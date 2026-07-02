@@ -5,163 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/viewing-groups": {
-      "get": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "GetViewingGroups",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewingGroupDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "CreateViewingGroup",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateViewingGroupRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/viewing-groups/member-candidates": {
-      "get": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "GetViewingGroupMemberCandidates",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewingGroupMemberCandidateDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/viewing-groups/{id}": {
-      "put": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "UpdateViewingGroup",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateViewingGroupRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "DeleteViewingGroup",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/viewing-groups/{id}/pin": {
-      "put": {
-        "tags": [
-          "ViewingGroups"
-        ],
-        "operationId": "SetViewingGroupPin",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetViewingGroupPinRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/users/me/two-factor/setup": {
       "post": {
         "tags": [
@@ -705,6 +548,40 @@
           "Users"
         ],
         "operationId": "GetSelfMediaExclusions",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/preferences/shared-profiles": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSharedProfilePreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateSharedProfilePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedProfilePreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -1860,6 +1737,197 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfiles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SharedProfileDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "CreateSharedProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSharedProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/member-candidates": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfileMemberCandidates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SharedProfileMemberCandidateDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}": {
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UpdateSharedProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSharedProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "DeleteSharedProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/pin": {
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "SetSharedProfilePin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSharedProfilePinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/leave": {
+      "post": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "LeaveSharedProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveSharedProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -8455,7 +8523,7 @@
             ],
             "format": "int32"
           },
-          "viewingGroupName": {
+          "sharedProfileName": {
             "type": [
               "null",
               "string"
@@ -9757,6 +9825,36 @@
           }
         }
       },
+      "CreateSharedProfileRequest": {
+        "required": [
+          "name",
+          "hostUserId",
+          "memberUserIds"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hostUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "memberUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "pin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreateSmartPlaylistCommand": {
         "required": [
           "prompt"
@@ -9855,36 +9953,6 @@
             "type": "string"
           },
           "password": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "CreateViewingGroupRequest": {
-        "required": [
-          "name",
-          "hostUserId",
-          "memberUserIds"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "hostUserId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "memberUserIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "pin": {
             "type": [
               "null",
               "string"
@@ -10754,6 +10822,18 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "LeaveSharedProfileRequest": {
+        "type": "object",
+        "properties": {
+          "newHostUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -15457,7 +15537,7 @@
               "string"
             ]
           },
-          "viewingGroupName": {
+          "sharedProfileName": {
             "type": [
               "null",
               "string"
@@ -16381,7 +16461,7 @@
           }
         }
       },
-      "SetViewingGroupPinRequest": {
+      "SetSharedProfilePinRequest": {
         "type": "object",
         "properties": {
           "pin": {
@@ -16389,6 +16469,112 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SharedProfileDto": {
+        "required": [
+          "id",
+          "name",
+          "hostUserId",
+          "hasPin",
+          "members"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hostIdentityUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hasPin": {
+            "type": "boolean"
+          },
+          "pinHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedProfileMemberDto"
+            }
+          }
+        }
+      },
+      "SharedProfileMemberCandidateDto": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SharedProfileMemberDto": {
+        "required": [
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "identityUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SharedProfilePreferencesDto": {
+        "type": "object",
+        "properties": {
+          "blockNewMembership": {
+            "type": "boolean"
           }
         }
       },
@@ -17615,7 +17801,14 @@
             ],
             "format": "uuid"
           },
-          "viewingGroupId": {
+          "sharedProfileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "syncPlayGroupId": {
             "type": [
               "null",
               "string"
@@ -17669,6 +17862,34 @@
         "properties": {
           "excludedLibraryIds": {
             "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "UpdateSharedProfileRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hostUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "memberUserIds": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string",
               "format": "uuid"
@@ -17792,34 +18013,6 @@
         "properties": {
           "role": {
             "type": "string"
-          }
-        }
-      },
-      "UpdateViewingGroupRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "hostUserId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "memberUserIds": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
           }
         }
       },
@@ -17989,104 +18182,6 @@
       "VideoResolutionIdentifier": {
         "type": "integer"
       },
-      "ViewingGroupDto": {
-        "required": [
-          "id",
-          "name",
-          "hostUserId",
-          "hasPin",
-          "members"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "hostUserId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "hostIdentityUserId": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "hasPin": {
-            "type": "boolean"
-          },
-          "pinHash": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "members": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ViewingGroupMemberDto"
-            }
-          }
-        }
-      },
-      "ViewingGroupMemberCandidateDto": {
-        "required": [
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "displayName": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "avatarUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "ViewingGroupMemberDto": {
-        "required": [
-          "userId"
-        ],
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "identityUserId": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "displayName": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "avatarUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "WatchStateScope": {
         "type": "integer",
         "default": 0
@@ -18253,9 +18348,6 @@
   },
   "tags": [
     {
-      "name": "ViewingGroups"
-    },
-    {
       "name": "Users"
     },
     {
@@ -18269,6 +18361,9 @@
     },
     {
       "name": "SmartPlaylists"
+    },
+    {
+      "name": "SharedProfiles"
     },
     {
       "name": "Setup"
