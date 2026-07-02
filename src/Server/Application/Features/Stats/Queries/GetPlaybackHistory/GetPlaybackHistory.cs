@@ -94,7 +94,8 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 MediaId = g.First().MediaId,
                 DeviceId = g.First().DeviceId,
                 UserId = g.First().UserId,
-                ViewingGroupName = g.First().ViewingGroupNameSnapshot
+                SharedProfileName = g.First().SharedProfileNameSnapshot,
+                CoWatchingWithSnapshot = g.First().CoWatchingWithSnapshot
             });
 
         var totalCount = await groupedQuery.CountAsync(cancellationToken);
@@ -228,7 +229,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 DeviceClient = g.DeviceId.HasValue && devices.TryGetValue(g.DeviceId.Value, out var devClient) ? devClient.ClientType.ToString() : null,
                 IsCompleted = g.IsCompleted,
                 UserName = userNames.GetValueOrDefault(g.UserId),
-                ViewingGroupName = g.ViewingGroupName,
+                SharedProfileName = g.SharedProfileName ?? g.CoWatchingWithSnapshot,
                 StreamQuality = quality
             };
         }).ToList();

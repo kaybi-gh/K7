@@ -32,9 +32,9 @@
             {
                 <span class="stream-card__mode-badge @OverallModeBadgeClass">@OverallModeLabel</span>
             }
-            @if (!string.IsNullOrEmpty(Stream.ViewingGroupName))
+            @if (!string.IsNullOrEmpty(Stream.SharedProfileName))
             {
-                <K7Chip Size="sm" Color="secondary" Variant="outlined">@Stream.ViewingGroupName</K7Chip>
+                <K7Chip Size="sm" Color="secondary" Variant="outlined">@Stream.SharedProfileName</K7Chip>
             }
         </div>
 

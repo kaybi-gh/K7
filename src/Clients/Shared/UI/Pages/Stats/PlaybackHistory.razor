@@ -40,11 +40,11 @@
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["ViewingGroup"]" VisibleOnMobile="false">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["SharedProfile"]" VisibleOnMobile="false">
                 <CellTemplate>
-                    @if (!string.IsNullOrEmpty(context.ViewingGroupName))
+                    @if (!string.IsNullOrEmpty(context.SharedProfileName))
                     {
-                        <K7Chip Size="sm" Color="secondary" Variant="outlined">@context.ViewingGroupName</K7Chip>
+                        <K7Chip Size="sm" Color="secondary" Variant="outlined">@context.SharedProfileName</K7Chip>
                     }
                     else
                     {

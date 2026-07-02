@@ -73,7 +73,7 @@ public class PlaybackSyncService
                             evt.Position,
                             evt.Duration,
                             state,
-                            viewingGroupId: evt.ViewingGroupId,
+                            sharedProfileId: evt.SharedProfileId,
                             cancellationToken: cancellationToken);
                     }
 

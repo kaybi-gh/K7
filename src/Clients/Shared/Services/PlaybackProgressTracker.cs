@@ -18,7 +18,8 @@ public class PlaybackProgressTracker : IDisposable
     private readonly IDeviceStorageService _deviceStorage;
     private readonly IConnectivityService _connectivity;
     private readonly IPlaybackJournal _journal;
-    private readonly IViewingGroupSessionService? _viewingGroupSession;
+    private readonly ISharedProfileSessionService? _viewingGroupSession;
+    private readonly ISyncPlayService? _syncPlayService;
     private readonly MediaCacheStore _cacheStore;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
@@ -46,7 +47,8 @@ public class PlaybackProgressTracker : IDisposable
         IConnectivityService connectivity,
         IPlaybackJournal journal,
         MediaCacheStore cacheStore,
-        IViewingGroupSessionService? viewingGroupSession = null)
+        ISharedProfileSessionService? viewingGroupSession = null,
+        ISyncPlayService? syncPlayService = null)
     {
         _playerService = playerService;
         _serverService = serverService;
@@ -55,6 +57,7 @@ public class PlaybackProgressTracker : IDisposable
         _journal = journal;
         _cacheStore = cacheStore;
         _viewingGroupSession = viewingGroupSession;
+        _syncPlayService = syncPlayService;
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
@@ -180,7 +183,8 @@ public class PlaybackProgressTracker : IDisposable
                 duration,
                 (int)_lastState,
                 deviceId,
-                viewingGroupId: _viewingGroupSession?.ActiveGroupId);
+                sharedProfileId: _viewingGroupSession?.ActiveGroupId,
+                syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
 
             if (_lastState is PlaybackState.Idle or PlaybackState.Ended)
             {

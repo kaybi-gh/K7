@@ -30,7 +30,7 @@
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="Duration" xml:space="preserve"><value>Durée</value></data>
   <data name="Device" xml:space="preserve"><value>Appareil</value></data>
-  <data name="ViewingGroup" xml:space="preserve"><value>Groupe</value></data>
+  <data name="SharedProfile" xml:space="preserve"><value>Regardé avec</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
   <data name="Period" xml:space="preserve"><value>Période</value></data>
   <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>

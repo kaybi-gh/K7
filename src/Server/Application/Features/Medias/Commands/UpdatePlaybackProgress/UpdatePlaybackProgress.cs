@@ -25,7 +25,8 @@ public record UpdatePlaybackProgressCommand(
     PlaybackState State,
     Guid? DeviceId = null,
     Guid? PlaylistId = null,
-    Guid? ViewingGroupId = null) : IRequest;
+    Guid? SharedProfileId = null,
+    Guid? SyncPlayGroupId = null) : IRequest;
 
 public class UpdatePlaybackProgressCommandHandler(
     IApplicationDbContext context,
@@ -37,7 +38,8 @@ public class UpdatePlaybackProgressCommandHandler(
     IMediaQueryCacheInvalidator cacheInvalidator,
     INextEpisodeEnqueueService nextEpisodeEnqueueService,
     IUserMediaStateUpdater userMediaStateUpdater,
-    IViewingGroupPlaybackResolver viewingGroupPlaybackResolver,
+    ISharedProfilePlaybackResolver viewingGroupPlaybackResolver,
+    ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
@@ -49,7 +51,8 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
     private readonly INextEpisodeEnqueueService _nextEpisodeEnqueueService = nextEpisodeEnqueueService;
     private readonly IUserMediaStateUpdater _userMediaStateUpdater = userMediaStateUpdater;
-    private readonly IViewingGroupPlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
+    private readonly ISharedProfilePlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
+    private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -118,15 +121,31 @@ public class UpdatePlaybackProgressCommandHandler(
         session.PositionSeconds = request.Position;
         session.DurationSeconds = request.Duration;
 
-        ViewingGroupPlaybackContext? viewingGroup = null;
-        if (request.ViewingGroupId is { } viewingGroupId)
+        SharedProfilePlaybackContext? viewingGroup = null;
+        if (request.SharedProfileId is { } sharedProfileId)
         {
-            viewingGroup = await _viewingGroupPlaybackResolver.ResolveAsync(viewingGroupId, userId, cancellationToken);
+            viewingGroup = await _viewingGroupPlaybackResolver.ResolveAsync(sharedProfileId, userId, cancellationToken);
             if (viewingGroup is not null)
             {
-                session.ViewingGroupId ??= viewingGroup.ViewingGroupId;
-                session.ViewingGroupNameSnapshot ??= viewingGroup.GroupName;
+                session.SharedProfileId ??= viewingGroup.SharedProfileId;
+                session.SharedProfileNameSnapshot ??= viewingGroup.GroupName;
                 await EnsureCoViewersAsync(request.ReferenceId, viewingGroup.CoViewerUserIds, cancellationToken);
+            }
+        }
+
+        SyncPlayPlaybackContext? syncPlay = null;
+        if (request.SyncPlayGroupId is { } syncPlayGroupId)
+        {
+            syncPlay = await _syncPlayPlaybackContextResolver.ResolveAsync(
+                syncPlayGroupId,
+                userId,
+                _currentUser.IdentityId,
+                cancellationToken);
+
+            if (syncPlay is not null)
+            {
+                session.CoWatchingWithSnapshot ??= syncPlay.CoWatchingWithSnapshot;
+                await EnsureCoViewersAsync(request.ReferenceId, syncPlay.CoViewerUserIds, cancellationToken);
             }
         }
 
@@ -296,7 +315,7 @@ public class UpdatePlaybackProgressCommandHandler(
                 Position = request.Position,
                 Duration = request.Duration,
                 State = (int)request.State,
-                ViewingGroupName = session.ViewingGroupNameSnapshot
+                SharedProfileName = session.SharedProfileNameSnapshot ?? session.CoWatchingWithSnapshot
             });
         }
         else

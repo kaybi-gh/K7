@@ -132,7 +132,7 @@ public partial class AdminActiveStreamsSection : IDisposable
             StartedAt = stream.StartedAt,
             DurationDisplay = $"{FormatTime(stream.Position)} / {FormatTime(stream.Duration)}",
             UserName = stream.UserName,
-            ViewingGroupName = stream.ViewingGroupName,
+            SharedProfileName = stream.SharedProfileName,
             DeviceName = stream.DeviceName,
             DeviceClient = stream.DeviceType,
             HasStreamDetails = hasStream,

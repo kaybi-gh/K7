@@ -53,7 +53,7 @@ public sealed record StreamDetailModel
     public string? Position { get; init; }
 
     public string? UserName { get; init; }
-    public string? ViewingGroupName { get; init; }
+    public string? SharedProfileName { get; init; }
     public string? DeviceName { get; init; }
     public string? DeviceClient { get; init; }
 

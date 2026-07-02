@@ -50,7 +50,7 @@ public class GetActiveStreamsQueryHandler(IActiveStreamTracker tracker, IApplica
                 Position = s.Position,
                 Duration = s.Duration,
                 State = s.State,
-                ViewingGroupName = s.ViewingGroupName
+                SharedProfileName = s.SharedProfileName
             })
             .ToList();
 
