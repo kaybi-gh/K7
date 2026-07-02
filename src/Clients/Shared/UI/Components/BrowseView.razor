@@ -72,7 +72,6 @@
                                    OverscanCount="OverscanCount"
                                    @ref="_gridComponentRef">
                         <ItemTemplate>@GridTemplate(context)</ItemTemplate>
-                        <Placeholder>@GridPlaceholder</Placeholder>
                     </K7VirtualGrid>
                 }
                 else
@@ -114,7 +113,8 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="10">
+                                <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="OverscanCount"
+                                            SpacerElement="tr">
                                     @TableRowTemplate(item)
                                 </Virtualize>
                             </tbody>
@@ -132,7 +132,6 @@
                                    OverscanCount="OverscanCount"
                                    @ref="_listComponentRef">
                         <ItemTemplate>@ListTemplate(context)</ItemTemplate>
-                        <Placeholder>@ListPlaceholder</Placeholder>
                     </K7VirtualList>
                 }
                 else

@@ -39,7 +39,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public float ListItemHeight { get; set; } = 64;
     [Parameter] public float? GridItemAspectRatio { get; set; } = 1.5f;
     [Parameter] public int GridFooterHeight { get; set; } = 44;
-    [Parameter] public int OverscanCount { get; set; } = 4;
+    [Parameter] public int OverscanCount { get; set; } = 10;
 
     private K7VirtualGrid<TItem>? _gridComponentRef;
     private K7VirtualList<TItem>? _listComponentRef;
