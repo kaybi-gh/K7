@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Associer un appareil - K7</value></data>
+  <data name="Title" xml:space="preserve"><value>Associer un appareil</value></data>
+  <data name="DeviceAuthorized" xml:space="preserve"><value>Appareil autorise. Vous pouvez fermer cette page.</value></data>
+  <data name="InvalidCode" xml:space="preserve"><value>Le code est invalide ou a expire. Veuillez reessayer.</value></data>
+  <data name="EnterCode" xml:space="preserve"><value>Entrez le code affiche sur votre appareil.</value></data>
+  <data name="AuthorizeDevice" xml:space="preserve"><value>Autoriser l'appareil</value></data>
+  <data name="CodePart1" xml:space="preserve"><value>Partie 1 du code</value></data>
+  <data name="CodePart2" xml:space="preserve"><value>Partie 2 du code</value></data>
+  <data name="CodePart3" xml:space="preserve"><value>Partie 3 du code</value></data>
+</root>

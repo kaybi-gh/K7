@@ -1,0 +1,94 @@
+.link-device {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--space-8);
+    background: var(--color-background);
+}
+
+.link-device__card {
+    width: min(440px, 100%);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.link-device__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+}
+
+.link-device__icon {
+    font-size: 2rem;
+    color: var(--color-primary);
+}
+
+.link-device__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.link-device__hint {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin: 0;
+}
+
+.link-device__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: stretch;
+}
+
+.link-device__code-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+}
+
+.link-device__segment {
+    width: 80px;
+    text-align: center;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-background);
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+.link-device__separator {
+    color: var(--color-text-secondary);
+}
+
+.link-device__alert {
+    width: 100%;
+    padding: var(--space-3);
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.link-device__alert--success {
+    background: color-mix(in srgb, var(--color-success) 15%, transparent);
+    color: var(--color-success);
+}
+
+.link-device__alert--error {
+    background: color-mix(in srgb, var(--color-error) 15%, transparent);
+    color: var(--color-error);
+}
