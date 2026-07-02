@@ -277,6 +277,10 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
             return new K7DataTableResult<BackgroundTaskDto>(items, totalCount);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch
         {
             Snackbar.Add(S["LoadError"], K7Severity.Error);
