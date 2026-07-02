@@ -24,7 +24,8 @@ public static class PlaylistMappings
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
             ItemCount = domain.Items.Count,
             Created = domain.Created,
-            LastModified = domain.LastModified
+            LastModified = domain.LastModified,
+            LastListenedAt = MapLastListenedAt(domain)
         };
 
         public LitePlaylistDto ToLitePlaylistDto() => new()
@@ -35,11 +36,18 @@ public static class PlaylistMappings
             IsSmartPlaylist = domain is SmartPlaylist,
             MediaType = domain.MediaType,
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
+            PreviewPictures = domain.ToPreviewPictureDtos(),
             ItemCount = domain.Items.Count,
             Created = domain.Created,
-            LastModified = domain.LastModified
+            LastModified = domain.LastModified,
+            LastListenedAt = MapLastListenedAt(domain)
         };
     }
+
+    private static DateTimeOffset? MapLastListenedAt(Playlist domain) =>
+        domain.UserStates.FirstOrDefault()?.LastListenedAt is { } lastListened
+            ? new DateTimeOffset(DateTime.SpecifyKind(lastListened, DateTimeKind.Utc))
+            : null;
 
     extension(SmartPlaylist domain)
     {
@@ -58,7 +66,8 @@ public static class PlaylistMappings
             ItemCount = domain.Items.Count,
             LastEvaluatedAt = domain.LastEvaluatedAt,
             Created = domain.Created,
-            LastModified = domain.LastModified
+            LastModified = domain.LastModified,
+            LastListenedAt = MapLastListenedAt(domain)
         };
 
         public LiteSmartPlaylistDto ToLiteSmartPlaylistDto() => new()

@@ -12,6 +12,7 @@ public sealed record LiteCollectionDto
     public Guid? UserId { get; init; }
     public MediaType? MediaType { get; init; }
     public MetadataPictureDto? CoverPicture { get; init; }
+    public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; init; } = [];
     public int ItemCount { get; init; }
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
