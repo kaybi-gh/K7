@@ -16,6 +16,9 @@
               Items="_collections"
               Loading="_loading"
               PersistenceKey="my-space-collections"
+              Class="my-space-library-browse"
+              @ref="_browseView"
+              OnColumnPickerRequested="OnColumnPickerRequested"
               DefaultItemWidth="160"
               DefaultSpacing="24"
               GridItemAspectRatio="1f"
@@ -29,8 +32,8 @@
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
-        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)">
-            @L["New"]
+        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)" Class="my-space-toolbar-new" AriaLabel="@L["New"]">
+            <span class="my-space-toolbar-new__label">@L["New"]</span>
         </K7Button>
     </ToolbarContent>
     <EmptyContent>
@@ -51,6 +54,8 @@
                        Href="@GetCollectionHref(collection)"
                        Variant="MediaCardVariant.Cover"
                        FooterVisible="true"
+                       ContextMenuEnabled="false"
+                       HoverOverlayEnabled="true"
                        PlaceholderIcon="@Phosphor.BookmarkSimple">
                 <CoverContent>
                     <K7CoverMosaic PreviewPictures="collection.PreviewPictures"
@@ -67,50 +72,51 @@
                        Href="@GetCollectionHref(collection)"
                        Variant="MediaCardVariant.Cover"
                        FooterVisible="true"
+                       ContextMenuEnabled="false"
+                       HoverOverlayEnabled="true"
                        PlaceholderIcon="@Phosphor.BookmarkSimple" />
         }
     </GridTemplate>
-    <TableColgroupContent>
-        <col style="width: 56px" />
-        <col />
-        <col style="width: 120px" />
-        <col style="width: 120px" />
-    </TableColgroupContent>
-    <TableHeaderContent>
-        <th>@S["Image"]</th>
-        <th>@S["Title"]</th>
-        <th>@L["ItemsColumn"]</th>
-        <th>@L["Visibility"]</th>
-    </TableHeaderContent>
-    <TableRowTemplate Context="row">
-        @{
-            var collection = row.Item;
-        }
-        <td>
-            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
-                <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
-                                        PreviewPictures="collection.PreviewPictures"
-                                        PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
-                                        PlaceholderIcon="@Phosphor.BookmarkSimple"
-                                        Alt="@collection.Title" />
-            </a>
-        </td>
-        <td>
-            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
-                <span class="library-list-item-title">@collection.Title</span>
-            </a>
-        </td>
-        <td>
-            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
-                <span class="library-list-item-secondary">@GetCollectionItemCountLabel(collection)</span>
-            </a>
-        </td>
-        <td>
-            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
-                <span class="library-list-item-secondary">@(collection.IsPublic ? L["Public"] : L["Private"])</span>
-            </a>
-        </td>
-    </TableRowTemplate>
+    <TableContent>
+        <K7DataTable TItem="LiteCollectionDto"
+                     ServerData="LoadTableDataAsync"
+                     ActiveSortKey="@_activeSortKey"
+                     ActiveSortDirection="@_activeSortDirection"
+                     OnSortChanged="OnTableSortChanged"
+                     OnRowClick="NavigateToCollection"
+                     RowHeight="56"
+                     ShowToolbar="false"
+                     Surface="false"
+                     @ref="_dataTable">
+            <K7DataColumn TItem="LiteCollectionDto" Title="@S["Title"]" SortKey="title" Hideable="false">
+                <CellTemplate Context="collection">
+                    <div class="library-table-title">
+                        <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
+                                                PreviewPictures="collection.PreviewPictures"
+                                                PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                                PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                                Alt="@collection.Title" />
+                        <p class="text-sm">@collection.Title</p>
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteCollectionDto" Title="@L["ItemsColumn"]" Width="120px" VisibleOnMobile="false">
+                <CellTemplate Context="collection">
+                    <span>@GetCollectionItemCountLabel(collection)</span>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteCollectionDto" Title="@L["Visibility"]" Width="120px" VisibleOnMobile="true">
+                <CellTemplate Context="collection">
+                    <span>@(collection.IsPublic ? L["Public"] : L["Private"])</span>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteCollectionDto" Title="@LibrarySortL["SortRecentActivity"]" SortKey="lastModified" Width="180px" VisibleOnMobile="false" Visible="false">
+                <CellTemplate Context="collection">
+                    <span>@collection.LastModified.ToString("d")</span>
+                </CellTemplate>
+            </K7DataColumn>
+        </K7DataTable>
+    </TableContent>
     <ListTemplate Context="collection">
         <LibraryBrowseListRow>
             <a href="@GetCollectionHref(collection)" class="library-list-item focusable">

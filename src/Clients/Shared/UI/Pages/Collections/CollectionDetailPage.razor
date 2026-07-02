@@ -142,7 +142,11 @@ else
 
                       GridItemAspectRatio="1.8f"
 
-                      ListItemHeight="64">
+                      ListItemHeight="64"
+
+                      @ref="_browseView"
+
+                      OnColumnPickerRequested="OnColumnPickerRequested">
 
             <EmptyContent>
 
@@ -196,97 +200,57 @@ else
 
             </GridTemplate>
 
-            <TableColgroupContent>
-                <col style="width: 56px" />
-                <col />
-                <col style="width: 100px" />
-                <col style="width: 88px" />
-            </TableColgroupContent>
-            <TableHeaderContent>
-
-                <th style="width: 56px;">@S["Image"]</th>
-
-                <th>@S["Title"]</th>
-
-                <th style="width: 100px;">@L["Year"]</th>
-
-                <th style="width: 88px;">@S["Actions"]</th>
-
-            </TableHeaderContent>
-
-            <TableRowTemplate Context="row">
-
-                @{
-
-                    var browseRow = row.Item;
-
-                    var vm = browseRow.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
-
-                }
-
-                <td @onclick="() => NavigateToItem(browseRow.Media)">
-
-                    <K7CoverMosaic ImageUrls="@GetItemPreviewUrls(browseRow.Media)"
-
-                                    PlaceholderIcon="@Phosphor.Image"
-
-                                    PictureSize="MetadataPictureSize.Small"
-
-                                    Alt="@browseRow.Media.Title"
-
-                                    Class="collection-table-cover" />
-
-                </td>
-
-                <td @onclick="() => NavigateToItem(browseRow.Media)">
-
-                    <span class="library-list-item-title">@browseRow.Media.Title</span>
-
-                </td>
-
-                <td @onclick="() => NavigateToItem(browseRow.Media)">
-
-                    <span class="library-list-item-secondary">@browseRow.Media.ReleaseDate?.Year</span>
-
-                </td>
-
-                <td class="library-browse-row-actions-cell">
-
-                    @if (vm is not null)
-
-                    {
-
-                        <LibraryBrowseRowActions Model="vm"
-
-                                                  Href="@GetItemHref(vm)"
-
-                                                  OverlayEnabled="true"
-
-                                                  ProgressEnabled="_canTrackProgress"
-
-                                                  WatchedStatusEnabled="_canTrackProgress"
-
-                                                  ExcludeMenuEnabled="_canExclude"
-
-                                                  WatchStateMenuEnabled="_canSetWatchState"
-
-                                                  IsAdmin="_isAdmin"
-
-                                                  OnRemove="() => RemoveItemAsync(browseRow)"
-
-                                                  RemoveAriaLabel="@S["Remove"]"
-
-                                                  OnExcludeForSelf="() => ExcludeForSelf(vm)"
-
-                                                  OnExcludeForOthers="() => ExcludeForOthers(vm)"
-
-                                                  OnWatchStateChanged="StateHasChanged" />
-
-                    }
-
-                </td>
-
-            </TableRowTemplate>
+            <TableContent>
+                <K7DataTable TItem="CollectionBrowseRow"
+                             ServerData="LoadTableDataAsync"
+                             ActiveSortKey="@_activeSortKey"
+                             ActiveSortDirection="@_activeSortDirection"
+                             OnSortChanged="OnTableSortChanged"
+                             OnRowClick="NavigateToBrowseRow"
+                             RowHeight="56"
+                             ShowToolbar="false"
+                             Surface="false"
+                             @ref="_dataTable">
+                    <K7DataColumn TItem="CollectionBrowseRow" Title="@S["Title"]" SortKey="title" Hideable="false">
+                        <CellTemplate Context="row">
+                            <div class="library-table-title">
+                                <K7CoverMosaic ImageUrls="@GetItemPreviewUrls(row.Media)"
+                                                PlaceholderIcon="@Phosphor.Image"
+                                                PictureSize="MetadataPictureSize.Small"
+                                                Alt="@row.Media.Title"
+                                                Class="collection-table-cover" />
+                                <p class="text-sm">@row.Media.Title</p>
+                            </div>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="CollectionBrowseRow" Title="@L["Year"]" SortKey="releaseDate" Width="100px" VisibleOnMobile="false" Property="row => row.Media.ReleaseDate?.Year" />
+                    <K7DataColumn TItem="CollectionBrowseRow" Title="@S["Actions"]" Width="88px" Hideable="false">
+                        <CellTemplate Context="row">
+                            @{
+                                var vm = row.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                            }
+                            @if (vm is not null)
+                            {
+                                <div @onclick:stopPropagation="true">
+                                    <LibraryBrowseRowActions Model="vm"
+                                                              Href="@GetItemHref(vm)"
+                                                              OverlayEnabled="true"
+                                                              ProgressEnabled="_canTrackProgress"
+                                                              WatchedStatusEnabled="_canTrackProgress"
+                                                              ExcludeMenuEnabled="_canExclude"
+                                                              WatchStateMenuEnabled="_canSetWatchState"
+                                                              IsAdmin="_isAdmin"
+                                                              OnRemove="() => RemoveItemAsync(row)"
+                                                              RemoveAriaLabel="@S["Remove"]"
+                                                              OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                                                              OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                                                              OnWatchStateChanged="StateHasChanged" />
+                                </div>
+                            }
+                        </CellTemplate>
+                    </K7DataColumn>
+                </K7DataTable>
+            </TableContent>
 
             <ListTemplate Context="row">
 

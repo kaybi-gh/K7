@@ -128,6 +128,75 @@
     height: 100%;
 }
 
+/* My Space library browse toolbar */
+.my-space-library-browse .browse-view-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+}
+
+.my-space-library-browse .browse-view-toolbar-start,
+.my-space-library-browse .browse-view-toolbar-end {
+    display: contents;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-start > .k7-button-group,
+.my-space-library-browse ::deep .browse-view-toolbar-actions > .k7-button-group {
+    width: max-content;
+    max-width: 100%;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-start > .library-toolbar-sort {
+    width: 12rem;
+    max-width: min(280px, 100%);
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-start > .library-toolbar-sort .k7-select-wrap,
+.my-space-library-browse ::deep .browse-view-toolbar-start > .library-toolbar-sort .k7-select {
+    height: 100%;
+    min-height: 40px;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 40px;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-start > .k7-button-group .k7-button-group-item,
+.my-space-library-browse ::deep .browse-view-toolbar-actions > .k7-button-group .k7-button-group-item {
+    height: 100%;
+}
+
+.my-space-library-browse ::deep .browse-view-toolbar-start > .k7-menu .k7-btn,
+.my-space-library-browse ::deep .browse-view-toolbar-start > .k7-btn {
+    height: 40px;
+    min-height: 40px;
+}
+
+.my-space-library-browse ::deep .library-table-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.my-space-library-browse ::deep .library-table-title .text-sm {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
 @media (max-width: 599.98px) {
     .library-group-browse .browse-view-toolbar {
         flex-wrap: wrap;
@@ -176,6 +245,77 @@
     }
 
     .library-group-browse ::deep .browse-view-toolbar-actions > .k7-button-group .k7-button-group-item {
+        padding: 0 var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .my-space-library-browse .browse-view-toolbar {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > h5,
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .flex-1 {
+        display: none;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .k7-button-group {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: none;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .k7-button-group .k7-button-group-item {
+        flex: 1;
+        min-width: 0;
+        padding: 0 var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .library-toolbar-sort {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        height: 40px;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .library-toolbar-sort .k7-select {
+        min-width: 0;
+        font-size: var(--text-xs);
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .k7-menu.my-space-toolbar-new,
+    .my-space-library-browse ::deep .browse-view-toolbar-start > .k7-btn.my-space-toolbar-new {
+        flex: 0 0 auto;
+    }
+
+    .my-space-library-browse ::deep .my-space-toolbar-new__label {
+        display: none;
+    }
+
+    .my-space-library-browse ::deep .k7-menu.my-space-toolbar-new .k7-btn,
+    .my-space-library-browse ::deep .k7-btn.my-space-toolbar-new {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-actions {
+        height: 40px;
+        margin-left: auto;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-actions > .k7-button-group {
+        height: 100%;
+    }
+
+    .my-space-library-browse ::deep .browse-view-toolbar-actions > .k7-button-group .k7-button-group-item {
         padding: 0 var(--space-2);
         font-size: var(--text-xs);
     }

@@ -132,7 +132,11 @@
 
                       Class="playlist-detail-browse"
 
-                      ListItemHeight="64">
+                      ListItemHeight="64"
+
+                      @ref="_browseView"
+
+                      OnColumnPickerRequested="OnColumnPickerRequested">
 
             <EmptyContent>
 
@@ -146,133 +150,71 @@
 
             </EmptyContent>
 
-            <TableColgroupContent>
-                <col style="width: 52px" />
-                <col />
-                @if (_isMusicPlaylist)
-                {
-                    <col style="width: 160px" />
-                    <col style="width: 80px" />
-                }
-                <col style="width: 88px" />
-            </TableColgroupContent>
-            <TableHeaderContent>
-
-                <th style="width: 52px;">@S["Image"]</th>
-
-                <th>@S["Title"]</th>
-
-                @if (_isMusicPlaylist)
-
-                {
-
-                    <th>@S["Artist"]</th>
-
-                    <th style="width: 80px;">@S["Duration"]</th>
-
-                }
-
-                <th style="width: 88px;">@S["Actions"]</th>
-
-            </TableHeaderContent>
-
-            <TableRowTemplate Context="row">
-
-                @{
-
-                    var item = row.Item.Item;
-
-                    var vm = GetCardViewModel(item);
-
-                    var href = GetItemHref(item);
-
-                }
-
-                <td class="track-cover-cell" @onclick="() => OnItemActivated(item)">
-
-                    @if (item.CoverUrl is not null)
-
-                    {
-
-                        <K7Image Src="@item.CoverUrl" Width="36"
-
-                                  ObjectFit="cover" Class="rounded" loading="lazy" />
-
-                    }
-
-                    else
-
-                    {
-
-                        <div class="track-cover-placeholder">
-
-                            <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
-
-                        </div>
-
-                    }
-
-                </td>
-
-                <td class="track-title-cell" @onclick="() => OnItemActivated(item)">
-
-                    <span class="library-list-item-title" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">
-
-                        @item.Title
-
-                    </span>
-
-                    @if (_isMusicPlaylist && item.IsPlaying)
-
-                    {
-
-                        <K7Icon Icon="@Phosphor.Waveform" IconSize="@K7IconSize.Sm" Color="primary" Class="ml-1" />
-
-                    }
-
-                </td>
-
-                @if (_isMusicPlaylist)
-
-                {
-
-                    <td @onclick="() => OnItemActivated(item)">
-
-                        <span class="library-list-item-secondary">@item.ArtistName</span>
-
-                    </td>
-
-                    <td @onclick="() => OnItemActivated(item)">
-
-                        <span class="library-list-item-secondary">@FormatTime(item.Duration)</span>
-
-                    </td>
-
-                }
-
-                <td class="library-browse-row-actions-cell">
-
-                    <PlaylistItemRowActions IsMusic="_isMusicPlaylist"
-
-                                             Track="BuildQueueItem(item)"
-
-                                             Model="vm"
-
-                                             Href="href"
-
-                                             OverlayEnabled="true"
-
-                                             ProgressEnabled="_canTrackProgress"
-
-                                             WatchedStatusEnabled="_canTrackProgress"
-
-                                             WatchStateMenuEnabled="_canSetWatchState"
-
-                                             OnRemove="() => RemoveItem(item)" />
-
-                </td>
-
-            </TableRowTemplate>
+            <TableContent>
+                <K7DataTable TItem="PlaylistItemViewModel"
+                             ServerData="LoadTableDataAsync"
+                             ActiveSortKey="@_activeSortKey"
+                             ActiveSortDirection="@_activeSortDirection"
+                             OnSortChanged="OnTableSortChanged"
+                             OnRowClick="OnItemActivated"
+                             RowHeight="56"
+                             ShowToolbar="false"
+                             Surface="false"
+                             @ref="_dataTable">
+                    <K7DataColumn TItem="PlaylistItemViewModel" Title="@S["Title"]" SortKey="title" Hideable="false">
+                        <CellTemplate Context="item">
+                            <div class="library-table-title">
+                                @if (item.CoverUrl is not null)
+                                {
+                                    <K7Image Src="@item.CoverUrl" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div class="track-cover-placeholder">
+                                        <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
+                                    </div>
+                                }
+                                <p class="text-sm" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">
+                                    @item.Title
+                                    @if (_isMusicPlaylist && item.IsPlaying)
+                                    {
+                                        <K7Icon Icon="@Phosphor.Waveform" IconSize="@K7IconSize.Sm" Color="primary" Class="ml-1" />
+                                    }
+                                </p>
+                            </div>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="PlaylistItemViewModel" Title="@S["Artist"]" SortKey="artist" Width="160px" Visible="@_isMusicPlaylist" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <span>@item.ArtistName</span>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="PlaylistItemViewModel" Title="@S["Duration"]" SortKey="duration" Width="80px" Visible="@_isMusicPlaylist" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <span>@FormatTime(item.Duration)</span>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="PlaylistItemViewModel" Title="@S["Actions"]" Width="88px" Hideable="false">
+                        <CellTemplate Context="item">
+                            @{
+                                var vm = GetCardViewModel(item);
+                                var href = GetItemHref(item);
+                            }
+                            <div @onclick:stopPropagation="true">
+                                <PlaylistItemRowActions IsMusic="_isMusicPlaylist"
+                                                         Track="BuildQueueItem(item)"
+                                                         Model="vm"
+                                                         Href="href"
+                                                         OverlayEnabled="true"
+                                                         ProgressEnabled="_canTrackProgress"
+                                                         WatchedStatusEnabled="_canTrackProgress"
+                                                         WatchStateMenuEnabled="_canSetWatchState"
+                                                         OnRemove="() => RemoveItem(item)" />
+                            </div>
+                        </CellTemplate>
+                    </K7DataColumn>
+                </K7DataTable>
+            </TableContent>
 
             <ListTemplate Context="row">
 

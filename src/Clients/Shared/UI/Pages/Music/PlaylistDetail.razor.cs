@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
@@ -37,6 +38,10 @@ public partial class PlaylistDetail
     private bool _loadingItems = true;
     private bool _canTrackProgress;
     private bool _canSetWatchState;
+    private BrowseView<PlaylistBrowseRow>? _browseView;
+    private K7DataTable<PlaylistItemViewModel>? _dataTable;
+    private string? _activeSortKey = "order";
+    private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
 
     private bool _isMusicPlaylist => _playlist?.MediaType is MediaType.MusicTrack;
     private bool _showHeaderPlaceholder => _items.Count == 0;
@@ -80,7 +85,56 @@ public partial class PlaylistDetail
             .Take(4)
             .ToList();
         _loadingItems = false;
+
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
     }
+
+    private Task<K7DataTableResult<PlaylistItemViewModel>> LoadTableDataAsync(
+        K7DataTableState<PlaylistItemViewModel> state, CancellationToken cancellationToken)
+    {
+        if (state.Count <= 0)
+            return Task.FromResult(new K7DataTableResult<PlaylistItemViewModel>([], 0));
+
+        var sorted = SortPlaylistItems(_items, state.SortKey, state.SortDirection);
+        var items = sorted
+            .Skip(state.StartIndex)
+            .Take(state.Count)
+            .ToList();
+
+        return Task.FromResult(new K7DataTableResult<PlaylistItemViewModel>(items, sorted.Count));
+    }
+
+    private static List<PlaylistItemViewModel> SortPlaylistItems(
+        IReadOnlyList<PlaylistItemViewModel> items,
+        string? sortKey,
+        K7SortDirection direction)
+    {
+        var desc = direction is K7SortDirection.Descending;
+        IEnumerable<PlaylistItemViewModel> query = items;
+
+        query = sortKey switch
+        {
+            "title" => desc ? query.OrderByDescending(i => i.Title) : query.OrderBy(i => i.Title),
+            "artist" => desc ? query.OrderByDescending(i => i.ArtistName) : query.OrderBy(i => i.ArtistName),
+            "duration" => desc ? query.OrderByDescending(i => i.Duration) : query.OrderBy(i => i.Duration),
+            _ => desc ? query.OrderByDescending(i => i.Order) : query.OrderBy(i => i.Order)
+        };
+
+        return query.ToList();
+    }
+
+    private async Task OnTableSortChanged(SortChangedEventArgs args)
+    {
+        _activeSortKey = args.SortKey;
+        _activeSortDirection = args.Direction;
+
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+    }
+
+    private void OnColumnPickerRequested() =>
+        _dataTable?.ToggleColumnPicker();
 
     private void RebuildBrowseRows()
     {
@@ -244,6 +298,10 @@ public partial class PlaylistDetail
                 .Cast<string>()
                 .Take(4)
                 .ToList();
+
+            if (_dataTable is not null)
+                await _dataTable.RefreshAsync();
+
             StateHasChanged();
         }
         catch

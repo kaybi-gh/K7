@@ -17,6 +17,8 @@ public partial class MediaCard : IDisposable
     [Parameter] public MediaCardVariant Variant { get; set; } = MediaCardVariant.Poster;
     [Parameter] public string? Href { get; set; }
     [Parameter] public bool OverlayEnabled { get; set; }
+    [Parameter] public bool HoverOverlayEnabled { get; set; }
+    [Parameter] public bool ContextMenuEnabled { get; set; } = true;
     [Parameter] public bool ProgressEnabled { get; set; }
     [Parameter] public bool WatchedStatusEnabled { get; set; }
     [Parameter] public bool FooterVisible { get; set; }
@@ -51,7 +53,8 @@ public partial class MediaCard : IDisposable
     private double _touchStartY;
 
     private bool LongPressEnabled =>
-        OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showPlaylist || _showCollection;
+        ContextMenuEnabled
+        && (OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showPlaylist || _showCollection);
 
     private string GetRootClass()
     {
