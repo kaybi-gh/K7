@@ -155,7 +155,7 @@
                           Required="true" RequiredError="@L["NameRequired"]" />
 
             <K7Select TValue="string" @bind-Value="_providerType" Label="@L["Provider"]" Variant="outlined">
-                <K7SelectItem Value="@("Webhook")">Webhook</K7SelectItem>
+                <K7SelectItem Value="@("Webhook")" Text="Webhook">Webhook</K7SelectItem>
             </K7Select>
 
             @if (_providerType == "Webhook")
@@ -163,8 +163,8 @@
                 <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
                               Required="true" RequiredError="@L["WebhookUrlRequired"]" />
                 <K7Select TValue="string" @bind-Value="_webhookMethod" Label="@L["HttpMethod"]" Variant="outlined">
-                    <K7SelectItem Value="@("POST")">POST</K7SelectItem>
-                    <K7SelectItem Value="@("PUT")">PUT</K7SelectItem>
+                    <K7SelectItem Value="@("POST")" Text="POST">POST</K7SelectItem>
+                    <K7SelectItem Value="@("PUT")" Text="PUT">PUT</K7SelectItem>
                 </K7Select>
             }
         </div>

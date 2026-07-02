@@ -253,7 +253,7 @@
                 <K7Select TValue="MetadataPictureType" @bind-Value="_uploadPictureType" Label="@L["PictureType"]" Variant="outlined">
                     @foreach (var type in _allowedPictureTypes)
                     {
-                        <K7SelectItem TValue="MetadataPictureType" Value="@type">@type</K7SelectItem>
+                        <K7SelectItem TValue="MetadataPictureType" Value="@type" Text="@type.ToString()">@type</K7SelectItem>
                     }
                 </K7Select>
             </div>

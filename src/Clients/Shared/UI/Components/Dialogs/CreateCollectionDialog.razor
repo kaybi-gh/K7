@@ -18,14 +18,14 @@
         <K7Select TValue="MediaType?" @bind-Value="_mediaType" Label="@L["MediaType"]"
                    Variant="outlined"
                    Clearable="true">
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)null)">@L["MediaTypeMixed"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Movie)">@S["MediaTypeMovies"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicAlbum)">@S["MediaTypeMusicAlbums"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicTrack)">@S["MediaTypeMusicTracks"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicArtist)">@S["MediaTypeMusicArtists"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Serie)">@S["MediaTypeSeries"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieSeason)">@S["MediaTypeSerieSeasons"]</K7SelectItem>
-            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieEpisode)">@S["MediaTypeSerieEpisodes"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)null)" Text="@L["MediaTypeMixed"]">@L["MediaTypeMixed"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Movie)" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicAlbum)" Text="@S["MediaTypeMusicAlbums"]">@S["MediaTypeMusicAlbums"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicTrack)" Text="@S["MediaTypeMusicTracks"]">@S["MediaTypeMusicTracks"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicArtist)" Text="@S["MediaTypeMusicArtists"]">@S["MediaTypeMusicArtists"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Serie)" Text="@S["MediaTypeSeries"]">@S["MediaTypeSeries"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieSeason)" Text="@S["MediaTypeSerieSeasons"]">@S["MediaTypeSerieSeasons"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieEpisode)" Text="@S["MediaTypeSerieEpisodes"]">@S["MediaTypeSerieEpisodes"]</K7SelectItem>
         </K7Select>
         <div class="d-flex align-center mt-2">
             <K7Switch @bind-Value="_isPublic" />

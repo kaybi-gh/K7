@@ -13,7 +13,8 @@
                 {
                     @foreach (var track in videoMetadata.AudioTracks)
                     {
-                        <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</K7SelectItem>
+                        var audioLabel = $"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}";
+                        <K7SelectItem Value="@track" Text="@audioLabel">@audioLabel</K7SelectItem>
                     }
                 }
             </K7Select>
@@ -23,7 +24,8 @@
                 {
                     @foreach (var track in videoMetadata.SubtitleTracks)
                     {
-                        <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec}")</K7SelectItem>
+                        var subtitleLabel = $"{track.Language} - {track.Name} - {track.Codec}";
+                        <K7SelectItem Value="@track" Text="@subtitleLabel">@subtitleLabel</K7SelectItem>
                     }
                 }
             </K7Select>

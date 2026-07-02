@@ -20,17 +20,17 @@
                     <p class="text-subtitle2">@L["MatchLabel"]</p>
                     <K7Select TValue="SmartPlaylistMatchCondition" @bind-Value="_matchCondition"
                                Variant="outlined" Style="width: 120px;">
-                        <K7SelectItem Value="SmartPlaylistMatchCondition.All">@L["MatchAll"]</K7SelectItem>
-                        <K7SelectItem Value="SmartPlaylistMatchCondition.Any">@L["MatchAny"]</K7SelectItem>
+                        <K7SelectItem Value="SmartPlaylistMatchCondition.All" Text="@L["MatchAll"]">@L["MatchAll"]</K7SelectItem>
+                        <K7SelectItem Value="SmartPlaylistMatchCondition.Any" Text="@L["MatchAny"]">@L["MatchAny"]</K7SelectItem>
                     </K7Select>
                     <p class="text-subtitle2">@L["RulesSuffix"]</p>
                 </div>
                 <K7Select TValue="MediaType" @bind-Value="_mediaType" Label="@L["MediaType"]"
                            Variant="outlined"
                            Style="width: 180px;">
-                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie">@S["MediaTypeMovies"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode">@S["MediaTypeTVShows"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
                 </K7Select>
             </div>
 

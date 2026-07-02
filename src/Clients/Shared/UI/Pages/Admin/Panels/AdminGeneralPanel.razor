@@ -24,7 +24,7 @@ else
                       ToStringFunc="@(t => t?.Name)">
                 @foreach (var theme in Themes.Collection)
                 {
-                    <K7SelectItem Value="@theme">@theme.Name</K7SelectItem>
+                    <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
                 }
             </K7Select>
             <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>

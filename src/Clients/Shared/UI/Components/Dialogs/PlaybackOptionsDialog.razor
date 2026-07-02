@@ -14,7 +14,7 @@
                 <K7Select TValue="IndexedFileDto" @bind-Value="SelectedFile" Label="@L["File"]" Variant="filled" ToStringFunc="@(f => f?.Name)">
                     @foreach (var file in Movie.IndexedFiles)
                     {
-                        <K7SelectItem Value="@file">@file.Name</K7SelectItem>
+                        <K7SelectItem Value="@file" Text="@file.Name">@file.Name</K7SelectItem>
                     }
                 </K7Select>
             }
@@ -26,7 +26,7 @@
                     {
                         @foreach (var track in videoMetadata.AudioTracks)
                         {
-                            <K7SelectItem Value="@track">
+                            <K7SelectItem Value="@track" Text="@GetAudioTrackLabel(track)">
                                 @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
                                 @if (audioLang is not null)
                                 {
@@ -43,7 +43,7 @@
                     {
                         @foreach (var track in videoMetadata.SubtitleTracks)
                         {
-                            <K7SelectItem Value="@track">
+                            <K7SelectItem Value="@track" Text="@GetSubtitleTrackLabel(track)">
                                 @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
                                 @if (subLang is not null)
                                 {

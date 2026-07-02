@@ -15,7 +15,8 @@
             <K7Select TValue="Guid?" @bind-Value="_targetUserId" Label="@L["TargetUser"]" Variant="outlined">
                 @foreach (var user in _availableTargets)
                 {
-                    <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.UserName ?? user.Email ?? user.Id.ToString())</K7SelectItem>
+                    var userLabel = user.UserName ?? user.Email ?? user.Id.ToString();
+                    <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
                 }
             </K7Select>
 
@@ -24,20 +25,20 @@
 
             <K7Select TValue="PlayCountMergeMode" @bind-Value="_playCountMode" Label="@L["PlayCount"]"
                        Variant="outlined">
-                <K7SelectItem Value="PlayCountMergeMode.Additive">@L["PlayCountAdditive"]</K7SelectItem>
-                <K7SelectItem Value="PlayCountMergeMode.Max">@L["PlayCountMax"]</K7SelectItem>
+                <K7SelectItem Value="PlayCountMergeMode.Additive" Text="@L["PlayCountAdditive"]">@L["PlayCountAdditive"]</K7SelectItem>
+                <K7SelectItem Value="PlayCountMergeMode.Max" Text="@L["PlayCountMax"]">@L["PlayCountMax"]</K7SelectItem>
             </K7Select>
 
             <K7Select TValue="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
                        Variant="outlined">
-                <K7SelectItem Value="RatingConflictMode.KeepExisting">@L["RatingKeepExisting"]</K7SelectItem>
-                <K7SelectItem Value="RatingConflictMode.Overwrite">@L["RatingOverwrite"]</K7SelectItem>
+                <K7SelectItem Value="RatingConflictMode.KeepExisting" Text="@L["RatingKeepExisting"]">@L["RatingKeepExisting"]</K7SelectItem>
+                <K7SelectItem Value="RatingConflictMode.Overwrite" Text="@L["RatingOverwrite"]">@L["RatingOverwrite"]</K7SelectItem>
             </K7Select>
 
             <K7Select TValue="ProgressConflictMode" @bind-Value="_progressMode" Label="@L["ProgressConflict"]"
                        Variant="outlined">
-                <K7SelectItem Value="ProgressConflictMode.MostRecent">@L["ProgressMostRecent"]</K7SelectItem>
-                <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
+                <K7SelectItem Value="ProgressConflictMode.MostRecent" Text="@L["ProgressMostRecent"]">@L["ProgressMostRecent"]</K7SelectItem>
+                <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite" Text="@L["ProgressAlwaysOverwrite"]">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
             </K7Select>
         </div>
     </div>
