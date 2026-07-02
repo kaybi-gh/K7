@@ -26,9 +26,10 @@ public class MediaPlaybackSession : BaseAuditableEntity
     public Guid? DeviceId { get; set; }
     public Device? Device { get; set; }
 
-    public Guid? ViewingGroupId { get; set; }
-    public ViewingGroup? ViewingGroup { get; set; }
-    public string? ViewingGroupNameSnapshot { get; set; }
+    public Guid? SharedProfileId { get; set; }
+    public SharedProfile? SharedProfile { get; set; }
+    public string? SharedProfileNameSnapshot { get; set; }
+    public string? CoWatchingWithSnapshot { get; set; }
 
     public PlaybackSessionDetails? Details { get; set; }
 }

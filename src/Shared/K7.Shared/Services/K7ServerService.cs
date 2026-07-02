@@ -17,7 +17,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Search;
 using K7.Shared.Dtos.Users;
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Enums;
 using K7.Shared.Extensions;
 using K7.Shared.Interfaces;
@@ -26,7 +26,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, IViewingGroupApi
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -190,9 +190,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
 
-    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? viewingGroupId = null, CancellationToken cancellationToken = default)
+    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, CancellationToken cancellationToken = default)
     {
-        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId, PlaylistId = playlistId, ViewingGroupId = viewingGroupId };
+        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId, PlaylistId = playlistId, SharedProfileId = sharedProfileId, SyncPlayGroupId = syncPlayGroupId };
         var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -466,40 +466,46 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ViewingGroupDto>> GetViewingGroupsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default)
     {
-        var groups = await HttpClient.GetFromJsonAsync<List<ViewingGroupDto>>("api/viewing-groups", _serializerOptions, cancellationToken);
+        var groups = await HttpClient.GetFromJsonAsync<List<SharedProfileDto>>("api/shared-profiles", _serializerOptions, cancellationToken);
         return groups ?? [];
     }
 
-    public async Task<IReadOnlyList<ViewingGroupMemberCandidateDto>> GetViewingGroupMemberCandidatesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetSharedProfileMemberCandidatesAsync(CancellationToken cancellationToken = default)
     {
-        var candidates = await HttpClient.GetFromJsonAsync<List<ViewingGroupMemberCandidateDto>>("api/viewing-groups/member-candidates", _serializerOptions, cancellationToken);
+        var candidates = await HttpClient.GetFromJsonAsync<List<SharedProfileMemberCandidateDto>>("api/shared-profiles/member-candidates", _serializerOptions, cancellationToken);
         return candidates ?? [];
     }
 
-    public async Task<Guid> CreateViewingGroupAsync(CreateViewingGroupRequest request, CancellationToken cancellationToken = default)
+    public async Task<Guid> CreateSharedProfileAsync(CreateSharedProfileRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsJsonAsync("api/viewing-groups", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PostAsJsonAsync("api/shared-profiles", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
-    public async Task UpdateViewingGroupAsync(Guid id, UpdateViewingGroupRequest request, CancellationToken cancellationToken = default)
+    public async Task UpdateSharedProfileAsync(Guid id, UpdateSharedProfileRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync($"api/viewing-groups/{id}", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync($"api/shared-profiles/{id}", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteViewingGroupAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteSharedProfileAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.DeleteAsync($"api/viewing-groups/{id}", cancellationToken);
+        var response = await HttpClient.DeleteAsync($"api/shared-profiles/{id}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task SetViewingGroupPinAsync(Guid id, SetViewingGroupPinRequest request, CancellationToken cancellationToken = default)
+    public async Task SetSharedProfilePinAsync(Guid id, SetSharedProfilePinRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync($"api/viewing-groups/{id}/pin", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync($"api/shared-profiles/{id}/pin", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task LeaveSharedProfileAsync(Guid id, LeaveSharedProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/shared-profiles/{id}/leave", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1469,6 +1475,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task UpdateSyncPlayPreferencesAsync(SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/syncplay", preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<SharedProfilePreferencesDto> GetSharedProfilePreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<SharedProfilePreferencesDto>("api/users/me/preferences/shared-profiles", _serializerOptions, cancellationToken);
+        return result ?? new SharedProfilePreferencesDto();
+    }
+
+    public async Task UpdateSharedProfilePreferencesAsync(SharedProfilePreferencesDto preferences, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/shared-profiles", preferences, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

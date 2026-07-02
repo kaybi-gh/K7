@@ -40,8 +40,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<UserPlaylistState> UserPlaylistStates { get; }
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
     DbSet<PlaybackSessionDetails> PlaybackSessionDetails { get; }
-    DbSet<ViewingGroup> ViewingGroups { get; }
-    DbSet<ViewingGroupMember> ViewingGroupMembers { get; }
+    DbSet<SharedProfile> SharedProfiles { get; }
+    DbSet<SharedProfileMember> SharedProfileMembers { get; }
     DbSet<MediaPlaybackSessionCoViewer> MediaPlaybackSessionCoViewers { get; }
     DbSet<Collection> Collections { get; }
     DbSet<CollectionItem> CollectionItems { get; }
