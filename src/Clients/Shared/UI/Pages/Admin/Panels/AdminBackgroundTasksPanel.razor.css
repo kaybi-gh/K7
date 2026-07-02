@@ -17,3 +17,43 @@
 .task-error-detail {
     margin: 0;
 }
+
+.background-tasks-toolbar .data-page-toolbar__end {
+    gap: var(--space-2);
+}
+
+.background-tasks-toolbar ::deep .background-tasks-toolbar__settings {
+    margin-right: var(--space-1);
+}
+
+.background-tasks-toolbar__primary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+@media (max-width: 599.98px) {
+    .background-tasks-toolbar__primary {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .background-tasks-toolbar__primary ::deep .k7-filter-menu {
+        flex: 0 0 auto;
+    }
+
+    .background-tasks-toolbar__primary ::deep .data-toolbar-sort {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        height: 40px;
+    }
+
+    .background-tasks-toolbar__primary ::deep .data-toolbar-sort .k7-select {
+        min-width: 0;
+        font-size: var(--text-xs);
+    }
+}

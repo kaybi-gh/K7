@@ -42,16 +42,12 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     [SupplyParameterFromQuery(Name = "sort")]
     public string? QuerySort { get; set; }
 
-    private BackgroundTaskSettingsDto? _settings;
     private BackgroundTaskSummaryDto? _summary;
     private K7DataTable<BackgroundTaskDto>? _tableRef;
-    private bool _isSavingSettings;
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
     private BackgroundTaskOrderingOption _selectedSort = BackgroundTaskOrderingOption.DateDesc;
     private int _totalCount;
-    private int _workerCount;
-    private Dictionary<string, int> _concurrencyLimits = new();
     private Dictionary<Guid, string> _peerNames = new();
     private readonly CancellationTokenSource _cts = new();
     private Timer? _debounceTimer;
@@ -85,7 +81,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
             _pendingQuerySync = true;
         }
 
-        await Task.WhenAll(LoadSettingsAsync(initial: true), LoadSummaryAsync(), LoadPeerNamesAsync());
+        await Task.WhenAll(LoadSummaryAsync(), LoadPeerNamesAsync());
     }
 
     protected override void OnAfterRender(bool firstRender) =>
@@ -215,7 +211,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         {
             _ = InvokeAsync(async () =>
             {
-                await Task.WhenAll(LoadSummaryAsync(), LoadSettingsAsync());
+                await LoadSummaryAsync();
                 StateHasChanged();
             });
         }, null, DebounceDelay, Timeout.InfiniteTimeSpan);
@@ -288,27 +284,6 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }
     }
 
-    private async Task LoadSettingsAsync(bool initial = false)
-    {
-        try
-        {
-            _settings = await BackgroundTaskService.GetSettingsAsync(_cts.Token);
-            if (initial)
-            {
-                _workerCount = _settings.WorkerCount;
-                _concurrencyLimits = _settings.ConcurrencyGroups.ToDictionary(g => g.Name, g => g.Limit);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Component disposed
-        }
-        catch
-        {
-            _settings = null;
-        }
-    }
-
     private async Task LoadSummaryAsync()
     {
         try
@@ -332,19 +307,21 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }
     }
 
-    private async Task SaveSettingsAsync()
+    private async Task OpenSettingsDialogAsync()
     {
-        _isSavingSettings = true;
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<Dialogs.BackgroundTaskSettingsDialog>(L["SettingsTitle"], null, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not UpdateBackgroundTaskSettingsRequest request)
+        {
+            return;
+        }
+
         try
         {
-            var request = new UpdateBackgroundTaskSettingsRequest
-            {
-                WorkerCount = _workerCount,
-                ConcurrencyLimits = _concurrencyLimits
-            };
             await BackgroundTaskService.UpdateSettingsAsync(request, _cts.Token);
             Snackbar.Add(L["SettingsSaved"], K7Severity.Success);
-            await LoadSettingsAsync(initial: true);
         }
         catch (OperationCanceledException)
         {
@@ -353,10 +330,6 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _isSavingSettings = false;
         }
     }
 
@@ -475,10 +448,6 @@ public partial class AdminBackgroundTasksPanel : IDisposable
             // Non-critical, fall back to showing GUIDs
         }
     }
-
-    private int GetGroupLimit(string name) => _concurrencyLimits.GetValueOrDefault(name, 1);
-
-    private void SetGroupLimit(string name, int value) => _concurrencyLimits[name] = value;
 
     private int GetStatusCount(BackgroundTaskStatus status) =>
         _summary?.StatusCounts.FirstOrDefault(s => s.Status == status)?.Count ?? 0;

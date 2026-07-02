@@ -1,0 +1,39 @@
+@inject IStringLocalizer<BackgroundTaskSettingsDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    @if (_isLoading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_settings is null)
+    {
+        <K7Alert Severity="K7Severity.Error">@S["LoadError"]</K7Alert>
+    }
+    else
+    {
+        <div class="d-flex flex-col gap-3">
+            <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]" />
+
+            @if (_settings.ConcurrencyGroups.Count > 0)
+            {
+                <h6>@L["ConcurrencyGroupsTitle"]</h6>
+                @foreach (var group in _settings.ConcurrencyGroups)
+                {
+                    var name = group.Name;
+                    <div class="background-task-settings__group-row">
+                        <span class="text-sm background-task-settings__group-name">@FormatConcurrencyGroup(name)</span>
+                        <K7TextField TValue="int" Type="number" Value="GetGroupLimit(name)"
+                                     ValueChanged="@(v => SetGroupLimit(name, v))"
+                                     Label="@L["GroupLimit"]" Class="background-task-settings__group-limit" />
+                        <span class="text-caption background-task-settings__group-active">@L["GroupActive"]: @group.ActiveCount</span>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Variant="filled" Color="primary" OnClick="Submit" Disabled="_isLoading || _settings is null">@S["Save"]</K7Button>
+</div>
