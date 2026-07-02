@@ -48,6 +48,18 @@
                     </div>
                 </CellTemplate>
             </K7DataColumn>
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["ViewingGroup"]" Width="120px" VisibleOnMobile="false">
+                <CellTemplate>
+                    @if (!string.IsNullOrEmpty(context.ViewingGroupName))
+                    {
+                        <K7Chip Size="sm" Color="secondary" Variant="outlined">@context.ViewingGroupName</K7Chip>
+                    }
+                    else
+                    {
+                        <span class="text-muted">-</span>
+                    }
+                </CellTemplate>
+            </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Hideable="false">
                 <CellTemplate>
                     <div class="history-title-cell">

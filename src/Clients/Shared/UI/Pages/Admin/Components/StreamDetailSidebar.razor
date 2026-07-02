@@ -76,6 +76,13 @@
                 <span class="detail-sidebar__label">@L["User"]</span>
                 <span class="detail-sidebar__value">@(Model.UserName ?? "-")</span>
             </div>
+            @if (!string.IsNullOrEmpty(Model.ViewingGroupName))
+            {
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["ViewingGroup"]</span>
+                    <span class="detail-sidebar__value">@Model.ViewingGroupName</span>
+                </div>
+            }
             <div class="detail-sidebar__row">
                 <span class="detail-sidebar__label">@L["Device"]</span>
                 <span class="detail-sidebar__value">@(Model.DeviceName ?? "-")</span>
