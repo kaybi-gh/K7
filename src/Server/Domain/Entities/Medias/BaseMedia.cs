@@ -11,6 +11,7 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public MediaType Type { get; protected set; } = type;
 
     public string? Title { get; set; }
+    public string? SortTitle { get; set; }
     public string? OriginalTitle { get; set; }
     public DateOnly? ReleaseDate { get; set; }
 

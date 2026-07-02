@@ -7,6 +7,7 @@ public sealed record PeerFullMediaMetadataDto
     public required Guid Id { get; init; }
     public required MediaType Type { get; init; }
     public string Title { get; init; } = string.Empty;
+    public string? SortTitle { get; init; }
     public string? OriginalTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public string? Overview { get; init; }
@@ -77,6 +78,7 @@ public sealed record PeerSeasonDto
 {
     public int SeasonNumber { get; init; }
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public string? Overview { get; init; }
     public DateOnly? AirDate { get; init; }
     public int? EpisodeCount { get; init; }
@@ -91,6 +93,7 @@ public sealed record PeerEpisodeDto
     public int EpisodeNumber { get; init; }
     public int SeasonNumber { get; init; }
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public string? Overview { get; init; }
     public DateOnly? AirDate { get; init; }
     public int? Runtime { get; init; }
@@ -103,6 +106,7 @@ public sealed record PeerMusicTrackDto
 {
     public Guid? Id { get; init; }
     public required string Title { get; init; }
+    public string? SortTitle { get; init; }
     public int? TrackNumber { get; init; }
     public int? DiscNumber { get; init; }
     public TimeSpan? Duration { get; init; }
@@ -123,5 +127,6 @@ public sealed record PeerMusicTrackArtistCreditDto
 public sealed record PeerMusicArtistDto
 {
     public required string Name { get; init; }
+    public string? SortName { get; init; }
     public required string MusicBrainzArtistId { get; init; }
 }

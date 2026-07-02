@@ -1037,6 +1037,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<DateOnly?>("ReleaseDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("SortTitle")
+                        .HasColumnType("text");
+
                     b.Property<string>("Title")
                         .HasColumnType("text");
 
@@ -1050,6 +1053,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("PeerServerId");
 
                     b.HasIndex("ReleaseDate");
+
+                    b.HasIndex("SortTitle");
 
                     b.HasIndex("Title");
 

@@ -709,7 +709,7 @@ public partial class LibraryGroup : IDisposable
 
                 if (items is null || offset >= items.Count) break;
 
-                var itemTitle = items[offset].Title ?? "";
+                var itemTitle = items[offset].SortTitle ?? items[offset].Title ?? "";
                 var itemChar = itemTitle.Length > 0 ? char.ToUpperInvariant(itemTitle[0]) : '#';
                 var isLetter = char.IsLetter(itemChar);
 

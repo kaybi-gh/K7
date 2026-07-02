@@ -429,11 +429,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                     queryable.OrderByDescending(x => x.ReleaseDate)
                     : orderedQueryable.ThenByDescending(x => x.ReleaseDate),
                 MediaOrderingOption.TitleAsc => orderedQueryable == null ?
-                    queryable.OrderBy(x => x.Title)
-                    : orderedQueryable.ThenBy(x => x.Title),
+                    queryable.OrderBy(x => x.SortTitle ?? x.Title)
+                    : orderedQueryable.ThenBy(x => x.SortTitle ?? x.Title),
                 MediaOrderingOption.TitleDesc => orderedQueryable == null ?
-                    queryable.OrderByDescending(x => x.Title)
-                    : orderedQueryable.ThenByDescending(x => x.Title),
+                    queryable.OrderByDescending(x => x.SortTitle ?? x.Title)
+                    : orderedQueryable.ThenByDescending(x => x.SortTitle ?? x.Title),
                 MediaOrderingOption.TrackNumberAsc => orderedQueryable == null ?
                     queryable.OrderBy(x => (x as MusicTrack)!.TrackNumber)
                     : orderedQueryable.ThenBy(x => (x as MusicTrack)!.TrackNumber),

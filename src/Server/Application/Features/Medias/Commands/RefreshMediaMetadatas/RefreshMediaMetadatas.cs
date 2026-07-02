@@ -203,6 +203,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                         {
                             AlbumId = album.Id,
                             Title = trackMeta.Title,
+                            SortTitle = trackMeta.SortTitle ?? MediaSortTitleHelper.Compute(trackMeta.Title),
                             TrackNumber = trackMeta.TrackNumber,
                             DiscNumber = trackMeta.DiscNumber,
                         };
@@ -240,7 +241,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (album.ArtistId is null && metadata.Artists is { Count: > 0 })
                 {
                     var primaryArtist = metadata.Artists[0];
-                    var artist = await FindOrCreateMusicArtistAsync(primaryArtist.Name, primaryArtist.MusicBrainzArtistId, cancellationToken);
+                    var artist = await FindOrCreateMusicArtistAsync(primaryArtist.Name, primaryArtist.SortName, primaryArtist.MusicBrainzArtistId, cancellationToken);
                     album.ArtistId = artist.Id;
                 }
             }
@@ -505,6 +506,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             if (metadataTrack is null) continue;
 
+            if (!track.IsFieldLocked(nameof(MusicTrack.SortTitle))
+                && metadataTrack.SortTitle is not null)
+            {
+                track.SortTitle = metadataTrack.SortTitle;
+            }
+
             if (!string.IsNullOrEmpty(metadataTrack.MusicBrainzRecordingId)
                 && !existingExternalIds.Any(e => e.MediaId == track.Id && e.ProviderName == "musicbrainz"))
             {
@@ -557,6 +564,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         // Try to match artist from metadata to get MusicBrainz ID
         var artistMetadata = metadata.Artists?.FirstOrDefault(a =>
             string.Equals(a.Name, artist.Title, StringComparison.OrdinalIgnoreCase));
+
+        if (!artist.IsFieldLocked(nameof(MusicArtist.SortTitle))
+            && artistMetadata?.SortName is not null)
+        {
+            artist.SortTitle = artistMetadata.SortName;
+        }
 
         var mbExternalId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
         if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)) && mbExternalId is null && !string.IsNullOrEmpty(artistMetadata?.MusicBrainzArtistId))
@@ -667,7 +680,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             for (var i = 0; i < metadataTrack.ArtistCredits.Count; i++)
             {
                 var credit = metadataTrack.ArtistCredits[i];
-                var creditArtist = await FindOrCreateMusicArtistAsync(credit.Name, credit.MusicBrainzArtistId, cancellationToken);
+                var creditArtist = await FindOrCreateMusicArtistAsync(credit.Name, null, credit.MusicBrainzArtistId, cancellationToken);
                 track.ArtistCredits.Add(new MusicArtistCredit
                 {
                     MusicArtistId = creditArtist.Id,
@@ -679,7 +692,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
     }
 
-    private async Task<MusicArtist> FindOrCreateMusicArtistAsync(string name, string? musicBrainzId, CancellationToken cancellationToken)
+    private async Task<MusicArtist> FindOrCreateMusicArtistAsync(string name, string? sortName, string? musicBrainzId, CancellationToken cancellationToken)
     {
         MusicArtist? existing = null;
 
@@ -695,7 +708,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (existing is not null) return existing;
 
-        var artist = new MusicArtist { Title = name };
+        var artist = new MusicArtist
+        {
+            Title = name,
+            SortTitle = sortName ?? MediaSortTitleHelper.Compute(name)
+        };
         _context.Medias.Add(artist);
 
         if (!string.IsNullOrEmpty(musicBrainzId))

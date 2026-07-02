@@ -8791,6 +8791,12 @@
           "title": {
             "type": "string"
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "year": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -11033,6 +11039,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -11090,6 +11102,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -11179,6 +11197,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -11352,6 +11376,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -11409,6 +11439,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -11571,6 +11607,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -11663,6 +11705,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -11715,6 +11763,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -11872,6 +11926,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -12354,6 +12414,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -12436,6 +12502,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -12690,6 +12762,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -12842,6 +12920,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -12985,6 +13069,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -13217,6 +13307,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -13393,6 +13489,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -13580,6 +13682,12 @@
               "string"
             ]
           },
+          "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -13732,6 +13840,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -14125,6 +14239,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"
@@ -16845,6 +16965,12 @@
             }
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortTitle": {
             "type": [
               "null",
               "string"

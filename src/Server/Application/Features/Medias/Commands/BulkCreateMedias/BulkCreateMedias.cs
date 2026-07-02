@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -167,6 +168,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var movie = new Movie
             {
                 Title = representative.Title,
+                SortTitle = ResolveSortTitle(representative),
                 ReleaseDate = representative.Year.HasValue ? new DateOnly(representative.Year.Value, 1, 1) : null
             };
             AddExternalIds(movie, representative.ExternalIds);
@@ -226,7 +228,11 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             {
                 if (!artistCache.ContainsKey(name))
                 {
-                    var artist = new Domain.Entities.Medias.MusicArtist { Title = name };
+                    var artist = new Domain.Entities.Medias.MusicArtist
+                    {
+                        Title = name,
+                        SortTitle = MediaSortTitleHelper.Compute(name)
+                    };
                     context.Medias.Add(artist);
                     newArtists.Add(artist);
                     artistCache[name] = artist;
@@ -281,7 +287,11 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             }
             else
             {
-                var album = new MusicAlbum { Title = albumName };
+                var album = new MusicAlbum
+                {
+                    Title = albumName,
+                    SortTitle = MediaSortTitleHelper.Compute(albumName)
+                };
                 context.Medias.Add(album);
                 newAlbums.Add(album);
                 albumCache[albumKey] = album;
@@ -321,6 +331,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var track = new MusicTrack
             {
                 Title = representative.Title,
+                SortTitle = ResolveSortTitle(representative),
                 AlbumId = album.Id
             };
             AddExternalIds(track, representative.ExternalIds);
@@ -398,6 +409,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
                 var serie = new Serie
                 {
                     Title = title,
+                    SortTitle = MediaSortTitleHelper.Compute(title),
                     ReleaseDate = representative.Year is { } y ? new DateOnly(y, 1, 1) : null
                 };
                 context.Medias.Add(serie);
@@ -438,9 +450,11 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             }
             else
             {
+                var seasonTitle = $"Season {seasonNumber}";
                 var season = new SerieSeason
                 {
-                    Title = $"Season {seasonNumber}",
+                    Title = seasonTitle,
+                    SortTitle = MediaSortTitleHelper.Compute(seasonTitle),
                     SerieId = serie.Id,
                     SeasonNumber = seasonNumber
                 };
@@ -468,6 +482,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var episode = new SerieEpisode
             {
                 Title = representative.Title,
+                SortTitle = ResolveSortTitle(representative),
                 SerieId = serieCache[seriesTitle].Id,
                 SeasonId = seasonCache[seasonKey].Id,
                 EpisodeNumber = representative.EpisodeNumber ?? 0
@@ -843,6 +858,9 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         return groups;
     }
+
+    private static string? ResolveSortTitle(BulkCreateMediasRequest.BulkCreateMediaItem item) =>
+        item.SortTitle ?? MediaSortTitleHelper.Compute(item.Title);
 
     private sealed class BatchGroup
     {

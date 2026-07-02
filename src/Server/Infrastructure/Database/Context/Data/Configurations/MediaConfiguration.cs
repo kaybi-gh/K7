@@ -38,6 +38,7 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
 
         builder.HasIndex(e => e.Type);
         builder.HasIndex(e => e.Title);
+        builder.HasIndex(e => e.SortTitle);
         builder.HasIndex(e => e.OriginalTitle);
         builder.HasIndex(e => e.ReleaseDate);
     }

@@ -25,6 +25,7 @@ public partial class EditMetadataDialog
 
     // Common fields
     private string? _title;
+    private string? _sortTitle;
     private string? _originalTitle;
     private string? _releaseDateStr;
     private string? _overview;
@@ -146,6 +147,7 @@ public partial class EditMetadataDialog
     {
         _isPersonMode = false;
         _title = media.Title;
+        _sortTitle = media.SortTitle;
         _releaseDateStr = media.ReleaseDate?.ToString("yyyy-MM-dd");
         _genresStr = media.Genres is not null ? string.Join(", ", media.Genres) : null;
         _lockedFields = [.. media.LockedFields ?? []];
@@ -466,6 +468,7 @@ public partial class EditMetadataDialog
         {
             LockedFields = [.. _lockedFields],
             Title = _title,
+            SortTitle = _sortTitle,
             OriginalTitle = _originalTitle,
             ReleaseDate = ParseDate(_releaseDateStr),
             Genres = _genresStr?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),

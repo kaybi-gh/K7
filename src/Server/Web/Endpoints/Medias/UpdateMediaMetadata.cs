@@ -23,6 +23,7 @@ public class UpdateMediaMetadata : IEndpoint
                 Id = id,
                 LockedFields = request.LockedFields,
                 Title = request.Title,
+                SortTitle = request.SortTitle,
                 OriginalTitle = request.OriginalTitle,
                 ReleaseDate = request.ReleaseDate,
                 Genres = request.Genres,

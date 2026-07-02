@@ -46,6 +46,7 @@ public class FederationMetadataProvider(
         return new ExternalMovieMetadata
         {
             Title = dto.Title,
+            SortTitle = dto.SortTitle,
             OriginalTitle = dto.OriginalTitle,
             ReleaseDate = dto.ReleaseDate,
             Overview = dto.Overview,
@@ -85,6 +86,7 @@ public class FederationMetadataProvider(
         return new ExternalMusicAlbumMetadata
         {
             Title = dto.Title,
+            SortTitle = dto.SortTitle,
             ReleaseDate = dto.ReleaseDate,
             Overview = dto.Overview,
             Genres = dto.Genres.ToList(),
@@ -98,6 +100,7 @@ public class FederationMetadataProvider(
             {
                 RemoteId = t.Id,
                 Title = t.Title,
+                SortTitle = t.SortTitle,
                 TrackNumber = t.TrackNumber,
                 DiscNumber = t.DiscNumber,
                 Duration = t.Duration,
@@ -115,6 +118,7 @@ public class FederationMetadataProvider(
             Artists = dto.Artists.Select(a => new ExternalMusicArtistMetadata
             {
                 Name = a.Name,
+                SortName = a.SortName,
                 MusicBrainzArtistId = a.MusicBrainzArtistId
             }).ToList(),
         };
@@ -131,6 +135,7 @@ public class FederationMetadataProvider(
         return new ExternalSerieMetadata
         {
             Title = dto.Title,
+            SortTitle = dto.SortTitle,
             OriginalTitle = dto.OriginalTitle,
             ReleaseDate = dto.ReleaseDate,
             Overview = dto.Overview,
@@ -175,6 +180,7 @@ public class FederationMetadataProvider(
         {
             SeasonNumber = season.SeasonNumber,
             Title = season.Title,
+            SortTitle = season.SortTitle,
             Overview = season.Overview,
             AirDate = season.AirDate,
             EpisodeCount = season.EpisodeCount,
@@ -206,6 +212,7 @@ public class FederationMetadataProvider(
             EpisodeNumber = episode.EpisodeNumber,
             SeasonNumber = episode.SeasonNumber,
             Title = episode.Title,
+            SortTitle = episode.SortTitle,
             Overview = episode.Overview,
             AirDate = episode.AirDate,
             Runtime = episode.Runtime,

@@ -21,6 +21,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Titre</value></data>
   <data name="Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="SortTitle" xml:space="preserve"><value>Titre de tri</value></data>
   <data name="OriginalTitle" xml:space="preserve"><value>Titre original</value></data>
   <data name="ReleaseDate" xml:space="preserve"><value>Date de sortie</value></data>
   <data name="FormationDate" xml:space="preserve"><value>Date de formation</value></data>

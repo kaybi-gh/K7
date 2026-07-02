@@ -21,6 +21,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -47,6 +48,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -69,6 +71,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -100,6 +103,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -122,6 +126,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -165,6 +170,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -191,6 +197,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
@@ -231,6 +238,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
@@ -243,6 +251,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
@@ -255,6 +264,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(track.Album?.Pictures ?? domain.Pictures),
@@ -289,6 +299,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
@@ -314,6 +325,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
@@ -326,6 +338,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
@@ -346,6 +359,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
+                SortTitle = domain.SortTitle,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
