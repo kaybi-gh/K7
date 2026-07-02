@@ -1,0 +1,44 @@
+@page "/link-device/authorize"
+@layout EmptyLayout
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IStringLocalizer<LinkDeviceAuthorize> L
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="link-device">
+    <div class="link-device__card">
+        <div class="link-device__header">
+            <i class="ph ph-devices link-device__icon"></i>
+            <h2 class="link-device__title">@L["Title"]</h2>
+        </div>
+
+        @if (_approved)
+        {
+            <div class="link-device__alert link-device__alert--success">@L["DeviceAuthorized"]</div>
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="link-device__alert link-device__alert--error">@L["InvalidCode"]</div>
+        }
+
+        @if (!_approved)
+        {
+            <p class="link-device__hint">@L["EnterCode"]</p>
+            <hr class="k7-divider" />
+
+            <form method="post" action="/connect/verify" id="link-form" data-enhance="false">
+                <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+                <div class="link-device__form">
+                    <div class="link-device__code-row">
+                        <input type="text" class="code-segment link-device__segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
+                        <span class="link-device__separator">-</span>
+                        <input type="text" class="code-segment link-device__segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
+                        <span class="link-device__separator">-</span>
+                        <input type="text" class="code-segment link-device__segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
+                    </div>
+                    <K7Button Variant="filled" ButtonType="submit" FullWidth="true">@L["AuthorizeDevice"]</K7Button>
+                </div>
+            </form>
+        }
+    </div>
+</div>

@@ -1,0 +1,23 @@
+@page "/auth/complete"
+@layout EmptyLayout
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IStringLocalizer<AuthComplete> L
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="auth-complete">
+    <div class="auth-complete__card">
+        @if (_isError)
+        {
+            <K7Icon Name="x-circle" IconSize="@K7IconSize.Lg" Color="error" />
+            <h2 class="auth-complete__title">@_title</h2>
+            <div class="auth-complete__alert auth-complete__alert--error">@_message</div>
+        }
+        else
+        {
+            <K7Icon Name="check-circle" IconSize="@K7IconSize.Lg" Color="success" />
+            <h2 class="auth-complete__title">@_title</h2>
+            <div class="auth-complete__alert auth-complete__alert--success">@_message</div>
+        }
+    </div>
+</div>
