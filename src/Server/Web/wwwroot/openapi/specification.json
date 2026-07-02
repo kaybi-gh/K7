@@ -12768,6 +12768,12 @@
               "string"
             ]
           },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -12926,6 +12932,12 @@
               "string"
             ]
           },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -13075,6 +13087,12 @@
             ]
           },
           "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalTitle": {
             "type": [
               "null",
               "string"
@@ -13313,6 +13331,12 @@
               "string"
             ]
           },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -13495,6 +13519,12 @@
             ]
           },
           "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalTitle": {
             "type": [
               "null",
               "string"
@@ -13688,6 +13718,12 @@
               "string"
             ]
           },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "releaseDate": {
             "type": [
               "null",
@@ -13846,6 +13882,12 @@
             ]
           },
           "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalTitle": {
             "type": [
               "null",
               "string"
@@ -14245,6 +14287,12 @@
             ]
           },
           "sortTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalTitle": {
             "type": [
               "null",
               "string"
