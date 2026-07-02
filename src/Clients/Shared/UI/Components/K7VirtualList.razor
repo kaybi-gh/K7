@@ -20,30 +20,17 @@
     }
     else if (ItemsProvider is not null)
     {
-        @if (Placeholder is not null)
-        {
-            <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
-                        OverscanCount="OverscanCount" @ref="_virtualizeRef">
-                <ItemContent>
-                    @if (ItemTemplate is not null)
-                    {
-                        @ItemTemplate(item)
-                    }
-                </ItemContent>
-                <Placeholder>
-                    @Placeholder
-                </Placeholder>
-            </Virtualize>
-        }
-        else
-        {
-            <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
-                        OverscanCount="OverscanCount" @ref="_virtualizeRef">
+        <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
+                    OverscanCount="OverscanCount" @ref="_virtualizeRef">
+            <ItemContent>
                 @if (ItemTemplate is not null)
                 {
                     @ItemTemplate(item)
                 }
-            </Virtualize>
-        }
+            </ItemContent>
+            <Placeholder>
+                <div class="k7-virtual-list-placeholder" style="@PlaceholderStyle" aria-hidden="true"></div>
+            </Placeholder>
+        </Virtualize>
     }
 </div>

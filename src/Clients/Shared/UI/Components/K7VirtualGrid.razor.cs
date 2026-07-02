@@ -17,10 +17,11 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     [Parameter] public int Spacing { get; set; } = 6;
     [Parameter] public float AspectRatio { get; set; } = 1.5f;
     [Parameter] public int FooterHeight { get; set; } = 44;
-    [Parameter] public int OverscanCount { get; set; } = 4;
+    [Parameter] public int OverscanCount { get; set; } = 10;
 
     private ElementReference _gridRef;
     private Virtualize<List<TItem>>? _virtualizeRef;
+    private readonly Dictionary<string, ItemsProviderResult<List<TItem>>> _rowsCache = new();
     private IJSObjectReference? _module;
     private DotNetObjectReference<K7VirtualGrid<TItem>>? _dotnetRef;
 
@@ -93,6 +94,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             }
 
             _lastColumnCount = newCols;
+            _rowsCache.Clear();
         }
 
         if (_virtualizeRef is not null && (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure))
@@ -108,6 +110,8 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
     public async Task RefreshAsync()
     {
+        _rowsCache.Clear();
+
         if (_virtualizeRef is not null)
         {
             await _virtualizeRef.RefreshDataAsync();
@@ -131,9 +135,15 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     {
         if (ItemsProvider is null) return default;
 
+        var cols = CalculateColumnCount();
+        var cacheKey = FormattableString.Invariant($"{cols}:{request.StartIndex}:{request.Count}");
+        if (_rowsCache.TryGetValue(cacheKey, out var cached))
+        {
+            return cached;
+        }
+
         try
         {
-            var cols = CalculateColumnCount();
             var itemStart = request.StartIndex * cols;
             var itemCount = request.Count * cols;
 
@@ -155,7 +165,9 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             _lastColumnCount = cols;
             _lastTotalRows = totalRows;
 
-            return new ItemsProviderResult<List<TItem>>(rows, totalRows);
+            var providerResult = new ItemsProviderResult<List<TItem>>(rows, totalRows);
+            _rowsCache[cacheKey] = providerResult;
+            return providerResult;
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
