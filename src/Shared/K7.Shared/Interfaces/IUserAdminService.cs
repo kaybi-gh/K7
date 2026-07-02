@@ -42,4 +42,9 @@ public interface IUserAdminService
     Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default);
     Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default);
+    Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default);
+    Task<TwoFactorSetupDto> BeginTwoFactorSetupAsync(CancellationToken cancellationToken = default);
+    Task<RecoveryCodesDto> VerifyTwoFactorSetupAsync(VerifyTwoFactorRequest request, CancellationToken cancellationToken = default);
+    Task<RecoveryCodesDto> GenerateTwoFactorRecoveryCodesAsync(CancellationToken cancellationToken = default);
+    Task DisableTwoFactorAsync(CancellationToken cancellationToken = default);
 }

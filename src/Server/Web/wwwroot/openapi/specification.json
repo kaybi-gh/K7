@@ -5,6 +5,19 @@
     "version": "v1"
   },
   "paths": {
+    "/api/users/me/two-factor/setup": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "BeginTwoFactorSetup",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{userId}/playback-sessions/bulk": {
       "post": {
         "tags": [
@@ -438,6 +451,43 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/two-factor": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DisableTwoFactor",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetTwoFactorStatus",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/two-factor/recovery-codes": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GenerateTwoFactorRecoveryCodes",
         "responses": {
           "200": {
             "description": "OK"
@@ -1023,6 +1073,29 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/two-factor/verify": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "VerifyTwoFactorSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyTwoFactorRequest"
               }
             }
           },
@@ -17167,6 +17240,17 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "VerifyTwoFactorRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
           }
         }
       },
