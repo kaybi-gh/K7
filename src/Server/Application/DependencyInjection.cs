@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
@@ -78,6 +78,8 @@ public static class DependencyInjection
         });
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
+        services.AddScoped<IUserMediaStateUpdater, UserMediaStateUpdater>();
+        services.AddScoped<IViewingGroupPlaybackResolver, ViewingGroupPlaybackResolver>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<DiagnosticIssueEntityResolver>();

@@ -41,7 +41,8 @@ internal sealed class AdminStreamNotifier(
                         StartedAt = s.StartedAt,
                         Position = s.Position,
                         Duration = s.Duration,
-                        State = s.State
+                        State = s.State,
+                        ViewingGroupName = s.ViewingGroupName
                     })
                     .ToList();
 
