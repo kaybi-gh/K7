@@ -1,0 +1,17 @@
+@using K7.Shared.Dtos.Federation.Social
+@inject IStringLocalizer<MySpaceReviewsPage> L
+
+<SocialUserReviewCard Review="Review"
+                      Compact="@Compact">
+    <Actions>
+        <K7IconButton Icon="@Phosphor.PencilSimple"
+                      Size="sm"
+                      AriaLabel="@L["EditReview"]"
+                      OnClick="OnEdit" />
+        <K7IconButton Icon="@Phosphor.Trash"
+                      Size="sm"
+                      Color="error"
+                      AriaLabel="@L["DeleteReview"]"
+                      OnClick="OnDelete" />
+    </Actions>
+</SocialUserReviewCard>

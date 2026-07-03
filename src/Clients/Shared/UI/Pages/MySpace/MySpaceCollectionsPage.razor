@@ -1,7 +1,9 @@
 @page "/my-space/collections"
 @layout MySpaceLayout
 @using K7.Clients.Shared.Mappings
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Shared.Dtos.Entities.Collections
+@using K7.Shared.Dtos.Federation.Social
 @using K7.Shared.Dtos.Requests
 @inject ICollectionService K7ServerService
 @inject IK7ServerService ApiClient
@@ -12,6 +14,41 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
+@if (_showShared)
+{
+    <div class="my-space-library-browse page-scrollable">
+        <div class="my-space-shared-toolbar">
+            <h5>@L["SharedTitle"]</h5>
+            <div class="flex-1"></div>
+            <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
+        </div>
+        @if (_loading)
+        {
+            <K7Spinner />
+        }
+        else if (_sharedCollections.Count == 0)
+        {
+            <p class="text-secondary pa-8">@L["SharedEmpty"]</p>
+        }
+        else
+        {
+            <div class="my-space-shared-grid">
+                @foreach (var item in _sharedCollections)
+                {
+                    <article class="my-space-shared-card" @key="@($"{item.Owner.IsFederated}-{item.CollectionId}")">
+                        <button type="button" class="my-space-shared-card__link focusable" @onclick="@(() => NavigationManager.NavigateTo(SocialUserNavigation.GetProfileHref(item.Owner)))">
+                            <h6>@item.Title</h6>
+                            <p class="text-sm text-secondary">@item.Owner.DisplayName</p>
+                            <p class="text-sm">@item.ItemCount @L["Items"]</p>
+                        </button>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
 <BrowseView TItem="LiteCollectionDto"
               Items="_collections"
               Loading="_loading"
@@ -26,6 +63,7 @@
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
+        <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
         <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
             @foreach (var opt in MySpaceLibraryBrowseSort.CollectionOptions)
             {
@@ -46,36 +84,23 @@
     <GridTemplate Context="collection">
         @{
             var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(collection));
-            var useMosaic = LibraryItemBrowseMappings.UseMosaicCover(collection.CoverPicture, collection.PreviewPictures);
         }
-        @if (useMosaic)
-        {
-            <MediaCard Model="vm"
-                       Href="@GetCollectionHref(collection)"
-                       Variant="MediaCardVariant.Cover"
-                       FooterVisible="true"
-                       ContextMenuEnabled="false"
-                       HoverOverlayEnabled="true"
-                       PlaceholderIcon="@Phosphor.BookmarkSimple">
-                <CoverContent>
-                    <K7CoverMosaic PreviewPictures="collection.PreviewPictures"
-                                     PlaceholderIcon="@Phosphor.BookmarkSimple"
-                                     PictureSize="MetadataPictureSize.Medium"
-                                     Alt="@collection.Title"
-                                     Class="media-card-mosaic" />
-                </CoverContent>
-            </MediaCard>
-        }
-        else
-        {
-            <MediaCard Model="vm"
-                       Href="@GetCollectionHref(collection)"
-                       Variant="MediaCardVariant.Cover"
-                       FooterVisible="true"
-                       ContextMenuEnabled="false"
-                       HoverOverlayEnabled="true"
-                       PlaceholderIcon="@Phosphor.BookmarkSimple" />
-        }
+        <MediaCard Model="vm"
+                   Href="@GetCollectionHref(collection)"
+                   Variant="MediaCardVariant.Cover"
+                   FooterVisible="true"
+                   ContextMenuEnabled="false"
+                   HoverOverlayEnabled="true"
+                   PlaceholderIcon="@Phosphor.BookmarkSimple">
+            <CoverContent>
+                <K7CoverMosaic CoverPicture="collection.CoverPicture"
+                               PreviewPictures="collection.PreviewPictures"
+                               PlaceholderIcon="@Phosphor.BookmarkSimple"
+                               PictureSize="MetadataPictureSize.Medium"
+                               Alt="@collection.Title"
+                               Class="media-card-mosaic" />
+            </CoverContent>
+        </MediaCard>
     </GridTemplate>
     <TableContent>
         <K7DataTable TItem="LiteCollectionDto"
@@ -133,3 +158,4 @@
         </LibraryBrowseListRow>
     </ListTemplate>
 </BrowseView>
+}

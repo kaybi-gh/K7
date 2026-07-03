@@ -4,7 +4,9 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
@@ -15,7 +17,9 @@ public partial class MySpacePlaylistsPage
     private const int PageSize = 500;
 
     private List<LitePlaylistDto> _playlists = [];
+    private List<SharedPlaylistBrowseDto> _sharedPlaylists = [];
     private bool _loading = true;
+    private bool _showShared;
     private bool _canCreate;
     private MediaType? _mediaTypeFilter;
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastListenedDesc;
@@ -30,6 +34,7 @@ public partial class MySpacePlaylistsPage
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private ISocialUserService SocialUserService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,11 +65,19 @@ public partial class MySpacePlaylistsPage
     private async Task LoadPlaylistsAsync()
     {
         _loading = true;
-        var result = await K7ServerService.GetPlaylistsAsync(
-            pageSize: PageSize,
-            mediaType: _mediaTypeFilter,
-            orderBy: _selectedSort);
-        _playlists = result?.Items?.ToList() ?? [];
+        if (_showShared)
+        {
+            _sharedPlaylists = (await SocialUserService.GetSharedPlaylistsAsync()).ToList();
+        }
+        else
+        {
+            var result = await K7ServerService.GetPlaylistsAsync(
+                pageSize: PageSize,
+                mediaType: _mediaTypeFilter,
+                orderBy: _selectedSort);
+            _playlists = result?.Items?.ToList() ?? [];
+        }
+
         _loading = false;
 
         if (_dataTable is not null)
@@ -122,6 +135,12 @@ public partial class MySpacePlaylistsPage
 
         if (_browseView is not null)
             await _browseView.RefreshAsync();
+    }
+
+    private async Task OnShowSharedChanged(bool value)
+    {
+        _showShared = value;
+        await LoadPlaylistsAsync();
     }
 
     private void NavigateToPlaylist(LitePlaylistDto playlist) =>

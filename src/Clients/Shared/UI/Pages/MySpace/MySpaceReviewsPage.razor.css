@@ -1,0 +1,76 @@
+.my-space-reviews-browse {
+    padding: var(--space-4);
+    --my-space-reviews-list-gap: var(--space-4);
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item > .media-review-card {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    margin-bottom: var(--my-space-reviews-list-gap);
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card__surface {
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.my-space-reviews-browse ::deep .browse-view-simple-grid > * {
+    height: 100%;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card__layout {
+    height: 100%;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card__body {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card--leading-poster {
+    --media-review-card-leading-max-width: 64px;
+    --media-review-card-leading-max-height: 96px;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card--leading-cover {
+    --media-review-card-leading-max-width: 64px;
+    --media-review-card-leading-max-height: 64px;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card--leading-backdrop {
+    --media-review-card-leading-max-width: 114px;
+    --media-review-card-leading-max-height: 64px;
+}
+
+.my-space-reviews-browse ::deep .browse-view-simple-grid .media-review-card--leading-poster {
+    --media-review-card-leading-max-width: 112px;
+    --media-review-card-leading-max-height: 168px;
+}
+
+.my-space-reviews-browse ::deep .browse-view-simple-grid .media-review-card--leading-cover {
+    --media-review-card-leading-max-width: 112px;
+    --media-review-card-leading-max-height: 112px;
+}
+
+.my-space-reviews-browse ::deep .browse-view-simple-grid .media-review-card--leading-backdrop {
+    --media-review-card-leading-max-width: 160px;
+    --media-review-card-leading-max-height: 90px;
+}
+
+.my-space-reviews-browse ::deep .k7-virtual-list-item .media-review-card__leading-title {
+    font-size: 0.75rem;
+}
+
+@media (max-width: 599.98px) {
+    .my-space-reviews-browse {
+        padding: 0;
+    }
+}

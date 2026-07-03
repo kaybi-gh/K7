@@ -18,14 +18,14 @@
                         Class="k7-category-card--lg"
                         OnClick="@(() => NavigationManager.NavigateTo("/my-space/playlists"))" />
 
-        <K7CategoryCard Title="@L["History"]"
-                        Description="@HistoryDescription"
-                        Icon="clock-counter-clockwise"
-                        GradientStart="rgba(80,50,20,0.85)"
-                        GradientEnd="rgba(30,20,10,0.85)"
-                        IconColor="rgba(140,90,30,0.6)"
+        <K7CategoryCard Title="@L["Collections"]"
+                        Description="@CollectionsDescription"
+                        Icon="bookmark-simple"
+                        GradientStart="rgba(20,60,80,0.85)"
+                        GradientEnd="rgba(10,20,40,0.85)"
+                        IconColor="rgba(30,80,120,0.6)"
                         Class="k7-category-card--lg"
-                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/history"))" />
+                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/collections"))" />
 
         <K7CategoryCard Title="@L["Stats"]"
                         Description="@L["StatsDesc"]"
@@ -36,14 +36,23 @@
                         Class="k7-category-card--lg"
                         OnClick="@(() => NavigationManager.NavigateTo("/my-space/stats"))" />
 
-        <K7CategoryCard Title="@L["Collections"]"
-                        Description="@CollectionsDescription"
-                        Icon="bookmark-simple"
-                        GradientStart="rgba(20,60,80,0.85)"
-                        GradientEnd="rgba(10,20,40,0.85)"
-                        IconColor="rgba(30,80,120,0.6)"
+        <K7CategoryCard Title="@L["History"]"
+                        Description="@HistoryDescription"
+                        Icon="clock-counter-clockwise"
+                        GradientStart="rgba(80,50,20,0.85)"
+                        GradientEnd="rgba(30,20,10,0.85)"
+                        IconColor="rgba(140,90,30,0.6)"
                         Class="k7-category-card--lg"
-                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/collections"))" />
+                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/history"))" />
+
+        <K7CategoryCard Title="@L["Reviews"]"
+                        Description="@L["ReviewsDesc"]"
+                        Icon="chat-circle-text"
+                        GradientStart="rgba(80,60,20,0.85)"
+                        GradientEnd="rgba(40,30,10,0.85)"
+                        IconColor="rgba(160,120,40,0.6)"
+                        Class="k7-category-card--lg"
+                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/reviews"))" />
 
         @if (DeviceService.GetClientType() != ClientType.Web)
         {

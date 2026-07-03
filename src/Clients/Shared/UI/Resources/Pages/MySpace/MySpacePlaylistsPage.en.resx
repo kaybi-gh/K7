@@ -38,4 +38,7 @@
   <data name="LastListenedMinutes" xml:space="preserve"><value>Played {0} min ago</value></data>
   <data name="LastListenedHours" xml:space="preserve"><value>Played {0} h ago</value></data>
   <data name="LastListenedDays" xml:space="preserve"><value>Played {0} d ago</value></data>
+  <data name="ShowShared" xml:space="preserve"><value>Shared with me</value></data>
+  <data name="SharedTitle" xml:space="preserve"><value>Shared playlists</value></data>
+  <data name="SharedEmpty" xml:space="preserve"><value>No playlists have been shared with you.</value></data>
 </root>
