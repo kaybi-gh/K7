@@ -3,7 +3,7 @@
 @inject IStringLocalizer<PlaybackHistory> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="full-bleed-page">
+<div class="full-bleed-page playback-history-page">
     <div class="data-page-toolbar">
         <h5 class="data-page-toolbar__title">@L["PageTitle"]</h5>
         <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
@@ -22,24 +22,27 @@
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
                      RowHeight="48" ShowToolbar="false" Surface="false" Height="100%">
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Hideable="false">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Width="140px">
                 <CellTemplate>
-                    @if (context.MediaUrl is not null)
-                    {
-                        <a class="text-sm" href="@context.MediaUrl">@context.MediaTitle</a>
-                    }
-                    else
-                    {
-                        <span class="text-sm">@context.MediaTitle</span>
-                    }
+                    <div class="playback-history-date-cell">
+                        <span>@context.StartedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                        <span class="text-muted">@context.StartedAt.ToLocalTime().ToString("HH:mm")</span>
+                    </div>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" VisibleOnMobile="false">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Hideable="false">
+                <CellTemplate>
+                    <LibraryTableMediaTitle ImageUrl="@context.ImageUrl"
+                                            MediaType="@context.MediaType"
+                                            Title="@(context.MediaTitle ?? S["Untitled"])"
+                                            Href="@context.MediaUrl" />
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Width="110px" VisibleOnMobile="false">
                 <CellTemplate>
                     <span class="text-sm">@MediaTypeLabelHelper.Format(context.MediaType, S)</span>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["SharedProfile"]" VisibleOnMobile="false">
                 <CellTemplate>
                     @if (!string.IsNullOrEmpty(context.SharedProfileName))
@@ -52,7 +55,7 @@
                     }
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]" Width="90px">
                 <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" VisibleOnMobile="false" />
