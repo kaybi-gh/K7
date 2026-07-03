@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Social</value></data>
+  <data name="ReviewPreferences" xml:space="preserve"><value>Review preferences</value></data>
+  <data name="BlurReviewsForUnwatchedMedia" xml:space="preserve"><value>Blur reviews until the media has been watched</value></data>
+  <data name="ShareTitle" xml:space="preserve"><value>What I share</value></data>
+  <data name="ViewTitle" xml:space="preserve"><value>What I want to see</value></data>
+  <data name="Reviews" xml:space="preserve"><value>Reviews</value></data>
+  <data name="Collections" xml:space="preserve"><value>Collections</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="SmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="PlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
+  <data name="ScopeNobody" xml:space="preserve"><value>Only my content</value></data>
+  <data name="ScopeLocalServer" xml:space="preserve"><value>My server only</value></data>
+  <data name="ScopeFederation" xml:space="preserve"><value>Federation</value></data>
+  <data name="ScopeSpecificPeople" xml:space="preserve"><value>Specific people</value></data>
+  <data name="FederationDirectPeersNote" xml:space="preserve"><value>Federated sharing applies only to directly connected servers, with no transitivity.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Preferences saved.</value></data>
+</root>

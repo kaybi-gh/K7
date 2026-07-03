@@ -9,7 +9,16 @@
             @if (!_isGuest)
             {
                 <SidebarNavLink Href="/settings/account" Title="@L["Account"]" Icon="@Phosphor.UserCircle" />
-                <SidebarNavLink Href="/settings/shared-profiles" Title="@L["SharedProfiles"]" Icon="@Phosphor.UsersThree" />
+                <SidebarNavGroup Title="@L["SharedProfiles"]" Icon="@Phosphor.UsersThree" Routes="@WatchTogetherRoutes">
+                    <NavLink class="nav-link focusable" href="/settings/syncplay">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Broadcast" /></span>
+                        <span class="nav-label">@L["WatchTogetherSyncPlay"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/shared-profiles">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.UsersThree" /></span>
+                        <span class="nav-label">@L["WatchTogetherSharedProfiles"]</span>
+                    </NavLink>
+                </SidebarNavGroup>
             }
             <SidebarNavLink Href="/settings/general" Title="@L["Interface"]" Icon="@Phosphor.SlidersHorizontal" />
 
@@ -23,6 +32,10 @@
                     <NavLink class="nav-link focusable" href="/settings/home">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
                         <span class="nav-label">@L["Home"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/social">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.GlobeHemisphereWest" /></span>
+                        <span class="nav-label">@L["Federation"]</span>
                     </NavLink>
                     <NavLink class="nav-link focusable" href="/settings/hidden">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.EyeSlash" /></span>
@@ -58,6 +71,12 @@
 </SidebarLayout>
 
 @code {
-    private static readonly string[] MyContentRoutes = ["/settings/libraries", "/settings/home", "/settings/hidden"];
+    private static readonly string[] MyContentRoutes = ["/settings/libraries", "/settings/home", "/settings/social", "/settings/hidden"];
     private static readonly string[] PlaybackRoutes = ["/settings/video-playback", "/settings/audio-player"];
+    private static readonly string[] WatchTogetherRoutes =
+    [
+        "/settings/syncplay",
+        "/settings/shared-profiles",
+        "/settings/viewing-groups"
+    ];
 }

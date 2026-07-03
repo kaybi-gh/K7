@@ -17,6 +17,7 @@ public partial class CreatePlaylistDialog
     private string _title = "";
     private string? _description;
     private MediaType _mediaType = MediaType.MusicTrack;
+    private VisibilityScope _visibilityScope = VisibilityScope.Nobody;
     private bool _isSubmitting;
 
     protected override void OnParametersSet()
@@ -46,7 +47,8 @@ public partial class CreatePlaylistDialog
             {
                 Title = _title.Trim(),
                 Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
-                MediaType = _mediaType
+                MediaType = _mediaType,
+                VisibilityScope = _visibilityScope
             });
 
             Snackbar.Add(L["Created"], K7Severity.Success);

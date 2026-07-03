@@ -7,14 +7,17 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminFederationPanel : IDisposable
 {
     [Inject] private IFederationService FederationService { get; set; } = default!;
+    [Inject] private IReviewService ReviewService { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -26,6 +29,16 @@ public partial class AdminFederationPanel : IDisposable
     private Guid? _testingPeerId;
     private List<PeerServerDto>? _peers;
     private List<PeerRequestDto>? _requests;
+    private FederationSocialPolicyDto _socialPolicy = new();
+
+    private static readonly FederationContentType[] _socialContentTypes =
+    [
+        FederationContentType.Reviews,
+        FederationContentType.Collections,
+        FederationContentType.Playlists,
+        FederationContentType.SmartPlaylists,
+        FederationContentType.PlaybackHistory
+    ];
 
     private List<PeerServerDto> _outboundPeers => _peers?.Where(p => !p.IsProvider).ToList() ?? [];
     private List<PeerServerDto> _inboundPeers => _peers?.Where(p => p.IsProvider).ToList() ?? [];
@@ -38,6 +51,8 @@ public partial class AdminFederationPanel : IDisposable
 
         if (_federationEnabled)
         {
+            _socialPolicy = await ReviewService.GetFederationSocialPolicyAsync();
+            EnsureSocialPolicyDefaults();
             await LoadData();
             await HubClient.JoinAdminFederationGroupAsync();
             HubClient.PeerStateChanged += OnPeerStateChanged;
@@ -47,6 +62,71 @@ public partial class AdminFederationPanel : IDisposable
         else
         {
             _isLoading = false;
+        }
+    }
+
+    private FederationContentTypePolicyDto GetContentPolicy(FederationContentType contentType)
+    {
+        if (!_socialPolicy.Policies.TryGetValue(contentType, out var policy))
+        {
+            policy = new FederationContentTypePolicyDto();
+            _socialPolicy.Policies[contentType] = policy;
+        }
+
+        return policy;
+    }
+
+    private void ToggleOutbound(FederationContentType contentType)
+    {
+        var policy = GetContentPolicy(contentType);
+        policy.Outbound = !policy.Outbound;
+        StateHasChanged();
+    }
+
+    private void ToggleInbound(FederationContentType contentType)
+    {
+        var policy = GetContentPolicy(contentType);
+        policy.Inbound = !policy.Inbound;
+        StateHasChanged();
+    }
+
+    private static void OnPolicyCheckboxKeyDown(KeyboardEventArgs e, Action toggle)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            toggle();
+        }
+    }
+
+    private string GetSocialContentLabel(FederationContentType contentType) => contentType switch
+    {
+        FederationContentType.Reviews => L["SocialContentReviews"],
+        FederationContentType.Collections => L["SocialContentCollections"],
+        FederationContentType.Playlists => L["SocialContentPlaylists"],
+        FederationContentType.SmartPlaylists => L["SocialContentSmartPlaylists"],
+        FederationContentType.PlaybackHistory => L["SocialContentPlaybackHistory"],
+        _ => contentType.ToString()
+    };
+
+    private void EnsureSocialPolicyDefaults()
+    {
+        foreach (var contentType in _socialContentTypes)
+        {
+            if (!_socialPolicy.Policies.ContainsKey(contentType))
+                _socialPolicy.Policies[contentType] = new FederationContentTypePolicyDto();
+        }
+    }
+
+    private async Task SaveSocialPolicyAsync()
+    {
+        try
+        {
+            await ReviewService.UpdateFederationSocialPolicyAsync(_socialPolicy);
+            Snackbar.Add(L["SocialPolicySaved"], K7Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add(L["SocialPolicySaveError"], K7Severity.Error);
         }
     }
 
@@ -75,6 +155,8 @@ public partial class AdminFederationPanel : IDisposable
 
         if (_federationEnabled)
         {
+            _socialPolicy = await ReviewService.GetFederationSocialPolicyAsync();
+            EnsureSocialPolicyDefaults();
             await LoadData();
             try
             {

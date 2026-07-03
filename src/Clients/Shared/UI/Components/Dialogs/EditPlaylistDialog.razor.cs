@@ -17,7 +17,10 @@ public partial class EditPlaylistDialog
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string? Description { get; set; }
     [Parameter] public MediaType MediaType { get; set; } = MediaType.MusicTrack;
+    [Parameter] public VisibilityScope VisibilityScope { get; set; } = VisibilityScope.Nobody;
     [Parameter] public Guid? CoverPictureId { get; set; }
+
+    private VisibilityScope _visibilityScope = VisibilityScope.Nobody;
 
     private CoverPickerResult? _pendingCover;
     private Guid? _currentCoverPictureId;
@@ -51,6 +54,7 @@ public partial class EditPlaylistDialog
 
     protected override async Task OnInitializedAsync()
     {
+        _visibilityScope = VisibilityScope;
         _currentCoverPictureId = CoverPictureId;
         await LoadItemPicturesAsync();
     }
@@ -119,7 +123,8 @@ public partial class EditPlaylistDialog
             {
                 Title = Title.Trim(),
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
-                MediaType = MediaType
+                MediaType = MediaType,
+                VisibilityScope = _visibilityScope
             });
 
             if (_removeCover)

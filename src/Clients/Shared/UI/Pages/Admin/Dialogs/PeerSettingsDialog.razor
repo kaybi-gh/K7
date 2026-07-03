@@ -38,12 +38,23 @@
             <div class="peer-settings__list">
                 @foreach (var library in _libraries)
                 {
-                    <label class="peer-settings__list-row">
-                        <input type="checkbox"
-                               checked="@_selectedIds.Contains(library.Id)"
-                               @onchange="() => ToggleLibrary(library.Id)" />
-                        <span>@library.Title</span>
-                    </label>
+                    <div class="peer-settings__list-row">
+                        <label>
+                            <input type="checkbox"
+                                   checked="@_selectedIds.Contains(library.Id)"
+                                   @onchange="() => ToggleLibrary(library.Id)" />
+                            <span>@library.Title</span>
+                        </label>
+                        @if (_selectedIds.Contains(library.Id))
+                        {
+                            <label class="peer-settings__sub-row">
+                                <input type="checkbox"
+                                       checked="@_shareHistoryIds.Contains(library.Id)"
+                                       @onchange="() => ToggleShareHistory(library.Id)" />
+                                <span>@L["SharePlaybackHistory"]</span>
+                            </label>
+                        }
+                    </div>
                 }
             </div>
         }
@@ -77,6 +88,25 @@
         }
     </div>
     }
+
+    @if (Peer is not null)
+    {
+    <div class="peer-settings__section">
+        <span class="peer-settings__label">@L["SocialAgreementsLabel"]</span>
+        <div class="peer-settings__social-grid">
+            <span></span>
+            <span class="peer-settings__social-col">@L["Outbound"]</span>
+            <span class="peer-settings__social-col">@L["Inbound"]</span>
+            @foreach (var contentType in _socialContentTypes)
+            {
+                var agreement = GetSocialAgreement(contentType);
+                <span>@GetContentTypeLabel(contentType)</span>
+                <K7Switch Value="agreement.AllowOutbound" ValueChanged="v => SetSocialOutbound(contentType, v)" />
+                <K7Switch Value="agreement.AllowInbound" ValueChanged="v => SetSocialInbound(contentType, v)" />
+            }
+        </div>
+    </div>
+    }
 </div>
 <div class="k7-dialog-actions">
     <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
@@ -87,13 +117,24 @@
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Parameter] public PeerServerDto? Peer { get; set; }
 
+    private static readonly FederationContentType[] _socialContentTypes =
+    [
+        FederationContentType.Reviews,
+        FederationContentType.Collections,
+        FederationContentType.Playlists,
+        FederationContentType.SmartPlaylists,
+        FederationContentType.PlaybackHistory
+    ];
+
     private bool _isLoading = true;
     private string _baseUrl = string.Empty;
     private bool _autoAdd;
     private List<LibraryDto> _libraries = [];
     private List<PeerShareAgreementDto> _inboundAgreements = [];
     private HashSet<Guid> _selectedIds = [];
+    private HashSet<Guid> _shareHistoryIds = [];
     private HashSet<Guid> _enabledInboundIds = [];
+    private readonly Dictionary<FederationContentType, PeerSocialAgreementDto> _socialAgreements = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,10 +146,26 @@
                 .Where(a => a.Direction == ShareDirection.Outbound)
                 .Select(a => a.LibraryId)
                 .ToHashSet();
+            _shareHistoryIds = Peer.ShareAgreements
+                .Where(a => a.Direction == ShareDirection.Outbound && a.SharePlaybackHistory)
+                .Select(a => a.LibraryId)
+                .ToHashSet();
             _enabledInboundIds = Peer.ShareAgreements
                 .Where(a => a.Direction == ShareDirection.Inbound && a.IsEnabled)
                 .Select(a => a.Id)
                 .ToHashSet();
+
+            foreach (var contentType in _socialContentTypes)
+            {
+                var existing = Peer.SocialAgreements.FirstOrDefault(a => a.ContentType == contentType);
+                _socialAgreements[contentType] = existing ?? new PeerSocialAgreementDto
+                {
+                    Id = Guid.Empty,
+                    ContentType = contentType,
+                    AllowOutbound = true,
+                    AllowInbound = true
+                };
+            }
         }
 
         if (Peer?.IsProvider == true)
@@ -143,10 +200,43 @@
         }
     }
 
+    private PeerSocialAgreementDto GetSocialAgreement(FederationContentType contentType) =>
+        _socialAgreements[contentType];
+
+    private void SetSocialOutbound(FederationContentType contentType, bool value)
+    {
+        var current = _socialAgreements[contentType];
+        _socialAgreements[contentType] = current with { AllowOutbound = value };
+    }
+
+    private void SetSocialInbound(FederationContentType contentType, bool value)
+    {
+        var current = _socialAgreements[contentType];
+        _socialAgreements[contentType] = current with { AllowInbound = value };
+    }
+
+    private string GetContentTypeLabel(FederationContentType contentType) => contentType switch
+    {
+        FederationContentType.Reviews => L["ContentReviews"],
+        FederationContentType.Collections => L["ContentCollections"],
+        FederationContentType.Playlists => L["ContentPlaylists"],
+        FederationContentType.SmartPlaylists => L["ContentSmartPlaylists"],
+        FederationContentType.PlaybackHistory => L["ContentPlaybackHistory"],
+        _ => contentType.ToString()
+    };
+
     private void ToggleLibrary(Guid id)
     {
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
+        else
+            _shareHistoryIds.Remove(id);
+    }
+
+    private void ToggleShareHistory(Guid id)
+    {
+        if (!_shareHistoryIds.Remove(id))
+            _shareHistoryIds.Add(id);
     }
 
     private void ToggleInbound(Guid agreementId)
@@ -163,8 +253,10 @@
         {
             BaseUrl = _baseUrl,
             SharedLibraryIds = Peer?.IsProvider == true ? _selectedIds.ToList() : null,
+            SharePlaybackHistoryLibraryIds = Peer?.IsProvider == true ? _shareHistoryIds.ToList() : null,
             EnabledInboundAgreementIds = Peer?.IsProvider != true ? _enabledInboundIds.ToList() : null,
-            AutoAddNewLibraries = _autoAdd
+            AutoAddNewLibraries = _autoAdd,
+            SocialAgreements = _socialAgreements.Values.ToList()
         };
         Dialog.Close(K7DialogResult.Ok(result));
     }

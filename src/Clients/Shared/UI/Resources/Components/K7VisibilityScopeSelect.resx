@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="ScopeNobody" xml:space="preserve"><value>Uniquement mon contenu</value></data>
+  <data name="ScopeLocalServer" xml:space="preserve"><value>Mon serveur uniquement</value></data>
+  <data name="ScopeFederation" xml:space="preserve"><value>Fédération</value></data>
+  <data name="ScopeSpecificPeople" xml:space="preserve"><value>Personnes spécifiques</value></data>
+</root>
