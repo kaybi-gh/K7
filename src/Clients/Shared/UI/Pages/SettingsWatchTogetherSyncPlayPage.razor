@@ -1,0 +1,21 @@
+@page "/settings/syncplay"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsSharedProfilesPage> L
+@inject ISyncPlayService SyncPlay
+
+<PageTitle>@L["SyncPlayTitle"]</PageTitle>
+
+<h4 class="mb-2">@L["SyncPlayTitle"]</h4>
+<p class="text-secondary mb-4">@L["SyncPlayPageDescription"]</p>
+
+<div class="pa-4">
+    <section class="settings-section">
+        <p class="text-secondary mb-3">@L["SyncPlayDeviceDescription"]</p>
+        <K7Switch Label="@L["SyncPlayDeviceEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
+        <p class="text-secondary mb-3 mt-4">@L["SyncPlayInvitationsDescription"]</p>
+        <K7Switch Label="@L["SyncPlayInvitationsEnabled"]"
+                  Value="_syncPlayPreferences.InvitationsEnabled"
+                  ValueChanged="OnSyncPlayInvitationsChanged"
+                  Disabled="_savingSyncPlayPreference" />
+    </section>
+</div>
