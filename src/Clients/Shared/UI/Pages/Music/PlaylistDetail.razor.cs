@@ -320,6 +320,7 @@ public partial class PlaylistDetail
             { x => x.Title, _playlist.Title },
             { x => x.Description, _playlist.Description },
             { x => x.MediaType, _playlist.MediaType },
+            { x => x.VisibilityScope, _playlist.VisibilityScope },
             { x => x.CoverPictureId, _playlist.CoverPicture?.Id }
         };
 
