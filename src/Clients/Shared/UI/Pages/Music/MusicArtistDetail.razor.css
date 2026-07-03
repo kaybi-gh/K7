@@ -90,6 +90,11 @@
     margin-top: 12px;
 }
 
+.artist-user-rating {
+    display: flex;
+    align-items: center;
+}
+
 .artist-top-tracks-section {
     position: relative;
     flex-shrink: 0;
