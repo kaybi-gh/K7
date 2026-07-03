@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.Home.Services;
+using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
@@ -146,6 +147,15 @@ public static class DependencyInjection
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Serie>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<Serie>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<SerieSeason>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<SerieSeason>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicAlbum>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<MusicAlbum>>>();
+
+        services.AddScoped<IFederatedMediaResolver, FederatedMediaResolver>();
+        services.AddScoped<IContentVisibilityEvaluator, ContentVisibilityEvaluator>();
+        services.AddScoped<IFederationSocialPolicyService, FederationSocialPolicyService>();
+        services.AddScoped<IUserFederationPrivacyService, UserFederationPrivacyService>();
+        services.AddScoped<IVisibilityGrantService, VisibilityGrantService>();
+        services.AddScoped<IFederationSocialConsumerService, FederationSocialConsumerService>();
+        services.AddScoped<ISocialUserProfileService, SocialUserProfileService>();
+        services.AddSingleton<IFederationViewerAssertionService, FederationViewerAssertionService>();
 
         return services;
     }

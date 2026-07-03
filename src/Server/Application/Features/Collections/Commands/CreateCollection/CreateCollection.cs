@@ -27,6 +27,7 @@ public record CreateCollectionCommand : IRequest<Guid>
     public required string Title { get; init; }
     public string? Description { get; init; }
     public bool IsPublic { get; init; }
+    public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
     public MediaType? MediaType { get; init; }
 }
 
@@ -38,12 +39,17 @@ public class CreateCollectionCommandHandler(IApplicationDbContext context, IUser
         if (request.MediaType.HasValue && !AllowedCollectionMediaTypes.Values.Contains(request.MediaType.Value))
             throw new ValidationException($"MediaType must be one of: {string.Join(", ", AllowedCollectionMediaTypes.Values)}");
 
+        var visibilityScope = request.VisibilityScope != VisibilityScope.Nobody
+            ? request.VisibilityScope
+            : request.IsPublic ? VisibilityScope.LocalServer : VisibilityScope.Nobody;
+
         var entity = new Collection
         {
             Id = Guid.NewGuid(),
             Title = request.Title,
             Description = request.Description,
-            IsPublic = request.IsPublic,
+            IsPublic = visibilityScope is VisibilityScope.LocalServer or VisibilityScope.Federation,
+            VisibilityScope = visibilityScope,
             MediaType = request.MediaType,
             UserId = currentUser.Id!.Value
         };

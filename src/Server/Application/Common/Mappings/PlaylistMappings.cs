@@ -25,7 +25,8 @@ public static class PlaylistMappings
             ItemCount = domain.Items.Count,
             Created = domain.Created,
             LastModified = domain.LastModified,
-            LastListenedAt = MapLastListenedAt(domain)
+            LastListenedAt = MapLastListenedAt(domain),
+            VisibilityScope = domain.VisibilityScope
         };
 
         public LitePlaylistDto ToLitePlaylistDto() => new()

@@ -17,6 +17,7 @@ public class GetPeersQueryHandler(IApplicationDbContext context)
         var peers = await context.PeerServers
             .Include(p => p.ShareAgreements)
                 .ThenInclude(a => a.Library)
+            .Include(p => p.SocialAgreements)
             .OrderBy(p => p.Name)
             .ToListAsync(cancellationToken);
 

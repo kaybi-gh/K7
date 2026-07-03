@@ -18,6 +18,7 @@ public record CreatePlaylistCommand : IRequest<Guid>
     public required string Title { get; init; }
     public string? Description { get; init; }
     public required MediaType MediaType { get; init; }
+    public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
 }
 
 public class CreatePlaylistCommandHandler(IApplicationDbContext context, IUser currentUser)
@@ -34,6 +35,7 @@ public class CreatePlaylistCommandHandler(IApplicationDbContext context, IUser c
             Title = request.Title,
             Description = request.Description,
             MediaType = request.MediaType,
+            VisibilityScope = request.VisibilityScope,
             UserId = currentUser.Id!.Value
         };
 

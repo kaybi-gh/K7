@@ -20,6 +20,9 @@ public static class FederationMappings
             Created = domain.Created,
             ShareAgreements = domain.ShareAgreements
                 .Select(a => a.ToPeerShareAgreementDto())
+                .ToList(),
+            SocialAgreements = domain.SocialAgreements
+                .Select(a => a.ToPeerSocialAgreementDto())
                 .ToList()
         };
     }
@@ -33,7 +36,19 @@ public static class FederationMappings
             LibraryTitle = domain.Library?.Title,
             Direction = domain.Direction,
             MaxConcurrentStreams = domain.MaxConcurrentStreams,
-            IsEnabled = domain.IsEnabled
+            IsEnabled = domain.IsEnabled,
+            SharePlaybackHistory = domain.SharePlaybackHistory
+        };
+    }
+
+    extension(PeerSocialAgreement domain)
+    {
+        public PeerSocialAgreementDto ToPeerSocialAgreementDto() => new()
+        {
+            Id = domain.Id,
+            ContentType = domain.ContentType,
+            AllowOutbound = domain.AllowOutbound,
+            AllowInbound = domain.AllowInbound
         };
     }
 

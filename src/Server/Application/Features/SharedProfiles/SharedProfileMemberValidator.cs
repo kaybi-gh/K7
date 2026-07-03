@@ -42,7 +42,7 @@ internal static class SharedProfileMemberValidator
         {
             throw new ValidationException(
             [
-                new ValidationFailure(nameof(memberIds), "One or more users do not allow being added to viewing groups.")
+                new ValidationFailure(nameof(memberIds), "One or more users do not allow being added to shared profiles.")
             ]);
         }
     }

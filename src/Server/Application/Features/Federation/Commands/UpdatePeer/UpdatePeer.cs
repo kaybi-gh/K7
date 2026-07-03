@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Federation.Commands.UpdatePeer;
@@ -16,6 +17,8 @@ public record UpdatePeerCommand : IRequest
     public IReadOnlyList<Guid>? EnabledInboundAgreementIds { get; init; }
     public int? MaxConcurrentStreams { get; init; }
     public bool? AutoAddNewLibraries { get; init; }
+    public IReadOnlyList<PeerSocialAgreementDto>? SocialAgreements { get; init; }
+    public IReadOnlyList<Guid>? SharePlaybackHistoryLibraryIds { get; init; }
 }
 
 public class UpdatePeerCommandHandler(
@@ -58,11 +61,23 @@ public class UpdatePeerCommandHandler(
                     LibraryId = libraryId,
                     Direction = ShareDirection.Outbound,
                     MaxConcurrentStreams = request.MaxConcurrentStreams,
-                    IsEnabled = true
+                    IsEnabled = true,
+                    SharePlaybackHistory = request.SharePlaybackHistoryLibraryIds?.Contains(libraryId) ?? false
                 });
             }
 
             sharedLibrariesChanged = true;
+        }
+        else if (request.SharePlaybackHistoryLibraryIds is not null)
+        {
+            var outboundAgreements = await context.PeerShareAgreements
+                .Where(a => a.PeerServerId == peer.Id && a.Direction == ShareDirection.Outbound)
+                .ToListAsync(cancellationToken);
+
+            foreach (var agreement in outboundAgreements)
+            {
+                agreement.SharePlaybackHistory = request.SharePlaybackHistoryLibraryIds.Contains(agreement.LibraryId);
+            }
         }
 
         if (request.EnabledInboundAgreementIds is not null)
@@ -74,6 +89,34 @@ public class UpdatePeerCommandHandler(
             foreach (var agreement in inboundAgreements)
             {
                 agreement.IsEnabled = request.EnabledInboundAgreementIds.Contains(agreement.Id);
+            }
+        }
+
+        if (request.SocialAgreements is not null)
+        {
+            var existing = await context.PeerSocialAgreements
+                .Where(a => a.PeerServerId == peer.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var social in request.SocialAgreements)
+            {
+                var agreement = existing.FirstOrDefault(a => a.ContentType == social.ContentType);
+                if (agreement is null)
+                {
+                    context.PeerSocialAgreements.Add(new PeerSocialAgreement
+                    {
+                        Id = Guid.NewGuid(),
+                        PeerServerId = peer.Id,
+                        ContentType = social.ContentType,
+                        AllowOutbound = social.AllowOutbound,
+                        AllowInbound = social.AllowInbound
+                    });
+                }
+                else
+                {
+                    agreement.AllowOutbound = social.AllowOutbound;
+                    agreement.AllowInbound = social.AllowInbound;
+                }
             }
         }
 
