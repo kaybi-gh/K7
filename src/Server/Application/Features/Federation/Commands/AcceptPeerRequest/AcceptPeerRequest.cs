@@ -46,6 +46,8 @@ public class AcceptPeerRequestCommandHandler(
             AutoAddNewLibraries = request.AutoShareNewLibraries
         };
 
+        peer.FederationAssertionSecret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+
         foreach (var libraryId in request.SharedLibraryIds)
         {
             peer.ShareAgreements.Add(new PeerShareAgreement
@@ -71,6 +73,7 @@ public class AcceptPeerRequestCommandHandler(
             peerRequest.Token,
             clientId,
             clientSecret,
+            peer.FederationAssertionSecret,
             cancellationToken);
     }
 }

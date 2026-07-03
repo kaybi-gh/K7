@@ -11,6 +11,7 @@ using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
+using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -63,8 +64,11 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<EphemeralStreamToken> EphemeralStreamTokens { get; }
     DbSet<PeerServer> PeerServers { get; }
     DbSet<PeerShareAgreement> PeerShareAgreements { get; }
+    DbSet<PeerSocialAgreement> PeerSocialAgreements { get; }
     DbSet<PeerRequest> PeerRequests { get; }
     DbSet<RemoteIndexedFile> RemoteIndexedFiles { get; }
+    DbSet<MediaReview> MediaReviews { get; }
+    DbSet<VisibilityGrant> VisibilityGrants { get; }
     DbSet<MetadataTag> MetadataTags { get; }
     DbSet<MediaMetadataTag> MediaMetadataTags { get; }
     DbSet<ApiKey> ApiKeys { get; }

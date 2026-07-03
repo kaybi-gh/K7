@@ -177,7 +177,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.MediaTypes?.Contains(MediaType.SerieSeason) == true)
         {
-            dataQuery = dataQuery.Include(x => ((SerieSeason)x).Episodes);
+            dataQuery = dataQuery
+                .Include(x => ((SerieSeason)x).Episodes)
+                .Include(x => ((SerieSeason)x).Serie)
+                    .ThenInclude(s => s.Pictures);
         }
 
         if (userId.HasValue)

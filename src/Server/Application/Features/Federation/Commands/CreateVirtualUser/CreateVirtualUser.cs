@@ -10,6 +10,7 @@ namespace K7.Server.Application.Features.Federation.Commands.CreateVirtualUser;
 public record CreateVirtualUserCommand : IRequest<Guid>
 {
     public required Guid PeerServerId { get; init; }
+    public required Guid OriginUserId { get; init; }
     public required string DisplayName { get; init; }
 }
 
@@ -25,15 +26,24 @@ public class CreateVirtualUserCommandHandler(IApplicationDbContext context)
 
         var existing = await context.Users
             .FirstOrDefaultAsync(u => u.PeerServerId == request.PeerServerId
-                && u.DisplayName == request.DisplayName, cancellationToken);
+                && u.OriginUserId == request.OriginUserId, cancellationToken);
 
         if (existing is not null)
+        {
+            if (existing.DisplayName != request.DisplayName)
+            {
+                existing.DisplayName = request.DisplayName;
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
             return existing.Id;
+        }
 
         var user = new User
         {
             Id = Guid.NewGuid(),
             PeerServerId = request.PeerServerId,
+            OriginUserId = request.OriginUserId,
             DisplayName = request.DisplayName,
             IsActive = true
         };

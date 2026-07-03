@@ -11,6 +11,7 @@ public record ConfirmPeeringCommand : IRequest
     public required string Token { get; init; }
     public required string ClientId { get; init; }
     public required string ClientSecret { get; init; }
+    public string? FederationAssertionSecret { get; init; }
 }
 
 public class ConfirmPeeringCommandHandler(
@@ -30,6 +31,7 @@ public class ConfirmPeeringCommandHandler(
 
         peer.OutboundClientId = request.ClientId;
         peer.OutboundClientSecret = request.ClientSecret;
+        peer.FederationAssertionSecret = request.FederationAssertionSecret;
         peer.Status = PeerStatus.Active;
         peer.LastSeen = DateTimeOffset.UtcNow;
 

@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
@@ -57,12 +58,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 context.Medias,
                 s => s.MediaId,
                 m => m.Id,
-                (s, m) => new { s.MediaId, s.ReferenceId, m.Title })
-            .GroupBy(x => new { x.MediaId, x.Title })
+                (s, m) => new { s.MediaId, s.ReferenceId, m.Title, m.Type })
+            .GroupBy(x => new { x.MediaId, x.Title, x.Type })
             .Select(g => new TopItemDto
             {
                 Id = g.Key.MediaId,
                 Name = g.Key.Title ?? "Unknown",
+                MediaType = g.Key.Type.ToString(),
                 PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
             })
             .OrderByDescending(x => x.PlayCount)
@@ -130,6 +132,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 {
                     Id = g.Key.ArtistId!.Value,
                     Name = g.Key.ArtistTitle ?? "Unknown artist",
+                    MediaType = nameof(MediaType.MusicArtist),
                     PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
@@ -152,6 +155,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 {
                     Id = g.Key.Id,
                     Name = g.Key.Title ?? "Unknown album",
+                    MediaType = nameof(MediaType.MusicAlbum),
                     PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
@@ -177,6 +181,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 {
                     Id = g.Key.Id,
                     Name = g.Key.Title ?? "Unknown show",
+                    MediaType = nameof(MediaType.Serie),
                     PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
@@ -200,6 +205,31 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
             .ToListAsync(cancellationToken);
+
+        topItems = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
+            context,
+            topItems,
+            item => item.Id,
+            (item, imageUrl) => item with { ImageUrl = imageUrl },
+            cancellationToken)).ToList();
+        topArtists = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
+            context,
+            topArtists,
+            item => item.Id,
+            (item, imageUrl) => item with { ImageUrl = imageUrl },
+            cancellationToken)).ToList();
+        topAlbums = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
+            context,
+            topAlbums,
+            item => item.Id,
+            (item, imageUrl) => item with { ImageUrl = imageUrl },
+            cancellationToken)).ToList();
+        topShows = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
+            context,
+            topShows,
+            item => item.Id,
+            (item, imageUrl) => item with { ImageUrl = imageUrl },
+            cancellationToken)).ToList();
 
         var playbackDetails = request.MediaType == MediaType.MusicTrack
             ? null

@@ -157,12 +157,14 @@ public static class MediaMappings
                         ReleaseDate = s.ReleaseDate,
                         Pictures = s.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                         SerieId = s.SerieId,
+                        SerieTitle = serie.Title,
                         SeasonNumber = s.SeasonNumber,
                         EpisodeCount = s.Episodes.Count,
                         Poster = s.Pictures
                             .Where(p => p.Type == MetadataPictureType.Poster)
                             .Select(p => p.ToMetadataPictureDto())
                             .FirstOrDefault(),
+                        SeriePictures = serie.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                         UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
                     })
                     .ToList(),
@@ -350,12 +352,14 @@ public static class MediaMappings
                 Created = domain.Created,
                 Pictures = MapPictures(domain.Pictures),
                 SerieId = season.SerieId,
+                SerieTitle = season.Serie?.Title,
                 SeasonNumber = season.SeasonNumber,
                 EpisodeCount = season.Episodes.Count,
                 Poster = domain.Pictures
                     .Where(p => p.Type == MetadataPictureType.Poster)
                     .Select(MapPicture)
                     .FirstOrDefault(),
+                SeriePictures = season.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
                 UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
                     ?? (domain.UserMediaStates.FirstOrDefault() is { } state
                         ? state.ToUserMediaStateDto()

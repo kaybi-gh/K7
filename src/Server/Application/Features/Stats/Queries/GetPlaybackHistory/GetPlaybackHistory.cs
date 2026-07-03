@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
@@ -129,6 +130,11 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             .Select(g => new { MediaId = g.Key, LibraryName = g.First().LibraryName })
             .ToDictionaryAsync(x => x.MediaId, x => x.LibraryName, cancellationToken);
 
+        var coverPictureIds = await MediaCoverPictureResolver.GetCoverPictureIdsByMediaIdAsync(
+            context,
+            mediaIds,
+            cancellationToken);
+
         var deviceIds = pagedGroups.Where(g => g.DeviceId.HasValue).Select(g => g.DeviceId!.Value).Distinct().ToList();
         var devices = deviceIds.Count > 0
             ? await context.Devices
@@ -221,6 +227,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                         trackNav?.AlbumId)
                     : null,
                 LibraryName = libraryByMedia.GetValueOrDefault(g.MediaId),
+                ImageUrl = MediaCoverPictureResolver.ToSmallPictureUrl(coverPictureIds.GetValueOrDefault(g.MediaId)),
                 StartedAt = g.StartedAt,
                 StoppedAt = g.StoppedAt,
                 TotalWatchedSeconds = g.TotalWatchedSeconds,
