@@ -60,6 +60,8 @@ builder.Services.AddSingleton<IStreamingService, MockStreamingService>();
 builder.Services.AddSingleton<IDeviceApiService, MockDeviceApiService>();
 builder.Services.AddSingleton<IUserAdminService, MockUserAdminService>();
 builder.Services.AddSingleton<IRatingService, MockRatingService>();
+builder.Services.AddSingleton<IReviewService, MockReviewService>();
+builder.Services.AddSingleton<ISocialUserService, MockSocialUserService>();
 builder.Services.AddSingleton<IBackgroundTaskService, MockBackgroundTaskService>();
 builder.Services.AddSingleton<IDiagnosticsService, MockDiagnosticsService>();
 builder.Services.AddSingleton<IServerInfoService, MockServerInfoService>();
