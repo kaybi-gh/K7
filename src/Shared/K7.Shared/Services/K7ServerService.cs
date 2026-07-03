@@ -11,6 +11,8 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos.Entities.Reviews;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
@@ -26,7 +28,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1670,5 +1672,150 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.PostAsJsonAsync("api/music-intelligence/search/lyrics", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<List<Guid>>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<IReadOnlyList<MediaReviewDto>> GetMediaReviewsAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<MediaReviewDto>>($"api/medias/{mediaId}/reviews", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedReviewDto>> GetFederatedMediaReviewsAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederatedReviewDto>>($"api/medias/{mediaId}/federated-reviews", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task UpsertMediaReviewAsync(Guid mediaId, UpsertMediaReviewRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/medias/{mediaId}/review", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<FederationPrivacySettingsDto> GetFederationPrivacyAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<FederationPrivacySettingsDto>("api/users/me/federation-privacy", _serializerOptions, cancellationToken)
+            ?? new FederationPrivacySettingsDto();
+    }
+
+    public async Task UpdateFederationPrivacyAsync(FederationPrivacySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/federation-privacy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<ReviewPreferencesDto> GetReviewPreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<ReviewPreferencesDto>("api/users/me/review-preferences", _serializerOptions, cancellationToken)
+            ?? new ReviewPreferencesDto();
+    }
+
+    public async Task UpdateReviewPreferencesAsync(ReviewPreferencesDto preferences, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/review-preferences", preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<FederationSocialPolicyDto> GetFederationSocialPolicyAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<FederationSocialPolicyDto>("api/admin/federation/social-policy", _serializerOptions, cancellationToken)
+            ?? new FederationSocialPolicyDto();
+    }
+
+    public async Task UpdateFederationSocialPolicyAsync(FederationSocialPolicyDto policy, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/federation/social-policy", policy, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<FederationGrantTargetDto>> GetFederationGrantTargetsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederationGrantTargetDto>>("api/users/me/federation-privacy/grant-targets", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedCollectionViewDto>> GetFederatedCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederatedCollectionViewDto>>("api/federation/social/collections", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedPlaylistViewDto>> GetFederatedPlaylistsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederatedPlaylistViewDto>>("api/federation/social/playlists", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetFederatedSmartPlaylistsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederatedSmartPlaylistViewDto>>("api/federation/social/smart-playlists", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetFederatedPlaybackHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<FederatedPlaybackHistoryViewDto>>("api/federation/social/playback-history", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<SocialUserReviewViewDto>> GetMyMediaReviewsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<SocialUserReviewViewDto>>("api/users/me/reviews", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<int> GetMyMediaReviewCountAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<int>("api/users/me/reviews/count", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<MyMediaReviewStateDto?> GetMyMediaReviewAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/medias/{mediaId}/review/me", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MyMediaReviewStateDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task DeleteMediaReviewAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/medias/{mediaId}/review", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<SocialUserDirectoryEntryDto>> GetSocialUserDirectoryAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<SocialUserDirectoryEntryDto>>("api/users/social/directory", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<SocialUserProfileDto?> GetLocalUserProfileAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<SocialUserProfileDto>($"api/users/{userId}/social-profile", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<SocialUserProfileDto?> GetFederatedUserProfileAsync(Guid peerServerId, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<SocialUserProfileDto>(
+            $"api/federation/peers/{peerServerId}/users/{originUserId}/social-profile", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<SharedCollectionBrowseDto>> GetSharedCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<SharedCollectionBrowseDto>>("api/users/me/shared-collections", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<SharedPlaylistBrowseDto>> GetSharedPlaylistsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<SharedPlaylistBrowseDto>>("api/users/me/shared-playlists", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<Guid> CopyFederatedPlaylistAsync(Guid peerServerId, Guid originUserId, Guid playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync(
+            $"api/federation/peers/{peerServerId}/users/{originUserId}/playlists/{playlistId}/copy",
+            null,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<SocialDiscoveryStateDto> GetSocialDiscoveryStateAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<SocialDiscoveryStateDto>("api/users/social/discovery", _serializerOptions, cancellationToken)
+            ?? new SocialDiscoveryStateDto();
     }
 }

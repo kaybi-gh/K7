@@ -14,4 +14,5 @@ public sealed record PeerServerDto
     public bool? LastTestSucceeded { get; init; }
     public DateTimeOffset Created { get; init; }
     public IReadOnlyList<PeerShareAgreementDto> ShareAgreements { get; init; } = [];
+    public IReadOnlyList<PeerSocialAgreementDto> SocialAgreements { get; init; } = [];
 }
