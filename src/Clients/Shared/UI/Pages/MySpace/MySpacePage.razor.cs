@@ -21,7 +21,9 @@ public partial class MySpacePage
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadPlaylistsCountAsync(), LoadCollectionsCountAsync());
+        await Task.WhenAll(
+            LoadPlaylistsCountAsync(),
+            LoadCollectionsCountAsync());
     }
 
     private async Task LoadPlaylistsCountAsync()
@@ -49,4 +51,5 @@ public partial class MySpacePage
             _collectionCount = 0;
         }
     }
+
 }

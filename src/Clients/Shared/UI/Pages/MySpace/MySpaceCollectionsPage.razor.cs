@@ -4,7 +4,9 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Collections;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
@@ -15,7 +17,9 @@ public partial class MySpaceCollectionsPage
     private const int PageSize = 500;
 
     private List<LiteCollectionDto> _collections = [];
+    private List<SharedCollectionBrowseDto> _sharedCollections = [];
     private bool _loading = true;
+    private bool _showShared;
     private bool _canCreate;
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastModifiedDesc;
     private BrowseView<LiteCollectionDto>? _browseView;
@@ -27,6 +31,7 @@ public partial class MySpaceCollectionsPage
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private ISocialUserService SocialUserService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,8 +44,16 @@ public partial class MySpaceCollectionsPage
     private async Task LoadCollectionsAsync()
     {
         _loading = true;
-        var result = await K7ServerService.GetCollectionsAsync(pageSize: PageSize, orderBy: _selectedSort);
-        _collections = result?.Items?.ToList() ?? [];
+        if (_showShared)
+        {
+            _sharedCollections = (await SocialUserService.GetSharedCollectionsAsync()).ToList();
+        }
+        else
+        {
+            var result = await K7ServerService.GetCollectionsAsync(pageSize: PageSize, orderBy: _selectedSort);
+            _collections = result?.Items?.ToList() ?? [];
+        }
+
         _loading = false;
 
         if (_dataTable is not null)
@@ -91,6 +104,12 @@ public partial class MySpaceCollectionsPage
 
         if (_browseView is not null)
             await _browseView.RefreshAsync();
+    }
+
+    private async Task OnShowSharedChanged(bool value)
+    {
+        _showShared = value;
+        await LoadCollectionsAsync();
     }
 
     private void NavigateToCollection(LiteCollectionDto collection) =>

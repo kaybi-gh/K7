@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>My reviews</value></data>
+  <data name="Empty" xml:space="preserve"><value>You have not written any reviews yet.</value></data>
+  <data name="EditReview" xml:space="preserve"><value>Edit review</value></data>
+  <data name="DeleteReview" xml:space="preserve"><value>Delete review</value></data>
+  <data name="DeleteConfirmTitle" xml:space="preserve"><value>Delete review</value></data>
+  <data name="DeleteConfirmMessage" xml:space="preserve"><value>Delete your review for "{0}"? This cannot be undone.</value></data>
+  <data name="All" xml:space="preserve"><value>All</value></data>
+  <data name="Music" xml:space="preserve"><value>Music</value></data>
+  <data name="FilterMovies" xml:space="preserve"><value>Movies</value></data>
+  <data name="TVShows" xml:space="preserve"><value>TV shows</value></data>
+  <data name="MediaTypeFilter" xml:space="preserve"><value>Media type</value></data>
+  <data name="SortNewest" xml:space="preserve"><value>Newest</value></data>
+  <data name="SortOldest" xml:space="preserve"><value>Oldest</value></data>
+  <data name="SortRatingDesc" xml:space="preserve"><value>Highest rating</value></data>
+  <data name="SortRatingAsc" xml:space="preserve"><value>Lowest rating</value></data>
+</root>

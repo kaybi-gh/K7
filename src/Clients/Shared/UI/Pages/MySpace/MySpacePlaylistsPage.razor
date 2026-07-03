@@ -1,7 +1,9 @@
 @page "/my-space/playlists"
 @layout MySpaceLayout
 @using K7.Clients.Shared.Mappings
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Shared.Dtos.Entities.Playlists
+@using K7.Shared.Dtos.Federation.Social
 @using K7.Shared.Dtos.Requests
 @using K7.Server.Domain.Enums
 @inject IPlaylistService K7ServerService
@@ -14,6 +16,47 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
+@if (_showShared)
+{
+    <div class="my-space-library-browse page-scrollable">
+        <div class="my-space-shared-toolbar">
+            <h5>@L["SharedTitle"]</h5>
+            <div class="flex-1"></div>
+            <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
+        </div>
+        @if (_loading)
+        {
+            <K7Spinner />
+        }
+        else if (_sharedPlaylists.Count == 0)
+        {
+            <p class="text-secondary pa-8">@L["SharedEmpty"]</p>
+        }
+        else
+        {
+            <div class="my-space-shared-grid">
+                @foreach (var item in _sharedPlaylists)
+                {
+                    <article class="my-space-shared-card" @key="@($"{item.Owner.IsFederated}-{item.PlaylistId}")">
+                        <button type="button" class="my-space-shared-card__link focusable" @onclick="@(() => NavigationManager.NavigateTo(SocialUserNavigation.GetProfileHref(item.Owner)))">
+                            <h6>
+                                @item.Title
+                                @if (item.IsSmart)
+                                {
+                                    <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
+                                }
+                            </h6>
+                            <p class="text-sm text-secondary">@item.Owner.DisplayName</p>
+                            <p class="text-sm">@item.ItemCount @L["Items"]</p>
+                        </button>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
 <BrowseView TItem="LitePlaylistDto"
               Items="_playlists"
               Loading="_loading"
@@ -28,6 +71,7 @@
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
+        <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
         <K7ButtonGroup TValue="MediaType?" Options="_mediaTypeOptions" Value="_mediaTypeFilter" ValueChanged="SetMediaTypeFilter" AriaLabel="@L["PageTitle"]" />
         <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
             @foreach (var opt in MySpaceLibraryBrowseSort.PlaylistOptions)
@@ -61,36 +105,24 @@
     <GridTemplate Context="playlist">
         @{
             var vm = playlist.ToCardViewModel(ApiClient, GetPlaylistSubtitle(playlist));
-            var useMosaic = LibraryItemBrowseMappings.UseMosaicCover(playlist.CoverPicture, playlist.PreviewPictures);
+            var placeholderIcon = playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
         }
-        @if (useMosaic)
-        {
-            <MediaCard Model="vm"
-                       Href="@GetPlaylistHref(playlist)"
-                       Variant="MediaCardVariant.Cover"
-                       FooterVisible="true"
-                       ContextMenuEnabled="false"
-                       HoverOverlayEnabled="true"
-                       PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)">
-                <CoverContent>
-                    <K7CoverMosaic PreviewPictures="playlist.PreviewPictures"
-                                     PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
-                                     PictureSize="MetadataPictureSize.Medium"
-                                     Alt="@playlist.Title"
-                                     Class="media-card-mosaic" />
-                </CoverContent>
-            </MediaCard>
-        }
-        else
-        {
-            <MediaCard Model="vm"
-                       Href="@GetPlaylistHref(playlist)"
-                       Variant="MediaCardVariant.Cover"
-                       FooterVisible="true"
-                       ContextMenuEnabled="false"
-                       HoverOverlayEnabled="true"
-                       PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)" />
-        }
+        <MediaCard Model="vm"
+                   Href="@GetPlaylistHref(playlist)"
+                   Variant="MediaCardVariant.Cover"
+                   FooterVisible="true"
+                   ContextMenuEnabled="false"
+                   HoverOverlayEnabled="true"
+                   PlaceholderIcon="@placeholderIcon">
+            <CoverContent>
+                <K7CoverMosaic CoverPicture="playlist.CoverPicture"
+                               PreviewPictures="playlist.PreviewPictures"
+                               PlaceholderIcon="@placeholderIcon"
+                               PictureSize="MetadataPictureSize.Medium"
+                               Alt="@playlist.Title"
+                               Class="media-card-mosaic" />
+            </CoverContent>
+        </MediaCard>
     </GridTemplate>
     <TableContent>
         <K7DataTable TItem="LitePlaylistDto"
@@ -155,3 +187,4 @@
         </LibraryBrowseListRow>
     </ListTemplate>
 </BrowseView>
+}

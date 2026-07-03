@@ -32,6 +32,9 @@
   <data name="DownloadsDesc" xml:space="preserve"><value>Content downloaded for offline use</value></data>
   <data name="PlaylistsCount" xml:space="preserve"><value>{0} playlists</value></data>
   <data name="CollectionsCount" xml:space="preserve"><value>{0} collections</value></data>
+  <data name="Reviews" xml:space="preserve"><value>My reviews</value></data>
+  <data name="ReviewsDesc" xml:space="preserve"><value>Reviews you have published</value></data>
+  <data name="ReviewsCount" xml:space="preserve"><value>{0} reviews</value></data>
   <data name="VideoHoursKpi" xml:space="preserve"><value>{0:0.#} h video</value></data>
   <data name="MusicHoursKpi" xml:space="preserve"><value>{0:0.#} h music</value></data>
 </root>
