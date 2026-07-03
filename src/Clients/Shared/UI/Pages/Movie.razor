@@ -3,6 +3,7 @@
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Shared.Dtos.Entities.Metadatas.Files;
 @using Microsoft.AspNetCore.Components.Authorization
+@using K7.Clients.Shared.UI.Components.Dialogs
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IPlayerService PlayerService
@@ -12,6 +13,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IStringLocalizer<Movie> L
 @inject IStringLocalizer<SharedResource> S
+@inject IStringLocalizer<MediaReviewDialog> ReviewDialogL
 @inject IDeviceService DeviceService
 @inject IJSRuntime JSRuntime
 <PageTitle>@_movie?.Title</PageTitle>
@@ -92,6 +94,12 @@ else
                         {
                             <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
                         }
+                        @if (_canRate)
+                        {
+                            <div class="movie-user-rating" @onclick:stopPropagation="true">
+                                <RatingStars MediaId="_movie.Id" Value="_movieUserRating" Size="md" />
+                            </div>
+                        }
                         @foreach (var genre in (_movie.Genres ?? []).Take(2))
                         {
                             var g = genre;
@@ -142,6 +150,10 @@ else
                                OnClick="PlayAsync" data-initial-focus>@S["Play"]</K7Button>   
                     
                     <div class="movie-actions-secondary">
+                    @if (_canRate)
+                    {
+                        <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
+                    }
                     <K7IconButton Icon="@Phosphor.Sliders" OnClick="OpenPlaybackOptionsAsync" AriaLabel="playback-options" />
                     @if (_movie.Trailers?.Count > 0)
                     {
@@ -205,6 +217,11 @@ else
                     </CarouselItem>
                 }
             </Carousel>
+        }
+
+        @if (_movie is not null)
+        {
+            <MediaReviewsSection @ref="_reviewsSection" MediaId="_movie.Id" />
         }
 
         @if (_similarMedia.Count > 0)

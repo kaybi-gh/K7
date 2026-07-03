@@ -24,4 +24,10 @@ internal static class MediaCardMenuActions
     public static bool SupportsCollection(MediaType? mediaType) =>
         mediaType is MediaType.Movie or MediaType.MusicAlbum or MediaType.MusicTrack
             or MediaType.MusicArtist or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
+
+    public static bool SupportsReview(MediaType? mediaType) =>
+        mediaType is MediaType.Movie
+            or MediaType.Serie
+            or MediaType.SerieEpisode
+            or MediaType.MusicAlbum;
 }

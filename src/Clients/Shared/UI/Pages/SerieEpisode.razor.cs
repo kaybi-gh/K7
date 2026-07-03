@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
@@ -25,10 +26,12 @@ public partial class SerieEpisode
     private bool _loading = true;
     private bool _canExclude;
     private bool _canSetWatchState;
+    private bool _canRate;
     private bool _isAdmin;
     private LiteSerieEpisodeDto? _previousEpisode;
     private LiteSerieEpisodeDto? _nextEpisode;
     private List<LiteSerieEpisodeDto> _moreEpisodes = [];
+    private MediaReviewsSection? _reviewsSection;
 
     private string DominantColorStyle => _dominantColor is not null
         ? $"--episode-dominant-color: {_dominantColor};"
@@ -38,6 +41,7 @@ public partial class SerieEpisode
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
 
         _loading = true;
         StateHasChanged();
@@ -311,5 +315,25 @@ public partial class SerieEpisode
             .Where(e => e.EpisodeNumber != EpisodeNumber)
             .ToList();
         StateHasChanged();
+    }
+
+    private async Task OpenReviewDialogAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var changed = await MediaReviewDialogHelper.OpenAsync(
+            DialogService,
+            ReviewDialogL,
+            _episode.Id,
+            _episode.Title ?? $"E{_episode.EpisodeNumber}");
+
+        if (!changed)
+            return;
+
+        var media = await k7ServerService.GetMediaAsync(_episode.Id);
+        _episode = media as SerieEpisodeDto;
+        if (_reviewsSection is not null)
+            await _reviewsSection.RefreshAsync();
     }
 }

@@ -1,0 +1,25 @@
+.picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.picker-row__label {
+    flex: 0 0 100%;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.picker-row__value {
+    display: flex;
+    align-items: center;
+    min-height: 2rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.media-review-dialog-emoji-preview {
+    font-size: 1.75rem;
+    line-height: 1;
+}

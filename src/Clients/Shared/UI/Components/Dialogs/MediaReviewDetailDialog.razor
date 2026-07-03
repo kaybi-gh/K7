@@ -1,0 +1,22 @@
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content media-review-detail-dialog">
+    <MediaReviewCard Flat="true"
+                     DisplayName="@Review.DisplayName"
+                     UserId="@Review.UserId"
+                     AvatarUrl="@Review.AvatarUrl"
+                     IsFederated="@Review.IsFederated"
+                     PeerName="@Review.PeerName"
+                     Rating="@Review.Rating"
+                     Text="@Review.Text"
+                     Emoji="@Review.Emoji"
+                     Created="@Review.Created" />
+</div>
+<div class="k7-dialog-actions">
+    @if (ShowProfileLink)
+    {
+        <K7Button Variant="outlined" OnClick="ViewProfile">@L["ViewProfile"]</K7Button>
+    }
+    <div class="flex-1"></div>
+    <K7Button OnClick="Close" Variant="filled" Color="primary">@S["Close"]</K7Button>
+</div>

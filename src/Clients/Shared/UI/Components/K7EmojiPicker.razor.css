@@ -1,0 +1,46 @@
+.k7-emoji-picker-wrapper {
+    position: relative;
+    display: inline-flex;
+    width: 100%;
+}
+
+.k7-emoji-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    width: 100%;
+}
+
+.k7-emoji-picker-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    background: transparent;
+    font-size: 1.75rem;
+    line-height: 1;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.k7-emoji-picker-btn:hover {
+    background: var(--color-surface-hover);
+}
+
+.k7-emoji-picker-btn.is-selected {
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    border-color: var(--color-accent);
+}
+
+.k7-emoji-picker-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}

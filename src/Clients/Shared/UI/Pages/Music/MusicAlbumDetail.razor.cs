@@ -1,9 +1,13 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -29,6 +33,9 @@ public partial class MusicAlbumDetail
     [Inject]
     private ILibraryService LibraryService { get; set; } = default!;
 
+    [Inject]
+    private IFeatureAccessService FeatureAccess { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -38,16 +45,21 @@ public partial class MusicAlbumDetail
     private int _trackCount;
     private double _totalDuration;
     private bool _loading = true;
+    private bool _canRate;
+    private int? _albumUserRating;
     private Guid? _libraryGroupId;
+    private MediaReviewsSection? _reviewsSection;
 
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
 
         var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
         if (media is MusicAlbumDto album)
         {
             _album = album;
+            _albumUserRating = GetUserRating(album.Ratings);
 
             var coverPicture = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
@@ -273,6 +285,31 @@ public partial class MusicAlbumDetail
                 genre: genre,
                 mediaType: MediaType.MusicAlbum));
     }
+
+    private async Task OpenReviewDialogAsync()
+    {
+        if (_album is null)
+            return;
+
+        var changed = await MediaReviewDialogHelper.OpenAsync(DialogService, ReviewDialogL, _album.Id, _album.Title);
+        if (!changed)
+            return;
+
+        var media = await k7ServerService.GetMediaAsync(_album.Id);
+        if (media is MusicAlbumDto album)
+        {
+            _album = album;
+            _albumUserRating = GetUserRating(album.Ratings);
+        }
+
+        if (_reviewsSection is not null)
+            await _reviewsSection.RefreshAsync();
+    }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)value
+            : null;
 
     internal sealed record TrackViewModel
     {

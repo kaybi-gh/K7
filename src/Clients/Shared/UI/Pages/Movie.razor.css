@@ -213,6 +213,12 @@
     flex-shrink: 0;
 }
 
+.movie-user-rating {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .movie-meta-details {
     display: flex;
     align-items: center;

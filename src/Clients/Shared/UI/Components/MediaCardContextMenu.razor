@@ -10,6 +10,10 @@
 {
     <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
 }
+@if (ShowReview && _hasValidMediaId)
+{
+    <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@L["MyReview"]</K7MenuItem>
+}
 @if (ShowWatchState && _hasValidMediaId)
 {
     <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">

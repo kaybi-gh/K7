@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Anonymous" xml:space="preserve"><value>Anonyme</value></data>
+  <data name="LocalUser" xml:space="preserve"><value>Utilisateur local</value></data>
+  <data name="FederatedUserOnPeer" xml:space="preserve"><value>Utilisateur fédéré de {0}</value></data>
+  <data name="RatingOutOfTen" xml:space="preserve"><value>Note : {0}/10</value></data>
+  <data name="JustNow" xml:space="preserve"><value>À l'instant</value></data>
+  <data name="MinutesAgo" xml:space="preserve"><value>Il y a {0} min</value></data>
+  <data name="HoursAgo" xml:space="preserve"><value>Il y a {0} h</value></data>
+  <data name="DaysAgo" xml:space="preserve"><value>Il y a {0} jours</value></data>
+  <data name="SpoilerHint" xml:space="preserve"><value>Contenu potentiellement spoilant</value></data>
+  <data name="RevealSpoiler" xml:space="preserve"><value>Révéler</value></data>
+</root>
