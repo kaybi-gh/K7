@@ -19,7 +19,10 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Shared profiles</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Watch together</value></data>
+  <data name="PageDescription" xml:space="preserve"><value>SyncPlay and shared profiles for watching together on your devices.</value></data>
+  <data name="SyncPlayPageDescription" xml:space="preserve"><value>Configure SyncPlay availability and invitations on this device.</value></data>
+  <data name="SharedProfilesPageDescription" xml:space="preserve"><value>Manage your shared profiles and visibility on this device.</value></data>
   <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
   <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Receive invitations on this device</value></data>
   <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Shows your SyncPlay availability and lets others invite you from this device.</value></data>
@@ -29,7 +32,7 @@
   <data name="PrivacyTitle" xml:space="preserve"><value>Privacy</value></data>
   <data name="PrivacyDescription" xml:space="preserve"><value>By default, other users cannot add you to a new shared profile. Turn this off to allow invitations.</value></data>
   <data name="BlockNewMembership" xml:space="preserve"><value>Block new shared profile invitations</value></data>
-  <data name="GroupsTitle" xml:space="preserve"><value>My shared profiles</value></data>
+  <data name="GroupsTitle" xml:space="preserve"><value>Your profiles</value></data>
   <data name="GroupsDescription" xml:space="preserve"><value>Shared profiles group members who watch together on a shared device. Pin the ones to show on this device.</value></data>
   <data name="ShowOnDevice" xml:space="preserve"><value>Show on this device</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Create shared profile</value></data>

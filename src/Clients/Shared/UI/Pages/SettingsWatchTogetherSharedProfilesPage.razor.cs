@@ -4,10 +4,11 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsSharedProfilesPage
+public partial class SettingsWatchTogetherSharedProfilesPage
 {
     [Inject] private ISharedProfileService SharedProfileService { get; set; } = default!;
     [Inject] private IUserPreferencesService PreferencesService { get; set; } = default!;
@@ -15,14 +16,14 @@ public partial class SettingsSharedProfilesPage
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private ISharedProfileDevicePinService SharedProfileDevicePin { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IStringLocalizer<SettingsSharedProfilesPage> L { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     private bool _loading = true;
     private bool _savingPreference;
-    private bool _savingSyncPlayPreference;
     private bool _dialogOpen;
     private Guid? _currentUserId;
     private SharedProfilePreferencesDto _preferences = new();
-    private SyncPlayPreferencesDto _syncPlayPreferences = new();
     private List<SharedProfileDto> _groups = [];
     private HashSet<Guid> _processing = [];
 
@@ -34,7 +35,6 @@ public partial class SettingsSharedProfilesPage
             _currentUserId = me?.Id;
 
             _preferences = await PreferencesService.GetSharedProfilePreferencesAsync();
-            _syncPlayPreferences = await PreferencesService.GetSyncPlayPreferencesAsync();
             await ReloadGroupsAsync();
         }
         catch (Exception ex)
@@ -50,26 +50,6 @@ public partial class SettingsSharedProfilesPage
     private async Task ReloadGroupsAsync()
     {
         _groups = (await SharedProfileService.GetSharedProfilesAsync()).ToList();
-    }
-
-    private async Task OnSyncPlayInvitationsChanged(bool value)
-    {
-        _syncPlayPreferences.InvitationsEnabled = value;
-        _savingSyncPlayPreference = true;
-        try
-        {
-            await PreferencesService.UpdateSyncPlayPreferencesAsync(_syncPlayPreferences);
-            Snackbar.Add(S["Saved"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            _syncPlayPreferences.InvitationsEnabled = !value;
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _savingSyncPlayPreference = false;
-        }
     }
 
     private void OnShowOnDeviceChanged(SharedProfileDto group, bool value) =>

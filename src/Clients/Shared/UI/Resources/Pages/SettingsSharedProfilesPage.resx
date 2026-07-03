@@ -19,7 +19,10 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Profils partagés</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Regarder ensemble</value></data>
+  <data name="PageDescription" xml:space="preserve"><value>SyncPlay et profils partagés pour regarder ensemble sur vos appareils.</value></data>
+  <data name="SyncPlayPageDescription" xml:space="preserve"><value>Configurez la disponibilité SyncPlay et les invitations sur cet appareil.</value></data>
+  <data name="SharedProfilesPageDescription" xml:space="preserve"><value>Gérez vos profils partagés et la visibilité sur cet appareil.</value></data>
   <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
   <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Recevoir les invitations sur cet appareil</value></data>
   <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Affiche votre disponibilité SyncPlay et permet aux autres de vous inviter depuis cet appareil.</value></data>
@@ -29,7 +32,7 @@
   <data name="PrivacyTitle" xml:space="preserve"><value>Confidentialité</value></data>
   <data name="PrivacyDescription" xml:space="preserve"><value>Par défaut, les autres utilisateurs ne peuvent pas vous ajouter à un nouveau profil partagé. Désactivez cette option pour autoriser les ajouts.</value></data>
   <data name="BlockNewMembership" xml:space="preserve"><value>Bloquer les ajouts à de nouveaux profils partagés</value></data>
-  <data name="GroupsTitle" xml:space="preserve"><value>Mes profils partagés</value></data>
+  <data name="GroupsTitle" xml:space="preserve"><value>Vos profils</value></data>
   <data name="GroupsDescription" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. Épinglez ceux à afficher sur cet appareil.</value></data>
   <data name="ShowOnDevice" xml:space="preserve"><value>Afficher sur cet appareil</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Créer un profil partagé</value></data>
