@@ -1,7 +1,7 @@
 @using System.Reflection
 @using K7.Clients.Shared.UI.Pages.Utils
 
-<Router AppAssembly="@typeof(MauiSignIn).Assembly" AdditionalAssemblies="@_sharedAssemblies">
+<Router AppAssembly="@typeof(MauiSignIn).Assembly" AdditionalAssemblies="@_sharedAssemblies" NotFoundPage="typeof(K7.Clients.Shared.UI.Pages.NotFound)">
     <Found Context="routeData">
         <CascadingAuthenticationState>
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(K7.Clients.Shared.UI.Layout.MainLayout)">

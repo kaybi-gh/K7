@@ -1,5 +1,6 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
@@ -63,6 +64,8 @@ public partial class Welcome : IDisposable
             if (!_guestEnabled)
                 Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Warning);
         }
+
+        AppReadySignal.Signal();
     }
 
     private async Task SignInAsync()
