@@ -37,17 +37,13 @@ public static class LiteMediaMappings
         var seasonDto = item as LiteSerieSeasonDto;
 
         MetadataPictureDto? bestPicture;
-        if (episodeDto is not null && preferEpisodeStill)
+        if (episodeDto is not null)
         {
             bestPicture = episodeDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still);
         }
         else
         {
-            var pictureSource = episodeDto is not null
-                ? (episodeDto.SeriePictures?.Count > 0 ? episodeDto.SeriePictures : null)
-                    ?? (episodeDto.SeasonPictures?.Count > 0 ? episodeDto.SeasonPictures : null)
-                    ?? item.Pictures
-                : item.Pictures;
+            var pictureSource = item.Pictures;
 
             bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
@@ -129,9 +125,6 @@ public static class LiteMediaMappings
 
         var bestPicture = item.MediaType == MediaType.SerieEpisode
             ? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                ?? item.Pictures?.FirstOrDefault()
             : item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)

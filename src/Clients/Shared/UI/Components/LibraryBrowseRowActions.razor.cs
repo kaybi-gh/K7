@@ -26,6 +26,7 @@ public partial class LibraryBrowseRowActions
 
     private bool _menuOpen;
     private bool _showRating;
+    private bool _showReview;
     private bool _showPlaylist;
     private bool _showCollection;
     private bool _watchStateMenuVisible;
@@ -35,6 +36,7 @@ public partial class LibraryBrowseRowActions
         || ExcludeMenuEnabled
         || _watchStateMenuVisible
         || _showRating
+        || _showReview
         || _showPlaylist
         || _showCollection;
 
@@ -44,6 +46,7 @@ public partial class LibraryBrowseRowActions
         {
             _watchStateMenuVisible = false;
             _showRating = false;
+            _showReview = false;
             _showPlaylist = false;
             _showCollection = false;
             return;
@@ -61,6 +64,7 @@ public partial class LibraryBrowseRowActions
         var mediaType = MediaCardMenuActions.InferMediaType(Model);
 
         _showRating = hasValidMediaId && canRate;
+        _showReview = hasValidMediaId && canRate && MediaCardMenuActions.SupportsReview(mediaType);
         _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
         _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }

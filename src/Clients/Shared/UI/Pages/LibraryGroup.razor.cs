@@ -2,9 +2,9 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
@@ -76,6 +76,7 @@ public partial class LibraryGroup : IDisposable
         _totalCount > 0 && !_loading && !_intelligentSearchLoading;
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
+    private string _tableScopeKey = "initial";
 
     private static readonly List<MediaOrderingOption> SortOptions =
     [
@@ -510,6 +511,8 @@ public partial class LibraryGroup : IDisposable
         _filter = MediaBrowseFilterPresets.Empty;
         _intelligentSearch = null;
         _intelligentSearchResults = [];
+        _totalCount = 0;
+        _tableScopeKey = $"{value}:{Guid.NewGuid():N}";
         await LoadTagsAsync();
         await PersistFiltersAsync();
         await RefreshAllAsync();
@@ -577,6 +580,12 @@ public partial class LibraryGroup : IDisposable
         _dataTable?.ToggleColumnPicker();
     }
 
+    private string? GetTableThumbUrl(LiteMediaDto item)
+    {
+        var picture = LiteMediaThumbnailHelper.ResolvePicture(item);
+        return picture?.GetUri(MetadataPictureSize.Small)?.OriginalString;
+    }
+
     private static string GetItemHref(LiteMediaDto item) => item switch
     {
         LiteMusicArtistDto artist => $"/music/artists/{artist.Id}",
@@ -591,6 +600,7 @@ public partial class LibraryGroup : IDisposable
     private static MediaCardVariant GetVariant(LiteMediaDto item) => item switch
     {
         LiteMusicAlbumDto or LiteMusicTrackDto or LiteMusicArtistDto => MediaCardVariant.Cover,
+        LiteSerieEpisodeDto => MediaCardVariant.Backdrop,
         _ => MediaCardVariant.Poster
     };
 

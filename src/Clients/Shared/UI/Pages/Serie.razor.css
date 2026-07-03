@@ -80,6 +80,11 @@
     flex-wrap: wrap;
 }
 
+.serie-user-rating {
+    display: flex;
+    align-items: center;
+}
+
 .serie-meta-separator {
     opacity: 0.4;
 }

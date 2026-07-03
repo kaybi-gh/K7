@@ -1,0 +1,18 @@
+.stats-table-media {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.stats-table-media ::deep .k7-img-wrap {
+    flex: 0 0 auto;
+}
+
+.stats-table-media__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}

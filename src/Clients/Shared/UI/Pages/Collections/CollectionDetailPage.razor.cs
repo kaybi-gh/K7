@@ -426,12 +426,6 @@ public partial class CollectionDetailPage
 
             ? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
 
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-
-                ?? item.Pictures?.FirstOrDefault()
-
             : item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
 
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)

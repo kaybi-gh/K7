@@ -37,13 +37,16 @@ public partial class Serie : IAsyncDisposable
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _canSetWatchState;
+    private bool _canRate;
     private bool _isAdmin;
     private bool _permissionsLoaded;
     private bool _isTv;
+    private int? _serieUserRating;
     private ElementReference _tvScrollRoot;
     private bool _tvScrollInitialized;
     private Guid? _libraryGroupId;
     private List<SerieStudioNetworkChip> _studioNetworkChips = [];
+    private MediaReviewsSection? _reviewsSection;
 
     private bool HasTvBelowContent =>
         (_serie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
@@ -61,6 +64,7 @@ public partial class Serie : IAsyncDisposable
             _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
             (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
             _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+            _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
             _permissionsLoaded = true;
         }
 
@@ -72,6 +76,7 @@ public partial class Serie : IAsyncDisposable
         if (media is SerieDto serie)
         {
             _serie = serie;
+            _serieUserRating = GetUserRating(serie.Ratings);
 
             _posterUrl = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
@@ -123,8 +128,9 @@ public partial class Serie : IAsyncDisposable
 
     private string? GetSeasonPosterUrl(LiteSerieSeasonDto season)
     {
+        var picture = LiteMediaThumbnailHelper.ResolvePicture(season);
         return apiClient.GetAbsoluteUri(
-            season.Poster?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+            picture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
     }
 
     private void NavigateToSeason(LiteSerieSeasonDto season)
@@ -372,6 +378,7 @@ public partial class Serie : IAsyncDisposable
             return;
 
         _serie = serie;
+        _serieUserRating = GetUserRating(serie.Ratings);
         _seasons = (serie.Seasons ?? [])
             .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber)
             .ToList();
@@ -390,11 +397,36 @@ public partial class Serie : IAsyncDisposable
     private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
         MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
 
+    private async Task OpenReviewDialogAsync()
+    {
+        if (_serie is null)
+            return;
+
+        var changed = await MediaReviewDialogHelper.OpenAsync(DialogService, ReviewDialogL, _serie.Id, _serie.Title);
+        if (!changed)
+            return;
+
+        var media = await k7ServerService.GetMediaAsync(_serie.Id);
+        if (media is SerieDto serie)
+        {
+            _serie = serie;
+            _serieUserRating = GetUserRating(serie.Ratings);
+        }
+
+        if (_reviewsSection is not null)
+            await _reviewsSection.RefreshAsync();
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_tvScrollInitialized)
             await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)Math.Round(value)
+            : null;
 
     private readonly record struct SerieStudioNetworkChip(string Label, bool IsNetwork);
 }

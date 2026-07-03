@@ -1,6 +1,7 @@
 @page "/library-groups/{id}"
 @using K7.Clients.Shared.Enums
 @using K7.Clients.Shared.Mappings
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
@@ -75,6 +76,7 @@
     </GridTemplate>
     <TableContent>
         <K7DataTable TItem="LiteMediaDto"
+                     @key="_tableScopeKey"
                      ServerData="LoadTableDataAsync"
                      ActiveSortKey="@_activeSortKey"
                      ActiveSortDirection="@_activeSortDirection"
@@ -86,17 +88,9 @@
                      @ref="_dataTable">
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Title"]" SortKey="title" Hideable="false">
                 <CellTemplate Context="item">
-                    <div class="library-table-title">
-                        @{
-                            var poster = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster) ?? item.Pictures?.FirstOrDefault();
-                            var thumbUrl = apiClient.GetAbsoluteUri(poster?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
-                        }
-                        @if (thumbUrl is not null)
-                        {
-                            <K7Image Src="@thumbUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
-                        }
-                        <p class="text-sm">@item.Title</p>
-                    </div>
+                    <LibraryTableMediaTitle ImageUrl="@GetTableThumbUrl(item)"
+                                            MediaType="@_selectedMediaType.ToString()"
+                                            Title="@item.Title" />
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Year"]" SortKey="releaseDate" Width="80px" VisibleOnMobile="false" Property="item => item.ReleaseDate?.Year" />
