@@ -1,0 +1,63 @@
+@inject IStringLocalizer<MediaReviewDialog> L
+
+<div class="k7-dialog-content">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        <div class="d-flex flex-col gap-3 mt-2">
+            @if (!string.IsNullOrWhiteSpace(MediaTitle))
+            {
+                <p class="text-sm text-secondary">@MediaTitle</p>
+            }
+            <div class="media-review-dialog-rating">
+                <span class="text-sm">@L["Rating"]</span>
+                <RatingStars MediaId="MediaId"
+                             Value="_rating"
+                             ValueChanged="OnRatingChanged"
+                             DeferPersistence="true" />
+            </div>
+            <K7TextField @bind-Value="_text" Label="@L["ReviewText"]" Lines="4" Variant="outlined" />
+            <div class="picker-row">
+                <span class="picker-row__label">@L["EmojiOptional"]</span>
+                <div class="picker-row__value">
+                    @if (!string.IsNullOrEmpty(_emoji))
+                    {
+                        <span class="media-review-dialog-emoji-preview" aria-hidden="true">@_emoji</span>
+                    }
+                    else
+                    {
+                        <span class="text-sm text-secondary">@L["EmojiNone"]</span>
+                    }
+                </div>
+                <K7Button Variant="outlined" Size="sm" OnClick="OpenEmojiPickerAsync">@L["EmojiChange"]</K7Button>
+                @if (!string.IsNullOrEmpty(_emoji))
+                {
+                    <K7Button Variant="text" Size="sm" OnClick="ClearEmoji">@L["EmojiRemove"]</K7Button>
+                }
+            </div>
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+  @if (_hasReview)
+    {
+        <K7Button Color="error" Variant="filled" OnClick="DeleteAsync" Disabled="_isSubmitting || _loading">
+            @L["DeleteReview"]
+        </K7Button>
+    }
+    <div class="flex-1"></div>
+    <K7Button OnClick="Cancel" Disabled="_isSubmitting">@S["Cancel"]</K7Button>
+    <K7Button Color="primary"
+               Variant="filled"
+               OnClick="SaveAsync"
+               Disabled="_isSubmitting || _loading || _rating is null or <= 0">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @S["Save"]
+    </K7Button>
+</div>

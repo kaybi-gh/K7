@@ -2,6 +2,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -17,6 +18,9 @@ public partial class MediaCardContextMenu
 
     [Parameter]
     public bool ShowPlay { get; set; }
+
+    [Parameter]
+    public bool ShowReview { get; set; }
 
     [Parameter]
     public bool ShowRating { get; set; }
@@ -54,6 +58,7 @@ public partial class MediaCardContextMenu
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> SharedStrings { get; set; } = default!;
+    [Inject] private IStringLocalizer<MediaReviewDialog> ReviewDialogL { get; set; } = default!;
 
     private Guid _mediaId;
     private bool _hasValidMediaId;
@@ -115,5 +120,10 @@ public partial class MediaCardContextMenu
         };
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AddToCollectionDialog>(L["AddToCollectionTitle"], parameters, options);
+    }
+
+    private async Task OpenReviewDialogAsync()
+    {
+        await MediaReviewDialogHelper.OpenAsync(DialogService, ReviewDialogL, _mediaId, Model.Title);
     }
 }

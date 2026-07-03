@@ -4,6 +4,7 @@
 @using K7.Shared.Dtos.Entities.Metadatas.Files
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using Microsoft.AspNetCore.Components.Authorization
+@using K7.Clients.Shared.UI.Components.Dialogs
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IPlayerService PlayerService
@@ -14,6 +15,7 @@
 @inject IStringLocalizer<SerieEpisode> L
 @inject IStringLocalizer<SharedResource> S
 @inject IStringLocalizer<MediaCard> CardL
+@inject IStringLocalizer<MediaReviewDialog> ReviewDialogL
 @inject MediaCacheStore CacheStore
 @inject IK7Snackbar Snackbar
 @inject IUserAdminService UserAdminService
@@ -74,6 +76,10 @@ else if (_episode is not null)
                         </K7Button>
 
                         <div class="episode-actions-secondary">
+                            @if (_canRate)
+                            {
+                                <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
+                            }
                             @if (_episode.UserState is { ProgressPercentage: > 0 and < 100 })
                             {
                                 <K7ProgressBar Value="@_episode.UserState.ProgressPercentage" Style="max-width: 200px;" />
@@ -185,5 +191,7 @@ else if (_episode is not null)
                 }
             </Carousel>
         }
+
+        <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" />
     </div>
 }

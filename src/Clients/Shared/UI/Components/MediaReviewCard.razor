@@ -1,0 +1,137 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<article class="media-review-card @RootClass"
+         role="@(IsActivatable && !ShowLeadingSlot ? "button" : null)"
+         tabindex="@(IsActivatable && !ShowLeadingSlot ? 0 : -1)"
+         aria-label="@(IsActivatable && !ShowLeadingSlot ? ActivateAriaLabel : null)"
+         @onclick="HandleArticleClickAsync"
+         @onkeydown="HandleArticleKeyDownAsync">
+    <div class="media-review-card__surface">
+        @if (!ShowAuthor && !ShowLeadingSlot && !string.IsNullOrWhiteSpace(Emoji))
+        {
+            <span class="media-review-card__emoji-floating" aria-hidden="true">@Emoji</span>
+        }
+
+        <div class="media-review-card__layout">
+            @if (ShowLeadingSlot)
+            {
+                <div class="media-review-card__leading" @onclick:stopPropagation="true">
+                    <div class="media-review-card__leading-visual">
+                        <div class="media-review-card__leading-artwork">
+                            @LeadingContent
+                            @if (!string.IsNullOrWhiteSpace(Emoji))
+                            {
+                                <span class="media-review-card__emoji-badge" aria-hidden="true">@Emoji</span>
+                            }
+                        </div>
+                        @if (ShowLeadingLabel)
+                        {
+                            <span class="media-review-card__leading-title">
+                                <span class="media-review-card__leading-title-inner">@LeadingLabel</span>
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+            else if (ShowAuthor)
+            {
+                <div class="media-review-card__avatar-wrap">
+                    <K7Avatar Size="lg"
+                              Class="media-review-card__avatar"
+                              Image="@(AvatarUrl ?? "")"
+                              UserId="@UserId"
+                              Alt="@ResolvedDisplayName">@AvatarInitial</K7Avatar>
+                    @if (!string.IsNullOrWhiteSpace(Emoji))
+                    {
+                        <span class="media-review-card__emoji-badge" aria-hidden="true">@Emoji</span>
+                    }
+                </div>
+            }
+
+            <div class="media-review-card__body @(IsActivatable && ShowLeadingSlot ? "media-review-card__body--activatable focusable" : null)"
+                 tabindex="@(IsActivatable && ShowLeadingSlot ? 0 : -1)"
+                 aria-label="@(IsActivatable && ShowLeadingSlot ? ActivateAriaLabel : null)"
+                 @onclick="HandleBodyClickAsync"
+                 @onkeydown="HandleBodyKeyDownAsync">
+                @if (ShowAuthor)
+                {
+                    <div class="media-review-card__top-row">
+                        <div class="media-review-card__identity">
+                            @if (!Compact && !string.IsNullOrEmpty(ProfileHref))
+                            {
+                                <a href="@ProfileHref"
+                                   class="media-review-card__name focusable"
+                                   @onclick:stopPropagation="true">@ResolvedDisplayName</a>
+                            }
+                            else
+                            {
+                                <span class="media-review-card__name">@ResolvedDisplayName</span>
+                            }
+                            <span class="media-review-card__subtitle">@OriginLabel</span>
+                        </div>
+                        @if (HasRating)
+                        {
+                            <div class="media-review-card__rating-pill">
+                                <RatingStars ReadOnly="true"
+                                             Value="@RatingValue"
+                                             AriaLabel="@RatingLabel"
+                                             Size="xs" />
+                            </div>
+                        }
+                    </div>
+                }
+                else if (HasRating)
+                {
+                    <div class="media-review-card__top-row media-review-card__top-row--rating-only">
+                        <div class="media-review-card__rating-pill">
+                            <RatingStars ReadOnly="true"
+                                         Value="@RatingValue"
+                                         AriaLabel="@RatingLabel"
+                                         Size="xs" />
+                        </div>
+                    </div>
+                }
+
+                @if (HasText)
+                {
+                    <blockquote class="media-review-card__quote">@Text</blockquote>
+                }
+
+                @if (ShowFooter)
+                {
+                    <hr class="media-review-card__divider" />
+                    <div class="media-review-card__footer">
+                        @if (Created is DateTimeOffset createdAt)
+                        {
+                            <span class="media-review-card__timestamp">@FormatRelativeTime(createdAt)</span>
+                        }
+                        @if (Actions is not null || ChildContent is not null)
+                        {
+                            <div class="media-review-card__meta">
+                                @ChildContent
+                                @if (Actions is not null)
+                                {
+                                    <div class="media-review-card__actions" @onclick:stopPropagation="true">
+                                        @Actions
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (ShowSpoilerOverlay)
+        {
+            <div class="media-review-card__spoiler-overlay" @onclick:stopPropagation="true">
+                <p class="media-review-card__spoiler-hint">@L["SpoilerHint"]</p>
+                <K7Button Variant="outlined"
+                          Size="sm"
+                          OnClick="RevealSpoiler">
+                    @L["RevealSpoiler"]
+                </K7Button>
+            </div>
+        }
+    </div>
+</article>

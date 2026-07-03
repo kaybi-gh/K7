@@ -206,6 +206,20 @@
     text-align: right;
 }
 
+.album-user-rating {
+    display: flex;
+    align-items: center;
+}
+
+.album-reviews {
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
+}
+
+.album-reviews ::deep .carousel-viewport:has(.media-review-card) {
+    margin-block-start: 0;
+}
+
 .album-overview {
     padding: 16px 0 32px;
     max-width: 800px;

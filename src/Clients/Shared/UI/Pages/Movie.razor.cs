@@ -13,6 +13,7 @@ using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -44,11 +45,14 @@ public partial class Movie : IAsyncDisposable
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _canSetWatchState;
+    private bool _canRate;
     private bool _isAdmin;
     private bool _isTv;
     private ElementReference _tvScrollRoot;
     private bool _tvScrollInitialized;
     private Guid? _libraryGroupId;
+    private MediaReviewsSection? _reviewsSection;
+    private int? _movieUserRating;
 
     private bool HasTvBelowContent =>
         (_movie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
@@ -65,6 +69,7 @@ public partial class Movie : IAsyncDisposable
             _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
             (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
             _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+            _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
         }
 
         if (_previousId == Id) return;
@@ -79,6 +84,8 @@ public partial class Movie : IAsyncDisposable
         _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
         if (_movie != null)
         {
+            _movieUserRating = GetUserRating(_movie.Ratings);
+
             _mediaCard = new MediaCardViewModel()
             {
                 Id = _movie.Id.ToString(),
@@ -461,6 +468,28 @@ public partial class Movie : IAsyncDisposable
         NavigationManager.NavigateTo(
             LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, studio: studio));
     }
+
+    private async Task OpenReviewDialogAsync()
+    {
+        if (_movie is null)
+            return;
+
+        var changed = await MediaReviewDialogHelper.OpenAsync(DialogService, ReviewDialogL, _movie.Id, _movie.Title);
+        if (!changed)
+            return;
+
+        _movie = await k7ServerService.GetMovieAsync(_movie.Id);
+        if (_movie is not null)
+            _movieUserRating = GetUserRating(_movie.Ratings);
+
+        if (_reviewsSection is not null)
+            await _reviewsSection.RefreshAsync();
+    }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)Math.Round(value)
+            : null;
 
     public async ValueTask DisposeAsync()
     {

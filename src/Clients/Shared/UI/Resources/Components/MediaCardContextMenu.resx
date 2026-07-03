@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Play" xml:space="preserve"><value>Lecture</value></data>
+  <data name="MyReview" xml:space="preserve"><value>Mon avis</value></data>
   <data name="HideForMe" xml:space="preserve"><value>Masquer pour moi</value></data>
   <data name="HideForUser" xml:space="preserve"><value>Masquer pour un utilisateur</value></data>
   <data name="MarkAsWatched" xml:space="preserve"><value>Marquer comme vu</value></data>

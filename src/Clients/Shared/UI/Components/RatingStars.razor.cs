@@ -11,7 +11,7 @@ public partial class RatingStars : IAsyncDisposable
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    [Parameter, EditorRequired]
+    [Parameter]
     public Guid MediaId { get; set; }
 
     [Parameter]
@@ -23,6 +23,15 @@ public partial class RatingStars : IAsyncDisposable
     [Parameter]
     public string Size { get; set; } = "sm";
 
+    [Parameter]
+    public bool DeferPersistence { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public string? AriaLabel { get; set; }
+
     private bool _canRate;
     private int? _hoveredValue;
     private ElementReference _element;
@@ -32,6 +41,24 @@ public partial class RatingStars : IAsyncDisposable
     private DotNetObjectReference<RatingStars>? _dotNetRef;
 
     private int StarCount => _currentValue.HasValue ? (int)Math.Ceiling(_currentValue.Value / 2.0) : 0;
+
+    private string DefaultAriaLabel => StarCount > 0 ? $"{StarCount}/5" : "0/5";
+
+    private string SizeClass => $"rating-stars--{NormalizedSize}";
+
+    private string NormalizedSize => Size switch
+    {
+        "xs" or "sm" or "md" or "lg" => Size,
+        _ => "sm"
+    };
+
+    private K7IconSize IconSize => NormalizedSize switch
+    {
+        "xs" => K7IconSize.Xs,
+        "md" => K7IconSize.Md,
+        "lg" => K7IconSize.Lg,
+        _ => K7IconSize.Sm
+    };
 
     private bool IsFilled(int star)
     {
@@ -44,21 +71,22 @@ public partial class RatingStars : IAsyncDisposable
     {
         _currentValue = Value;
         _lastParameterValue = Value;
-        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        if (!ReadOnly)
+            _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && _canRate)
+        if (!firstRender || ReadOnly || !_canRate)
+            return;
+
+        try
         {
-            try
-            {
-                _dotNetRef = DotNetObjectReference.Create(this);
-                await JS.InvokeVoidAsync("K7.RatingStars.init", _element, _dotNetRef);
-            }
-            catch (JSException) { }
-            catch (InvalidOperationException) { }
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("K7.RatingStars.init", _element, _dotNetRef);
         }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
     }
 
     protected override void OnParametersSet()
@@ -107,6 +135,12 @@ public partial class RatingStars : IAsyncDisposable
     public async Task OnEditCommit()
     {
         var rating = _currentValue.HasValue ? _currentValue.Value : 0;
+        if (DeferPersistence)
+        {
+            await ValueChanged.InvokeAsync(_currentValue);
+            return;
+        }
+
         await RateAsync(rating);
     }
 
@@ -130,7 +164,8 @@ public partial class RatingStars : IAsyncDisposable
         var newValue = stars * 2;
         _currentValue = newValue > 0 ? newValue : null;
         await ValueChanged.InvokeAsync(_currentValue);
-        await RateAsync(newValue);
+        if (!DeferPersistence)
+            await RateAsync(newValue);
     }
 
     private async Task RateAsync(int value)

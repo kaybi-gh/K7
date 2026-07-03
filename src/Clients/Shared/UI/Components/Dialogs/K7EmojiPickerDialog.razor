@@ -1,0 +1,10 @@
+@namespace K7.Clients.Shared.UI.Components.Dialogs
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <K7EmojiPicker @bind-SelectedEmoji="_selected" ShowToggle="false" AllowClear="false" />
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@CancelText</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Confirm">@ConfirmText</K7Button>
+</div>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Avis</value></data>
+  <data name="Rating" xml:space="preserve"><value>Note</value></data>
+  <data name="ReviewText" xml:space="preserve"><value>Votre avis (optionnel)</value></data>
+  <data name="EmojiOptional" xml:space="preserve"><value>Emoji (optionnel)</value></data>
+  <data name="EmojiNone" xml:space="preserve"><value>Aucun</value></data>
+  <data name="EmojiChange" xml:space="preserve"><value>Choisir</value></data>
+  <data name="EmojiRemove" xml:space="preserve"><value>Retirer</value></data>
+  <data name="DeleteReview" xml:space="preserve"><value>Supprimer l'avis</value></data>
+  <data name="RatingRequired" xml:space="preserve"><value>Une note est requise.</value></data>
+  <data name="Saved" xml:space="preserve"><value>Avis enregistré.</value></data>
+  <data name="SaveError" xml:space="preserve"><value>Impossible d'enregistrer l'avis.</value></data>
+  <data name="Deleted" xml:space="preserve"><value>Avis supprimé.</value></data>
+  <data name="DeleteError" xml:space="preserve"><value>Impossible de supprimer l'avis.</value></data>
+</root>

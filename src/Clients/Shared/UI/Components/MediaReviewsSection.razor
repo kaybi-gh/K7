@@ -1,0 +1,30 @@
+@using K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Clients.Shared.UI.Models
+@inject IStringLocalizer<MediaReviewsSection> L
+@inject IStringLocalizer<MediaReviewDetailDialog> DetailDialogL
+
+@if (_reviews.Count > 0)
+{
+    <div class="media-reviews-section">
+        <Carousel @ref="_carousel" Title="@L["Title"]" ShowLoopBack="false">
+            @foreach (var review in _reviews)
+            {
+                <CarouselItem @key="review.Id">
+                    <MediaReviewCard Compact="true"
+                                     DisplayName="@review.DisplayName"
+                                     UserId="@review.UserId"
+                                     AvatarUrl="@review.AvatarUrl"
+                                     IsFederated="@review.IsFederated"
+                                     PeerName="@review.PeerName"
+                                     Rating="@review.Rating"
+                                     Text="@review.Text"
+                                     Emoji="@review.Emoji"
+                                     Created="@review.Created"
+                                     IsSpoilerBlurred="@IsReviewSpoilerBlurred(review)"
+                                     ActivateAriaLabel="@L["OpenReview"]"
+                                     OnActivate="() => OpenReviewAsync(review)" />
+                </CarouselItem>
+            }
+        </Carousel>
+    </div>
+}

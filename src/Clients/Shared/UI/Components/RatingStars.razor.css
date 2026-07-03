@@ -9,11 +9,32 @@
 }
 
 .rating-star {
-    font-size: 1rem;
     color: var(--color-text-muted);
     line-height: 1;
 }
 
+.rating-stars--xs .rating-star {
+    font-size: 0.75rem;
+}
+
+.rating-stars--sm .rating-star {
+    font-size: 1rem;
+}
+
+.rating-stars--md .rating-star {
+    font-size: 1.125rem;
+}
+
+.rating-stars--lg .rating-star {
+    font-size: 1.25rem;
+}
+
 .rating-star.star--filled {
     color: var(--color-accent);
+}
+
+.rating-stars--readonly {
+    cursor: default;
+    user-select: none;
+    padding: 0;
 }

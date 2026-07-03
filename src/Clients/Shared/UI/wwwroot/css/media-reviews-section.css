@@ -1,0 +1,21 @@
+.media-reviews-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--k7-space-3);
+    overflow: visible;
+}
+
+.media-reviews-section .carousel-container:has(.media-review-card) {
+    --carousel-slide-width: 400px;
+}
+
+.media-reviews-section .carousel-item .media-review-card--activatable {
+    width: var(--carousel-slide-width, 400px);
+    max-width: 100%;
+}
+
+@media (max-width: 599.98px) {
+    .media-reviews-section .carousel-container:has(.media-review-card) {
+        --carousel-slide-width: 72vw;
+    }
+}

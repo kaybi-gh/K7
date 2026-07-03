@@ -3,28 +3,45 @@
 @inject IPlaybackJournal PlaybackJournal
 @inject IFeatureAccessService FeatureAccess
 
-@if (_canRate)
+@if (ReadOnly || _canRate)
 {
-    <span @ref="_element"
-          class="rating-stars focusable"
-          role="slider"
-          data-sn-activatable
-          aria-valuemin="0"
-          aria-valuemax="5"
-          aria-valuenow="@StarCount"
-          aria-label="Rating"
-          tabindex="0"
-          @onclick:stopPropagation="true"
-          @onkeydown="HandleKeyDown">
-        @for (int i = 1; i <= 5; i++)
-        {
-            var star = i;
-            <span class="rating-star @(IsFilled(star) ? "star--filled" : "")"
-                  @onclick="() => OnStarClick(star)"
-                  @onpointerover="() => OnPointerOver(star)"
-                  @onpointerout="OnPointerOut">
-                <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" />
-            </span>
-        }
-    </span>
+    @if (ReadOnly)
+    {
+        <span class="rating-stars rating-stars--readonly @SizeClass"
+              role="img"
+              aria-label="@(AriaLabel ?? DefaultAriaLabel)">
+            @for (var i = 1; i <= 5; i++)
+            {
+                var star = i;
+                <span class="rating-star @(IsFilled(star) ? "star--filled" : "")">
+                    <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" IconSize="@IconSize" />
+                </span>
+            }
+        </span>
+    }
+    else
+    {
+        <span @ref="_element"
+              class="rating-stars focusable @SizeClass"
+              role="slider"
+              data-sn-activatable
+              aria-valuemin="0"
+              aria-valuemax="5"
+              aria-valuenow="@StarCount"
+              aria-label="Rating"
+              tabindex="0"
+              @onclick:stopPropagation="true"
+              @onkeydown="HandleKeyDown">
+            @for (var i = 1; i <= 5; i++)
+            {
+                var star = i;
+                <span class="rating-star @(IsFilled(star) ? "star--filled" : "")"
+                      @onclick="() => OnStarClick(star)"
+                      @onpointerover="() => OnPointerOver(star)"
+                      @onpointerout="OnPointerOut">
+                    <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" IconSize="@IconSize" />
+                </span>
+            }
+        </span>
+    }
 }
