@@ -24,4 +24,13 @@
   <data name="SharedLibrariesLabel" xml:space="preserve"><value>Bibliothèques partagées avec ce pair</value></data>
   <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliothèque disponible</value></data>
   <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Bibliothèques a intégrer localement</value></data>
+  <data name="SharePlaybackHistory" xml:space="preserve"><value>Partager l'historique de lecture</value></data>
+  <data name="SocialAgreementsLabel" xml:space="preserve"><value>Partage social avec ce pair</value></data>
+  <data name="Outbound" xml:space="preserve"><value>Sortant</value></data>
+  <data name="Inbound" xml:space="preserve"><value>Entrant</value></data>
+  <data name="ContentReviews" xml:space="preserve"><value>Avis</value></data>
+  <data name="ContentCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="ContentPlaylists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="ContentSmartPlaylists" xml:space="preserve"><value>Playlists intelligentes</value></data>
+  <data name="ContentPlaybackHistory" xml:space="preserve"><value>Historique de lecture</value></data>
 </root>

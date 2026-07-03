@@ -27,10 +27,7 @@
             <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieSeason)" Text="@S["MediaTypeSerieSeasons"]">@S["MediaTypeSerieSeasons"]</K7SelectItem>
             <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.SerieEpisode)" Text="@S["MediaTypeSerieEpisodes"]">@S["MediaTypeSerieEpisodes"]</K7SelectItem>
         </K7Select>
-        <div class="d-flex align-center mt-2">
-            <K7Switch @bind-Value="_isPublic" />
-            <span class="ml-2">@L["IsPublic"]</span>
-        </div>
+        <K7VisibilityScopeSelect Label="@L["VisibilityScope"]" @bind-Value="_visibilityScope" Variant="outlined" />
     </div>
 </div>
 <div class="k7-dialog-actions">

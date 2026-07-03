@@ -23,6 +23,7 @@
   <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optionnelle)</value></data>
   <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibilité</value></data>
   <data name="Creating" xml:space="preserve"><value>Création...</value></data>
   <data name="Created" xml:space="preserve"><value>Playlist créée</value></data>
   <data name="Error" xml:space="preserve"><value>Erreur lors de la création</value></data>

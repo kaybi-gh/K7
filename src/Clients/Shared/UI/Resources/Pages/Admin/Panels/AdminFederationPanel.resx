@@ -80,4 +80,17 @@
   <data name="PeerDeleted" xml:space="preserve"><value>Pair supprime</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Erreur lors de la suppression</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>Injoignable</value></data>
+  <data name="SocialPolicyTitle" xml:space="preserve"><value>Politique sociale</value></data>
+  <data name="SocialPolicyDescription" xml:space="preserve"><value>Contrôle global du partage social entre serveurs fédérés.</value></data>
+  <data name="SocialPolicyEnabled" xml:space="preserve"><value>Activer le partage social</value></data>
+  <data name="SocialOutbound" xml:space="preserve"><value>Sortant</value></data>
+  <data name="SocialInbound" xml:space="preserve"><value>Entrant</value></data>
+  <data name="SocialContentReviews" xml:space="preserve"><value>Avis</value></data>
+  <data name="SocialContentCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="SocialContentPlaylists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="SocialContentSmartPlaylists" xml:space="preserve"><value>Playlists intelligentes</value></data>
+  <data name="SocialContentPlaybackHistory" xml:space="preserve"><value>Historique de lecture</value></data>
+  <data name="SaveSocialPolicy" xml:space="preserve"><value>Enregistrer la politique</value></data>
+  <data name="SocialPolicySaved" xml:space="preserve"><value>Politique sociale enregistrée</value></data>
+  <data name="SocialPolicySaveError" xml:space="preserve"><value>Erreur lors de l'enregistrement de la politique</value></data>
 </root>

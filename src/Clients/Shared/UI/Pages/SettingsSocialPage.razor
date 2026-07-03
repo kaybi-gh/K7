@@ -1,0 +1,125 @@
+@page "/settings/social"
+@layout SettingsLayout
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Federation.Social
+@inject IStringLocalizer<SettingsSocialPage> L
+@inject IStringLocalizer<SharedResource> S
+@inject IReviewService ReviewService
+@inject IK7Snackbar Snackbar
+
+<PageTitle>@L["Title"]</PageTitle>
+
+<h4>@L["Title"]</h4>
+
+@if (_loading)
+{
+    <K7ProgressBar Indeterminate="true" />
+}
+else
+{
+    <div class="pa-4 d-flex flex-col gap-4">
+        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+            @L["FederationDirectPeersNote"]
+        </K7Alert>
+
+        <section class="settings-section d-flex flex-col gap-3">
+            <h6 class="mb-0">@L["ShareTitle"]</h6>
+            @RenderShareRow(L["Reviews"], FederationContentType.Reviews, () => _privacy.Share.Reviews, v => _privacy.Share.Reviews = v)
+            @RenderShareRow(L["Collections"], FederationContentType.Collections, () => _privacy.Share.Collections, v => _privacy.Share.Collections = v)
+            @RenderShareRow(L["Playlists"], FederationContentType.Playlists, () => _privacy.Share.Playlists, v => _privacy.Share.Playlists = v)
+            @RenderShareRow(L["SmartPlaylists"], FederationContentType.SmartPlaylists, () => _privacy.Share.SmartPlaylists, v => _privacy.Share.SmartPlaylists = v)
+            @RenderShareRow(L["PlaybackHistory"], FederationContentType.PlaybackHistory, () => _privacy.Share.PlaybackHistory, v => _privacy.Share.PlaybackHistory = v)
+        </section>
+
+        <hr class="k7-divider" />
+
+        <section class="settings-section d-flex flex-col gap-3">
+            <h6 class="mb-0">@L["ViewTitle"]</h6>
+            <K7Switch @bind-Value="_reviewPreferences.BlurReviewsForUnwatchedMedia" Label="@L["BlurReviewsForUnwatchedMedia"]" />
+            @RenderViewRow(L["Reviews"], FederationContentType.Reviews, () => _privacy.View.Reviews, v => _privacy.View.Reviews = v)
+            @RenderViewRow(L["Collections"], FederationContentType.Collections, () => _privacy.View.Collections, v => _privacy.View.Collections = v)
+            @RenderViewRow(L["Playlists"], FederationContentType.Playlists, () => _privacy.View.Playlists, v => _privacy.View.Playlists = v)
+            @RenderViewRow(L["SmartPlaylists"], FederationContentType.SmartPlaylists, () => _privacy.View.SmartPlaylists, v => _privacy.View.SmartPlaylists = v)
+            @RenderViewRow(L["PlaybackHistory"], FederationContentType.PlaybackHistory, () => _privacy.View.PlaybackHistory, v => _privacy.View.PlaybackHistory = v)
+        </section>
+
+        <div class="d-flex justify-end">
+            <K7Button Variant="filled"
+                      Color="primary"
+                      Disabled="_saving"
+                      OnClick="SaveAsync">@S["Save"]</K7Button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private FederationPrivacySettingsDto _privacy = new();
+    private ReviewPreferencesDto _reviewPreferences = new();
+    private List<FederationVisibilityGrantDto> _shareGrants = [];
+    private List<FederationVisibilityGrantDto> _viewGrants = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _privacy = await ReviewService.GetFederationPrivacyAsync();
+        _reviewPreferences = await ReviewService.GetReviewPreferencesAsync();
+        _shareGrants = _privacy.Share.Grants.ToList();
+        _viewGrants = _privacy.View.Grants.ToList();
+        _privacy.Share.Grants = _shareGrants;
+        _privacy.View.Grants = _viewGrants;
+        _loading = false;
+    }
+
+    private RenderFragment RenderShareRow(
+        string label,
+        FederationContentType contentType,
+        Func<VisibilityScope> getter,
+        Action<VisibilityScope> setter) => __builder =>
+    {
+        var value = getter();
+        <K7VisibilityScopeSelect Label="@label" Value="value" ValueChanged="@(v => { setter(v); StateHasChanged(); })" />
+        if (value == VisibilityScope.SpecificPeople)
+        {
+            <FederationVisibilityGrantsEditor ContentType="contentType" @bind-Grants="_shareGrants" />
+        }
+    };
+
+    private RenderFragment RenderViewRow(
+        string label,
+        FederationContentType contentType,
+        Func<VisibilityScope> getter,
+        Action<VisibilityScope> setter) => __builder =>
+    {
+        var value = getter();
+        <K7VisibilityScopeSelect Label="@label" Value="value" ValueChanged="@(v => { setter(v); StateHasChanged(); })" />
+        if (value == VisibilityScope.SpecificPeople)
+        {
+            <FederationVisibilityGrantsEditor ContentType="contentType" @bind-Grants="_viewGrants" />
+        }
+    };
+
+    private async Task SaveAsync()
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        try
+        {
+            _privacy.Share.Grants = _shareGrants;
+            _privacy.View.Grants = _viewGrants;
+            await ReviewService.UpdateFederationPrivacyAsync(_privacy);
+            await ReviewService.UpdateReviewPreferencesAsync(_reviewPreferences);
+            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

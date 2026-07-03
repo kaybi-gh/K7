@@ -19,13 +19,13 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="GroupName" xml:space="preserve"><value>Nom du foyer</value></data>
+  <data name="GroupName" xml:space="preserve"><value>Nom du profil partagé</value></data>
   <data name="Members" xml:space="preserve"><value>Membres</value></data>
   <data name="Host" xml:space="preserve"><value>Hôte</value></data>
-  <data name="GroupPinOptional" xml:space="preserve"><value>PIN du foyer (optionnel)</value></data>
+  <data name="GroupPinOptional" xml:space="preserve"><value>PIN du profil partagé (optionnel)</value></data>
   <data name="NewPinOptional" xml:space="preserve"><value>Nouveau PIN (optionnel)</value></data>
   <data name="ConfirmPin" xml:space="preserve"><value>Confirmer le PIN</value></data>
-  <data name="GroupPinHelper" xml:space="preserve"><value>Protège l'accès au foyer sur cet appareil.</value></data>
+  <data name="GroupPinHelper" xml:space="preserve"><value>Protège l'accès au profil partagé sur cet appareil.</value></data>
   <data name="Create" xml:space="preserve"><value>Créer</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>

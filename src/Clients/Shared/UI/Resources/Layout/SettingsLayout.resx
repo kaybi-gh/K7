@@ -23,12 +23,15 @@
   <data name="GroupMyContent" xml:space="preserve"><value>Mon contenu</value></data>
   <data name="GroupPlayback" xml:space="preserve"><value>Lecture</value></data>
   <data name="Account" xml:space="preserve"><value>Mon compte</value></data>
-  <data name="SharedProfiles" xml:space="preserve"><value>Profils partagés</value></data>
+  <data name="SharedProfiles" xml:space="preserve"><value>Regarder ensemble</value></data>
+  <data name="WatchTogetherSyncPlay" xml:space="preserve"><value>SyncPlay</value></data>
+  <data name="WatchTogetherSharedProfiles" xml:space="preserve"><value>Profils partagés</value></data>
   <data name="Interface" xml:space="preserve"><value>Interface</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="History" xml:space="preserve"><value>Historique</value></data>
   <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
   <data name="Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Federation" xml:space="preserve"><value>Social</value></data>
   <data name="Hidden" xml:space="preserve"><value>Masqués</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>

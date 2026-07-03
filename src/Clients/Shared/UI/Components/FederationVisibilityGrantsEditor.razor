@@ -1,0 +1,25 @@
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Federation.Social
+@inject IStringLocalizer<FederationVisibilityGrantsEditor> L
+@inject IStringLocalizer<SharedResource> S
+@inject IReviewService ReviewService
+
+<div class="federation-grants-editor">
+    @if (_loading)
+    {
+        <p class="text-sm text-secondary">@S["Loading"]</p>
+    }
+    else if (_targets.Count == 0)
+    {
+        <p class="text-sm text-secondary">@L["NoTargets"]</p>
+    }
+    else
+    {
+        <K7CheckboxList TItem="FederationGrantTargetDto"
+                        Items="_targets"
+                        IsChecked="IsTargetSelected"
+                        CheckedChanged="OnTargetToggled"
+                        ItemLabel="@(target => target.Label)"
+                        Class="federation-grants-editor__list" />
+    }
+</div>

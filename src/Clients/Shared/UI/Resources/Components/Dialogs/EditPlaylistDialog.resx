@@ -22,6 +22,7 @@
   <data name="NameLabel" xml:space="preserve"><value>Nom de la playlist</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optionnelle)</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibilité</value></data>
   <data name="Saving" xml:space="preserve"><value>Enregistrement...</value></data>
   <data name="Updated" xml:space="preserve"><value>Playlist modifiée</value></data>
   <data name="Error" xml:space="preserve"><value>Erreur lors de la modification</value></data>

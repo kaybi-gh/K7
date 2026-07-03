@@ -2,6 +2,7 @@
 @layout AdminLayout
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities
+@using K7.Shared.Dtos.Federation.Social
 @inject IStringLocalizer<AdminFederationPanel> L
 @inject IStringLocalizer<SharedResource> S
 
@@ -32,6 +33,61 @@
             }
         </div>
     </K7Paper>
+
+    @if (_federationEnabled)
+    {
+        <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+            <div class="d-flex flex-col gap-3">
+                <h6>@L["SocialPolicyTitle"]</h6>
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["SocialPolicyDescription"]</span>
+                <K7Switch Label="@L["SocialPolicyEnabled"]" @bind-Value="_socialPolicy.Enabled" />
+                @if (_socialPolicy.Enabled)
+                {
+                    <div class="federation-social-policy">
+                        <div class="federation-social-policy__header">
+                            <span class="federation-social-policy__label-col"></span>
+                            <span class="federation-social-policy__check-col">@L["SocialOutbound"]</span>
+                            <span class="federation-social-policy__check-col">@L["SocialInbound"]</span>
+                        </div>
+                        @foreach (var contentType in _socialContentTypes)
+                        {
+                            var policy = GetContentPolicy(contentType);
+                            <div class="federation-social-policy__row">
+                                <span class="federation-social-policy__label-col">@GetSocialContentLabel(contentType)</span>
+                                <div class="federation-social-policy__check focusable"
+                                     tabindex="-1"
+                                     role="checkbox"
+                                     aria-checked="@policy.Outbound"
+                                     aria-label="@($"{GetSocialContentLabel(contentType)} - {L["SocialOutbound"]}")"
+                                     @onclick="() => ToggleOutbound(contentType)"
+                                     @onkeydown="e => OnPolicyCheckboxKeyDown(e, () => ToggleOutbound(contentType))"
+                                     @onkeydown:preventDefault="true">
+                                    <input type="checkbox"
+                                           tabindex="-1"
+                                           checked="@policy.Outbound"
+                                           aria-hidden="true" />
+                                </div>
+                                <div class="federation-social-policy__check focusable"
+                                     tabindex="-1"
+                                     role="checkbox"
+                                     aria-checked="@policy.Inbound"
+                                     aria-label="@($"{GetSocialContentLabel(contentType)} - {L["SocialInbound"]}")"
+                                     @onclick="() => ToggleInbound(contentType)"
+                                     @onkeydown="e => OnPolicyCheckboxKeyDown(e, () => ToggleInbound(contentType))"
+                                     @onkeydown:preventDefault="true">
+                                    <input type="checkbox"
+                                           tabindex="-1"
+                                           checked="@policy.Inbound"
+                                           aria-hidden="true" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                <K7Button Variant="outlined" Color="primary" Size="sm" OnClick="SaveSocialPolicyAsync">@L["SaveSocialPolicy"]</K7Button>
+            </div>
+        </K7Paper>
+    }
 
     @if (!_federationEnabled)
     {

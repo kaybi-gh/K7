@@ -17,7 +17,7 @@ public partial class CreateCollectionDialog
     private string _title = "";
     private string? _description;
     private MediaType? _mediaType;
-    private bool _isPublic;
+    private VisibilityScope _visibilityScope = VisibilityScope.Nobody;
     private bool _isSubmitting;
 
     protected override void OnParametersSet()
@@ -39,7 +39,7 @@ public partial class CreateCollectionDialog
             {
                 Title = _title.Trim(),
                 Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
-                IsPublic = _isPublic,
+                VisibilityScope = _visibilityScope,
                 MediaType = _mediaType
             });
 

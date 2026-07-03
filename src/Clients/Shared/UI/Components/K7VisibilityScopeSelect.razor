@@ -1,0 +1,22 @@
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<K7VisibilityScopeSelect> L
+
+<K7Select TValue="VisibilityScope"
+          Label="@Label"
+          Value="Value"
+          ValueChanged="ValueChanged"
+          Variant="@Variant"
+          Class="@Class">
+    <K7SelectItem TValue="VisibilityScope" Value="VisibilityScope.Nobody" Text="@L["ScopeNobody"]">@L["ScopeNobody"]</K7SelectItem>
+    <K7SelectItem TValue="VisibilityScope" Value="VisibilityScope.LocalServer" Text="@L["ScopeLocalServer"]">@L["ScopeLocalServer"]</K7SelectItem>
+    <K7SelectItem TValue="VisibilityScope" Value="VisibilityScope.Federation" Text="@L["ScopeFederation"]">@L["ScopeFederation"]</K7SelectItem>
+    <K7SelectItem TValue="VisibilityScope" Value="VisibilityScope.SpecificPeople" Text="@L["ScopeSpecificPeople"]">@L["ScopeSpecificPeople"]</K7SelectItem>
+</K7Select>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public VisibilityScope Value { get; set; }
+    [Parameter] public EventCallback<VisibilityScope> ValueChanged { get; set; }
+    [Parameter] public string Variant { get; set; } = "outlined";
+    [Parameter] public string Class { get; set; } = "";
+}
