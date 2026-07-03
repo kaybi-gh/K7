@@ -48,7 +48,7 @@
             <Authorized>
                 <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
                         type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                    <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial">
+                    <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
                         <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
                     </K7Avatar>
                 </button>
@@ -72,7 +72,7 @@
              data-sn-layer-close=".app-nav-backdrop">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
-                    <K7Avatar Image="@_avatarUrl" Letter="@_avatarInitial">
+                    <K7Avatar Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
                         <span class="connection-badge connection-badge--@_badgeClass"></span>
                     </K7Avatar>
                     <div class="app-nav-popover-user-info">

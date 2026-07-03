@@ -1,4 +1,4 @@
-<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly">
+<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly" NotFoundPage="typeof(NotFound)">
     <Found Context="routeData">
         <CascadingAuthenticationState>
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">

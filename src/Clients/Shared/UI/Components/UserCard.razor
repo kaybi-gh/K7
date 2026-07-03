@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<a class="user-card focusable" href="@ProfileHref">
+    <div class="user-card__visual">
+        <K7Avatar Class="user-card__avatar"
+                  UserId="@AvatarUserId"
+                  Image="@(AvatarUrl ?? "")"
+                  Alt="@Identity.DisplayName">@AvatarInitial</K7Avatar>
+        <div class="user-card__overlay" aria-hidden="true"></div>
+    </div>
+    <div class="user-card__footer">
+        <div class="user-card__title">
+            <span class="user-card__title-inner">@Identity.DisplayName</span>
+        </div>
+        @if (PeerSubtitle is not null)
+        {
+            <div class="user-card__subtitle">
+                <span class="user-card__subtitle-inner">@PeerSubtitle</span>
+            </div>
+        }
+    </div>
+</a>

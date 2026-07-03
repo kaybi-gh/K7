@@ -1,0 +1,177 @@
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.Mappings
+@using K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Clients.Shared.UI.Helpers
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Federation.Social
+@inject IStringLocalizer<SocialUserProfileView> L
+@inject IStringLocalizer<MediaReviewsSection> ReviewsL
+@inject IStringLocalizer<MediaReviewDetailDialog> DetailDialogL
+@inject IStringLocalizer<SharedResource> S
+@inject ISocialUserService SocialUserService
+@inject NavigationManager NavigationManager
+@inject IK7Snackbar Snackbar
+
+<div class="social-user-profile page-scrollable">
+@if (_loading)
+{
+    <header class="social-user-profile__topbar">
+        <K7BackButton Class="social-user-profile__back" />
+    </header>
+    <div class="social-user-profile__loading">
+        <K7Spinner />
+    </div>
+}
+else if (_profile is null)
+{
+    <header class="social-user-profile__topbar">
+        <K7BackButton Class="social-user-profile__back" />
+    </header>
+    <K7EmptyState Title="@L["NotFound"]" />
+}
+else
+{
+    <header class="social-user-profile__topbar">
+        <K7BackButton Class="social-user-profile__back" />
+        <K7Avatar Size="lg"
+                  Class="social-user-profile__avatar"
+                  UserId="@_avatarUserId"
+                  Image="@(MediaReviewCardHelper.GetAvatarUrl(_profile.Identity.AvatarPictureId) ?? "")"
+                  Alt="@_profile.Identity.DisplayName" />
+        <div class="social-user-profile__identity">
+            <h1 class="social-user-profile__name">@_profile.Identity.DisplayName</h1>
+            @if (_profile.Identity.IsFederated && !string.IsNullOrWhiteSpace(_profile.Identity.PeerName))
+            {
+                <p class="text-secondary text-sm">@string.Format(L["OnPeer"], _profile.Identity.PeerName)</p>
+            }
+        </div>
+    </header>
+
+    <div class="social-user-profile__feed">
+        @if (_recentReviews.Count > 0)
+        {
+            <div class="media-reviews-section">
+                <Carousel @ref="_reviewsCarousel" Title="@L["RecentReviews"]" ShowLoopBack="false">
+                    @foreach (var review in _recentReviews)
+                    {
+                        <CarouselItem @key="review.Id">
+                            <SocialUserReviewCard Review="review"
+                                                  Compact="true"
+                                                  IsSpoilerBlurred="@IsReviewSpoilerBlurred(review)"
+                                                  ActivateAriaLabel="@ReviewsL["OpenReview"]"
+                                                  OnActivate="() => OpenReviewAsync(review)" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            </div>
+        }
+    </div>
+
+    @if (_profile.Collections.Count > 0)
+    {
+        <section class="social-user-profile__section">
+            <h2 class="social-user-profile__section-title">@L["Collections"]</h2>
+            <div class="social-user-profile__media-grid">
+                @foreach (var collection in _profile.Collections)
+                {
+                    <SocialUserLibraryItemCard @key="collection.Id"
+                                               Model="@GetCollectionCardModel(collection)"
+                                               Href="@GetCollectionHref(collection)"
+                                               CoverPictureId="@collection.CoverPictureId"
+                                               PreviewItems="@collection.PreviewItems"
+                                               PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                               PlaceholderIcon="@Phosphor.BookmarkSimple" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (_profile.Playlists.Count > 0)
+    {
+        <section class="social-user-profile__section">
+            <h2 class="social-user-profile__section-title">@L["Playlists"]</h2>
+            <div class="social-user-profile__media-grid">
+                @foreach (var playlist in _profile.Playlists)
+                {
+                    <SocialUserLibraryItemCard @key="playlist.Id"
+                                               Model="@GetPlaylistCardModel(playlist)"
+                                               Href="@GetPlaylistHref(playlist)"
+                                               CoverPictureId="@playlist.CoverPictureId"
+                                               PreviewItems="@playlist.PreviewItems"
+                                               PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
+                                               PlaceholderIcon="@Phosphor.Queue"
+                                               ShowCopyButton="@_canCopyPlaylist"
+                                               CopyAriaLabel="@L["CopyPlaylist"]"
+                                               OnCopy="@(() => OnCopyPlaylistAsync(playlist.Id))" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (_profile.SmartPlaylists.Count > 0)
+    {
+        <section class="social-user-profile__section">
+            <h2 class="social-user-profile__section-title">@L["SmartPlaylists"]</h2>
+            <div class="social-user-profile__media-grid">
+                @foreach (var playlist in _profile.SmartPlaylists)
+                {
+                    <SocialUserLibraryItemCard @key="playlist.Id"
+                                               Model="@GetPlaylistCardModel(playlist)"
+                                               Href="@GetPlaylistHref(playlist)"
+                                               CoverPictureId="@playlist.CoverPictureId"
+                                               PreviewItems="@playlist.PreviewItems"
+                                               PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
+                                               PlaceholderIcon="@Phosphor.Sparkle" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (_showPlaybackSection)
+    {
+        <section class="social-user-profile__section">
+            <h2 class="social-user-profile__section-title">@L["RecentPlayback"]</h2>
+            @if (_recentPlayback.Count > 0)
+            {
+                <div class="social-user-profile__playback-table">
+                    <K7DataTable TItem="SocialUserPlaybackViewDto"
+                                 Items="_recentPlayback"
+                                 ShowToolbar="false"
+                                 Surface="false"
+                                 Striped="false"
+                                 RowHeight="@PlaybackRowHeight"
+                                 Height="@PlaybackTableHeight"
+                                 OnRowClick="OnPlaybackRowClick">
+                        <K7DataColumn TItem="SocialUserPlaybackViewDto" Title="@L["Media"]" Hideable="false">
+                            <CellTemplate Context="entry">
+                                @{
+                                    var mediaHref = SocialUserNavigation.GetPlaybackHref(entry);
+                                }
+                                <LibraryTableMediaTitle ImageUrl="@entry.ImageUrl"
+                                                        MediaType="@entry.MediaType?.ToString()"
+                                                        Title="@(entry.MediaTitle ?? S["Untitled"])"
+                                                        Href="@mediaHref"
+                                                        StopPropagation="true" />
+                            </CellTemplate>
+                        </K7DataColumn>
+                        <K7DataColumn TItem="SocialUserPlaybackViewDto" Title="@L["Type"]" Width="120px" VisibleOnMobile="false">
+                            <CellTemplate Context="entry">
+                                <span class="text-sm">@FormatMediaType(entry.MediaType)</span>
+                            </CellTemplate>
+                        </K7DataColumn>
+                        <K7DataColumn TItem="SocialUserPlaybackViewDto" Title="@L["Date"]" Width="160px">
+                            <CellTemplate Context="entry">
+                                <span class="text-sm">@entry.EndedAt.ToLocalTime().ToString("g")</span>
+                            </CellTemplate>
+                        </K7DataColumn>
+                    </K7DataTable>
+                </div>
+            }
+            else
+            {
+                <K7EmptyState Icon="@Phosphor.ClockCounterClockwise" Title="@L["NoRecentPlayback"]" Compact="true" />
+            }
+        </section>
+    }
+}
+</div>

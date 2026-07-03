@@ -1,0 +1,19 @@
+@page "/federation/peers/{PeerServerId:guid}/users/{OriginUserId:guid}"
+@layout MainLayout
+@using K7.Shared.Dtos.Federation.Social
+@inject ISocialUserService SocialUserService
+
+<SocialUserProfileView LoadProfileAsync="LoadProfileAsync"
+                        CanCopyPlaylist="true"
+                        CopyPlaylistAsync="CopyPlaylistAsync" />
+
+@code {
+    [Parameter] public Guid PeerServerId { get; set; }
+    [Parameter] public Guid OriginUserId { get; set; }
+
+    private Task<SocialUserProfileDto?> LoadProfileAsync(CancellationToken cancellationToken) =>
+        SocialUserService.GetFederatedUserProfileAsync(PeerServerId, OriginUserId, cancellationToken);
+
+    private Task<Guid> CopyPlaylistAsync(Guid playlistId, CancellationToken cancellationToken) =>
+        SocialUserService.CopyFederatedPlaylistAsync(PeerServerId, OriginUserId, playlistId, cancellationToken);
+}

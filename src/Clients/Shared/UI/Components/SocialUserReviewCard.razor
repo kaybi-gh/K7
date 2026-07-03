@@ -1,0 +1,27 @@
+@using K7.Clients.Shared.Models
+@inject IStringLocalizer<SharedResource> S
+
+<MediaReviewCard HideAuthor="true"
+                 Compact="@Compact"
+                 Rating="@Review.Rating"
+                 Text="@Review.Text"
+                 Emoji="@Review.Emoji"
+                 Created="@Review.Created"
+                 LeadingLabel="@_mediaCard.Title"
+                 LeadingArtworkVariant="@_mediaVariant"
+                 IsSpoilerBlurred="@IsSpoilerBlurred"
+                 ActivateAriaLabel="@ActivateAriaLabel"
+                 OnActivate="@OnActivate">
+    <LeadingContent>
+        <MediaCard Model="@_mediaCard"
+                   Href="@_mediaHref"
+                   Variant="@_mediaVariant"
+                   FooterVisible="false"
+                   HoverOverlayEnabled="true"
+                   ContextMenuEnabled="false"
+                   PlaceholderIcon="@Phosphor.FilmSlate" />
+    </LeadingContent>
+    <Actions>
+        @Actions
+    </Actions>
+</MediaReviewCard>

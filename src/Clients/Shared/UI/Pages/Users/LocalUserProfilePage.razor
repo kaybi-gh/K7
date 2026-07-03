@@ -1,0 +1,13 @@
+@page "/users/{UserId:guid}"
+@layout MainLayout
+@using K7.Shared.Dtos.Federation.Social
+@inject ISocialUserService SocialUserService
+
+<SocialUserProfileView LoadProfileAsync="LoadProfileAsync" />
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    private Task<SocialUserProfileDto?> LoadProfileAsync(CancellationToken cancellationToken) =>
+        SocialUserService.GetLocalUserProfileAsync(UserId, cancellationToken);
+}

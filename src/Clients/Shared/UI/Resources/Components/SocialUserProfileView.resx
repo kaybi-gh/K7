@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="NotFound" xml:space="preserve"><value>Utilisateur introuvable</value></data>
+  <data name="OnPeer" xml:space="preserve"><value>Sur {0}</value></data>
+  <data name="RecentPlayback" xml:space="preserve"><value>Dernières lectures</value></data>
+  <data name="Media" xml:space="preserve"><value>Média</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="RecentReviews" xml:space="preserve"><value>Derniers avis</value></data>
+  <data name="Collections" xml:space="preserve"><value>Collections</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="SmartPlaylists" xml:space="preserve"><value>Playlists intelligentes</value></data>
+  <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="CopyPlaylist" xml:space="preserve"><value>Copier dans mes playlists</value></data>
+  <data name="PlaylistCopied" xml:space="preserve"><value>Playlist copiée</value></data>
+  <data name="PlaylistCopyFailed" xml:space="preserve"><value>Impossible de copier la playlist</value></data>
+  <data name="NoRecentPlayback" xml:space="preserve"><value>Aucune lecture récente</value></data>
+</root>

@@ -23,6 +23,7 @@ public partial class AppNav : IDisposable
     private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
     private string? _avatarUrl;
+    private Guid? _userId;
     private string _avatarInitial = "?";
     private string? _viewingGroupLabel;
     private bool _chatOpen;
@@ -65,9 +66,16 @@ public partial class AppNav : IDisposable
             var me = await UserService.GetCurrentUserAsync();
             if (me is not null)
             {
+                _userId = me.Id;
                 _avatarUrl = me.AvatarUrl;
                 var name = me.DisplayName ?? me.UserName;
                 _avatarInitial = string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+            }
+            else
+            {
+                _userId = null;
+                _avatarUrl = null;
+                _avatarInitial = "?";
             }
         }
         catch

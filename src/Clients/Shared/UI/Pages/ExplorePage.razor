@@ -60,6 +60,17 @@ else
                                 Class="k7-category-card--lg"
                                 OnClick="@(() => NavigationManager.NavigateTo($"/explore?library-group={group.Id}"))" />
             }
+            @if (_showSocialDirectory)
+            {
+                <K7CategoryCard Title="@L["OtherUsers"]"
+                                Description="@L["OtherUsersDesc"]"
+                                Icon="users"
+                                GradientStart="rgba(60,40,80,0.85)"
+                                GradientEnd="rgba(30,20,40,0.85)"
+                                IconColor="rgba(120,80,160,0.6)"
+                                Class="k7-category-card--lg"
+                                OnClick="@(() => NavigationManager.NavigateTo("/users"))" />
+            }
         </section>
     </div>
 }

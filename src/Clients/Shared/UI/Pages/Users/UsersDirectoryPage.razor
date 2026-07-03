@@ -1,0 +1,31 @@
+@page "/users"
+@layout MainLayout
+@using K7.Shared.Dtos.Federation.Social
+@inject IStringLocalizer<UsersDirectoryPage> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<BrowseView TItem="SocialUserDirectoryEntryDto"
+            Items="_entries"
+            Loading="_loading"
+            PersistenceKey="users-directory"
+            Class="users-directory-browse page-scrollable"
+            DefaultItemWidth="160"
+            DefaultSpacing="24"
+            GridItemAspectRatio="1f">
+    <ToolbarContent>
+        <div class="users-directory-browse__intro">
+            <h5>@L["PageTitle"]</h5>
+            <p class="text-sm text-secondary">@L["Description"]</p>
+        </div>
+        <div class="flex-1"></div>
+        <K7ResultCount Count="_entries.Count" />
+    </ToolbarContent>
+    <EmptyContent>
+        <K7EmptyState Title="@L["Empty"]" />
+    </EmptyContent>
+    <GridTemplate Context="entry">
+        <UserCard Identity="entry.Identity" />
+    </GridTemplate>
+</BrowseView>
