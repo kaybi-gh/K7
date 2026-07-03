@@ -13,8 +13,10 @@ public class PeerServer : BaseAuditableEntity
     public bool AutoAddNewLibraries { get; set; }
     public DateTimeOffset? LastSeen { get; set; }
     public bool? LastTestSucceeded { get; set; }
+    public string? FederationAssertionSecret { get; set; }
 
     public IList<PeerShareAgreement> ShareAgreements { get; set; } = [];
+    public IList<PeerSocialAgreement> SocialAgreements { get; set; } = [];
     public IList<Library> RemoteLibraries { get; set; } = [];
     public IList<RemoteIndexedFile> RemoteIndexedFiles { get; set; } = [];
 }

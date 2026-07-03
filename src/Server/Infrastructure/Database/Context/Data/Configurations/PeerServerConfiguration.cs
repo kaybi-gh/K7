@@ -25,6 +25,9 @@ public class PeerServerConfiguration : IEntityTypeConfiguration<PeerServer>
         builder.Property(p => p.InboundApplicationId)
             .HasMaxLength(200);
 
+        builder.Property(p => p.FederationAssertionSecret)
+            .HasMaxLength(256);
+
         builder.Property(p => p.Status)
             .HasConversion<string>()
             .HasMaxLength(50);
@@ -42,6 +45,11 @@ public class PeerServerConfiguration : IEntityTypeConfiguration<PeerServer>
         builder.HasMany(p => p.RemoteIndexedFiles)
             .WithOne(f => f.PeerServer)
             .HasForeignKey(f => f.PeerServerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(p => p.SocialAgreements)
+            .WithOne(a => a.PeerServer)
+            .HasForeignKey(a => a.PeerServerId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

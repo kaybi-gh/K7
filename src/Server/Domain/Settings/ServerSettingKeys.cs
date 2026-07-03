@@ -12,4 +12,5 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> VideoPlayerSettings = new("VideoPlayerSettings");
     public static readonly SettingKey<string> TrackSelectionPreferences = new("TrackSelectionPreferences");
     public static readonly SettingKey<string> AudioMuseAi = new("AudioMuseAi");
+    public static readonly SettingKey<string> FederationSocialPolicy = new("FederationSocialPolicy");
 }

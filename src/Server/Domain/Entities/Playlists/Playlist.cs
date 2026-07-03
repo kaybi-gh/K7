@@ -9,6 +9,7 @@ public class Playlist : BaseAuditableEntity
     public required string Title { get; set; }
     public string? Description { get; set; }
     public required MediaType MediaType { get; set; }
+    public VisibilityScope VisibilityScope { get; set; } = VisibilityScope.Nobody;
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
