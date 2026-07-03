@@ -70,6 +70,11 @@
     font-weight: 700;
 }
 
+.season-user-rating {
+    display: flex;
+    align-items: center;
+}
+
 .season-overview {
     margin: 0;
     opacity: 0.85;

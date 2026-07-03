@@ -45,6 +45,7 @@ public partial class MediaCard : IDisposable
     private bool _preventNextClick;
     private bool _watchStateMenuVisible;
     private bool _showRating;
+    private bool _showReview;
     private bool _showPlaylist;
     private bool _showCollection;
     private CancellationTokenSource? _longPressCts;
@@ -54,7 +55,7 @@ public partial class MediaCard : IDisposable
 
     private bool LongPressEnabled =>
         ContextMenuEnabled
-        && (OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showPlaylist || _showCollection);
+        && (OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showReview || _showPlaylist || _showCollection);
 
     private string GetRootClass()
     {
@@ -81,6 +82,7 @@ public partial class MediaCard : IDisposable
         {
             _watchStateMenuVisible = false;
             _showRating = false;
+            _showReview = false;
             _showPlaylist = false;
             _showCollection = false;
             return;
@@ -98,6 +100,7 @@ public partial class MediaCard : IDisposable
         var mediaType = MediaCardMenuActions.InferMediaType(Model);
 
         _showRating = hasValidMediaId && canRate;
+        _showReview = hasValidMediaId && canRate && MediaCardMenuActions.SupportsReview(mediaType);
         _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
         _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }

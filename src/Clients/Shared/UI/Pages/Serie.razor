@@ -2,6 +2,7 @@
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Server.Domain.Enums
+@using K7.Clients.Shared.UI.Components.Dialogs
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
@@ -13,6 +14,7 @@
 @inject IPlayerService PlayerService
 @inject PlaybackProgressTracker PlaybackProgressTracker
 @inject IFederationService FederationService
+@inject IStringLocalizer<MediaReviewDialog> ReviewDialogL
 
 <PageTitle>@_serie?.Title</PageTitle>
 
@@ -57,6 +59,12 @@ else if (_serie is not null)
                         @if (!string.IsNullOrEmpty(_serie.ContentRating))
                         {
                             <K7Chip Variant="outlined" Size="sm">@_serie.ContentRating</K7Chip>
+                        }
+                        @if (_canRate)
+                        {
+                            <div class="serie-user-rating" @onclick:stopPropagation="true">
+                                <RatingStars MediaId="_serie.Id" Value="_serieUserRating" Size="md" />
+                            </div>
                         }
                     </div>
 
@@ -112,6 +120,10 @@ else if (_serie is not null)
                     </div>
 
                     <div class="serie-actions-secondary">
+                        @if (_canRate)
+                        {
+                            <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
+                        }
                         @if (_serie.Trailers?.Count > 0)
                         {
                             <K7IconButton Icon="@Phosphor.FilmSlate" OnClick="OpenTrailerAsync" AriaLabel="trailer" />
@@ -231,6 +243,11 @@ else if (_serie is not null)
                     </Carousel>
                 }
 
+                @if (_serie is not null)
+                {
+                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
+                }
+
                 @if (_similarMedia.Count > 0)
                 {
                     <Carousel Title="@L["SimilarMedia"]">
@@ -266,6 +283,11 @@ else if (_serie is not null)
                         </CarouselItem>
                     }
                 </Carousel>
+            }
+
+            @if (_serie is not null)
+            {
+                <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
             }
 
             @if (_similarMedia.Count > 0)

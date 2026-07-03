@@ -31,10 +31,8 @@ public partial class K7Image
     private bool HasSource => !string.IsNullOrEmpty(Src);
     private bool HasCustomFallback => FallbackContent is not null;
     private bool ShowFallback => !HasSource || _failed;
-    private bool ShowLoading => HasSource && !_loaded && !_failed && ShouldShowLoadingState;
-    private bool ShouldShowLoadingState => ShowLoadingState && !IsTinyThumbnail;
-    private bool IsTinyThumbnail => (Width is > 0 and <= 40) || (Height is > 0 and <= 40);
-    private bool UseLoadTransition => ShouldShowLoadingState && HasSource && !_failed;
+    private bool ShowLoading => HasSource && !_loaded && !_failed && ShowLoadingState;
+    private bool UseLoadTransition => HasSource && !_failed;
 
     private string WrapCssClass =>
         string.Join(" ",

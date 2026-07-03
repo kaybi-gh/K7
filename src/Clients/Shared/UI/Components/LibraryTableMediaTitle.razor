@@ -1,0 +1,34 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+
+<div class="library-table-title">
+    <TableMediaThumb ImageUrl="@ImageUrl" MediaType="@MediaType" Size="@ThumbSize" />
+    <div class="library-table-title__content">
+        @if (Href is not null)
+        {
+            <a class="@LinkClass focusable"
+               href="@Href"
+               @onclick:stopPropagation="@StopPropagation">@Title</a>
+        }
+        else
+        {
+            <p class="@TextClass">@Title</p>
+        }
+        @if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string? MediaType { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public bool StopPropagation { get; set; }
+    [Parameter] public string LinkClass { get; set; } = "text-sm";
+    [Parameter] public string TextClass { get; set; } = "text-sm";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public TableMediaThumbHelper.Size ThumbSize { get; set; } = TableMediaThumbHelper.Size.Standard;
+}

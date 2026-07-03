@@ -1,0 +1,50 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+@using K7.Server.Domain.Enums
+@inject IK7ServerService ApiClient
+
+@if (ResolvedImageUrl is not null)
+{
+    <div class="table-media-thumb" style="@ThumbStyle">
+        <K7Image Src="@ResolvedImageUrl"
+                 Alt=""
+                 ObjectFit="contain"
+                 Class="table-media-thumb__image rounded"
+                 loading="lazy"
+                 FallbackContent="@PlaceholderVisual" />
+    </div>
+}
+else
+{
+    <div class="table-media-thumb table-media-thumb--placeholder" style="@ThumbStyle" aria-hidden="true">
+        @PlaceholderVisual
+    </div>
+}
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string? MediaType { get; set; }
+    [Parameter] public TableMediaThumbHelper.Size Size { get; set; } = TableMediaThumbHelper.Size.Standard;
+
+    private string? ResolvedImageUrl =>
+        ApiClient.GetAbsoluteUri(ImageUrl)?.AbsoluteUri;
+
+    private string ThumbStyle =>
+        TableMediaThumbHelper.BuildStyle(TableMediaThumbHelper.ParseMediaType(MediaType), Size);
+
+    private string PlaceholderIcon
+    {
+        get
+        {
+            var mediaType = TableMediaThumbHelper.ParseMediaType(MediaType);
+            return mediaType is K7.Server.Domain.Enums.MediaType.SerieEpisode
+                or K7.Server.Domain.Enums.MediaType.SerieSeason
+                or K7.Server.Domain.Enums.MediaType.Serie
+                or K7.Server.Domain.Enums.MediaType.Movie
+                ? Phosphor.FilmSlate
+                : Phosphor.Image;
+        }
+    }
+
+    private RenderFragment PlaceholderVisual => @<K7Icon Icon="@PlaceholderIcon" IconSize="@K7IconSize.Sm" />;
+}

@@ -151,7 +151,9 @@ else
                             {
                                 <tr>
                                     <td class="stats-table-rank">@(index + 1)</td>
-                                    <td class="stats-table-name">@item.Name</td>
+                                    <td class="stats-table-name">
+                                        <StatsTableMediaName Name="@item.Name" ImageUrl="@item.ImageUrl" MediaType="@item.MediaType" />
+                                    </td>
                                     <td class="stats-table-count">@item.PlayCount</td>
                                 </tr>
                             }
@@ -170,7 +172,9 @@ else
                             {
                                 <tr>
                                     <td class="stats-table-rank">@(index + 1)</td>
-                                    <td class="stats-table-name">@artist.Name</td>
+                                    <td class="stats-table-name">
+                                        <StatsTableMediaName Name="@artist.Name" ImageUrl="@artist.ImageUrl" MediaType="MusicArtist" />
+                                    </td>
                                     <td class="stats-table-count">@artist.PlayCount</td>
                                 </tr>
                             }
@@ -189,7 +193,9 @@ else
                             {
                                 <tr>
                                     <td class="stats-table-rank">@(index + 1)</td>
-                                    <td class="stats-table-name">@album.Name</td>
+                                    <td class="stats-table-name">
+                                        <StatsTableMediaName Name="@album.Name" ImageUrl="@album.ImageUrl" MediaType="MusicAlbum" />
+                                    </td>
                                     <td class="stats-table-count">@album.PlayCount</td>
                                 </tr>
                             }
@@ -208,7 +214,9 @@ else
                             {
                                 <tr>
                                     <td class="stats-table-rank">@(index + 1)</td>
-                                    <td class="stats-table-name">@show.Name</td>
+                                    <td class="stats-table-name">
+                                        <StatsTableMediaName Name="@show.Name" ImageUrl="@show.ImageUrl" MediaType="Serie" />
+                                    </td>
                                     <td class="stats-table-count">@show.PlayCount</td>
                                 </tr>
                             }

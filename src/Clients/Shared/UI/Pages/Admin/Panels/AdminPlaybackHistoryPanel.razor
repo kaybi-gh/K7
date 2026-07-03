@@ -31,7 +31,7 @@
 
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync"
-                     RowHeight="64" @ref="_tableRef" OnRowClick="OnRowClicked" ShowToolbar="false" Surface="false" Height="100%">
+                     RowHeight="48" @ref="_tableRef" OnRowClick="OnRowClicked" ShowToolbar="false" Surface="false" Height="100%">
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Width="140px">
                 <CellTemplate>
                     <div class="history-date-cell">
@@ -62,19 +62,16 @@
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Hideable="false">
                 <CellTemplate>
-                    <div class="history-title-cell">
-                        @if (context.MediaUrl is not null)
-                        {
-                            <a class="history-title" href="@context.MediaUrl">@context.MediaTitle</a>
-                        }
-                        else
-                        {
-                            <span class="history-title">@context.MediaTitle</span>
-                        }
+                    <LibraryTableMediaTitle ImageUrl="@context.ImageUrl"
+                                            MediaType="@context.MediaType"
+                                            Title="@(context.MediaTitle ?? "-")"
+                                            Href="@context.MediaUrl"
+                                            LinkClass="history-title"
+                                            StopPropagation="true">
                         <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
                             @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
                         </span>
-                    </div>
+                    </LibraryTableMediaTitle>
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Width="110px" VisibleOnMobile="false">

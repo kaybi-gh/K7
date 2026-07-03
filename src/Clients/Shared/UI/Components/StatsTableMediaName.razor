@@ -1,0 +1,15 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+
+<div class="library-table-title stats-table-media">
+    <TableMediaThumb ImageUrl="@ImageUrl"
+                     MediaType="@MediaType"
+                     Size="TableMediaThumbHelper.Size.Compact" />
+    <span class="stats-table-media__name">@Name</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = default!;
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string? MediaType { get; set; }
+}

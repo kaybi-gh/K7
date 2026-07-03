@@ -32,6 +32,8 @@ public partial class SerieSeason : IAsyncDisposable
     private List<int> _allSeasonNumbers = [];
     private string _pageTitle = "";
     private bool _loading = true;
+    private bool _canRate;
+    private int? _seasonUserRating;
     private string? _focusEpisodeFragment;
     private bool _isTv;
     private LiteSerieEpisodeDto? _focusedEpisode;
@@ -55,6 +57,7 @@ public partial class SerieSeason : IAsyncDisposable
         _castLoadEpisodeId = null;
         _seasonTvScrollInitialized = false;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
         if (serieMedia is not SerieDto serie)
@@ -90,6 +93,7 @@ public partial class SerieSeason : IAsyncDisposable
         if (seasonMedia is SerieSeasonDto seasonDto)
         {
             _season = seasonDto;
+            _seasonUserRating = GetUserRating(seasonDto.Ratings);
 
             _episodes = (seasonDto.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
@@ -459,12 +463,18 @@ public partial class SerieSeason : IAsyncDisposable
         if (media is SerieSeasonDto season)
         {
             _season = season;
+            _seasonUserRating = GetUserRating(season.Ratings);
             _episodes = (season.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
                 .ToList();
             StateHasChanged();
         }
     }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)value
+            : null;
 
     public async ValueTask DisposeAsync()
     {

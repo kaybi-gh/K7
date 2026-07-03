@@ -160,6 +160,13 @@ else if (_season is not null)
                             @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
                         </h4>
 
+                        @if (_canRate)
+                        {
+                            <div class="season-user-rating" @onclick:stopPropagation="true">
+                                <RatingStars MediaId="_season.Id" Value="_seasonUserRating" Size="md" />
+                            </div>
+                        }
+
                         @if (_allSeasonNumbers.Count > 1)
                         {
                             <K7Menu Title="@L["ChooseSeason"]">

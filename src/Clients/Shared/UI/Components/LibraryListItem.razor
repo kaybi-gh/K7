@@ -1,10 +1,11 @@
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Shared.Dtos.Entities.Medias
 
 <LibraryBrowseListRow Actions="Actions">
-    <a href="@Href" class="library-list-item focusable">
+    <a href="@Href" class="@RootClass">
         @ThumbnailContent
         <div class="library-list-item-info">
-            <p class="library-list-item-title">@Item.Title</p>
+            <p class="library-list-item-title">@PrimaryTitle</p>
             @if (SecondaryText is not null)
             {
                 <span class="library-list-item-secondary">@SecondaryText</span>
@@ -23,12 +24,18 @@
     private RenderFragment ThumbnailContent => @<text>
         @if (ThumbnailUrl is not null)
         {
-            <K7Image Src="@ThumbnailUrl" Alt="@Item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" loading="lazy" />
+            <K7Image Src="@ThumbnailUrl"
+                     Alt=""
+                     Width="@ThumbWidth"
+                     Height="@ThumbHeight"
+                     ObjectFit="cover"
+                     Class="library-list-item-thumb rounded"
+                     loading="lazy" />
         }
         else
         {
-            <div class="library-list-item-thumb-placeholder rounded">
-                <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
+            <div class="library-list-item-thumb-placeholder rounded" aria-hidden="true">
+                <K7Icon Icon="@PlaceholderIcon" IconSize="@K7IconSize.Sm" />
             </div>
         }
     </text>;
