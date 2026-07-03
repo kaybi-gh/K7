@@ -2,9 +2,12 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Enums;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -26,6 +29,9 @@ public partial class MusicArtistDetail
     [Inject]
     private IServerPreferencesService ServerPreferences { get; set; } = default!;
 
+    [Inject]
+    private IFeatureAccessService FeatureAccess { get; set; } = default!;
+
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
@@ -34,15 +40,19 @@ public partial class MusicArtistDetail
     private List<TrackViewModel> _tracks = [];
     private List<LitePersonRoleDto> _members = [];
     private bool _loading = true;
+    private bool _canRate;
+    private int? _artistUserRating;
 
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
         var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
 
         if (media is MusicArtistDto artist)
         {
             _artist = artist;
+            _artistUserRating = GetUserRating(artist.Ratings);
 
             _portraitUrl = apiClient.GetAbsoluteUri(
                 artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
@@ -289,6 +299,11 @@ public partial class MusicArtistDetail
             }
         }
     }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)value
+            : null;
 
     internal sealed record TrackViewModel
     {
