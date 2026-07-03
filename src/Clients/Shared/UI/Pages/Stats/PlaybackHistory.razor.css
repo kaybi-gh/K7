@@ -1,0 +1,34 @@
+.playback-history-date-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    font-size: var(--text-sm);
+}
+
+.playback-history-date-cell .text-muted {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.playback-history-page .data-page-body ::deep .k7-data-table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.playback-history-page .data-page-body ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: 100%;
+}
+
+@media (max-width: 599.98px) {
+    .playback-history-page .data-page-body ::deep .k7-data-table-el {
+        min-width: max-content;
+    }
+
+    .playback-history-page .data-page-body ::deep .k7-data-table-el th,
+    .playback-history-page .data-page-body ::deep .k7-data-table-el td {
+        white-space: nowrap;
+    }
+}

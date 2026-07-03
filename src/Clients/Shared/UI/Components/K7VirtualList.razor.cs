@@ -37,6 +37,12 @@ public partial class K7VirtualList<TItem>
             return default;
 
         var result = await ProvideItemsAsync(request);
+        if (result.Items is null)
+        {
+            request.CancellationToken.ThrowIfCancellationRequested();
+            return new ItemsProviderResult<IndexedListItem>([], result.TotalItemCount);
+        }
+
         var sourceItems = result.Items as ICollection<TItem> ?? result.Items.ToArray();
         if (sourceItems.Count == 0)
             return new ItemsProviderResult<IndexedListItem>([], result.TotalItemCount);
