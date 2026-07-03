@@ -25,7 +25,9 @@ public class UpdatePeerEndpoint : IEndpoint
                 SharedLibraryIds = request.SharedLibraryIds,
                 EnabledInboundAgreementIds = request.EnabledInboundAgreementIds,
                 MaxConcurrentStreams = request.MaxConcurrentStreams,
-                AutoAddNewLibraries = request.AutoAddNewLibraries
+                AutoAddNewLibraries = request.AutoAddNewLibraries,
+                SocialAgreements = request.SocialAgreements,
+                SharePlaybackHistoryLibraryIds = request.SharePlaybackHistoryLibraryIds
             }, cancellationToken);
 
             return Results.NoContent();

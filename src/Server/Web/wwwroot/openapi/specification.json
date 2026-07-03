@@ -482,6 +482,74 @@
         }
       }
     },
+    "/api/users/me/federation-privacy": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetFederationPrivacySettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateFederationPrivacySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationPrivacySettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/review-preferences": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetReviewPreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateReviewPreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/two-factor/recovery-codes": {
       "post": {
         "tags": [
@@ -815,6 +883,82 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/social/directory": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSocialUserDirectoryEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/social-profile": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetLocalSocialUserProfileEndpoint",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/shared-collections": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSharedCollectionsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/shared-playlists": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSharedPlaylistsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/social/discovery": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSocialDiscoveryStateEndpoint",
         "responses": {
           "200": {
             "description": "OK"
@@ -2043,6 +2187,160 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/medias/{mediaId}/federated-reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "GetFederatedMediaReviewsEndpoint",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{mediaId}/review": {
+      "put": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "UpsertMediaReviewEndpoint",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertMediaReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "DeleteMediaReviewEndpoint",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{mediaId}/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "GetMediaReviewsEndpoint",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{mediaId}/review/me": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "GetMyMediaReviewEndpoint",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "GetMyMediaReviewsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/reviews/count": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "operationId": "GetMyMediaReviewCountEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -6488,6 +6786,279 @@
         }
       }
     },
+    "/api/federation/peers/{peerServerId}/users/{originUserId}/social-profile": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederatedSocialUserProfileEndpoint",
+        "parameters": [
+          {
+            "name": "peerServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peers/{peerServerId}/users/{originUserId}/playlists/{playlistId}/copy": {
+      "post": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "CopyFederatedPlaylistEndpoint",
+        "parameters": [
+          {
+            "name": "peerServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "playlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/collections": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialCollectionsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/playlists": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialPlaylistsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/smart-playlists": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialSmartPlaylistsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/playback-history": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationPlaybackHistoryEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/federation-privacy/grant-targets": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetFederationGrantTargetsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/collections": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialCollections",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/playback-history": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialPlaybackHistory",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/playlists": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialPlaylists",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/reviews": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialReviews",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/smart-playlists": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialSmartPlaylists",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialUsers",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/downloads/{id}": {
       "delete": {
         "tags": [
@@ -7988,6 +8559,40 @@
         }
       }
     },
+    "/api/admin/federation/social-policy": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetFederationSocialPolicy",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateFederationSocialPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationSocialPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/streams": {
       "get": {
         "tags": [
@@ -9443,6 +10048,12 @@
           },
           "clientSecret": {
             "type": "string"
+          },
+          "federationAssertionSecret": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9484,6 +10095,9 @@
           },
           "isPublic": {
             "type": "boolean"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           },
           "mediaType": {
             "oneOf": [
@@ -9796,6 +10410,9 @@
           },
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           }
         }
       },
@@ -10322,6 +10939,57 @@
           }
         }
       },
+      "FederationContentType": {
+        "type": "integer"
+      },
+      "FederationContentTypePolicyDto": {
+        "type": "object",
+        "properties": {
+          "outbound": {
+            "type": "boolean"
+          },
+          "inbound": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FederationContentVisibilityDto": {
+        "type": "object",
+        "properties": {
+          "reviews": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "collections": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "playlists": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "smartPlaylists": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "playbackHistory": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationVisibilityGrantDto"
+            }
+          }
+        }
+      },
+      "FederationPrivacySettingsDto": {
+        "type": "object",
+        "properties": {
+          "share": {
+            "$ref": "#/components/schemas/FederationContentVisibilityDto"
+          },
+          "view": {
+            "$ref": "#/components/schemas/FederationContentVisibilityDto"
+          }
+        }
+      },
       "FederationSessionRequest": {
         "required": [
           "fileId",
@@ -10348,6 +11016,56 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "FederationSocialPolicyDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "policies": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FederationContentTypePolicyDto"
+            }
+          }
+        }
+      },
+      "FederationVisibilityGrantDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FederationContentType"
+              }
+            ]
+          },
+          "targetUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetPeerServerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetOriginUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -11953,6 +12671,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "seasonNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -11978,6 +12702,15 @@
                 "$ref": "#/components/schemas/MetadataPictureDto"
               }
             ]
+          },
+          "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
           },
           "id": {
             "type": "string",
@@ -12755,6 +13488,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "seasonNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -12780,6 +13519,15 @@
                 "$ref": "#/components/schemas/MetadataPictureDto"
               }
             ]
+          },
+          "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
           },
           "id": {
             "type": "string",
@@ -15097,6 +15845,28 @@
           }
         }
       },
+      "PeerSocialAgreementDto": {
+        "required": [
+          "id",
+          "contentType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contentType": {
+            "$ref": "#/components/schemas/FederationContentType"
+          },
+          "allowOutbound": {
+            "type": "boolean"
+          },
+          "allowInbound": {
+            "type": "boolean"
+          }
+        }
+      },
       "PersonDto": {
         "type": "object",
         "properties": {
@@ -15780,6 +16550,9 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           }
         }
       },
@@ -16190,6 +16963,14 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ReviewPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "blurReviewsForUnwatchedMedia": {
+            "type": "boolean"
           }
         }
       },
@@ -17055,6 +17836,12 @@
               "string"
             ]
           },
+          "mediaType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "playCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -17173,6 +17960,9 @@
           },
           "isPublic": {
             "type": "boolean"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           }
         }
       },
@@ -17680,6 +18470,25 @@
               "null",
               "boolean"
             ]
+          },
+          "socialAgreements": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PeerSocialAgreementDto"
+            }
+          },
+          "sharePlaybackHistoryLibraryIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -17840,6 +18649,9 @@
           },
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           }
         }
       },
@@ -18016,6 +18828,32 @@
           }
         }
       },
+      "UpsertMediaReviewRequest": {
+        "required": [
+          "text",
+          "rating"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "UserMediaStateDto": {
         "type": "object",
         "properties": {
@@ -18180,6 +19018,9 @@
         }
       },
       "VideoResolutionIdentifier": {
+        "type": "integer"
+      },
+      "VisibilityScope": {
         "type": "integer"
       },
       "WatchStateScope": {
@@ -18375,6 +19216,9 @@
       "name": "Search"
     },
     {
+      "name": "Reviews"
+    },
+    {
       "name": "Restrictions"
     },
     {
@@ -18415,6 +19259,9 @@
     },
     {
       "name": "Federation"
+    },
+    {
+      "name": "Social"
     },
     {
       "name": "Downloads"
