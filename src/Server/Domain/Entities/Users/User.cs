@@ -18,6 +18,7 @@ public class User : BaseAuditableEntity
 
     public Guid? PeerServerId { get; set; }
     public PeerServer? PeerServer { get; set; }
+    public Guid? OriginUserId { get; set; }
 
     public IList<UserRating> Ratings { get; set; } = [];
     public IList<Device> Devices { get; set; } = [];
