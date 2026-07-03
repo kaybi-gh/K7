@@ -16,5 +16,5 @@ public sealed record PlaylistDto
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
     public DateTimeOffset? LastListenedAt { get; init; }
-
+    public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
 }

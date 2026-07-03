@@ -10,4 +10,5 @@ public sealed record PeerShareAgreementDto
     public required ShareDirection Direction { get; init; }
     public int? MaxConcurrentStreams { get; init; }
     public bool IsEnabled { get; init; }
+    public bool SharePlaybackHistory { get; init; }
 }

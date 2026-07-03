@@ -7,5 +7,6 @@ public sealed record CreateCollectionRequest
     public required string Title { get; init; }
     public string? Description { get; init; }
     public bool IsPublic { get; init; }
+    public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
     public MediaType? MediaType { get; init; }
 }

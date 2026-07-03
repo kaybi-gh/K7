@@ -5,6 +5,7 @@ public sealed record TopItemDto
     public Guid Id { get; init; }
     public required string Name { get; init; }
     public string? ImageUrl { get; init; }
+    public string? MediaType { get; init; }
     public int PlayCount { get; init; }
 }
 
