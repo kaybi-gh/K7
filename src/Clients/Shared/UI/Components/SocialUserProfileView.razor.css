@@ -1,0 +1,107 @@
+.social-user-profile {
+    --carousel-margin-start: 40px;
+    margin-top: var(--space-4);
+}
+
+.social-user-profile.page-scrollable {
+    overflow-x: visible;
+}
+
+.social-user-profile__topbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-inline: var(--carousel-margin-start);
+}
+
+.social-user-profile__topbar ::deep .k7-back-btn {
+    position: static;
+    top: auto;
+    left: auto;
+    flex-shrink: 0;
+}
+
+.social-user-profile__topbar ::deep .k7-avatar {
+    flex-shrink: 0;
+}
+
+.social-user-profile__loading {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-16);
+}
+
+.social-user-profile__feed {
+    overflow: visible;
+}
+
+.social-user-profile__feed ::deep .media-reviews-section {
+    overflow: visible;
+}
+
+.social-user-profile__playback-table {
+    padding-inline: var(--carousel-margin-start);
+}
+
+.social-user-profile__playback-table ::deep .k7-data-table {
+    flex: none;
+    min-height: auto;
+}
+
+.social-user-profile__playback-table ::deep .k7-data-table-scroll {
+    flex: none;
+    min-height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.social-user-profile__playback-table ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: 100%;
+}
+
+@media (max-width: 599.98px) {
+    .social-user-profile__playback-table ::deep .k7-data-table-el {
+        min-width: max-content;
+    }
+
+    .social-user-profile__playback-table ::deep .k7-data-table-el th,
+    .social-user-profile__playback-table ::deep .k7-data-table-el td {
+        white-space: nowrap;
+    }
+}
+
+.social-user-profile__media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 24px;
+    padding-inline: var(--carousel-margin-start);
+}
+
+.social-user-profile__media-grid ::deep .media-card {
+    width: 100% !important;
+}
+
+.social-user-profile__media-card-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+.social-user-profile__media-card-copy {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    z-index: 2;
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+@media (max-width: 599.98px) {
+    .social-user-profile {
+        --carousel-margin-start: 16px;
+    }
+}

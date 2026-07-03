@@ -41,4 +41,6 @@
   <data name="Back" xml:space="preserve"><value>Retour</value></data>
   <data name="BrowseAll" xml:space="preserve"><value>Tout parcourir</value></data>
   <data name="NoLibraryGroup" xml:space="preserve"><value>Groupe introuvable</value></data>
+  <data name="OtherUsers" xml:space="preserve"><value>Autres utilisateurs</value></data>
+  <data name="OtherUsersDesc" xml:space="preserve"><value>Profils locaux et pairs directement connectés</value></data>
 </root>

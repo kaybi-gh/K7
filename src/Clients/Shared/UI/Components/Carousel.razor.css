@@ -2,6 +2,16 @@
     overflow: hidden;
 }
 
+.carousel-viewport:has(.media-review-card) {
+    padding-block: var(--space-12);
+    margin-block: calc(-1 * var(--space-12));
+}
+
+.carousel-viewport:has(.media-review-card) ::deep .carousel-item {
+    padding-inline: var(--space-2);
+    box-sizing: content-box;
+}
+
 .carousel-container {
     display: flex;
     align-items: flex-start;
@@ -65,11 +75,33 @@
     --carousel-slide-width: 140px;
 }
 
+.carousel-container:has(.media-review-card) {
+    --carousel-slide-width: 400px;
+    align-items: stretch;
+}
+
+.carousel-container:has(.media-review-card) ::deep .carousel-item {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+.carousel-container:has(.media-review-card) ::deep .carousel-item > .media-review-card {
+    flex: 1 1 auto;
+    height: 100%;
+}
+
 @media (min-width: 601px) {
     ::deep .carousel-item > .media-card.media-card--poster,
     ::deep .carousel-item > .media-card.media-card--cover,
     ::deep .carousel-item > .media-card.media-card--backdrop {
         width: var(--carousel-slide-width) !important;
+    }
+
+    ::deep .carousel-item > .media-review-card--activatable,
+    ::deep .carousel-item > .media-review-card--compact {
+        width: var(--carousel-slide-width);
+        max-width: var(--carousel-slide-width);
     }
 }
 
@@ -87,10 +119,21 @@
         --carousel-slide-width: 120px;
     }
 
+    .carousel-container:has(.media-review-card) {
+        --carousel-slide-width: min(88vw, 22rem);
+    }
+
     ::deep .carousel-item > .media-card.media-card--poster,
     ::deep .carousel-item > .media-card.media-card--cover,
     ::deep .carousel-item > .media-card.media-card--backdrop {
         width: var(--carousel-slide-width) !important;
+    }
+
+    ::deep .carousel-item > .media-review-card--activatable,
+    ::deep .carousel-item > .media-review-card--compact {
+        width: var(--carousel-slide-width);
+        max-width: var(--carousel-slide-width);
+        min-width: min(var(--carousel-slide-width), 17.5rem);
     }
 }
 

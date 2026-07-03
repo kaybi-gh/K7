@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="NotFound" xml:space="preserve"><value>User not found</value></data>
+  <data name="OnPeer" xml:space="preserve"><value>On {0}</value></data>
+  <data name="RecentPlayback" xml:space="preserve"><value>Recent playback</value></data>
+  <data name="Media" xml:space="preserve"><value>Media</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="RecentReviews" xml:space="preserve"><value>Recent reviews</value></data>
+  <data name="Collections" xml:space="preserve"><value>Collections</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="SmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="CopyPlaylist" xml:space="preserve"><value>Copy to my playlists</value></data>
+  <data name="PlaylistCopied" xml:space="preserve"><value>Playlist copied</value></data>
+  <data name="PlaylistCopyFailed" xml:space="preserve"><value>Could not copy playlist</value></data>
+  <data name="NoRecentPlayback" xml:space="preserve"><value>No recent playback</value></data>
+</root>
