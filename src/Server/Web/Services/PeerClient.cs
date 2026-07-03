@@ -6,6 +6,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 using Microsoft.Extensions.Logging;
 
@@ -25,10 +26,10 @@ public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPe
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task SendPeerConfirmAsync(string remoteUrl, string token, string clientId, string clientSecret, CancellationToken cancellationToken = default)
+    public async Task SendPeerConfirmAsync(string remoteUrl, string token, string clientId, string clientSecret, string? federationAssertionSecret = null, CancellationToken cancellationToken = default)
     {
         var url = $"{remoteUrl.TrimEnd('/')}/api/federation/peer-confirm";
-        var payload = new { Token = token, ClientId = clientId, ClientSecret = clientSecret };
+        var payload = new { Token = token, ClientId = clientId, ClientSecret = clientSecret, FederationAssertionSecret = federationAssertionSecret };
         var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -212,6 +213,104 @@ public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPe
         {
             return false;
         }
+    }
+
+    public async Task<IReadOnlyList<FederatedUserRef>> GetRemoteSocialUsersAsync(
+        string baseUrl, string accessToken, string viewerAssertion, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedUserRef>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedReviewDto>> GetRemoteSocialReviewsAsync(
+        string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/reviews";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedReviewDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedCollectionDto>> GetRemoteSocialCollectionsAsync(
+        string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/collections";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedCollectionDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedPlaylistDto>> GetRemoteSocialPlaylistsAsync(
+        string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/playlists";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedPlaylistDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedSmartPlaylistDto>> GetRemoteSocialSmartPlaylistsAsync(
+        string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/smart-playlists";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedSmartPlaylistDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederationPlaybackEntryDto>> GetRemotePlaybackHistoryAsync(
+        string baseUrl, string accessToken, string viewerAssertion, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/playback-history";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederationPlaybackEntryDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<FederatedUserPlaybackEntryDto>> GetRemoteSocialPlaybackHistoryAsync(
+        string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/playback-history";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<FederatedUserPlaybackEntryDto>>(_jsonOptions, cancellationToken) ?? [];
     }
 
     private sealed record TokenResponse(
