@@ -15,6 +15,8 @@ using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos.Entities.Reviews;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
@@ -548,6 +550,87 @@ public sealed class MockUserAdminService : IUserAdminService
 public sealed class MockRatingService : IRatingService
 {
     public Task RateMediaAsync(Guid mediaId, int value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockReviewService : IReviewService
+{
+    public Task<IReadOnlyList<MediaReviewDto>> GetMediaReviewsAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<MediaReviewDto>>([]);
+
+    public Task<IReadOnlyList<FederatedReviewDto>> GetFederatedMediaReviewsAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedReviewDto>>([]);
+
+    public Task UpsertMediaReviewAsync(Guid mediaId, UpsertMediaReviewRequest request, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<FederationPrivacySettingsDto> GetFederationPrivacyAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new FederationPrivacySettingsDto());
+
+    public Task UpdateFederationPrivacyAsync(FederationPrivacySettingsDto settings, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<ReviewPreferencesDto> GetReviewPreferencesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ReviewPreferencesDto());
+
+    public Task UpdateReviewPreferencesAsync(ReviewPreferencesDto preferences, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<FederationSocialPolicyDto> GetFederationSocialPolicyAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new FederationSocialPolicyDto());
+
+    public Task UpdateFederationSocialPolicyAsync(FederationSocialPolicyDto policy, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<IReadOnlyList<FederationGrantTargetDto>> GetFederationGrantTargetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederationGrantTargetDto>>([]);
+
+    public Task<IReadOnlyList<FederatedCollectionViewDto>> GetFederatedCollectionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedCollectionViewDto>>([]);
+
+    public Task<IReadOnlyList<FederatedPlaylistViewDto>> GetFederatedPlaylistsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedPlaylistViewDto>>([]);
+
+    public Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetFederatedSmartPlaylistsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedSmartPlaylistViewDto>>([]);
+
+    public Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetFederatedPlaybackHistoryAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedPlaybackHistoryViewDto>>([]);
+
+    public Task<IReadOnlyList<SocialUserReviewViewDto>> GetMyMediaReviewsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SocialUserReviewViewDto>>([]);
+
+    public Task<int> GetMyMediaReviewCountAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(0);
+
+    public Task<MyMediaReviewStateDto?> GetMyMediaReviewAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<MyMediaReviewStateDto?>(null);
+
+    public Task DeleteMediaReviewAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+public sealed class MockSocialUserService : ISocialUserService
+{
+    public Task<IReadOnlyList<SocialUserDirectoryEntryDto>> GetSocialUserDirectoryAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SocialUserDirectoryEntryDto>>([]);
+
+    public Task<SocialUserProfileDto?> GetLocalUserProfileAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<SocialUserProfileDto?>(null);
+
+    public Task<SocialUserProfileDto?> GetFederatedUserProfileAsync(Guid peerServerId, Guid originUserId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<SocialUserProfileDto?>(null);
+
+    public Task<IReadOnlyList<SharedCollectionBrowseDto>> GetSharedCollectionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SharedCollectionBrowseDto>>([]);
+
+    public Task<IReadOnlyList<SharedPlaylistBrowseDto>> GetSharedPlaylistsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SharedPlaylistBrowseDto>>([]);
+
+    public Task<Guid> CopyFederatedPlaylistAsync(Guid peerServerId, Guid originUserId, Guid playlistId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Guid.NewGuid());
+
+    public Task<SocialDiscoveryStateDto> GetSocialDiscoveryStateAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new SocialDiscoveryStateDto());
 }
 
 public sealed class MockBackgroundTaskService : IBackgroundTaskService
