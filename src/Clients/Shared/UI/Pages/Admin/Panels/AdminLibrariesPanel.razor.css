@@ -29,6 +29,17 @@
     color: var(--color-text-primary);
 }
 
+::deep .library-card__scan-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+::deep .library-card__scan-label {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
 ::deep .empty-state {
     display: flex;
     flex-direction: column;

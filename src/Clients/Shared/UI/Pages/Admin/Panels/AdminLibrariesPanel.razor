@@ -66,6 +66,20 @@
                     @string.Format(L["IssueCount"], issueCount)
                 </K7Chip>
             }
+            @if (GetScanProgress(library.Id) is { } scanProgress)
+            {
+                <div class="library-card__scan-progress">
+                    <span class="library-card__scan-label">@FormatScanProgress(scanProgress)</span>
+                    @if (scanProgress.Total > 0)
+                    {
+                        <K7ProgressBar Value="@GetScanProgressValue(scanProgress)" />
+                    }
+                    else
+                    {
+                        <K7ProgressBar Indeterminate="true" />
+                    }
+                </div>
+            }
             <div style="display:flex;gap:4px;border-top:1px solid var(--color-border);padding-top:8px;margin-top:auto">
                 @if (library.PeerServerId is null)
                 {

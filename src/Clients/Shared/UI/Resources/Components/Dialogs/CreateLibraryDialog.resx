@@ -34,7 +34,21 @@
   <data name="PathPlaceholder" xml:space="preserve"><value>Ex: /media/movies, D:\Films...</value></data>
   <data name="PathHelper" xml:space="preserve"><value>Chemin absolu vers le dossier contenant les fichiers média</value></data>
   <data name="Browse" xml:space="preserve"><value>Parcourir</value></data>
-  <data name="AutoIndex" xml:space="preserve"><value>Indexer les fichiers automatiquement après la création</value></data>
+  <data name="AutoIndex" xml:space="preserve"><value>Indexer les fichiers après la création</value></data>
+  <data name="AutoIndexHelper" xml:space="preserve"><value>Lance un premier scan complet du dossier une fois la bibliothèque créée.</value></data>
+  <data name="SectionGeneralTitle" xml:space="preserve"><value>Informations générales</value></data>
+  <data name="SectionMetadataTitle" xml:space="preserve"><value>Métadonnées</value></data>
+  <data name="SectionMetadataDescription" xml:space="preserve"><value>Fournisseur, langues et rafraîchissement des fiches (affiches, synopsis, etc.). Indépendant du scan de fichiers sur le disque.</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraîchissement des métadonnées (jours)</value></data>
+  <data name="MetadataRefreshHelper" xml:space="preserve"><value>Re-télécharge affiches, synopsis, etc. depuis le fournisseur. 0 ou vide = désactivé.</value></data>
+  <data name="SectionScanTitle" xml:space="preserve"><value>Indexation et scan</value></data>
+  <data name="SectionScanDescription" xml:space="preserve"><value>Détecte les nouveaux fichiers, suppressions et renommages dans les dossiers de la bibliothèque.</value></data>
+  <data name="RealtimeMonitorLabel" xml:space="preserve"><value>Surveillance en temps réel</value></data>
+  <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Scanne automatiquement les dossiers dès qu'un fichier est ajouté, modifié ou supprimé.</value></data>
+  <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Scan périodique (heures)</value></data>
+  <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = désactivé. Recommandé sur NAS ou partages réseau où la surveillance temps réel est peu fiable.</value></data>
+  <data name="SectionCapabilitiesTitle" xml:space="preserve"><value>Capacités</value></data>
+  <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Traitements appliqués aux médias de cette bibliothèque (transcodage, miniatures, etc.).</value></data>
   <data name="SummaryTitle" xml:space="preserve"><value>Résumé de la librairie</value></data>
   <data name="AutoIndexSummary" xml:space="preserve"><value>Indexation automatique</value></data>
   <data name="Creating" xml:space="preserve"><value>Création...</value></data>

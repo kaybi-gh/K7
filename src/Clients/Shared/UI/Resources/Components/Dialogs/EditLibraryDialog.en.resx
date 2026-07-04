@@ -25,8 +25,8 @@
   <data name="ProviderRequired" xml:space="preserve"><value>Metadata provider is required</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
-  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Auto-refresh metadata (days)</value></data>
-  <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 or empty = disabled</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Metadata refresh (days)</value></data>
+  <data name="MetadataRefreshHelper" xml:space="preserve"><value>Re-downloads posters, summaries, etc. from the provider. 0 or empty = disabled.</value></data>
   <data name="DescriptionLabel" xml:space="preserve"><value>Short description</value></data>
   <data name="DescriptionHelper" xml:space="preserve"><value>Optional - displayed on the library card</value></data>
   <data name="IconLabel" xml:space="preserve"><value>Icon</value></data>
@@ -43,5 +43,16 @@
   <data name="MetadataLanguageLabel" xml:space="preserve"><value>Metadata language</value></data>
   <data name="MetadataFallbackLanguageLabel" xml:space="preserve"><value>Fallback language</value></data>
   <data name="GroupLabel" xml:space="preserve"><value>Group</value></data>
+  <data name="SectionGeneralTitle" xml:space="preserve"><value>General information</value></data>
+  <data name="SectionMetadataTitle" xml:space="preserve"><value>Metadata</value></data>
+  <data name="SectionMetadataDescription" xml:space="preserve"><value>Provider, languages, and refresh of media details (posters, summaries, etc.). Separate from disk file scanning.</value></data>
+  <data name="SectionScanTitle" xml:space="preserve"><value>Indexing and scan</value></data>
+  <data name="SectionScanDescription" xml:space="preserve"><value>Detects new files, deletions, and renames in the library folders.</value></data>
+  <data name="SectionCapabilitiesTitle" xml:space="preserve"><value>Capabilities</value></data>
+  <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Processing applied to media in this library (transcoding, thumbnails, etc.).</value></data>
   <data name="NoPictures" xml:space="preserve"><value>No pictures available in this library</value></data>
+  <data name="RealtimeMonitorLabel" xml:space="preserve"><value>Real-time monitoring</value></data>
+  <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Automatically scans folders when a file is added, modified, or deleted.</value></data>
+  <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Periodic scan (hours)</value></data>
+  <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = disabled. Recommended on NAS or network shares where real-time monitoring is unreliable.</value></data>
 </root>

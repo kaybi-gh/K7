@@ -25,8 +25,8 @@
   <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraîchissement automatique (jours)</value></data>
-  <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 ou vide = desactivé</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraîchissement des métadonnées (jours)</value></data>
+  <data name="MetadataRefreshHelper" xml:space="preserve"><value>Re-télécharge affiches, synopsis, etc. depuis le fournisseur. 0 ou vide = désactivé.</value></data>
   <data name="DescriptionLabel" xml:space="preserve"><value>Description courte</value></data>
   <data name="DescriptionHelper" xml:space="preserve"><value>Facultatif - affiché sur la card de la librairie</value></data>
   <data name="IconLabel" xml:space="preserve"><value>Icône</value></data>
@@ -43,5 +43,16 @@
   <data name="MetadataLanguageLabel" xml:space="preserve"><value>Langue des métadonnées</value></data>
   <data name="MetadataFallbackLanguageLabel" xml:space="preserve"><value>Langue de secours</value></data>
   <data name="GroupLabel" xml:space="preserve"><value>Groupe</value></data>
+  <data name="SectionGeneralTitle" xml:space="preserve"><value>Informations générales</value></data>
+  <data name="SectionMetadataTitle" xml:space="preserve"><value>Métadonnées</value></data>
+  <data name="SectionMetadataDescription" xml:space="preserve"><value>Fournisseur, langues et rafraîchissement des fiches (affiches, synopsis, etc.). Indépendant du scan de fichiers sur le disque.</value></data>
+  <data name="SectionScanTitle" xml:space="preserve"><value>Indexation et scan</value></data>
+  <data name="SectionScanDescription" xml:space="preserve"><value>Détecte les nouveaux fichiers, suppressions et renommages dans les dossiers de la bibliothèque.</value></data>
+  <data name="SectionCapabilitiesTitle" xml:space="preserve"><value>Capacités</value></data>
+  <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Traitements appliqués aux médias de cette bibliothèque (transcodage, miniatures, etc.).</value></data>
   <data name="NoPictures" xml:space="preserve"><value>Aucune image disponible dans cette librairie</value></data>
+  <data name="RealtimeMonitorLabel" xml:space="preserve"><value>Surveillance en temps réel</value></data>
+  <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Scanne automatiquement les dossiers dès qu'un fichier est ajouté, modifié ou supprimé.</value></data>
+  <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Scan périodique (heures)</value></data>
+  <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = désactivé. Recommandé sur NAS ou partages réseau où la surveillance temps réel est peu fiable.</value></data>
 </root>

@@ -34,7 +34,21 @@
   <data name="PathPlaceholder" xml:space="preserve"><value>E.g.: /media/movies, D:\Movies...</value></data>
   <data name="PathHelper" xml:space="preserve"><value>Absolute path to the folder containing media files</value></data>
   <data name="Browse" xml:space="preserve"><value>Browse</value></data>
-  <data name="AutoIndex" xml:space="preserve"><value>Automatically index files after creation</value></data>
+  <data name="AutoIndex" xml:space="preserve"><value>Index files after creation</value></data>
+  <data name="AutoIndexHelper" xml:space="preserve"><value>Runs a full initial scan of the folder once the library is created.</value></data>
+  <data name="SectionGeneralTitle" xml:space="preserve"><value>General information</value></data>
+  <data name="SectionMetadataTitle" xml:space="preserve"><value>Metadata</value></data>
+  <data name="SectionMetadataDescription" xml:space="preserve"><value>Provider, languages, and refresh of media details (posters, summaries, etc.). Separate from disk file scanning.</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Metadata refresh (days)</value></data>
+  <data name="MetadataRefreshHelper" xml:space="preserve"><value>Re-downloads posters, summaries, etc. from the provider. 0 or empty = disabled.</value></data>
+  <data name="SectionScanTitle" xml:space="preserve"><value>Indexing and scan</value></data>
+  <data name="SectionScanDescription" xml:space="preserve"><value>Detects new files, deletions, and renames in the library folders.</value></data>
+  <data name="RealtimeMonitorLabel" xml:space="preserve"><value>Real-time monitoring</value></data>
+  <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Automatically scans folders when a file is added, modified, or deleted.</value></data>
+  <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Periodic scan (hours)</value></data>
+  <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = disabled. Recommended on NAS or network shares where real-time monitoring is unreliable.</value></data>
+  <data name="SectionCapabilitiesTitle" xml:space="preserve"><value>Capabilities</value></data>
+  <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Processing applied to media in this library (transcoding, thumbnails, etc.).</value></data>
   <data name="SummaryTitle" xml:space="preserve"><value>Library summary</value></data>
   <data name="AutoIndexSummary" xml:space="preserve"><value>Automatic indexing</value></data>
   <data name="Creating" xml:space="preserve"><value>Creating...</value></data>
