@@ -41,6 +41,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public float? GridItemAspectRatio { get; set; } = 1.5f;
     [Parameter] public int GridFooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 10;
+    [Parameter] public bool DisableViewModePersistence { get; set; }
+    [Parameter] public EventCallback<BrowseViewMode> ViewModeChanged { get; set; }
 
     private K7VirtualGrid<TItem>? _gridComponentRef;
     private K7VirtualList<TItem>? _listComponentRef;
@@ -82,7 +84,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _dotnetRef ??= DotNetObjectReference.Create(this);
 
             var saved = await _module.InvokeAsync<BrowseViewSettings?>("getSettings", PersistenceKey);
-            if (saved is not null)
+            if (!DisableViewModePersistence && saved is not null)
             {
                 _currentMode = saved.Mode;
             }
@@ -104,6 +106,9 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     protected override void OnParametersSet()
     {
+        if (DisableViewModePersistence)
+            _currentMode = DefaultMode;
+
         _tableRows = Items?.Select((item, index) => new BrowseViewTableRowContext<TItem>
         {
             Item = item,
@@ -127,7 +132,11 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     {
         if (mode == _currentMode) return;
         _currentMode = mode;
-        await SaveSettingsAsync();
+        if (ViewModeChanged.HasDelegate)
+            await ViewModeChanged.InvokeAsync(mode);
+
+        if (!DisableViewModePersistence)
+            await SaveSettingsAsync();
     }
 
     public async Task RefreshAsync()

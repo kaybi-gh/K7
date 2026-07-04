@@ -24,6 +24,9 @@ public static class PageFilterUrlSync
         return query.TryGetValue(key, out var value) ? value : null;
     }
 
+    public static IReadOnlyDictionary<string, string> GetQuery(NavigationManager navigation) =>
+        ParseQuery(navigation);
+
     public static void SetQuery(NavigationManager navigation, IReadOnlyDictionary<string, string?> parameters)
     {
         var queryParams = new Dictionary<string, object?>(parameters.Count, StringComparer.OrdinalIgnoreCase);

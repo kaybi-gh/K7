@@ -47,5 +47,7 @@
   <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
   <data name="IntelligentSearchNoResults" xml:space="preserve"><value>No results for this search in this group.</value></data>
   <data name="IntelligentSearchError" xml:space="preserve"><value>Intelligent search failed.</value></data>
+  <data name="CreateSmartPlaylist" xml:space="preserve"><value>Create smart playlist</value></data>
+  <data name="CreateSmartPlaylistDialogTitle" xml:space="preserve"><value>Create smart playlist</value></data>
 </root>
 
