@@ -1,4 +1,4 @@
-﻿using K7.Server.Domain.Events;
+using K7.Server.Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Libraries.EventHandlers;

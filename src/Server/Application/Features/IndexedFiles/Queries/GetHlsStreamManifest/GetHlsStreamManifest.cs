@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
@@ -256,35 +256,35 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             .ToList();
 
         foreach (var track in audioTracks)
-            {
-                var isDefault = query.DefaultAudioTrackIndex.HasValue
-                    ? track.Index == query.DefaultAudioTrackIndex.Value
-                    : track == audioTracks[0];
-                var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Track {track.Index}";
-                var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
+        {
+            var isDefault = query.DefaultAudioTrackIndex.HasValue
+                ? track.Index == query.DefaultAudioTrackIndex.Value
+                : track == audioTracks[0];
+            var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Track {track.Index}";
+            var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
 
-                var trackAudioParams = new List<string>
+            var trackAudioParams = new List<string>
                 {
                     $"streamSessionId={query.StreamSessionId}"
                 };
 
-                if (audioTrackTranscodings.TryGetValue(track.Index, out var transcodingCodec))
-                    trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+            if (audioTrackTranscodings.TryGetValue(track.Index, out var transcodingCodec))
+                trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
 
-                var audioQueryString = "?" + string.Join("&", trackAudioParams);
+            var audioQueryString = "?" + string.Join("&", trackAudioParams);
 
-                var audioUri = GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
-                    + audioQueryString;
+            var audioUri = GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
+                + audioQueryString;
 
-                playlist.AppendLine(
-                    $"#EXT-X-MEDIA:TYPE=AUDIO," +
-                    $"GROUP-ID=\"audio\"," +
-                    $"NAME=\"{EscapeHlsAttribute(trackName)}\"," +
-                    $"LANGUAGE=\"{language}\"," +
-                    $"DEFAULT={BoolToYesNo(isDefault)}," +
-                    $"AUTOSELECT={BoolToYesNo(isDefault)}," +
-                    $"URI=\"{audioUri}\"");
-            }
+            playlist.AppendLine(
+                $"#EXT-X-MEDIA:TYPE=AUDIO," +
+                $"GROUP-ID=\"audio\"," +
+                $"NAME=\"{EscapeHlsAttribute(trackName)}\"," +
+                $"LANGUAGE=\"{language}\"," +
+                $"DEFAULT={BoolToYesNo(isDefault)}," +
+                $"AUTOSELECT={BoolToYesNo(isDefault)}," +
+                $"URI=\"{audioUri}\"");
+        }
 
         // Generate #EXT-X-MEDIA:TYPE=SUBTITLES entries for text-based subtitle tracks
         var subtitleQueryString = $"?streamSessionId={query.StreamSessionId}";

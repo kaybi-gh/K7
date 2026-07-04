@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using K7.Server.Application.Common.Interfaces;
 using Microsoft.Extensions.Logging;
 

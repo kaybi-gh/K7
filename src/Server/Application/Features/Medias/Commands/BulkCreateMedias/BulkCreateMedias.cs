@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -11,8 +13,6 @@ using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 
 namespace K7.Server.Application.Features.Medias.Commands.BulkCreateMedias;
 

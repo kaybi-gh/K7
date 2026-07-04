@@ -35,6 +35,8 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
         builder.Property(t => t.MusicAudioAnalysisEnabled).HasDefaultValue(true);
         builder.Property(t => t.TranscodingEnabled).HasDefaultValue(true);
         builder.Property(t => t.TransmuxingEnabled).HasDefaultValue(true);
+        builder.Property(t => t.RealtimeMonitorEnabled).HasDefaultValue(true);
+        builder.Property(t => t.AutoScanIntervalHours).HasDefaultValue(6);
 
         builder
             .HasMany(l => l.IndexedFiles)

@@ -1,6 +1,6 @@
-﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 

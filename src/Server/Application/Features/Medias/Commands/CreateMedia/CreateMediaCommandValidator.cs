@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.CreateMedia;
+namespace K7.Server.Application.Features.Medias.Commands.CreateMedia;
 
 public class CreateMediaCommandValidator : AbstractValidator<CreateMediaCommand>
 {

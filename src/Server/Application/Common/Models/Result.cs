@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Common.Models;
+namespace K7.Server.Application.Common.Models;
 
 public class Result
 {

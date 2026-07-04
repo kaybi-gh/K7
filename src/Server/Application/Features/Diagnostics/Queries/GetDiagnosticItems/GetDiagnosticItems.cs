@@ -1,5 +1,4 @@
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Extensions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
@@ -7,6 +6,7 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Extensions;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Navigation;
 

@@ -3,8 +3,8 @@ using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Diagnostics.Services;
-using K7.Server.Application.Features.Home.Services;
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Application.Features.Home.Services;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
@@ -58,6 +58,10 @@ public static class DependencyInjection
         services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
         services.AddHostedService<MetadataRefreshSchedulerService>();
         services.AddHostedService<PeerSyncSchedulerService>();
+        services.AddHostedService<LibraryScanSchedulerService>();
+        services.AddSingleton<LibraryFolderWatcherService>();
+        services.AddSingleton<ILibraryFolderWatcher>(sp => sp.GetRequiredService<LibraryFolderWatcherService>());
+        services.AddHostedService(sp => sp.GetRequiredService<LibraryFolderWatcherService>());
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
         services.AddSingleton<HubPresenceTracker>();
@@ -79,6 +83,7 @@ public static class DependencyInjection
             return limiter;
         });
         services.AddScoped<IFileIndexer, FileIndexer>();
+        services.AddScoped<ILibraryScanProgressReporter, LibraryScanProgressReporter>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
         services.AddScoped<IUserMediaStateUpdater, UserMediaStateUpdater>();
         services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();

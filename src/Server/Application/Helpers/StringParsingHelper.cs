@@ -1,7 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace K7.Server.Application.Helpers;
+
 public static partial class StringParsingHelper
 {
     public readonly struct RegexResult(string output, string? trimmedInput)

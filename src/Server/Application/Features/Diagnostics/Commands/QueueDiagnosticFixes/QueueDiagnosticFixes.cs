@@ -1,3 +1,4 @@
+using FluentValidation.Results;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
@@ -5,7 +6,6 @@ using K7.Server.Application.Features.Diagnostics.Commands.FixDiagnosticItems;
 using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
-using FluentValidation.Results;
 using Microsoft.Extensions.Logging;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 

@@ -1,10 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.ValueObjects;
 
 namespace K7.Server.Application.Extensions;
+
 public static class IndexedFileExtensions
 {
     public static bool TryIdentifyMovie(this IndexedFile indexedFile, [NotNullWhen(true)] out MediaIdentification? movieIdentification)

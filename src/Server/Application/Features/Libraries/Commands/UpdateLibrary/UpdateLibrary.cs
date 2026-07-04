@@ -1,5 +1,6 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
@@ -20,16 +21,14 @@ public record UpdateLibraryCommand : IRequest
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }
+    public bool? RealtimeMonitorEnabled { get; init; }
+    public int? AutoScanIntervalHours { get; init; }
 }
 
-public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
+public class UpdateLibraryCommandHandler(IApplicationDbContext context, ILibraryFolderWatcher libraryFolderWatcher) : IRequestHandler<UpdateLibraryCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public UpdateLibraryCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IApplicationDbContext _context = context;
+    private readonly ILibraryFolderWatcher _libraryFolderWatcher = libraryFolderWatcher;
 
     public async Task Handle(UpdateLibraryCommand request, CancellationToken cancellationToken)
     {
@@ -54,6 +53,11 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
             entity.TranscodingEnabled = request.TranscodingEnabled.Value;
         if (request.TransmuxingEnabled.HasValue)
             entity.TransmuxingEnabled = request.TransmuxingEnabled.Value;
+        if (request.RealtimeMonitorEnabled.HasValue)
+            entity.RealtimeMonitorEnabled = request.RealtimeMonitorEnabled.Value;
+        if (request.AutoScanIntervalHours.HasValue)
+            entity.AutoScanIntervalHours = request.AutoScanIntervalHours.Value;
         await _context.SaveChangesAsync(cancellationToken);
+        await _libraryFolderWatcher.RefreshWatchersAsync(cancellationToken);
     }
 }

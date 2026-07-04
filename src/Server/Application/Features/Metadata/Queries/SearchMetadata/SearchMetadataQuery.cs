@@ -1,7 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
-using MediatR;
 using K7.Shared.Dtos.Entities.Metadatas;
+using MediatR;
 
 namespace K7.Server.Application.Features.Metadata.Queries.SearchMetadata;
 

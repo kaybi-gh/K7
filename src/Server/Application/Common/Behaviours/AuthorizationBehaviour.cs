@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;

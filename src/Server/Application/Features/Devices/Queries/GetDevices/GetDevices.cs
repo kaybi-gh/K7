@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Devices;
@@ -15,7 +15,7 @@ public sealed record GetDevicesQuery : IRequest<PaginatedList<Device>>
     public EnumHashSetQueryParam<ClientType>? ClientTypes { get; init; }
     public EnumHashSetQueryParam<DeviceType>? DeviceTypes { get; init; }
     public EnumHashSetQueryParam<OperatingSystem>? OperatingSystems { get; init; }
-    public EnumHashSetQueryParam<DevicesOrderingOption>? OrderBy { get; init; } = [ DevicesOrderingOption.CreatedDesc ];
+    public EnumHashSetQueryParam<DevicesOrderingOption>? OrderBy { get; init; } = [DevicesOrderingOption.CreatedDesc];
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
 };

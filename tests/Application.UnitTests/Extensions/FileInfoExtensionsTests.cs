@@ -51,7 +51,8 @@ public class FileInfoExtensionsTests : FileFixture
             Path = Path.Combine(FileHelper.TestDirectoryPath, "file.mkv"),
             ParentDirectory = fileInfo.Directory?.Name,
             Hash = fileInfo.ComputeFileHash(),
-            Size = fileInfo.Length
+            Size = fileInfo.Length,
+            LastWriteTimeUtc = fileInfo.LastWriteTimeUtc
         };
 
         // Act

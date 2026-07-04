@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
 using K7.Server.Domain.Entities;

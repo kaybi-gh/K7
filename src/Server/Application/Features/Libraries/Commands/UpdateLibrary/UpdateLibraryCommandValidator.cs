@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 
 namespace K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
 

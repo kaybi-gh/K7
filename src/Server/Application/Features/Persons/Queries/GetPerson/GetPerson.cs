@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 

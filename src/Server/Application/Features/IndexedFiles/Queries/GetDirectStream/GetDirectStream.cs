@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Http;

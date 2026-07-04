@@ -1,12 +1,12 @@
+using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
-using FluentValidation.Results;
-using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 using K7.Shared.Dtos.Requests;
 using Microsoft.EntityFrameworkCore;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Users.Commands.MergeUsers;
 

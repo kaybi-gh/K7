@@ -1,6 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
+using K7.Server.Application.Features.Libraries.Commands.IndexLibraryPaths;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using MediatR;
@@ -22,7 +22,6 @@ public class NotifyIndexedFile : IEndpoint
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            // Find library that owns this path
             var library = await context.Libraries
                 .Where(l => l.RootPath != null && l.PeerServerId == null)
                 .ToListAsync(cancellationToken);
@@ -37,15 +36,15 @@ public class NotifyIndexedFile : IEndpoint
             {
                 case IndexedFileNotificationType.Added:
                 case IndexedFileNotificationType.Modified:
-                    // Trigger a library scan to pick up the new/modified file
                     await sender.Send(new CreateBackgroundTaskCommand
                     {
-                        Request = new IndexLibraryFilesCommand(matchingLibrary.Id),
+                        Request = new IndexLibraryPathsCommand(matchingLibrary.Id, [body.Path]),
                         Priority = BackgroundTaskPriority.Normal,
                         TargetEntityId = matchingLibrary.Id,
                         TargetEntityTypeName = nameof(Domain.Entities.Library),
                         MaxAttempts = 1,
                         TimeoutSeconds = 3600,
+                        ConcurrencyGroup = "library-scan"
                     }, cancellationToken);
                     break;
 

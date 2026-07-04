@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;

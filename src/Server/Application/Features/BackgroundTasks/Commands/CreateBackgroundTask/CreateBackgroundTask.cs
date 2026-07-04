@@ -1,9 +1,9 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using System.Text.Json;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 

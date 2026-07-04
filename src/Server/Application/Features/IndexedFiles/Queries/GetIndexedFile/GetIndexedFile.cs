@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFile;

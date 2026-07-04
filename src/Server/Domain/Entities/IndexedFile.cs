@@ -12,6 +12,7 @@ public class IndexedFile : BaseAuditableEntity
     public string? ParentDirectory { get; set; }
     public required uint Hash { get; set; }
     public required long Size { get; set; }
+    public DateTimeOffset LastWriteTimeUtc { get; set; }
 
     public MediaIdentification? Identification { get; set; }
     public BaseFileMetadata? FileMetadata { get; set; }

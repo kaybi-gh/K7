@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;

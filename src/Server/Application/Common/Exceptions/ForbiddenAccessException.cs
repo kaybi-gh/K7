@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Common.Exceptions;
+namespace K7.Server.Application.Common.Exceptions;
 
 public class ForbiddenAccessException : Exception
 {

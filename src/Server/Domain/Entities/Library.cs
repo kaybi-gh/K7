@@ -19,6 +19,9 @@ public class Library : BaseAuditableEntity
     public bool TranscodingEnabled { get; set; } = true;
     public bool TransmuxingEnabled { get; set; } = true;
 
+    public bool RealtimeMonitorEnabled { get; set; } = true;
+    public int AutoScanIntervalHours { get; set; } = 6;
+
     public required Guid LibraryGroupId { get; set; }
     public LibraryGroup? LibraryGroup { get; set; }
 
