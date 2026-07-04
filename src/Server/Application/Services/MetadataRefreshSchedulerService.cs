@@ -1,5 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
+using K7.Server.Application.Helpers;
+using K7.Server.Domain.Entities.Medias;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,7 +60,8 @@ public class MetadataRefreshSchedulerService(
             var threshold = DateTimeOffset.UtcNow.AddDays(-library.MetadataRefreshIntervalDays!.Value);
 
             var staleMediaIds = await context.Medias
-                .Where(m => m.IndexedFiles.Any(f => f.LibraryId == library.Id))
+                .Where(m => m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist)
+                .WhereLinkedToLibrary(library.Id)
                 .Where(m => m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < threshold)
                 .Select(m => m.Id)
                 .Take(50)

@@ -6,11 +6,10 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
@@ -35,7 +34,7 @@ public class QueueRefreshMediaMetadataCommandHandler(
 
         Guard.Against.NotFound(request.MediaId, media);
 
-        var library = await FindLibraryAsync(media, cancellationToken);
+        var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
         if (library is null)
         {
             throw new ValidationException(
@@ -82,30 +81,5 @@ public class QueueRefreshMediaMetadataCommandHandler(
             MaxAttempts = 3,
             ConcurrencyGroup = concurrencyGroup
         }, cancellationToken);
-    }
-
-    private async Task<Library?> FindLibraryAsync(BaseMedia media, CancellationToken cancellationToken)
-    {
-        Guid? libraryId;
-
-        if (media is MusicArtist)
-        {
-            libraryId = await context.Medias.OfType<MusicAlbum>()
-                .Where(a => a.ArtistId == media.Id)
-                .SelectMany(a => context.IndexedFiles.Where(f => f.MediaId == a.Id).Select(f => (Guid?)f.LibraryId))
-                .FirstOrDefaultAsync(cancellationToken);
-        }
-        else
-        {
-            libraryId = await context.IndexedFiles
-                .Where(f => f.MediaId == media.Id)
-                .Select(f => (Guid?)f.LibraryId)
-                .FirstOrDefaultAsync(cancellationToken);
-        }
-
-        if (libraryId is null)
-            return null;
-
-        return await context.Libraries.FindAsync([libraryId.Value], cancellationToken);
     }
 }

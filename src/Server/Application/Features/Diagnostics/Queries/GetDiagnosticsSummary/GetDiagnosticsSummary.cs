@@ -37,32 +37,34 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
         foreach (var library in libraries)
         {
-            var libraryMediaIds = _context.IndexedFiles
+            var libraryFileMediaIds = _context.IndexedFiles
                 .Where(f => f.LibraryId == library.Id && f.MediaId != null)
                 .Select(f => f.MediaId!.Value)
                 .Distinct();
 
-            var totalMediaCount = await libraryMediaIds.CountAsync(cancellationToken);
+            var linkedMedia = _context.Medias.WhereLinkedToLibrary(library.Id);
+            var linkedMediaIds = linkedMedia.Select(m => m.Id);
+            var refreshableLinkedMedia = linkedMedia
+                .Where(m => m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist);
 
-            var mediaMissingPicturesCount = await _context.Medias
-                .Where(m => libraryMediaIds.Contains(m.Id))
+            var totalMediaCount = await linkedMedia.CountAsync(cancellationToken);
+
+            var mediaMissingPicturesCount = await linkedMedia
                 .Where(m => !m.Pictures.Any())
                 .CountAsync(cancellationToken);
 
-            var mediaMissingExternalIdCount = await _context.Medias
-                .Where(m => libraryMediaIds.Contains(m.Id))
+            var mediaMissingExternalIdCount = await refreshableLinkedMedia
                 .Where(m => m is Movie || m is Serie || m is MusicAlbum)
                 .Where(m => !m.ExternalIds.Any())
                 .CountAsync(cancellationToken);
 
-            var mediaMissingMetadataCount = await _context.Medias
-                .Where(m => libraryMediaIds.Contains(m.Id))
+            var mediaMissingMetadataCount = await linkedMedia
                 .Where(m => m.ExternalIds.Any())
                 .Where(m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
                 .CountAsync(cancellationToken);
 
             var mediaWithoutFilesCount = await _context.Medias
-                .Where(m => libraryMediaIds.Contains(m.Id))
+                .Where(m => libraryFileMediaIds.Contains(m.Id))
                 .Where(m => !m.IndexedFiles.Any())
                 .CountAsync(cancellationToken);
 
@@ -70,8 +72,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 library.MetadataRefreshIntervalDays, DateTimeOffset.UtcNow);
             var staleMetadataCount = staleMetadataThreshold is null
                 ? 0
-                : await _context.Medias
-                    .Where(m => libraryMediaIds.Contains(m.Id))
+                : await refreshableLinkedMedia
                     .Where(m => m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < staleMetadataThreshold)
                     .CountAsync(cancellationToken);
 
@@ -98,7 +99,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
             var missingAudioAnalysisCount = library.MediaType == LibraryMediaType.Music
                 ? await _context.Medias.OfType<MusicTrack>()
-                    .Where(t => libraryMediaIds.Contains(t.Id))
+                    .Where(t => libraryFileMediaIds.Contains(t.Id))
                     .Where(t => t.AudioAnalysis == null)
                     .CountAsync(cancellationToken)
                 : 0;
@@ -110,12 +111,12 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             var pendingStatuses = new[] { BackgroundTaskStatus.Pending, BackgroundTaskStatus.InProgress, BackgroundTaskStatus.WaitingForRetry };
             var pendingTaskCount = await _context.BackgroundTasks
                 .Where(t => pendingStatuses.Contains(t.Status))
-                .Where(t => t.TargetEntityId != null && libraryMediaIds.Contains(t.TargetEntityId.Value))
+                .Where(t => t.TargetEntityId != null && linkedMediaIds.Contains(t.TargetEntityId.Value))
                 .CountAsync(cancellationToken);
 
             var failedTaskCount = await _context.BackgroundTasks
                 .Where(t => t.Status == BackgroundTaskStatus.Failed)
-                .Where(t => t.TargetEntityId != null && libraryMediaIds.Contains(t.TargetEntityId.Value))
+                .Where(t => t.TargetEntityId != null && linkedMediaIds.Contains(t.TargetEntityId.Value))
                 .CountAsync(cancellationToken);
 
             result.Add(new LibraryHealthSummaryDto
