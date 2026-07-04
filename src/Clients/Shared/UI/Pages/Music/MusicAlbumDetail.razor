@@ -23,7 +23,8 @@
             <div class="album-header-cover">
                 @if (_coverUrl is not null)
                 {
-                    <K7Image Src="@_coverUrl"
+                    <K7Image @key="_coverUrl"
+                              Src="@_coverUrl"
                               Alt="@_album.Title"
                               Class="album-detail-cover"
                               ObjectFit="cover" />

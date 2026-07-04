@@ -1,5 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -11,11 +13,12 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
-public partial class EditMetadataDialog
+public partial class EditMetadataDialog : IDisposable
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
 
     [Parameter] public MediaDto? Media { get; set; }
     [Parameter] public PersonDto? Person { get; set; }
@@ -106,6 +109,13 @@ public partial class EditMetadataDialog
     private ProviderImageDto? _selectedProviderImage;
     private bool _isLoadingProviderImages;
     private bool _isImportingProviderImage;
+    private DateTimeOffset? _pictureCacheVersion;
+
+    protected override void OnInitialized()
+    {
+        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
+        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
+    }
 
     protected override void OnParametersSet()
     {
@@ -234,15 +244,63 @@ public partial class EditMetadataDialog
                 _allowedPictureTypes = [MetadataPictureType.Cover];
                 break;
 
-            case MusicAlbumDto:
+            case MusicAlbumDto album:
                 _showGenres = true;
-                _showOverview = false;
+                _showOverview = !string.IsNullOrWhiteSpace(album.Overview);
+                _overview = album.Overview;
                 _canBrowseProviderImages = true;
                 _allowedPictureTypes = [MetadataPictureType.Cover];
                 break;
         }
 
         _uploadPictureType = _allowedPictureTypes.FirstOrDefault();
+    }
+
+    private void OnMediaMetadataRefreshed(Guid mediaId)
+    {
+        if (Media?.Id != mediaId)
+            return;
+
+        _ = InvokeAsync(ReloadMediaFromServerAsync);
+    }
+
+    private void OnMediaPicturesUpdated(Guid mediaId)
+    {
+        if (Media?.Id != mediaId)
+            return;
+
+        _pictureCacheVersion = DateTimeOffset.UtcNow;
+        _ = InvokeAsync(ReloadMediaFromServerAsync);
+    }
+
+    private string? GetPictureDisplayUrl(MetadataPictureDto picture, MetadataPictureSize size = MetadataPictureSize.Small)
+    {
+        var uri = picture.GetUri(size)?.OriginalString;
+        var cacheVersion = _pictureCacheVersion
+            ?? (Media as MediaDto)?.LastMetadataRefreshedAt;
+        return MediaPictureUrlHelper.WithCacheBuster(uri, cacheVersion);
+    }
+
+    private async Task ReloadMediaFromServerAsync()
+    {
+        if (Media is null)
+            return;
+
+        var fresh = await MediaService.GetMediaAsync(Media.Id, bypassCache: true);
+        if (fresh is null)
+            return;
+
+        Media = fresh;
+        InitFromMedia(fresh);
+        _providerImages = null;
+        _selectedProviderImage = null;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
+        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
     }
 
     private string GetLockIcon(string fieldName)

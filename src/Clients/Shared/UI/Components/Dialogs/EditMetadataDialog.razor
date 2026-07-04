@@ -225,7 +225,7 @@
                     @foreach (var pic in Media.Pictures)
                     {
                         <div class="picture-item @GetPictureItemClass(pic.Type)">
-                            <img src="@pic.GetUri(K7.Server.Domain.Enums.MetadataPictureSize.Small)" alt="@pic.Type" loading="lazy" />
+                            <img src="@GetPictureDisplayUrl(pic)" alt="@pic.Type" loading="lazy" />
                             <span class="picture-type">@pic.Type</span>
                             <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
                                           OnClick="@(() => DeletePictureAsync(pic.Id))" Title="@L["Delete"]" />

@@ -47,6 +47,7 @@
   <data name="HideForUser" xml:space="preserve"><value>Hide for a user</value></data>
   <data name="ExclusionsUpdated" xml:space="preserve"><value>Exclusions updated.</value></data>
   <data name="ErrorWithDetails" xml:space="preserve"><value>Error: {0}</value></data>
+  <data name="RefreshMetadataCompleted" xml:space="preserve"><value>Metadata updated.</value></data>
   <data name="Hidden" xml:space="preserve"><value>"{0}" hidden</value></data>
   <data name="Unhidden" xml:space="preserve"><value>"{0}" visible again</value></data>
   <data name="MarkedAsWatched" xml:space="preserve"><value>Marked as watched.</value></data>

@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
@@ -13,7 +14,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
-public partial class MusicAlbumDetail
+public partial class MusicAlbumDetail : IDisposable
 {
     [Parameter]
     public required string Id { get; set; }
@@ -36,6 +37,9 @@ public partial class MusicAlbumDetail
     [Inject]
     private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
+    [Inject]
+    private K7HubClient K7HubClient { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -49,23 +53,55 @@ public partial class MusicAlbumDetail
     private int? _albumUserRating;
     private Guid? _libraryGroupId;
     private MediaReviewsSection? _reviewsSection;
+    private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+
+    protected override void OnInitialized()
+    {
+        _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
-        _loading = true;
-        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        if (Guid.TryParse(Id, out var mediaId))
+        {
+            _metadataRefreshWatcher?.Watch(
+                mediaId,
+                () => LoadAlbumAsync(isBackgroundRefresh: true),
+                () => LoadAlbumAsync(isPicturesRefresh: true));
+        }
 
-        var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
+        await LoadAlbumAsync();
+    }
+
+    private async Task LoadAlbumAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
+    {
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _loading = true;
+
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+
+        var media = await k7ServerService.GetMediaAsync(
+            Guid.Parse(Id),
+            bypassCache: isBackgroundRefresh || isPicturesRefresh);
         if (media is MusicAlbumDto album)
         {
             _album = album;
             _albumUserRating = GetUserRating(album.Ratings);
 
-            var coverPicture = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
-            _coverUrl = apiClient.GetAbsoluteUri(
-                coverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-            _coverDominantColor = coverPicture?.DominantColor;
+            ApplyAlbumCover(album, isPicturesRefresh ? DateTimeOffset.UtcNow : album.LastMetadataRefreshedAt);
+
+            if (isPicturesRefresh)
+            {
+                _tracks = _tracks
+                    .Select(t => t with { CoverUrl = _coverUrl, CoverDominantColor = _coverDominantColor })
+                    .ToList();
+                _tracksByDisc = new SortedDictionary<int, List<TrackViewModel>>(
+                    _tracks.GroupBy(t => t.DiscNumber).ToDictionary(g => g.Key, g => g.ToList()));
+
+                StateHasChanged();
+                return;
+            }
 
             _artists = album.ArtistId.HasValue
                 ? [new ArtistInfo(album.ArtistId.Value, album.ArtistName ?? S["UnknownArtist"])]
@@ -119,7 +155,18 @@ public partial class MusicAlbumDetail
             _libraryGroupId = null;
         }
 
-        _loading = false;
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _loading = false;
+
+        if (isBackgroundRefresh && media is MusicAlbumDto)
+            Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _metadataRefreshWatcher?.Dispose();
     }
 
     private async Task PlayAll()
@@ -304,6 +351,16 @@ public partial class MusicAlbumDetail
 
         if (_reviewsSection is not null)
             await _reviewsSection.RefreshAsync();
+    }
+
+    private void ApplyAlbumCover(MusicAlbumDto album, DateTimeOffset? cacheVersion)
+    {
+        var coverPicture = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+        var coverUri = apiClient.GetAbsoluteUri(
+            coverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _coverUrl = MediaPictureUrlHelper.WithCacheBuster(coverUri, cacheVersion);
+        _coverDominantColor = coverPicture?.DominantColor;
     }
 
     private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>

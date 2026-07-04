@@ -23,6 +23,8 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<Guid, double, bool>? ProgressUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
+    public event Action<Guid>? MediaMetadataRefreshed;
+    public event Action<Guid>? MediaPicturesUpdated;
     public event Action<Guid, int, int, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
     public event Action<IReadOnlyList<ActiveStreamDto>>? ActiveStreamsUpdated;
@@ -124,6 +126,16 @@ public sealed class K7HubClient : IAsyncDisposable
             _hubConnection.On<List<MediaBatchItem>>("ReceiveMediaBatchAdded", (items) =>
             {
                 MediaBatchAdded?.Invoke(items);
+            });
+
+            _hubConnection.On<Guid>("ReceiveMediaMetadataRefreshed", mediaId =>
+            {
+                MediaMetadataRefreshed?.Invoke(mediaId);
+            });
+
+            _hubConnection.On<Guid>("ReceiveMediaPicturesUpdated", mediaId =>
+            {
+                MediaPicturesUpdated?.Invoke(mediaId);
             });
 
             _hubConnection.On<Guid, int, int, int>("ReceiveLibraryScanCompleted", (libraryId, addedCount, skippedCount, inaccessiblePathCount) =>

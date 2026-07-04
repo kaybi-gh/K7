@@ -3,7 +3,6 @@ using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
-using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Shared.Enums;
 using K7.Server.Domain.Enums;
@@ -29,12 +28,16 @@ public partial class Movie : IAsyncDisposable
     [Inject] private IFederationService FederationService { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
     private bool isLoading { get; set; } = true;
     private static MovieDto? _movie;
     private static MediaCardViewModel? _mediaCard;
+    private string? _backdropUrl;
+    private string? _logoUrl;
+    private string? _posterSmallUrl;
     private bool _overviewExpanded;
     private IndexedFileDto? _selectedFile;
     private RemoteIndexedFileDto? _selectedRemoteFile;
@@ -53,14 +56,17 @@ public partial class Movie : IAsyncDisposable
     private Guid? _libraryGroupId;
     private MediaReviewsSection? _reviewsSection;
     private int? _movieUserRating;
+    private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+
+    protected override void OnInitialized()
+    {
+        _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+    }
 
     private bool HasTvBelowContent =>
         (_movie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
 
-    private string? GetLogoUrl() =>
-        apiClient.GetAbsoluteUri(
-            _movie?.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Logo)?
-                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+    private string? GetLogoUrl() => _logoUrl;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -75,22 +81,59 @@ public partial class Movie : IAsyncDisposable
         if (_previousId == Id) return;
         _previousId = Id;
 
-        _tvScrollInitialized = false;
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-
-        isLoading = true;
-        _similarMedia = [];
-
-        _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
-        if (_movie != null)
+        if (Guid.TryParse(Id, out var mediaId))
         {
+            _metadataRefreshWatcher?.Watch(
+                mediaId,
+                () => LoadMovieAsync(isBackgroundRefresh: true),
+                () => LoadMovieAsync(isPicturesRefresh: true));
+        }
+
+        await LoadMovieAsync();
+    }
+
+    private async Task LoadMovieAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
+    {
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+        {
+            _tvScrollInitialized = false;
+            _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+            isLoading = true;
+            _similarMedia = [];
+        }
+
+        var movie = await k7ServerService.GetMovieAsync(
+            Guid.Parse(Id),
+            bypassCache: isBackgroundRefresh || isPicturesRefresh);
+        if (movie != null)
+        {
+            _movie = movie;
             _movieUserRating = GetUserRating(_movie.Ratings);
+
+            var cacheVersion = isPicturesRefresh
+                ? DateTimeOffset.UtcNow
+                : _movie.LastMetadataRefreshedAt;
+
+            var backdropUri = apiClient.GetAbsoluteUri(
+                _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Backdrop)?
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _backdropUrl = MediaPictureUrlHelper.WithCacheBuster(backdropUri, cacheVersion);
+
+            var logoUri = apiClient.GetAbsoluteUri(
+                _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Logo)?
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _logoUrl = MediaPictureUrlHelper.WithCacheBuster(logoUri, cacheVersion);
+
+            var posterUri = apiClient.GetAbsoluteUri(
+                _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?
+                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+            _posterSmallUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
 
             _mediaCard = new MediaCardViewModel()
             {
                 Id = _movie.Id.ToString(),
                 Title = _movie.Title,
-                PictureUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                PictureUrl = _posterSmallUrl
             };
             
             _selectedFile = _movie.IndexedFiles?.FirstOrDefault();
@@ -109,9 +152,17 @@ public partial class Movie : IAsyncDisposable
         {
             _libraryGroupId = null;
         }
-        isLoading = false;
 
-        _ = LoadSimilarMediaAsync();
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            isLoading = false;
+
+        if (!isPicturesRefresh)
+            _ = LoadSimilarMediaAsync();
+
+        if (isBackgroundRefresh && movie is not null)
+            Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
+
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -493,6 +544,8 @@ public partial class Movie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _metadataRefreshWatcher?.Dispose();
+
         if (_tvScrollInitialized)
             await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }
