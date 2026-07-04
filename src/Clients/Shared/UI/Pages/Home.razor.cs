@@ -40,6 +40,7 @@ public partial class Home : IDisposable
     private bool _isTv;
     private MediaCardViewModel? _focusedItem;
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
+    private int _catalogRefreshGeneration;
 
     protected override async Task OnInitializedAsync()
     {
@@ -52,6 +53,8 @@ public partial class Home : IDisposable
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
         CacheStore.HomeFeedInvalidated += OnHomeFeedInvalidated;
 
         HomeLayoutDto layout;
@@ -158,6 +161,8 @@ public partial class Home : IDisposable
     {
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
         CacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
     }
 
@@ -165,6 +170,8 @@ public partial class Home : IDisposable
     {
         if (isLoading || _isOffline)
             return;
+
+        Interlocked.Increment(ref _catalogRefreshGeneration);
 
         _ = InvokeAsync(async () =>
         {
@@ -175,6 +182,7 @@ public partial class Home : IDisposable
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
     {
+        Interlocked.Increment(ref _catalogRefreshGeneration);
         CacheStore.InvalidateByPrefix("home-feed");
 
         _ = InvokeAsync(async () =>
@@ -183,6 +191,40 @@ public partial class Home : IDisposable
             StateHasChanged();
         });
     }
+
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        if (!RowMightBeAffectedByLibrary(libraryId))
+            return;
+
+        Interlocked.Increment(ref _catalogRefreshGeneration);
+        CacheStore.InvalidateByPrefix("home-feed");
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshAllRowsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
+    {
+        if (!RowMightBeAffectedByLibrary(libraryId))
+            return;
+
+        Interlocked.Increment(ref _catalogRefreshGeneration);
+        CacheStore.InvalidateByPrefix("home-feed");
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshNonContinueWatchingRowsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
+        _rows.Any(r => r.Config.LibraryIds is null or { Count: 0 }
+            || r.Config.LibraryIds.Contains(libraryId));
 
     private async Task RefreshContinueWatchingRowsAsync()
     {
@@ -305,13 +347,18 @@ public partial class Home : IDisposable
 
     private async Task RefreshRowInBackground(GetHomeFeedQuery query, string cacheKey, List<MediaCardViewModel> target)
     {
+        var generation = _catalogRefreshGeneration;
         var items = await FetchRowAsync(query);
-        if (items is null) return;
+        if (items is null || generation != _catalogRefreshGeneration)
+            return;
 
         CacheStore.Set(cacheKey, items);
 
         await InvokeAsync(() =>
         {
+            if (generation != _catalogRefreshGeneration)
+                return;
+
             target.Clear();
             target.AddRange(items);
             StateHasChanged();

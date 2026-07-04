@@ -8,10 +8,11 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class HomeFeedCarouselRow
+public partial class HomeFeedCarouselRow : IDisposable
 {
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+    [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
@@ -39,6 +40,45 @@ public partial class HomeFeedCarouselRow
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
+        K7HubClient.MediaBatchAdded += OnCatalogChanged;
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+    }
+
+    public void Dispose()
+    {
+        K7HubClient.MediaBatchAdded -= OnCatalogChanged;
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+    }
+
+    private void OnCatalogChanged(List<K7.Shared.Dtos.Notifications.MediaBatchItem> items)
+    {
+        _ = ReloadAsync();
+    }
+
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        if (!CatalogCarouselRefreshScope.IsAffected(LibraryIds, LibraryGroupIds, libraryId))
+            return;
+
+        _ = ReloadAsync();
+    }
+
+    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
+    {
+        if (!CatalogCarouselRefreshScope.IsAffected(LibraryIds, LibraryGroupIds, libraryId))
+            return;
+
+        _ = ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loadKey = null;
+        await OnParametersSetAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnParametersSetAsync()

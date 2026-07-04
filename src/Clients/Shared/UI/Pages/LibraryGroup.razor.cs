@@ -158,6 +158,8 @@ public partial class LibraryGroup : IDisposable
         }
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
 
         await LoadTagsAsync();
 
@@ -633,6 +635,30 @@ public partial class LibraryGroup : IDisposable
         });
     }
 
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        if (_libraryIds is { Count: > 0 } && !_libraryIds.Contains(libraryId))
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshAllAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
+    {
+        if (_libraryIds is { Count: > 0 } && !_libraryIds.Contains(libraryId))
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshAllAsync();
+            StateHasChanged();
+        });
+    }
+
     private async Task RefreshAllAsync()
     {
         if (_browseView is not null)
@@ -853,5 +879,7 @@ public partial class LibraryGroup : IDisposable
     public void Dispose()
     {
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
     }
 }
