@@ -36,6 +36,12 @@ internal sealed class LibraryNotifier(
         await hubContext.Clients.All.ReceiveMediaMetadataRefreshed(mediaId);
     }
 
+    public async Task NotifyMediaPicturesUpdatedAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Broadcasting MediaPicturesUpdated: {MediaId}", mediaId);
+        await hubContext.Clients.All.ReceiveMediaPicturesUpdated(mediaId);
+    }
+
     public async Task NotifyLibraryScanCompletedAsync(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Broadcasting LibraryScanCompleted: library {LibraryId}, {AddedCount} added, {SkippedCount} skipped, {InaccessiblePathCount} inaccessible", libraryId, addedCount, skippedCount, inaccessiblePathCount);

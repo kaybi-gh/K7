@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.Home.Services;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
 using K7.Server.Application.Features.Notifications.Services.Descriptors;
@@ -84,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaExternalIdResolver>();
+        services.AddScoped<MediaPictureReadyNotifier>();
         services.AddScoped<DiagnosticIssueEntityResolver>();
         services.AddScoped<DiagnosticFixBatchBuilder>();
         services.AddScoped<IHomeLayoutMaintenanceService, HomeLayoutMaintenanceService>();
