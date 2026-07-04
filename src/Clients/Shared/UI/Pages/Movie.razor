@@ -72,15 +72,14 @@ else
 {
     @if (_movie != null)
     {
-        var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop);
-        var backdropUrl = apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(backdropPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri;
         <div @ref="_tvScrollRoot" class="movie-page" data-tv-scroll>
-        <div class="background-image" style="--background-picture: url(@backdropUrl)" />
+        <div class="background-image" style="--background-picture: url(@_backdropUrl)" />
         <div class="movie-main" data-tv-scroll-zone="main">
         <K7BackButton />
         <div class="hero-page-stack">
             <div class="d-flex flex-col pa-10" style="gap: 8px;">
                 <K7Image Class="movie-page-logo"
+                         @key="_logoUrl"
                          ObjectFit="scale-down"
                          Src="@GetLogoUrl()"
                          Alt="">
@@ -166,7 +165,7 @@ else
                                         MediaId="_movie!.Id"
                                         Title="@(_movie.Title ?? string.Empty)"
                                         MediaType="MediaType.Movie"
-                                        CoverUrl="@(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri)"
+                                        CoverUrl="@_posterSmallUrl"
                                         VideoMetadata="@(_selectedFile.FileMetadata as VideoFileMetadataDto)"
                                         AudioTrackIndex="_selectedAudioFileTrack?.Index"
                                         SubtitleTrackIndices="@(_selectedSubtitleFileTrack is not null ? [_selectedSubtitleFileTrack.Index] : null)" />

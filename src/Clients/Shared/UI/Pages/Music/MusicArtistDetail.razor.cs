@@ -1,6 +1,9 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -12,7 +15,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
-public partial class MusicArtistDetail
+public partial class MusicArtistDetail : IDisposable
 {
     [Parameter]
     public required string Id { get; set; }
@@ -32,6 +35,9 @@ public partial class MusicArtistDetail
     [Inject]
     private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
+    [Inject]
+    private K7HubClient K7HubClient { get; set; } = default!;
+
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
@@ -42,21 +48,69 @@ public partial class MusicArtistDetail
     private bool _loading = true;
     private bool _canRate;
     private int? _artistUserRating;
+    private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+
+    protected override void OnInitialized()
+    {
+        _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
-        _loading = true;
-        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
-        var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
+        if (Guid.TryParse(Id, out var mediaId))
+        {
+            _metadataRefreshWatcher?.Watch(
+                mediaId,
+                () => LoadArtistAsync(isBackgroundRefresh: true),
+                () => LoadArtistAsync(isPicturesRefresh: true));
+        }
+
+        await LoadArtistAsync();
+    }
+
+    private async Task LoadArtistAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
+    {
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _loading = true;
+
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+
+        var media = await k7ServerService.GetMediaAsync(
+            Guid.Parse(Id),
+            bypassCache: isBackgroundRefresh || isPicturesRefresh);
 
         if (media is MusicArtistDto artist)
         {
             _artist = artist;
             _artistUserRating = GetUserRating(artist.Ratings);
 
-            _portraitUrl = apiClient.GetAbsoluteUri(
-                artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            ApplyArtistPortrait(artist, isPicturesRefresh ? DateTimeOffset.UtcNow : artist.LastMetadataRefreshedAt);
+
+            if (isPicturesRefresh)
+            {
+                var pictureCacheVersion = DateTimeOffset.UtcNow;
+                _albums = (artist.Albums ?? [])
+                    .OrderByDescending(a => a.ReleaseDate)
+                    .Select(album => new MediaCardViewModel
+                    {
+                        Id = album.Id.ToString(),
+                        Kind = MediaCardKind.Cover,
+                        MediaType = MediaType.MusicAlbum,
+                        Title = album.Title,
+                        AdditionalInformations = album.ReleaseDate?.Year.ToString(),
+                        PictureUrl = MediaPictureUrlHelper.WithCacheBuster(
+                            apiClient.GetAbsoluteUri(
+                                (album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                                    ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
+                                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+                            pictureCacheVersion)
+                    })
+                    .ToList();
+
+                StateHasChanged();
+                return;
+            }
 
             var albums = (artist.Albums ?? [])
                 .OrderByDescending(a => a.ReleaseDate)
@@ -107,7 +161,28 @@ public partial class MusicArtistDetail
             await LoadSimilarArtistsAsync(artist.Id);
         }
 
-        _loading = false;
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _loading = false;
+
+        if (isBackgroundRefresh && media is MusicArtistDto)
+            Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _metadataRefreshWatcher?.Dispose();
+    }
+
+    private void ApplyArtistPortrait(MusicArtistDto artist, DateTimeOffset? cacheVersion)
+    {
+        var portraitPicture = artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+            ?? artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Portrait);
+        var portraitUri = apiClient.GetAbsoluteUri(
+            portraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _portraitUrl = MediaPictureUrlHelper.WithCacheBuster(portraitUri, cacheVersion);
     }
 
     private async Task LoadSimilarArtistsAsync(Guid artistId)

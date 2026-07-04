@@ -390,8 +390,8 @@ public sealed class MockMediaService : IMediaService
 {
     public Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<HomeFeedItemDto>?>(null);
     public Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<MediaFormatDto>());
-    public Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MovieDto?>(null);
-    public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MediaDto?>(null);
+    public Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false) => Task.FromResult<MovieDto?>(null);
+    public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false) => Task.FromResult<MediaDto?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
     public Task<MediaTagsDto?> GetMediaTagsAsync(GetMediaTagsQuery query, CancellationToken cancellationToken = default) => Task.FromResult<MediaTagsDto?>(null);

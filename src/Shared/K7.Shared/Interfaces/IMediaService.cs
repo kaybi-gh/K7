@@ -14,8 +14,8 @@ namespace K7.Shared.Interfaces;
 public interface IMediaService
 {
     Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default);
-    Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false);
+    Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false);
     Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default);
     Task<MediaTagsDto?> GetMediaTagsAsync(GetMediaTagsQuery query, CancellationToken cancellationToken = default);

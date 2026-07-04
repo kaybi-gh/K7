@@ -23,6 +23,7 @@ public partial class Serie : IAsyncDisposable
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
     [Parameter]
     public required string Id { get; set; }
 
@@ -47,6 +48,12 @@ public partial class Serie : IAsyncDisposable
     private Guid? _libraryGroupId;
     private List<SerieStudioNetworkChip> _studioNetworkChips = [];
     private MediaReviewsSection? _reviewsSection;
+    private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+
+    protected override void OnInitialized()
+    {
+        _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+    }
 
     private bool HasTvBelowContent =>
         (_serie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
@@ -68,29 +75,54 @@ public partial class Serie : IAsyncDisposable
             _permissionsLoaded = true;
         }
 
-        _loading = true;
-        _tvScrollInitialized = false;
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        if (Guid.TryParse(Id, out var mediaId))
+        {
+            _metadataRefreshWatcher?.Watch(
+                mediaId,
+                () => LoadSerieAsync(isBackgroundRefresh: true),
+                () => LoadSerieAsync(isPicturesRefresh: true));
+        }
 
-        var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
+        await LoadSerieAsync();
+    }
+
+    private async Task LoadSerieAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
+    {
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+        {
+            _loading = true;
+            _tvScrollInitialized = false;
+            _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        }
+
+        var media = await k7ServerService.GetMediaAsync(
+            Guid.Parse(Id),
+            bypassCache: isBackgroundRefresh || isPicturesRefresh);
         if (media is SerieDto serie)
         {
             _serie = serie;
             _serieUserRating = GetUserRating(serie.Ratings);
 
-            _posterUrl = apiClient.GetAbsoluteUri(
+            var cacheVersion = isPicturesRefresh
+                ? DateTimeOffset.UtcNow
+                : serie.LastMetadataRefreshedAt;
+
+            var posterUri = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _posterUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
 
-            _backdropUrl = apiClient.GetAbsoluteUri(
+            var backdropUri = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _backdropUrl = MediaPictureUrlHelper.WithCacheBuster(backdropUri, cacheVersion);
 
             _dominantColor = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?.DominantColor;
 
-            _logoUrl = apiClient.GetAbsoluteUri(
+            var logoUri = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _logoUrl = MediaPictureUrlHelper.WithCacheBuster(logoUri, cacheVersion);
 
             _seasons = (serie.Seasons ?? [])
                 .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber)
@@ -105,9 +137,16 @@ public partial class Serie : IAsyncDisposable
             _studioNetworkChips = [];
         }
 
-        _loading = false;
+        if (!isBackgroundRefresh && !isPicturesRefresh)
+            _loading = false;
 
-        _ = LoadSimilarMediaAsync();
+        if (!isPicturesRefresh)
+            _ = LoadSimilarMediaAsync();
+
+        if (isBackgroundRefresh && media is SerieDto)
+            Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
+
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -419,6 +458,8 @@ public partial class Serie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _metadataRefreshWatcher?.Dispose();
+
         if (_tvScrollInitialized)
             await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }

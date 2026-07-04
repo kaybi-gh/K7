@@ -87,11 +87,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         }
     }
 
-    public async Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false)
     {
         try
         {
-            return await HttpClient.GetFromJsonAsync<MovieDto>($"api/medias/{id}", _serializerOptions, cancellationToken);
+            var url = BuildMediaUrl(id, bypassCache);
+            return await HttpClient.GetFromJsonAsync<MovieDto>(url, _serializerOptions, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -138,11 +139,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<HomeFeedItemDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
-    public async Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false)
     {
         try
         {
-            return await HttpClient.GetFromJsonAsync<MediaDto>($"api/medias/{id}", _serializerOptions, cancellationToken);
+            var url = BuildMediaUrl(id, bypassCache);
+            return await HttpClient.GetFromJsonAsync<MediaDto>(url, _serializerOptions, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -150,6 +152,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             return null;
         }
     }
+
+    private static string BuildMediaUrl(Guid id, bool bypassCache) =>
+        bypassCache
+            ? $"api/medias/{id}?nocache={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}"
+            : $"api/medias/{id}";
 
     public async Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default)
     {
