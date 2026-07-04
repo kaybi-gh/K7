@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Devices;
 
 namespace K7.Server.Application.Features.Devices.Queries.GetDevice;

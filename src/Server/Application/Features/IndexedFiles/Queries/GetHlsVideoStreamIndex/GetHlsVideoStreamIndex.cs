@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
@@ -28,7 +28,7 @@ public static class GetHlsVideoStreamIndexQueryUriBuilder
         .Replace("{quality}", $"{videoResolutionIdentifier}");
 }
 public record GetHlsVideoStreamIndexQuery(
-    Guid Id, 
+    Guid Id,
     string VideoResolutionIdentifier,
     Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
@@ -49,7 +49,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         {
             var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.VideoResolutionIdentifier);
             Guard.Against.Null(quality, nameof(query.VideoResolutionIdentifier), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
-        }        
+        }
 
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -112,15 +112,15 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         {
             $"streamSessionId={streamSessionId}"
         };
-        
+
         if (!string.IsNullOrEmpty(transcodingVideoCodec))
             queryParams.Add($"TranscodingVideoCodec={transcodingVideoCodec}");
 
         if (subtitleBurnInStreamIndex.HasValue)
             queryParams.Add($"SubtitleBurnInStreamIndex={subtitleBurnInStreamIndex.Value}");
-            
+
         var queryString = "?" + string.Join("&", queryParams);
-        
+
         content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(segmentDurations.Max())}");
         content.AppendLine("#EXT-X-VERSION:7"); // Version 7 required for fMP4
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
@@ -137,7 +137,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
 
         return content.ToString();
     }
-    
+
     private static double[] ComputeEqualLengthSegments(int desiredSegmentLengthMs, double totalDurationMs)
     {
         if (desiredSegmentLengthMs == 0 || totalDurationMs == 0)
@@ -150,7 +150,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
 
         var segmentsLen = wholeSegments + (remainingMs > 0 ? 1 : 0);
         var segments = new double[segmentsLen];
-        
+
         for (int i = 0; i < wholeSegments; i++)
         {
             segments[i] = desiredSegmentLengthMs / 1000.0;

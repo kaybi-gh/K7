@@ -1,6 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Enums;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using Microsoft.EntityFrameworkCore;
 

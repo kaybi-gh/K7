@@ -1,13 +1,28 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
+using K7.Server.Application.Models;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 
 namespace K7.Server.Application.Extensions;
+
 public static class FileInfoExtensions
 {
     public static bool IsSupportedFile(this FileInfo fileInfo)
     {
         return Constants.MediaFiles.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public static ScannedFileEntry ToScannedFileEntry(this FileInfo fileInfo)
+    {
+        return new ScannedFileEntry
+        {
+            Path = fileInfo.FullName,
+            Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
+            Extension = fileInfo.Extension,
+            ParentDirectory = fileInfo.Directory?.Name,
+            Size = fileInfo.Length,
+            LastWriteTimeUtc = fileInfo.LastWriteTimeUtc
+        };
     }
 
     public static uint ComputeFileHash(this FileInfo fileInfo)
@@ -30,6 +45,22 @@ public static class FileInfoExtensions
         return BitConverter.ToUInt32(hashBytes) ^ (uint)fileInfo.Length;
     }
 
+    public static IndexedFile ToIndexedFile(this ScannedFileEntry entry, Guid libraryId, uint hash)
+    {
+        return new IndexedFile
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            Name = entry.Name,
+            Extension = entry.Extension,
+            Path = entry.Path,
+            ParentDirectory = entry.ParentDirectory,
+            Hash = hash,
+            Size = entry.Size,
+            LastWriteTimeUtc = entry.LastWriteTimeUtc
+        };
+    }
+
     public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId)
     {
         if (!fileInfo.IsSupportedFile())
@@ -37,16 +68,6 @@ public static class FileInfoExtensions
             return null;
         }
 
-        return new IndexedFile()
-        {
-            Id = Guid.NewGuid(),
-            LibraryId = libraryId,
-            Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
-            Extension = fileInfo.Extension,
-            Path = fileInfo.FullName,
-            ParentDirectory = fileInfo.Directory?.Name,
-            Hash = fileInfo.ComputeFileHash(),
-            Size = fileInfo.Length
-        };
+        return fileInfo.ToScannedFileEntry().ToIndexedFile(libraryId, fileInfo.ComputeFileHash());
     }
 }

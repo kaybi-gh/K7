@@ -24,7 +24,9 @@ public static class LibraryMappings
             SeekbarThumbnailGenerationEnabled = domain.SeekbarThumbnailGenerationEnabled,
             MusicAudioAnalysisEnabled = domain.MusicAudioAnalysisEnabled,
             TranscodingEnabled = domain.TranscodingEnabled,
-            TransmuxingEnabled = domain.TransmuxingEnabled
+            TransmuxingEnabled = domain.TransmuxingEnabled,
+            RealtimeMonitorEnabled = domain.RealtimeMonitorEnabled,
+            AutoScanIntervalHours = domain.AutoScanIntervalHours
         };
     }
 }

@@ -1,10 +1,11 @@
-﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Enums;
-using K7.Server.Domain.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
+
 public record CreateFileMetadatasCommand : IRequest
 {
     public required Guid Id { get; set; }
@@ -27,7 +28,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
         var indexedFile = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
-            
+
         Guard.Against.NotFound(request.Id, indexedFile);
         Guard.Against.NullOrEmpty(indexedFile.Path);
 

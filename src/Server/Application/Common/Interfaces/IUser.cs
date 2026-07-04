@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Common.Interfaces;
+namespace K7.Server.Application.Common.Interfaces;
 
 public interface IUser // How to put this into domain?
 {

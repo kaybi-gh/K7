@@ -1,7 +1,7 @@
+using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
-using FluentValidation.Results;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Users.Commands.DeleteUser;

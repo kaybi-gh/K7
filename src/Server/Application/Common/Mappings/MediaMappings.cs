@@ -243,160 +243,160 @@ public static class MediaMappings
 
             return domain switch
             {
-            Movie movie => new LiteMovieDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            MusicAlbum album => new LiteMusicAlbumDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            MusicTrack track => new LiteMusicTrackDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(track.Album?.Pictures ?? domain.Pictures),
-                AlbumId = track.AlbumId,
-                TrackNumber = track.TrackNumber,
-                IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
-                RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
-                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds
-                    ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
-                AlbumTitle = track.Album?.Title,
-                ArtistName = track.Artist?.Title ?? track.Album?.Artist?.Title,
-                ArtistId = track.ArtistId ?? track.Album?.ArtistId,
-                Genre = track.GetPrimaryGenreDisplayName(),
-                LoudnessLufs = track.AudioAnalysis?.LoudnessLufs,
-                FadeInDuration = track.AudioAnalysis?.FadeInDuration,
-                FadeOutDuration = track.AudioAnalysis?.FadeOutDuration,
-                ReplayGainTrackGain = track.AudioAnalysis?.ReplayGainTrackGain,
-                ArtistCredits = track.ArtistCredits.Count > 0
-                    ? track.ArtistCredits.OrderBy(c => c.Order).Select(c => new MusicArtistCreditDto
-                    {
-                        ArtistId = c.MusicArtistId,
-                        ArtistName = c.MusicArtist?.Title ?? "",
-                        IsGuest = c.IsGuest
-                    }).ToList()
-                    : null,
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            MusicArtist artist => new LiteMusicArtistDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                ArtistType = artist.ArtistType,
-                Country = artist.Country,
-                Albums = artist.Albums.Count > 0
-                    ? artist.Albums.Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto()).ToList()
-                    : null,
-                GuestAppearanceAlbums = artist.ArtistCredits.Count > 0
-                    ? artist.ArtistCredits
-                        .Where(c => c.IsGuest && c.Media is MusicTrack { Album: not null })
-                        .Select(c => ((MusicTrack)c.Media).Album)
-                        .DistinctBy(a => a.Id)
-                        .Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto())
-                        .ToList() is { Count: > 0 } guestAlbums ? guestAlbums : null
-                    : null,
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            Serie => new LiteSerieDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            SerieSeason season => new LiteSerieSeasonDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                SerieId = season.SerieId,
-                SerieTitle = season.Serie?.Title,
-                SeasonNumber = season.SeasonNumber,
-                EpisodeCount = season.Episodes.Count,
-                Poster = domain.Pictures
-                    .Where(p => p.Type == MetadataPictureType.Poster)
-                    .Select(MapPicture)
-                    .FirstOrDefault(),
-                SeriePictures = season.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
-                UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
-                    ?? (domain.UserMediaStates.FirstOrDefault() is { } state
+                Movie movie => new LiteMovieDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                         ? state.ToUserMediaStateDto()
-                        : null),
-                UserRating = GetUserRating(domain)
-            },
-            SerieEpisode episode => new LiteSerieEpisodeDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Created = domain.Created,
-                Pictures = MapPictures(domain.Pictures),
-                EpisodeNumber = episode.EpisodeNumber,
-                SeasonNumber = episode.Season?.SeasonNumber ?? 0,
-                SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
-                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
-                    ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
-                Overview = episode.Overview,
-                SerieId = episode.SerieId,
-                SerieTitle = episode.Serie?.Title,
-                SerieReleaseDate = episode.Serie?.ReleaseDate,
-                StillImageId = domain.Pictures
-                    .Where(p => p.Type == MetadataPictureType.Still)
-                    .Select(p => (Guid?)p.Id)
-                    .FirstOrDefault(),
-                IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
-                RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
-                SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
-                SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                UserRating = GetUserRating(domain)
-            },
-            _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                MusicAlbum album => new LiteMusicAlbumDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                MusicTrack track => new LiteMusicTrackDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(track.Album?.Pictures ?? domain.Pictures),
+                    AlbumId = track.AlbumId,
+                    TrackNumber = track.TrackNumber,
+                    IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
+                    RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
+                    Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds
+                        ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
+                    AlbumTitle = track.Album?.Title,
+                    ArtistName = track.Artist?.Title ?? track.Album?.Artist?.Title,
+                    ArtistId = track.ArtistId ?? track.Album?.ArtistId,
+                    Genre = track.GetPrimaryGenreDisplayName(),
+                    LoudnessLufs = track.AudioAnalysis?.LoudnessLufs,
+                    FadeInDuration = track.AudioAnalysis?.FadeInDuration,
+                    FadeOutDuration = track.AudioAnalysis?.FadeOutDuration,
+                    ReplayGainTrackGain = track.AudioAnalysis?.ReplayGainTrackGain,
+                    ArtistCredits = track.ArtistCredits.Count > 0
+                        ? track.ArtistCredits.OrderBy(c => c.Order).Select(c => new MusicArtistCreditDto
+                        {
+                            ArtistId = c.MusicArtistId,
+                            ArtistName = c.MusicArtist?.Title ?? "",
+                            IsGuest = c.IsGuest
+                        }).ToList()
+                        : null,
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                MusicArtist artist => new LiteMusicArtistDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    ArtistType = artist.ArtistType,
+                    Country = artist.Country,
+                    Albums = artist.Albums.Count > 0
+                        ? artist.Albums.Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto()).ToList()
+                        : null,
+                    GuestAppearanceAlbums = artist.ArtistCredits.Count > 0
+                        ? artist.ArtistCredits
+                            .Where(c => c.IsGuest && c.Media is MusicTrack { Album: not null })
+                            .Select(c => ((MusicTrack)c.Media).Album)
+                            .DistinctBy(a => a.Id)
+                            .Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto())
+                            .ToList() is { Count: > 0 } guestAlbums ? guestAlbums : null
+                        : null,
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                Serie => new LiteSerieDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                SerieSeason season => new LiteSerieSeasonDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    SerieId = season.SerieId,
+                    SerieTitle = season.Serie?.Title,
+                    SeasonNumber = season.SeasonNumber,
+                    EpisodeCount = season.Episodes.Count,
+                    Poster = domain.Pictures
+                        .Where(p => p.Type == MetadataPictureType.Poster)
+                        .Select(MapPicture)
+                        .FirstOrDefault(),
+                    SeriePictures = season.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
+                    UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
+                        ?? (domain.UserMediaStates.FirstOrDefault() is { } state
+                            ? state.ToUserMediaStateDto()
+                            : null),
+                    UserRating = GetUserRating(domain)
+                },
+                SerieEpisode episode => new LiteSerieEpisodeDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    EpisodeNumber = episode.EpisodeNumber,
+                    SeasonNumber = episode.Season?.SeasonNumber ?? 0,
+                    SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
+                    Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
+                        ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
+                    Overview = episode.Overview,
+                    SerieId = episode.SerieId,
+                    SerieTitle = episode.Serie?.Title,
+                    SerieReleaseDate = episode.Serie?.ReleaseDate,
+                    StillImageId = domain.Pictures
+                        .Where(p => p.Type == MetadataPictureType.Still)
+                        .Select(p => (Guid?)p.Id)
+                        .FirstOrDefault(),
+                    IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
+                    RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
+                    SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
+                    SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                },
+                _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
             };
         }
     }

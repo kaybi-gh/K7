@@ -1,6 +1,6 @@
+using FluentValidation.Results;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
-using FluentValidation.Results;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Users.Commands.ChangePassword;

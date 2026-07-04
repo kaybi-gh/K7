@@ -1,9 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Application.Features.Medias.Services;
 using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdateMediaMetadata;

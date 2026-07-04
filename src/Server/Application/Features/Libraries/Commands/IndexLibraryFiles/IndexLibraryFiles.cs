@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Interfaces;
 
@@ -11,12 +11,18 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
     private readonly IApplicationDbContext _context;
     private readonly IFileIndexer _fileIndexerService;
     private readonly ILibraryNotifier _libraryNotifier;
+    private readonly IMediaQueryCacheInvalidator _cacheInvalidator;
 
-    public IndexLibraryFilesCommandHandler(IApplicationDbContext context, IFileIndexer fileIndexerService, ILibraryNotifier libraryNotifier)
+    public IndexLibraryFilesCommandHandler(
+        IApplicationDbContext context,
+        IFileIndexer fileIndexerService,
+        ILibraryNotifier libraryNotifier,
+        IMediaQueryCacheInvalidator cacheInvalidator)
     {
         _context = context;
         _fileIndexerService = fileIndexerService;
         _libraryNotifier = libraryNotifier;
+        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task Handle(IndexLibraryFilesCommand request, CancellationToken cancellationToken)
@@ -25,13 +31,6 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-
-        var existingFiles = await _context.IndexedFiles
-            .Where(f => f.LibraryId == request.Id)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        entity.IndexedFiles = existingFiles;
 
         var result = await _fileIndexerService.IndexAsync(entity, cancellationToken);
 
@@ -56,6 +55,7 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        _cacheInvalidator.InvalidateAll();
         await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, result.SkippedCount, result.InaccessiblePaths.Count, cancellationToken);
     }
 }

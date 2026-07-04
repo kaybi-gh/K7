@@ -10328,6 +10328,26 @@
           },
           "transmuxingEnabled": {
             "type": "boolean"
+          },
+          "metadataRefreshIntervalDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "realtimeMonitorEnabled": {
+            "type": "boolean"
+          },
+          "autoScanIntervalHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -11632,6 +11652,17 @@
           },
           "transmuxingEnabled": {
             "type": "boolean"
+          },
+          "realtimeMonitorEnabled": {
+            "type": "boolean"
+          },
+          "autoScanIntervalHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -18168,6 +18199,21 @@
               "null",
               "boolean"
             ]
+          },
+          "realtimeMonitorEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "autoScanIntervalHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

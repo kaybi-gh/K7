@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -99,7 +99,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
                 RawOperatingSystemVersionName = request.CreateDeviceRequest.WebDeviceDetails.RawOperatingSystemVersionName,
                 RawPlatformType = request.CreateDeviceRequest.WebDeviceDetails.RawPlatformType,
                 RawEngineName = request.CreateDeviceRequest.WebDeviceDetails.RawEngineName,
-                RawEngineVersion = request.CreateDeviceRequest.WebDeviceDetails.RawEngineVersion                
+                RawEngineVersion = request.CreateDeviceRequest.WebDeviceDetails.RawEngineVersion
             };
         }
 

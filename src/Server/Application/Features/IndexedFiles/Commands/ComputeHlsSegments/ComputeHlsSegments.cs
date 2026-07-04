@@ -1,10 +1,11 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
+
 public record ComputeHlsSegmentsCommand : IRequest
 {
     public required Guid Id { get; set; }

@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;

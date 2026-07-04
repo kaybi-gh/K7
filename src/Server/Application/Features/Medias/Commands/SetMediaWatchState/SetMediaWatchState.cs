@@ -1,3 +1,5 @@
+using FluentValidation;
+using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Services;
@@ -6,8 +8,6 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Enums;
-using FluentValidation;
-using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Medias.Commands.SetMediaWatchState;

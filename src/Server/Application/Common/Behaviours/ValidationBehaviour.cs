@@ -1,4 +1,4 @@
-﻿using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Common.Behaviours;
 

@@ -1,8 +1,9 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
+
 public record GenerateThumbnailsCommand : IRequest
 {
     public required Guid Id { get; set; }

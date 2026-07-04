@@ -807,6 +807,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset>("LastWriteTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("LibraryId")
                         .HasColumnType("uuid");
 
@@ -841,6 +844,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int>("AutoScanIntervalHours")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(6);
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
@@ -894,6 +902,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<Guid?>("PeerServerId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("RealtimeMonitorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("RootPath")
                         .HasColumnType("text");

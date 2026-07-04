@@ -27,13 +27,13 @@ public static class GetHlsVideoStreamSegmentQueryUriBuilder
 
     public static string BuildPlaylistRelativePath(int segmentNumber) =>
         $"segments/{segmentNumber}.m4s";
-    
+
     public static string BuildInitSegmentPath() => "segments/init.m4s";
 }
 
 public record GetHlsVideoStreamSegmentQuery(
-    Guid Id, 
-    string Quality, 
+    Guid Id,
+    string Quality,
     int SegmentNumber,
     Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
@@ -75,7 +75,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         var query_db = _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .Where(x => x.Id == query.Id);
-        
+
         var entity = await query_db.FirstOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
@@ -209,7 +209,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         var timeoutSeconds = query.SegmentNumber == -1 ? 60 : 30;
         var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
         var pollingInterval = 200;
-        
+
         while (!File.Exists(segmentPath) && DateTime.UtcNow < deadline)
         {
             if (DateTime.UtcNow.Second % 2 == 0 && DateTime.UtcNow.Millisecond < pollingInterval)
@@ -234,7 +234,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
 
         // Wait for the file to be accessible (not locked by FFmpeg)
         var accessDeadline = DateTime.UtcNow.AddSeconds(5);
-        
+
         while (DateTime.UtcNow < accessDeadline)
         {
             try

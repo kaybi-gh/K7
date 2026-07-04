@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
@@ -6,6 +6,7 @@ using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Models;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -14,24 +15,66 @@ using K7.Server.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Services;
+
 public class FileIndexer : IFileIndexer
 {
     private const int SaveBatchSize = 500;
+    private const int ScanParallelism = 4;
+    private const int ProgressReportInterval = 250;
 
     private readonly ILogger<FileIndexer> _logger;
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IAudioTagReader _audioTagReader;
+    private readonly ILibraryScanProgressReporter _progressReporter;
 
-    public FileIndexer(ILogger<FileIndexer> logger, IApplicationDbContext context, ISender sender, IAudioTagReader audioTagReader)
+    public FileIndexer(
+        ILogger<FileIndexer> logger,
+        IApplicationDbContext context,
+        ISender sender,
+        IAudioTagReader audioTagReader,
+        ILibraryScanProgressReporter progressReporter)
     {
         _logger = logger;
         _context = context;
         _sender = sender;
         _audioTagReader = audioTagReader;
+        _progressReporter = progressReporter;
     }
 
-    public async Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken)
+    public Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken = default)
+    {
+        Guard.Against.NullOrEmpty(library.RootPath);
+        return IndexInternalAsync(library, ct => FileInfoHelper.GetSupportedFilesRecursively(library.RootPath!, ct), cancellationToken);
+    }
+
+    public Task<LibraryScanResult> IndexPathsAsync(Library library, IReadOnlyList<string> paths, CancellationToken cancellationToken = default)
+    {
+        Guard.Against.NullOrEmpty(library.RootPath);
+
+        var normalizedPaths = paths
+            .Select(path => Path.GetFullPath(path))
+            .Where(path => path.StartsWith(Path.GetFullPath(library.RootPath!), StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (normalizedPaths.Count == 0)
+        {
+            throw new ArgumentException("No paths are within the library root.", nameof(paths));
+        }
+
+        return IndexInternalAsync(
+            library,
+            ct => FileInfoHelper.GetSupportedFilesForPaths(normalizedPaths, ct),
+            cancellationToken,
+            scopePaths: normalizedPaths);
+    }
+
+    private async Task<LibraryScanResult> IndexInternalAsync(
+        Library library,
+        Func<CancellationToken, (List<ScannedFileEntry> Files, List<(string Path, string Error)> InaccessiblePaths)> scanFiles,
+        CancellationToken cancellationToken,
+        IReadOnlyList<string>? scopePaths = null)
     {
         List<CreateBackgroundTasksBatchItem> backgroundTasks = [];
 
@@ -39,18 +82,40 @@ public class FileIndexer : IFileIndexer
         {
             _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
 
-            var (indexedFiles, skippedFilePaths, inaccessiblePaths) = ScanFiles(library, cancellationToken);
-            var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
-            var unchangedToReIdentify = unchangedFiles.Where(x => x.Identification is null || !x.MediaId.HasValue).ToList();
-            var toBeIdentifiedFiles = addedFiles.Concat(unchangedToReIdentify).ToList();
+            await _progressReporter.ReportProgressAsync(library.Id, 0, 0, "scanning", cancellationToken);
 
-            var unchangedCount = unchangedFiles.Count();
-            var addedCount = addedFiles.Count();
-            var removedCount = removedFiles.Count();
-            var renamedCount = renamedFiles.Count();
+            var (scannedEntries, inaccessiblePaths) = scanFiles(cancellationToken);
+            var skippedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified. {InaccessibleCount} inaccessible directories.",
-                unchangedCount, addedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count, inaccessiblePaths.Count);
+            await _progressReporter.ReportProgressAsync(library.Id, 0, scannedEntries.Count, "comparing", cancellationToken);
+
+            var existingFiles = await LoadExistingFilesAsync(library.Id, scopePaths, cancellationToken);
+            library.IndexedFiles = existingFiles;
+
+            var diff = BuildDiff(library.Id, scannedEntries, existingFiles, skippedFilePaths);
+
+            var unchangedToReIdentify = diff.UnchangedFiles
+                .Where(x => x.Identification is null || !x.MediaId.HasValue)
+                .ToList();
+
+            var modifiedAsNew = diff.ModifiedFiles
+                .Select(pair => ApplyContentChange(pair.ExistingFile, pair.ScannedFile))
+                .ToList();
+
+            var toBeIdentifiedFiles = diff.AddedFiles
+                .Concat(unchangedToReIdentify)
+                .Concat(modifiedAsNew.Where(f => f.Identification is null || !f.MediaId.HasValue))
+                .ToList();
+
+            var unchangedCount = diff.UnchangedFiles.Count;
+            var addedCount = diff.AddedFiles.Count;
+            var removedCount = diff.RemovedFiles.Count;
+            var renamedCount = diff.RenamedFiles.Count;
+            var modifiedCount = diff.ModifiedFiles.Count;
+
+            _logger.LogInformation(
+                "Found {UnchangedCount} unchanged, {AddedCount} added, {ModifiedCount} modified, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified. {InaccessibleCount} inaccessible directories.",
+                unchangedCount, addedCount, modifiedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count, inaccessiblePaths.Count);
 
             foreach (var (path, error) in inaccessiblePaths)
             {
@@ -58,29 +123,37 @@ public class FileIndexer : IFileIndexer
             }
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
-            ProcessAddedFiles(library, addedFiles, backgroundTasks);
-            await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, backgroundTasks, cancellationToken);
-            ProcessRemovedFiles(removedFiles, backgroundTasks);
-            ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
+            ProcessAddedFiles(library, diff.AddedFiles, backgroundTasks);
+            ProcessAddedFiles(library, modifiedAsNew, backgroundTasks);
+            await ProcessUnchangedFilesMissingMetadataAsync(library, diff.UnchangedFiles, backgroundTasks, cancellationToken);
+            ProcessRemovedFiles(diff.RemovedFiles, backgroundTasks);
+            ProcessRenamedFiles(library, diff.RenamedFiles, backgroundTasks);
 
-            // Attach unchanged files that were re-identified (loaded as no-tracking)
             if (unchangedToReIdentify.Count > 0)
             {
                 _context.IndexedFiles.UpdateRange(unchangedToReIdentify);
             }
 
-            // Save added files in batches to avoid a single massive transaction
-            foreach (var batch in addedFiles.Chunk(SaveBatchSize))
+            if (modifiedAsNew.Count > 0)
+            {
+                _context.IndexedFiles.UpdateRange(modifiedAsNew);
+            }
+
+            foreach (var (existingFile, scannedFile) in diff.BackfillTimestampFiles)
+            {
+                existingFile.LastWriteTimeUtc = scannedFile.LastWriteTimeUtc;
+                _context.IndexedFiles.Update(existingFile);
+            }
+
+            foreach (var batch in diff.AddedFiles.Chunk(SaveBatchSize))
             {
                 _context.IndexedFiles.AddRange(batch);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                // Detach saved entities to keep the ChangeTracker lean
                 foreach (var file in batch)
                     _context.Entry(file).State = EntityState.Detached;
             }
 
-            // Save re-identified and other tracked changes
             await _context.SaveChangesAsync(cancellationToken);
 
             if (backgroundTasks.Count > 0)
@@ -88,9 +161,11 @@ public class FileIndexer : IFileIndexer
                 await _sender.Send(new CreateBackgroundTasksBatchCommand(backgroundTasks), cancellationToken);
             }
 
+            await _progressReporter.ReportProgressAsync(library.Id, scannedEntries.Count, scannedEntries.Count, "completed", cancellationToken);
+
             return new LibraryScanResult(
                 unchangedCount,
-                addedCount,
+                addedCount + modifiedCount,
                 removedCount,
                 renamedCount,
                 skippedFilePaths.Count,
@@ -104,30 +179,56 @@ public class FileIndexer : IFileIndexer
         }
     }
 
-    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths, IReadOnlyList<(string Path, string Error)> InaccessiblePaths) ScanFiles(Library library, CancellationToken cancellationToken)
+    private async Task<List<IndexedFile>> LoadExistingFilesAsync(
+        Guid libraryId,
+        IReadOnlyList<string>? scopePaths,
+        CancellationToken cancellationToken)
     {
-        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath!, cancellationToken);
-        ConcurrentBag<IndexedFile> indexedFiles = [];
-        ConcurrentBag<string> skippedFilePaths = [];
+        var query = _context.IndexedFiles
+            .Where(f => f.LibraryId == libraryId)
+            .AsNoTracking();
 
-        Parallel.ForEach(fileInfos, new ParallelOptions { CancellationToken = cancellationToken }, fileInfo =>
+        if (scopePaths is { Count: > 0 })
         {
-            try
-            {
-                var indexedFile = fileInfo.ToIndexedFile(library.Id);
-                if (indexedFile != null)
-                {
-                    indexedFiles.Add(indexedFile);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
-                skippedFilePaths.Add(fileInfo.FullName);
-            }
-        });
+            var scopedFiles = await query.ToListAsync(cancellationToken);
+            return scopedFiles
+                .Where(f => scopePaths.Any(scope => f.Path.StartsWith(scope, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
 
-        return ([.. indexedFiles], [.. skippedFilePaths], inaccessiblePaths);
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    private LibraryScanDiff BuildDiff(
+        Guid libraryId,
+        IReadOnlyList<ScannedFileEntry> scannedEntries,
+        IReadOnlyList<IndexedFile> existingFiles,
+        HashSet<string> skippedFilePaths)
+    {
+        var hashCache = new ConcurrentDictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
+
+        uint ComputeHash(ScannedFileEntry entry)
+        {
+            return hashCache.GetOrAdd(entry.Path, _ => new FileInfo(entry.Path).ComputeFileHash());
+        }
+
+        return LibraryScanDiffBuilder.Build(
+            scannedEntries,
+            existingFiles,
+            skippedFilePaths,
+            entry => entry.ToIndexedFile(libraryId, ComputeHash(entry)));
+    }
+
+    private static IndexedFile ApplyContentChange(IndexedFile existingFile, ScannedFileEntry scannedFile)
+    {
+        var fileInfo = new FileInfo(scannedFile.Path);
+        existingFile.Hash = fileInfo.ComputeFileHash();
+        existingFile.Size = scannedFile.Size;
+        existingFile.LastWriteTimeUtc = scannedFile.LastWriteTimeUtc;
+        existingFile.Name = scannedFile.Name;
+        existingFile.Extension = scannedFile.Extension;
+        existingFile.ParentDirectory = scannedFile.ParentDirectory;
+        return existingFile;
     }
 
     private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
@@ -171,7 +272,7 @@ public class FileIndexer : IFileIndexer
                 }
 
                 Parallel.ForEach(toBeIdentifiedFiles.Where(f => f.Identification is not null),
-                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                    new ParallelOptions { MaxDegreeOfParallelism = ScanParallelism },
                     file => EnrichMusicIdentificationFromTags(file));
 
                 foreach (var albumGroup in toBeIdentifiedFiles
@@ -272,30 +373,7 @@ public class FileIndexer : IFileIndexer
 
         _logger.LogInformation("Found {Count} unchanged files missing FileMetadata, creating tasks.", filesMissingMetadata.Count);
 
-        var fileType = library.MediaType switch
-        {
-            LibraryMediaType.Movie => FileType.Video,
-            LibraryMediaType.Music => FileType.Audio,
-            LibraryMediaType.Serie => FileType.Video,
-            _ => throw new InvalidOperationException(),
-        };
-
-        foreach (var file in filesMissingMetadata)
-        {
-            backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
-            {
-                Request = new CreateFileMetadatasCommand()
-                {
-                    Id = file.Id,
-                    FileType = fileType
-                },
-                Priority = BackgroundTaskPriority.VeryHigh,
-                TargetEntityId = file.Id,
-                TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 5,
-                ConcurrencyGroup = "ffmpeg"
-            });
-        }
+        ProcessAddedFiles(library, filesMissingMetadata, backgroundTasks);
     }
 
     private static void ProcessRemovedFiles(IEnumerable<IndexedFile> removedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
@@ -319,6 +397,7 @@ public class FileIndexer : IFileIndexer
             oldFile.ParentDirectory = newFile.ParentDirectory;
             oldFile.Path = newFile.Path;
             oldFile.Size = newFile.Size;
+            oldFile.LastWriteTimeUtc = newFile.LastWriteTimeUtc;
 
             if (library.MediaType == LibraryMediaType.Movie
                 && newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification)

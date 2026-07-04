@@ -20,4 +20,6 @@ public sealed record LibraryDto
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;
+    public bool RealtimeMonitorEnabled { get; init; } = true;
+    public int AutoScanIntervalHours { get; init; } = 6;
 }

@@ -21,7 +21,8 @@ public class IndexLibraryFiles : IEndpoint
                 Priority = Domain.Enums.BackgroundTaskPriority.Normal,
                 TargetEntityId = id,
                 TargetEntityTypeName = nameof(Library),
-                TimeoutSeconds = 3600
+                TimeoutSeconds = 3600,
+                ConcurrencyGroup = "library-scan"
             }, cancellationToken);
             return Results.NoContent();
         })

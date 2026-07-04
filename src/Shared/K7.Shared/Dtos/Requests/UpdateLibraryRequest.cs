@@ -13,4 +13,6 @@ public sealed record UpdateLibraryRequest
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }
+    public bool? RealtimeMonitorEnabled { get; init; }
+    public int? AutoScanIntervalHours { get; init; }
 }

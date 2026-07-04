@@ -5,9 +5,9 @@ using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
-using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using Microsoft.Extensions.Logging;
 

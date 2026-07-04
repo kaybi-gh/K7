@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;

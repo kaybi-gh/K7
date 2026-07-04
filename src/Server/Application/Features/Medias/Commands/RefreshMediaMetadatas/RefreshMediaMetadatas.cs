@@ -1,13 +1,13 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;

@@ -1,4 +1,4 @@
-﻿using K7.Server.Domain.Enums;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Helpers;
 

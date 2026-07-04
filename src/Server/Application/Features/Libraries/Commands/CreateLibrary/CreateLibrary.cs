@@ -1,7 +1,8 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -28,17 +29,25 @@ public record CreateLibraryCommand : IRequest<Guid>
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;
+    public int? MetadataRefreshIntervalDays { get; init; }
+    public bool RealtimeMonitorEnabled { get; init; } = true;
+    public int AutoScanIntervalHours { get; init; } = 6;
 }
 
 public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly ILibraryFolderWatcher _libraryFolderWatcher;
 
-    public CreateLibraryCommandHandler(IApplicationDbContext context, ISender sender)
+    public CreateLibraryCommandHandler(
+        IApplicationDbContext context,
+        ISender sender,
+        ILibraryFolderWatcher libraryFolderWatcher)
     {
         _context = context;
         _sender = sender;
+        _libraryFolderWatcher = libraryFolderWatcher;
     }
 
     public async Task<Guid> Handle(CreateLibraryCommand request, CancellationToken cancellationToken)
@@ -80,12 +89,16 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled,
             MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled,
             TranscodingEnabled = request.TranscodingEnabled,
-            TransmuxingEnabled = request.TransmuxingEnabled
+            TransmuxingEnabled = request.TransmuxingEnabled,
+            MetadataRefreshIntervalDays = request.MetadataRefreshIntervalDays,
+            RealtimeMonitorEnabled = request.RealtimeMonitorEnabled,
+            AutoScanIntervalHours = request.AutoScanIntervalHours
         };
 
         entity.AddDomainEvent(new LibraryCreatedEvent(entity));
         _context.Libraries.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
+        await _libraryFolderWatcher.RefreshWatchersAsync(cancellationToken);
 
         if (request.TriggerFileIndexingOnCreation)
         {
@@ -95,7 +108,8 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
                 Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = entity.Id,
                 TargetEntityTypeName = nameof(Library),
-                TimeoutSeconds = 3600
+                TimeoutSeconds = 3600,
+                ConcurrencyGroup = "library-scan"
             }, cancellationToken);
         }
 

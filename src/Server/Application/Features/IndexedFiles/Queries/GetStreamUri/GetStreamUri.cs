@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -65,7 +65,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         var device = await _context.Devices
             .FindAsync([request.DeviceId], cancellationToken);
-            
+
         Guard.Against.NotFound((Guid)request.DeviceId, device);
 
         if (indexedFile.FileMetadata is AudioFileMetadata audioFileMetadata)

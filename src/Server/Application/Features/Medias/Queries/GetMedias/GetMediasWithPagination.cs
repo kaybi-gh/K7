@@ -1,7 +1,8 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using System.Text.Json;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Medias.Services;
@@ -11,7 +12,6 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using Microsoft.Extensions.Caching.Memory;
-using System.Text.Json;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 

@@ -829,6 +829,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LastWriteTimeUtc")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("LibraryId")
                         .HasColumnType("TEXT");
 
@@ -863,6 +867,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("AutoScanIntervalHours")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(6);
 
                     b.Property<string>("Created")
                         .IsRequired()
@@ -918,6 +927,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<Guid?>("PeerServerId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("RealtimeMonitorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("RootPath")
                         .HasColumnType("TEXT");

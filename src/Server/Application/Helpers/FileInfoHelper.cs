@@ -1,4 +1,8 @@
-﻿namespace K7.Server.Application.Helpers;
+using K7.Server.Application.Extensions;
+using K7.Server.Application.Models;
+
+namespace K7.Server.Application.Helpers;
+
 public static class FileInfoHelper
 {
     private static readonly HashSet<string> ExcludedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
@@ -9,6 +13,70 @@ public static class FileInfoHelper
         "@Recycle",
         ".DS_Store"
     };
+
+    public static (List<ScannedFileEntry> Files, List<(string Path, string Error)> InaccessiblePaths) GetSupportedFilesRecursively(
+        string rootDirectory,
+        CancellationToken cancellationToken = default)
+    {
+        var (fileInfos, inaccessiblePaths) = GetAllFileInfosRecursively(rootDirectory, cancellationToken);
+        var files = new List<ScannedFileEntry>(fileInfos.Count);
+
+        foreach (var fileInfo in fileInfos)
+        {
+            if (!fileInfo.IsSupportedFile())
+                continue;
+
+            files.Add(fileInfo.ToScannedFileEntry());
+        }
+
+        return (files, inaccessiblePaths);
+    }
+
+    public static (List<ScannedFileEntry> Files, List<(string Path, string Error)> InaccessiblePaths) GetSupportedFilesForPaths(
+        IReadOnlyList<string> paths,
+        CancellationToken cancellationToken = default)
+    {
+        var files = new List<ScannedFileEntry>();
+        var inaccessiblePaths = new List<(string Path, string Error)>();
+
+        foreach (var path in paths)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (File.Exists(path))
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(path);
+                    if (fileInfo.IsSupportedFile())
+                        files.Add(fileInfo.ToScannedFileEntry());
+                }
+                catch (Exception ex)
+                {
+                    inaccessiblePaths.Add((path, ex.Message));
+                }
+
+                continue;
+            }
+
+            if (Directory.Exists(path))
+            {
+                var (dirFiles, dirErrors) = GetSupportedFilesRecursively(path, cancellationToken);
+                files.AddRange(dirFiles);
+                inaccessiblePaths.AddRange(dirErrors);
+                continue;
+            }
+
+            inaccessiblePaths.Add((path, "Path does not exist."));
+        }
+
+        var distinctFiles = files
+            .GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+
+        return (distinctFiles, inaccessiblePaths);
+    }
 
     public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(string rootDirectory, CancellationToken cancellationToken = default)
     {

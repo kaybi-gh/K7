@@ -1,9 +1,9 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using K7.Server.Domain.Settings;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Federation.Services;
 
