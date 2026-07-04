@@ -1,9 +1,11 @@
-﻿using K7.Clients.Shared.Helpers;
+﻿using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -33,18 +35,6 @@ public partial class LibraryGroup : IDisposable
     [Parameter]
     public required string Id { get; set; }
 
-    [SupplyParameterFromQuery(Name = "genre")]
-    public string? GenreQuery { get; set; }
-
-    [SupplyParameterFromQuery(Name = "studio")]
-    public string? StudioQuery { get; set; }
-
-    [SupplyParameterFromQuery(Name = "network")]
-    public string? NetworkQuery { get; set; }
-
-    [SupplyParameterFromQuery(Name = "mediaType")]
-    public string? MediaTypeQuery { get; set; }
-
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
     private bool _loading = true;
@@ -65,6 +55,9 @@ public partial class LibraryGroup : IDisposable
     private List<LiteMediaDto> _intelligentSearchResults = [];
     private bool _intelligentSearchLoading;
     private MediaTagsDto? _tags;
+    private BrowseViewMode _browseViewMode = BrowseViewMode.Grid;
+    private bool _pendingQuerySync;
+    private bool _showCreateSmartPlaylist => _intelligentSearch is null;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
 
@@ -78,6 +71,12 @@ public partial class LibraryGroup : IDisposable
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
     private string _tableScopeKey = "initial";
 
+    private Dictionary<string, object> CreateSmartPlaylistButtonAttributes => new()
+    {
+        ["aria-label"] = L["CreateSmartPlaylist"].Value,
+        ["title"] = L["CreateSmartPlaylist"].Value
+    };
+
     private static readonly List<MediaOrderingOption> SortOptions =
     [
         MediaOrderingOption.TitleAsc,
@@ -88,15 +87,16 @@ public partial class LibraryGroup : IDisposable
         MediaOrderingOption.ReleaseDateAsc
     ];
 
-    private float GridAspectRatio => _selectedMediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist ? 1f : 1.5f;
+    private float GridAspectRatio => _selectedMediaType switch
+    {
+        MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist => 1f,
+        MediaType.SerieEpisode => 9f / 16f,
+        _ => 1.5f
+    };
+
+    private int GridItemWidth => _selectedMediaType == MediaType.SerieEpisode ? 200 : 160;
 
     private string FilterStorageKey => $"library-group.{Id}";
-
-    private bool HasQuerySeededFilters =>
-        !string.IsNullOrWhiteSpace(GenreQuery)
-        || !string.IsNullOrWhiteSpace(StudioQuery)
-        || !string.IsNullOrWhiteSpace(NetworkQuery)
-        || !string.IsNullOrWhiteSpace(MediaTypeQuery);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -135,14 +135,6 @@ public partial class LibraryGroup : IDisposable
             _ => _availableMediaTypes.Count > 0 ? _availableMediaTypes[0] : default
         };
 
-        if (!string.IsNullOrWhiteSpace(MediaTypeQuery)
-            && Enum.TryParse<MediaType>(MediaTypeQuery, ignoreCase: true, out var parsedMediaType)
-            && (_availableMediaTypes.Contains(parsedMediaType)
-                || (_availableMediaTypes.Count == 0 && parsedMediaType == _selectedMediaType)))
-        {
-            _selectedMediaType = parsedMediaType;
-        }
-
         _mediaTypeOptions = _availableMediaTypes
             .Select(mt => new ButtonGroupOption<MediaType>(mt, Label: GetMediaTypeLabel(mt)))
             .ToList();
@@ -151,19 +143,18 @@ public partial class LibraryGroup : IDisposable
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
         _filter = MediaBrowseFilterPresets.Empty;
-        if (!string.IsNullOrWhiteSpace(GenreQuery))
-            _filter = MediaBrowseFilterPresets.ToggleGenre(_filter, GenreQuery);
-        if (!string.IsNullOrWhiteSpace(StudioQuery))
-            _filter = MediaBrowseFilterPresets.SetSearchFieldValue(_filter, "Studio", StudioQuery);
-        if (!string.IsNullOrWhiteSpace(NetworkQuery))
-            _filter = MediaBrowseFilterPresets.SetSearchFieldValue(_filter, "Network", NetworkQuery);
-
         _intelligentSearch = null;
         _intelligentSearchResults = [];
+        _browseViewMode = BrowseViewMode.Grid;
 
-        if (!HasQuerySeededFilters)
+        if (LibraryGroupBrowseUrlSync.HasBrowseQuery(Navigation))
         {
-            await LoadPersistedFiltersAsync();
+            ApplyBrowseState(LibraryGroupBrowseUrlSync.ReadState(Navigation));
+            await SaveFiltersToStorageAsync();
+        }
+        else if (await LoadPersistedFiltersAsync())
+        {
+            _pendingQuerySync = true;
         }
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
@@ -182,6 +173,102 @@ public partial class LibraryGroup : IDisposable
         }
 
         _loading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender) =>
+        LibraryGroupBrowseUrlSync.SyncAfterRender(
+            Navigation,
+            firstRender,
+            ref _pendingQuerySync,
+            BuildCurrentBrowseUrlState());
+
+    private void ApplyBrowseState(LibraryGroupBrowseUrlState state)
+    {
+        if (state.MediaType is MediaType mediaType && mediaType != default
+            && (_availableMediaTypes.Contains(mediaType)
+                || (_availableMediaTypes.Count == 0 && mediaType == _selectedMediaType)))
+        {
+            _selectedMediaType = mediaType;
+        }
+
+        if (state.Sort is MediaOrderingOption sort)
+        {
+            _selectedSort = sort;
+            (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(sort);
+        }
+
+        if (state.View is BrowseViewMode view)
+            _browseViewMode = view;
+
+        if (state.Filter is not null)
+            _filter = state.Filter;
+
+        _intelligentSearch = state.IntelligentSearch;
+    }
+
+    private LibraryGroupBrowseUrlState BuildCurrentBrowseUrlState() =>
+        new(
+            MediaType: _selectedMediaType != default ? _selectedMediaType : null,
+            Sort: _selectedSort,
+            View: _browseViewMode,
+            Filter: MediaBrowseFilterPresets.IsEmpty(_filter) ? null : _filter,
+            IntelligentSearch: _intelligentSearch);
+
+    private async Task PersistFiltersAsync()
+    {
+        await SaveFiltersToStorageAsync();
+        LibraryGroupBrowseUrlSync.SyncState(Navigation, BuildCurrentBrowseUrlState());
+    }
+
+    private async Task SaveFiltersToStorageAsync()
+    {
+        try
+        {
+            var state = new LibraryGroupFilterState(
+                (int)_selectedMediaType,
+                (int)_selectedSort,
+                MediaBrowseFilterPresets.IsEmpty(_filter) ? null : JsonSerializer.Serialize(_filter),
+                _intelligentSearch is null ? null : JsonSerializer.Serialize(_intelligentSearch),
+                (int)_browseViewMode);
+            await PageFilterStorage.SaveAsync(FilterStorageKey, state);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task OnBrowseViewModeChanged(BrowseViewMode mode)
+    {
+        if (_browseViewMode == mode)
+            return;
+
+        _browseViewMode = mode;
+        await PersistFiltersAsync();
+    }
+
+    private async Task CreateSmartPlaylistFromBrowseAsync()
+    {
+        if (_intelligentSearch is not null)
+            return;
+
+        var (orderBy, orderDescending) = BrowseSortUrlMapping.ToSmartPlaylistOrder(_selectedSort, _selectedMediaType);
+        var parameters = new K7DialogParameters<SmartPlaylistDialog>
+        {
+            { x => x.InitialMediaType, _selectedMediaType },
+            { x => x.InitialRuleFilter, _filter },
+            { x => x.InitialOrderBy, orderBy },
+            { x => x.InitialOrderDescending, orderDescending }
+        };
+
+        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(
+            L["CreateSmartPlaylistDialogTitle"],
+            parameters,
+            new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: Guid id })
+            Navigation.NavigateTo($"/smart-playlists/{id}");
     }
 
     private async ValueTask<ItemsProviderResult<LiteMediaDto>> ProvideMediasAsync(
@@ -299,15 +386,13 @@ public partial class LibraryGroup : IDisposable
         PageSize = pageSize
     };
 
-    private async Task LoadPersistedFiltersAsync()
+    private async Task<bool> LoadPersistedFiltersAsync()
     {
         try
         {
             var state = await PageFilterStorage.LoadAsync<LibraryGroupFilterState>(FilterStorageKey);
             if (state is null)
-            {
-                return;
-            }
+                return false;
 
             if (Enum.IsDefined(typeof(MediaType), state.MediaType)
                 && (_availableMediaTypes.Count == 0 || _availableMediaTypes.Contains((MediaType)state.MediaType)))
@@ -321,6 +406,12 @@ public partial class LibraryGroup : IDisposable
                 (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(_selectedSort);
             }
 
+            if (state.View is int viewValue
+                && Enum.IsDefined(typeof(BrowseViewMode), viewValue))
+            {
+                _browseViewMode = (BrowseViewMode)viewValue;
+            }
+
             if (!string.IsNullOrWhiteSpace(state.FilterJson))
             {
                 _filter = JsonSerializer.Deserialize<RuleGroupDto>(state.FilterJson) ?? MediaBrowseFilterPresets.Empty;
@@ -330,27 +421,12 @@ public partial class LibraryGroup : IDisposable
             {
                 _intelligentSearch = JsonSerializer.Deserialize<IntelligentSearchRequest>(state.IntelligentSearchJson);
             }
-        }
-        catch
-        {
-            // Non-critical
-        }
-    }
 
-    private async Task PersistFiltersAsync()
-    {
-        try
-        {
-            var state = new LibraryGroupFilterState(
-                (int)_selectedMediaType,
-                (int)_selectedSort,
-                MediaBrowseFilterPresets.IsEmpty(_filter) ? null : JsonSerializer.Serialize(_filter),
-                _intelligentSearch is null ? null : JsonSerializer.Serialize(_intelligentSearch));
-            await PageFilterStorage.SaveAsync(FilterStorageKey, state);
+            return true;
         }
         catch
         {
-            // Non-critical
+            return false;
         }
     }
 
@@ -596,6 +672,22 @@ public partial class LibraryGroup : IDisposable
         LiteSerieEpisodeDto ep => $"/series/{ep.SerieId}/seasons/{ep.SeasonNumber}#ep-{ep.EpisodeNumber}",
         _ => $"/movies/{item.Id}"
     };
+
+    private MediaCardViewModel? GetGridCardViewModel(LiteMediaDto item) =>
+        item.ToCardViewModel(
+            apiClient,
+            n => string.Format(S["SeasonNumber"], n),
+            episodeStillOnly: _selectedMediaType == MediaType.SerieEpisode,
+            pictureSize: _selectedMediaType == MediaType.SerieEpisode ? MetadataPictureSize.Medium : MetadataPictureSize.Small);
+
+    private MediaCardViewModel? GetCardViewModel(LiteMediaDto item) =>
+        item.ToCardViewModel(
+            apiClient,
+            n => string.Format(S["SeasonNumber"], n),
+            pictureSize: _selectedMediaType == MediaType.SerieEpisode ? MetadataPictureSize.Medium : MetadataPictureSize.Small);
+
+    private static string? GetGridPlaceholderIcon(LiteMediaDto item) =>
+        item is LiteSerieEpisodeDto ? Phosphor.Image : null;
 
     private static MediaCardVariant GetVariant(LiteMediaDto item) => item switch
     {

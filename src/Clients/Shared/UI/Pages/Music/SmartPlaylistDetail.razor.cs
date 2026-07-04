@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -147,6 +149,36 @@ public partial class SmartPlaylistDetail
         {
             _evaluating = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task BrowseInLibraryAsync()
+    {
+        if (_smartPlaylist is null || _smartPlaylist.RuleFilter.Items.Count == 0)
+            return;
+
+        try
+        {
+            var groups = await LibraryService.GetLibraryGroupsAsync();
+            var libraryMediaType = LibraryGroupBrowseNavigationHelper.ToLibraryMediaType(_smartPlaylist.MediaType);
+            var groupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(groups, null, libraryMediaType);
+            if (groupId is null)
+            {
+                Snackbar.Add(L["BrowseInLibraryUnavailable"], K7Severity.Info);
+                return;
+            }
+
+            var url = LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(
+                groupId.Value,
+                new LibraryGroupBrowseUrlState(
+                    MediaType: _smartPlaylist.MediaType,
+                    Filter: _smartPlaylist.RuleFilter));
+
+            NavigationManager.NavigateTo(url);
+        }
+        catch
+        {
+            Snackbar.Add(L["BrowseInLibraryUnavailable"], K7Severity.Error);
         }
     }
 

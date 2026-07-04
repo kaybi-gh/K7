@@ -1,6 +1,7 @@
 @page "/smart-playlists/{Id}"
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IPlaylistService K7ServerService
+@inject ILibraryService LibraryService
 @inject IK7ServerService ApiClient
 @inject IStringLocalizer<SmartPlaylistDetail> L
 @inject IStringLocalizer<SharedResource> S
@@ -60,6 +61,12 @@
                         {
                             <text>@L["Reevaluate"]</text>
                         }
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="secondary"
+                               StartIcon="@Phosphor.Funnel"
+                               OnClick="BrowseInLibraryAsync"
+                               Disabled="@(_smartPlaylist.RuleFilter.Items.Count == 0)">
+                        @L["BrowseInLibrary"]
                     </K7Button>
                     <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
                     <K7IconButton Icon="@Phosphor.Trash" OnClick="ConfirmDelete" />

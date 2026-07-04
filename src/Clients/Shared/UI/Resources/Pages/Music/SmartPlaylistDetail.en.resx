@@ -30,5 +30,7 @@
   <data name="DeleteSuccess" xml:space="preserve"><value>Smart playlist deleted</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Error while deleting</value></data>
   <data name="NoRules" xml:space="preserve"><value>No rules defined</value></data>
+  <data name="BrowseInLibrary" xml:space="preserve"><value>Browse in library</value></data>
+  <data name="BrowseInLibraryUnavailable" xml:space="preserve"><value>No library group is available for this media type</value></data>
 </root>
 
