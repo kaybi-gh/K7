@@ -25,7 +25,9 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid>? MediaMetadataRefreshed;
     public event Action<Guid>? MediaPicturesUpdated;
+    public event Action<Guid, Guid>? MediaIndexedFilesUpdated;
     public event Action<Guid, int, int, int>? LibraryScanCompleted;
+    public event Action<Guid, int, int, string>? LibraryScanProgress;
     public event Action? BackgroundTaskUpdated;
     public event Action<IReadOnlyList<ActiveStreamDto>>? ActiveStreamsUpdated;
     public event Action<ServerMetricsSnapshotDto>? ServerMetricsUpdated;
@@ -138,9 +140,19 @@ public sealed class K7HubClient : IAsyncDisposable
                 MediaPicturesUpdated?.Invoke(mediaId);
             });
 
+            _hubConnection.On<Guid, Guid>("ReceiveMediaIndexedFilesUpdated", (mediaId, libraryId) =>
+            {
+                MediaIndexedFilesUpdated?.Invoke(mediaId, libraryId);
+            });
+
             _hubConnection.On<Guid, int, int, int>("ReceiveLibraryScanCompleted", (libraryId, addedCount, skippedCount, inaccessiblePathCount) =>
             {
                 LibraryScanCompleted?.Invoke(libraryId, addedCount, skippedCount, inaccessiblePathCount);
+            });
+
+            _hubConnection.On<Guid, int, int, string>("ReceiveLibraryScanProgress", (libraryId, processed, total, phase) =>
+            {
+                LibraryScanProgress?.Invoke(libraryId, processed, total, phase);
             });
 
             _hubConnection.On("ReceiveBackgroundTaskUpdated", () =>
