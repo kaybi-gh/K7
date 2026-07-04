@@ -25,6 +25,7 @@ public class LogInCallback : IEndpoint
                    [FromServices] UserManager<ApplicationUser> userManager,
                    [FromServices] SignInManager<ApplicationUser> signInManager,
                    [FromServices] IApplicationDbContext applicationDbContext,
+                   [FromServices] ISetupService setupService,
                    [FromServices] IOptions<AuthenticationConfiguration> authConfig,
                    [FromRoute] string provider,
                    CancellationToken cancellationToken) =>
@@ -73,6 +74,16 @@ public class LogInCallback : IEndpoint
                 ?? throw new InvalidOperationException("Email claim is missing.");
 
             var name = result.Principal.GetClaim(ClaimTypes.Name);
+
+            var returnUrl = result.Properties!.RedirectUri ?? "/";
+            if (!await setupService.IsSetupCompletedAsync(cancellationToken)
+                && IsSetupExternalLoginReturnUrl(returnUrl))
+            {
+                var properties = result.Properties;
+                properties.Items["LoginProvider"] = provider;
+                await context.SignInAsync(IdentityConstants.ExternalScheme, result.Principal, properties);
+                return Results.Redirect(returnUrl);
+            }
 
             // Check if the user already exists in the local database
             var user = await userManager.FindByLoginAsync(provider, providerKey);
@@ -126,7 +137,6 @@ public class LogInCallback : IEndpoint
                 await applicationDbContext.SaveChangesAsync(cancellationToken);
             }
 
-            var returnUrl = result.Properties!.RedirectUri ?? "/";
             var signInResult = await signInManager.ExternalLoginSignInAsync(
                 provider,
                 providerKey,
@@ -149,4 +159,7 @@ public class LogInCallback : IEndpoint
         .WithName(type.Name)
         .WithTags(groupName);
     }
+
+    private static bool IsSetupExternalLoginReturnUrl(string returnUrl) =>
+        returnUrl.Contains("/setup/external-login", StringComparison.OrdinalIgnoreCase);
 }
