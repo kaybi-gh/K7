@@ -89,7 +89,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_pendingVirtualizeRefresh && _virtualizeRef is not null && ServerData is null)
+        if (_pendingVirtualizeRefresh && _virtualizeRef is not null)
         {
             _pendingVirtualizeRefresh = false;
             await _virtualizeRef.RefreshDataAsync();
@@ -205,7 +205,13 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         {
             _needsRender = true;
             await _virtualizeRef.RefreshDataAsync();
+            StateHasChanged();
+            return;
         }
+
+        _pendingVirtualizeRefresh = true;
+        _needsRender = true;
+        StateHasChanged();
     }
 
     private async ValueTask<ItemsProviderResult<IndexedRow>> ProvideItemsAsync(

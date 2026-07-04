@@ -212,6 +212,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
             _ = InvokeAsync(async () =>
             {
                 await LoadSummaryAsync();
+                _tableKey++;
                 StateHasChanged();
             });
         }, null, DebounceDelay, Timeout.InfiniteTimeSpan);
