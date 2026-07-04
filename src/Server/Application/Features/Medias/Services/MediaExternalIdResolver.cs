@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -68,9 +69,8 @@ public class MediaExternalIdResolver(
         Library library,
         CancellationToken cancellationToken)
     {
-        var indexedFiles = await context.IndexedFiles
+        var indexedFiles = await MediaLibraryLinkageHelper.GetIndexedFilesQuery(context, media)
             .AsNoTracking()
-            .Where(f => f.MediaId == media.Id)
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
 

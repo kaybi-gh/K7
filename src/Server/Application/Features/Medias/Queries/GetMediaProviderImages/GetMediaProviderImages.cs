@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -22,7 +23,6 @@ public class GetMediaProviderImagesQueryHandler(
         var media = await context.Medias
             .AsNoTracking()
             .Include(m => m.ExternalIds)
-            .Include(m => m.IndexedFiles)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
@@ -90,14 +90,7 @@ public class GetMediaProviderImagesQueryHandler(
 
     private async Task<string> ResolveLanguageAsync(BaseMedia media, CancellationToken cancellationToken)
     {
-        var libraryId = media.IndexedFiles.FirstOrDefault()?.LibraryId;
-        if (libraryId is null)
-            return "en";
-
-        var library = await context.Libraries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(l => l.Id == libraryId, cancellationToken);
-
+        var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
         return library?.MetadataLanguage ?? "en";
     }
 }

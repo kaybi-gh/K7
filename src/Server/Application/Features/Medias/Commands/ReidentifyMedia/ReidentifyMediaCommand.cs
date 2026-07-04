@@ -2,6 +2,7 @@ using Ardalis.GuardClauses;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -24,15 +25,11 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
     {
         var media = await context.Medias
             .Include(m => m.ExternalIds)
-            .Include(m => m.IndexedFiles)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
 
-        var libraryId = media.IndexedFiles.FirstOrDefault()?.LibraryId;
-        var library = libraryId.HasValue
-            ? await context.Libraries.FindAsync([libraryId.Value], cancellationToken)
-            : null;
+        var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
 
         // Update or add external Id
         var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == request.SelectedProvider);
