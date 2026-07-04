@@ -1,12 +1,13 @@
-﻿using System.Net;
+using System.Net;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
@@ -24,6 +25,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly OutboundRateLimiter _rateLimiter;
+    private readonly MediaPictureReadyNotifier _pictureReadyNotifier;
 
     public DownloadMetadataPictureFromProviderCommandHandler(
         IApplicationDbContext context,
@@ -31,7 +33,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         IImageProcessor imageProcessor,
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
-        OutboundRateLimiter rateLimiter)
+        OutboundRateLimiter rateLimiter,
+        MediaPictureReadyNotifier pictureReadyNotifier)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
@@ -39,6 +42,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
         _rateLimiter = rateLimiter;
+        _pictureReadyNotifier = pictureReadyNotifier;
     }
 
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
@@ -122,6 +126,10 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     MaxAttempts = 3,
                     ConcurrencyGroup = "image-processing"
                 }, cancellationToken);
+            }
+            else
+            {
+                await _pictureReadyNotifier.NotifyIfMediaPictureReadyAsync(entity.Id, cancellationToken);
             }
         }
         catch (HttpRequestException ex)

@@ -1,8 +1,9 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,6 +20,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
     private readonly IImageProcessor _imageProcessor;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly ILogger<GenerateMetadataPictureVariantsCommandHandler> _logger;
+    private readonly MediaPictureReadyNotifier _pictureReadyNotifier;
 
     /// <summary>
     /// Target widths per picture type and size.
@@ -26,9 +28,11 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
     /// </summary>
     private static readonly Dictionary<(MetadataPictureType, MetadataPictureSize), int> VariantWidths = new()
     {
-        // Posters (2:3 ratio)
+        // Posters and covers (2:3 ratio)
         [(MetadataPictureType.Poster, MetadataPictureSize.Small)] = 200,
         [(MetadataPictureType.Poster, MetadataPictureSize.Medium)] = 342,
+        [(MetadataPictureType.Cover, MetadataPictureSize.Small)] = 200,
+        [(MetadataPictureType.Cover, MetadataPictureSize.Medium)] = 342,
 
         // Backdrops (16:9 ratio)
         [(MetadataPictureType.Backdrop, MetadataPictureSize.Small)] = 780,
@@ -47,12 +51,14 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
         IApplicationDbContext context,
         IImageProcessor imageProcessor,
         IOptions<PathsConfiguration> pathsConfiguration,
-        ILogger<GenerateMetadataPictureVariantsCommandHandler> logger)
+        ILogger<GenerateMetadataPictureVariantsCommandHandler> logger,
+        MediaPictureReadyNotifier pictureReadyNotifier)
     {
         _context = context;
         _imageProcessor = imageProcessor;
         _pathsConfiguration = pathsConfiguration.Value;
         _logger = logger;
+        _pictureReadyNotifier = pictureReadyNotifier;
     }
 
     public async Task Handle(GenerateMetadataPictureVariantsCommand request, CancellationToken cancellationToken)
@@ -150,5 +156,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _pictureReadyNotifier.NotifyIfMediaPictureReadyAsync(picture.Id, cancellationToken);
     }
 }
