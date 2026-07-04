@@ -17,7 +17,8 @@ public static class FileSystemInitializerExtensions
             ["Logs"] = paths.Logs,
             ["Metadatas"] = paths.Metadatas,
             ["Transcoding"] = paths.Transcoding,
-            ["Config/openiddict-keys"] = Path.Combine(paths.Config, "openiddict-keys")
+            ["Config/openiddict-keys"] = Path.Combine(paths.Config, "openiddict-keys"),
+            ["Config/dataprotection-keys"] = Path.Combine(paths.Config, "dataprotection-keys")
         };
 
         var errors = new List<string>();

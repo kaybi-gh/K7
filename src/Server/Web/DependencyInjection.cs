@@ -23,8 +23,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var metadataPath = configuration.GetValue<string>("Paths:Metadatas") ?? "metadatas";
-        var keysPath = Path.Combine(metadataPath, "dataprotection-keys");
+        var configPath = configuration.GetValue<string>("Paths:Config") ?? "config";
+        var keysPath = Path.Combine(configPath, "dataprotection-keys");
         services.AddDataProtection()
             .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
             .SetApplicationName("K7");
