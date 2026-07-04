@@ -1,5 +1,4 @@
-using K7.Server.Domain.Enums;
-using K7.Shared.Dtos.Entities;
+using K7.Clients.Shared.Helpers;
 using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Clients.Shared.UI.Helpers;
@@ -7,21 +6,7 @@ namespace K7.Clients.Shared.UI.Helpers;
 public static class LiteMediaThumbnailHelper
 {
     public static MetadataPictureDto? ResolvePicture(LiteMediaDto item) =>
-        item switch
-        {
-            LiteSerieEpisodeDto episode =>
-                episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still),
-            LiteSerieSeasonDto season =>
-                season.Poster
-                ?? season.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                ?? season.Pictures?.FirstOrDefault()
-                ?? season.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                ?? season.SeriePictures?.FirstOrDefault(),
-            _ =>
-                item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                ?? item.Pictures?.FirstOrDefault()
-        };
+        LiteMediaPictureResolver.ResolvePicture(item);
 
     public enum ThumbShape
     {
@@ -34,7 +19,7 @@ public static class LiteMediaThumbnailHelper
         item switch
         {
             LiteSerieEpisodeDto => ThumbShape.Widescreen,
-            LiteSerieSeasonDto => ThumbShape.Poster,
+            LiteSerieSeasonDto or LiteMovieDto or LiteSerieDto => ThumbShape.Poster,
             _ => ThumbShape.Square
         };
 
