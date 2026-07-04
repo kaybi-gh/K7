@@ -28,6 +28,8 @@ public partial class EditLibraryDialog
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
     [Parameter] public bool TranscodingEnabled { get; set; } = true;
     [Parameter] public bool TransmuxingEnabled { get; set; } = true;
+    [Parameter] public bool RealtimeMonitorEnabled { get; set; } = true;
+    [Parameter] public int AutoScanIntervalHours { get; set; } = 6;
 
     private bool _isSubmitting;
 
@@ -52,7 +54,9 @@ public partial class EditLibraryDialog
                 SeekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled,
                 MusicAudioAnalysisEnabled = MusicAudioAnalysisEnabled,
                 TranscodingEnabled = TranscodingEnabled,
-                TransmuxingEnabled = TransmuxingEnabled
+                TransmuxingEnabled = TransmuxingEnabled,
+                RealtimeMonitorEnabled = RealtimeMonitorEnabled,
+                AutoScanIntervalHours = AutoScanIntervalHours
             };
 
             await LibraryService.UpdateLibraryAsync(LibraryId, request);

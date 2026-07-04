@@ -1,5 +1,6 @@
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
@@ -8,25 +9,64 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminLibrariesPanel
+public partial class AdminLibrariesPanel : IDisposable
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
     [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<LibraryDto>? _libraries;
     private Dictionary<Guid, int> _libraryIssueCountMap = [];
     private Dictionary<Guid, LibraryStatisticsDto> _libraryStatsMap = [];
+    private readonly Dictionary<Guid, LibraryScanProgressState> _scanProgressMap = new();
 
     private IList<LibraryDto> _libraryItems => _libraries ?? [];
 
     protected override async Task OnInitializedAsync()
     {
+        K7HubClient.LibraryScanProgress += OnLibraryScanProgress;
+        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
         await LoadLibraries();
     }
+
+    public void Dispose()
+    {
+        K7HubClient.LibraryScanProgress -= OnLibraryScanProgress;
+        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+    }
+
+    private void OnLibraryScanProgress(Guid libraryId, int processed, int total, string phase)
+    {
+        _scanProgressMap[libraryId] = new LibraryScanProgressState(processed, total, phase);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
+    {
+        _scanProgressMap.Remove(libraryId);
+        _ = InvokeAsync(async () =>
+        {
+            await LoadStatistics();
+            StateHasChanged();
+        });
+    }
+
+    private LibraryScanProgressState? GetScanProgress(Guid libraryId) =>
+        _scanProgressMap.GetValueOrDefault(libraryId);
+
+    private static double GetScanProgressValue(LibraryScanProgressState progress) =>
+        progress.Total <= 0 ? 0 : Math.Clamp((double)progress.Processed / progress.Total * 100d, 0d, 100d);
+
+    private string FormatScanProgress(LibraryScanProgressState progress) =>
+        progress.Total > 0
+            ? string.Format(L["ScanProgressFormat"], progress.Processed, progress.Total, progress.Phase)
+            : string.Format(L["ScanProgressIndeterminate"], progress.Phase);
+
+    private sealed record LibraryScanProgressState(int Processed, int Total, string Phase);
 
     private async Task LoadLibraries()
     {
@@ -132,6 +172,8 @@ public partial class AdminLibrariesPanel
     {
         try
         {
+            _scanProgressMap[library.Id] = new LibraryScanProgressState(0, 0, "queued");
+            StateHasChanged();
             await K7ServerService.IndexLibraryFilesAsync(library.Id);
             Snackbar.Add(string.Format(L["IndexStarted"], library.Title), K7Severity.Success);
         }
@@ -175,7 +217,9 @@ public partial class AdminLibrariesPanel
             { x => x.SeekbarThumbnailGenerationEnabled, library.SeekbarThumbnailGenerationEnabled },
             { x => x.MusicAudioAnalysisEnabled, library.MusicAudioAnalysisEnabled },
             { x => x.TranscodingEnabled, library.TranscodingEnabled },
-            { x => x.TransmuxingEnabled, library.TransmuxingEnabled }
+            { x => x.TransmuxingEnabled, library.TransmuxingEnabled },
+            { x => x.RealtimeMonitorEnabled, library.RealtimeMonitorEnabled },
+            { x => x.AutoScanIntervalHours, library.AutoScanIntervalHours }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };

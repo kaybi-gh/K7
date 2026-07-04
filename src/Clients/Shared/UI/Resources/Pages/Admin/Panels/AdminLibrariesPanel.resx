@@ -46,5 +46,7 @@
   <data name="StatArtists" xml:space="preserve"><value>artiste(s)</value></data>
   <data name="StatAlbums" xml:space="preserve"><value>album(s)</value></data>
   <data name="StatTracks" xml:space="preserve"><value>piste(s)</value></data>
+  <data name="ScanProgressFormat" xml:space="preserve"><value>Scan : {0}/{1} ({2})</value></data>
+  <data name="ScanProgressIndeterminate" xml:space="preserve"><value>Scan : {0}...</value></data>
 </root>
 

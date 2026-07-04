@@ -1,54 +1,83 @@
 @inject IStringLocalizer<EditLibraryDialog> L
 
 <div class="k7-dialog-content">
-        <div class="d-flex flex-col">
-            <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
-                          Required="true" RequiredError="@L["TitleRequired"]" />
+    <div class="edit-library-dialog d-flex flex-col">
+        <section class="edit-library-section">
+            <h6 class="edit-library-section__title">@L["SectionGeneralTitle"]</h6>
+            <div class="edit-library-section__fields d-flex flex-col">
+                <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
+                              Required="true" RequiredError="@L["TitleRequired"]" />
 
-            @if (AvailableGroups.Count > 0)
-            {
-                <K7Select TValue="Guid" @bind-Value="SelectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
-                    @foreach (var group in AvailableGroups)
+                @if (AvailableGroups.Count > 0)
+                {
+                    <K7Select TValue="Guid" @bind-Value="SelectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
+                        @foreach (var group in AvailableGroups)
+                        {
+                            <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
+                        }
+                    </K7Select>
+                }
+            </div>
+        </section>
+
+        <section class="edit-library-section">
+            <h6 class="edit-library-section__title">@L["SectionMetadataTitle"]</h6>
+            <p class="edit-library-section__description">@L["SectionMetadataDescription"]</p>
+            <div class="edit-library-section__fields d-flex flex-col">
+                <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
+                          Disabled="IsFederated">
+                    @foreach (var provider in AvailableProviders)
                     {
-                        <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
+                        <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                     }
                 </K7Select>
-            }
 
-            <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
-                      Disabled="IsFederated">
-                @foreach (var provider in AvailableProviders)
-                {
-                    <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
-                }
-            </K7Select>
+                <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
+                                  Disabled="IsFederated" />
 
-            <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
-                              Disabled="IsFederated" />
+                <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
+                                  Disabled="IsFederated" />
 
-            <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
-                              Disabled="IsFederated" />
-
-            <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
+                <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]"
                              Disabled="IsFederated" />
+            </div>
+        </section>
 
-            @if (!IsFederated)
-            {
+        @if (!IsFederated)
+        {
+            <section class="edit-library-section">
+                <h6 class="edit-library-section__title">@L["SectionScanTitle"]</h6>
+                <p class="edit-library-section__description">@L["SectionScanDescription"]</p>
+                <div class="edit-library-section__fields d-flex flex-col">
+                    <K7Switch @bind-Value="RealtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
+                    <span class="edit-library-section__field-hint">@L["RealtimeMonitorHelper"]</span>
+
+                    <K7TextField TValue="int" Type="number" @bind-Value="AutoScanIntervalHours"
+                                 Label="@L["AutoScanIntervalLabel"]" Variant="outlined"
+                                 HelperText="@L["AutoScanIntervalHelper"]" />
+                </div>
+            </section>
+
+            <section class="edit-library-section">
+                <h6 class="edit-library-section__title">@L["SectionCapabilitiesTitle"]</h6>
+                <p class="edit-library-section__description">@L["SectionCapabilitiesDescription"]</p>
                 <LibraryProcessingSettingsSection MediaType="MediaType"
+                    ShowSectionTitle="false"
                     @bind-IntroDetectionEnabled="IntroDetectionEnabled"
                     @bind-SeekbarThumbnailGenerationEnabled="SeekbarThumbnailGenerationEnabled"
                     @bind-MusicAudioAnalysisEnabled="MusicAudioAnalysisEnabled"
                     @bind-TranscodingEnabled="TranscodingEnabled"
                     @bind-TransmuxingEnabled="TransmuxingEnabled" />
-            }
-        </div>
+            </section>
+        }
     </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit"
-                   Disabled="@(!CanSubmit)">
-            @L["Save"]
-        </K7Button>
-    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit"
+               Disabled="@(!CanSubmit)">
+        @L["Save"]
+    </K7Button>
+</div>

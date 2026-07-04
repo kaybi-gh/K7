@@ -29,6 +29,9 @@ public partial class CreateLibraryDialog
     private string _metadataFallbackLanguage = "en";
     private List<MetadataProviderInfoDto> _availableProviders = [];
     private bool _triggerIndexing = true;
+    private bool _realtimeMonitorEnabled = true;
+    private int _autoScanIntervalHours = 6;
+    private int? _metadataRefreshIntervalDays;
     private bool _isSubmitting;
     private bool _introDetectionEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
@@ -171,7 +174,10 @@ public partial class CreateLibraryDialog
                 SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
                 MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
                 TranscodingEnabled = _transcodingEnabled,
-                TransmuxingEnabled = _transmuxingEnabled
+                TransmuxingEnabled = _transmuxingEnabled,
+                MetadataRefreshIntervalDays = _metadataRefreshIntervalDays,
+                RealtimeMonitorEnabled = _realtimeMonitorEnabled,
+                AutoScanIntervalHours = _autoScanIntervalHours
             };
 
             await K7ServerService.CreateLibraryAsync(request);

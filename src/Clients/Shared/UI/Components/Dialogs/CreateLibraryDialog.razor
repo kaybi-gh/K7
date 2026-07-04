@@ -55,81 +55,112 @@
         @* Step 2: Name, group, path, settings *@
         @if (_activeStep == 1)
         {
-            <div class="d-flex flex-col mt-2">
-                <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
-                              Required="true" RequiredError="@L["NameRequired"]"
-                              Placeholder="@L["NamePlaceholder"]" />
+            <div class="create-library-config edit-library-dialog d-flex flex-col mt-2">
+                <section class="edit-library-section">
+                    <h6 class="edit-library-section__title">@L["SectionGeneralTitle"]</h6>
+                    <div class="edit-library-section__fields d-flex flex-col">
+                        <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
+                                      Required="true" RequiredError="@L["NameRequired"]"
+                                      Placeholder="@L["NamePlaceholder"]" />
 
-                @if (_compatibleGroups.Count > 0)
-                {
-                    <div class="d-flex flex-col gap-2 mb-3">
-                        <span class="text-sm text-bold">@L["GroupLabel"]</span>
-                        <div class="d-flex flex-wrap gap-2">
-                            <K7Chip Color="@(_createNewGroup ? "primary" : "default")" Size="sm"
-                                    OnClick="@(() => SelectGroup(null))" Style="cursor: pointer;">
-                                @L["GroupNewOption"]
-                            </K7Chip>
-                            @foreach (var group in _compatibleGroups)
-                            {
-                                <K7Chip Color="@(_selectedGroupId == group.Id ? "primary" : "default")" Size="sm"
-                                        OnClick="@(() => SelectGroup(group.Id))" Style="cursor: pointer;">
-                                    @group.Title
-                                </K7Chip>
-                            }
-                        </div>
+                        @if (_compatibleGroups.Count > 0)
+                        {
+                            <div class="d-flex flex-col gap-2">
+                                <span class="text-sm text-bold">@L["GroupLabel"]</span>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <K7Chip Color="@(_createNewGroup ? "primary" : "default")" Size="sm"
+                                            OnClick="@(() => SelectGroup(null))" Style="cursor: pointer;">
+                                        @L["GroupNewOption"]
+                                    </K7Chip>
+                                    @foreach (var group in _compatibleGroups)
+                                    {
+                                        <K7Chip Color="@(_selectedGroupId == group.Id ? "primary" : "default")" Size="sm"
+                                                OnClick="@(() => SelectGroup(group.Id))" Style="cursor: pointer;">
+                                            @group.Title
+                                        </K7Chip>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_createNewGroup)
+                        {
+                            <K7TextField @bind-Value="_groupDescription" Label="@L["DescriptionLabel"]" Variant="outlined"
+                                         HelperText="@L["DescriptionHelper"]" />
+
+                            <div class="picker-row">
+                                <span class="picker-row__label">@L["IconLabel"]</span>
+                                <div class="picker-row__value">
+                                    @if (!string.IsNullOrEmpty(_groupIcon))
+                                    {
+                                        <i class="@_groupIcon picker-row__icon-preview" aria-hidden="true"></i>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-sm text-secondary">@L["IconNone"]</span>
+                                    }
+                                </div>
+                                <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
+                            </div>
+                        }
+
+                        <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
+                                      Required="true" RequiredError="@L["PathRequired"]"
+                                      Placeholder="@L["PathPlaceholder"]"
+                                      HelperText="@L["PathHelper"]"
+                                      AdornmentIcon="@Phosphor.FolderOpen"
+                                      OnAdornmentClick="BrowseFolderAsync" />
                     </div>
-                }
+                </section>
 
-                @if (_createNewGroup)
-                {
-                    <K7TextField @bind-Value="_groupDescription" Label="@L["DescriptionLabel"]" Variant="outlined"
-                                 HelperText="@L["DescriptionHelper"]" />
+                <section class="edit-library-section">
+                    <h6 class="edit-library-section__title">@L["SectionMetadataTitle"]</h6>
+                    <p class="edit-library-section__description">@L["SectionMetadataDescription"]</p>
+                    <div class="edit-library-section__fields d-flex flex-col">
+                        <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
+                            @foreach (var provider in _availableProviders)
+                            {
+                                <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
+                            }
+                        </K7Select>
 
-                    <div class="picker-row">
-                        <span class="picker-row__label">@L["IconLabel"]</span>
-                        <div class="picker-row__value">
-                            @if (!string.IsNullOrEmpty(_groupIcon))
-                            {
-                                <i class="@_groupIcon picker-row__icon-preview" aria-hidden="true"></i>
-                            }
-                            else
-                            {
-                                <span class="text-sm text-secondary">@L["IconNone"]</span>
-                            }
-                        </div>
-                        <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
+                        <K7LanguageSelect @bind-Value="_metadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined" />
+
+                        <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined" />
+
+                        <K7TextField TValue="int?" Type="number" @bind-Value="_metadataRefreshIntervalDays"
+                                     Label="@L["MetadataRefreshLabel"]" Variant="outlined"
+                                     HelperText="@L["MetadataRefreshHelper"]" />
                     </div>
-                }
+                </section>
 
-                <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
-                              Required="true" RequiredError="@L["PathRequired"]"
-                              Placeholder="@L["PathPlaceholder"]"
-                              HelperText="@L["PathHelper"]"
-                              AdornmentIcon="@Phosphor.FolderOpen"
-                              OnAdornmentClick="BrowseFolderAsync" />
+                <section class="edit-library-section">
+                    <h6 class="edit-library-section__title">@L["SectionScanTitle"]</h6>
+                    <p class="edit-library-section__description">@L["SectionScanDescription"]</p>
+                    <div class="edit-library-section__fields d-flex flex-col">
+                        <K7Switch @bind-Value="_realtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
+                        <span class="edit-library-section__field-hint">@L["RealtimeMonitorHelper"]</span>
 
-                <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
-                    @foreach (var provider in _availableProviders)
-                    {
-                        <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
-                    }
-                </K7Select>
+                        <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours"
+                                     Label="@L["AutoScanIntervalLabel"]" Variant="outlined"
+                                     HelperText="@L["AutoScanIntervalHelper"]" />
 
-                <K7LanguageSelect @bind-Value="_metadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined" />
+                        <K7Switch @bind-Value="_triggerIndexing" Label="@L["AutoIndex"]" />
+                        <span class="edit-library-section__field-hint">@L["AutoIndexHelper"]</span>
+                    </div>
+                </section>
 
-                <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined" />
-
-                <div class="d-flex align-center mt-2">
-                    <K7Switch @bind-Value="_triggerIndexing" />
-                    <label class="text-sm ml-2">@L["AutoIndex"]</label>
-                </div>
-
-                <LibraryProcessingSettingsSection MediaType="_selectedMediaType"
-                    @bind-IntroDetectionEnabled="_introDetectionEnabled"
-                    @bind-SeekbarThumbnailGenerationEnabled="_seekbarThumbnailGenerationEnabled"
-                    @bind-MusicAudioAnalysisEnabled="_musicAudioAnalysisEnabled"
-                    @bind-TranscodingEnabled="_transcodingEnabled"
-                    @bind-TransmuxingEnabled="_transmuxingEnabled" />
+                <section class="edit-library-section">
+                    <h6 class="edit-library-section__title">@L["SectionCapabilitiesTitle"]</h6>
+                    <p class="edit-library-section__description">@L["SectionCapabilitiesDescription"]</p>
+                    <LibraryProcessingSettingsSection MediaType="_selectedMediaType"
+                        ShowSectionTitle="false"
+                        @bind-IntroDetectionEnabled="_introDetectionEnabled"
+                        @bind-SeekbarThumbnailGenerationEnabled="_seekbarThumbnailGenerationEnabled"
+                        @bind-MusicAudioAnalysisEnabled="_musicAudioAnalysisEnabled"
+                        @bind-TranscodingEnabled="_transcodingEnabled"
+                        @bind-TransmuxingEnabled="_transmuxingEnabled" />
+                </section>
             </div>
         }
 
