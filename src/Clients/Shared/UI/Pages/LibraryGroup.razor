@@ -17,61 +17,93 @@
             Loading="_loading || _intelligentSearchLoading"
             @ref="_browseView"
             PersistenceKey="@($"library-{Id}")"
-            DefaultItemWidth="160"
+            DefaultItemWidth="@GridItemWidth"
             DefaultSpacing="24"
+            DefaultMode="_browseViewMode"
+            DisableViewModePersistence="true"
+            ViewModeChanged="OnBrowseViewModeChanged"
             Class="library-group-browse"
             GridItemAspectRatio="GridAspectRatio"
             JumpIndexLabels="JumpLabels"
             OnJumpRequested="OnJumpRequested"
             OnColumnPickerRequested="OnColumnPickerRequested">
     <ToolbarContent>
-        @if (_availableMediaTypes.Count > 1)
-        {
-            <K7ButtonGroup TValue="MediaType"
-                           Options="_mediaTypeOptions"
-                           Value="_selectedMediaType"
-                           ValueChanged="OnMediaTypeFilterChanged"
-                           AriaLabel="@L["MediaTypeFilter"]" />
-        }
-        <K7Select TValue="MediaOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
-            @foreach (var opt in SortOptions)
+        <div class="library-toolbar-filters">
+            @if (_availableMediaTypes.Count > 1)
             {
-                <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+                <div class="library-toolbar-media-type">
+                    <K7ButtonGroup TValue="MediaType"
+                                   Options="_mediaTypeOptions"
+                                   Value="_selectedMediaType"
+                                   ValueChanged="OnMediaTypeFilterChanged"
+                                   AriaLabel="@L["MediaTypeFilter"]" />
+                </div>
             }
-        </K7Select>
-        <LibraryBrowseFilters Tags="_tags"
-                               LibraryIds="_libraryIds?.ToArray()"
-                               LibraryGroupIds="_libraryGroupIds"
-                               Filter="_filter"
-                               FilterChanged="OnFilterChanged"
-                               ActiveIntelligentSearch="_intelligentSearch"
-                               IntelligentSearchChanged="OnIntelligentSearchChanged"
-                               MediaType="_selectedMediaType"
-                               ShowWatchFilters="_showWatchFilters" />
-        @if (_showMusicPlaybackActions)
-        {
-            <div class="library-toolbar-playback">
-                <K7IconButton Icon="@Phosphor.Play"
-                              Class="library-toolbar-playback__btn"
-                              Disabled="!_canPlayMusic"
-                              OnClick="PlayAllAsync"
-                              AriaLabel="@S["PlayAll"]" />
-                <K7IconButton Icon="@Phosphor.Shuffle"
-                              Class="library-toolbar-playback__btn"
-                              Disabled="!_canPlayMusic"
-                              OnClick="ShuffleAllAsync"
-                              AriaLabel="@S["Shuffle"]" />
+            <div class="library-toolbar-selects">
+                <K7Select TValue="MediaOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
+                    @foreach (var opt in SortOptions)
+                    {
+                        <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+                    }
+                </K7Select>
+                <LibraryBrowseFilters Tags="_tags"
+                                       LibraryIds="_libraryIds?.ToArray()"
+                                       LibraryGroupIds="_libraryGroupIds"
+                                       Filter="_filter"
+                                       FilterChanged="OnFilterChanged"
+                                       ActiveIntelligentSearch="_intelligentSearch"
+                                       IntelligentSearchChanged="OnIntelligentSearchChanged"
+                                       MediaType="_selectedMediaType"
+                                       ShowWatchFilters="_showWatchFilters" />
             </div>
-        }
-        <K7ResultCount Count="_totalCount" />
+        </div>
+        <div class="library-toolbar-meta">
+            @if (_showMusicPlaybackActions || _showCreateSmartPlaylist)
+            {
+                <div class="library-toolbar-trailing">
+                    @if (_showMusicPlaybackActions)
+                    {
+                        <div class="library-toolbar-playback">
+                            <K7IconButton Icon="@Phosphor.Play"
+                                          Class="library-toolbar-playback__btn"
+                                          Disabled="!_canPlayMusic"
+                                          OnClick="PlayAllAsync"
+                                          AriaLabel="@S["PlayAll"]" />
+                            <K7IconButton Icon="@Phosphor.Shuffle"
+                                          Class="library-toolbar-playback__btn"
+                                          Disabled="!_canPlayMusic"
+                                          OnClick="ShuffleAllAsync"
+                                          AriaLabel="@S["Shuffle"]" />
+                        </div>
+                    }
+                    @if (_showCreateSmartPlaylist)
+                    {
+                        <K7Button Variant="outlined"
+                                  Class="library-toolbar-smart-playlist"
+                                  StartIcon="@Phosphor.Sparkle"
+                                  OnClick="CreateSmartPlaylistFromBrowseAsync"
+                                  AdditionalAttributes="CreateSmartPlaylistButtonAttributes" />
+                    }
+                </div>
+            }
+            <K7ResultCount Count="_totalCount" />
+        </div>
     </ToolbarContent>
     <GridTemplate Context="item">
         @{
-            var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+            var vm = GetGridCardViewModel(item);
         }
         @if (vm is not null)
         {
-            <MediaCard Model="vm" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" WatchStateMenuEnabled="_canSetWatchState" FooterVisible="true" />
+            <MediaCard Model="vm"
+                       Variant="@GetVariant(item)"
+                       Href="@GetItemHref(item)"
+                       OverlayEnabled="true"
+                       ProgressEnabled="true"
+                       WatchedStatusEnabled="true"
+                       WatchStateMenuEnabled="_canSetWatchState"
+                       FooterVisible="true"
+                       PlaceholderIcon="@GetGridPlaceholderIcon(item)" />
         }
     </GridTemplate>
     <TableContent>
@@ -134,7 +166,7 @@
             <K7DataColumn TItem="LiteMediaDto" Title="@S["Actions"]" Width="88px" Hideable="false">
                 <CellTemplate Context="item">
                     @{
-                        var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+                        var vm = GetCardViewModel(item);
                     }
                     @if (vm is not null)
                     {
@@ -158,7 +190,7 @@
     </TableContent>
     <ListTemplate Context="item">
         @{
-            var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+            var vm = GetCardViewModel(item);
         }
         <LibraryListItem Item="item" Href="@GetItemHref(item)">
             <Actions>
