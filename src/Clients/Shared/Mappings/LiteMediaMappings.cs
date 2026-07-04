@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
@@ -14,7 +15,9 @@ public static class LiteMediaMappings
         IK7ServerService apiClient,
         Func<int, string> seasonFormatter,
         bool useParentTitle = false,
-        bool preferEpisodeStill = false)
+        bool preferEpisodeStill = false,
+        bool episodeStillOnly = false,
+        MetadataPictureSize pictureSize = MetadataPictureSize.Small)
     {
         var kind = item switch
         {
@@ -36,20 +39,9 @@ public static class LiteMediaMappings
         var trackDto = item as LiteMusicTrackDto;
         var seasonDto = item as LiteSerieSeasonDto;
 
-        MetadataPictureDto? bestPicture;
-        if (episodeDto is not null)
-        {
-            bestPicture = episodeDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still);
-        }
-        else
-        {
-            var pictureSource = item.Pictures;
-
-            bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-                ?? pictureSource?.FirstOrDefault();
-        }
+        var bestPicture = episodeDto is not null && episodeStillOnly
+            ? LiteMediaPictureResolver.ResolveEpisodeStill(episodeDto)
+            : LiteMediaPictureResolver.ResolvePicture(item);
 
         var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
 
@@ -83,7 +75,7 @@ public static class LiteMediaMappings
             UserRating = item.UserRating,
             Title = cardTitle,
             AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter, preferEpisodeStill),
-            PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(pictureSize)?.OriginalString)?.AbsoluteUri,
             BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
@@ -124,7 +116,7 @@ public static class LiteMediaMappings
         };
 
         var bestPicture = item.MediaType == MediaType.SerieEpisode
-            ? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+            ? LiteMediaPictureResolver.ResolveEpisodePictures(item.Pictures)
             : item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
