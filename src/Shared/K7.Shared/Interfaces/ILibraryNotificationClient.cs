@@ -8,5 +8,7 @@ public interface ILibraryNotificationClient
     Task ReceiveMediaBatchAdded(List<MediaBatchItem> items);
     Task ReceiveMediaMetadataRefreshed(Guid mediaId);
     Task ReceiveMediaPicturesUpdated(Guid mediaId);
+    Task ReceiveMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId);
     Task ReceiveLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount);
+    Task ReceiveLibraryScanProgress(Guid libraryId, int processed, int total, string phase);
 }

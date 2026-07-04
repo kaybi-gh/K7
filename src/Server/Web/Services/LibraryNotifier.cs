@@ -42,9 +42,21 @@ internal sealed class LibraryNotifier(
         await hubContext.Clients.All.ReceiveMediaPicturesUpdated(mediaId);
     }
 
+    public async Task NotifyMediaIndexedFilesUpdatedAsync(Guid mediaId, Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Broadcasting MediaIndexedFilesUpdated: {MediaId} in library {LibraryId}", mediaId, libraryId);
+        await hubContext.Clients.All.ReceiveMediaIndexedFilesUpdated(mediaId, libraryId);
+    }
+
     public async Task NotifyLibraryScanCompletedAsync(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Broadcasting LibraryScanCompleted: library {LibraryId}, {AddedCount} added, {SkippedCount} skipped, {InaccessiblePathCount} inaccessible", libraryId, addedCount, skippedCount, inaccessiblePathCount);
         await hubContext.Clients.All.ReceiveLibraryScanCompleted(libraryId, addedCount, skippedCount, inaccessiblePathCount);
+    }
+
+    public async Task NotifyLibraryScanProgressAsync(Guid libraryId, int processed, int total, string phase, CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Broadcasting LibraryScanProgress: library {LibraryId}, {Processed}/{Total}, phase {Phase}", libraryId, processed, total, phase);
+        await hubContext.Clients.All.ReceiveLibraryScanProgress(libraryId, processed, total, phase);
     }
 }

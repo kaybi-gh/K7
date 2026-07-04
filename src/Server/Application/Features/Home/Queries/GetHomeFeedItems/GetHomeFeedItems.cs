@@ -1,10 +1,11 @@
-using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Restrictions.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -109,7 +110,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Where(x => x.UserMediaStates.Any(s =>
                 s.UserId == userId.Value
                 && !s.IsCompleted
-                && s.LastInteractedAt != null));
+                && s.LastInteractedAt != null))
+            .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
 
         query = ApplyFamilyFilter(query, request.MediaTypes);
         query = ApplyLibraryFilter(query, request.LibraryIds);
@@ -345,6 +347,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsNoTracking()
             .Where(x => x is Movie || x is Serie || x is MusicAlbum);
 
+        query = CatalogMediaAvailabilityHelper.WhereHasPlayableFiles(query);
         query = ApplyFamilyFilter(query, request.MediaTypes);
         query = ApplyLibraryFilter(query, request.LibraryIds);
 
@@ -408,21 +411,21 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             switch (item)
             {
                 case SerieEpisode episode when episode.Serie is not null:
-                {
-                    var serieId = episode.Serie.Id;
-                    if (!serieGroups.ContainsKey(serieId))
-                        serieGroups[serieId] = (insertOrder++, []);
-                    serieGroups[serieId].Episodes.Add(episode);
-                    break;
-                }
+                    {
+                        var serieId = episode.Serie.Id;
+                        if (!serieGroups.ContainsKey(serieId))
+                            serieGroups[serieId] = (insertOrder++, []);
+                        serieGroups[serieId].Episodes.Add(episode);
+                        break;
+                    }
                 case MusicTrack track when track.Album is not null:
-                {
-                    var albumId = track.Album.Id;
-                    if (!albumGroups.ContainsKey(albumId))
-                        albumGroups[albumId] = (insertOrder++, []);
-                    albumGroups[albumId].Tracks.Add(track);
-                    break;
-                }
+                    {
+                        var albumId = track.Album.Id;
+                        if (!albumGroups.ContainsKey(albumId))
+                            albumGroups[albumId] = (insertOrder++, []);
+                        albumGroups[albumId].Tracks.Add(track);
+                        break;
+                    }
                 case Serie or SerieSeason:
                     // Skip top-level serie/season entries -- episodes represent them
                     break;
