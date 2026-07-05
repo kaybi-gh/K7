@@ -27,6 +27,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Server\Application\K7.Server.Application.csproj" />
         <ProjectReference Include="..\..\src\Server\Infrastructure\Database\Context\K7.Server.Infrastructure.Database.Context.csproj" />
+        <ProjectReference Include="..\..\src\Server\Infrastructure\MediaProcessing\K7.Server.Infrastructure.MediaProcessing.csproj" />
         <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 
