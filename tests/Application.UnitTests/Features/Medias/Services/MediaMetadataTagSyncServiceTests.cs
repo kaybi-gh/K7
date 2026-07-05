@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -79,5 +80,53 @@ public class MediaMetadataTagSyncServiceTests
             .ToListAsync();
 
         tags.Should().ContainSingle();
+    }
+
+    [Test]
+    public async Task ApplyTagsAsync_ShouldReuseExistingDbTag_WhenClassicalAlreadyExists()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var existingTag = new MetadataTag
+        {
+            Id = Guid.NewGuid(),
+            Kind = MetadataTagKind.Genre,
+            NormalizedKey = "classical",
+            DisplayName = "Classical"
+        };
+        _context.MetadataTags.Add(existingTag);
+        await _context.SaveChangesAsync();
+
+        var album = new MusicAlbum
+        {
+            Id = Guid.NewGuid(),
+            Title = "Demo Album",
+            Created = now,
+            LastModified = now
+        };
+        var track = new MusicTrack
+        {
+            Id = Guid.NewGuid(),
+            Title = "Track 1",
+            AlbumId = album.Id,
+            Created = now,
+            LastModified = now
+        };
+        _context.Medias.AddRange(album, track);
+
+        IApplicationDbContext dbContext = _context;
+        var service = new MediaMetadataTagSyncService(dbContext);
+        var desired = MetadataTagBuilder.FromGenres(album, ["Classical"]);
+
+        await service.ApplyTagsAsync(album, desired, CancellationToken.None);
+        await service.ApplyTagsAsync(track, desired, CancellationToken.None);
+
+        await _context.SaveChangesAsync();
+
+        var tags = await _context.MetadataTags
+            .Where(t => t.Kind == MetadataTagKind.Genre && t.NormalizedKey == "classical")
+            .ToListAsync();
+
+        tags.Should().ContainSingle();
+        tags[0].Id.Should().Be(existingTag.Id);
     }
 }
