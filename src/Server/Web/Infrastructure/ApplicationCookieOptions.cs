@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Server.Web.Infrastructure;
 
@@ -13,8 +15,7 @@ internal static class ApplicationCookieOptions
     {
         options.LoginPath = "/welcome";
         options.LogoutPath = "/account/logout";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = cookieSecurePolicy;
+        ConfigureCookie(options, cookieSecurePolicy);
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = RememberMeLifetime;
 
@@ -47,4 +48,24 @@ internal static class ApplicationCookieOptions
 
     private static void ApplyLifetime(AuthenticationProperties properties) =>
         properties.ExpiresUtc = DateTimeOffset.UtcNow.Add(GetLifetime(properties));
+
+    internal static void ConfigureTwoFactorCookies(
+        IServiceCollection services,
+        CookieSecurePolicy cookieSecurePolicy)
+    {
+        services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorUserIdScheme, options =>
+            ConfigureCookie(options, cookieSecurePolicy));
+
+        services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme, options =>
+            ConfigureCookie(options, cookieSecurePolicy));
+    }
+
+    private static void ConfigureCookie(
+        CookieAuthenticationOptions options,
+        CookieSecurePolicy cookieSecurePolicy)
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
+        options.Cookie.IsEssential = true;
+    }
 }

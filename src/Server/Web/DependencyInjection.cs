@@ -60,6 +60,7 @@ public static class DependencyInjection
 
         services.ConfigureApplicationCookie(options =>
             ApplicationCookieOptions.Configure(options, cookieSecurePolicy));
+        ApplicationCookieOptions.ConfigureTwoFactorCookies(services, cookieSecurePolicy);
 
         services.AddAuthorization(options =>
         {

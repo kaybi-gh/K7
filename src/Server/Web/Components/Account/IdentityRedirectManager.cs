@@ -1,9 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Server.Web.Components.Account
 {
-    internal sealed class IdentityRedirectManager(NavigationManager navigationManager)
+    internal sealed class IdentityRedirectManager(
+        NavigationManager navigationManager,
+        IHttpContextAccessor httpContextAccessor)
     {
         public const string StatusCookieName = "Identity.StatusMessage";
 
@@ -15,25 +16,22 @@ namespace K7.Server.Web.Components.Account
             MaxAge = TimeSpan.FromSeconds(5),
         };
 
-        [DoesNotReturn]
         public void RedirectTo(string? uri)
         {
-            uri ??= "";
+            uri = NormalizeRedirectUri(uri);
 
-            if (!Uri.IsWellFormedUriString(uri, UriKind.Relative) && !uri.StartsWith("k7://") && !uri.StartsWith("http://localhost:59451"))
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext is not null && !httpContext.Response.HasStarted)
             {
-                uri = navigationManager.ToBaseRelativePath(uri);
+                httpContext.Response.Redirect(uri);
+                return;
             }
 
-            var tata = Uri.IsWellFormedUriString(uri, UriKind.Relative);
-
-            // During static rendering, NavigateTo throws a NavigationException which is handled by the framework as a redirect.
-            // So as long as this is called from a statically rendered Identity component, the InvalidOperationException is never thrown.
-            navigationManager.NavigateTo(uri);
+            // forceLoad ensures auth cookies from the POST response are visible on the next request.
+            navigationManager.NavigateTo(uri, forceLoad: true);
             throw new InvalidOperationException($"{nameof(IdentityRedirectManager)} can only be used during static rendering.");
         }
 
-        [DoesNotReturn]
         public void RedirectTo(string uri, Dictionary<string, object?> queryParameters)
         {
             var uriWithoutQuery = navigationManager.ToAbsoluteUri(uri).GetLeftPart(UriPartial.Path);
@@ -41,19 +39,38 @@ namespace K7.Server.Web.Components.Account
             RedirectTo(newUri);
         }
 
-        [DoesNotReturn]
         public void RedirectToWithStatus(string uri, string message, HttpContext context)
         {
             context.Response.Cookies.Append(StatusCookieName, message, StatusCookieBuilder.Build(context));
+
+            uri = NormalizeRedirectUri(uri);
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Redirect(uri);
+                return;
+            }
+
             RedirectTo(uri);
+        }
+
+        private string NormalizeRedirectUri(string? uri)
+        {
+            uri ??= "";
+
+            if (!Uri.IsWellFormedUriString(uri, UriKind.Relative)
+                && !uri.StartsWith("k7://")
+                && !uri.StartsWith("http://localhost:59451"))
+            {
+                uri = navigationManager.ToBaseRelativePath(uri);
+            }
+
+            return uri;
         }
 
         private string CurrentPath => navigationManager.ToAbsoluteUri(navigationManager.Uri).GetLeftPart(UriPartial.Path);
 
-        [DoesNotReturn]
         public void RedirectToCurrentPage() => RedirectTo(CurrentPath);
 
-        [DoesNotReturn]
         public void RedirectToCurrentPageWithStatus(string message, HttpContext context)
             => RedirectToWithStatus(CurrentPath, message, context);
     }
