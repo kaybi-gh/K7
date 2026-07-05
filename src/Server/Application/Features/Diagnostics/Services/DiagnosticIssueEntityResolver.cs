@@ -53,7 +53,9 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
         var query = context.IndexedFiles
             .AsNoTracking()
             .Where(f => f.FileMetadata != null
-                && !context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id)
+                && f.FileMetadata.Type == FileType.Video
+                && context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
+                && !context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
                 && NonFederatedLibraryIds().Contains(f.LibraryId));
 
         if (libraryId.HasValue)

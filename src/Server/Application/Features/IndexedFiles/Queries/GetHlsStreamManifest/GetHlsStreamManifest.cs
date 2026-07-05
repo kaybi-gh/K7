@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
@@ -11,6 +12,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 
@@ -89,15 +91,21 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
     private readonly IActiveStreamTracker _activeStreamTracker;
+    private readonly ISender _sender;
+    private readonly ILogger<GetHlsStreamManifestQueryHandler> _logger;
 
     public GetHlsStreamManifestQueryHandler(
         IApplicationDbContext context,
         IMediaAccessGuard accessGuard,
-        IActiveStreamTracker activeStreamTracker)
+        IActiveStreamTracker activeStreamTracker,
+        ISender sender,
+        ILogger<GetHlsStreamManifestQueryHandler> logger)
     {
         _context = context;
         _accessGuard = accessGuard;
         _activeStreamTracker = activeStreamTracker;
+        _sender = sender;
+        _logger = logger;
     }
 
     public async Task<IResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
@@ -119,6 +127,18 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         await LoadFileTracksAsync(indexedFile.FileMetadata, cancellationToken);
 
+        var hlsSegmentsAvailable = indexedFile.FileMetadata is VideoFileMetadata
+            && await HlsSegmentHelper.HasSegmentsAsync(_context, query.Id, cancellationToken);
+
+        if (!hlsSegmentsAvailable && indexedFile.FileMetadata is VideoFileMetadata)
+        {
+            await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
+                _sender,
+                query.Id,
+                _logger,
+                cancellationToken);
+        }
+
         if (query.SubtitleBurnInStreamIndex is int burnInIndex
             && indexedFile.FileMetadata is VideoFileMetadata videoMetadata)
         {
@@ -135,7 +155,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var masterPlaylist = indexedFile.FileMetadata switch
         {
             AudioFileMetadata x => GenerateAudioFileMasterPlaylist(x, query),
-            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query),
+            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query, hlsSegmentsAvailable),
             _ => throw new InvalidOperationException()
         };
         return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
@@ -206,7 +226,10 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         return playlist.ToString();
     }
 
-    private static string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata, GetHlsStreamManifestQuery query)
+    private static string GenerateVideoFileMasterPlaylist(
+        VideoFileMetadata videoFileMetadata,
+        GetHlsStreamManifestQuery query,
+        bool hlsSegmentsAvailable)
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
@@ -342,7 +365,13 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         // Bitmap subtitles (PGS) are burned into the video and require transcoding
         if (query.SubtitleBurnInStreamIndex.HasValue)
         {
-            effectiveVideoCodec ??= query.TranscodingVideoCodec ?? "h264";
+            effectiveVideoCodec ??= query.TranscodingVideoCodec ?? HlsSegmentHelper.FallbackTranscodingVideoCodec;
+        }
+
+        // Transmuxing requires keyframe-based segments; fall back to transcoding when they are missing
+        if (!hlsSegmentsAvailable && string.IsNullOrEmpty(effectiveVideoCodec))
+        {
+            effectiveVideoCodec = HlsSegmentHelper.FallbackTranscodingVideoCodec;
         }
 
         var effectiveVideoCodecString = !string.IsNullOrEmpty(effectiveVideoCodec)

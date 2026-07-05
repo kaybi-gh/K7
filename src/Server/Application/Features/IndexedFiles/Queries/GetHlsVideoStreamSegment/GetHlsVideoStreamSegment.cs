@@ -1,10 +1,10 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -44,17 +44,20 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
     private readonly IApplicationDbContext _context;
     private readonly ITranscodeJobManager _transcodeJobManager;
     private readonly IActiveStreamTracker _activeStreamTracker;
+    private readonly ISender _sender;
     private readonly ILogger<GetHlsVideoStreamSegmentQueryHandler> _logger;
 
     public GetHlsVideoStreamSegmentQueryHandler(
         IApplicationDbContext context,
         ITranscodeJobManager transcodeJobManager,
         IActiveStreamTracker activeStreamTracker,
+        ISender sender,
         ILogger<GetHlsVideoStreamSegmentQueryHandler> logger)
     {
         _context = context;
         _transcodeJobManager = transcodeJobManager;
         _activeStreamTracker = activeStreamTracker;
+        _sender = sender;
         _logger = logger;
     }
 
@@ -93,40 +96,41 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             && !query.SubtitleBurnInStreamIndex.HasValue;
         List<HlsSegment> allSegments;
 
-        var hlsSegments = entity.FileMetadata.GetHlsSegments();
+        var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(_context, query.Id, cancellationToken);
+        var effectiveTranscodingVideoCodec = query.TranscodingVideoCodec;
+
+        if (isTransmuxing && hlsSegments.Count == 0)
+        {
+            await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
+                _sender,
+                query.Id,
+                _logger,
+                cancellationToken);
+
+            isTransmuxing = false;
+            effectiveTranscodingVideoCodec ??= HlsSegmentHelper.FallbackTranscodingVideoCodec;
+        }
 
         if (isTransmuxing)
         {
             // Transmux (stream copy): use keyframe-based segments from the database
             if (query.SegmentNumber == -1)
             {
-                allSegments = await _context.HlsSegments
-                    .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
+                allSegments = hlsSegments
                     .OrderBy(s => s.Number)
                     .Take(20)
-                    .ToListAsync(cancellationToken);
+                    .ToList();
             }
             else
             {
-                Guard.Against.NullOrEmpty(hlsSegments);
                 allSegments = hlsSegments.OrderBy(s => s.Number).ToList();
             }
         }
         else
         {
             // Transcode: use equal-length 6s segments matching the index playlist
-            var dbSegments = query.SegmentNumber == -1
-                ? await _context.HlsSegments
-                    .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
-                    .ToListAsync(cancellationToken)
-                : hlsSegments.Count > 0
-                    ? hlsSegments.ToList()
-                    : await _context.HlsSegments
-                        .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
-                        .ToListAsync(cancellationToken);
-
-            var totalDurationMs = dbSegments.Count > 0
-                ? dbSegments.Sum(s => s.Duration)
+            var totalDurationMs = hlsSegments.Count > 0
+                ? hlsSegments.Sum(s => s.Duration)
                 : entity.FileMetadata is VideoFileMetadata v
                     ? (long)v.Duration.TotalMilliseconds
                     : throw new InvalidOperationException("Cannot determine duration for HLS transcoding");
@@ -139,7 +143,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             return Results.NotFound($"Segment index {query.SegmentNumber} out of range (0-{allSegments.Count - 1})");
         }
 
-        var videoCodec = query.TranscodingVideoCodec
+        var videoCodec = effectiveTranscodingVideoCodec
             ?? (query.SubtitleBurnInStreamIndex.HasValue ? "h264" : null);
 
         if (query.SubtitleBurnInStreamIndex is int burnInIndex

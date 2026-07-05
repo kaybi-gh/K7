@@ -6,7 +6,6 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.Extensions;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Navigation;
 
@@ -114,7 +113,10 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 IsOrphan = f.MediaId == null,
                 IsUnidentified = f.Identification == null,
                 HasNoFileMetadata = f.FileMetadata == null,
-                HasNoHlsSegments = f.FileMetadata != null && !_context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id)
+                HasNoHlsSegments = f.FileMetadata != null
+                    && f.FileMetadata.Type == FileType.Video
+                    && _context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
+                    && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
             })
             .Where(f => f.IsOrphan || f.IsUnidentified || f.HasNoFileMetadata || f.HasNoHlsSegments)
             .ToListAsync(cancellationToken);

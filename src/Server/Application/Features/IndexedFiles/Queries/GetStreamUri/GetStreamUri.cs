@@ -1,10 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Services;
-using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using K7.Server.Application.Features.TrackSelectionPreferences.Queries.GetEffectiveTrackSelectionPreferences;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -93,28 +92,15 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 .Collection(v => v.SubtitleTracks)
                 .LoadAsync(cancellationToken);
 
-            var hlsSegmentsAvailable = await _context.HlsSegments
-                .AnyAsync(s => s.IndexedFileId == request.Id, cancellationToken);
+            var hlsSegmentsAvailable = await HlsSegmentHelper.HasSegmentsAsync(_context, request.Id, cancellationToken);
 
             if (!hlsSegmentsAvailable)
             {
-                _logger.LogWarning(
-                    "HLS segments not yet computed for IndexedFile {Id}, queuing segmentation and forcing transcoding",
-                    request.Id);
-
-                await _sender.Send(new CreateBackgroundTaskCommand
-                {
-                    Request = new ComputeHlsSegmentsCommand
-                    {
-                        Id = request.Id,
-                        SegmentsDuration = TimeSpan.FromSeconds(2)
-                    },
-                    Priority = BackgroundTaskPriority.High,
-                    TargetEntityId = request.Id,
-                    TargetEntityTypeName = nameof(IndexedFile),
-                    MaxAttempts = 5,
-                    ConcurrencyGroup = "ffmpeg"
-                }, cancellationToken);
+                await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
+                    _sender,
+                    request.Id,
+                    _logger,
+                    cancellationToken);
             }
 
             var subtitleTrackIndex = request.SubtitleTrackIndex;
