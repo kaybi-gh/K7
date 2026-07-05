@@ -15,9 +15,8 @@ The name comes from the French pronunciation `/ka.sɛt/` *(cassette)*. The idea 
 
 ### Demo
 
-<!-- Access the live demo right [here](not-yet-available): connect either as a guest or use the demo user login `demo`, password `demo`. -->
-
-Coming soon..
+Access the live demo right [here](https://k7.kaybi.dev): connect either as a guest.
+Only guest access is available for the demo meaning that a ton of features are hidden.
 
 ### Screenshots
 
@@ -101,7 +100,8 @@ K7 would not exist without the work of many projects and communities, including:
 - [OpenIddict](https://github.com/openiddict/openiddict-core) - authentication and OIDC
 - [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI) - optional music intelligence
 - [MusicBrainz](https://musicbrainz.org) - music metadata
-- [TMDb](https://www.themoviedb.org) - movie and TV metadata
+- [TMDb](https://www.themoviedb.org) - movie metadata
+- [TheTVDB](https://www.thetvdb.com) - TV series metadata
 - [Wikimedia Commons](https://commons.wikimedia.org), [Wikidata](https://www.wikidata.org), and [Wikipedia](https://www.wikipedia.org) - artist images and person metadata
 - [Chromaprint / AcoustID](https://acoustid.org/chromaprint) - audio fingerprinting
 - [TagLibSharp](https://github.com/mono/taglib-sharp) - reading and writing media tags
