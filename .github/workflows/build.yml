@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - '.scripts/**'
       - .gitignore
-      - CODE_OF_CONDUCT.md
       - LICENSE
       - README.md
 

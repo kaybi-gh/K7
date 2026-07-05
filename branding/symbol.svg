@@ -1,6 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28">
-  <g fill="currentColor" transform="translate(-350.749,-318.84)">
-    <path id="symbol-1" d="m 350.749,318.84 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
-    <path id="symbol-2" d="m 385,329.84 h -12.5 l -6.75,9 6.26,8.32 z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28" role="img" aria-label="K7 symbol">
+  <style>
+    .symbol { fill: #d9b060; }
+
+    @media (prefers-color-scheme: light) {
+      .symbol { fill: #c49a48; }
+    }
+  </style>
+  <g class="symbol" transform="translate(-350.749,-318.84)">
+    <path d="m 350.749,318.84 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+    <path d="m 385,329.84 h -12.5 l -6.75,9 6.26,8.32 z"/>
   </g>
 </svg>
