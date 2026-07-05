@@ -66,6 +66,13 @@
     border-radius: 4px;
 }
 
+.about-credit-logo--tvdb {
+    width: auto;
+    max-width: 72px;
+    height: 32px;
+    object-fit: contain;
+}
+
 .about-credit-text {
     display: flex;
     flex-direction: column;

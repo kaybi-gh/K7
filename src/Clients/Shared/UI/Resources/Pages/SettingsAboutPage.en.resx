@@ -28,7 +28,8 @@
   <data name="CreditFfmpeg" xml:space="preserve"><value>Media transcoding and processing</value></data>
   <data name="CreditOpenIddict" xml:space="preserve"><value>OpenID Connect authentication</value></data>
   <data name="CreditMusicBrainz" xml:space="preserve"><value>Music metadata</value></data>
-  <data name="CreditTmdb" xml:space="preserve"><value>Movie and TV show metadata</value></data>
+  <data name="CreditTmdb" xml:space="preserve"><value>Movie metadata</value></data>
+  <data name="CreditTvdb" xml:space="preserve"><value>TV series metadata</value></data>
   <data name="CreditWikimedia" xml:space="preserve"><value>Artist images</value></data>
   <data name="CreditChromaprint" xml:space="preserve"><value>Audio fingerprinting and intro detection</value></data>
   <data name="CreditAudioMuse" xml:space="preserve"><value>AI-powered music analysis</value></data>
@@ -37,6 +38,7 @@
   <data name="CreditEfCore" xml:space="preserve"><value>Data access</value></data>
   <data name="CreditSignalR" xml:space="preserve"><value>Real-time communication</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>This product uses the TMDB API but is not endorsed or certified by TMDB.</value></data>
+  <data name="TvdbDisclaimer" xml:space="preserve"><value>TV information and images are provided by TheTVDB.com, but we are not endorsed or certified by TheTVDB.com or its affiliates.</value></data>
   <data name="DeviceInfo" xml:space="preserve"><value>Device</value></data>
   <data name="LoadingCodecs" xml:space="preserve"><value>Loading...</value></data>
   <data name="CodecContainers" xml:space="preserve"><value>Containers</value></data>
