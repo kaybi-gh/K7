@@ -2,11 +2,11 @@ using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Extensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 
@@ -37,10 +37,17 @@ public record GetHlsVideoStreamIndexQuery(
 public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ISender _sender;
+    private readonly ILogger<GetHlsVideoStreamIndexQueryHandler> _logger;
 
-    public GetHlsVideoStreamIndexQueryHandler(IApplicationDbContext context)
+    public GetHlsVideoStreamIndexQueryHandler(
+        IApplicationDbContext context,
+        ISender sender,
+        ILogger<GetHlsVideoStreamIndexQueryHandler> logger)
     {
         _context = context;
+        _sender = sender;
+        _logger = logger;
     }
 
     public async Task<IResult> Handle(GetHlsVideoStreamIndexQuery query, CancellationToken cancellationToken)
@@ -69,12 +76,24 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             && string.IsNullOrEmpty(query.TranscodingVideoCodec)
             && !query.SubtitleBurnInStreamIndex.HasValue;
 
-        var hlsSegments = entity.FileMetadata.GetHlsSegments();
+        var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(_context, query.Id, cancellationToken);
+        var effectiveTranscodingVideoCodec = query.TranscodingVideoCodec;
+
+        if (isTransmuxing && hlsSegments.Count == 0)
+        {
+            await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
+                _sender,
+                query.Id,
+                _logger,
+                cancellationToken);
+
+            isTransmuxing = false;
+            effectiveTranscodingVideoCodec ??= HlsSegmentHelper.FallbackTranscodingVideoCodec;
+        }
 
         double[] segmentDurations;
         if (isTransmuxing)
         {
-            Guard.Against.NullOrEmpty(hlsSegments);
             segmentDurations = hlsSegments
                 .Select(s => s.Duration / 1000.0).ToArray();
         }
@@ -92,7 +111,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         var indexPlaylist = GenerateHlsIndexContent(
             segmentDurations,
             query.StreamSessionId,
-            query.TranscodingVideoCodec,
+            effectiveTranscodingVideoCodec,
             query.SubtitleBurnInStreamIndex);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }

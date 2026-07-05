@@ -29,7 +29,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 l.Id,
                 l.Title,
                 l.MediaType,
-                l.MetadataRefreshIntervalDays
+                l.MetadataRefreshIntervalDays,
+                l.TransmuxingEnabled
             })
             .ToListAsync(cancellationToken);
 
@@ -93,8 +94,11 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 .CountAsync(cancellationToken);
 
             var missingHlsSegmentsCount = await _context.IndexedFiles
-                .Where(f => f.LibraryId == library.Id && f.FileMetadata != null
-                    && !_context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id))
+                .Where(f => f.LibraryId == library.Id
+                    && f.FileMetadata != null
+                    && f.FileMetadata.Type == FileType.Video
+                    && library.TransmuxingEnabled
+                    && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id))
                 .CountAsync(cancellationToken);
 
             var missingAudioAnalysisCount = library.MediaType == LibraryMediaType.Music
