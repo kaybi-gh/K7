@@ -50,4 +50,7 @@
   <data name="InvalidCode" xml:space="preserve">
     <value>Error: Invalid authenticator code.</value>
   </data>
+  <data name="SessionExpired" xml:space="preserve">
+    <value>Error: Your two-factor sign-in session has expired. Please sign in again.</value>
+  </data>
 </root>

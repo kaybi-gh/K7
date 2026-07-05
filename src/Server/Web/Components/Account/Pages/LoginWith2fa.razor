@@ -20,7 +20,7 @@
     </div>
     <div class="auth-card-body">
         <StatusMessage Message="@message" />
-        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post" Enhance="false">
             <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
             <input type="hidden" name="RememberMe" value="@RememberMe" />
             <DataAnnotationsValidator />
@@ -61,10 +61,23 @@
     [SupplyParameterFromQuery]
     private bool RememberMe { get; set; }
 
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
-        user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+        var twoFactorUser = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (twoFactorUser is null)
+        {
+            Logger.LogWarning(
+                "No two-factor authentication user found for {Method} {Path}.",
+                HttpContext.Request.Method,
+                HttpContext.Request.Path);
+            RedirectManager.RedirectToWithStatus("/sign-in", L["SessionExpired"].Value, HttpContext);
+            return;
+        }
+
+        user = twoFactorUser;
         Input ??= new();
     }
 

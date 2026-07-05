@@ -27,7 +27,7 @@
     <div class="auth-card-body">
         @if (_auth.Local.SignInEnabled)
         {
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" Enhance="false">
                 <DataAnnotationsValidator />
                 <div class="auth-form-stack">
                     <div class="auth-form-field">

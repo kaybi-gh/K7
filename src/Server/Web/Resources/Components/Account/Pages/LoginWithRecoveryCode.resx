@@ -41,4 +41,7 @@
   <data name="InvalidCode" xml:space="preserve">
     <value>Erreur : code de récupération invalide.</value>
   </data>
+  <data name="SessionExpired" xml:space="preserve">
+    <value>Erreur : votre session d'authentification a expiré. Veuillez vous reconnecter.</value>
+  </data>
 </root>
