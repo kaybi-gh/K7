@@ -12,6 +12,7 @@ public static class DiagnosticFixMappings
         DiagnosticIssue.MissingAudioAnalysis => DiagnosticFixAction.AnalyzeMusicTrackAudio,
         DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
         DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
+        DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
         _ => null
     };
 

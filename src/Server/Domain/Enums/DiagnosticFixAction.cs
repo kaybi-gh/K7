@@ -6,5 +6,6 @@ public enum DiagnosticFixAction
     ExtractFileMetadata = 2,
     ComputeHlsSegments = 3,
     AutoReidentifyMetadata = 4,
-    AnalyzeMusicTrackAudio = 5
+    AnalyzeMusicTrackAudio = 5,
+    RetryCreateMedia = 6
 }

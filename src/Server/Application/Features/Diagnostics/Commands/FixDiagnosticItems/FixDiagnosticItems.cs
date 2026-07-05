@@ -1,7 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
+using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
@@ -23,11 +25,22 @@ public record FixDiagnosticItemsCommand : IRequest<int>
 public class FixDiagnosticItemsCommandHandler(
     IApplicationDbContext context,
     ISender sender,
+    OrphanIndexedFileFixBuilder orphanIndexedFileFixBuilder,
     ILogger<FixDiagnosticItemsCommandHandler> logger)
     : IRequestHandler<FixDiagnosticItemsCommand, int>
 {
     public async Task<int> Handle(FixDiagnosticItemsCommand request, CancellationToken cancellationToken)
     {
+        if (request.Action == DiagnosticFixAction.RetryCreateMedia)
+        {
+            var items = await orphanIndexedFileFixBuilder.BuildCreateMediaTasksAsync(request.EntityIds, cancellationToken);
+            if (items.Count == 0)
+                return 0;
+
+            await sender.Send(new CreateBackgroundTasksBatchCommand(items), cancellationToken);
+            return request.EntityIds.Count;
+        }
+
         var successCount = 0;
 
         foreach (var entityId in request.EntityIds)
