@@ -15,6 +15,8 @@ public interface IMediaMetadataTagSyncService
 
 public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) : IMediaMetadataTagSyncService
 {
+    private readonly Dictionary<(MetadataTagKind Kind, string NormalizedKey), MetadataTag> _tagCache = new();
+
     public async Task ApplyTagsAsync(Guid mediaId, IReadOnlyList<MetadataTagDesired> desired, CancellationToken cancellationToken = default)
     {
         var media = await context.Medias
@@ -33,10 +35,17 @@ public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) :
         if (desired.Count == 0)
             return;
 
-        var kinds = desired.Select(t => t.Kind).ToHashSet();
-        var desiredKeys = desired
+        var uniqueDesired = desired
+            .GroupBy(t => (t.Kind, t.NormalizedKey))
+            .Select(g => g.First())
+            .ToList();
+
+        var kinds = uniqueDesired.Select(t => t.Kind).Distinct().ToList();
+        var desiredKeys = uniqueDesired
             .Select(t => (t.Kind, t.NormalizedKey))
             .ToHashSet();
+
+        await PreloadTagsAsync(uniqueDesired, cancellationToken);
 
         var toRemove = media.MetadataTags
             .Where(mt => kinds.Contains(mt.MetadataTag.Kind)
@@ -46,7 +55,7 @@ public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) :
         foreach (var link in toRemove)
             context.MediaMetadataTags.Remove(link);
 
-        foreach (var tag in desired)
+        foreach (var tag in uniqueDesired)
         {
             var metadataTag = await GetOrCreateTagAsync(tag.Kind, tag.NormalizedKey, tag.DisplayName, cancellationToken);
             if (media.MetadataTags.Any(mt => mt.MetadataTagId == metadataTag.Id))
@@ -62,23 +71,56 @@ public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) :
         }
     }
 
+    private async Task PreloadTagsAsync(
+        IReadOnlyList<MetadataTagDesired> desired,
+        CancellationToken cancellationToken)
+    {
+        RegisterLocalTags();
+
+        var missingKeys = desired
+            .Select(t => (t.Kind, t.NormalizedKey))
+            .Where(key => !_tagCache.ContainsKey(key))
+            .Distinct()
+            .ToList();
+
+        if (missingKeys.Count == 0)
+            return;
+
+        var kinds = missingKeys.Select(k => k.Kind).Distinct().ToList();
+        var normalizedKeys = missingKeys.Select(k => k.NormalizedKey).Distinct().ToList();
+
+        var existing = await context.MetadataTags
+            .Where(t => kinds.Contains(t.Kind) && normalizedKeys.Contains(t.NormalizedKey))
+            .ToListAsync(cancellationToken);
+
+        foreach (var tag in existing)
+            RegisterTag(tag);
+    }
+
     private async Task<MetadataTag> GetOrCreateTagAsync(
         MetadataTagKind kind,
         string normalizedKey,
         string displayName,
         CancellationToken cancellationToken)
     {
-        var tracked = context.MetadataTags.Local
-            .FirstOrDefault(t => t.Kind == kind && t.NormalizedKey == normalizedKey);
+        var key = (kind, normalizedKey);
 
-        if (tracked is not null)
-            return tracked;
+        if (_tagCache.TryGetValue(key, out var cached))
+            return cached;
+
+        RegisterLocalTags();
+
+        if (_tagCache.TryGetValue(key, out cached))
+            return cached;
 
         var existing = await context.MetadataTags
             .FirstOrDefaultAsync(t => t.Kind == kind && t.NormalizedKey == normalizedKey, cancellationToken);
 
         if (existing is not null)
+        {
+            RegisterTag(existing);
             return existing;
+        }
 
         var tag = new MetadataTag
         {
@@ -88,6 +130,16 @@ public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) :
             DisplayName = displayName
         };
         context.MetadataTags.Add(tag);
+        RegisterTag(tag);
         return tag;
     }
+
+    private void RegisterLocalTags()
+    {
+        foreach (var tag in context.MetadataTags.Local)
+            RegisterTag(tag);
+    }
+
+    private void RegisterTag(MetadataTag tag) =>
+        _tagCache[(tag.Kind, tag.NormalizedKey)] = tag;
 }
