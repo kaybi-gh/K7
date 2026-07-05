@@ -335,6 +335,9 @@ public partial class Serie : IAsyncDisposable
 
     private Guid? GetLibraryIdForReIdentify()
     {
+        if (_serie?.LibraryId is { } libraryId)
+            return libraryId;
+
         return _serie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
     }
 

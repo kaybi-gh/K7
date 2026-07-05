@@ -19,8 +19,8 @@ public class MediaExternalIdResolver(
 {
     public async Task<ExternalId?> ResolveAsync(BaseMedia media, Library library, CancellationToken cancellationToken = default)
     {
-        var existing = media.ExternalIds.FirstOrDefault(e => e.ProviderName == library.MetadataProviderName)
-            ?? media.ExternalIds.FirstOrDefault();
+        var existing = media.ExternalIds.FirstOrDefault(e =>
+            string.Equals(e.ProviderName, library.MetadataProviderName, StringComparison.OrdinalIgnoreCase));
         if (existing is not null)
             return existing;
 

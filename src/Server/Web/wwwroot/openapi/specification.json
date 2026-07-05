@@ -13941,6 +13941,13 @@
             ],
             "format": "int32"
           },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -14105,6 +14112,13 @@
             ],
             "format": "int32"
           },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -14264,6 +14278,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -14504,6 +14525,13 @@
             ],
             "format": "int32"
           },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -14696,6 +14724,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -14891,6 +14926,13 @@
             ],
             "format": "int32"
           },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -15059,6 +15101,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -15416,6 +15465,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "lastMetadataRefreshedAt": {
             "type": [

@@ -52,7 +52,10 @@ public class SearchMetadataQueryHandler(
         {
             var normalizedProvider = MetadataProviderNames.Normalize(library.MetadataProviderName);
             applicableProviders = metadataProviders
-                .Where(p => MetadataProviderNames.Normalize(p.ProviderName) == normalizedProvider);
+                .Where(p => string.Equals(
+                    MetadataProviderNames.Normalize(p.ProviderName),
+                    normalizedProvider,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         var providerList = applicableProviders.ToList();

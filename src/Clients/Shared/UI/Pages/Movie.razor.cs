@@ -498,6 +498,9 @@ public partial class Movie : IAsyncDisposable
 
     private Guid? GetLibraryIdForReIdentify(Guid? indexedFileId = null)
     {
+        if (_movie?.LibraryId is { } libraryId)
+            return libraryId;
+
         if (_movie?.IndexedFiles is not { Count: > 0 })
             return null;
 
