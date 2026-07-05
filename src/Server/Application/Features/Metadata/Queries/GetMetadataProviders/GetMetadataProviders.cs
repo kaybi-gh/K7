@@ -37,7 +37,8 @@ public class GetMetadataProvidersQueryHandler : IRequestHandler<GetMetadataProvi
                 ProviderName = p.ProviderName,
                 SupportedMediaTypes = p.SupportedMediaTypes
             })
-            .OrderBy(p => p.ProviderName);
+            .OrderBy(p => request.MediaType == LibraryMediaType.Serie && p.ProviderName == "tvdb" ? 0 : 1)
+            .ThenBy(p => p.ProviderName);
 
         return Task.FromResult(result);
     }

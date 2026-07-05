@@ -3644,7 +3644,6 @@
           {
             "name": "query",
             "in": "query",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -3680,6 +3679,14 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],

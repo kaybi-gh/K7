@@ -337,7 +337,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
 
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
-            request.MetadataProviderExternalId, request.Language, cancellationToken);
+            request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
         serie.ApplyMetadata(serieMetadata);
         await _metadataTagSyncService.ApplyTagsAsync(
             serie,
@@ -406,7 +406,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         foreach (var season in serie.Seasons)
         {
             var seasonMetadata = await metadataProvider.FetchSeasonMetadataAsync(
-                request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken);
+                request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken, request.FallbackLanguage);
             season.ApplyMetadata(seasonMetadata);
 
             if (request.MetadataProviderName == "federation")
@@ -429,7 +429,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             {
                 var episodeMetadata = await metadataProvider.FetchEpisodeMetadataAsync(
                     request.MetadataProviderExternalId, season.SeasonNumber, episode.EpisodeNumber,
-                    request.Language, cancellationToken);
+                    request.Language, cancellationToken, request.FallbackLanguage);
 
                 episode.ApplyMetadata(episodeMetadata);
 
