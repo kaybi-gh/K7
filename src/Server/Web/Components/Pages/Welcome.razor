@@ -1,4 +1,5 @@
 @page "/welcome"
+@attribute [ExcludeFromInteractiveRouting]
 @layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 @using K7.Server.Domain.Constants
 @using K7.Server.Infrastructure.Configuration
@@ -75,15 +76,23 @@
             : Navigation.GetUriWithQueryParameters("/sign-in",
                 new Dictionary<string, object?> { ["ReturnUrl"] = returnUrl });
 
-        if (!_guestEnabled && _auth.Oidc.Enabled && !_auth.Local.SignInEnabled)
+        if (!_guestEnabled)
         {
-            RedirectManager.RedirectTo(oidcLoginUrl);
-            return;
-        }
+            var target = _auth.Local.SignInEnabled
+                ? _signInUrl
+                : _auth.Oidc.Enabled ? oidcLoginUrl : null;
 
-        if (!_guestEnabled && _auth.Local.SignInEnabled && !_auth.Oidc.Enabled)
-        {
-            RedirectManager.RedirectTo(_signInUrl);
+            if (target is not null)
+            {
+                if (HttpMethods.IsGet(HttpContext.Request.Method) && !HttpContext.Response.HasStarted)
+                {
+                    HttpContext.Response.Redirect(target);
+                    return;
+                }
+
+                RedirectManager.RedirectTo(target);
+                return;
+            }
         }
     }
 
