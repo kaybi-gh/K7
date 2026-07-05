@@ -1,0 +1,22 @@
+server:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/Server/**'
+          - 'Dockerfile'
+          - 'entrypoint.sh'
+          - 'docker-compose*.yaml'
+
+clients:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/Clients/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'

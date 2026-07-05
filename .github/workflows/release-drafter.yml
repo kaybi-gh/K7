@@ -1,0 +1,23 @@
+name: Release drafter
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - branding/**
+      - LICENSE
+      - .github/FUNDING.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  update-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update draft release
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -65,8 +65,7 @@ No `Result<T>` wrapper pattern.
 
 ## References
 
-- Architecture details: `docs/SolutionArchitecture.md`
-- Coding conventions: `docs/CodingConventions.md`
-- UI guidelines: `docs/UIGuidelines.md`
-- Setup & contributing: `CONTRIBUTING.md`
-- Code formatting: `.editorconfig`
+- Architecture and conventions: [AGENTS.md](../AGENTS.md)
+- Setup and contributing: [CONTRIBUTING.md](../CONTRIBUTING.md)
+- Design context: [.impeccable.md](../.impeccable.md)
+- Code formatting: [.editorconfig](../.editorconfig)

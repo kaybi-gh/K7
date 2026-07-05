@@ -26,8 +26,10 @@ COPY . .
 RUN find . -name "libman.json" -execdir libman restore \;
 
 ARG BUILD_CONFIGURATION=Release
+ARG APP_VERSION=0.0.0
 RUN dotnet publish "src/Server/Web/K7.Server.Web.csproj" \
-    -c $BUILD_CONFIGURATION -o /publish --no-restore
+    -c $BUILD_CONFIGURATION -o /publish --no-restore \
+    -p:Version=${APP_VERSION}
 
 
 # VS Fast Mode debug stage (F5 in Visual Studio with Docker profile)
