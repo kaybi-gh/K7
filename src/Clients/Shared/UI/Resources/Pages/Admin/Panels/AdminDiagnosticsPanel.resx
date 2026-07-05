@@ -79,6 +79,9 @@
   <data name="ActionExtract" xml:space="preserve"><value>Extraire</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
   <data name="ActionAnalyzeAudio" xml:space="preserve"><value>Analyser</value></data>
+  <data name="ActionRetryCreateMedia" xml:space="preserve"><value>Relancer la création</value></data>
+  <data name="ReIdentifyIndexedFileDialogTitle" xml:space="preserve"><value>Ré-identifier le fichier</value></data>
+  <data name="ReIdentifyIndexedFileSent" xml:space="preserve"><value>Ré-identification lancée.</value></data>
   <data name="QueueAllFixes" xml:space="preserve"><value>Tout corriger ({0})</value></data>
   <data name="AllFixesQueued" xml:space="preserve"><value>{0} correction(s) lancée(s) en tâche de fond.</value></data>
   <data name="AllLibraries" xml:space="preserve"><value>Toutes les bibliothèques</value></data>

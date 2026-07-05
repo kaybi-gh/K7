@@ -130,13 +130,20 @@
                         </span>
                     </CellTemplate>
                 </K7DataColumn>
-                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColActions"]" Width="96px" Hideable="false">
+                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColActions"]" Width="128px" Hideable="false">
                     <CellTemplate>
                         @{
                             var issue = context.Issues[0];
                             var fixAction = GetFixActionForIssue(issue);
+                            var showReIdentify = SupportsIndexedFileReIdentify(context, issue);
                         }
                         <div class="diagnostics-actions-cell">
+                            @if (showReIdentify)
+                            {
+                                <K7IconButton Icon="@Phosphor.MagnifyingGlass" Size="sm"
+                                              OnClick="@(() => OpenReIdentifyDialogAsync(context))"
+                                              AriaLabel="@L["ActionReidentify"]" />
+                            }
                             @if (fixAction is { } action)
                             {
                                 <K7IconButton Icon="@GetFixActionIcon(action)" Size="sm"

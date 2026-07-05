@@ -9,7 +9,7 @@ using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Diagnostics.Services;
 
-public class DiagnosticFixBatchBuilder(IApplicationDbContext context)
+public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanIndexedFileFixBuilder orphanIndexedFileFixBuilder)
 {
     public async Task<List<CreateBackgroundTasksBatchItem>> BuildBatchItemsAsync(
         DiagnosticFixAction action,
@@ -18,6 +18,7 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context)
     {
         return action switch
         {
+            DiagnosticFixAction.RetryCreateMedia => await orphanIndexedFileFixBuilder.BuildCreateMediaTasksAsync(entityIds, cancellationToken),
             DiagnosticFixAction.AnalyzeMusicTrackAudio => entityIds.Select(trackId => new CreateBackgroundTasksBatchItem
             {
                 Request = new AnalyzeMusicTrackAudioCommand { TrackId = trackId },
@@ -44,7 +45,8 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context)
     public static bool UsesBackgroundTaskBatch(DiagnosticFixAction action) =>
         action is DiagnosticFixAction.AnalyzeMusicTrackAudio
             or DiagnosticFixAction.ComputeHlsSegments
-            or DiagnosticFixAction.ExtractFileMetadata;
+            or DiagnosticFixAction.ExtractFileMetadata
+            or DiagnosticFixAction.RetryCreateMedia;
 
     private async Task<List<CreateBackgroundTasksBatchItem>> BuildExtractFileMetadataItemsAsync(
         IReadOnlyList<Guid> indexedFileIds,

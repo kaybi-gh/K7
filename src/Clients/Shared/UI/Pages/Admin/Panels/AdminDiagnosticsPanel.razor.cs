@@ -2,6 +2,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -529,6 +530,7 @@ public partial class AdminDiagnosticsPanel
                 DiagnosticIssue.MissingAudioAnalysis => DiagnosticFixAction.AnalyzeMusicTrackAudio,
                 DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
                 DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
+                DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
                 _ => null
             };
         }
@@ -550,6 +552,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingAudioAnalysis => DiagnosticFixAction.AnalyzeMusicTrackAudio,
         DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
         DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
+        DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
         _ => null
     };
 
@@ -560,6 +563,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticFixAction.AnalyzeMusicTrackAudio => L["ActionAnalyzeAudio"],
         DiagnosticFixAction.ExtractFileMetadata => L["ActionExtract"],
         DiagnosticFixAction.ComputeHlsSegments => L["ActionHls"],
+        DiagnosticFixAction.RetryCreateMedia => L["ActionRetryCreateMedia"],
         _ => action.ToString()
     };
 
@@ -570,6 +574,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticFixAction.AnalyzeMusicTrackAudio => Phosphor.Waveform,
         DiagnosticFixAction.ExtractFileMetadata => Phosphor.Code,
         DiagnosticFixAction.ComputeHlsSegments => Phosphor.Rows,
+        DiagnosticFixAction.RetryCreateMedia => Phosphor.ArrowClockwise,
         _ => Phosphor.Wrench
     };
 
@@ -653,4 +658,51 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.InaccessiblePath => "warning",
         _ => "warning"
     };
+
+    private static bool SupportsIndexedFileReIdentify(DiagnosticItemDto item, DiagnosticIssue issue) =>
+        item.EntityType == DiagnosticEntityType.IndexedFile
+        && issue is DiagnosticIssue.OrphanFile or DiagnosticIssue.UnidentifiedFile;
+
+    private MediaType? GetReIdentifyMediaType(Guid libraryId) =>
+        _summaries?.FirstOrDefault(s => s.LibraryId == libraryId)?.MediaType switch
+        {
+            LibraryMediaType.Movie => MediaType.Movie,
+            LibraryMediaType.Serie => MediaType.Serie,
+            LibraryMediaType.Music => MediaType.MusicAlbum,
+            _ => null
+        };
+
+    private async Task OpenReIdentifyDialogAsync(DiagnosticItemDto item)
+    {
+        var mediaType = GetReIdentifyMediaType(item.LibraryId);
+        if (mediaType is null)
+            return;
+
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.IndexedFileId, item.EntityId },
+            { x => x.InitialSearchQuery, item.EntityName },
+            { x => x.MediaType, mediaType },
+            { x => x.LibraryId, item.LibraryId }
+        };
+
+        var options = new K7DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = K7DialogMaxWidth.Medium,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(
+            L["ReIdentifyIndexedFileDialogTitle"],
+            parameters,
+            options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(L["ReIdentifyIndexedFileSent"], K7Severity.Success);
+            await LoadItemsAsync();
+        }
+    }
 }

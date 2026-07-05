@@ -22,6 +22,7 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
             DiagnosticIssue.MissingExternalId => await GetMediaIdsMissingExternalIdAsync(libraryId, cancellationToken),
             DiagnosticIssue.StaleMetadata => await GetMediaIdsWithStaleMetadataAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingMembers => await GetMusicArtistIdsMissingMembersAsync(libraryId, cancellationToken),
+            DiagnosticIssue.OrphanFile => await GetOrphanIndexedFileIdsAsync(libraryId, cancellationToken),
             _ => []
         };
     }
@@ -249,6 +250,20 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
         ).Distinct().ToListAsync(cancellationToken);
 
         return artistIdsInLibrary;
+    }
+
+    private async Task<List<Guid>> GetOrphanIndexedFileIdsAsync(
+        Guid? libraryId,
+        CancellationToken cancellationToken)
+    {
+        var query = context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.MediaId == null && f.Identification != null && NonFederatedLibraryIds().Contains(f.LibraryId));
+
+        if (libraryId.HasValue)
+            query = query.Where(f => f.LibraryId == libraryId.Value);
+
+        return await query.Select(f => f.Id).ToListAsync(cancellationToken);
     }
 
     private static IReadOnlyList<MetadataPictureType> GetExpectedPictureTypes(MediaType type) => type switch
