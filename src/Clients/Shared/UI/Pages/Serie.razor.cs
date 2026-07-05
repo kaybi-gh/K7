@@ -205,7 +205,8 @@ public partial class Serie : IAsyncDisposable
         {
             { x => x.MediaId, _serie.Id },
             { x => x.InitialSearchQuery, _serie.Title },
-            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie }
+            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie },
+            { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
@@ -330,6 +331,11 @@ public partial class Serie : IAsyncDisposable
 
             _studioNetworkChips.Add(new SerieStudioNetworkChip(studio, IsNetwork: false));
         }
+    }
+
+    private Guid? GetLibraryIdForReIdentify()
+    {
+        return _serie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
     }
 
     private async Task ResolveLibraryGroupIdAsync()

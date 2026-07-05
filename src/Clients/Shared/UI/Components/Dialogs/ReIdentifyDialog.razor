@@ -7,7 +7,7 @@
             
             <div class="d-flex">
                 <K7TextField Type="number" @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="outlined" Clearable="true" />
-                <K7TextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="outlined" Clearable="true" />
+                <K7TextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="outlined" Clearable="true" Adornment="end" AdornmentIcon="@Phosphor.MagnifyingGlass" OnAdornmentClick="SearchAsync" />
             </div>
             
             <K7Button Variant="filled" Color="primary" OnClick="SearchAsync" Disabled="_isSearching">

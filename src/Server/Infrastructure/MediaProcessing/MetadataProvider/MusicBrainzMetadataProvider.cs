@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo, IMetadataImageProvider
+public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo, IMetadataImageProvider, ISearchableMetadataProvider
 {
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
@@ -124,6 +124,122 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         };
 
         return metadata;
+    }
+
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(
+        string query, int? year, string? providerId, MediaType? mediaType, string language, CancellationToken cancellationToken)
+    {
+        if (mediaType.HasValue && mediaType != MediaType.MusicAlbum)
+            return [];
+
+        var results = new List<MetadataSearchResult>();
+
+        try
+        {
+            var trimmedProviderId = providerId?.Trim();
+            if (!string.IsNullOrWhiteSpace(trimmedProviderId))
+            {
+                var lookup = await LookupSearchResultByProviderIdAsync(trimmedProviderId, cancellationToken);
+                if (lookup is not null)
+                    results.Add(lookup);
+
+                return results;
+            }
+
+            if (string.IsNullOrWhiteSpace(query))
+                return results;
+
+            var searchQuery = year.HasValue
+                ? $"{query} AND date:{year.Value}"
+                : query;
+            var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(searchQuery)}&limit=10&fmt=json";
+
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            var response = await _httpClient.GetFromJsonAsync<MbReleaseSearchResult>(url, JsonOptions, cancellationToken);
+            if (response?.Releases is null)
+                return results;
+
+            foreach (var release in response.Releases)
+            {
+                var externalId = release.ReleaseGroup?.Id ?? release.Id;
+                if (string.IsNullOrWhiteSpace(externalId))
+                    continue;
+
+                results.Add(new MetadataSearchResult
+                {
+                    Provider = ProviderName,
+                    ExternalId = externalId,
+                    Title = release.Title ?? string.Empty
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MusicBrainz metadata search failed for {Query}", query);
+        }
+
+        return results;
+    }
+
+    private async Task<MetadataSearchResult?> LookupSearchResultByProviderIdAsync(string providerId, CancellationToken cancellationToken)
+    {
+        var releaseGroup = await GetReleaseGroupAsync(providerId, cancellationToken);
+        if (releaseGroup is not null)
+        {
+            return await MapReleaseGroupToSearchResultAsync(releaseGroup, cancellationToken);
+        }
+
+        var release = await GetReleaseWithReleaseGroupAsync(providerId, cancellationToken);
+        if (release is null)
+            return null;
+
+        var externalId = release.ReleaseGroup?.Id ?? release.Id;
+        var posterUrl = await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release-group/{externalId}", cancellationToken)
+            ?? await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release/{release.Id}", cancellationToken);
+
+        return new MetadataSearchResult
+        {
+            Provider = ProviderName,
+            ExternalId = externalId,
+            Title = release.Title ?? string.Empty,
+            Year = ParseYear(release.Date),
+            PosterUrl = posterUrl
+        };
+    }
+
+    private async Task<MetadataSearchResult> MapReleaseGroupToSearchResultAsync(MbReleaseGroup releaseGroup, CancellationToken cancellationToken)
+    {
+        var posterUrl = await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release-group/{releaseGroup.Id}", cancellationToken);
+
+        return new MetadataSearchResult
+        {
+            Provider = ProviderName,
+            ExternalId = releaseGroup.Id,
+            Title = releaseGroup.Title ?? string.Empty,
+            Year = ParseYear(releaseGroup.FirstReleaseDate),
+            PosterUrl = posterUrl
+        };
+    }
+
+    private async Task<MbRelease?> GetReleaseWithReleaseGroupAsync(string releaseId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = $"{BaseUrl}/release/{releaseId}?inc=release-groups&fmt=json";
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            return await _httpClient.GetFromJsonAsync<MbRelease>(url, JsonOptions, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch MusicBrainz release {Id}", releaseId);
+            return null;
+        }
+    }
+
+    private static int? ParseYear(string? date)
+    {
+        var parsed = ParseDate(date);
+        return parsed?.Year;
     }
 
     private static string BuildSearchQuery(MediaIdentification identification)
@@ -661,6 +777,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public List<MbMedium>? Media { get; init; }
         [JsonPropertyName("artist-credit")]
         public List<MbArtistCredit>? ArtistCredit { get; init; }
+        [JsonPropertyName("release-group")]
+        public MbReleaseGroupRef? ReleaseGroup { get; init; }
     }
 
     private record MbArtistCredit

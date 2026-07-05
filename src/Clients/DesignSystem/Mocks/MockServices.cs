@@ -420,7 +420,7 @@ public sealed class MockMediaService : IMediaService
     }
     public Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PersonDto?>(null);
     public Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PersonDto>?>(null);
-    public Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, MediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult(Enumerable.Empty<MetadataSearchResult>());
+    public Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, MediaType? mediaType = null, Guid? libraryId = null, string? language = null, CancellationToken cancellationToken = default) => Task.FromResult(Enumerable.Empty<MetadataSearchResult>());
     public Task ReidentifyIndexedFileAsync(Guid id, ReidentifyIndexedFileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;

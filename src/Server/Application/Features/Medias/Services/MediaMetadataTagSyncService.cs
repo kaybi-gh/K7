@@ -68,6 +68,12 @@ public sealed class MediaMetadataTagSyncService(IApplicationDbContext context) :
         string displayName,
         CancellationToken cancellationToken)
     {
+        var tracked = context.MetadataTags.Local
+            .FirstOrDefault(t => t.Kind == kind && t.NormalizedKey == normalizedKey);
+
+        if (tracked is not null)
+            return tracked;
+
         var existing = await context.MetadataTags
             .FirstOrDefaultAsync(t => t.Kind == kind && t.NormalizedKey == normalizedKey, cancellationToken);
 

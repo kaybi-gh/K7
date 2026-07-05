@@ -12,6 +12,7 @@ using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
 using TMDbLib.Client;
+using TMDbLib.Objects.Find;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
@@ -61,13 +62,16 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(providerId) && int.TryParse(providerId, out var tmdbId))
+            var trimmedProviderId = providerId?.Trim();
+            if (!string.IsNullOrWhiteSpace(trimmedProviderId))
             {
-                var movie = await _tdmbClient.GetMovieAsync(tmdbId, language, cancellationToken: cancellationToken);
+                var tmdbId = await ResolveMovieTmdbIdAsync(trimmedProviderId, cancellationToken);
+                var movie = await _tdmbClient.GetMovieAsync(tmdbId.ToString(), language, cancellationToken: cancellationToken);
                 if (movie != null)
                 {
                     results.Add(MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview));
                 }
+
                 return results;
             }
 
@@ -541,5 +545,18 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         }
 
         return results;
+    }
+
+    private async Task<int> ResolveMovieTmdbIdAsync(string providerId, CancellationToken cancellationToken)
+    {
+        var trimmed = providerId.Trim();
+        if (int.TryParse(trimmed, out var tmdbId))
+            return tmdbId;
+
+        var findResult = await _tdmbClient.FindAsync(FindExternalSource.Imdb, trimmed, cancellationToken: cancellationToken);
+        var movieResult = findResult?.MovieResults?.FirstOrDefault()
+            ?? throw new InvalidOperationException($"No TMDb movie found for external ID '{trimmed}'");
+
+        return movieResult.Id;
     }
 }
