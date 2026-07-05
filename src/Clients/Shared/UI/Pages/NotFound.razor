@@ -18,7 +18,7 @@
 
         if (isWeb)
         {
-            Navigation.NavigateTo($"/welcome?returnUrl={returnUrl}", replace: true);
+            Navigation.NavigateTo($"/welcome?returnUrl={returnUrl}", forceLoad: true, replace: true);
             return;
         }
 
