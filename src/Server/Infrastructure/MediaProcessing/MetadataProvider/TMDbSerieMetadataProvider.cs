@@ -71,13 +71,16 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(providerId) && int.TryParse(providerId, out var tmdbId))
+            var trimmedProviderId = providerId?.Trim();
+            if (!string.IsNullOrWhiteSpace(trimmedProviderId))
             {
+                var tmdbId = await ResolveTmdbIdAsync(trimmedProviderId, cancellationToken);
                 var show = await _tmdbClient.GetTvShowAsync(tmdbId, language: language, cancellationToken: cancellationToken);
                 if (show is not null)
                 {
                     results.Add(MapToSearchResult(show.Id, show.Name, show.FirstAirDate, show.PosterPath, show.Overview));
                 }
+
                 return results;
             }
 
@@ -599,13 +602,14 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
     private async Task<int> ResolveTmdbIdAsync(string providerId, CancellationToken cancellationToken)
     {
-        if (int.TryParse(providerId, out var tmdbId))
+        var trimmed = providerId.Trim();
+        if (int.TryParse(trimmed, out var tmdbId))
             return tmdbId;
 
         // Assume it's an IMDb ID (tt...) - resolve via TMDb Find API
-        var findResult = await _tmdbClient.FindAsync(TMDbLib.Objects.Find.FindExternalSource.Imdb, providerId, cancellationToken: cancellationToken);
+        var findResult = await _tmdbClient.FindAsync(TMDbLib.Objects.Find.FindExternalSource.Imdb, trimmed, cancellationToken: cancellationToken);
         var tvResult = findResult?.TvResults?.FirstOrDefault()
-            ?? throw new InvalidOperationException($"No TMDb series found for external ID '{providerId}'");
+            ?? throw new InvalidOperationException($"No TMDb series found for external ID '{trimmed}'");
 
         return tvResult.Id;
     }

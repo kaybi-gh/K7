@@ -1,25 +1,71 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Metadata.Queries.SearchMetadata;
 
 public class SearchMetadataQuery : IRequest<IEnumerable<MetadataSearchResult>>
 {
-    public required string Query { get; init; }
+    public string? Query { get; init; }
     public int? Year { get; init; }
     public string? ProviderId { get; init; }
     public MediaType? MediaType { get; init; }
-    public string Language { get; init; } = "en";
+    public string? Language { get; init; }
+    public Guid? LibraryId { get; init; }
 }
 
-public class SearchMetadataQueryHandler(IEnumerable<ISearchableMetadataProvider> metadataProviders)
+public class SearchMetadataQueryHandler(
+    IEnumerable<ISearchableMetadataProvider> metadataProviders,
+    IApplicationDbContext context)
     : IRequestHandler<SearchMetadataQuery, IEnumerable<MetadataSearchResult>>
 {
     public async Task<IEnumerable<MetadataSearchResult>> Handle(SearchMetadataQuery request, CancellationToken cancellationToken)
     {
-        var tasks = metadataProviders.Select(provider => provider.SearchMetadataAsync(request.Query, request.Year, request.ProviderId, request.MediaType, request.Language, cancellationToken));
+        Library? library = null;
+        if (request.LibraryId.HasValue)
+        {
+            library = await context.Libraries
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == request.LibraryId.Value, cancellationToken);
+        }
+
+        var language = request.Language;
+        if (string.IsNullOrWhiteSpace(language))
+            language = library?.MetadataLanguage;
+
+        language = string.IsNullOrWhiteSpace(language) ? "en" : language;
+
+        var mediaType = request.MediaType ?? library?.MediaType switch
+        {
+            LibraryMediaType.Movie => MediaType.Movie,
+            LibraryMediaType.Serie => MediaType.Serie,
+            LibraryMediaType.Music => MediaType.MusicAlbum,
+            _ => null
+        };
+
+        IEnumerable<ISearchableMetadataProvider> applicableProviders = metadataProviders;
+        if (library is not null)
+        {
+            var normalizedProvider = MetadataProviderNames.Normalize(library.MetadataProviderName);
+            applicableProviders = metadataProviders
+                .Where(p => MetadataProviderNames.Normalize(p.ProviderName) == normalizedProvider);
+        }
+
+        var providerList = applicableProviders.ToList();
+        if (providerList.Count == 0)
+            return [];
+
+        var tasks = providerList.Select(provider => provider.SearchMetadataAsync(
+            request.Query ?? string.Empty,
+            request.Year,
+            request.ProviderId,
+            mediaType,
+            language,
+            cancellationToken));
         var results = await Task.WhenAll(tasks);
         return results.SelectMany(r => r);
     }

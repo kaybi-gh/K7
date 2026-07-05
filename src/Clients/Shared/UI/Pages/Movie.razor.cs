@@ -322,7 +322,9 @@ public partial class Movie : IAsyncDisposable
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.MediaId, _movie.Id },
-            { x => x.InitialSearchQuery, _movie.Title }
+            { x => x.InitialSearchQuery, _movie.Title },
+            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
+            { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
@@ -341,7 +343,9 @@ public partial class Movie : IAsyncDisposable
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, indexedFileId },
-            { x => x.InitialSearchQuery, _movie?.Title }
+            { x => x.InitialSearchQuery, _movie?.Title },
+            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
+            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
@@ -491,6 +495,17 @@ public partial class Movie : IAsyncDisposable
 
     private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
         MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+
+    private Guid? GetLibraryIdForReIdentify(Guid? indexedFileId = null)
+    {
+        if (_movie?.IndexedFiles is not { Count: > 0 })
+            return null;
+
+        if (indexedFileId.HasValue)
+            return _movie.IndexedFiles.FirstOrDefault(f => f.Id == indexedFileId)?.LibraryId;
+
+        return _movie.IndexedFiles.First().LibraryId;
+    }
 
     private async Task ResolveLibraryGroupIdAsync()
     {

@@ -284,9 +284,14 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<LiteMediaDto>>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, K7.Server.Domain.Enums.MediaType? mediaType = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, K7.Server.Domain.Enums.MediaType? mediaType = null, Guid? libraryId = null, string? language = null, CancellationToken cancellationToken = default)
     {
-        var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
+        var queryParams = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            queryParams.Add($"query={Uri.EscapeDataString(query)}");
+        }
 
         if (year.HasValue)
         {
@@ -301,6 +306,16 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (mediaType.HasValue)
         {
             queryParams.Add($"mediaType={(int)mediaType.Value}");
+        }
+
+        if (libraryId.HasValue)
+        {
+            queryParams.Add($"libraryId={libraryId.Value}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            queryParams.Add($"language={Uri.EscapeDataString(language)}");
         }
 
         var queryString = string.Join("&", queryParams);

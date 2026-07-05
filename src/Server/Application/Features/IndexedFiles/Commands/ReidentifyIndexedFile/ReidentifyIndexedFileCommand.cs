@@ -25,6 +25,9 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
         Guard.Against.NotFound(request.IndexedFileId, indexedFile);
 
         var library = await context.Libraries.FindAsync([indexedFile.LibraryId], cancellationToken);
+        Guard.Against.Null(library);
+
+        var providerName = library.MetadataProviderName;
 
         if (indexedFile.MediaId.HasValue)
         {
@@ -43,7 +46,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
         var existingExternalId = await context.ExternalIds
             .Include(x => x!.Media)
                 .ThenInclude(x => x!.IndexedFiles)
-            .FirstOrDefaultAsync(x => x.Value == request.SelectedExternalId && x.ProviderName == request.SelectedProvider, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Value == request.SelectedExternalId && x.ProviderName == providerName, cancellationToken);
 
         if (existingExternalId != null && existingExternalId.Media != null)
         {
@@ -58,7 +61,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             context.IndexedFiles.Attach(indexedFile);
         }
 
-        BaseMedia newMedia = library?.MediaType switch
+        BaseMedia newMedia = library.MediaType switch
         {
             LibraryMediaType.Serie => new Serie() { IndexedFiles = [indexedFile] },
             LibraryMediaType.Music => new MusicAlbum() { IndexedFiles = [indexedFile] },
@@ -75,15 +78,15 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             {
                 MediaId = newMedia.Id,
                 MetadataProviderExternalId = request.SelectedExternalId,
-                MetadataProviderName = request.SelectedProvider,
-                Language = library?.MetadataLanguage ?? "fr",
-                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
+                MetadataProviderName = providerName,
+                Language = library.MetadataLanguage,
+                FallbackLanguage = library.MetadataFallbackLanguage
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = newMedia.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             MaxAttempts = 1,
-            ConcurrencyGroup = request.SelectedProvider
+            ConcurrencyGroup = providerName
         }, cancellationToken);
     }
 }

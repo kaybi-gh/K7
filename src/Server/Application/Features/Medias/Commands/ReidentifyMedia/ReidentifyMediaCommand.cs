@@ -30,9 +30,12 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
         Guard.Against.NotFound(request.MediaId, media);
 
         var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
+        Guard.Against.Null(library);
+
+        var providerName = library.MetadataProviderName;
 
         // Update or add external Id
-        var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == request.SelectedProvider);
+        var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == providerName);
         if (existingExternalId != null)
         {
             existingExternalId.Value = request.SelectedExternalId;
@@ -40,7 +43,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
         else
         {
             media.ExternalIds ??= new List<ExternalId>();
-            media.ExternalIds.Add(new ExternalId { ProviderName = request.SelectedProvider, Value = request.SelectedExternalId });
+            media.ExternalIds.Add(new ExternalId { ProviderName = providerName, Value = request.SelectedExternalId });
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -52,15 +55,15 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
             {
                 MediaId = media.Id,
                 MetadataProviderExternalId = request.SelectedExternalId,
-                MetadataProviderName = request.SelectedProvider,
-                Language = library?.MetadataLanguage ?? "fr",
-                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
+                MetadataProviderName = providerName,
+                Language = library.MetadataLanguage,
+                FallbackLanguage = library.MetadataFallbackLanguage
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             MaxAttempts = 1,
-            ConcurrencyGroup = request.SelectedProvider
+            ConcurrencyGroup = providerName
         }, cancellationToken);
     }
 }
