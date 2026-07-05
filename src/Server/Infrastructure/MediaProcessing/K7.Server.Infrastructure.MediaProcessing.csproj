@@ -16,5 +16,9 @@
     <ProjectReference Include="..\..\Domain\K7.Server.Domain.csproj" />
     <ProjectReference Include="..\..\Application\K7.Server.Application.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="K7.Server.Application.UnitTests" />
+  </ItemGroup>
   
 </Project>

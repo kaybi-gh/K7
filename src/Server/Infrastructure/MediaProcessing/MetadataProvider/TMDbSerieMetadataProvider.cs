@@ -105,7 +105,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     }
 
     public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(
-        string providerId, string language, CancellationToken cancellationToken = default)
+        string providerId, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var show = await _tmdbClient.GetTvShowAsync(
@@ -154,7 +154,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     }
 
     public async Task<ExternalSeasonMetadata> FetchSeasonMetadataAsync(
-        string providerId, int seasonNumber, string language, CancellationToken cancellationToken = default)
+        string providerId, int seasonNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var season = await _tmdbClient.GetTvSeasonAsync(
@@ -200,7 +200,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     }
 
     public async Task<ExternalEpisodeMetadata> FetchEpisodeMetadataAsync(
-        string providerId, int seasonNumber, int episodeNumber, string language, CancellationToken cancellationToken = default)
+        string providerId, int seasonNumber, int episodeNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var episode = await _tmdbClient.GetTvEpisodeAsync(

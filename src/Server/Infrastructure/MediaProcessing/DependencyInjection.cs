@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
+using K7.Server.Infrastructure.MediaProcessing.MetadataProvider.Tvdb;
 using K7.Server.Application.Common.Interfaces;
 using TMDbLib.Client;
 
@@ -33,6 +34,7 @@ public static class DependencyInjection
             client.SetConfig(client.GetConfigAsync().GetAwaiter().GetResult());
             return client;
         });
+        services.AddHttpClient<TvdbAuthenticationService>();
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("tmdb", (sp, _) => sp.GetRequiredService<TMDbMetadataProvider>());
@@ -50,6 +52,12 @@ public static class DependencyInjection
         services.AddKeyedScoped<ISerieMetadataProvider>("imdb", (sp, _) => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
+        services.AddHttpClient<TvdbApiClient>();
+        services.AddScoped<TvdbSerieMetadataProvider>();
+        services.AddKeyedScoped<ISerieMetadataProvider>("tvdb", (sp, _) => sp.GetRequiredService<TvdbSerieMetadataProvider>());
+        services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
+        services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
+        services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
         services.AddScoped<MusicBrainzMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("musicbrainz", (sp, _) => sp.GetRequiredService<MusicBrainzMetadataProvider>());

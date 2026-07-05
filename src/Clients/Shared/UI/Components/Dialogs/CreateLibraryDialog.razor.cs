@@ -49,7 +49,13 @@ public partial class CreateLibraryDialog
         _mediaTypeSelected = true;
 
         _availableProviders = await K7ServerService.GetMetadataProvidersAsync(mediaType);
-        _selectedProvider = _availableProviders.FirstOrDefault()?.ProviderName ?? "";
+        _selectedProvider = mediaType switch
+        {
+            LibraryMediaType.Serie => _availableProviders.FirstOrDefault(p => p.ProviderName == "tvdb")?.ProviderName
+                ?? _availableProviders.FirstOrDefault()?.ProviderName
+                ?? "",
+            _ => _availableProviders.FirstOrDefault()?.ProviderName ?? ""
+        };
 
         var allGroups = await K7ServerService.GetLibraryGroupsAsync();
         _compatibleGroups = allGroups.Where(g => g.MediaType == mediaType).ToList();

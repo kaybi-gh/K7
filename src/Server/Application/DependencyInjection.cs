@@ -78,6 +78,9 @@ public static class DependencyInjection
         {
             var limiter = new OutboundRateLimiter();
             limiter.ConfigureHost("musicbrainz.org", TimeSpan.FromMilliseconds(1100));
+            limiter.ConfigureHost("api4.thetvdb.com", TimeSpan.FromMilliseconds(500));
+            limiter.ConfigureHost("artworks.thetvdb.com", TimeSpan.FromMilliseconds(200));
+            limiter.ConfigureHost("image.tmdb.org", TimeSpan.FromMilliseconds(50));
             limiter.ConfigureHost("commons.wikimedia.org", TimeSpan.FromSeconds(2));
             limiter.ConfigureHost("upload.wikimedia.org", TimeSpan.FromSeconds(2));
             return limiter;
@@ -92,6 +95,7 @@ public static class DependencyInjection
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();
         services.AddScoped<DiagnosticIssueEntityResolver>();
+        services.AddScoped<OrphanIndexedFileFixBuilder>();
         services.AddScoped<DiagnosticFixBatchBuilder>();
         services.AddScoped<IHomeLayoutMaintenanceService, HomeLayoutMaintenanceService>();
         services.AddScoped<INextEpisodeEnqueueService, NextEpisodeEnqueueService>();

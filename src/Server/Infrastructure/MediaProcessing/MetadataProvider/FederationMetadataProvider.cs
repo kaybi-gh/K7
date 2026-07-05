@@ -124,7 +124,7 @@ public class FederationMetadataProvider(
         };
     }
 
-    public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(string providerId, string language, CancellationToken cancellationToken = default)
+    public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(string providerId, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var dto = await FetchRemoteMetadataAsync(providerId, cancellationToken);
         if (dto is null)
@@ -164,7 +164,7 @@ public class FederationMetadataProvider(
         };
     }
 
-    public async Task<ExternalSeasonMetadata> FetchSeasonMetadataAsync(string providerId, int seasonNumber, string language, CancellationToken cancellationToken = default)
+    public async Task<ExternalSeasonMetadata> FetchSeasonMetadataAsync(string providerId, int seasonNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var dto = await FetchRemoteMetadataAsync(providerId, cancellationToken);
         if (dto is null)
@@ -193,7 +193,7 @@ public class FederationMetadataProvider(
         };
     }
 
-    public async Task<ExternalEpisodeMetadata> FetchEpisodeMetadataAsync(string providerId, int seasonNumber, int episodeNumber, string language, CancellationToken cancellationToken = default)
+    public async Task<ExternalEpisodeMetadata> FetchEpisodeMetadataAsync(string providerId, int seasonNumber, int episodeNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
         var dto = await FetchRemoteMetadataAsync(providerId, cancellationToken);
         if (dto is null)
