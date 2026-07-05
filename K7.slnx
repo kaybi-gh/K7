@@ -8,6 +8,7 @@
     <File Path="Dockerfile" />
     <File Path="entrypoint.sh" />
     <File Path="global.json" />
+    <File Path="K7.CI.slnf" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Source/" />

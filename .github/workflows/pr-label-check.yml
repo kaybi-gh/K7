@@ -1,0 +1,28 @@
+name: PR label check
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize, edited]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  require-changelog-label:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    steps:
+      - name: Require a changelog label
+        uses: mheap/github-action-required-labels@v5
+        with:
+          mode: minimum
+          count: 1
+          labels: |
+            breaking-change
+            enhancement
+            bug
+            chore
+            documentation
+            skip-changelog

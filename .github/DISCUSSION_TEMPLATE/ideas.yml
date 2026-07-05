@@ -1,0 +1,34 @@
+title: Idea
+labels:
+  - Ideas
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea or feature request. K7 is maintained for real-world use, but not every suggestion will be built.
+
+        If something is **broken**, open a [bug report](https://github.com/kaybi-gh/K7/issues/new?template=bug_report.yml) instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What pain point or limitation are you hitting today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work? Mockups or examples from other apps are welcome.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways you thought about solving this, or workarounds you use today.
+    validations:
+      required: false

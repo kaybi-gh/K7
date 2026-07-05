@@ -1,0 +1,36 @@
+name: Docker cleanup
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [ main ]
+
+permissions:
+  packages: write
+
+jobs:
+  delete-pr-image:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete PR image tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_TAG: pr-${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          VERSION_IDS=$(gh api "/user/packages/container/k7/versions?per_page=100" \
+            --jq ".[] | select(.metadata.container.tags[]? == \"${PR_TAG}\") | .id" 2>/dev/null || true)
+
+          if [ -z "${VERSION_IDS}" ]; then
+            echo "No image found for tag ${PR_TAG}."
+            exit 0
+          fi
+
+          while IFS= read -r version_id; do
+            [ -z "${version_id}" ] && continue
+            echo "Deleting package version ${version_id} (tag ${PR_TAG})."
+            gh api --method DELETE "/user/packages/container/k7/versions/${version_id}"
+          done <<< "${VERSION_IDS}"

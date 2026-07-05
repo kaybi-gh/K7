@@ -1,0 +1,14 @@
+{
+  "solution": {
+    "path": "K7.slnx",
+    "projects": [
+      "src\\Server\\Web\\K7.Server.Web.csproj",
+      "src\\Clients\\Web\\K7.Clients.Web.csproj",
+      "src\\Clients\\Shared\\UI\\K7.Clients.Shared.UI.csproj",
+      "tests\\Application.UnitTests\\Application.UnitTests.csproj",
+      "tests\\Application.FunctionalTests\\Application.FunctionalTests.csproj",
+      "tests\\Clients.ComponentTests\\Clients.ComponentTests.csproj",
+      "tests\\Domain.UnitTests\\Domain.UnitTests.csproj"
+    ]
+  }
+}

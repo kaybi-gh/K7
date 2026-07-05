@@ -10,7 +10,6 @@ K7 follows **Clean Architecture** with strict dependency direction: Domain → A
 - **Web** - ASP.NET Core host, Minimal API endpoints, SignalR hub.
 - **Clients** - Blazor WebAssembly + MAUI Blazor Hybrid, sharing components/pages/services.
 
-For the full breakdown, see [`docs/SolutionArchitecture.md`](docs/SolutionArchitecture.md).
 
 ## Prerequisites
 
@@ -114,7 +113,7 @@ Enforced via [`.editorconfig`](.editorconfig) at the repository root. Key rules:
 - Always forward `CancellationToken` - last parameter, `= default` on public methods.
 - Structured logging only: `_logger.LogX("message {Param}", param)`. Never use `$""` interpolation.
 
-Run `dotnet format` to auto-fix formatting issues. Full conventions: [`docs/CodingConventions.md`](docs/CodingConventions.md).
+Run `dotnet format` to auto-fix formatting issues. See [.editorconfig](.editorconfig).
 
 ## Adding a new feature
 

@@ -1,0 +1,81 @@
+name: Bug report
+description: Something is broken or not working as expected
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        - Search [existing issues](https://github.com/kaybi-gh/K7/issues) first.
+        - For ideas and feature requests, use [Discussions](https://github.com/kaybi-gh/K7/discussions) instead.
+        - For security problems, use [private security advisories](https://github.com/kaybi-gh/K7/security/advisories/new), not a public issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: K7 version
+      description: Release tag, Docker image tag, or commit hash if you run from source.
+      placeholder: "e.g. 1.0.0, latest, pr-42"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where does this happen?
+      options:
+        - Web client (browser)
+        - MAUI app (Android)
+        - MAUI app (iOS)
+        - MAUI app (Windows)
+        - Server (API, streaming, background tasks)
+        - Docker deployment
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably trigger the problem.
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Server logs, browser console, or screenshots. Redact tokens and personal paths.
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I am running a supported setup (Docker, .NET 10, or a current MAUI build).
+          required: false
