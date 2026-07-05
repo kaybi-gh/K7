@@ -18,6 +18,7 @@ public class GetMedia : IEndpoint
             var result = await sender.Send(new GetMediaQuery(id));
             var dto = result.Media.ToMediaDto();
             dto.TotalPlayCount = result.TotalPlayCount;
+            dto.LibraryId = result.LibraryId;
             return dto;
         })
         .RequireAuthorization(Policies.GuestOrAbove)

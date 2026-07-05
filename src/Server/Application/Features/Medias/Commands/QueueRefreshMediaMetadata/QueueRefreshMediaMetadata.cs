@@ -45,10 +45,9 @@ public class QueueRefreshMediaMetadataCommandHandler(
             ]);
         }
 
-        var externalId = media.ExternalIds.FirstOrDefault(e => e.ProviderName == library.MetadataProviderName)
-            ?? media.ExternalIds.FirstOrDefault();
-
-        externalId ??= await externalIdResolver.ResolveAsync(media, library, cancellationToken);
+        var externalId = media.ExternalIds.FirstOrDefault(e =>
+                string.Equals(e.ProviderName, library.MetadataProviderName, StringComparison.OrdinalIgnoreCase))
+            ?? await externalIdResolver.ResolveAsync(media, library, cancellationToken);
 
         if (externalId is null)
         {
@@ -60,10 +59,10 @@ public class QueueRefreshMediaMetadataCommandHandler(
             ]);
         }
 
-        var concurrencyGroup = externalId.ProviderName == "federation"
+        var concurrencyGroup = library.MetadataProviderName == "federation"
             && externalId.Value.Split(':') is [var peerId, ..]
             ? $"federation:{peerId}"
-            : externalId.ProviderName;
+            : library.MetadataProviderName;
 
         await sender.Send(new CreateBackgroundTaskCommand
         {
@@ -71,7 +70,7 @@ public class QueueRefreshMediaMetadataCommandHandler(
             {
                 MediaId = media.Id,
                 MetadataProviderExternalId = externalId.Value,
-                MetadataProviderName = externalId.ProviderName,
+                MetadataProviderName = library.MetadataProviderName,
                 Language = library.MetadataLanguage,
                 FallbackLanguage = library.MetadataFallbackLanguage
             },

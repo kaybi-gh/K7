@@ -28,5 +28,6 @@ public abstract record MediaDto
     public IReadOnlyList<ExternalIdDto>? ExternalIds { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public int TotalPlayCount { get; set; }
+    public Guid? LibraryId { get; set; }
     public DateTimeOffset? LastMetadataRefreshedAt { get; init; }
 }

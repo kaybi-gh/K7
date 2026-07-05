@@ -1,12 +1,13 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedia;
 
-public record GetMediaResult(BaseMedia Media, int TotalPlayCount);
+public record GetMediaResult(BaseMedia Media, int TotalPlayCount, Guid? LibraryId);
 
 public record GetMediaQuery(Guid Id) : IRequest<GetMediaResult>;
 
@@ -121,6 +122,8 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .Where(s => s.MediaId == request.Id && s.PlayCount > 0)
             .SumAsync(s => s.PlayCount, cancellationToken);
 
-        return new GetMediaResult(entity, totalPlayCount);
+        var libraryId = await MediaLibraryLinkageHelper.FindLibraryIdAsync(context, entity, cancellationToken);
+
+        return new GetMediaResult(entity, totalPlayCount, libraryId);
     }
 }
