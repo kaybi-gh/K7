@@ -29,7 +29,8 @@
   <data name="CreditFfmpeg" xml:space="preserve"><value>Transcodage et traitement multimedia</value></data>
   <data name="CreditOpenIddict" xml:space="preserve"><value>Authentification OpenID Connect</value></data>
   <data name="CreditMusicBrainz" xml:space="preserve"><value>Métadonnées musicales</value></data>
-  <data name="CreditTmdb" xml:space="preserve"><value>Métadonnées films et series</value></data>
+  <data name="CreditTmdb" xml:space="preserve"><value>Métadonnées films</value></data>
+  <data name="CreditTvdb" xml:space="preserve"><value>Métadonnées séries TV</value></data>
   <data name="CreditWikimedia" xml:space="preserve"><value>Images d'artistes</value></data>
   <data name="CreditChromaprint" xml:space="preserve"><value>Empreintes audio et detection d'intros</value></data>
   <data name="CreditAudioMuse" xml:space="preserve"><value>Analyse musicale par IA</value></data>
@@ -38,6 +39,7 @@
   <data name="CreditEfCore" xml:space="preserve"><value>Acces aux données</value></data>
   <data name="CreditSignalR" xml:space="preserve"><value>Communication temps reel</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>Ce produit utilise l'API TMDB mais n'est ni approuve ni certifie par TMDB.</value></data>
+  <data name="TvdbDisclaimer" xml:space="preserve"><value>Les informations et images TV sont fournies par TheTVDB.com, sans approbation ni certification de TheTVDB.com ou de ses affiliés.</value></data>
   <data name="LoadingCodecs" xml:space="preserve"><value>Chargement...</value></data>
   <data name="CodecContainers" xml:space="preserve"><value>Conteneurs</value></data>
   <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
