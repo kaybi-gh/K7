@@ -32,8 +32,7 @@
     background-position: center 20%;
     opacity: 0;
     transition: opacity 1.5s ease-in-out;
-    mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 70%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 70%);
+    transform: translateZ(0);
 }
 
 .person-backdrop--active {

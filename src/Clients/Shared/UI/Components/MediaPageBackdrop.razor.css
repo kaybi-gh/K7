@@ -1,0 +1,84 @@
+.media-page-backdrop {
+    --media-scroll-fade: 0;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    isolation: isolate;
+}
+
+.media-page-backdrop__image {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    transform: translateZ(0);
+}
+
+.media-page-backdrop__image--secondary {
+    animation: media-backdrop-fade-in 0.5s ease forwards;
+}
+
+/* Two separate scrim layers (not stacked backgrounds) to avoid compositing banding. */
+.media-page-backdrop__scrim-side {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.45) 22%,
+        rgba(0, 0, 0, 0.2) 42%,
+        rgba(0, 0, 0, 0.06) 58%,
+        transparent 75%
+    );
+    transform: translateZ(0);
+}
+
+.media-page-backdrop__scrim-bottom {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.62) 0%,
+        rgba(0, 0, 0, 0.3) 24%,
+        rgba(0, 0, 0, 0.1) 44%,
+        transparent 72%
+    );
+    transform: translateZ(0);
+}
+
+.media-page-backdrop__scroll-fade {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg);
+    opacity: calc(var(--media-scroll-fade) * 0.92);
+    will-change: opacity;
+}
+
+@keyframes media-backdrop-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 599.98px) {
+    .media-page-backdrop__scrim-side {
+        background: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0.74) 0%,
+            rgba(0, 0, 0, 0.42) 30%,
+            rgba(0, 0, 0, 0.12) 55%,
+            transparent 80%
+        );
+    }
+
+    .media-page-backdrop__scrim-bottom {
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.68) 0%,
+            rgba(0, 0, 0, 0.34) 26%,
+            rgba(0, 0, 0, 0.1) 48%,
+            transparent 70%
+        );
+    }
+}

@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -34,10 +35,9 @@ public partial class SerieEpisode
     private LiteSerieEpisodeDto? _nextEpisode;
     private List<LiteSerieEpisodeDto> _moreEpisodes = [];
     private MediaReviewsSection? _reviewsSection;
+    private ElementReference _scrollRoot;
 
-    private string DominantColorStyle => _dominantColor is not null
-        ? $"--episode-dominant-color: {_dominantColor};"
-        : "";
+    private string DominantColorStyle => DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor);
 
     protected override async Task OnParametersSetAsync()
     {

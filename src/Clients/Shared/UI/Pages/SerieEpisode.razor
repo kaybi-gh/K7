@@ -32,11 +32,10 @@
 }
 else if (_episode is not null)
 {
-    <div class="episode-page" style="@DominantColorStyle">
-        @if (_stillUrl is not null)
-        {
-            <div class="background-image" style="--background-picture: url('@_stillUrl')" />
-        }
+    <div @ref="_scrollRoot" class="episode-page" style="@DominantColorStyle">
+        <MediaPageBackdrop ImageUrl="@_stillUrl"
+                           DominantColor="@_dominantColor"
+                           ScrollTarget="@_scrollRoot" />
 
         <div class="episode-main">
             <K7BackButton Class="episode-back-btn" />
@@ -154,6 +153,7 @@ else if (_episode is not null)
             }
         </div>
 
+        <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
         @if (_moreEpisodes.Count > 0)
         {
             <Carousel Title="@L["MoreEpisodes"]">
@@ -200,5 +200,6 @@ else if (_episode is not null)
         }
 
         <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" />
+        </MediaPageContent>
     </div>
 }

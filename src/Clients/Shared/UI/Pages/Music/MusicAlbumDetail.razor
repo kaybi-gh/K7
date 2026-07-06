@@ -12,12 +12,9 @@
 
 @if (_album is not null)
 {
-    <div class="album-detail-page">
+    <div class="album-detail-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _coverDominantColor)">
+        <MusicAmbientWash DominantColor="@_coverDominantColor" />
         <K7BackButton />
-        @if (_coverUrl is not null)
-        {
-            <div class="background-image" style="--background-picture: url('@_coverUrl')" />
-        }
 
         <div class="album-header">
             <div class="album-header-cover">

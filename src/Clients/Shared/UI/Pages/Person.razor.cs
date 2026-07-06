@@ -31,6 +31,7 @@ public partial class Person : IDisposable
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
+    private ElementReference _scrollRoot;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
