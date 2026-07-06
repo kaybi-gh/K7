@@ -52,9 +52,10 @@ public class FileIndexer : IFileIndexer
     {
         Guard.Against.NullOrEmpty(library.RootPath);
 
+        var normalizedRoot = PathHelper.NormalizePath(library.RootPath!);
         var normalizedPaths = paths
-            .Select(path => Path.GetFullPath(path))
-            .Where(path => path.StartsWith(Path.GetFullPath(library.RootPath!), StringComparison.OrdinalIgnoreCase))
+            .Select(path => PathHelper.NormalizePath(path, library.RootPath!))
+            .Where(path => PathHelper.IsPathUnderRoot(path, normalizedRoot))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -126,7 +127,7 @@ public class FileIndexer : IFileIndexer
             ProcessAddedFiles(library, diff.AddedFiles, backgroundTasks);
             ProcessAddedFiles(library, modifiedAsNew, backgroundTasks);
             await ProcessUnchangedFilesMissingMetadataAsync(library, diff.UnchangedFiles, backgroundTasks, cancellationToken);
-            ProcessRemovedFiles(diff.RemovedFiles, backgroundTasks);
+            await ProcessRemovedFilesAsync(diff.RemovedFiles, cancellationToken);
             ProcessRenamedFiles(library, diff.RenamedFiles, backgroundTasks);
 
             if (unchangedToReIdentify.Count > 0)
@@ -192,7 +193,7 @@ public class FileIndexer : IFileIndexer
         {
             var scopedFiles = await query.ToListAsync(cancellationToken);
             return scopedFiles
-                .Where(f => scopePaths.Any(scope => f.Path.StartsWith(scope, StringComparison.OrdinalIgnoreCase)))
+                .Where(f => scopePaths.Any(scope => PathHelper.IsPathInScope(f.Path, scope)))
                 .ToList();
         }
 
@@ -376,15 +377,17 @@ public class FileIndexer : IFileIndexer
         ProcessAddedFiles(library, filesMissingMetadata, backgroundTasks);
     }
 
-    private static void ProcessRemovedFiles(IEnumerable<IndexedFile> removedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
+    private async Task ProcessRemovedFilesAsync(IReadOnlyList<IndexedFile> removedFiles, CancellationToken cancellationToken)
     {
-        backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTasksBatchItem()
+        if (removedFiles.Count == 0)
+            return;
+
+        _logger.LogInformation("Removing {Count} indexed files no longer present on disk.", removedFiles.Count);
+
+        foreach (var file in removedFiles)
         {
-            Request = new DeleteIndexedFileCommand(x.Id),
-            Priority = BackgroundTaskPriority.Normal,
-            TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 5
-        }));
+            await _sender.Send(new DeleteIndexedFileCommand(file.Id), cancellationToken);
+        }
     }
 
     private void ProcessRenamedFiles(Library library, IEnumerable<(IndexedFile NewFile, IndexedFile OldFile)> renamedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
