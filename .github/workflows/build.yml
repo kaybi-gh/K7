@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - '**.md'
       - branding/**
+      - screenshots/**
       - LICENSE
       - .github/FUNDING.yml
 
@@ -14,6 +15,7 @@ on:
     paths-ignore:
       - '**.md'
       - branding/**
+      - screenshots/**
       - LICENSE
       - .github/FUNDING.yml
 

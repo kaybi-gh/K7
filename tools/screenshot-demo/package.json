@@ -1,0 +1,14 @@
+{
+  "name": "k7-screenshot-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "composite:movie": "node composite-showcase.mjs",
+    "showcase": "node capture.mjs && node composite-showcase.mjs",
+    "install-browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}
