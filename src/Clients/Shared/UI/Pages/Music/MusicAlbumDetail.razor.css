@@ -209,6 +209,7 @@
 .album-user-rating {
     display: flex;
     align-items: center;
+    margin-top: 8px;
 }
 
 .album-reviews {
@@ -282,22 +283,30 @@
 
     .album-genres {
         justify-content: center;
+        margin-top: 4px;
+    }
+
+    .album-user-rating {
+        justify-content: center;
+        margin-top: 4px;
     }
 
     .album-actions {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
+        justify-content: center;
         width: 100%;
         gap: 8px;
+        margin-top: 12px;
     }
 
     .album-actions-primary,
     .album-actions-secondary {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
         gap: 8px;
-        width: 100%;
+        width: auto;
     }
 
     .album-actions-primary ::deep .k7-btn--lg {
