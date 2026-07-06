@@ -156,9 +156,30 @@ else if (_season is not null)
                     </K7Image>
 
                     <div class="season-title-row">
-                        <h4 class="season-title">
-                            @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
-                        </h4>
+                        <div class="season-title-group">
+                            <h4 class="season-title">
+                                @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
+                            </h4>
+
+                            @if (_allSeasonNumbers.Count > 1)
+                            {
+                                <K7Menu Title="@L["ChooseSeason"]">
+                                    <ActivatorContent>
+                                        <K7IconButton Icon="@Phosphor.CaretDown" AriaLabel="@L["ChooseSeason"]" Size="sm" />
+                                    </ActivatorContent>
+                                    <ChildContent>
+                                        @foreach (var sn in _allSeasonNumbers)
+                                        {
+                                            var seasonNum = sn;
+                                            <K7MenuItem Icon="@(seasonNum == SeasonNumber ? "check" : "")"
+                                                        OnClick="() => GoToSeason(seasonNum)">
+                                                @(seasonNum == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], seasonNum))
+                                            </K7MenuItem>
+                                        }
+                                    </ChildContent>
+                                </K7Menu>
+                            }
+                        </div>
 
                         @if (_canRate)
                         {
@@ -167,25 +188,7 @@ else if (_season is not null)
                             </div>
                         }
 
-                        @if (_allSeasonNumbers.Count > 1)
-                        {
-                            <K7Menu Title="@L["ChooseSeason"]">
-                                <ActivatorContent>
-                                    <K7IconButton Icon="@Phosphor.CaretDown" AriaLabel="@L["ChooseSeason"]" Size="sm" />
-                                </ActivatorContent>
-                                <ChildContent>
-                                    @foreach (var sn in _allSeasonNumbers)
-                                    {
-                                        var seasonNum = sn;
-                                        <K7MenuItem Icon="@(seasonNum == SeasonNumber ? "check" : "")"
-                                                    OnClick="() => GoToSeason(seasonNum)">
-                                            @(seasonNum == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], seasonNum))
-                                        </K7MenuItem>
-                                    }
-                                </ChildContent>
-                            </K7Menu>
-                        }
-
+                        <div class="season-actions">
                         <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
 
                         <AuthorizeView Roles="User,Administrator">
@@ -215,6 +218,7 @@ else if (_season is not null)
                                 </ChildContent>
                             </K7Menu>
                         </AuthorizeView>
+                        </div>
                     </div>
 
                     @if (!string.IsNullOrEmpty(_season.Overview))

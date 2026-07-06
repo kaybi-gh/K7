@@ -65,9 +65,23 @@
     flex-wrap: wrap;
 }
 
+.season-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}
+
 .season-title {
     margin: 0;
     font-weight: 700;
+}
+
+.season-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
 }
 
 .season-user-rating {
@@ -129,10 +143,19 @@
 
     ::deep .season-logo:not(.k7-img-wrap--custom-fallback) {
         max-width: 80vw;
+        align-self: center;
+        margin-inline: auto;
     }
 
     ::deep .season-logo .k7-img {
         max-width: 80vw;
+        object-position: center center;
+    }
+
+    ::deep .season-logo.k7-img-wrap--custom-fallback {
+        align-self: center;
+        text-align: center;
+        width: 100%;
     }
 
     .background-image {
@@ -141,7 +164,18 @@
     }
 
     .season-title-row {
+        flex-wrap: wrap;
         align-items: center;
+    }
+
+    .season-user-rating {
+        order: -1;
+        flex: 0 0 100%;
+        justify-content: center;
+    }
+
+    .season-actions {
+        flex-wrap: nowrap;
     }
 }
 
