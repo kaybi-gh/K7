@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Application.Features.MetadataPictures.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -64,10 +65,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             };
 
             var directory = Path.Combine(basePath, subDirectory);
-            var originalExtension = Path.GetExtension(entity.OriginalRemoteUri!.LocalPath);
-            var tempFilePath = Path.Combine(directory, $"{entity.Id}{originalExtension}");
 
-            await _rateLimiter.WaitAsync(entity.OriginalRemoteUri.Host, cancellationToken);
+            await _rateLimiter.WaitAsync(entity.OriginalRemoteUri!.Host, cancellationToken);
 
             using var httpClient = _httpClientFactory.CreateClient(DependencyInjection.MetadataPictureDownloadClient);
             using var response = await httpClient.GetAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
@@ -81,14 +80,23 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             }
 
             response.EnsureSuccessStatusCode();
+
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            var downloadedExtension = MetadataImageUrlHelper.GetExtensionFromContentType(contentType)
+                ?? Path.GetExtension(entity.OriginalRemoteUri.LocalPath);
+
+            if (string.IsNullOrEmpty(downloadedExtension))
+                downloadedExtension = ".jpg";
+
+            var tempFilePath = Path.Combine(directory, $"{entity.Id}{downloadedExtension}");
             var imageData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             var file = new FileInfo(tempFilePath);
             file.Directory?.Create();
             await File.WriteAllBytesAsync(tempFilePath, imageData, cancellationToken);
 
-            var isSvg = string.Equals(originalExtension, ".svg", StringComparison.OrdinalIgnoreCase);
+            var isSvg = _imageProcessor.IsSvgFile(tempFilePath)
+                || MetadataImageUrlHelper.IsVectorContentType(contentType);
 
-            // Convert to WebP (skip for SVGs - ffmpeg cannot decode them)
             if (isSvg)
             {
                 entity.LocalPath = tempFilePath;
@@ -96,7 +104,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             else
             {
                 var webpFilePath = Path.Combine(directory, $"{entity.Id}.webp");
-                if (!string.Equals(originalExtension, ".webp", StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(downloadedExtension, ".webp", StringComparison.OrdinalIgnoreCase))
                 {
                     await _imageProcessor.ConvertToWebPAsync(tempFilePath, webpFilePath, cancellationToken: cancellationToken);
                     File.Delete(tempFilePath);
@@ -111,8 +119,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            // Enqueue variant generation as a background task (skip for SVGs)
-            if (!isSvg && entity.Type != MetadataPictureType.Thumbnail)
+            if (entity.Type != MetadataPictureType.Thumbnail)
             {
                 await _sender.Send(new CreateBackgroundTaskCommand
                 {

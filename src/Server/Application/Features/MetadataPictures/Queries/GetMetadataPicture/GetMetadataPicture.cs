@@ -115,6 +115,8 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         ".webp" => "image/webp",
         ".jpg" or ".jpeg" => "image/jpeg",
         ".png" => "image/png",
+        ".svg" => "image/svg+xml",
+        ".gif" => "image/gif",
         _ => "application/octet-stream"
     };
 }

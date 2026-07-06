@@ -8,6 +8,9 @@
   <ItemGroup>
     <PackageReference Include="FFMpegCore" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="Svg.Skia" />
     <PackageReference Include="TagLibSharp" />
     <PackageReference Include="TMDbLib" />
   </ItemGroup>

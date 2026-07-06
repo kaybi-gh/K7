@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -90,9 +91,7 @@ public class WikidataMetadataProvider : IMusicArtistMetadataProvider
             .GetProperty("value")
             .GetString();
 
-        return string.IsNullOrEmpty(filename)
-            ? null
-            : $"https://commons.wikimedia.org/wiki/Special:FilePath/{Uri.EscapeDataString(filename)}";
+        return MetadataImageUrlHelper.BuildWikimediaCommonsImageUrl(filename);
     }
 
     private static (string? Lang, string? Title) PickWikipediaTitle(JsonElement entity, string language)

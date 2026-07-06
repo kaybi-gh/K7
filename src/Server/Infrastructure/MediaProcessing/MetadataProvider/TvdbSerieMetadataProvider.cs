@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -201,7 +202,11 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         var posterUrl = TvdbImageUrlHelper.BuildImageUrl(season?.Image ?? seasonRef.Image);
         if (posterUrl is not null)
-            pictures.Add(CreatePicture(posterUrl, MetadataPictureType.Poster));
+        {
+            var posterPicture = CreatePicture(posterUrl, MetadataPictureType.Poster);
+            if (posterPicture is not null)
+                pictures.Add(posterPicture);
+        }
 
         foreach (var artwork in season?.Artwork ?? [])
         {
@@ -209,8 +214,12 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 continue;
 
             var url = TvdbImageUrlHelper.BuildImageUrl(artwork.Image);
-            if (url is not null)
-                pictures.Add(CreatePicture(url, MetadataPictureType.Poster));
+            if (url is null)
+                continue;
+
+            var artworkPicture = CreatePicture(url, MetadataPictureType.Poster);
+            if (artworkPicture is not null)
+                pictures.Add(artworkPicture);
         }
 
         var episodes = await GetCachedEpisodesAsync(seriesId, cancellationToken);
@@ -347,7 +356,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             _logger.LogDebug(ex, "TVDB image fetch failed for provider id {ProviderId}", context.ProviderId);
         }
 
-        return results;
+        return MetadataImageUrlHelper.FilterProviderImages(results);
     }
 
     private async Task AddSeriesImagesAsync(
@@ -577,11 +586,11 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             };
 
             var portraitUrl = TvdbImageUrlHelper.BuildImageUrl(character.PersonImgUrl ?? character.Image);
-            if (portraitUrl is not null)
+            if (MetadataImageUrlHelper.TryCreateRemoteUri(portraitUrl, out var portraitUri))
             {
                 actor.PortraitPicture = new MetadataPicture
                 {
-                    OriginalRemoteUri = new Uri(portraitUrl),
+                    OriginalRemoteUri = portraitUri,
                     Type = MetadataPictureType.Portrait
                 };
                 actor.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(actor.PortraitPicture));
@@ -677,7 +686,11 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         {
             var fallbackUrl = TvdbImageUrlHelper.BuildImageUrl(fallbackImage);
             if (fallbackUrl is not null)
-                pictures.Add(CreatePicture(fallbackUrl, MetadataPictureType.Poster));
+            {
+                var fallbackPicture = CreatePicture(fallbackUrl, MetadataPictureType.Poster);
+                if (fallbackPicture is not null)
+                    pictures.Add(fallbackPicture);
+            }
         }
 
         return pictures;
@@ -694,15 +707,22 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     private static void AddArtworkPicture(List<MetadataPicture> pictures, TvdbArtwork artwork, MetadataPictureType type)
     {
         var url = TvdbImageUrlHelper.BuildImageUrl(artwork.Image);
-        if (url is not null)
-            pictures.Add(CreatePicture(url, type));
+        if (url is null)
+            return;
+
+        var picture = CreatePicture(url, type);
+        if (picture is not null)
+            pictures.Add(picture);
     }
 
-    private static MetadataPicture CreatePicture(string url, MetadataPictureType type)
+    private static MetadataPicture? CreatePicture(string url, MetadataPictureType type)
     {
+        if (!MetadataImageUrlHelper.TryCreateRemoteUri(url, out var remoteUri))
+            return null;
+
         var picture = new MetadataPicture
         {
-            OriginalRemoteUri = new Uri(url),
+            OriginalRemoteUri = remoteUri,
             Type = type
         };
         picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
@@ -733,7 +753,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             if (pictureType is null)
                 continue;
 
-            results.Add(new ProviderImageDto
+            var normalized = MetadataImageUrlHelper.NormalizeProviderImage(new ProviderImageDto
             {
                 Url = url,
                 ThumbnailUrl = thumb,
@@ -742,6 +762,9 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 Height = artwork.Height is null ? 0 : (int)artwork.Height,
                 Language = artwork.Language
             });
+
+            if (normalized is not null)
+                results.Add(normalized);
         }
     }
 }

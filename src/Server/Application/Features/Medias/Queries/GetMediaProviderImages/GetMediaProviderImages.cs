@@ -85,7 +85,7 @@ public class GetMediaProviderImagesQueryHandler(
             results.AddRange(images);
         }
 
-        return results;
+        return MetadataImageUrlHelper.FilterProviderImages(results);
     }
 
     private async Task<string> ResolveLanguageAsync(BaseMedia media, CancellationToken cancellationToken)

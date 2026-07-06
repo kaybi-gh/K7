@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Shared.Dtos.Entities.Metadatas;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +33,6 @@ public class GetPersonProviderImagesQueryHandler(
             results.AddRange(images);
         }
 
-        return results;
+        return MetadataImageUrlHelper.FilterProviderImages(results);
     }
 }
