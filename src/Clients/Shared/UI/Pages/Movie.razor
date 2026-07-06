@@ -89,16 +89,18 @@ else
                 </K7Image>
                 <div class="movie-meta">
                     <div class="movie-meta-chips">
-                        @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
-                        {
-                            <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
-                        }
-                        @if (_canRate)
-                        {
-                            <div class="movie-user-rating" @onclick:stopPropagation="true">
-                                <RatingStars MediaId="_movie.Id" Value="_movieUserRating" Size="md" />
-                            </div>
-                        }
+                        <div class="movie-ratings">
+                            @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
+                            {
+                                <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
+                            }
+                            @if (_canRate)
+                            {
+                                <div class="movie-user-rating" @onclick:stopPropagation="true">
+                                    <RatingStars MediaId="_movie.Id" Value="_movieUserRating" Size="md" />
+                                </div>
+                            }
+                        </div>
                         @foreach (var genre in (_movie.Genres ?? []).Take(2))
                         {
                             var g = genre;

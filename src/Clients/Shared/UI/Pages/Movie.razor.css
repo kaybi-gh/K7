@@ -209,6 +209,13 @@
     width: 100%;
 }
 
+.movie-ratings {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}
+
 .movie-meta-chips ::deep .k7-chip {
     flex-shrink: 0;
 }
@@ -286,9 +293,14 @@
     .movie-meta-chips {
         width: 100%;
         max-width: 100%;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         justify-content: center;
         gap: 6px;
+    }
+
+    .movie-ratings {
+        flex: 0 0 100%;
+        justify-content: center;
     }
 
     .movie-meta-chips ::deep .k7-chip {
