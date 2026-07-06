@@ -75,14 +75,14 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             return;
         }
 
-        // Thumbnails don't need variants
         if (picture.Type == MetadataPictureType.Thumbnail)
         {
             return;
         }
 
-        // Convert original to WebP if it isn't already
-        if (!picture.LocalPath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+        var isSvgOriginal = _imageProcessor.IsSvgFile(picture.LocalPath);
+
+        if (!isSvgOriginal && !picture.LocalPath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
         {
             var webpPath = Path.ChangeExtension(picture.LocalPath, ".webp");
             try
@@ -100,6 +100,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
 
         var directory = Path.GetDirectoryName(picture.LocalPath)!;
         var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
+        var sourcePath = picture.LocalPath;
 
         foreach (var ((pictureType, size), maxWidth) in VariantWidths)
         {
@@ -114,7 +115,14 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
 
             try
             {
-                await _imageProcessor.ResizeAsync(picture.LocalPath, variantPath, maxWidth, cancellationToken: cancellationToken);
+                if (_imageProcessor.IsSvgFile(sourcePath))
+                {
+                    await _imageProcessor.RasterizeSvgToWebPAsync(sourcePath, variantPath, maxWidth, cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    await _imageProcessor.ResizeAsync(sourcePath, variantPath, maxWidth, cancellationToken: cancellationToken);
+                }
 
                 var variant = new MetadataPictureVariant
                 {
@@ -123,7 +131,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
                     Size = size,
                     LocalPath = variantPath,
                     Width = maxWidth,
-                    Height = 0, // Computed by ffmpeg (aspect ratio preserved)
+                    Height = 0,
                 };
 
                 _context.MetadataPictureVariants.Add(variant);
@@ -140,12 +148,11 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             }
         }
 
-        // Extract dominant color if not already set
         if (picture.DominantColor is null)
         {
             try
             {
-                picture.DominantColor = await _imageProcessor.ExtractDominantColorAsync(picture.LocalPath, cancellationToken);
+                picture.DominantColor = await _imageProcessor.ExtractDominantColorAsync(sourcePath, cancellationToken);
                 if (picture.DominantColor is not null)
                     _logger.LogInformation("Extracted dominant color {Color} for MetadataPicture {PictureId}", picture.DominantColor, picture.Id);
             }

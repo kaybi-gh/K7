@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
@@ -124,9 +125,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
                 .GetProperty("value")
                 .GetString();
 
-            return string.IsNullOrEmpty(filename)
-                ? null
-                : $"https://commons.wikimedia.org/wiki/Special:FilePath/{Uri.EscapeDataString(filename)}";
+            return MetadataImageUrlHelper.BuildWikimediaCommonsImageUrl(filename);
         }
         catch (Exception ex)
         {
@@ -267,14 +266,10 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
                     var imageUrl = await FetchWikidataImageAsync(qid, cancellationToken);
                     if (!string.IsNullOrEmpty(imageUrl))
                     {
-                        var thumbUrl = imageUrl.Contains("Special:FilePath")
-                            ? imageUrl + "?width=300"
-                            : imageUrl;
-
                         results.Add(new ProviderImageDto
                         {
                             Url = imageUrl,
-                            ThumbnailUrl = thumbUrl,
+                            ThumbnailUrl = MetadataImageUrlHelper.BuildWikimediaThumbnailUrl(imageUrl) ?? imageUrl,
                             Type = MetadataPictureType.Portrait,
                             Width = 0,
                             Height = 0,
@@ -334,7 +329,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
             _logger.LogWarning(ex, "MusicBrainz person images fetch failed for {Id}", providerId);
         }
 
-        return results;
+        return MetadataImageUrlHelper.FilterProviderImages(results);
     }
 
     #region MusicBrainz DTOs

@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -53,9 +54,9 @@ public class RefreshPersonMetadataCommandHandler(
         if (details.Gender != PersonGender.NotSpecified)
             person.Gender = details.Gender;
 
-        if (!string.IsNullOrEmpty(details.ImageUrl))
+        if (!string.IsNullOrEmpty(details.ImageUrl)
+            && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var imageUri))
         {
-            var imageUri = new Uri(details.ImageUrl);
             if (person.PortraitPicture is null || person.PortraitPicture.OriginalRemoteUri != imageUri)
             {
                 var picture = new MetadataPicture

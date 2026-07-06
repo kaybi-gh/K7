@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -282,12 +283,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 // Poster from MusicBrainz cover art
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
-                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbDetails.ImageUrl))
+                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
+                    && MetadataImageUrlHelper.TryCreateRemoteUri(mbDetails.ImageUrl, out var mbImageUri))
                 {
                     var picture = new MetadataPicture
                     {
                         Type = MetadataPictureType.Poster,
-                        OriginalRemoteUri = new Uri(mbDetails.ImageUrl),
+                        OriginalRemoteUri = mbImageUri,
                         MediaId = artist.Id
                     };
                     picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
@@ -308,12 +310,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     artist.Biography = details.Biography;
 
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
-                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
+                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
+                    && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var wikidataImageUri))
                 {
                     var picture = new MetadataPicture
                     {
                         Type = MetadataPictureType.Poster,
-                        OriginalRemoteUri = new Uri(details.ImageUrl),
+                        OriginalRemoteUri = wikidataImageUri,
                         MediaId = artist.Id
                     };
                     picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
@@ -445,11 +448,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (episodeMetadata.RemoteId is not null)
                     episodeRemoteIds[(season.SeasonNumber, episode.EpisodeNumber)] = episodeMetadata.RemoteId.Value;
 
-                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl) && !episode.IsFieldLocked(nameof(SerieEpisode.Pictures)))
+                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl)
+                    && !episode.IsFieldLocked(nameof(SerieEpisode.Pictures))
+                    && MetadataImageUrlHelper.TryCreateRemoteUri(episodeMetadata.StillImageUrl, out var stillUri))
                 {
                     var stillPicture = new MetadataPicture
                     {
-                        OriginalRemoteUri = new Uri(episodeMetadata.StillImageUrl),
+                        OriginalRemoteUri = stillUri,
                         Type = MetadataPictureType.Still
                     };
                     stillPicture.AddDomainEvent(new MetadataPictureCreatedEvent(stillPicture));
@@ -636,12 +641,14 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!biographyLocked && string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
                     artist.Biography = details.Biography;
 
-                if (!picturesLocked && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
+                if (!picturesLocked
+                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
+                    && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var deferredWikidataImageUri))
                 {
                     var picture = new MetadataPicture
                     {
                         Type = MetadataPictureType.Poster,
-                        OriginalRemoteUri = new Uri(details.ImageUrl),
+                        OriginalRemoteUri = deferredWikidataImageUri,
                         MediaId = artist.Id
                     };
                     picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
@@ -650,12 +657,14 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        if (!picturesLocked && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbImageUrl))
+        if (!picturesLocked
+            && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
+            && MetadataImageUrlHelper.TryCreateRemoteUri(mbImageUrl, out var coverImageUri))
         {
             var picture = new MetadataPicture
             {
                 Type = MetadataPictureType.Poster,
-                OriginalRemoteUri = new Uri(mbImageUrl),
+                OriginalRemoteUri = coverImageUri,
                 MediaId = artist.Id
             };
             picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));

@@ -54,6 +54,6 @@ public class UploadUserAvatar : IEndpoint
             return true;
 
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        return ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".svg";
+        return ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp";
     }
 }
