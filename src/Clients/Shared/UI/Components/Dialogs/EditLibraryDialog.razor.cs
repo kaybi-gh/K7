@@ -31,36 +31,65 @@ public partial class EditLibraryDialog
     [Parameter] public bool RealtimeMonitorEnabled { get; set; } = true;
     [Parameter] public int AutoScanIntervalHours { get; set; } = 6;
 
+    private string _title = "";
+    private Guid _selectedGroupId;
+    private string _selectedProvider = "";
+    private string _metadataLanguage = "en";
+    private string _metadataFallbackLanguage = "en";
+    private int? _metadataRefreshIntervalDays;
+    private bool _introDetectionEnabled = true;
+    private bool _seekbarThumbnailGenerationEnabled = true;
+    private bool _musicAudioAnalysisEnabled = true;
+    private bool _transcodingEnabled = true;
+    private bool _transmuxingEnabled = true;
+    private bool _realtimeMonitorEnabled = true;
+    private int _autoScanIntervalHours = 6;
     private bool _isSubmitting;
 
-    private bool CanSubmit => !_isSubmitting && !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(SelectedProvider);
+    protected override void OnInitialized()
+    {
+        _title = Title;
+        _selectedGroupId = SelectedGroupId;
+        _selectedProvider = SelectedProvider ?? "";
+        _metadataLanguage = MetadataLanguage;
+        _metadataFallbackLanguage = MetadataFallbackLanguage;
+        _metadataRefreshIntervalDays = MetadataRefreshIntervalDays;
+        _introDetectionEnabled = IntroDetectionEnabled;
+        _seekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled;
+        _musicAudioAnalysisEnabled = MusicAudioAnalysisEnabled;
+        _transcodingEnabled = TranscodingEnabled;
+        _transmuxingEnabled = TransmuxingEnabled;
+        _realtimeMonitorEnabled = RealtimeMonitorEnabled;
+        _autoScanIntervalHours = AutoScanIntervalHours;
+    }
+
+    private bool CanSubmit => !_isSubmitting && !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_selectedProvider);
 
     private async Task Submit()
     {
+        var request = new UpdateLibraryRequest
+        {
+            Title = _title.Trim(),
+            MetadataProviderName = _selectedProvider,
+            MetadataLanguage = _metadataLanguage,
+            MetadataFallbackLanguage = _metadataFallbackLanguage,
+            MetadataRefreshIntervalDays = _metadataRefreshIntervalDays,
+            LibraryGroupId = _selectedGroupId,
+            IntroDetectionEnabled = _introDetectionEnabled,
+            SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
+            MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
+            TranscodingEnabled = _transcodingEnabled,
+            TransmuxingEnabled = _transmuxingEnabled,
+            RealtimeMonitorEnabled = _realtimeMonitorEnabled,
+            AutoScanIntervalHours = _autoScanIntervalHours
+        };
+
         _isSubmitting = true;
         StateHasChanged();
 
         try
         {
-            var request = new UpdateLibraryRequest
-            {
-                Title = Title.Trim(),
-                MetadataProviderName = SelectedProvider,
-                MetadataLanguage = MetadataLanguage,
-                MetadataFallbackLanguage = MetadataFallbackLanguage,
-                MetadataRefreshIntervalDays = MetadataRefreshIntervalDays,
-                LibraryGroupId = SelectedGroupId,
-                IntroDetectionEnabled = IntroDetectionEnabled,
-                SeekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled,
-                MusicAudioAnalysisEnabled = MusicAudioAnalysisEnabled,
-                TranscodingEnabled = TranscodingEnabled,
-                TransmuxingEnabled = TransmuxingEnabled,
-                RealtimeMonitorEnabled = RealtimeMonitorEnabled,
-                AutoScanIntervalHours = AutoScanIntervalHours
-            };
-
             await LibraryService.UpdateLibraryAsync(LibraryId, request);
-
             Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)

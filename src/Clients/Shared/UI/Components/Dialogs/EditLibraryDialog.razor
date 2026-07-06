@@ -5,12 +5,12 @@
         <section class="edit-library-section">
             <h6 class="edit-library-section__title">@L["SectionGeneralTitle"]</h6>
             <div class="edit-library-section__fields d-flex flex-col">
-                <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
+                <K7TextField @bind-Value="_title" Label="@L["TitleLabel"]" Variant="outlined"
                               Required="true" RequiredError="@L["TitleRequired"]" />
 
                 @if (AvailableGroups.Count > 0)
                 {
-                    <K7Select TValue="Guid" @bind-Value="SelectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
+                    <K7Select TValue="Guid" @bind-Value="_selectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
                         @foreach (var group in AvailableGroups)
                         {
                             <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
@@ -24,7 +24,7 @@
             <h6 class="edit-library-section__title">@L["SectionMetadataTitle"]</h6>
             <p class="edit-library-section__description">@L["SectionMetadataDescription"]</p>
             <div class="edit-library-section__fields d-flex flex-col">
-                <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
+                <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
                           Disabled="IsFederated">
                     @foreach (var provider in AvailableProviders)
                     {
@@ -32,13 +32,13 @@
                     }
                 </K7Select>
 
-                <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
+                <K7LanguageSelect @bind-Value="_metadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
                                   Disabled="IsFederated" />
 
-                <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
+                <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
                                   Disabled="IsFederated" />
 
-                <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
+                <K7TextField TValue="int?" Type="number" @bind-Value="_metadataRefreshIntervalDays"
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]"
                              Disabled="IsFederated" />
@@ -51,10 +51,10 @@
                 <h6 class="edit-library-section__title">@L["SectionScanTitle"]</h6>
                 <p class="edit-library-section__description">@L["SectionScanDescription"]</p>
                 <div class="edit-library-section__fields d-flex flex-col">
-                    <K7Switch @bind-Value="RealtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
+                    <K7Switch @bind-Value="_realtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
                     <span class="edit-library-section__field-hint">@L["RealtimeMonitorHelper"]</span>
 
-                    <K7TextField TValue="int" Type="number" @bind-Value="AutoScanIntervalHours"
+                    <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours" Immediate="true"
                                  Label="@L["AutoScanIntervalLabel"]" Variant="outlined"
                                  HelperText="@L["AutoScanIntervalHelper"]" />
                 </div>
@@ -65,11 +65,11 @@
                 <p class="edit-library-section__description">@L["SectionCapabilitiesDescription"]</p>
                 <LibraryProcessingSettingsSection MediaType="MediaType"
                     ShowSectionTitle="false"
-                    @bind-IntroDetectionEnabled="IntroDetectionEnabled"
-                    @bind-SeekbarThumbnailGenerationEnabled="SeekbarThumbnailGenerationEnabled"
-                    @bind-MusicAudioAnalysisEnabled="MusicAudioAnalysisEnabled"
-                    @bind-TranscodingEnabled="TranscodingEnabled"
-                    @bind-TransmuxingEnabled="TransmuxingEnabled" />
+                    @bind-IntroDetectionEnabled="_introDetectionEnabled"
+                    @bind-SeekbarThumbnailGenerationEnabled="_seekbarThumbnailGenerationEnabled"
+                    @bind-MusicAudioAnalysisEnabled="_musicAudioAnalysisEnabled"
+                    @bind-TranscodingEnabled="_transcodingEnabled"
+                    @bind-TransmuxingEnabled="_transmuxingEnabled" />
             </section>
         }
     </div>
