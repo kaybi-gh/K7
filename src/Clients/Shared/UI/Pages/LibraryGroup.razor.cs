@@ -70,6 +70,7 @@ public partial class LibraryGroup : IDisposable
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
     private string _tableScopeKey = "initial";
+    private DebouncedActionRunner? _picturesRefreshRunner;
 
     private Dictionary<string, object> CreateSmartPlaylistButtonAttributes => new()
     {
@@ -160,6 +161,9 @@ public partial class LibraryGroup : IDisposable
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
+
+        _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterPicturesUpdatedAsync, InvokeAsync);
 
         await LoadTagsAsync();
 
@@ -659,6 +663,20 @@ public partial class LibraryGroup : IDisposable
         });
     }
 
+    private void OnMediaPicturesUpdated(Guid mediaId)
+    {
+        if (_loading)
+            return;
+
+        _picturesRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshAfterPicturesUpdatedAsync()
+    {
+        await RefreshAllAsync();
+        StateHasChanged();
+    }
+
     private async Task RefreshAllAsync()
     {
         if (_browseView is not null)
@@ -881,5 +899,7 @@ public partial class LibraryGroup : IDisposable
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
+        _picturesRefreshRunner?.Dispose();
     }
 }
