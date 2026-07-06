@@ -25,3 +25,4 @@ Throw typed exceptions (no `Result<T>`). DTO mapping via extension methods in `A
 ## Git
 
 Conventional Commits: `type(scope): description`, lowercase, no trailing period.
+Subject line only - no commit body or multi-line description.
