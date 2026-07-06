@@ -17,6 +17,17 @@ public static class PathHelper
         return NormalizePath(Path.Combine(rootPath, path));
     }
 
+    public static string NormalizeLibraryPath(string path, string libraryRootPath)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return NormalizePath(path);
+
+        if (Path.IsPathRooted(path))
+            return NormalizePath(path);
+
+        return NormalizePath(Path.Combine(libraryRootPath, path));
+    }
+
     public static bool IsPathInScope(string filePath, string scopePath)
     {
         var normalizedFile = NormalizePath(filePath);
