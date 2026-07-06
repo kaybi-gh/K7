@@ -277,10 +277,6 @@
 
 /* Mobile: slide-up panel — fullscreen for explore, card for profile */
 @media (max-width: 599.98px) {
-    .app-nav-bar {
-        justify-content: space-around !important;
-    }
-
     .app-nav-popover {
         left: 0;
         right: 0;
@@ -339,6 +335,11 @@
     color: var(--color-text-secondary);
 }
 
+/* Profile slot - transparent on desktop */
+.app-nav-item-slot--profile {
+    display: contents;
+}
+
 /* ============================================================
    Mobile bottom nav
    ============================================================ */
@@ -355,13 +356,17 @@
     }
 
     .app-nav-bar {
-        justify-content: space-around;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        align-items: stretch;
         padding: 0;
         gap: 0;
+        width: 100%;
     }
 
     .app-nav-logo,
-    .app-nav-spacer {
+    .app-nav-spacer,
+    .app-nav-player {
         display: none;
     }
 
@@ -369,18 +374,35 @@
         display: none;
     }
 
-    /* On mobile, app-nav-main renders inline with search/avatar */
     .app-nav-main {
         display: contents;
     }
 
-    /* Reorder for mobile: Home, Explore, Search, My space, Profile */
-    .app-nav-item--home              { order: 1; }
-    .app-nav-item--explore           { order: 2; }
-    ::deep .app-nav-item--search-mobile { order: 3; }
-    .app-nav-item--myspace           { order: 4; }
-    .app-nav-avatar-btn,
-    .app-nav-item--profile           { order: 5; }
+    @supports (grid-template-columns: subgrid) {
+        .app-nav-main {
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-column: 1 / span 4;
+            align-items: stretch;
+        }
+    }
+
+    .app-nav-item-slot--profile {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        grid-column: 5;
+        min-width: 0;
+    }
+
+    .app-nav-main > a.k7-btn,
+    .app-nav-item-slot--profile .app-nav-avatar-btn,
+    .app-nav-item-slot--profile .app-nav-item--profile,
+    .app-nav-main ::deep .app-nav-item--search-mobile {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
 
     .app-nav-link {
         flex-direction: column;
@@ -419,19 +441,29 @@
         font-size: 0.625rem;
     }
 
-    ::deep .app-nav-item--search-mobile {
+    .app-nav-main ::deep .app-nav-item--search-mobile {
         flex-direction: column;
         gap: 2px;
         padding: var(--space-1) var(--space-2);
         min-height: var(--nav-height);
+        height: 100%;
         justify-content: center;
         align-items: center;
         border-radius: 0;
-        width: auto;
-        height: auto;
+        width: 100%;
+        max-width: none;
     }
 
-    ::deep .app-nav-item--search-mobile .app-nav-label {
+    .app-nav-item-slot--profile .app-nav-avatar-btn {
+        flex: 1;
+        width: 100%;
+        min-height: var(--nav-height);
+        justify-content: center;
+        align-items: center;
+        border-radius: 0;
+    }
+
+    .app-nav-main ::deep .app-nav-item--search-mobile .app-nav-label {
         font-size: 0.625rem;
     }
 }
