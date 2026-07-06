@@ -164,8 +164,8 @@ else if (_person is not null)
                         {
                             <CarouselItem @key="item.ExternalId">
                                 <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
-                                           OverlayEnabled="true"
-                                           FooterVisible="true" />
+                                           FooterVisible="true"
+                                           ContextMenuEnabled="false" />
                             </CarouselItem>
                         }
                     </Carousel>
