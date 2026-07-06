@@ -1,6 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Events;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
@@ -14,6 +16,11 @@ public class DeleteIndexedFileCommandHandler(
 {
     public async Task Handle(DeleteIndexedFileCommand request, CancellationToken cancellationToken)
     {
+        foreach (var tracked in context.IndexedFiles.Local.Where(x => x.Id == request.Id).ToList())
+        {
+            context.Entry(tracked).State = EntityState.Detached;
+        }
+
         var entity = await context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
