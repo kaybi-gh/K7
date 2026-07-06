@@ -5,6 +5,7 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Enums;
@@ -27,6 +28,7 @@ public partial class SerieEpisode
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _canRate;
+    private int? _episodeUserRating;
     private bool _isAdmin;
     private LiteSerieEpisodeDto? _previousEpisode;
     private LiteSerieEpisodeDto? _nextEpisode;
@@ -87,6 +89,7 @@ public partial class SerieEpisode
         }
 
         _indexedFile = _episode.IndexedFiles?.FirstOrDefault();
+        _episodeUserRating = GetUserRating(_episode.Ratings);
         _pageTitle = $"{_episode.SerieTitle} - S{SeasonNumber:00}E{EpisodeNumber:00} - {_episode.Title}";
 
         var still = _episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
@@ -333,7 +336,13 @@ public partial class SerieEpisode
 
         var media = await k7ServerService.GetMediaAsync(_episode.Id);
         _episode = media as SerieEpisodeDto;
+        _episodeUserRating = GetUserRating(_episode?.Ratings);
         if (_reviewsSection is not null)
             await _reviewsSection.RefreshAsync();
     }
+
+    private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>
+        ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
+            ? (int)value
+            : null;
 }

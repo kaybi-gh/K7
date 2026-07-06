@@ -103,6 +103,11 @@
     color: var(--color-text-secondary);
 }
 
+.episode-user-rating {
+    display: flex;
+    align-items: center;
+}
+
 .episode-actions {
     display: flex;
     align-items: center;
@@ -208,6 +213,12 @@
 
     .episode-details {
         justify-content: center;
+    }
+
+    .episode-user-rating {
+        display: flex;
+        justify-content: center;
+        width: 100%;
     }
 
     .episode-title {
