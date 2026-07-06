@@ -91,7 +91,6 @@ public class FileIndexer : IFileIndexer
             await _progressReporter.ReportProgressAsync(library.Id, 0, scannedEntries.Count, "comparing", cancellationToken);
 
             var existingFiles = await LoadExistingFilesAsync(library.Id, scopePaths, cancellationToken);
-            library.IndexedFiles = existingFiles;
 
             var diff = BuildDiff(library.Id, library.RootPath!, scannedEntries, existingFiles, skippedFilePaths);
             var removedFiles = CollectFilesAbsentFromDisk(diff.RemovedFiles, existingFiles);
