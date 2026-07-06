@@ -76,6 +76,13 @@
                     }
                 </div>
 
+                @if (_canRate)
+                {
+                    <div class="album-user-rating" @onclick:stopPropagation="true">
+                        <RatingStars MediaId="_album.Id" Value="_albumUserRating" Size="md" />
+                    </div>
+                }
+
                 @if (_album.Genres?.Any() == true)
                 {
                     <div class="album-genres">
@@ -105,9 +112,6 @@
                         <DownloadAllButton Items="GetDownloadRequests()" />
                         @if (_canRate)
                         {
-                            <div class="album-user-rating" @onclick:stopPropagation="true">
-                                <RatingStars MediaId="_album.Id" Value="_albumUserRating" Size="md" />
-                            </div>
                             <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
                         }
                         <K7Menu Title="@L["MoreActions"]">

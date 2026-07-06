@@ -202,11 +202,18 @@
         text-align: center;
     }
 
+    .artist-user-rating {
+        display: flex;
+        justify-content: center;
+        margin-top: 8px;
+    }
+
     .artist-actions {
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 8px;
         display: flex;
+        margin-top: 12px;
     }
 
     .artist-actions ::deep .k7-btn--lg {

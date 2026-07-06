@@ -46,6 +46,13 @@
                         </div>
                     }
 
+                    @if (_canRate)
+                    {
+                        <div class="artist-user-rating" @onclick:stopPropagation="true">
+                            <RatingStars MediaId="_artist.Id" Value="_artistUserRating" Size="md" />
+                        </div>
+                    }
+
                     <div class="artist-actions">
                         @if (_tracks.Count > 0 || _albums.Count > 0)
                         {
@@ -66,12 +73,6 @@
                             {
                                 <DownloadAllButton Items="GetDownloadRequests()" />
                             }
-                        }
-                        @if (_canRate)
-                        {
-                            <div class="artist-user-rating" @onclick:stopPropagation="true">
-                                <RatingStars MediaId="_artist.Id" Value="_artistUserRating" Size="md" />
-                            </div>
                         }
                         <K7Menu Title="@L["MoreActions"]">
                             <ActivatorContent>
