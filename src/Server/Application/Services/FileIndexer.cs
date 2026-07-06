@@ -93,42 +93,55 @@ public class FileIndexer : IFileIndexer
             var existingFiles = await LoadExistingFilesAsync(library.Id, scopePaths, cancellationToken);
             library.IndexedFiles = existingFiles;
 
-            var diff = BuildDiff(library.Id, scannedEntries, existingFiles, skippedFilePaths);
+            var diff = BuildDiff(library.Id, library.RootPath!, scannedEntries, existingFiles, skippedFilePaths);
+            var removedFiles = CollectFilesAbsentFromDisk(diff.RemovedFiles, existingFiles);
+            var removedIds = removedFiles.Select(f => f.Id).ToHashSet();
 
-            var unchangedToReIdentify = diff.UnchangedFiles
+            var unchangedFiles = diff.UnchangedFiles.Where(f => !removedIds.Contains(f.Id)).ToList();
+            var addedFiles = diff.AddedFiles;
+            var renamedFiles = diff.RenamedFiles.Where(pair => !removedIds.Contains(pair.OldFile.Id)).ToList();
+
+            var unchangedToReIdentify = unchangedFiles
                 .Where(x => x.Identification is null || !x.MediaId.HasValue)
                 .ToList();
 
             var modifiedAsNew = diff.ModifiedFiles
+                .Where(pair => !removedIds.Contains(pair.ExistingFile.Id))
                 .Select(pair => ApplyContentChange(pair.ExistingFile, pair.ScannedFile))
                 .ToList();
 
-            var toBeIdentifiedFiles = diff.AddedFiles
+            var toBeIdentifiedFiles = addedFiles
                 .Concat(unchangedToReIdentify)
                 .Concat(modifiedAsNew.Where(f => f.Identification is null || !f.MediaId.HasValue))
                 .ToList();
 
-            var unchangedCount = diff.UnchangedFiles.Count;
-            var addedCount = diff.AddedFiles.Count;
-            var removedCount = diff.RemovedFiles.Count;
-            var renamedCount = diff.RenamedFiles.Count;
-            var modifiedCount = diff.ModifiedFiles.Count;
+            var unchangedCount = unchangedFiles.Count;
+            var addedCount = addedFiles.Count;
+            var removedCount = removedFiles.Count;
+            var renamedCount = renamedFiles.Count;
+            var modifiedCount = modifiedAsNew.Count;
 
             _logger.LogInformation(
                 "Found {UnchangedCount} unchanged, {AddedCount} added, {ModifiedCount} modified, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified. {InaccessibleCount} inaccessible directories.",
                 unchangedCount, addedCount, modifiedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count, inaccessiblePaths.Count);
+
+            foreach (var file in removedFiles)
+            {
+                _logger.LogInformation("Removing indexed file no longer present on disk: {Path}", file.Path);
+            }
 
             foreach (var (path, error) in inaccessiblePaths)
             {
                 _logger.LogWarning("Inaccessible directory {Path}: {Error}", path, error);
             }
 
+            await ProcessRemovedFilesAsync(removedFiles, cancellationToken);
+
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
-            ProcessAddedFiles(library, diff.AddedFiles, backgroundTasks);
+            ProcessAddedFiles(library, addedFiles, backgroundTasks);
             ProcessAddedFiles(library, modifiedAsNew, backgroundTasks);
-            await ProcessUnchangedFilesMissingMetadataAsync(library, diff.UnchangedFiles, backgroundTasks, cancellationToken);
-            await ProcessRemovedFilesAsync(diff.RemovedFiles, cancellationToken);
-            ProcessRenamedFiles(library, diff.RenamedFiles, backgroundTasks);
+            await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, backgroundTasks, cancellationToken);
+            ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
             if (unchangedToReIdentify.Count > 0)
             {
@@ -146,7 +159,7 @@ public class FileIndexer : IFileIndexer
                 _context.IndexedFiles.Update(existingFile);
             }
 
-            foreach (var batch in diff.AddedFiles.Chunk(SaveBatchSize))
+            foreach (var batch in addedFiles.Chunk(SaveBatchSize))
             {
                 _context.IndexedFiles.AddRange(batch);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -202,6 +215,7 @@ public class FileIndexer : IFileIndexer
 
     private LibraryScanDiff BuildDiff(
         Guid libraryId,
+        string libraryRootPath,
         IReadOnlyList<ScannedFileEntry> scannedEntries,
         IReadOnlyList<IndexedFile> existingFiles,
         HashSet<string> skippedFilePaths)
@@ -217,7 +231,28 @@ public class FileIndexer : IFileIndexer
             scannedEntries,
             existingFiles,
             skippedFilePaths,
-            entry => entry.ToIndexedFile(libraryId, ComputeHash(entry)));
+            entry => entry.ToIndexedFile(libraryId, ComputeHash(entry)),
+            libraryRootPath);
+    }
+
+    private static List<IndexedFile> CollectFilesAbsentFromDisk(
+        IReadOnlyList<IndexedFile> removedFromDiff,
+        IReadOnlyList<IndexedFile> existingFiles)
+    {
+        var removedById = removedFromDiff.ToDictionary(f => f.Id);
+
+        foreach (var existing in existingFiles)
+        {
+            if (removedById.ContainsKey(existing.Id))
+                continue;
+
+            if (File.Exists(existing.Path))
+                continue;
+
+            removedById[existing.Id] = existing;
+        }
+
+        return removedById.Values.ToList();
     }
 
     private static IndexedFile ApplyContentChange(IndexedFile existingFile, ScannedFileEntry scannedFile)
@@ -340,7 +375,7 @@ public class FileIndexer : IFileIndexer
             _ => throw new InvalidOperationException(),
         };
 
-        foreach (var file in addedFiles)
+        foreach (var file in addedFiles.Where(f => File.Exists(f.Path)))
         {
             backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
             {
@@ -369,7 +404,10 @@ public class FileIndexer : IFileIndexer
             .ToListAsync(cancellationToken))
             .ToHashSet();
 
-        var filesMissingMetadata = unchangedFiles.Where(f => !idsWithMetadata.Contains(f.Id)).ToList();
+        var filesMissingMetadata = unchangedFiles
+            .Where(f => File.Exists(f.Path))
+            .Where(f => !idsWithMetadata.Contains(f.Id))
+            .ToList();
         if (filesMissingMetadata.Count == 0) return;
 
         _logger.LogInformation("Found {Count} unchanged files missing FileMetadata, creating tasks.", filesMissingMetadata.Count);

@@ -1,8 +1,10 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 
@@ -12,59 +14,58 @@ public record CreateFileMetadatasCommand : IRequest
     public required FileType FileType { get; set; }
 }
 
-public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetadatasCommand>
+public class CreateFileMetadatasCommandHandler(
+    IApplicationDbContext context,
+    IMediaAnalysisService mediaAnalysisService,
+    ISender sender,
+    ILogger<CreateFileMetadatasCommandHandler> logger) : IRequestHandler<CreateFileMetadatasCommand>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IMediaAnalysisService _mediaAnalysisService;
-
-    public CreateFileMetadatasCommandHandler(IApplicationDbContext context, IMediaAnalysisService mediaAnalysisService)
-    {
-        _context = context;
-        _mediaAnalysisService = mediaAnalysisService;
-    }
-
     public async Task Handle(CreateFileMetadatasCommand request, CancellationToken cancellationToken)
     {
-        var indexedFile = await _context.IndexedFiles
+        var indexedFile = await context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, indexedFile);
         Guard.Against.NullOrEmpty(indexedFile.Path);
 
-        var file = new FileInfo(indexedFile.Path);
-        if (!file.Exists)
+        if (!File.Exists(indexedFile.Path))
         {
-            throw new FileNotFoundException("File not found.", indexedFile.Path);
+            logger.LogInformation(
+                "Indexed file {IndexedFileId} no longer exists on disk at {Path}; removing entry",
+                indexedFile.Id,
+                indexedFile.Path);
+            await sender.Send(new DeleteIndexedFileCommand(indexedFile.Id), cancellationToken);
+            return;
         }
 
         BaseFileMetadata fileMetadata = request.FileType switch
         {
-            FileType.Audio => await _mediaAnalysisService.GetAudioFileMetadataAsync(indexedFile.Path, cancellationToken),
-            FileType.Video => await _mediaAnalysisService.GetVideoFileMetadataAsync(indexedFile.Path, cancellationToken),
+            FileType.Audio => await mediaAnalysisService.GetAudioFileMetadataAsync(indexedFile.Path, cancellationToken),
+            FileType.Video => await mediaAnalysisService.GetVideoFileMetadataAsync(indexedFile.Path, cancellationToken),
             _ => throw new NotImplementedException(),
         };
 
         // Clear existing file metadatas
         if (indexedFile.FileMetadata is AudioFileMetadata afm)
         {
-            await _context.Entry(afm).Reference(x => x.AudioTrack).LoadAsync(cancellationToken);
-            await _context.Entry(afm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
-            _context.FileMetadatas.Remove(indexedFile.FileMetadata);
+            await context.Entry(afm).Reference(x => x.AudioTrack).LoadAsync(cancellationToken);
+            await context.Entry(afm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
+            context.FileMetadatas.Remove(indexedFile.FileMetadata);
         }
         else if (indexedFile.FileMetadata is VideoFileMetadata vfm)
         {
-            await _context.Entry(vfm).Collection(x => x.AudioTracks).LoadAsync(cancellationToken);
-            await _context.Entry(vfm).Collection(x => x.SubtitleTracks).LoadAsync(cancellationToken);
-            await _context.Entry(vfm).Collection(x => x.VideoTracks).LoadAsync(cancellationToken);
-            await _context.Entry(vfm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
-            await _context.Entry(vfm).Reference(x => x.Thumbnails).LoadAsync(cancellationToken);
-            _context.FileMetadatas.Remove(indexedFile.FileMetadata);
+            await context.Entry(vfm).Collection(x => x.AudioTracks).LoadAsync(cancellationToken);
+            await context.Entry(vfm).Collection(x => x.SubtitleTracks).LoadAsync(cancellationToken);
+            await context.Entry(vfm).Collection(x => x.VideoTracks).LoadAsync(cancellationToken);
+            await context.Entry(vfm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
+            await context.Entry(vfm).Reference(x => x.Thumbnails).LoadAsync(cancellationToken);
+            context.FileMetadatas.Remove(indexedFile.FileMetadata);
         }
 
-        await _context.FileMetadatas.AddAsync(fileMetadata, cancellationToken);
+        await context.FileMetadatas.AddAsync(fileMetadata, cancellationToken);
         indexedFile.FileMetadata = fileMetadata;
         indexedFile.AddDomainEvent(new FileMetadataCreatedEvent(indexedFile, request.FileType));
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

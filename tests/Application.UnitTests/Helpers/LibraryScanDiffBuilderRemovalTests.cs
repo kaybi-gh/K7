@@ -55,7 +55,12 @@ public class LibraryScanDiffBuilderRemovalTests
             LastWriteTimeUtc = existing.LastWriteTimeUtc
         };
 
-        var diff = LibraryScanDiffBuilder.Build([scanned], [existing], [], _ => throw new InvalidOperationException());
+        var diff = LibraryScanDiffBuilder.Build(
+            [scanned],
+            [existing],
+            [],
+            _ => throw new InvalidOperationException(),
+            libraryRootPath: @"C:\music");
 
         diff.UnchangedFiles.Should().ContainSingle().Which.Should().BeSameAs(existing);
         diff.RemovedFiles.Should().BeEmpty();

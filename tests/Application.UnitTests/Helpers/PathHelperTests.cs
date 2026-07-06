@@ -41,10 +41,19 @@ public class PathHelperTests
     }
 
     [Test]
-    public void NormalizePath_ShouldResolveRelativePathAgainstRoot()
+    public void NormalizeLibraryPath_ShouldResolveRelativePathAgainstLibraryRoot()
     {
-        var normalized = PathHelper.NormalizePath(@"artist\album\track.flac", @"C:\music");
+        var normalized = PathHelper.NormalizeLibraryPath(@"artist\album\track.flac", @"C:\music");
 
         normalized.Should().Be(PathHelper.NormalizePath(@"C:\music\artist\album\track.flac"));
+    }
+
+    [Test]
+    public void NormalizeLibraryPath_ShouldKeepAbsolutePathUnchanged()
+    {
+        var path = @"C:\music\artist\album\track.flac";
+        var normalized = PathHelper.NormalizeLibraryPath(path, @"D:\other-root");
+
+        normalized.Should().Be(PathHelper.NormalizePath(path));
     }
 }

@@ -23,7 +23,7 @@ public static class FileInfoHelper
 
         foreach (var fileInfo in fileInfos)
         {
-            if (!fileInfo.IsSupportedFile())
+            if (!fileInfo.Exists || !fileInfo.IsSupportedFile())
                 continue;
 
             files.Add(fileInfo.ToScannedFileEntry());
@@ -48,7 +48,7 @@ public static class FileInfoHelper
                 try
                 {
                     var fileInfo = new FileInfo(path);
-                    if (fileInfo.IsSupportedFile())
+                    if (fileInfo.Exists && fileInfo.IsSupportedFile())
                         files.Add(fileInfo.ToScannedFileEntry());
                 }
                 catch (Exception ex)

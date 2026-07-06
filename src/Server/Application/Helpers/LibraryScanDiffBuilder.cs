@@ -19,12 +19,13 @@ public static class LibraryScanDiffBuilder
         IReadOnlyList<ScannedFileEntry> scannedFiles,
         IReadOnlyList<IndexedFile> existingFiles,
         HashSet<string> skippedFilePaths,
-        Func<ScannedFileEntry, IndexedFile> createIndexedFile)
+        Func<ScannedFileEntry, IndexedFile> createIndexedFile,
+        string? libraryRootPath = null)
     {
-        var scanned = DedupeScannedFiles(scannedFiles);
-        var (dedupedExisting, duplicateExisting) = DedupeExistingFiles(existingFiles);
+        var scanned = DedupeScannedFiles(scannedFiles, libraryRootPath);
+        var (dedupedExisting, duplicateExisting) = DedupeExistingFiles(existingFiles, libraryRootPath);
         var existingByPath = dedupedExisting.ToDictionary(
-            f => PathHelper.NormalizePath(f.Path),
+            f => NormalizeIndexedPath(f.Path, libraryRootPath),
             f => f,
             StringComparer.OrdinalIgnoreCase);
         var matchedExisting = new HashSet<IndexedFile>();
@@ -35,7 +36,7 @@ public static class LibraryScanDiffBuilder
 
         foreach (var scannedFile in scanned)
         {
-            var normalizedScannedPath = PathHelper.NormalizePath(scannedFile.Path);
+            var normalizedScannedPath = NormalizeIndexedPath(scannedFile.Path, libraryRootPath);
             if (existingByPath.TryGetValue(normalizedScannedPath, out var existing))
             {
                 matchedExisting.Add(existing);
@@ -80,18 +81,20 @@ public static class LibraryScanDiffBuilder
         };
     }
 
-    private static List<ScannedFileEntry> DedupeScannedFiles(IReadOnlyList<ScannedFileEntry> scannedFiles) =>
+    private static List<ScannedFileEntry> DedupeScannedFiles(IReadOnlyList<ScannedFileEntry> scannedFiles, string? libraryRootPath) =>
         scannedFiles
-            .GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(f => NormalizeIndexedPath(f.Path, libraryRootPath), StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
             .ToList();
 
-    private static (List<IndexedFile> Canonical, List<IndexedFile> Duplicates) DedupeExistingFiles(IReadOnlyList<IndexedFile> existingFiles)
+    private static (List<IndexedFile> Canonical, List<IndexedFile> Duplicates) DedupeExistingFiles(
+        IReadOnlyList<IndexedFile> existingFiles,
+        string? libraryRootPath)
     {
         List<IndexedFile> canonical = [];
         List<IndexedFile> duplicates = [];
 
-        foreach (var group in existingFiles.GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase))
+        foreach (var group in existingFiles.GroupBy(f => NormalizeIndexedPath(f.Path, libraryRootPath), StringComparer.OrdinalIgnoreCase))
         {
             var ordered = group.OrderByDescending(f => f.Created).ToList();
             canonical.Add(ordered[0]);
@@ -156,4 +159,9 @@ public static class LibraryScanDiffBuilder
         remainingAdded.RemoveAll(renamedAdded.Contains);
         return (renamed, remainingAdded, renamedRemoved);
     }
+
+    private static string NormalizeIndexedPath(string path, string? libraryRootPath) =>
+        libraryRootPath is null
+            ? PathHelper.NormalizePath(path)
+            : PathHelper.NormalizeLibraryPath(path, libraryRootPath);
 }
