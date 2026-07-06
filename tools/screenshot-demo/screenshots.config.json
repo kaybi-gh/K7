@@ -1,0 +1,143 @@
+{
+  "baseUrl": "https://k7.kaybi.dev",
+  "outputDir": "../../screenshots",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "colorScheme": "dark",
+  "guestLogin": true,
+  "settleMs": 2500,
+  "defaultProfile": "desktop",
+  "profiles": {
+    "desktop": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    "tv": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "platform": "tv"
+    },
+    "mobile": {
+      "device": "iPhone 14"
+    }
+  },
+  "captures": [
+    {
+      "file": "home-desktop.png",
+      "path": "/",
+      "profile": "desktop",
+      "waitFor": "a[href='/explore']"
+    },
+    {
+      "file": "home-tv.png",
+      "path": "/",
+      "profile": "tv",
+      "waitFor": ".home-tv-hero, .home-page--tv"
+    },
+    {
+      "file": "home-mobile.png",
+      "path": "/",
+      "profile": "mobile",
+      "waitFor": "a[href='/explore']"
+    },
+    {
+      "file": "explore-desktop.png",
+      "path": "/explore",
+      "profile": "desktop",
+      "waitFor": "h1"
+    },
+    {
+      "file": "explore-mobile.png",
+      "path": "/explore",
+      "profile": "mobile",
+      "waitFor": ".explore-page, .media-card, h1"
+    },
+    {
+      "file": "movies-desktop.png",
+      "path": "/library-groups/a2b53ab2-86bd-4187-bc5f-d3f04d3bd5fe",
+      "profile": "desktop",
+      "optional": true,
+      "waitFor": "table, .media-card, .k7-data-table"
+    },
+    {
+      "file": "movies-mobile.png",
+      "path": "/library-groups/a2b53ab2-86bd-4187-bc5f-d3f04d3bd5fe",
+      "profile": "mobile",
+      "optional": true,
+      "waitFor": "table, .media-card, .k7-data-table"
+    },
+    {
+      "file": "movie-detail-desktop.png",
+      "path": "/movies/019f36d2-369f-789a-8c8e-21da7fe44550",
+      "profile": "desktop",
+      "optional": true,
+      "waitFor": ".movie-detail-page, .media-detail-page, h1"
+    },
+    {
+      "file": "movie-detail-tv.png",
+      "path": "/movies/019f36d2-369f-789a-8c8e-21da7fe44550",
+      "profile": "tv",
+      "optional": true,
+      "waitFor": ".movie-detail-page, .media-detail-page, h1, .movie-page"
+    },
+    {
+      "file": "movie-detail-mobile.png",
+      "path": "/movies/019f36d2-369f-789a-8c8e-21da7fe44550",
+      "profile": "mobile",
+      "optional": true,
+      "waitFor": ".movie-detail-page, .media-detail-page, h1"
+    },
+    {
+      "file": "movie-detail-sintel-desktop.png",
+      "path": "/movies/019f36d2-33fe-7126-890a-4dbd1ab0be9b",
+      "profile": "desktop",
+      "optional": true,
+      "waitFor": ".movie-detail-page, .media-detail-page, h1"
+    },
+    {
+      "file": "movie-detail-sintel-mobile.png",
+      "path": "/movies/019f36d2-33fe-7126-890a-4dbd1ab0be9b",
+      "profile": "mobile",
+      "optional": true,
+      "waitFor": ".movie-detail-page, .media-detail-page, h1"
+    },
+    {
+      "file": "music-album-desktop.png",
+      "path": "/music/albums/019f368e-7855-7269-9bad-e54e6eace8f1",
+      "profile": "desktop",
+      "optional": true,
+      "waitFor": ".album-detail-page, h1"
+    },
+    {
+      "file": "music-album-mobile.png",
+      "path": "/music/albums/019f368e-7855-7269-9bad-e54e6eace8f1",
+      "profile": "mobile",
+      "optional": true,
+      "waitFor": ".album-detail-page, h1"
+    },
+    {
+      "file": "series-desktop.png",
+      "path": "/series/019f36d2-43f3-71f3-bd6c-7aa807cdfba6",
+      "profile": "desktop",
+      "optional": true,
+      "waitFor": ".serie-detail-page, h1"
+    },
+    {
+      "file": "series-mobile.png",
+      "path": "/series/019f36d2-43f3-71f3-bd6c-7aa807cdfba6",
+      "profile": "mobile",
+      "optional": true,
+      "waitFor": ".serie-detail-page, h1"
+    }
+  ],
+  "discover": {
+    "enabled": true,
+    "maxPerType": 1
+  }
+}
