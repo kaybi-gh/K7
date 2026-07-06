@@ -57,12 +57,20 @@ internal static class MediaLibraryLinkageHelper
             MusicAlbum album => await context.Medias.OfType<MusicTrack>()
                 .Where(t => t.AlbumId == album.Id)
                 .SelectMany(t => context.IndexedFiles.Where(f => f.MediaId == t.Id).Select(f => (Guid?)f.LibraryId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? await context.IndexedFiles
+                    .Where(f => f.MediaId == album.Id)
+                    .Select(f => (Guid?)f.LibraryId)
+                    .FirstOrDefaultAsync(cancellationToken),
 
-            Serie => await context.Medias.OfType<SerieEpisode>()
-                .Where(e => e.SerieId == media.Id)
+            Serie serie => await context.Medias.OfType<SerieEpisode>()
+                .Where(e => e.SerieId == serie.Id)
                 .SelectMany(e => context.IndexedFiles.Where(f => f.MediaId == e.Id).Select(f => (Guid?)f.LibraryId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? await context.IndexedFiles
+                    .Where(f => f.MediaId == serie.Id)
+                    .Select(f => (Guid?)f.LibraryId)
+                    .FirstOrDefaultAsync(cancellationToken),
 
             SerieSeason season => await context.Medias.OfType<SerieEpisode>()
                 .Where(e => e.SeasonId == season.Id)
@@ -125,16 +133,18 @@ internal static class MediaLibraryLinkageHelper
         media switch
         {
             MusicAlbum album => context.IndexedFiles
-                .Where(f => f.MediaId != null
-                    && context.Medias.OfType<MusicTrack>().Any(t => t.Id == f.MediaId && t.AlbumId == album.Id)),
+                .Where(f => f.MediaId == album.Id
+                    || (f.MediaId != null
+                        && context.Medias.OfType<MusicTrack>().Any(t => t.Id == f.MediaId && t.AlbumId == album.Id))),
 
             MusicArtist artist => context.IndexedFiles
                 .Where(f => f.MediaId != null
                     && context.Medias.OfType<MusicTrack>().Any(t => t.Id == f.MediaId && t.Album!.ArtistId == artist.Id)),
 
             Serie serie => context.IndexedFiles
-                .Where(f => f.MediaId != null
-                    && context.Medias.OfType<SerieEpisode>().Any(e => e.Id == f.MediaId && e.SerieId == serie.Id)),
+                .Where(f => f.MediaId == serie.Id
+                    || (f.MediaId != null
+                        && context.Medias.OfType<SerieEpisode>().Any(e => e.Id == f.MediaId && e.SerieId == serie.Id))),
 
             SerieSeason season => context.IndexedFiles
                 .Where(f => f.MediaId != null

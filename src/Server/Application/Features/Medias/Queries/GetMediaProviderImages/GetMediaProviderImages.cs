@@ -63,6 +63,17 @@ public class GetMediaProviderImagesQueryHandler(
                 externalIds = serie.ExternalIds;
         }
 
+        else if (media is MusicTrack track)
+        {
+            mediaType = MediaType.MusicAlbum;
+            var album = await context.Medias
+                .AsNoTracking()
+                .Include(m => m.ExternalIds)
+                .FirstOrDefaultAsync(m => m.Id == track.AlbumId, cancellationToken);
+            if (album is not null)
+                externalIds = album.ExternalIds;
+        }
+
         var results = new List<ProviderImageDto>();
 
         foreach (var provider in imageProviders)

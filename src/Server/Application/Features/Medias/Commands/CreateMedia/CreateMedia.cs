@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
@@ -292,7 +293,45 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+        await QueueAudioAnalysisForIndexedFilesAsync(indexedFiles, library, cancellationToken);
         return album.Id;
+    }
+
+    private async Task QueueAudioAnalysisForIndexedFilesAsync(
+        List<IndexedFile> indexedFiles,
+        Library library,
+        CancellationToken cancellationToken)
+    {
+        if (!library.MusicAudioAnalysisEnabled)
+            return;
+
+        var fileIds = indexedFiles.Select(f => f.Id).ToList();
+        var trackIds = await _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => fileIds.Contains(f.Id) && f.MediaId != null)
+            .Select(f => f.MediaId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var tracksNeedingAnalysis = await _context.Medias
+            .OfType<MusicTrack>()
+            .AsNoTracking()
+            .Where(t => trackIds.Contains(t.Id) && t.AudioAnalysis == null)
+            .Select(t => t.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var trackId in tracksNeedingAnalysis)
+        {
+            await _sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new AnalyzeMusicTrackAudioCommand { TrackId = trackId },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = trackId,
+                TargetEntityTypeName = nameof(MusicTrack),
+                MaxAttempts = 2,
+                ConcurrencyGroup = "ffmpeg"
+            }, cancellationToken);
+        }
     }
 
     private async Task<Guid> HandleSerieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
