@@ -30,9 +30,11 @@
 else if (_season is not null && _isTv)
 {
     <div @ref="_seasonTvRoot" class="season-tv @(HasDisplayableCast ? "season-tv--scrollable" : "")" data-tv-scroll>
-        <div class="tv-backdrop" style="--tv-backdrop: url('@(_previousStillUrl ?? _backdropUrl)')" />
-        <div class="tv-backdrop tv-backdrop--next" style="--tv-backdrop: url('@(_focusedStillUrl ?? _backdropUrl)')" @key="_focusedStillUrl" />
-        <div class="tv-hero-gradient" aria-hidden="true" />
+        <MediaPageBackdrop ImageUrl="@(_previousStillUrl ?? _backdropUrl)"
+                           SecondaryImageUrl="@(_focusedStillUrl ?? _backdropUrl)"
+                           SecondaryImageKey="@_focusedStillUrl"
+                           DominantColor="@_dominantColor"
+                           ScrollTarget="@_seasonTvRoot" />
 
         <div class="season-tv-main" data-tv-scroll-zone="main">
             <div class="tv-hero">
@@ -135,11 +137,10 @@ else if (_season is not null && _isTv)
 }
 else if (_season is not null)
 {
-    <div class="season-page">
-        @if (_backdropUrl is not null)
-        {
-            <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
-        }
+    <div @ref="_seasonScrollRoot" class="season-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
+        <MediaPageBackdrop ImageUrl="@_backdropUrl"
+                           DominantColor="@_dominantColor"
+                           ScrollTarget="@_seasonScrollRoot" />
 
         <div class="season-main">
             <K7BackButton />
@@ -234,7 +235,7 @@ else if (_season is not null)
             </div>
         </div>
 
-        <div class="season-episodes">
+        <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor" Class="season-episodes">
             @foreach (var episode in _episodes)
             {
                 <div id="ep-@episode.EpisodeNumber">
@@ -246,6 +247,6 @@ else if (_season is not null)
                                      OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
                 </div>
             }
-        </div>
+        </MediaPageContent>
     </div>
 }

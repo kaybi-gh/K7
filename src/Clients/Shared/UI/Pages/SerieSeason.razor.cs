@@ -25,6 +25,7 @@ public partial class SerieSeason : IAsyncDisposable
 
     private SerieSeasonDto? _season;
     private string? _backdropUrl;
+    private string? _dominantColor;
     private string? _logoUrl;
     private List<LiteSerieEpisodeDto> _episodes = [];
     private int? _previousSeasonNumber;
@@ -41,6 +42,7 @@ public partial class SerieSeason : IAsyncDisposable
     private string? _previousStillUrl;
     private Carousel? _tvCarousel;
     private ElementReference _seasonTvRoot;
+    private ElementReference _seasonScrollRoot;
     private bool _seasonTvScrollInitialized;
     private bool _isFederated;
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
@@ -66,9 +68,10 @@ public partial class SerieSeason : IAsyncDisposable
             return;
         }
 
+        var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
         _backdropUrl = apiClient.GetAbsoluteUri(
-            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
-                ?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _dominantColor = backdropPicture?.DominantColor;
 
         _logoUrl = apiClient.GetAbsoluteUri(
             serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)

@@ -9,12 +9,9 @@
 <PageTitle>@_artist?.Title</PageTitle>
 @if (_artist is not null)
 {
-    <div class="artist-detail-page">
+    <div class="artist-detail-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _portraitDominantColor)">
+        <MusicAmbientWash DominantColor="@_portraitDominantColor" />
         <K7BackButton />
-        @if (_portraitUrl is not null)
-        {
-            <div class="background-image" style="--background-picture: url('@_portraitUrl')" />
-        }
 
         <div class="artist-hero-viewport">
             <div class="artist-hero">

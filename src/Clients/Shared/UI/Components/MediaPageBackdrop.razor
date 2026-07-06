@@ -1,0 +1,23 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div @ref="_rootRef"
+     class="media-page-backdrop @Class"
+     style="@StyleAttribute"
+     aria-hidden="true">
+    @if (ImageUrl is not null)
+    {
+        <div class="media-page-backdrop__image"
+             style="background-image: url('@ImageUrl')" />
+    }
+
+    @if (SecondaryImageUrl is not null)
+    {
+        <div class="media-page-backdrop__image media-page-backdrop__image--secondary"
+             style="background-image: url('@SecondaryImageUrl')"
+             @key="SecondaryImageKey" />
+    }
+
+    <div class="media-page-backdrop__scrim-side" />
+    <div class="media-page-backdrop__scrim-bottom" />
+    <div class="media-page-backdrop__scroll-fade" />
+</div>

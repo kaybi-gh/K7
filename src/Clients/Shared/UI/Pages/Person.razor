@@ -22,7 +22,7 @@
 }
 else if (_person is not null)
 {
-    <div class="person-page">
+    <div @ref="_scrollRoot" class="person-page">
         @if (_backdropUrls.Count > 0)
         {
             <div class="person-backdrops">
@@ -34,6 +34,8 @@ else if (_person is not null)
                 }
             </div>
         }
+
+        <MediaPageBackdrop ScrollTarget="@_scrollRoot" />
 
         <div class="person-main">
             <K7BackButton />
@@ -119,6 +121,7 @@ else if (_person is not null)
 
         @if (_discography.Count > 0 || _medias.Count > 0)
         {
+            <MediaPageContent>
             <div class="person-content">
                 @if (_discography.Count > 0)
                 {
@@ -173,6 +176,7 @@ else if (_person is not null)
                     </Carousel>
                 }
             </div>
+            </MediaPageContent>
         }
     </div>
 }

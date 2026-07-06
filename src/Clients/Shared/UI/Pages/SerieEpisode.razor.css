@@ -6,30 +6,13 @@
     overflow-x: hidden;
 }
 
-.background-image {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-image: var(--background-picture);
-    mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
-    mask-size: 100% 100%;
-    mask-repeat: no-repeat;
-    pointer-events: none;
-}
-
 .episode-main {
     position: relative;
     display: flex;
     flex-direction: column;
     min-height: 85vh;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 .episode-back-btn {
@@ -182,21 +165,6 @@
 }
 
 @media (max-width: 599.98px) {
-    .background-image {
-        mask-image: linear-gradient(to bottom, black 0%, black 25%, transparent 60%);
-        -webkit-mask-image: linear-gradient(to bottom, black 0%, black 25%, transparent 60%);
-    }
-
-    .episode-page {
-        background: linear-gradient(
-            to bottom,
-            transparent 30%,
-            color-mix(in srgb, var(--episode-dominant-color, var(--color-bg)) 40%, transparent) 50%,
-            var(--episode-dominant-color, var(--color-bg)) 65%,
-            var(--color-bg) 100%
-        );
-    }
-
     .episode-hero {
         padding: var(--space-10) var(--space-4) var(--space-6);
     }

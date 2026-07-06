@@ -57,24 +57,6 @@
     left: 0;
 }
 
-.background-image {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-    pointer-events: none;
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-image: var(--background-picture);
-    mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
-    mask-size: 100% 100%;
-    mask-repeat: no-repeat;
-}
-
 .mobile-layout .background {
     position: absolute;
     width: 100%;
@@ -145,15 +127,6 @@
     --carousel-margin-start: 40px;
 }
 
-.movie-main {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    flex-shrink: 0;
-    z-index: 2;
-}
-
 .movie-page {
     position: relative;
     display: flex;
@@ -162,17 +135,22 @@
     overflow-x: hidden;
 }
 
-.movie-page-content {
+.movie-main {
     position: relative;
-    z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
-    padding-bottom: var(--space-6);
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
+    z-index: 2;
 }
 
 .movie-main:has(.k7-menu--open) {
     z-index: 3;
+}
+
+::deep .movie-page-content {
+    z-index: 1;
 }
 
 .movie-page-content ::deep .carousel-wrapper {
@@ -253,18 +231,6 @@
     display: flex;
     align-items: center;
     gap: 4px;
-}
-
-@media (min-width: 600px) {
-    .background-image {
-        mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-    }
-}
-
-:global(html.platform-tv) .background-image {
-    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
 :global(html.platform-tv) .movie-page[data-tv-scroll] {

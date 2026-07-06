@@ -72,8 +72,13 @@ else
 {
     @if (_movie != null)
     {
-        <div @ref="_tvScrollRoot" class="movie-page" data-tv-scroll>
-        <div class="background-image" style="--background-picture: url(@_backdropUrl)" />
+        <div @ref="_tvScrollRoot"
+             class="movie-page"
+             style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)"
+             data-tv-scroll>
+        <MediaPageBackdrop ImageUrl="@_backdropUrl"
+                           DominantColor="@_dominantColor"
+                           ScrollTarget="@_tvScrollRoot" />
         <div class="movie-main" data-tv-scroll-zone="main">
         <K7BackButton />
         <div class="hero-page-stack">
@@ -207,7 +212,10 @@ else
 
         @if (HasTvBelowContent)
         {
-        <div class="movie-page-content" data-tv-scroll-zone="below">
+        <MediaPageContent Class="movie-page-content"
+                          DominantColor="@_dominantColor"
+                          Tinted="@(_dominantColor is not null)">
+        <div data-tv-scroll-zone="below">
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">
@@ -247,6 +255,7 @@ else
             </Carousel>
         }
         </div>
+        </MediaPageContent>
         }
         </div>
     }

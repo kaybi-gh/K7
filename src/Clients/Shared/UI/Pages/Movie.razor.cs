@@ -36,6 +36,7 @@ public partial class Movie : IAsyncDisposable
     private static MovieDto? _movie;
     private static MediaCardViewModel? _mediaCard;
     private string? _backdropUrl;
+    private string? _dominantColor;
     private string? _logoUrl;
     private string? _posterSmallUrl;
     private bool _overviewExpanded;
@@ -114,10 +115,11 @@ public partial class Movie : IAsyncDisposable
                 ? DateTimeOffset.UtcNow
                 : _movie.LastMetadataRefreshedAt;
 
+            var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Backdrop);
             var backdropUri = apiClient.GetAbsoluteUri(
-                _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Backdrop)?
-                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+                backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _backdropUrl = MediaPictureUrlHelper.WithCacheBuster(backdropUri, cacheVersion);
+            _dominantColor = backdropPicture?.DominantColor;
 
             var logoUri = apiClient.GetAbsoluteUri(
                 _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Logo)?

@@ -40,6 +40,7 @@ public partial class MusicArtistDetail : IDisposable
 
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
+    private string? _portraitDominantColor;
     private List<MediaCardViewModel> _albums = [];
     private List<MediaCardViewModel> _similarArtists = [];
     private List<TrackViewModel> _topTracks = [];
@@ -183,6 +184,7 @@ public partial class MusicArtistDetail : IDisposable
         var portraitUri = apiClient.GetAbsoluteUri(
             portraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
         _portraitUrl = MediaPictureUrlHelper.WithCacheBuster(portraitUri, cacheVersion);
+        _portraitDominantColor = portraitPicture?.DominantColor;
     }
 
     private async Task LoadSimilarArtistsAsync(Guid artistId)

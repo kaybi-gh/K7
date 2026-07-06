@@ -30,12 +30,11 @@ else if (_serie is not null)
 {
     <div @ref="_tvScrollRoot"
          class="serie-page"
-         style="@(_dominantColor is not null ? $"--serie-dominant-color: {_dominantColor};" : "")"
+         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)"
          data-tv-scroll="@(_isTv && HasTvScrollContent ? string.Empty : null)">
-        @if (_backdropUrl is not null)
-        {
-            <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
-        }
+        <MediaPageBackdrop ImageUrl="@_backdropUrl"
+                           DominantColor="@_dominantColor"
+                           ScrollTarget="@_tvScrollRoot" />
 
         <div class="serie-main" data-tv-scroll-zone="main">
             <K7BackButton />
@@ -198,39 +197,39 @@ else if (_serie is not null)
         }
         </div>
 
-        @if (!_isTv && _seasons.Count > 0)
+        @if (!_isTv && (_seasons.Count > 0 || (_serie.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0))
         {
-            <Carousel Title="@L["Seasons"]">
-                @foreach (var season in _seasons)
+            <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
+                @if (_seasons.Count > 0)
                 {
-                    <CarouselItem @key="season.Id">
-                        <MediaCard Model="@(new MediaCardViewModel
-                                   {
-                                       Id = season.Id.ToString(),
-                                       Kind = MediaCardKind.Season,
-                                       Title = season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], season.SeasonNumber),
-                                       AdditionalInformations = string.Format(S["EpisodeCount"], season.EpisodeCount),
-                                       PictureUrl = GetSeasonPosterUrl(season),
-                                       Watched = season.UserState?.IsCompleted ?? false,
-                                       Progress = season.UserState?.ProgressPercentage ?? 0,
-                                   })"
-                                   Variant="MediaCardVariant.Poster"
-                                   Href="@($"/series/{Id}/seasons/{season.SeasonNumber}")"
-                                   FooterVisible="true"
-                                   OverlayEnabled="true"
-                                   ProgressEnabled="true"
-                                   WatchedStatusEnabled="true"
-                                   WatchStateMenuEnabled="true"
-                                   BulkEpisodeCount="@season.EpisodeCount"
-                                   OnWatchStateChanged="ReloadSerieAsync" />
-                    </CarouselItem>
+                    <Carousel Title="@L["Seasons"]">
+                        @foreach (var season in _seasons)
+                        {
+                            <CarouselItem @key="season.Id">
+                                <MediaCard Model="@(new MediaCardViewModel
+                                           {
+                                               Id = season.Id.ToString(),
+                                               Kind = MediaCardKind.Season,
+                                               Title = season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], season.SeasonNumber),
+                                               AdditionalInformations = string.Format(S["EpisodeCount"], season.EpisodeCount),
+                                               PictureUrl = GetSeasonPosterUrl(season),
+                                               Watched = season.UserState?.IsCompleted ?? false,
+                                               Progress = season.UserState?.ProgressPercentage ?? 0,
+                                           })"
+                                           Variant="MediaCardVariant.Poster"
+                                           Href="@($"/series/{Id}/seasons/{season.SeasonNumber}")"
+                                           FooterVisible="true"
+                                           OverlayEnabled="true"
+                                           ProgressEnabled="true"
+                                           WatchedStatusEnabled="true"
+                                           WatchStateMenuEnabled="true"
+                                           BulkEpisodeCount="@season.EpisodeCount"
+                                           OnWatchStateChanged="ReloadSerieAsync" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
-        }
 
-        @if (_isTv && HasTvBelowContent)
-        {
-            <div class="serie-page-below" data-tv-scroll-zone="below">
                 @if ((_serie.PersonRoles?.Count ?? 0) > 0)
                 {
                     <Carousel Title="@L["CastingAndCrew"]">
@@ -269,48 +268,53 @@ else if (_serie is not null)
                         }
                     </Carousel>
                 }
-            </div>
+            </MediaPageContent>
         }
-        else
+
+        @if (_isTv && HasTvBelowContent)
         {
-            @if ((_serie.PersonRoles?.Count ?? 0) > 0)
-            {
-                <Carousel Title="@L["CastingAndCrew"]">
-                    @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
-                    {
-                        <CarouselItem @key="cast.Key">
-                            <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
-                        </CarouselItem>
-                    }
-                </Carousel>
-            }
+            <MediaPageContent Class="serie-page-below" Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
+                <div data-tv-scroll-zone="below">
+                @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+                {
+                    <Carousel Title="@L["CastingAndCrew"]">
+                        @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
+                        {
+                            <CarouselItem @key="cast.Key">
+                                <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
 
-            @if (_serie is not null)
-            {
-                <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
-            }
+                @if (_serie is not null)
+                {
+                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
+                }
 
-            @if (_similarMedia.Count > 0)
-            {
-                <Carousel Title="@L["SimilarMedia"]">
-                    @foreach (var media in _similarMedia)
-                    {
-                        <CarouselItem @key="media.Id">
-                            <MediaCard Model="media"
-                                       Href="@($"/series/{media.Id}")"
-                                       OverlayEnabled="true"
-                                       ProgressEnabled="_canTrackProgress"
-                                       WatchedStatusEnabled="_canTrackProgress"
-                                       FooterVisible="true"
-                                       ExcludeMenuEnabled="_canExclude"
-                                       WatchStateMenuEnabled="_canSetWatchState"
-                                       IsAdmin="_isAdmin"
-                                       OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
-                                       OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
-                        </CarouselItem>
-                    }
-                </Carousel>
-            }
+                @if (_similarMedia.Count > 0)
+                {
+                    <Carousel Title="@L["SimilarMedia"]">
+                        @foreach (var media in _similarMedia)
+                        {
+                            <CarouselItem @key="media.Id">
+                                <MediaCard Model="media"
+                                           Href="@($"/series/{media.Id}")"
+                                           OverlayEnabled="true"
+                                           ProgressEnabled="_canTrackProgress"
+                                           WatchedStatusEnabled="_canTrackProgress"
+                                           FooterVisible="true"
+                                           ExcludeMenuEnabled="_canExclude"
+                                           WatchStateMenuEnabled="_canSetWatchState"
+                                           IsAdmin="_isAdmin"
+                                           OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
+                                           OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+                </div>
+            </MediaPageContent>
         }
     </div>
 }
