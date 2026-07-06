@@ -2,6 +2,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Explore;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -35,6 +36,7 @@ public partial class HomeFeedCarouselRow : IDisposable
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
+    private DebouncedActionRunner? _picturesRefreshRunner;
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,6 +46,9 @@ public partial class HomeFeedCarouselRow : IDisposable
         K7HubClient.MediaBatchAdded += OnCatalogChanged;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
+
+        _picturesRefreshRunner = new DebouncedActionRunner(ReloadAsync, InvokeAsync);
     }
 
     public void Dispose()
@@ -51,6 +56,8 @@ public partial class HomeFeedCarouselRow : IDisposable
         K7HubClient.MediaBatchAdded -= OnCatalogChanged;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
+        _picturesRefreshRunner?.Dispose();
     }
 
     private void OnCatalogChanged(List<K7.Shared.Dtos.Notifications.MediaBatchItem> items)
@@ -72,6 +79,18 @@ public partial class HomeFeedCarouselRow : IDisposable
             return;
 
         _ = ReloadAsync();
+    }
+
+    private void OnMediaPicturesUpdated(Guid mediaId)
+    {
+        if (_loading)
+            return;
+
+        var id = mediaId.ToString();
+        if (!_items.Any(i => i.Id == id || i.ParentId == id))
+            return;
+
+        _picturesRefreshRunner?.Schedule();
     }
 
     private async Task ReloadAsync()

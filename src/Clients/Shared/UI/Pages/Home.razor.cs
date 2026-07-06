@@ -41,6 +41,7 @@ public partial class Home : IDisposable
     private MediaCardViewModel? _focusedItem;
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
     private int _catalogRefreshGeneration;
+    private DebouncedActionRunner? _picturesRefreshRunner;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,7 +56,10 @@ public partial class Home : IDisposable
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
         CacheStore.HomeFeedInvalidated += OnHomeFeedInvalidated;
+
+        _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterPicturesUpdatedAsync, InvokeAsync);
 
         HomeLayoutDto layout;
         try
@@ -163,7 +167,29 @@ public partial class Home : IDisposable
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
         CacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
+        _picturesRefreshRunner?.Dispose();
+    }
+
+    private void OnMediaPicturesUpdated(Guid mediaId)
+    {
+        if (isLoading || _isOffline)
+            return;
+
+        var id = mediaId.ToString();
+        if (!_rows.Any(r => r.Items.Any(i => i.Id == id || i.ParentId == id)))
+            return;
+
+        _picturesRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshAfterPicturesUpdatedAsync()
+    {
+        Interlocked.Increment(ref _catalogRefreshGeneration);
+        CacheStore.InvalidateByPrefix("home-feed");
+        await RefreshNonContinueWatchingRowsAsync();
+        StateHasChanged();
     }
 
     private void OnHomeFeedInvalidated()
