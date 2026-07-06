@@ -137,7 +137,8 @@ Anti-reference: neon aesthetics, glowing cyan/purple accents, anything competing
 ## Git Conventions
 
 Conventional Commits: `type(scope): description`. Types: `feat`, `fix`, `refactor`, `perf`, `style`, `docs`, `test`, `chore`, `ci`, `build`.
-Description in lowercase, no period at end. Never amend a pushed commit.
+Description in lowercase, no period at end. Subject line only - no commit body or multi-line description.
+Never amend a pushed commit.
 
 ## Common Commands
 
