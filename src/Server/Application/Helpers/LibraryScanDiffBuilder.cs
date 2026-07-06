@@ -23,7 +23,10 @@ public static class LibraryScanDiffBuilder
     {
         var scanned = DedupeScannedFiles(scannedFiles);
         var (dedupedExisting, duplicateExisting) = DedupeExistingFiles(existingFiles);
-        var existingByPath = dedupedExisting.ToDictionary(f => f.Path, StringComparer.OrdinalIgnoreCase);
+        var existingByPath = dedupedExisting.ToDictionary(
+            f => PathHelper.NormalizePath(f.Path),
+            f => f,
+            StringComparer.OrdinalIgnoreCase);
         var matchedExisting = new HashSet<IndexedFile>();
         List<IndexedFile> unchanged = [];
         List<IndexedFile> addedCandidates = [];
@@ -32,7 +35,8 @@ public static class LibraryScanDiffBuilder
 
         foreach (var scannedFile in scanned)
         {
-            if (existingByPath.TryGetValue(scannedFile.Path, out var existing))
+            var normalizedScannedPath = PathHelper.NormalizePath(scannedFile.Path);
+            if (existingByPath.TryGetValue(normalizedScannedPath, out var existing))
             {
                 matchedExisting.Add(existing);
 
