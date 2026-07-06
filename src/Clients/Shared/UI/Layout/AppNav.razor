@@ -24,6 +24,11 @@
                 <span class="app-nav-label">@L["Explore"]</span>
             </a>
 
+            <K7IconButton Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search app-nav-item--search-mobile">
+                <K7Icon Icon="@Phosphor.MagnifyingGlass" />
+                <span class="app-nav-label">@L["Search"]</span>
+            </K7IconButton>
+
             <a href="/my-space" class="k7-btn k7-btn--text app-nav-item--myspace focusable @(_activeNav == "/my-space" ? "active" : "")"
                @onclick="@(() => Navigate("/my-space"))" @onclick:preventDefault>
                 <span class="app-nav-icon"><K7Icon Icon="@Phosphor.FolderUser" /></span>
@@ -39,27 +44,24 @@
 
         <K7IconButton Icon="@Phosphor.MagnifyingGlass" Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search app-nav-item--search-desktop" />
 
-        <K7IconButton Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search app-nav-item--search-mobile">
-            <K7Icon Icon="@Phosphor.MagnifyingGlass" />
-            <span class="app-nav-label">@L["Search"]</span>
-        </K7IconButton>
-
-        <AuthorizeView>
-            <Authorized>
-                <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
-                        type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                    <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
-                        <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
-                    </K7Avatar>
-                </button>
-            </Authorized>
-            <NotAuthorized>
-                <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable" type="button" @onclick="Login">
-                    <span class="app-nav-icon"><K7Icon Icon="@Phosphor.UserCircle" /></span>
-                    <span class="app-nav-label">@L["Login"]</span>
-                </button>
-            </NotAuthorized>
-        </AuthorizeView>
+        <div class="app-nav-item-slot app-nav-item-slot--profile">
+            <AuthorizeView>
+                <Authorized>
+                    <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
+                            type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
+                        <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
+                            <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                        </K7Avatar>
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable" type="button" @onclick="Login">
+                        <span class="app-nav-icon"><K7Icon Icon="@Phosphor.UserCircle" /></span>
+                        <span class="app-nav-label">@L["Login"]</span>
+                    </button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
     </div>
 </header>
 
