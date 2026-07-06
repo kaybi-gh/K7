@@ -51,6 +51,7 @@
   <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Processing applied to media in this library (transcoding, thumbnails, etc.).</value></data>
   <data name="SummaryTitle" xml:space="preserve"><value>Library summary</value></data>
   <data name="AutoIndexSummary" xml:space="preserve"><value>Automatic indexing</value></data>
+  <data name="AutoScanDisabledSummary" xml:space="preserve"><value>Disabled</value></data>
   <data name="Creating" xml:space="preserve"><value>Creating...</value></data>
   <data name="Submit" xml:space="preserve"><value>Create library</value></data>
   <data name="Success" xml:space="preserve"><value>Library '{0}' created successfully!</value></data>
