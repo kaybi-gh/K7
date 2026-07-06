@@ -40,16 +40,18 @@ else if (_person is not null)
             <div class="person-hero">
                 <div class="person-hero-content">
                     <div class="person-portrait">
-                        @if (_portraitUrl is not null)
-                        {
-                            <img src="@_portraitUrl" alt="@_person.Name" class="person-portrait-img" />
-                        }
-                        else
-                        {
-                            <div class="person-portrait-placeholder">
-                                <K7Icon Name="user" Class="person-portrait-placeholder-icon" />
-                            </div>
-                        }
+                        <K7Image Src="@(_portraitUrl ?? PersonPlaceholderSrc)"
+                                 Alt="@_person.Name"
+                                 Fluid="true"
+                                 ObjectFit="cover">
+                            <FallbackContent>
+                                <K7Image Src="@PersonPlaceholderSrc"
+                                         Alt="@_person.Name"
+                                         Fluid="true"
+                                         ObjectFit="cover"
+                                         ShowLoadingState="false" />
+                            </FallbackContent>
+                        </K7Image>
                     </div>
 
                     <div class="person-info">

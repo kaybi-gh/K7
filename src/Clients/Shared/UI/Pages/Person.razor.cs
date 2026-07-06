@@ -18,6 +18,7 @@ public partial class Person : IDisposable
     public required string Id { get; set; }
 
     private PersonDto? _person;
+    private const string PersonPlaceholderSrc = "_content/K7.Clients.Shared.UI/images/person-placeholder.png";
     private string? _portraitUrl;
     private List<string> _backdropUrls = [];
     private List<MediaCardViewModel> _medias = [];
