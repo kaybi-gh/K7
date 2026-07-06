@@ -51,6 +51,7 @@
   <data name="SectionCapabilitiesDescription" xml:space="preserve"><value>Traitements appliqués aux médias de cette bibliothèque (transcodage, miniatures, etc.).</value></data>
   <data name="SummaryTitle" xml:space="preserve"><value>Résumé de la librairie</value></data>
   <data name="AutoIndexSummary" xml:space="preserve"><value>Indexation automatique</value></data>
+  <data name="AutoScanDisabledSummary" xml:space="preserve"><value>Désactivé</value></data>
   <data name="Creating" xml:space="preserve"><value>Création...</value></data>
   <data name="Submit" xml:space="preserve"><value>Créer la librairie</value></data>
   <data name="Success" xml:space="preserve"><value>Librairie « {0} » créée avec succès !</value></data>

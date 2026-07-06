@@ -159,33 +159,33 @@ public partial class CreateLibraryDialog
 
     private async Task SubmitAsync()
     {
+        var request = new CreateLibraryRequest
+        {
+            Title = _title.Trim(),
+            MediaType = _selectedMediaType,
+            RootPath = _rootPath.Trim(),
+            TriggerFileIndexingOnCreation = _triggerIndexing,
+            MetadataProviderName = _selectedProvider,
+            MetadataLanguage = _metadataLanguage,
+            MetadataFallbackLanguage = _metadataFallbackLanguage,
+            LibraryGroupId = _selectedGroupId,
+            GroupDescription = _createNewGroup && !string.IsNullOrWhiteSpace(_groupDescription) ? _groupDescription.Trim() : null,
+            GroupIcon = _createNewGroup ? _groupIcon : null,
+            IntroDetectionEnabled = _introDetectionEnabled,
+            SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
+            MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
+            TranscodingEnabled = _transcodingEnabled,
+            TransmuxingEnabled = _transmuxingEnabled,
+            MetadataRefreshIntervalDays = _metadataRefreshIntervalDays,
+            RealtimeMonitorEnabled = _realtimeMonitorEnabled,
+            AutoScanIntervalHours = _autoScanIntervalHours
+        };
+
         _isSubmitting = true;
         StateHasChanged();
 
         try
         {
-            var request = new CreateLibraryRequest
-            {
-                Title = _title.Trim(),
-                MediaType = _selectedMediaType,
-                RootPath = _rootPath.Trim(),
-                TriggerFileIndexingOnCreation = _triggerIndexing,
-                MetadataProviderName = _selectedProvider,
-                MetadataLanguage = _metadataLanguage,
-                MetadataFallbackLanguage = _metadataFallbackLanguage,
-                LibraryGroupId = _selectedGroupId,
-                GroupDescription = _createNewGroup && !string.IsNullOrWhiteSpace(_groupDescription) ? _groupDescription.Trim() : null,
-                GroupIcon = _createNewGroup ? _groupIcon : null,
-                IntroDetectionEnabled = _introDetectionEnabled,
-                SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
-                MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
-                TranscodingEnabled = _transcodingEnabled,
-                TransmuxingEnabled = _transmuxingEnabled,
-                MetadataRefreshIntervalDays = _metadataRefreshIntervalDays,
-                RealtimeMonitorEnabled = _realtimeMonitorEnabled,
-                AutoScanIntervalHours = _autoScanIntervalHours
-            };
-
             await K7ServerService.CreateLibraryAsync(request);
             Snackbar.Add(string.Format(L["Success"], _title), K7Severity.Success);
             Dialog.Close(K7DialogResult.Ok(true));

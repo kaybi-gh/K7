@@ -141,7 +141,7 @@
                         <K7Switch @bind-Value="_realtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
                         <span class="edit-library-section__field-hint">@L["RealtimeMonitorHelper"]</span>
 
-                        <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours"
+                        <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours" Immediate="true"
                                      Label="@L["AutoScanIntervalLabel"]" Variant="outlined"
                                      HelperText="@L["AutoScanIntervalHelper"]" />
 
@@ -191,6 +191,14 @@
                     <tr>
                         <td><strong>@L["AutoIndexSummary"]</strong></td>
                         <td>@(_triggerIndexing ? S["Yes"] : S["No"])</td>
+                    </tr>
+                    <tr>
+                        <td><strong>@L["RealtimeMonitorLabel"]</strong></td>
+                        <td>@(_realtimeMonitorEnabled ? S["Yes"] : S["No"])</td>
+                    </tr>
+                    <tr>
+                        <td><strong>@L["AutoScanIntervalLabel"]</strong></td>
+                        <td>@(_autoScanIntervalHours == 0 ? L["AutoScanDisabledSummary"] : _autoScanIntervalHours.ToString())</td>
                     </tr>
                 </tbody>
             </table>

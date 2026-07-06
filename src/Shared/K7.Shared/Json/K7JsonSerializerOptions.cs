@@ -14,6 +14,7 @@ public static class K7JsonSerializerOptions
 
     public static void Configure(JsonSerializerOptions options)
     {
+        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.PropertyNameCaseInsensitive = true;
