@@ -205,6 +205,20 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             .Select(t => new { t.Id, t.AlbumId })
             .ToDictionaryAsync(t => t.Id, cancellationToken);
 
+        var albumIds = trackNavById.Values.Select(t => t.AlbumId).Distinct().ToList();
+        var albumMetadataById = albumIds.Count == 0
+            ? new Dictionary<Guid, AlbumDiagnosticInfo>()
+            : await _context.Medias.OfType<MusicAlbum>()
+                .AsNoTracking()
+                .Where(a => albumIds.Contains(a.Id))
+                .Select(a => new AlbumDiagnosticInfo
+                {
+                    Id = a.Id,
+                    HasExternalIds = a.ExternalIds.Any(),
+                    GenreCount = a.MetadataTags.Count(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                })
+                .ToDictionaryAsync(a => a.Id, cancellationToken);
+
         var pictureTypes = await _context.MetadataPictures
             .Where(p => p.MediaId != null && mediaIds.Contains(p.MediaId.Value))
             .Select(p => new { Id = p.MediaId!.Value, p.Type })
@@ -231,6 +245,15 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             if (!m.HasExternalIds && isEnrichableMedia) issues.Add(DiagnosticIssue.MissingExternalId);
             if (!m.HasExternalIds && !isEnrichableMedia && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
             if (m.HasExternalIds && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
+
+            if (m.IsMusicTrack
+                && trackNavById.TryGetValue(m.Id, out var trackRef)
+                && albumMetadataById.TryGetValue(trackRef.AlbumId, out var albumInfo)
+                && (albumInfo.GenreCount > 0 || albumInfo.HasExternalIds))
+            {
+                issues.Remove(DiagnosticIssue.MissingMetadata);
+            }
+
             if (!m.HasIndexedFiles) issues.Add(DiagnosticIssue.MissingFiles);
 
             var isStale = MetadataStalenessHelper.IsStale(
@@ -290,6 +313,13 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         MediaType.MusicAlbum => [MetadataPictureType.Cover],
         _ => []
     };
+
+    private sealed class AlbumDiagnosticInfo
+    {
+        public required Guid Id { get; init; }
+        public required bool HasExternalIds { get; init; }
+        public required int GenreCount { get; init; }
+    }
 
     private async Task<List<DiagnosticItemDto>> GetMusicArtistIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
     {

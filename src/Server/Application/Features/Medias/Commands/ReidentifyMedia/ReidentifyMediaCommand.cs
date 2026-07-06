@@ -1,4 +1,6 @@
 using Ardalis.GuardClauses;
+using FluentValidation.Results;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
@@ -8,6 +10,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Medias.Commands.ReidentifyMedia;
 
@@ -30,7 +33,15 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
         Guard.Against.NotFound(request.MediaId, media);
 
         var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
-        Guard.Against.Null(library);
+        if (library is null)
+        {
+            throw new ValidationException(
+            [
+                new ValidationFailure(
+                    nameof(request.MediaId),
+                    $"Media {request.MediaId} is not linked to any library and cannot be reidentified.")
+            ]);
+        }
 
         var providerName = library.MetadataProviderName;
 

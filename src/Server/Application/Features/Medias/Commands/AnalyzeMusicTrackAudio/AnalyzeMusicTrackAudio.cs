@@ -58,7 +58,13 @@ public class AnalyzeMusicTrackAudioCommandHandler(
         var loudnessLufs = await loudnessAnalyzer.AnalyzeLufsAsync(filePath, cancellationToken);
 
         if (waveformPeaks is null && fadeResult is null && tags?.ReplayGainTrackGain is null && loudnessLufs is null)
-            return;
+        {
+            logger.LogWarning(
+                "Audio analysis produced no results for track '{Title}' ({TrackId}), will retry",
+                track.Title,
+                track.Id);
+            throw new InvalidOperationException($"Audio analysis produced no results for track {track.Id}.");
+        }
 
         var analysis = new AudioAnalysis
         {

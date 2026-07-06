@@ -64,6 +64,32 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
         Guard.Against.NotFound(request.MediaId, media);
 
+        var refreshMedia = await MediaMetadataRefreshTargetHelper.ResolveRefreshMediaAsync(_context, media, cancellationToken);
+        if (refreshMedia.Id != media.Id)
+        {
+            media = await _context.Medias
+                .Include(m => m.ExternalIds)
+                .Include(m => m.Pictures)
+                .Include(m => m.PersonRoles)
+                    .ThenInclude(pr => pr.Person)
+                .Include(m => m.PersonRoles)
+                    .ThenInclude(pr => pr.ExternalIds)
+                .Include(m => m.PersonRoles)
+                    .ThenInclude(pr => pr.PortraitPicture)
+                .Include(m => m.Ratings)
+                .Include(m => m.MetadataTags)
+                    .ThenInclude(mt => mt.MetadataTag)
+                .FirstAsync(m => m.Id == refreshMedia.Id, cancellationToken);
+
+            var providerExternalId = media.ExternalIds
+                .FirstOrDefault(e => string.Equals(e.ProviderName, request.MetadataProviderName, StringComparison.OrdinalIgnoreCase))
+                ?.Value;
+            if (!string.IsNullOrEmpty(providerExternalId))
+            {
+                request = request with { MetadataProviderExternalId = providerExternalId };
+            }
+        }
+
         var metadataUpdate = media switch
         {
             Movie movie => HandleMovieAsync(request, movie, cancellationToken),

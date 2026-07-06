@@ -34,6 +34,13 @@ public class QueueRefreshMediaMetadataCommandHandler(
 
         Guard.Against.NotFound(request.MediaId, media);
 
+        var refreshMedia = await MediaMetadataRefreshTargetHelper.ResolveRefreshMediaAsync(context, media, cancellationToken);
+        if (refreshMedia.Id != media.Id)
+        {
+            await context.Entry(refreshMedia).Collection(m => m.ExternalIds).LoadAsync(cancellationToken);
+            media = refreshMedia;
+        }
+
         var library = await MediaLibraryLinkageHelper.FindLibraryAsync(context, media, cancellationToken);
         if (library is null)
         {

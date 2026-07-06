@@ -607,18 +607,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
         try
         {
-            var coverArtUrl = $"{CoverArtBaseUrl}/release-group/{releaseGroupId}";
-            await _rateLimiter.WaitAsync(Host, cancellationToken);
-            var response = await _httpClient.GetAsync(coverArtUrl, cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
+            await TryAddCoverArtFromUrlAsync($"{CoverArtBaseUrl}/release-group/{releaseGroupId}", results, cancellationToken);
+            if (results.Count > 0)
                 return results;
 
-            var coverArt = await response.Content.ReadFromJsonAsync<CoverArtResponse>(JsonOptions, cancellationToken);
-            if (coverArt?.Images is null)
-                return results;
-
-            AddCoverArtImages(results, coverArt.Images);
+            await TryAddCoverArtFromUrlAsync($"{CoverArtBaseUrl}/release/{releaseGroupId}", results, cancellationToken);
         }
         catch
         {
@@ -626,6 +619,24 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
 
         return results;
+    }
+
+    private async Task TryAddCoverArtFromUrlAsync(
+        string coverArtUrl,
+        List<ProviderImageDto> results,
+        CancellationToken cancellationToken)
+    {
+        await _rateLimiter.WaitAsync(Host, cancellationToken);
+        var response = await _httpClient.GetAsync(coverArtUrl, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        var coverArt = await response.Content.ReadFromJsonAsync<CoverArtResponse>(JsonOptions, cancellationToken);
+        if (coverArt?.Images is null)
+            return;
+
+        AddCoverArtImages(results, coverArt.Images);
     }
 
     private async Task<IReadOnlyList<ProviderImageDto>> FetchArtistImagesAsync(string artistMbid, CancellationToken cancellationToken)
@@ -682,18 +693,30 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
             var isFront = img.Front == true;
             var thumbUrl = img.Thumbnails?.Large ?? img.Thumbnails?.Small ?? img.Image;
+            var (width, height) = ResolveCoverArtDimensions(img);
 
             results.Add(new ProviderImageDto
             {
                 Url = img.Image,
                 ThumbnailUrl = thumbUrl,
                 Type = MetadataPictureType.Cover,
-                Width = 0,
-                Height = 0,
+                Width = width,
+                Height = height,
                 VoteAverage = isFront ? 10 : 0,
                 Language = null
             });
         }
+    }
+
+    private static (int Width, int Height) ResolveCoverArtDimensions(CoverArtImage image)
+    {
+        if (image.Thumbnails?.Large is not null)
+            return (500, 500);
+
+        if (image.Thumbnails?.Small is not null)
+            return (250, 250);
+
+        return (0, 0);
     }
 
     private record CoverArtResponse
