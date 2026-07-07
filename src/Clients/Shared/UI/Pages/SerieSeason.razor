@@ -221,12 +221,12 @@ else if (_season is not null)
 
                     @if (!string.IsNullOrEmpty(_season.Overview))
                     {
-                        <p class="season-overview overview-clickable focusable"
-                           tabindex="0"
-                           role="button"
-                           @onclick="OpenSeasonOverviewDialogAsync">
-                            @_season.Overview
-                        </p>
+                        <div class="season-overview-wrap overview-clickable focusable"
+                             tabindex="0"
+                             role="button"
+                             @onclick="OpenSeasonOverviewDialogAsync">
+                            <p class="season-overview">@_season.Overview</p>
+                        </div>
                     }
                 </div>
             </div>
