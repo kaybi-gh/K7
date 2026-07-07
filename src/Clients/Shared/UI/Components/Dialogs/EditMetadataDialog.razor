@@ -239,7 +239,7 @@
             <div class="pictures-section">
                 <div class="pictures-grid">
                     <div class="picture-item picture-item--poster">
-                        <img src="@Person.PortraitPicture.GetUri(K7.Server.Domain.Enums.MetadataPictureSize.Small)" alt="Portrait" loading="lazy" />
+                        <img src="@GetPersonPortraitDisplayUrl()" alt="Portrait" loading="lazy" />
                         <span class="picture-type">@MetadataPictureType.Portrait</span>
                         <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
                                       OnClick="@(() => DeletePictureAsync(Person.PortraitPicture.Id))" Title="@L["Delete"]" />

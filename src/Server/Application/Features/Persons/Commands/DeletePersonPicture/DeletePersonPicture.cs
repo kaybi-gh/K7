@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Constants;
 using Microsoft.Extensions.Logging;
 
@@ -14,13 +15,16 @@ public record DeletePersonPictureCommand : IRequest
 public class DeletePersonPictureCommandHandler : IRequestHandler<DeletePersonPictureCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
     private readonly ILogger<DeletePersonPictureCommandHandler> _logger;
 
     public DeletePersonPictureCommandHandler(
         IApplicationDbContext context,
+        MetadataPictureDeletionService pictureDeletionService,
         ILogger<DeletePersonPictureCommandHandler> logger)
     {
         _context = context;
+        _pictureDeletionService = pictureDeletionService;
         _logger = logger;
     }
 
@@ -36,22 +40,7 @@ public class DeletePersonPictureCommandHandler : IRequestHandler<DeletePersonPic
         if (person.PortraitPicture is null)
             return;
 
-        var picture = person.PortraitPicture;
-
-        foreach (var variant in picture.Variants)
-        {
-            if (File.Exists(variant.LocalPath))
-            {
-                File.Delete(variant.LocalPath);
-            }
-        }
-
-        if (picture.LocalPath is not null && File.Exists(picture.LocalPath))
-        {
-            File.Delete(picture.LocalPath);
-        }
-
-        _context.MetadataPictures.Remove(picture);
+        _pictureDeletionService.Remove(person.PortraitPicture);
         person.PortraitPicture = null;
         await _context.SaveChangesAsync(cancellationToken);
 

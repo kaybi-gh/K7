@@ -94,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();
+        services.AddScoped<MetadataPictureDeletionService>();
         services.AddScoped<DiagnosticIssueEntityResolver>();
         services.AddScoped<OrphanIndexedFileFixBuilder>();
         services.AddScoped<DiagnosticFixBatchBuilder>();
