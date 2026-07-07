@@ -1,0 +1,137 @@
+/* Shared hero layout for media detail pages (mobile-first split at 50vh). */
+
+.media-hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1;
+    min-height: 0;
+}
+
+.media-hero-backdrop-zone {
+    flex-shrink: 0;
+}
+
+.media-hero-body {
+    flex-shrink: 0;
+}
+
+.media-hero-scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0.4;
+    animation: media-hero-bounce-hint 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes media-hero-bounce-hint {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+}
+
+@media (max-width: 599.98px) {
+    .movie-page,
+    .serie-page,
+    .person-page,
+    .episode-page {
+        --media-backdrop-height: 50vh;
+        --media-backdrop-height: 50dvh;
+        --media-wash-tint: var(--media-dominant-color, var(--color-accent));
+        --media-wash-color: color-mix(in srgb, var(--media-wash-tint) 24%, var(--color-bg));
+        background: var(--media-wash-color);
+    }
+
+    .media-hero-main {
+        min-height: 100vh;
+        min-height: 100dvh;
+        position: relative;
+        isolation: isolate;
+    }
+
+    /* Wash spans the full hero viewport; fully opaque from 50vh so the backdrop clip is hidden. */
+    .media-hero-main::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 0;
+        background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            transparent 38%,
+            color-mix(in srgb, var(--media-wash-color) 18%, transparent) 42%,
+            color-mix(in srgb, var(--media-wash-color) 45%, transparent) 46%,
+            var(--media-wash-color) 50%,
+            var(--media-wash-color) 100%
+        );
+    }
+
+    .media-hero-main > :not(.media-hero-scroll-hint) {
+        position: relative;
+        z-index: 1;
+    }
+
+    .media-hero-backdrop-zone {
+        height: var(--media-backdrop-height);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        padding: var(--space-4);
+        padding-top: calc(var(--space-10) + env(safe-area-inset-top, 0px));
+        box-sizing: border-box;
+    }
+
+    .media-hero-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        padding: var(--space-4) var(--space-4) var(--space-6);
+        box-sizing: border-box;
+        background: transparent;
+    }
+
+    .media-hero-logo:not(.k7-img-wrap--custom-fallback) {
+        max-width: min(80vw, 320px);
+        max-height: min(24vh, 128px);
+    }
+
+    .media-hero-logo ::deep .k7-img {
+        max-width: min(80vw, 320px);
+        max-height: min(24vh, 128px);
+        object-fit: scale-down;
+        object-position: center bottom;
+    }
+
+    .media-hero-logo.k7-img-wrap--custom-fallback,
+    .media-hero-logo ::deep .k7-img-wrap--custom-fallback {
+        text-align: center;
+        width: 100%;
+    }
+
+    .media-hero-title {
+        margin: 0;
+        text-align: center;
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+    }
+}
+
+@media (min-width: 600px) {
+    .media-hero-backdrop-zone {
+        height: auto;
+        padding: 0;
+        display: block;
+    }
+
+    .media-hero-body {
+        padding: 0;
+        background: transparent;
+    }
+}

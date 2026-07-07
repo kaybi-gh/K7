@@ -45,21 +45,32 @@
     flex-shrink: 0;
 }
 
-.person-hero {
+.person-hero.media-hero {
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     flex: 1;
     min-height: 0;
-    padding: 0 var(--space-10) var(--space-12);
 }
 
-.person-hero-content {
-    display: flex;
-    gap: var(--space-10);
-    align-items: flex-end;
-    max-width: 1100px;
+@media (min-width: 600px) {
+    .person-hero.media-hero {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: var(--space-10);
+        max-width: 1100px;
+        padding: 0 var(--space-10) var(--space-12);
+    }
+
+    .person-hero.media-hero .media-hero-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .person-hero.media-hero .media-hero-backdrop-zone {
+        flex-shrink: 0;
+    }
 }
 
 /* Portrait */
@@ -172,24 +183,6 @@
     overflow: hidden;
 }
 
-/* Scroll hint chevron */
-
-.person-scroll-hint {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    opacity: 0.4;
-    animation: person-bounce-hint 2s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes person-bounce-hint {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(6px); }
-}
-
 /* Carousel section */
 
 ::deep .carousel-wrapper {
@@ -201,12 +194,8 @@
    ============================================================ */
 
 @media (max-width: 960px) {
-    .person-hero {
+    .person-hero.media-hero {
         padding: 0 var(--space-6) var(--space-8);
-    }
-
-    .person-hero-content {
-        gap: var(--space-6);
     }
 
     .person-portrait {
@@ -224,25 +213,18 @@
 
 @media (max-width: 599.98px) {
     .person-main {
-        min-height: 85vh;
         height: auto;
+        min-height: 0;
         overflow: visible;
     }
 
-    .person-hero {
-        padding: var(--space-10) var(--space-4) var(--space-6);
-        justify-content: flex-end;
+    .person-hero.media-hero {
+        padding: 0;
     }
 
-    .person-hero-content {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: var(--space-6);
-    }
-
-    .person-portrait {
-        width: 160px;
+    .person-hero.media-hero .media-hero-backdrop-zone .person-portrait {
+        width: 120px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
     }
 
     .person-info {
@@ -285,7 +267,7 @@
    ============================================================ */
 
 @media (min-width: 1280px) {
-    .person-hero-content {
+    .person-hero.media-hero {
         max-width: 1400px;
         gap: var(--space-12);
     }
@@ -312,11 +294,8 @@
    ============================================================ */
 
 @media (min-width: 1920px) {
-    .person-hero {
+    .person-hero.media-hero {
         padding: 0 var(--space-16) var(--space-16);
-    }
-
-    .person-hero-content {
         max-width: 1800px;
         gap: var(--space-16);
     }
