@@ -8,7 +8,10 @@
     z-index: 1;
     isolation: isolate;
     flex-shrink: 0;
-    padding-bottom: max(var(--space-16), 18vh, var(--k7-safe-bottom, 0px));
+    padding-bottom: max(var(--space-8), var(--k7-safe-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
     background: linear-gradient(
         to bottom,
         transparent 0,
@@ -44,6 +47,7 @@
     flex-direction: column;
     overflow: hidden;
     padding-bottom: 0;
+    gap: 0;
     background: var(--media-content-bottom-color);
 }
 
@@ -65,6 +69,10 @@
 
 /* Layout helper when passed from movie page (parent scoped CSS cannot target this root). */
 .media-page-content.movie-page-content {
+    gap: var(--space-6);
+}
+
+.media-page-content.movie-page-content > div {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);

@@ -161,7 +161,6 @@
 
 ::deep .carousel-wrapper {
     --carousel-margin-start: 40px;
-    padding-bottom: var(--space-6);
 }
 
 @media (max-width: 599.98px) {
