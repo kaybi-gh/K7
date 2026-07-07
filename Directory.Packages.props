@@ -85,8 +85,8 @@
     <PackageVersion Include="MessagePack" Version="3.1.7" />
     <PackageVersion Include="MessagePack.Annotations" Version="3.1.7" />
     <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.11.10" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.0" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.0" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
     <PackageVersion Include="SourceGear.sqlite3" Version="3.50.4.5" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.config.e_sqlite3" Version="3.0.3" />
