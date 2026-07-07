@@ -12,7 +12,7 @@
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-md);
 }
 
 .media-review-card--compact .media-review-card__surface {
