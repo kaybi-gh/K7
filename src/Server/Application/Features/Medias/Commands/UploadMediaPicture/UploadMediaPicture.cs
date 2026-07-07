@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -25,17 +26,23 @@ public class UploadMediaPictureCommandHandler : IRequestHandler<UploadMediaPictu
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
+    private readonly ILibraryNotifier _libraryNotifier;
     private readonly ILogger<UploadMediaPictureCommandHandler> _logger;
 
     public UploadMediaPictureCommandHandler(
         IApplicationDbContext context,
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
+        MetadataPictureDeletionService pictureDeletionService,
+        ILibraryNotifier libraryNotifier,
         ILogger<UploadMediaPictureCommandHandler> logger)
     {
         _context = context;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
+        _pictureDeletionService = pictureDeletionService;
+        _libraryNotifier = libraryNotifier;
         _logger = logger;
     }
 
@@ -45,6 +52,11 @@ public class UploadMediaPictureCommandHandler : IRequestHandler<UploadMediaPictu
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
+
+        await _pictureDeletionService.RemoveMediaPicturesByTypeAsync(
+            request.MediaId,
+            request.PictureType,
+            cancellationToken);
 
         var ext = Path.GetExtension(request.FileName);
         var pictureId = Guid.NewGuid();
@@ -69,6 +81,8 @@ public class UploadMediaPictureCommandHandler : IRequestHandler<UploadMediaPictu
 
         _context.MetadataPictures.Add(picture);
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _libraryNotifier.NotifyMediaPicturesUpdatedAsync(request.MediaId, cancellationToken);
 
         await _sender.Send(new CreateBackgroundTaskCommand
         {

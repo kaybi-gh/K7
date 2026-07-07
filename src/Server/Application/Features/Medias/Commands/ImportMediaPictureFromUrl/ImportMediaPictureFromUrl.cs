@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -25,6 +26,8 @@ public class ImportMediaPictureFromUrlCommandHandler : IRequestHandler<ImportMed
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
+    private readonly ILibraryNotifier _libraryNotifier;
     private readonly ILogger<ImportMediaPictureFromUrlCommandHandler> _logger;
 
     public ImportMediaPictureFromUrlCommandHandler(
@@ -32,12 +35,16 @@ public class ImportMediaPictureFromUrlCommandHandler : IRequestHandler<ImportMed
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
         IHttpClientFactory httpClientFactory,
+        MetadataPictureDeletionService pictureDeletionService,
+        ILibraryNotifier libraryNotifier,
         ILogger<ImportMediaPictureFromUrlCommandHandler> logger)
     {
         _context = context;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
         _httpClientFactory = httpClientFactory;
+        _pictureDeletionService = pictureDeletionService;
+        _libraryNotifier = libraryNotifier;
         _logger = logger;
     }
 
@@ -47,6 +54,11 @@ public class ImportMediaPictureFromUrlCommandHandler : IRequestHandler<ImportMed
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
+
+        await _pictureDeletionService.RemoveMediaPicturesByTypeAsync(
+            request.MediaId,
+            request.PictureType,
+            cancellationToken);
 
         using var httpClient = _httpClientFactory.CreateClient();
         await using var responseStream = await httpClient.GetStreamAsync(request.Url, cancellationToken);
@@ -73,6 +85,8 @@ public class ImportMediaPictureFromUrlCommandHandler : IRequestHandler<ImportMed
 
         _context.MetadataPictures.Add(picture);
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _libraryNotifier.NotifyMediaPicturesUpdatedAsync(request.MediaId, cancellationToken);
 
         await _sender.Send(new CreateBackgroundTaskCommand
         {

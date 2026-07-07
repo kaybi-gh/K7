@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -25,6 +26,7 @@ public class ImportPersonPictureFromUrlCommandHandler : IRequestHandler<ImportPe
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
     private readonly ILogger<ImportPersonPictureFromUrlCommandHandler> _logger;
 
     public ImportPersonPictureFromUrlCommandHandler(
@@ -32,12 +34,14 @@ public class ImportPersonPictureFromUrlCommandHandler : IRequestHandler<ImportPe
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
         IHttpClientFactory httpClientFactory,
+        MetadataPictureDeletionService pictureDeletionService,
         ILogger<ImportPersonPictureFromUrlCommandHandler> logger)
     {
         _context = context;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
         _httpClientFactory = httpClientFactory;
+        _pictureDeletionService = pictureDeletionService;
         _logger = logger;
     }
 
@@ -48,6 +52,9 @@ public class ImportPersonPictureFromUrlCommandHandler : IRequestHandler<ImportPe
             .FirstOrDefaultAsync(p => p.Id == request.PersonId, cancellationToken);
 
         Guard.Against.NotFound(request.PersonId, person);
+
+        await _pictureDeletionService.RemovePersonPortraitAsync(request.PersonId, cancellationToken);
+        person.PortraitPicture = null;
 
         using var httpClient = _httpClientFactory.CreateClient();
         await using var responseStream = await httpClient.GetStreamAsync(request.Url, cancellationToken);

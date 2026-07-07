@@ -281,6 +281,12 @@ public partial class EditMetadataDialog : IDisposable
         return MediaPictureUrlHelper.WithCacheBuster(uri, cacheVersion);
     }
 
+    private string? GetPersonPortraitDisplayUrl(MetadataPictureSize size = MetadataPictureSize.Small)
+    {
+        var uri = Person?.PortraitPicture?.GetUri(size)?.OriginalString;
+        return MediaPictureUrlHelper.WithCacheBuster(uri, _pictureCacheVersion);
+    }
+
     private async Task ReloadMediaFromServerAsync()
     {
         if (Media is null)
@@ -295,6 +301,32 @@ public partial class EditMetadataDialog : IDisposable
         _providerImages = null;
         _selectedProviderImage = null;
         StateHasChanged();
+    }
+
+    private async Task ReloadPersonFromServerAsync()
+    {
+        if (Person is null)
+            return;
+
+        var fresh = await MediaService.GetPersonAsync(Person.Id);
+        if (fresh is null)
+            return;
+
+        Person = fresh;
+        InitFromPerson(fresh);
+        _providerImages = null;
+        _selectedProviderImage = null;
+        StateHasChanged();
+    }
+
+    private async Task ReloadPicturesAsync()
+    {
+        _pictureCacheVersion = DateTimeOffset.UtcNow;
+
+        if (_isPersonMode)
+            await ReloadPersonFromServerAsync();
+        else
+            await ReloadMediaFromServerAsync();
     }
 
     public void Dispose()
@@ -413,6 +445,7 @@ public partial class EditMetadataDialog : IDisposable
 
             _selectedProviderImage = null;
             Snackbar.Add(L["PictureUploaded"].Value, K7Severity.Success);
+            await ReloadPicturesAsync();
         }
         catch (Exception ex)
         {
@@ -457,6 +490,7 @@ public partial class EditMetadataDialog : IDisposable
 
             _pictureFile = null;
             Snackbar.Add(L["PictureUploaded"].Value, K7Severity.Success);
+            await ReloadPicturesAsync();
         }
         catch (Exception ex)
         {
@@ -483,6 +517,7 @@ public partial class EditMetadataDialog : IDisposable
             }
 
             Snackbar.Add(L["PictureDeleted"].Value, K7Severity.Success);
+            await ReloadPicturesAsync();
         }
         catch (Exception ex)
         {

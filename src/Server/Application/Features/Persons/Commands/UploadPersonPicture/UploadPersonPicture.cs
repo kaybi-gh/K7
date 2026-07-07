@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -25,17 +26,20 @@ public class UploadPersonPictureCommandHandler : IRequestHandler<UploadPersonPic
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
     private readonly ILogger<UploadPersonPictureCommandHandler> _logger;
 
     public UploadPersonPictureCommandHandler(
         IApplicationDbContext context,
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
+        MetadataPictureDeletionService pictureDeletionService,
         ILogger<UploadPersonPictureCommandHandler> logger)
     {
         _context = context;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
+        _pictureDeletionService = pictureDeletionService;
         _logger = logger;
     }
 
@@ -46,6 +50,9 @@ public class UploadPersonPictureCommandHandler : IRequestHandler<UploadPersonPic
             .FirstOrDefaultAsync(p => p.Id == request.PersonId, cancellationToken);
 
         Guard.Against.NotFound(request.PersonId, person);
+
+        await _pictureDeletionService.RemovePersonPortraitAsync(request.PersonId, cancellationToken);
+        person.PortraitPicture = null;
 
         var ext = Path.GetExtension(request.FileName);
         var pictureId = Guid.NewGuid();
