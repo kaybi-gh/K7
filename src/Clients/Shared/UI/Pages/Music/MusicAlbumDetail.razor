@@ -12,8 +12,11 @@
 
 @if (_album is not null)
 {
-    <div class="album-detail-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _coverDominantColor)">
-        <MusicAmbientWash DominantColor="@_coverDominantColor" />
+    <MediaPageContent Class="album-detail-wash"
+                      FullWash="true"
+                      DominantColor="@_coverDominantColor"
+                      Tinted="@(_coverDominantColor is not null)">
+        <div class="album-detail-page">
         <K7BackButton />
 
         <div class="album-header">
@@ -236,7 +239,8 @@
                 <MediaReviewsSection @ref="_reviewsSection" MediaId="_album.Id" />
             </div>
         </div>
-    </div>
+        </div>
+    </MediaPageContent>
 }
 else if (_loading)
 {
