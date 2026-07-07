@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="media-page-content @(Tinted ? "media-page-content--tinted" : "") @Class"
+<div class="media-page-content @(Tinted ? "media-page-content--tinted" : "") @(FullWash ? "media-page-content--full-wash" : "") @Class"
      style="@StyleAttribute">
     @ChildContent
 </div>
