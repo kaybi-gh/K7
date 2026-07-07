@@ -223,7 +223,7 @@
     }
 
     .person-hero.media-hero .media-hero-backdrop-zone .person-portrait {
-        width: 120px;
+        width: 50vw;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
     }
 
