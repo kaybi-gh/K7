@@ -20,7 +20,8 @@ public partial class Person : IDisposable
     private PersonDto? _person;
     private const string PersonPlaceholderSrc = "_content/K7.Clients.Shared.UI/images/person-placeholder.png";
     private string? _portraitUrl;
-    private List<string> _backdropUrls = [];
+    private string? _previousBackdropUrl;
+    private readonly List<PersonBackdropSlide> _backdrops = [];
     private List<MediaCardViewModel> _medias = [];
     private List<MediaCardViewModel> _discography = [];
     private List<PersonKnownForItemDto> _knownFor = [];
@@ -32,6 +33,12 @@ public partial class Person : IDisposable
     private bool _canSetWatchState;
     private bool _isAdmin;
     private ElementReference _scrollRoot;
+
+    private bool HasBelowContent => _discography.Count > 0 || _medias.Count > 0 || _knownFor.Count > 0;
+
+    private string? ActiveBackdropUrl => _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].Url : null;
+
+    private string? ActiveDominantColor => _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].DominantColor : null;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
@@ -62,13 +69,13 @@ public partial class Person : IDisposable
 
         foreach (var role in _person.Roles)
         {
-            if (seenMedia.Add(role.MediaId) && _backdropUrls.Count < 5)
+            if (seenMedia.Add(role.MediaId) && _backdrops.Count < 5)
             {
-                var backdropUri = role.Media?.Pictures
-                    ?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
-                    ?.GetUri(MetadataPictureSize.Medium)?.OriginalString;
+                var backdropPicture = role.Media?.Pictures
+                    ?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+                var backdropUri = backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString;
                 if (apiClient.GetAbsoluteUri(backdropUri)?.AbsoluteUri is { } url)
-                    _backdropUrls.Add(url);
+                    _backdrops.Add(new PersonBackdropSlide(url, backdropPicture?.DominantColor));
             }
 
             AddFilmographyRole(role, seenSeries);
@@ -118,11 +125,12 @@ public partial class Person : IDisposable
 
         _discography.Sort((a, b) => string.Compare(b.AdditionalInformations, a.AdditionalInformations, StringComparison.Ordinal));
 
-        if (_backdropUrls.Count > 1)
+        if (_backdrops.Count > 1)
         {
             _backdropTimer = new Timer(async _ =>
             {
-                _activeBackdropIndex = (_activeBackdropIndex + 1) % _backdropUrls.Count;
+                _previousBackdropUrl = _backdrops[_activeBackdropIndex].Url;
+                _activeBackdropIndex = (_activeBackdropIndex + 1) % _backdrops.Count;
                 await InvokeAsync(StateHasChanged);
             }, null, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(6));
         }
@@ -232,10 +240,10 @@ public partial class Person : IDisposable
         var coverUri = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
             ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
 
-        if (_backdropUrls.Count < 5
+        if (_backdrops.Count < 5
             && apiClient.GetAbsoluteUri(coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is { } coverUrl)
         {
-            _backdropUrls.Add(coverUrl);
+            _backdrops.Add(new PersonBackdropSlide(coverUrl, coverUri?.DominantColor));
         }
 
         _discography.Add(new MediaCardViewModel
@@ -294,4 +302,6 @@ public partial class Person : IDisposable
     }
 
     public void Dispose() => _backdropTimer?.Dispose();
+
+    private readonly record struct PersonBackdropSlide(string Url, string? DominantColor);
 }

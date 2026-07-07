@@ -22,20 +22,13 @@
 }
 else if (_person is not null)
 {
-    <div @ref="_scrollRoot" class="person-page">
-        @if (_backdropUrls.Count > 0)
-        {
-            <div class="person-backdrops">
-                @for (int i = 0; i < _backdropUrls.Count; i++)
-                {
-                    var idx = i;
-                    <div class="person-backdrop @(idx == _activeBackdropIndex ? "person-backdrop--active" : "")"
-                         style="background-image: url('@_backdropUrls[idx]')" />
-                }
-            </div>
-        }
-
-        <MediaPageBackdrop ScrollTarget="@_scrollRoot" />
+    <div @ref="_scrollRoot"
+         class="person-page"
+         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)">
+        <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
+                           SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
+                           SecondaryImageKey="@ActiveBackdropUrl"
+                           ScrollTarget="@_scrollRoot" />
 
         <div class="person-main">
             <K7BackButton />
@@ -111,7 +104,7 @@ else if (_person is not null)
                 </div>
             </div>
 
-            @if (_discography.Count > 0 || _medias.Count > 0)
+            @if (HasBelowContent)
             {
                 <div class="person-scroll-hint" aria-hidden="true">
                     <K7Icon Icon="@Phosphor.CaretDown" />
@@ -119,9 +112,10 @@ else if (_person is not null)
             }
         </div>
 
-        @if (_discography.Count > 0 || _medias.Count > 0)
+        @if (HasBelowContent)
         {
-            <MediaPageContent>
+            <MediaPageContent Class="person-page-content"
+                              Tinted="@(ActiveDominantColor is not null)">
             <div class="person-content">
                 @if (_discography.Count > 0)
                 {
