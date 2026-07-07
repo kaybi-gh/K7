@@ -34,6 +34,11 @@ internal static class CatalogMediaAvailabilityHelper
                 || HasLocalFiles(episode.IndexedFiles)
                 || episode.Serie is Serie parentSerie && HasPlayableFiles(parentSerie, excludedLibraryIds),
             MusicTrack track => track.RemoteIndexedFiles.Count > 0 || HasLocalFiles(track.IndexedFiles),
+            MusicArtist artist => artist.Albums.Any(a => HasPlayableFiles(a, excludedLibraryIds))
+                || artist.ArtistCredits.Any(c =>
+                    c.Media is MusicTrack track && (
+                        HasPlayableFiles(track, excludedLibraryIds)
+                        || track.Album is MusicAlbum album && HasPlayableFiles(album, excludedLibraryIds))),
             _ => media.RemoteIndexedFiles.Count > 0 || HasLocalFiles(media.IndexedFiles)
         };
     }

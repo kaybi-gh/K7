@@ -12,7 +12,28 @@ internal static class PersonRoleAvailabilityHelper
         var playableRoles = roles
             .Where(r => r.Media is not null && CatalogMediaAvailabilityHelper.HasPlayableFiles(r.Media, excludedLibraryIds));
 
-        return DedupeByMediaIdentity(playableRoles);
+        var result = DedupeByMediaIdentity(playableRoles);
+
+        foreach (var role in result)
+        {
+            if (role.Media is MusicArtist artist)
+                TrimMusicArtistCollections(artist, excludedLibraryIds);
+        }
+
+        return result;
+    }
+
+    private static void TrimMusicArtistCollections(MusicArtist artist, IReadOnlySet<Guid>? excludedLibraryIds)
+    {
+        artist.Albums = artist.Albums
+            .Where(a => CatalogMediaAvailabilityHelper.HasPlayableFiles(a, excludedLibraryIds))
+            .ToList();
+
+        artist.ArtistCredits = artist.ArtistCredits
+            .Where(c => c.Media is MusicTrack track && (
+                CatalogMediaAvailabilityHelper.HasPlayableFiles(track, excludedLibraryIds)
+                || track.Album is MusicAlbum album && CatalogMediaAvailabilityHelper.HasPlayableFiles(album, excludedLibraryIds)))
+            .ToList();
     }
 
     private static List<BasePersonRole> DedupeByMediaIdentity(IEnumerable<BasePersonRole> roles)

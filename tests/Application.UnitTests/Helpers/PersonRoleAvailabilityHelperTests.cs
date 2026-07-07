@@ -60,6 +60,40 @@ public class CatalogMediaAvailabilityHelperTests
 
         CatalogMediaAvailabilityHelper.HasPlayableFiles(serie).Should().BeTrue();
     }
+
+    [Test]
+    public void HasPlayableFiles_ShouldReturnTrue_WhenMusicArtistHasAlbumWithPlayableTrack()
+    {
+        var artist = new MusicArtist
+        {
+            Albums =
+            [
+                new MusicAlbum
+                {
+                    Tracks =
+                    [
+                        new MusicTrack
+                        {
+                            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        CatalogMediaAvailabilityHelper.HasPlayableFiles(artist).Should().BeTrue();
+    }
+
+    [Test]
+    public void HasPlayableFiles_ShouldReturnFalse_WhenMusicArtistHasOnlyEmptyAlbums()
+    {
+        var artist = new MusicArtist
+        {
+            Albums = [new MusicAlbum { Tracks = [new MusicTrack()] }]
+        };
+
+        CatalogMediaAvailabilityHelper.HasPlayableFiles(artist).Should().BeFalse();
+    }
 }
 
 public class PersonRoleAvailabilityHelperTests
@@ -128,5 +162,48 @@ public class PersonRoleAvailabilityHelperTests
         var filtered = PersonRoleAvailabilityHelper.FilterPlayableRoles(roles);
 
         filtered.Should().ContainSingle();
+    }
+
+    [Test]
+    public void FilterPlayableRoles_ShouldKeepMusicArtistRole_WhenAlbumTracksArePlayable()
+    {
+        var personId = Guid.NewGuid();
+        var roles = new List<BasePersonRole>
+        {
+            new MusicArtistMember
+            {
+                PersonId = personId,
+                Media = new MusicArtist
+                {
+                    Title = "Artist",
+                    Albums =
+                    [
+                        new MusicAlbum
+                        {
+                            Title = "Playable Album",
+                            Tracks =
+                            [
+                                new MusicTrack
+                                {
+                                    IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                                }
+                            ]
+                        },
+                        new MusicAlbum
+                        {
+                            Title = "Empty Album",
+                            Tracks = [new MusicTrack()]
+                        }
+                    ]
+                }
+            }
+        };
+
+        var filtered = PersonRoleAvailabilityHelper.FilterPlayableRoles(roles);
+
+        filtered.Should().ContainSingle();
+        var artist = (MusicArtist)filtered[0].Media!;
+        artist.Albums.Should().ContainSingle();
+        artist.Albums[0].Title.Should().Be("Playable Album");
     }
 }
