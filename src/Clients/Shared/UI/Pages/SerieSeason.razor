@@ -21,10 +21,8 @@
 
 @if (_loading)
 {
-    <div class="season-page">
-        <div class="d-flex flex-col pa-16">
-            <K7Spinner />
-        </div>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
     </div>
 }
 else if (_season is not null && _isTv)
@@ -137,12 +135,11 @@ else if (_season is not null && _isTv)
 }
 else if (_season is not null)
 {
-    <div @ref="_seasonScrollRoot" class="season-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
-        <MediaPageBackdrop ImageUrl="@_backdropUrl"
-                           DominantColor="@_dominantColor"
-                           ScrollTarget="@_seasonScrollRoot" />
-
-        <div class="season-main">
+    <MediaPageContent Class="season-detail-wash"
+                      FullWash="true"
+                      DominantColor="@_dominantColor"
+                      Tinted="@(_dominantColor is not null)">
+        <div class="season-detail-page">
             <K7BackButton />
 
             <div class="season-header">
@@ -233,20 +230,20 @@ else if (_season is not null)
                     }
                 </div>
             </div>
-        </div>
 
-        <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor" Class="season-episodes">
-            @foreach (var episode in _episodes)
-            {
-                <div id="ep-@episode.EpisodeNumber">
-                    <EpisodeListItem @key="episode.Id"
-                                     Episode="episode"
-                                     StillUrl="@GetEpisodeStillUrl(episode)"
-                                     Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
-                                     OnPlay="PlayEpisodeAsync"
-                                     OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
-                </div>
-            }
-        </MediaPageContent>
-    </div>
+            <div class="season-episodes">
+                @foreach (var episode in _episodes)
+                {
+                    <div id="ep-@episode.EpisodeNumber">
+                        <EpisodeListItem @key="episode.Id"
+                                         Episode="episode"
+                                         StillUrl="@GetEpisodeStillUrl(episode)"
+                                         Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
+                                         OnPlay="PlayEpisodeAsync"
+                                         OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
+                    </div>
+                }
+            </div>
+        </div>
+    </MediaPageContent>
 }

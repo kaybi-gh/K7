@@ -42,7 +42,6 @@ public partial class SerieSeason : IAsyncDisposable
     private string? _previousStillUrl;
     private Carousel? _tvCarousel;
     private ElementReference _seasonTvRoot;
-    private ElementReference _seasonScrollRoot;
     private bool _seasonTvScrollInitialized;
     private bool _isFederated;
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
