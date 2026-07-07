@@ -3,6 +3,7 @@ using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
@@ -27,6 +28,7 @@ public partial class SearchPage
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private bool _canTrackProgress;
     private bool _canExclude;
@@ -49,16 +51,29 @@ public partial class SearchPage
         if (!string.IsNullOrWhiteSpace(QueryParam) && QueryParam != _query)
         {
             _query = QueryParam;
-            await SearchAsync(_query);
+            if (_query.Length >= 2)
+                await SearchAsync(_query);
+            else
+                _result = null;
         }
     }
+
     private async Task OnQueryDebounced(string? value)
     {
         _query = value;
+        SyncQueryToUrl();
         if (!string.IsNullOrWhiteSpace(_query) && _query.Length >= 2)
             await SearchAsync(_query);
         else
             _result = null;
+    }
+
+    private void SyncQueryToUrl()
+    {
+        PageFilterUrlSync.SetQuery(Navigation, new Dictionary<string, string?>
+        {
+            ["q"] = string.IsNullOrWhiteSpace(_query) ? null : _query
+        });
     }
 
     private async Task SearchAsync(string query)

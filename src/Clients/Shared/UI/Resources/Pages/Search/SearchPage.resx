@@ -22,7 +22,7 @@
   <data name="PageTitle" xml:space="preserve"><value>Recherche</value></data>
   <data name="Medias" xml:space="preserve"><value>Médias</value></data>
   <data name="Persons" xml:space="preserve"><value>Personnes</value></data>
-  <data name="Characters" xml:space="preserve"><value>Personnages</value></data>
+  <data name="Roles" xml:space="preserve"><value>Rôles</value></data>
   <data name="All" xml:space="preserve"><value>Tout</value></data>
   <data name="NoResults" xml:space="preserve"><value>Aucun résultat pour "{0}"</value></data>
   <data name="TypeHint" xml:space="preserve"><value>Rechercher un titre, une personne ou un personnage...</value></data>
