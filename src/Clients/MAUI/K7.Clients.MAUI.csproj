@@ -32,7 +32,7 @@
 
     <!-- Versions (ApplicationDisplayVersion = semver; ApplicationVersion = Android/iOS build number) -->
     <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
-    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Minor), 100))), $([MSBuild]::Max(0, $([System.Version]::Parse('$(Version)').Build)))))</ApplicationVersion>
+    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Minor), 100)))), $([System.Version]::Parse('$(Version)').Build)))</ApplicationVersion>
 
     <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
     <WindowsPackageType>None</WindowsPackageType>
