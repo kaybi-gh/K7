@@ -222,6 +222,7 @@
 .carousel-container:has(.personrole-item) .carousel-loop-back__image {
     border-radius: 50%;
     border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-md);
 }
 
 .carousel-loop-back__image {
