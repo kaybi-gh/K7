@@ -4,8 +4,8 @@ var _instances = new Map();
 var scrollFadeDistance = 1000;
 
 export function attachScrollFade(scrollRoot, backdropEl) {
-    if (!scrollRoot || !backdropEl) {
-        return { dispose: function () {} };
+    if (!scrollRoot || !backdropEl || typeof scrollRoot.addEventListener !== 'function') {
+        return false;
     }
 
     function onScroll() {
@@ -17,21 +17,18 @@ export function attachScrollFade(scrollRoot, backdropEl) {
     onScroll();
     _instances.set(backdropEl, { scrollRoot: scrollRoot, onScroll: onScroll });
 
-    return {
-        dispose: function () {
-            var instance = _instances.get(backdropEl);
-            if (instance) {
-                instance.scrollRoot.removeEventListener('scroll', instance.onScroll);
-                _instances.delete(backdropEl);
-            }
-        }
-    };
+    return true;
 }
 
 export function dispose(backdropEl) {
     var instance = _instances.get(backdropEl);
-    if (instance) {
-        instance.scrollRoot.removeEventListener('scroll', instance.onScroll);
-        _instances.delete(backdropEl);
+    if (!instance) {
+        return;
     }
+
+    if (instance.scrollRoot && typeof instance.scrollRoot.removeEventListener === 'function') {
+        instance.scrollRoot.removeEventListener('scroll', instance.onScroll);
+    }
+
+    _instances.delete(backdropEl);
 }
