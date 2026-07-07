@@ -99,19 +99,21 @@
     }
 
     .media-hero-logo:not(.k7-img-wrap--custom-fallback) {
+        flex-shrink: 0;
+        width: min(80vw, 320px);
         max-width: min(80vw, 320px);
-        max-height: min(24vh, 128px);
     }
 
-    .media-hero-logo ::deep .k7-img {
-        max-width: min(80vw, 320px);
+    .media-hero-logo .k7-img {
+        display: block;
+        width: min(80vw, 320px);
+        height: auto;
         max-height: min(24vh, 128px);
         object-fit: scale-down;
         object-position: center bottom;
     }
 
-    .media-hero-logo.k7-img-wrap--custom-fallback,
-    .media-hero-logo ::deep .k7-img-wrap--custom-fallback {
+    .media-hero-logo.k7-img-wrap--custom-fallback {
         text-align: center;
         width: 100%;
     }

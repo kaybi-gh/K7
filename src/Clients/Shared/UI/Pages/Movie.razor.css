@@ -294,4 +294,8 @@
     ::deep .carousel-wrapper {
         --carousel-margin-start: 16px;
     }
+
+    .movie-tagline {
+        display: none;
+    }
 }
