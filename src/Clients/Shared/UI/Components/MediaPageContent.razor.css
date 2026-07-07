@@ -6,6 +6,7 @@
     --media-content-bottom-vignette: color-mix(in srgb, var(--color-drawer) 72%, transparent);
     position: relative;
     z-index: 1;
+    isolation: isolate;
     flex-shrink: 0;
     padding-bottom: max(var(--space-16), 18vh, var(--k7-safe-bottom, 0px));
     background: linear-gradient(
@@ -22,7 +23,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
     background: radial-gradient(
         ellipse 300% 50% at 50% 100%,
         var(--media-content-bottom-vignette) 0%,
@@ -33,15 +34,33 @@
 .media-page-content--tinted {
     --media-content-top-color: color-mix(in srgb, var(--media-content-tint) 24%, var(--color-bg));
     --media-content-bottom-color: var(--media-content-top-color);
+    --media-content-bottom-vignette: color-mix(in srgb, var(--media-content-top-color) 62%, var(--color-drawer));
+}
+
+.media-page-content--full-wash {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
+    background: var(--media-content-bottom-color);
+}
+
+.media-page-content--full-wash::after {
+    background: radial-gradient(
+        ellipse 280% 42% at 50% 100%,
+        color-mix(in srgb, var(--media-content-bottom-vignette) 82%, transparent) 0%,
+        transparent 44%
+    );
 }
 
 :global([data-theme="default-light"]) .media-page-content {
     --media-content-bottom-vignette: color-mix(in srgb, var(--color-surface) 82%, white);
 }
 
-.media-page-content > * {
-    position: relative;
-    z-index: 1;
+:global([data-theme="default-light"]) .media-page-content--tinted {
+    --media-content-bottom-vignette: color-mix(in srgb, var(--media-content-top-color) 68%, white);
 }
 
 /* Layout helper when passed from movie page (parent scoped CSS cannot target this root). */
@@ -52,7 +71,14 @@
 }
 
 @media (max-width: 599.98px) {
-    .media-page-content {
-        --media-content-fade-height: 128px;
+    .media-page-content:not(.media-page-content--full-wash) {
+        --media-content-fade-height: 192px;
+        background: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--media-content-top-color) 30%, transparent) 0%,
+            color-mix(in srgb, var(--media-content-top-color) 65%, transparent) 30%,
+            var(--media-content-top-color) var(--media-content-fade-height),
+            var(--media-content-bottom-color) 100%
+        );
     }
 }

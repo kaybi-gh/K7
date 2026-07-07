@@ -12,6 +12,9 @@ public partial class MediaPageContent
     public bool Tinted { get; set; }
 
     [Parameter]
+    public bool FullWash { get; set; }
+
+    [Parameter]
     public string? DominantColor { get; set; }
 
     [Parameter]
