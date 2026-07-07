@@ -75,17 +75,21 @@
     align-items: center;
 }
 
+.season-overview-wrap {
+    max-width: 700px;
+}
+
 .season-overview {
     margin: 0;
     opacity: 0.85;
     line-height: 1.6;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 0.9rem;
     color: var(--color-text-secondary);
-    max-width: 700px;
 }
 
 .season-episodes {
