@@ -9,8 +9,11 @@
 <PageTitle>@_artist?.Title</PageTitle>
 @if (_artist is not null)
 {
-    <div class="artist-detail-page" style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _portraitDominantColor)">
-        <MusicAmbientWash DominantColor="@_portraitDominantColor" />
+    <MediaPageContent Class="artist-detail-wash"
+                      FullWash="true"
+                      DominantColor="@_portraitDominantColor"
+                      Tinted="@(_portraitDominantColor is not null)">
+        <div class="artist-detail-page">
         <K7BackButton />
 
         <div class="artist-hero-viewport">
@@ -85,6 +88,7 @@
                     </div>
                 </div>
             </div>
+        </div>
 
             @if (_topTracks.Count > 0)
             {
@@ -166,9 +170,8 @@
                     </Carousel>
                 </div>
             }
-
         </div>
-    </div>
+    </MediaPageContent>
 }
 else if (_loading)
 {

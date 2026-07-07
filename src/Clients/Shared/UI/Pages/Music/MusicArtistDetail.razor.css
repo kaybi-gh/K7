@@ -2,19 +2,25 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    gap: var(--space-6);
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-bottom: max(var(--space-8), var(--k7-safe-bottom, 0px));
+}
+
+::deep .artist-detail-wash {
+    height: 100%;
 }
 
 .artist-hero-viewport {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
-    min-height: 100%;
     flex-shrink: 0;
-    padding-bottom: var(--space-6);
 }
 
 .artist-hero {
@@ -215,7 +221,6 @@
     }
 
     .artist-hero-viewport {
-        gap: var(--space-8);
-        padding-bottom: var(--space-8);
+        flex-shrink: 0;
     }
 }
