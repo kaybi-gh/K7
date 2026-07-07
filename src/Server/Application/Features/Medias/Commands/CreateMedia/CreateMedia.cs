@@ -86,14 +86,31 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var existingExternalId = await _context.ExternalIds
             .Include(x => x.Media)
                 .ThenInclude(x => x!.IndexedFiles)
-            .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId
+                && x.ProviderName == library.MetadataProviderName
+                && x.Media is Movie, cancellationToken);
 
-        if (existingExternalId?.Media is not null)
+        if (existingExternalId?.Media is Movie existingMovie)
         {
-            foreach (var file in indexedFiles.Where(f => existingExternalId.Media.IndexedFiles.All(i => i.Id != f.Id)))
-                existingExternalId.Media.IndexedFiles.Add(file);
-            await _context.SaveChangesAsync(cancellationToken);
-            return existingExternalId.Media.Id;
+            await AttachMovieIndexedFilesAsync(existingMovie, indexedFiles, cancellationToken);
+            return existingMovie.Id;
+        }
+
+        var identification = primaryFile.Identification;
+        if (identification?.Title is not null)
+        {
+            var existingByTitle = await _context.Medias
+                .OfType<Movie>()
+                .Include(m => m.IndexedFiles)
+                .FirstOrDefaultAsync(m =>
+                    m.Title == identification.Title
+                    && m.ReleaseDate == identification.ReleaseYear, cancellationToken);
+
+            if (existingByTitle is not null)
+            {
+                await AttachMovieIndexedFilesAsync(existingByTitle, indexedFiles, cancellationToken);
+                return existingByTitle.Id;
+            }
         }
 
         foreach (var file in indexedFiles.Where(f => _context.Entry(f).State == EntityState.Detached))
@@ -127,6 +144,17 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }, cancellationToken);
 
         return movie.Id;
+    }
+
+    private async Task AttachMovieIndexedFilesAsync(
+        Movie movie,
+        List<IndexedFile> indexedFiles,
+        CancellationToken cancellationToken)
+    {
+        foreach (var file in indexedFiles.Where(f => movie.IndexedFiles.All(i => i.Id != f.Id)))
+            movie.IndexedFiles.Add(file);
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Guid> HandleMusicAlbumAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)

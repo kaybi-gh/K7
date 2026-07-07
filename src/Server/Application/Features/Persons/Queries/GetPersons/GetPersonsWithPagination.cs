@@ -40,10 +40,27 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
 
             query = query.Where(p => p.Roles.Any(r =>
                 (roleFilter == null || roleFilter.Count == 0 || roleFilter.Contains(r.Type)) &&
-                (r.Media is MusicAlbum
-                    ? ((MusicAlbum)r.Media).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-            ));
+                (
+                    r.Media!.RemoteIndexedFiles.Any()
+                    || (r.Media is MusicAlbum
+                        ? ((MusicAlbum)r.Media).Tracks.Any(t =>
+                            t.RemoteIndexedFiles.Any()
+                            || t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                        : r.Media is Serie
+                            ? ((Serie)r.Media).Seasons.Any(s => s.Episodes.Any(e =>
+                                e.RemoteIndexedFiles.Any()
+                                || e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
+                            : r.Media is SerieEpisode
+                                ? ((SerieEpisode)r.Media).RemoteIndexedFiles.Any()
+                                    || ((SerieEpisode)r.Media).IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                                    || ((SerieEpisode)r.Media).Serie!.Seasons.Any(s => s.Episodes.Any(e =>
+                                        e.RemoteIndexedFiles.Any()
+                                        || e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
+                                : r.Media is MusicTrack
+                                    ? ((MusicTrack)r.Media).RemoteIndexedFiles.Any()
+                                        || ((MusicTrack)r.Media).IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                )));
         }
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);

@@ -1,3 +1,4 @@
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 
 namespace K7.Server.Application.Helpers;
@@ -13,4 +14,27 @@ internal static class CatalogMediaAvailabilityHelper
                     ? x.RemoteIndexedFiles.Any()
                         || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any() || e.RemoteIndexedFiles.Any()))
                     : x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
+
+    internal static bool HasPlayableFiles(BaseMedia media, IReadOnlySet<Guid>? excludedLibraryIds = null)
+    {
+        bool FileAllowed(IndexedFile file) =>
+            excludedLibraryIds is null || !excludedLibraryIds.Contains(file.LibraryId);
+
+        bool HasLocalFiles(IEnumerable<IndexedFile> files) =>
+            files.Any(FileAllowed);
+
+        return media switch
+        {
+            MusicAlbum album => album.RemoteIndexedFiles.Count > 0
+                || album.Tracks.Any(t => t.RemoteIndexedFiles.Count > 0 || HasLocalFiles(t.IndexedFiles)),
+            Serie serie => serie.RemoteIndexedFiles.Count > 0
+                || serie.Seasons.Any(s => s.Episodes.Any(e =>
+                    e.RemoteIndexedFiles.Count > 0 || HasLocalFiles(e.IndexedFiles))),
+            SerieEpisode episode => episode.RemoteIndexedFiles.Count > 0
+                || HasLocalFiles(episode.IndexedFiles)
+                || episode.Serie is Serie parentSerie && HasPlayableFiles(parentSerie, excludedLibraryIds),
+            MusicTrack track => track.RemoteIndexedFiles.Count > 0 || HasLocalFiles(track.IndexedFiles),
+            _ => media.RemoteIndexedFiles.Count > 0 || HasLocalFiles(media.IndexedFiles)
+        };
+    }
 }
