@@ -62,23 +62,66 @@
 }
 
 @media (max-width: 599.98px) {
-    .media-page-backdrop__scrim-side {
-        background: linear-gradient(
-            to right,
-            rgba(0, 0, 0, 0.74) 0%,
-            rgba(0, 0, 0, 0.42) 30%,
-            rgba(0, 0, 0, 0.12) 55%,
-            transparent 80%
+    .media-page-backdrop__image {
+        -webkit-mask-image: radial-gradient(
+            ellipse 168% 72% at 50% 36%,
+            #000 0%,
+            #000 42%,
+            rgba(0, 0, 0, 0.72) 54%,
+            rgba(0, 0, 0, 0.28) 64%,
+            transparent 76%
         );
+        mask-image: radial-gradient(
+            ellipse 168% 72% at 50% 36%,
+            #000 0%,
+            #000 42%,
+            rgba(0, 0, 0, 0.72) 54%,
+            rgba(0, 0, 0, 0.28) 64%,
+            transparent 76%
+        );
+        mask-size: 100% 100%;
+        mask-repeat: no-repeat;
+    }
+
+    .media-page-backdrop__scrim-side {
+        background:
+            linear-gradient(to right, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.22) 12%, transparent 26%),
+            linear-gradient(to left, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.22) 12%, transparent 26%);
     }
 
     .media-page-backdrop__scrim-bottom {
-        background: linear-gradient(
-            to top,
-            rgba(0, 0, 0, 0.68) 0%,
-            rgba(0, 0, 0, 0.34) 26%,
-            rgba(0, 0, 0, 0.1) 48%,
-            transparent 70%
+        background:
+            radial-gradient(
+                ellipse 168% 68% at 50% 100%,
+                rgba(0, 0, 0, 0.88) 0%,
+                rgba(0, 0, 0, 0.52) 38%,
+                rgba(0, 0, 0, 0.16) 58%,
+                transparent 72%
+            ),
+            linear-gradient(
+                to top,
+                rgba(0, 0, 0, 0.72) 0%,
+                rgba(0, 0, 0, 0.28) 34%,
+                transparent 58%
+            );
+    }
+
+    .media-page-backdrop::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+        background: radial-gradient(
+            ellipse 168% 70% at 50% 100%,
+            color-mix(in srgb, var(--media-dominant-color, transparent) 34%, var(--color-bg)) 0%,
+            color-mix(in srgb, var(--media-dominant-color, transparent) 18%, var(--color-bg)) 32%,
+            color-mix(in srgb, var(--media-dominant-color, transparent) 6%, transparent) 52%,
+            transparent 68%
         );
+    }
+
+    .media-page-backdrop__scroll-fade {
+        z-index: 2;
     }
 }

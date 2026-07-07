@@ -41,11 +41,12 @@ public partial class MediaPageBackdrop : IAsyncDisposable
         if (!ScrollFadeEnabled || _scrollAttached)
             return;
 
-        _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
             "import", "./_content/K7.Clients.Shared.UI/js/mediaPageBackdrop.js");
 
-        await _module.InvokeVoidAsync("attachScrollFade", ScrollTarget, _rootRef);
-        _scrollAttached = true;
+        var attached = await _module.InvokeAsync<bool>("attachScrollFade", ScrollTarget, _rootRef);
+        if (attached)
+            _scrollAttached = true;
     }
 
     public async ValueTask DisposeAsync()
