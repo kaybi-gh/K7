@@ -35,11 +35,23 @@ internal static class CatalogMediaAvailabilityHelper
                 || episode.Serie is Serie parentSerie && HasPlayableFiles(parentSerie, excludedLibraryIds),
             MusicTrack track => track.RemoteIndexedFiles.Count > 0 || HasLocalFiles(track.IndexedFiles),
             MusicArtist artist => artist.Albums.Any(a => HasPlayableFiles(a, excludedLibraryIds))
-                || artist.ArtistCredits.Any(c =>
-                    c.Media is MusicTrack track && (
-                        HasPlayableFiles(track, excludedLibraryIds)
-                        || track.Album is MusicAlbum album && HasPlayableFiles(album, excludedLibraryIds))),
+                || artist.ArtistCredits.Any(c => IsArtistCreditPlayable(artist, c, excludedLibraryIds)),
             _ => media.RemoteIndexedFiles.Count > 0 || HasLocalFiles(media.IndexedFiles)
         };
+    }
+
+    internal static bool IsArtistCreditPlayable(
+        MusicArtist artist,
+        MusicArtistCredit credit,
+        IReadOnlySet<Guid>? excludedLibraryIds = null)
+    {
+        if (credit.Media is not MusicTrack track)
+            return false;
+
+        if (HasPlayableFiles(track, excludedLibraryIds))
+            return true;
+
+        var album = artist.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
+        return album is not null && HasPlayableFiles(album, excludedLibraryIds);
     }
 }
