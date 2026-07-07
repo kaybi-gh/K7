@@ -243,6 +243,10 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
 .k7-avatar--sm { width: 28px; height: 28px; font-size: 0.75rem; }
 .k7-avatar--lg { width: 56px; height: 56px; font-size: 1.4rem; }
 .k7-avatar--xl { width: 80px; height: 80px; font-size: 2rem; }
+.k7-avatar--card .k7-avatar__clip {
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-md);
+}
 
 /* ── Divider ─────────────────────────────────────────────────────────────────── */
 .k7-divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-2) 0; }
