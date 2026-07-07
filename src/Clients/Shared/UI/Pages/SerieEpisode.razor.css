@@ -10,16 +10,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 85vh;
     flex-shrink: 0;
     z-index: 2;
-}
-
-.episode-back-btn {
-    position: absolute;
-    top: var(--space-3);
-    left: var(--space-3);
-    z-index: 10;
 }
 
 .episode-hero {
@@ -29,7 +21,23 @@
     justify-content: flex-end;
     flex: 1;
     min-height: 0;
-    padding: var(--space-10) var(--space-8) var(--space-8);
+}
+
+@media (min-width: 600px) {
+    .episode-main {
+        min-height: 85vh;
+    }
+
+    .episode-hero.media-hero {
+        padding: var(--space-10) var(--space-8) var(--space-8);
+    }
+}
+
+.episode-back-btn {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    z-index: 10;
 }
 
 .episode-hero-content {
@@ -144,28 +152,13 @@
     padding-top: var(--space-2);
 }
 
-.episode-scroll-hint {
-    position: absolute;
-    bottom: var(--space-2);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    opacity: 0.4;
-    animation: episode-bounce-hint 2s ease-in-out infinite;
-}
-
-@keyframes episode-bounce-hint {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(6px); }
-}
-
 ::deep .carousel-wrapper {
     --carousel-margin-start: 40px;
 }
 
 @media (max-width: 599.98px) {
-    .episode-hero {
-        padding: var(--space-10) var(--space-4) var(--space-6);
+    .episode-hero.media-hero {
+        flex: none;
     }
 
     .episode-hero-content {

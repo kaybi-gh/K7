@@ -79,19 +79,22 @@ else
         <MediaPageBackdrop ImageUrl="@_backdropUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_tvScrollRoot" />
-        <div class="movie-main" data-tv-scroll-zone="main">
+        <div class="movie-main media-hero-main" data-tv-scroll-zone="main">
         <K7BackButton />
-        <div class="hero-page-stack">
-            <div class="d-flex flex-col pa-10" style="gap: 8px;">
-                <K7Image Class="movie-page-logo"
+        <div class="media-hero movie-hero">
+            <div class="media-hero-backdrop-zone">
+                <K7Image Class="movie-page-logo media-hero-logo"
                          @key="_logoUrl"
                          ObjectFit="scale-down"
                          Src="@GetLogoUrl()"
                          Alt="">
                     <FallbackContent>
-                        <h2 class="media-logo-title">@_movie.Title?.ToUpper()</h2>
+                        <h2 class="media-logo-title media-hero-title">@_movie.Title?.ToUpper()</h2>
                     </FallbackContent>
                 </K7Image>
+            </div>
+            <div class="media-hero-body">
+            <div class="d-flex flex-col" style="gap: 8px;">
                 <div class="movie-meta">
                     <div class="movie-meta-chips">
                         <div class="movie-ratings">
@@ -200,11 +203,12 @@ else
                     </div>
                 </div>
             </div>
+            </div>
         </div>
 
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
-            <div class="movie-scroll-hint">
+            <div class="media-hero-scroll-hint" aria-hidden="true">
                 <K7Icon Icon="@Phosphor.CaretDown" />
             </div>
         }

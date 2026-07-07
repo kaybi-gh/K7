@@ -37,18 +37,20 @@ else if (_episode is not null)
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_scrollRoot" />
 
-        <div class="episode-main">
+        <div class="episode-main media-hero-main">
             <K7BackButton Class="episode-back-btn" />
 
-            <div class="episode-hero">
+            <div class="episode-hero media-hero">
+                <div class="media-hero-backdrop-zone">
+                    <h2 class="episode-title media-hero-title">@(_episode.Title ?? S["Untitled"])</h2>
+                </div>
+                <div class="media-hero-body">
                 <div class="episode-hero-content">
                     <div class="episode-meta">
                         <a class="episode-serie-link" href="@($"/series/{SerieId}")">@_episode.SerieTitle</a>
                         <span class="episode-meta-separator">-</span>
                         <span class="episode-meta-text">@string.Format(L["SeasonEpisode"], _episode.SeasonNumber, _episode.EpisodeNumber)</span>
                     </div>
-
-                    <h2 class="episode-title">@(_episode.Title ?? S["Untitled"])</h2>
 
                     <div class="episode-details">
                         @if (_episode.AirDate is not null)
@@ -143,11 +145,12 @@ else if (_episode is not null)
                         </p>
                     }
                 </div>
+                </div>
             </div>
 
             @if ((_episode.PersonRoles?.Count ?? 0) > 0 || _moreEpisodes.Count > 0)
             {
-                <div class="episode-scroll-hint">
+                <div class="media-hero-scroll-hint" aria-hidden="true">
                     <K7Icon Icon="@Phosphor.CaretDown" />
                 </div>
             }

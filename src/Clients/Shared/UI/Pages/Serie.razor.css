@@ -92,17 +92,32 @@
     gap: var(--space-1);
 }
 
+@media (min-width: 600px) {
+    .serie-hero.media-hero {
+        padding: var(--space-10);
+    }
+}
+
 @media (max-width: 599.98px) {
+    .serie-logo:not(.k7-img-wrap--custom-fallback) {
+        max-width: none;
+        max-height: none;
+    }
+
+    .serie-logo ::deep .k7-img {
+        object-position: center bottom;
+    }
+
     .serie-main {
         height: auto;
-        min-height: 70vh;
+        min-height: 0;
         flex-shrink: 0;
         overflow: visible;
     }
 
     .serie-hero {
         flex: none;
-        height: 100%;
+        height: auto;
     }
 
     .serie-page {
@@ -177,21 +192,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: 1.05rem;
-}
-
-.serie-scroll-hint {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    opacity: 0.4;
-    animation: bounce-hint 2s ease-in-out infinite;
-}
-
-@keyframes bounce-hint {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(6px); }
 }
 
 :global(html.platform-tv) .serie-page[data-tv-scroll] {

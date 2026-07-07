@@ -30,10 +30,10 @@ else if (_person is not null)
                            SecondaryImageKey="@ActiveBackdropUrl"
                            ScrollTarget="@_scrollRoot" />
 
-        <div class="person-main">
+        <div class="person-main media-hero-main">
             <K7BackButton />
-            <div class="person-hero">
-                <div class="person-hero-content">
+            <div class="person-hero media-hero">
+                <div class="media-hero-backdrop-zone">
                     <div class="person-portrait">
                         <K7Image Src="@(_portraitUrl ?? PersonPlaceholderSrc)"
                                  Alt="@_person.Name"
@@ -48,7 +48,8 @@ else if (_person is not null)
                             </FallbackContent>
                         </K7Image>
                     </div>
-
+                </div>
+                <div class="media-hero-body">
                     <div class="person-info">
                         <div class="person-name-row">
                             <h3 class="person-name">@_person.Name</h3>
@@ -106,7 +107,7 @@ else if (_person is not null)
 
             @if (HasBelowContent)
             {
-                <div class="person-scroll-hint" aria-hidden="true">
+                <div class="media-hero-scroll-hint" aria-hidden="true">
                     <K7Icon Icon="@Phosphor.CaretDown" />
                 </div>
             }

@@ -1,5 +1,6 @@
 .media-page-backdrop {
     --media-scroll-fade: 0;
+    --media-backdrop-height: 100%;
     position: fixed;
     inset: 0;
     z-index: 0;
@@ -62,25 +63,33 @@
 }
 
 @media (max-width: 599.98px) {
+    .media-page-backdrop {
+        --media-backdrop-height: 50vh;
+        --media-backdrop-height: 50dvh;
+        inset: auto;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: var(--media-backdrop-height);
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            #000 0%,
+            #000 78%,
+            rgba(0, 0, 0, 0.55) 90%,
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            #000 0%,
+            #000 78%,
+            rgba(0, 0, 0, 0.55) 90%,
+            transparent 100%
+        );
+    }
+
     .media-page-backdrop__image {
-        -webkit-mask-image: radial-gradient(
-            ellipse 168% 72% at 50% 36%,
-            #000 0%,
-            #000 42%,
-            rgba(0, 0, 0, 0.72) 54%,
-            rgba(0, 0, 0, 0.28) 64%,
-            transparent 76%
-        );
-        mask-image: radial-gradient(
-            ellipse 168% 72% at 50% 36%,
-            #000 0%,
-            #000 42%,
-            rgba(0, 0, 0, 0.72) 54%,
-            rgba(0, 0, 0, 0.28) 64%,
-            transparent 76%
-        );
-        mask-size: 100% 100%;
-        mask-repeat: no-repeat;
+        -webkit-mask-image: none;
+        mask-image: none;
     }
 
     .media-page-backdrop__scrim-side {
@@ -92,33 +101,17 @@
     .media-page-backdrop__scrim-bottom {
         background:
             radial-gradient(
-                ellipse 168% 68% at 50% 100%,
-                rgba(0, 0, 0, 0.88) 0%,
-                rgba(0, 0, 0, 0.52) 38%,
-                rgba(0, 0, 0, 0.16) 58%,
-                transparent 72%
+                ellipse 140% 90% at 50% 100%,
+                rgba(0, 0, 0, 0.72) 0%,
+                rgba(0, 0, 0, 0.38) 32%,
+                transparent 64%
             ),
             linear-gradient(
                 to top,
-                rgba(0, 0, 0, 0.72) 0%,
-                rgba(0, 0, 0, 0.28) 34%,
-                transparent 58%
+                var(--media-wash-color, var(--color-bg)) 0%,
+                color-mix(in srgb, var(--media-wash-color, var(--color-bg)) 55%, transparent) 40%,
+                transparent 68%
             );
-    }
-
-    .media-page-backdrop::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 1;
-        background: radial-gradient(
-            ellipse 168% 70% at 50% 100%,
-            color-mix(in srgb, var(--media-dominant-color, transparent) 34%, var(--color-bg)) 0%,
-            color-mix(in srgb, var(--media-dominant-color, transparent) 18%, var(--color-bg)) 32%,
-            color-mix(in srgb, var(--media-dominant-color, transparent) 6%, transparent) 52%,
-            transparent 68%
-        );
     }
 
     .media-page-backdrop__scroll-fade {
