@@ -109,7 +109,7 @@
     }
 
     .serie-main {
-        height: auto;
+        height: 100%;
         min-height: 0;
         flex-shrink: 0;
         overflow: visible;
