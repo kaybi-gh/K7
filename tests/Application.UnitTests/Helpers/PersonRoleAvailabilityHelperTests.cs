@@ -206,4 +206,36 @@ public class PersonRoleAvailabilityHelperTests
         artist.Albums.Should().ContainSingle();
         artist.Albums[0].Title.Should().Be("Playable Album");
     }
+
+    [Test]
+    public void IsArtistCreditPlayable_ShouldUseArtistAlbums_WhenGuestTrackHasNoFiles()
+    {
+        var albumId = Guid.NewGuid();
+        var artist = new MusicArtist
+        {
+            Albums =
+            [
+                new MusicAlbum
+                {
+                    Id = albumId,
+                    Tracks =
+                    [
+                        new MusicTrack
+                        {
+                            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                        }
+                    ]
+                }
+            ],
+            ArtistCredits =
+            [
+                new MusicArtistCredit
+                {
+                    Media = new MusicTrack { AlbumId = albumId }
+                }
+            ]
+        };
+
+        CatalogMediaAvailabilityHelper.IsArtistCreditPlayable(artist, artist.ArtistCredits[0]).Should().BeTrue();
+    }
 }

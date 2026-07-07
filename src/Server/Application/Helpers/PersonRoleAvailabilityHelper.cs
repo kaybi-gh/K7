@@ -30,9 +30,7 @@ internal static class PersonRoleAvailabilityHelper
             .ToList();
 
         artist.ArtistCredits = artist.ArtistCredits
-            .Where(c => c.Media is MusicTrack track && (
-                CatalogMediaAvailabilityHelper.HasPlayableFiles(track, excludedLibraryIds)
-                || track.Album is MusicAlbum album && CatalogMediaAvailabilityHelper.HasPlayableFiles(album, excludedLibraryIds)))
+            .Where(c => CatalogMediaAvailabilityHelper.IsArtistCreditPlayable(artist, c, excludedLibraryIds))
             .ToList();
     }
 
