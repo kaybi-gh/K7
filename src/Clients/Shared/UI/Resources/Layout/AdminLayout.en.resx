@@ -43,6 +43,7 @@
   <data name="FeatureFlags" xml:space="preserve"><value>Feature flags</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Video player</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Video playback</value></data>
+  <data name="AudioPlayback" xml:space="preserve"><value>Audio playback</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio &amp; subtitles</value></data>
   <data name="Federation" xml:space="preserve"><value>Federation</value></data>
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>

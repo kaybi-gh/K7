@@ -1,126 +1,158 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared;
+using K7.Shared.Dtos;
+using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SettingsAudioPlayerPage
 {
-    private static readonly string[] EqFrequencyLabels =
-        ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+    private sealed record AudioFormState(
+        AudioPlayerSettingsDto Settings,
+        AudioPlaybackPolicySettingsDto Policy);
 
-    private static readonly Dictionary<string, double[]> EqPresetBands = new()
+    private AudioPlayerSettingsDto? _settings;
+    private AudioPlaybackPolicySettingsDto? _audioPolicy;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _hasUserOverride;
+    private readonly SettingsFormTracker<AudioFormState> _formTracker = new();
+
+    [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
+
+    private bool IsDirty =>
+        _settings is not null
+        && _audioPolicy is not null
+        && _formTracker.IsDirty(new AudioFormState(_settings, _audioPolicy));
+
+    private bool ResetDisabled => !IsDirty && !_hasUserOverride;
+
+    protected override async Task OnInitializedAsync()
     {
-        ["flat"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        ["bass-boost"] = [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
-        ["treble-boost"] = [0, 0, 0, 0, 0, 1, 3, 5, 6, 7],
-        ["vocal"] = [-2, -1, 0, 3, 5, 5, 3, 0, -1, -2],
-        ["rock"] = [5, 4, 2, 0, -1, -1, 0, 2, 4, 5],
-        ["electronic"] = [5, 4, 1, 0, -2, 0, 1, 3, 5, 5],
-    };
+        try
+        {
+            _settings = await UserPreferencesService.GetEffectiveAudioPlayerSettingsAsync();
+            _audioPolicy = await UserPreferencesService.GetEffectiveAudioPlaybackPolicySettingsAsync();
+            ApplySettingsToRuntime(_settings);
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
+        }
+        catch
+        {
+            _settings = new AudioPlayerSettingsDto();
+            _audioPolicy = new AudioPlaybackPolicySettingsDto();
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
+        }
 
-    private bool _loudnessEnabled;
-    private double _targetLufs;
-    private double _preampDb;
-    private bool _limiterEnabled;
-    private bool _eqEnabled;
-    private string _eqPresetName = "flat";
-    private double[] _eqBands = new double[10];
-    private double _crossfadeDuration;
-    private bool _adaptiveCrossfade;
-    private bool _autoplayEnabled;
-    private int _streamingQualityWifi;
-    private int _streamingQualityMobile;
-    private bool _downmixToStereo;
-    private bool _showFullscreenOnPlay;
-    private bool _keepScreenOn;
-    private int _skipBackSeconds;
-    private int _skipForwardSeconds;
-
-    protected override void OnInitialized()
-    {
-        _loudnessEnabled = AudioPlayerService.LoudnessEnabled;
-        _targetLufs = AudioPlayerService.LoudnessTargetLufs;
-        _preampDb = AudioPlayerService.LoudnessPreampDb;
-        _limiterEnabled = AudioPlayerService.LimiterEnabled;
-        _eqEnabled = AudioPlayerService.EqEnabled;
-        _eqPresetName = AudioPlayerService.EqPresetName ?? "flat";
-        _eqBands = (double[])AudioPlayerService.EqBands.Clone();
-        _crossfadeDuration = AudioPlayerService.CrossfadeDuration;
-        _adaptiveCrossfade = AudioPlayerService.AdaptiveCrossfade;
-        _autoplayEnabled = AutoplayService.Enabled;
-        _streamingQualityWifi = DeviceStorage.Get(PreferenceKeys.STREAMING_QUALITY_WIFI, 0);
-        _streamingQualityMobile = DeviceStorage.Get(PreferenceKeys.STREAMING_QUALITY_MOBILE, 0);
-        _downmixToStereo = DeviceStorage.Get(PreferenceKeys.DOWNMIX_TO_STEREO, false);
-        _showFullscreenOnPlay = AudioPlayerService.ShowFullscreenOnPlay;
-        _keepScreenOn = AudioPlayerService.KeepScreenOn;
-        _skipBackSeconds = AudioPlayerService.SkipBackSeconds;
-        _skipForwardSeconds = AudioPlayerService.SkipForwardSeconds;
+        _loading = false;
     }
 
-    private void OnBandChanged(int index, double value)
+    private void OnSettingsChanged(AudioPlayerSettingsDto value)
     {
-        _eqBands[index] = value;
-        _eqPresetName = "custom";
+        _settings = value;
+        StateHasChanged();
     }
 
-    private void OnPresetChanged(string preset)
+    private void OnAudioPolicyChanged(AudioPlaybackPolicySettingsDto value)
     {
-        _eqPresetName = preset;
-        if (EqPresetBands.TryGetValue(preset, out var bands))
-            _eqBands = (double[])bands.Clone();
+        _audioPolicy = value;
+        StateHasChanged();
     }
 
-    private Task SaveAsync()
+    private void CaptureFormState()
     {
-        AudioPlayerService.SetLoudnessEnabled(_loudnessEnabled);
-        AudioPlayerService.SetLoudnessTargetLufs(_targetLufs);
-        AudioPlayerService.SetLoudnessPreampDb(_preampDb);
-        AudioPlayerService.SetLimiterEnabled(_limiterEnabled);
-        AudioPlayerService.SetEqEnabled(_eqEnabled);
-        AudioPlayerService.SetEqBands(_eqBands);
-        AudioPlayerService.SetEqPresetName(_eqPresetName);
-        AudioPlayerService.SetCrossfadeDuration(_crossfadeDuration);
+        if (_settings is null || _audioPolicy is null)
+            return;
 
-        if (_adaptiveCrossfade != AudioPlayerService.AdaptiveCrossfade)
+        _formTracker.Capture(new AudioFormState(_settings, _audioPolicy));
+    }
+
+    private void CancelChanges()
+    {
+        if (_settings is null || _audioPolicy is null)
+            return;
+
+        var state = _formTracker.Restore();
+        _settings = state.Settings;
+        _audioPolicy = state.Policy;
+        ApplySettingsToRuntime(_settings);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _settings is null || _audioPolicy is null)
+            return;
+
+        _saving = true;
+        try
+        {
+            await Task.WhenAll(
+                UserPreferencesService.UpdateUserAudioPlayerSettingsAsync(_settings),
+                UserPreferencesService.UpdateUserAudioPlaybackPolicySettingsAsync(_audioPolicy));
+            ApplySettingsToRuntime(_settings);
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
+            Snackbar.Add(L["Saved"], K7Severity.Success);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        if (_saving)
+            return;
+
+        _saving = true;
+        try
+        {
+            await Task.WhenAll(
+                UserPreferencesService.ResetUserAudioPlayerSettingsAsync(),
+                UserPreferencesService.ResetUserAudioPlaybackPolicySettingsAsync());
+            _settings = await UserPreferencesService.GetEffectiveAudioPlayerSettingsAsync();
+            _audioPolicy = await UserPreferencesService.GetEffectiveAudioPlaybackPolicySettingsAsync();
+            ApplySettingsToRuntime(_settings);
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task RefreshOverrideStateAsync() =>
+        _hasUserOverride = await UserPreferenceOverrideHelper.HasAudioOverridesAsync(UserPreferencesService);
+
+    private void ApplySettingsToRuntime(AudioPlayerSettingsDto settings)
+    {
+        AudioPlayerService.SetLoudnessEnabled(settings.LoudnessEnabled);
+        AudioPlayerService.SetLoudnessTargetLufs(settings.LoudnessTargetLufs);
+        AudioPlayerService.SetLoudnessPreampDb(settings.LoudnessPreampDb);
+        AudioPlayerService.SetLimiterEnabled(settings.LimiterEnabled);
+        AudioPlayerService.SetEqEnabled(settings.EqEnabled);
+        AudioPlayerService.SetEqBands(settings.EqBands);
+        AudioPlayerService.SetEqPresetName(settings.EqPresetName);
+        AudioPlayerService.SetCrossfadeDuration(settings.CrossfadeDuration);
+
+        if (settings.AdaptiveCrossfade != AudioPlayerService.AdaptiveCrossfade)
             AudioPlayerService.ToggleAdaptiveCrossfade();
 
-        AutoplayService.SetEnabled(_autoplayEnabled);
+        AutoplayService.SetEnabled(settings.AutoplayEnabled);
 
-        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_WIFI, _streamingQualityWifi);
-        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_MOBILE, _streamingQualityMobile);
-        DeviceStorage.Set(PreferenceKeys.DOWNMIX_TO_STEREO, _downmixToStereo);
+        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_WIFI, settings.StreamingQualityWifi);
+        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_MOBILE, settings.StreamingQualityMobile);
+        DeviceStorage.Set(PreferenceKeys.DOWNMIX_TO_STEREO, settings.DownmixToStereo);
 
-        AudioPlayerService.SetShowFullscreenOnPlay(_showFullscreenOnPlay);
-        AudioPlayerService.SetKeepScreenOn(_keepScreenOn);
-        AudioPlayerService.SetSkipBackSeconds(_skipBackSeconds);
-        AudioPlayerService.SetSkipForwardSeconds(_skipForwardSeconds);
-
-        Snackbar.Add(L["Saved"], K7Severity.Success);
-
-        return Task.CompletedTask;
-    }
-
-    private Task ResetAsync()
-    {
-        _loudnessEnabled = true;
-        _targetLufs = -14.0;
-        _preampDb = 0.0;
-        _limiterEnabled = true;
-        _eqEnabled = false;
-        _eqPresetName = "flat";
-        _eqBands = new double[10];
-        _crossfadeDuration = 6.0;
-        _adaptiveCrossfade = true;
-        _autoplayEnabled = true;
-        _streamingQualityWifi = 0;
-        _streamingQualityMobile = 0;
-        _downmixToStereo = false;
-        _showFullscreenOnPlay = false;
-        _keepScreenOn = false;
-        _skipBackSeconds = 5;
-        _skipForwardSeconds = 5;
-        StateHasChanged();
-        return Task.CompletedTask;
+        AudioPlayerService.SetShowFullscreenOnPlay(settings.ShowFullscreenOnPlay);
+        AudioPlayerService.SetKeepScreenOn(settings.KeepScreenOn);
+        AudioPlayerService.SetSkipBackSeconds(settings.SkipBackSeconds);
+        AudioPlayerService.SetSkipForwardSeconds(settings.SkipForwardSeconds);
     }
 }
