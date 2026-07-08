@@ -37,6 +37,10 @@ window.K7.getSavedTheme = function () {
     return localStorage.getItem('k7-theme');
 };
 
+window.K7.clearSavedTheme = function () {
+    localStorage.removeItem('k7-theme');
+};
+
 window.K7.applyTheme = function (dataAttribute) {
     document.documentElement.setAttribute('data-theme', dataAttribute);
     localStorage.setItem('k7-theme', dataAttribute);
