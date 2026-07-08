@@ -72,4 +72,9 @@
   <data name="GenerateStillFromSourceSkipped" xml:space="preserve"><value>Aucune image générée (image HD déjà présente)</value></data>
   <data name="Close" xml:space="preserve"><value>Fermer</value></data>
   <data name="ImagesApplyImmediately" xml:space="preserve"><value>Les images sont enregistrées immédiatement. Verrouillez par type ou toutes les images pour empêcher le rafraîchissement de les écraser.</value></data>
+  <data name="CurrentImages" xml:space="preserve"><value>Images actuelles</value></data>
+  <data name="ProviderImages" xml:space="preserve"><value>Images du fournisseur</value></data>
+  <data name="AddImage" xml:space="preserve"><value>Ajouter une image</value></data>
+  <data name="ReplaceImage" xml:space="preserve"><value>Remplacer</value></data>
+  <data name="NoImage" xml:space="preserve"><value>Aucune image</value></data>
 </root>

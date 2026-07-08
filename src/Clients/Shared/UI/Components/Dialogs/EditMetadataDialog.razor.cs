@@ -1,6 +1,6 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
@@ -11,6 +11,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -21,6 +22,7 @@ public partial class EditMetadataDialog : IDisposable
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter] public MediaDto? Media { get; set; }
     [Parameter] public PersonDto? Person { get; set; }
@@ -99,9 +101,7 @@ public partial class EditMetadataDialog : IDisposable
     ];
 
     // Picture upload
-    private MetadataPictureType _uploadPictureType = MetadataPictureType.Poster;
-    private IBrowserFile? _pictureFile;
-    private bool _isUploading;
+    private MetadataPictureType? _uploadingPictureType;
     private List<MetadataPictureType> _allowedPictureTypes = [];
 
     // Provider images
@@ -111,15 +111,38 @@ public partial class EditMetadataDialog : IDisposable
     private CancellationTokenSource? _picturesDebounceCts;
     private IReadOnlyList<ProviderImageDto>? _providerImages;
     private MetadataPictureType _providerImageFilter = MetadataPictureType.Poster;
-    private ProviderImageDto? _selectedProviderImage;
+    private string? _importingProviderImageUrl;
     private bool _isLoadingProviderImages;
-    private bool _isImportingProviderImage;
     private DateTimeOffset? _pictureCacheVersion;
+    private ElementReference _dialogContentRef;
 
     protected override void OnInitialized()
     {
         K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await ResetDialogScrollAsync();
+    }
+
+    private async Task OnTabChangedAsync(int tab)
+    {
+        _activeTab = tab;
+        await ResetDialogScrollAsync();
+    }
+
+    private async Task ResetDialogScrollAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("K7.scrollToTop", _dialogContentRef);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     protected override void OnParametersSet()
@@ -155,7 +178,6 @@ public partial class EditMetadataDialog : IDisposable
 
         _canBrowseProviderImages = true;
         _allowedPictureTypes = [MetadataPictureType.Portrait];
-        _uploadPictureType = MetadataPictureType.Portrait;
     }
 
     private void InitFromMedia(MediaDto media)
@@ -259,8 +281,14 @@ public partial class EditMetadataDialog : IDisposable
                 _allowedPictureTypes = [MetadataPictureType.Cover];
                 break;
         }
+    }
 
-        _uploadPictureType = _allowedPictureTypes.FirstOrDefault();
+    private MetadataPictureDto? GetCurrentPicture(MetadataPictureType type)
+    {
+        if (_isPersonMode && type == MetadataPictureType.Portrait)
+            return Person?.PortraitPicture;
+
+        return Media?.Pictures?.FirstOrDefault(picture => picture.Type == type);
     }
 
     private void OnMediaMetadataRefreshed(Guid mediaId)
@@ -310,12 +338,6 @@ public partial class EditMetadataDialog : IDisposable
         return MediaPictureUrlHelper.WithCacheBuster(uri, cacheVersion);
     }
 
-    private string? GetPersonPortraitDisplayUrl(MetadataPictureSize size = MetadataPictureSize.Small)
-    {
-        var uri = ApiClient.GetAbsoluteUri(Person?.PortraitPicture?.GetUri(size)?.OriginalString)?.AbsoluteUri;
-        return MediaPictureUrlHelper.WithCacheBuster(uri, _pictureCacheVersion);
-    }
-
     private async Task ReloadMediaFromServerAsync()
     {
         if (Media is null)
@@ -328,7 +350,7 @@ public partial class EditMetadataDialog : IDisposable
         Media = fresh;
         InitFromMedia(fresh);
         _providerImages = null;
-        _selectedProviderImage = null;
+        _importingProviderImageUrl = null;
         StateHasChanged();
     }
 
@@ -344,7 +366,7 @@ public partial class EditMetadataDialog : IDisposable
         Person = fresh;
         InitFromPerson(fresh);
         _providerImages = null;
-        _selectedProviderImage = null;
+        _importingProviderImageUrl = null;
         StateHasChanged();
     }
 
@@ -385,6 +407,8 @@ public partial class EditMetadataDialog : IDisposable
     {
         if (!_lockedFields.Remove(fieldName))
             _lockedFields.Add(fieldName);
+
+        StateHasChanged();
     }
 
     private async Task ToggleAllPicturesLockAsync()
@@ -406,11 +430,20 @@ public partial class EditMetadataDialog : IDisposable
     private async Task TogglePictureTypeLockAsync(MetadataPictureType type)
     {
         if (IsAllPicturesLocked())
-            return;
-
-        var fieldName = GetPictureTypeLockField(type);
-        if (!_lockedFields.Remove(fieldName))
-            _lockedFields.Add(fieldName);
+        {
+            _lockedFields.Remove("Pictures");
+            foreach (var allowedType in _allowedPictureTypes)
+            {
+                if (allowedType != type)
+                    _lockedFields.Add(GetPictureTypeLockField(allowedType));
+            }
+        }
+        else
+        {
+            var fieldName = GetPictureTypeLockField(type);
+            if (!_lockedFields.Remove(fieldName))
+                _lockedFields.Add(fieldName);
+        }
 
         StateHasChanged();
         await SaveLockedFieldsAsync();
@@ -419,6 +452,14 @@ public partial class EditMetadataDialog : IDisposable
     private static string GetPictureTypeLockField(MetadataPictureType type) => $"Pictures:{type}";
 
     private bool IsAllPicturesLocked() => _lockedFields.Contains("Pictures");
+
+    private bool IsFieldLocked(string fieldName) => _lockedFields.Contains(fieldName);
+
+    private string GetFieldClass(string fieldName, string? baseClass = null) =>
+        string.Join(" ", new[] { baseClass, IsFieldLocked(fieldName) ? "metadata-field--locked" : null }
+            .Where(static s => !string.IsNullOrWhiteSpace(s)));
+
+    private bool IsExternalIdsLocked() => IsFieldLocked("ExternalIds");
 
     private bool IsPictureTypeLocked(MetadataPictureType type) =>
         IsAllPicturesLocked() || _lockedFields.Contains(GetPictureTypeLockField(type));
@@ -459,7 +500,37 @@ public partial class EditMetadataDialog : IDisposable
 
     private void CloseImagesTab() => Dialog.Close(K7DialogResult.Ok());
 
-    private void OnReleaseDateChanged(string? value) => _releaseDateStr = value;
+    private void OnOriginalLanguageChanged(string? value)
+    {
+        if (IsFieldLocked("OriginalLanguage"))
+            return;
+
+        _originalLanguage = value;
+    }
+
+    private void OnReleaseDateChanged(string? value)
+    {
+        if (IsFieldLocked("ReleaseDate"))
+            return;
+
+        _releaseDateStr = value;
+    }
+
+    private void OnBirthdayChanged(string? value)
+    {
+        if (IsFieldLocked("Birthday"))
+            return;
+
+        _birthdayStr = value;
+    }
+
+    private void OnDeathdayChanged(string? value)
+    {
+        if (IsFieldLocked("Deathday"))
+            return;
+
+        _deathdayStr = value;
+    }
 
     private static string? ValidateDate(string? value)
     {
@@ -469,13 +540,13 @@ public partial class EditMetadataDialog : IDisposable
         return DateOnly.TryParse(value, out _) ? null : "Invalid date format (YYYY-MM-DD)";
     }
 
-    private static string GetPictureItemClass(MetadataPictureType type) => type switch
+    private static string GetPictureSlotPreviewClass(MetadataPictureType type) => type switch
     {
-        MetadataPictureType.Poster or MetadataPictureType.Portrait => "picture-item--poster",
-        MetadataPictureType.Backdrop or MetadataPictureType.Still => "picture-item--backdrop",
-        MetadataPictureType.Cover => "picture-item--cover",
-        MetadataPictureType.Logo => "picture-item--logo",
-        _ => "picture-item--free"
+        MetadataPictureType.Poster or MetadataPictureType.Portrait => "picture-slot-preview--poster",
+        MetadataPictureType.Backdrop or MetadataPictureType.Still => "picture-slot-preview--backdrop",
+        MetadataPictureType.Cover => "picture-slot-preview--cover",
+        MetadataPictureType.Logo => "picture-slot-preview--logo",
+        _ => "picture-slot-preview--free"
     };
 
     private string GetProviderGridClass() => _providerImageFilter switch
@@ -493,7 +564,7 @@ public partial class EditMetadataDialog : IDisposable
 
         _isLoadingProviderImages = true;
         _providerImages = null;
-        _selectedProviderImage = null;
+        _importingProviderImageUrl = null;
         StateHasChanged();
 
         try
@@ -503,7 +574,13 @@ public partial class EditMetadataDialog : IDisposable
                 : await MediaService.GetMediaProviderImagesAsync(Media!.Id);
 
             if (_providerImages.Count > 0)
-                _providerImageFilter = _providerImages[0].Type;
+            {
+                var matchedType = _allowedPictureTypes
+                    .FirstOrDefault(type => _providerImages.Any(image => image.Type == type));
+                _providerImageFilter = _providerImages.Any(image => image.Type == matchedType)
+                    ? matchedType
+                    : _providerImages[0].Type;
+            }
         }
         catch (Exception ex)
         {
@@ -516,23 +593,20 @@ public partial class EditMetadataDialog : IDisposable
         }
     }
 
-    private async Task ImportProviderImageAsync()
+    private async Task ImportProviderImageAsync(ProviderImageDto image)
     {
-        if (_selectedProviderImage is null)
-            return;
-
         if (Media is null && Person is null)
             return;
 
-        _isImportingProviderImage = true;
+        _importingProviderImageUrl = image.Url;
         StateHasChanged();
 
         try
         {
             var request = new ImportMediaPictureFromUrlRequest
             {
-                Url = _selectedProviderImage.Url,
-                PictureType = _selectedProviderImage.Type
+                Url = image.Url,
+                PictureType = image.Type
             };
 
             if (_isPersonMode && Person is not null)
@@ -544,7 +618,6 @@ public partial class EditMetadataDialog : IDisposable
                 await MediaService.ImportMediaPictureFromUrlAsync(Media.Id, request);
             }
 
-            _selectedProviderImage = null;
             Snackbar.Add(L["PictureUploaded"].Value, K7Severity.Success);
             await ReloadPicturesAsync();
         }
@@ -554,53 +627,55 @@ public partial class EditMetadataDialog : IDisposable
         }
         finally
         {
-            _isImportingProviderImage = false;
+            _importingProviderImageUrl = null;
             StateHasChanged();
         }
     }
 
-    private void OnPictureFileSelected(InputFileChangeEventArgs e)
+    private async Task OnSlotFileSelectedAsync(MetadataPictureType type, InputFileChangeEventArgs e)
     {
-        _pictureFile = e.File;
-    }
-
-    private async Task UploadPictureAsync()
-    {
-        if (_pictureFile is null)
+        if (e.File is null)
             return;
 
-        if (Media is null && Person is null)
-            return;
-
-        _isUploading = true;
+        _uploadingPictureType = type;
         StateHasChanged();
 
         try
         {
+            await UploadPictureAsync(e.File, type);
+        }
+        finally
+        {
+            _uploadingPictureType = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UploadPictureAsync(IBrowserFile file, MetadataPictureType pictureType)
+    {
+        if (Media is null && Person is null)
+            return;
+
+        try
+        {
             const long maxSize = 10 * 1024 * 1024;
-            await using var stream = _pictureFile.OpenReadStream(maxSize);
+            await using var stream = file.OpenReadStream(maxSize);
 
             if (_isPersonMode && Person is not null)
             {
-                await MediaService.UploadPersonPictureAsync(Person.Id, stream, _pictureFile.Name, _uploadPictureType);
+                await MediaService.UploadPersonPictureAsync(Person.Id, stream, file.Name, pictureType);
             }
             else if (Media is not null)
             {
-                await MediaService.UploadMediaPictureAsync(Media.Id, stream, _pictureFile.Name, _uploadPictureType);
+                await MediaService.UploadMediaPictureAsync(Media.Id, stream, file.Name, pictureType);
             }
 
-            _pictureFile = null;
             Snackbar.Add(L["PictureUploaded"].Value, K7Severity.Success);
             await ReloadPicturesAsync();
         }
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, K7Severity.Error);
-        }
-        finally
-        {
-            _isUploading = false;
-            StateHasChanged();
         }
     }
 
@@ -742,14 +817,20 @@ public partial class EditMetadataDialog : IDisposable
         return DateOnly.TryParse(value, out var date) ? date : null;
     }
 
-    private void AddExternalId()
-    {
-        _externalIds.Add(new ExternalIdEditEntry());
-    }
-
     private void RemoveExternalId(ExternalIdEditEntry entry)
     {
+        if (IsExternalIdsLocked())
+            return;
+
         _externalIds.Remove(entry);
+    }
+
+    private void AddExternalId()
+    {
+        if (IsExternalIdsLocked())
+            return;
+
+        _externalIds.Add(new ExternalIdEditEntry());
     }
 
     private sealed class ExternalIdEditEntry
