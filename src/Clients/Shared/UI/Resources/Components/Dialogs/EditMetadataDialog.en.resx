@@ -72,4 +72,9 @@
   <data name="GenerateStillFromSourceSkipped" xml:space="preserve"><value>No still generated (HD still already present)</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="ImagesApplyImmediately" xml:space="preserve"><value>Images are saved immediately. Lock by type or lock all images to prevent refresh from overwriting them.</value></data>
+  <data name="CurrentImages" xml:space="preserve"><value>Current images</value></data>
+  <data name="ProviderImages" xml:space="preserve"><value>Provider images</value></data>
+  <data name="AddImage" xml:space="preserve"><value>Add image</value></data>
+  <data name="ReplaceImage" xml:space="preserve"><value>Replace</value></data>
+  <data name="NoImage" xml:space="preserve"><value>No image</value></data>
 </root>

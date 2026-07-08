@@ -1698,6 +1698,10 @@ K7.scrollToElement = function (id) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
+K7.scrollToTop = function (element) {
+    if (element) element.scrollTop = 0;
+};
+
 K7.focusById = function (id) {
     var el = document.getElementById(id);
     if (!el) return;
