@@ -1,0 +1,39 @@
+.eq-bands {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem 0.5rem;
+    height: 260px;
+}
+
+.eq-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+}
+
+.eq-band-slider {
+    display: flex;
+    flex: 1;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+}
+
+.eq-band-value {
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    min-height: 1rem;
+}
+
+.eq-band-label {
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+}

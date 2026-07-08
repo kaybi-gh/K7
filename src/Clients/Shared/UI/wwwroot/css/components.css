@@ -455,6 +455,20 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
   flex-direction: column;
   justify-content: center;
 }
+.k7-slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.k7-slider-field__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.k7-slider-field .text-caption {
+  color: var(--color-text-muted);
+}
 .k7-range--vertical {
   writing-mode: vertical-lr;
   direction: rtl;
