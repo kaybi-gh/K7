@@ -33,7 +33,7 @@
                     <ul class="k7-list">
                         @foreach (var result in _results)
                         {
-                            <li class="@(_selectedResult == result ? "selected" : "")" @onclick="() => _selectedResult = result">
+                            <li class="focusable @(_selectedResult == result ? "selected" : "")" @onclick="() => _selectedResult = result">
                                 <div class="grid">
                                     <div>
                                         @if (!string.IsNullOrEmpty(result.PosterUrl))
