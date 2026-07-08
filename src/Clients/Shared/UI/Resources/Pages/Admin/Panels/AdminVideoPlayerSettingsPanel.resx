@@ -30,9 +30,11 @@
   <data name="SubtitleFontSize" xml:space="preserve"><value>Taille des sous-titres</value></data>
   <data name="SubtitleFontColor" xml:space="preserve"><value>Couleur des sous-titres</value></data>
   <data name="SubtitleBackgroundOpacity" xml:space="preserve"><value>Opacité de l'arrière-plan des sous-titres</value></data>
+  <data name="SubtitleBackgroundOpacityHint" xml:space="preserve"><value>0 = transparent, 1 = fond opaque derrière le texte.</value></data>
   <data name="SubtitleShadow" xml:space="preserve"><value>Ombre des sous-titres</value></data>
   <data name="SubtitleShadowColor" xml:space="preserve"><value>Couleur de l'ombre</value></data>
   <data name="SubtitleShadowBlur" xml:space="preserve"><value>Flou de l'ombre</value></data>
+  <data name="SubtitleShadowBlurHint" xml:space="preserve"><value>Intensité du flou autour des lettres pour améliorer la lisibilité.</value></data>
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Afficher les miniatures au survol de la barre de lecture</value></data>
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée sur le serveur.</value></data>
   <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée pour la bibliothèque concernée.</value></data>
