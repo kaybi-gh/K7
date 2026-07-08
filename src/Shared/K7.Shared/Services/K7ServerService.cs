@@ -158,9 +158,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             ? $"api/medias/{id}?nocache={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}"
             : $"api/medias/{id}";
 
-    public async Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false)
     {
-        return await HttpClient.GetFromJsonAsync<PersonDto>($"api/persons/{id}", _serializerOptions, cancellationToken);
+        var url = bypassCache
+            ? $"api/persons/{id}?nocache={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}"
+            : $"api/persons/{id}";
+        return await HttpClient.GetFromJsonAsync<PersonDto>(url, _serializerOptions, cancellationToken);
     }
 
     public async Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default)
