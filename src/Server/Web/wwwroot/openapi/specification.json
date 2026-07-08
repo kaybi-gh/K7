@@ -3844,6 +3844,30 @@
         }
       }
     },
+    "/api/medias/{id}/pictures/generate-from-source": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GenerateEpisodeStillFromSource",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}/top-tracks": {
       "get": {
         "tags": [
@@ -15328,6 +15352,24 @@
               "string"
             ],
             "format": "uri"
+          },
+          "originalWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "originalHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "dominantColor": {
             "type": [

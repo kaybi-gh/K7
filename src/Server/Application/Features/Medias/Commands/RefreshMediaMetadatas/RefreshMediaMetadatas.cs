@@ -1,5 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.GenerateEpisodeStillFromSource;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
@@ -7,6 +9,7 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
@@ -317,7 +320,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 await SyncArtistMembersAsync(artist, mbDetails.Members, request.Language, cancellationToken);
 
                 // Poster from MusicBrainz cover art
-                if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
+                if (!artist.IsPictureTypeLocked(MetadataPictureType.Poster)
                     && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
                     && MetadataImageUrlHelper.TryCreateRemoteUri(mbDetails.ImageUrl, out var mbImageUri))
                 {
@@ -344,7 +347,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Biography)) && !string.IsNullOrEmpty(details.Biography))
                     artist.Biography = details.Biography;
 
-                if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
+                if (!artist.IsPictureTypeLocked(MetadataPictureType.Poster)
                     && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
                     && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var wikidataImageUri))
                 {
@@ -375,6 +378,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .LoadAsync(cancellationToken);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
+        ISerieMetadataProvider? tmdbSerieProvider = null;
+        if (string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
+        {
+            tmdbSerieProvider = _serviceProvider.GetKeyedService<ISerieMetadataProvider>("tmdb");
+        }
 
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
@@ -483,9 +491,30 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (episodeMetadata.RemoteId is not null)
                     episodeRemoteIds[(season.SeasonNumber, episode.EpisodeNumber)] = episodeMetadata.RemoteId.Value;
 
-                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl)
-                    && !episode.IsFieldLocked(nameof(SerieEpisode.Pictures))
-                    && MetadataImageUrlHelper.TryCreateRemoteUri(episodeMetadata.StillImageUrl, out var stillUri))
+                var stillImageUrl = episodeMetadata.StillImageUrl;
+                if (tmdbSerieProvider is not null)
+                {
+                    var supplementalMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbEpisodeMetadataAsync(
+                        metadataProvider,
+                        tmdbSerieProvider,
+                        serie,
+                        season.SeasonNumber,
+                        episode.EpisodeNumber,
+                        request.Language,
+                        request.FallbackLanguage,
+                        cancellationToken);
+
+                    if (!string.IsNullOrWhiteSpace(supplementalMetadata?.StillImageUrl))
+                        stillImageUrl = supplementalMetadata.StillImageUrl;
+
+                    SupplementalEpisodeMetadataResolver.MergeSupplementalExternalIds(
+                        episode,
+                        supplementalMetadata?.ExternalIds);
+                }
+
+                if (!string.IsNullOrEmpty(stillImageUrl)
+                    && !episode.IsPictureTypeLocked(MetadataPictureType.Still)
+                    && MetadataImageUrlHelper.TryCreateRemoteUri(stillImageUrl, out var stillUri))
                 {
                     var stillPicture = new MetadataPicture
                     {
@@ -494,8 +523,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     };
                     stillPicture.AddDomainEvent(new MetadataPictureCreatedEvent(stillPicture));
 
-                    episode.Pictures.Clear();
+                    episode.RemovePicturesOfType(MetadataPictureType.Still);
                     episode.Pictures.Add(stillPicture);
+                }
+                else if (!episode.IsPictureTypeLocked(MetadataPictureType.Still))
+                {
+                    await TryQueueEpisodeStillFromSourceFallbackAsync(episode, cancellationToken);
                 }
             }
         }
@@ -662,8 +695,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         // Skip bio/image enrichment if already complete or locked
         var biographyLocked = artist.IsFieldLocked(nameof(MusicArtist.Biography));
-        var picturesLocked = artist.IsFieldLocked(nameof(MusicArtist.Pictures));
-        if ((picturesLocked || artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster))
+        var posterLocked = artist.IsPictureTypeLocked(MetadataPictureType.Poster);
+        if ((posterLocked || artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster))
             && (biographyLocked || !string.IsNullOrEmpty(artist.Biography))) return;
 
         var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
@@ -676,7 +709,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!biographyLocked && string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
                     artist.Biography = details.Biography;
 
-                if (!picturesLocked
+                if (!posterLocked
                     && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
                     && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var deferredWikidataImageUri))
                 {
@@ -692,7 +725,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        if (!picturesLocked
+        if (!posterLocked
             && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
             && MetadataImageUrlHelper.TryCreateRemoteUri(mbImageUrl, out var coverImageUri))
         {
@@ -873,5 +906,31 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             _pictureDeletionService.Remove(role.PortraitPicture);
             role.PortraitPicture = null;
         }
+    }
+
+    private async Task TryQueueEpisodeStillFromSourceFallbackAsync(
+        SerieEpisode episode,
+        CancellationToken cancellationToken)
+    {
+        if (episode.Pictures.Any(picture => picture.Type == MetadataPictureType.Still))
+            return;
+
+        var hasIndexedVideo = await _context.IndexedFiles
+            .AnyAsync(
+                file => file.MediaId == episode.Id && file.FileMetadata is VideoFileMetadata,
+                cancellationToken);
+
+        if (!hasIndexedVideo)
+            return;
+
+        await _sender.Send(new CreateBackgroundTaskCommand
+        {
+            Request = new GenerateEpisodeStillFromSourceCommand { MediaId = episode.Id },
+            Priority = BackgroundTaskPriority.Low,
+            TargetEntityId = episode.Id,
+            TargetEntityTypeName = nameof(SerieEpisode),
+            MaxAttempts = 2,
+            ConcurrencyGroup = "ffmpeg"
+        }, cancellationToken);
     }
 }

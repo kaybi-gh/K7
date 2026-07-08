@@ -32,6 +32,7 @@ public interface IMediaService
     Task DeleteMediaPictureAsync(Guid mediaId, Guid pictureId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProviderImageDto>> GetMediaProviderImagesAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task<Guid> ImportMediaPictureFromUrlAsync(Guid mediaId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default);
+    Task<Guid?> GenerateEpisodeStillFromSourceAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdatePersonMetadataAsync(Guid id, UpdatePersonMetadataRequest request, CancellationToken cancellationToken = default);
     Task<Guid> UploadPersonPictureAsync(Guid personId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default);

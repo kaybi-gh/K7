@@ -429,6 +429,7 @@ public sealed class MockMediaService : IMediaService
     public Task DeleteMediaPictureAsync(Guid mediaId, Guid pictureId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<IReadOnlyList<ProviderImageDto>> GetMediaProviderImagesAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ProviderImageDto>>([]);
     public Task<Guid> ImportMediaPictureFromUrlAsync(Guid mediaId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<Guid?> GenerateEpisodeStillFromSourceAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<Guid?>(null);
     public Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdatePersonMetadataAsync(Guid id, UpdatePersonMetadataRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<Guid> UploadPersonPictureAsync(Guid personId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
