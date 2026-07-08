@@ -27,6 +27,7 @@
   <data name="LastPlayed" xml:space="preserve"><value>Last played</value></data>
   <data name="HideForUserDialogTitle" xml:space="preserve"><value>Hide for a user</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
+  <data name="RemovedFromContinueWatching" xml:space="preserve"><value>{0} removed from Keep Watching</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>
   <data name="OfflineTitle" xml:space="preserve"><value>You're offline</value></data>
   <data name="OfflineSubtitle" xml:space="preserve"><value>Can't reach the server. Your downloads are still available.</value></data>

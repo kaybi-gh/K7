@@ -65,7 +65,7 @@
                 {
                     @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
                     {
-                        @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress)
+                        @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress, row.ContinueWatching)
                     }
                 }
             </VerticalCarousel>
@@ -76,7 +76,7 @@
             {
                 @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
                 {
-                    @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress)
+                    @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress, row.ContinueWatching)
                 }
             }
         }
@@ -88,7 +88,7 @@
     }
 </div>
 
-@{ RenderFragment RenderCarousel(string title, List<MediaCardViewModel> items, bool progress, bool watched)
+@{ RenderFragment RenderCarousel(string title, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {
     return @<Carousel Title="@title">
         @foreach (var item in items)
@@ -102,11 +102,13 @@
                            WatchedStatusEnabled="watched"
                            FooterVisible="true"
                            ExcludeMenuEnabled="_canExclude"
+                           ContinueWatchingMenuEnabled="continueWatching && _canTrackProgress"
                            WatchStateMenuEnabled="_canSetWatchState"
                            IsAdmin="_isAdmin"
                            OnFocused="() => OnItemFocused(item)"
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
-                           OnExcludeForOthers="() => ExcludeForOthers(item)" />
+                           OnExcludeForOthers="() => ExcludeForOthers(item)"
+                           OnDismissFromContinueWatching="() => DismissFromContinueWatching(item)" />
             </CarouselItem>
         }
     </Carousel>;

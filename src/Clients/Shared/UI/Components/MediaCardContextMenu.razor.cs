@@ -38,6 +38,9 @@ public partial class MediaCardContextMenu
     public bool ExcludeMenuEnabled { get; set; }
 
     [Parameter]
+    public bool ContinueWatchingMenuEnabled { get; set; }
+
+    [Parameter]
     public bool IsAdmin { get; set; }
 
     [Parameter]
@@ -48,6 +51,9 @@ public partial class MediaCardContextMenu
 
     [Parameter]
     public EventCallback OnExcludeForOthers { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismissFromContinueWatching { get; set; }
 
     [Parameter]
     public EventCallback OnWatchStateChanged { get; set; }
