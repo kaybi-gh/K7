@@ -1,11 +1,15 @@
 @page "/settings/general"
 @layout SettingsLayout
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.Services.Resources
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
 @inject IK7ServerService ApiClient
+@inject IServerInfoService ServerInfoService
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
 @inject IK7DialogService DialogService
+@inject IK7Snackbar Snackbar
 @inject IServerConnectionService ServerConnectionService
 @inject IUserAdminService UserService
 @inject IJSRuntime JSRuntime
@@ -16,21 +20,49 @@
 <h4 class="mb-4">@L["GeneralPageTitle"]</h4>
 
 <div class="pa-4">
-    <K7Select TValue="ThemeDefinition" Label="@L["Theme"]" @bind-Value="@ThemeService.Theme" ToStringFunc="@(t => t?.Name)">
+    <K7Select TValue="ThemeDefinition"
+              Label="@L["Theme"]"
+              @bind-Value="@ThemeService.Theme"
+              ToStringFunc="@(t => t?.Name)">
         @foreach (var theme in Themes.Collection)
         {
             <K7SelectItem Value="@theme" Text="@theme?.Name">@theme?.Name</K7SelectItem>
         }
     </K7Select>
 
-    <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" Class="mt-4" />
+    <K7LanguageSelect Value="@_currentCulture"
+                      ValueChanged="OnCultureChanged"
+                      Label="@L["Language"]"
+                      Languages="SupportedLanguages.Interface"
+                      Class="mt-4" />
 
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
-        <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" />
+        <K7TextField Value="@_backendUrl"
+                     Label="@L["ServerUrl"]"
+                     ReadOnly="true"
+                     Disabled="true"
+                     Variant="text"
+                     Class="mt-4" />
     }
     else
     {
-        <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" Adornment="end" AdornmentIcon="@Phosphor.Trash" OnAdornmentClick="ChangeBackendUrl" />
+        <K7TextField @bind-Value="@_backendUrl"
+                     Label="@L["ServerUrl"]"
+                     ReadOnly="true"
+                     Variant="text"
+                     Class="mt-4"
+                     Adornment="end"
+                     AdornmentIcon="@Phosphor.Trash"
+                     OnAdornmentClick="ChangeBackendUrl" />
     }
+
+    <div class="mt-6">
+        <K7Button Variant="outlined"
+                  Color="secondary"
+                  Disabled="IsOnDefaults || _resetting"
+                  OnClick="ResetToDefaultsAsync">
+            @S["ResetToDefaults"]
+        </K7Button>
+    </div>
 </div>

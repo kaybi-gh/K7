@@ -24,6 +24,7 @@
   <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
   <data name="Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
+  <data name="GeneralResetSuccess" xml:space="preserve"><value>Préférences rétablies aux valeurs par défaut du serveur.</value></data>
   <data name="ServerUrl" xml:space="preserve"><value>URL du serveur K7</value></data>
   <data name="FormFactor" xml:space="preserve"><value>Type d'appareil :</value></data>
   <data name="Hdr" xml:space="preserve"><value>HDR :</value></data>
