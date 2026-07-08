@@ -25,6 +25,7 @@
   <data name="HideForUser" xml:space="preserve"><value>Hide for user</value></data>
   <data name="MarkAsWatched" xml:space="preserve"><value>Mark as watched</value></data>
   <data name="MarkAsUnwatched" xml:space="preserve"><value>Mark as unwatched</value></data>
+  <data name="RemoveFromContinueWatching" xml:space="preserve"><value>Remove from Keep Watching</value></data>
   <data name="AddToPlaylist" xml:space="preserve"><value>Add to playlist</value></data>
   <data name="AddToCollection" xml:space="preserve"><value>Add to collection</value></data>
   <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to playlist</value></data>

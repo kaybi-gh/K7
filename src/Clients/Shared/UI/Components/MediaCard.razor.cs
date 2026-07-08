@@ -23,11 +23,13 @@ public partial class MediaCard : IDisposable
     [Parameter] public bool WatchedStatusEnabled { get; set; }
     [Parameter] public bool FooterVisible { get; set; }
     [Parameter] public bool ExcludeMenuEnabled { get; set; }
+    [Parameter] public bool ContinueWatchingMenuEnabled { get; set; }
     [Parameter] public bool WatchStateMenuEnabled { get; set; }
     [Parameter] public int? BulkEpisodeCount { get; set; }
     [Parameter] public bool IsAdmin { get; set; }
     [Parameter] public EventCallback OnExcludeForSelf { get; set; }
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
+    [Parameter] public EventCallback OnDismissFromContinueWatching { get; set; }
     [Parameter] public EventCallback OnWatchStateChanged { get; set; }
     [Parameter] public EventCallback OnFocused { get; set; }
     [Parameter] public RenderFragment? CoverContent { get; set; }
@@ -55,7 +57,7 @@ public partial class MediaCard : IDisposable
 
     private bool LongPressEnabled =>
         ContextMenuEnabled
-        && (OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showReview || _showPlaylist || _showCollection);
+        && (OverlayEnabled || ExcludeMenuEnabled || ContinueWatchingMenuEnabled || _watchStateMenuVisible || _showRating || _showReview || _showPlaylist || _showCollection);
 
     private string GetRootClass()
     {

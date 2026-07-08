@@ -458,6 +458,25 @@ public partial class Home : IDisposable
         _ => MediaCardVariant.Poster
     };
 
+    private async Task DismissFromContinueWatching(MediaCardViewModel model)
+    {
+        try
+        {
+            await k7ServerService.DismissFromContinueWatchingAsync(Guid.Parse(model.Id));
+            Snackbar.Add(string.Format(L["RemovedFromContinueWatching"], model.Title), K7Severity.Success);
+
+            foreach (var (_, items) in _rows)
+                items.RemoveAll(x => x.Id == model.Id);
+
+            CacheStore.InvalidateByPrefix("home-feed");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
     private async Task ExcludeForSelf(MediaCardViewModel model)
     {
         try

@@ -20,6 +20,10 @@
         @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
     </K7MenuItem>
 }
+@if (ContinueWatchingMenuEnabled && _hasValidMediaId)
+{
+    <K7MenuItem Icon="x-circle" OnClick="OnDismissFromContinueWatching">@L["RemoveFromContinueWatching"]</K7MenuItem>
+}
 @if (ExcludeMenuEnabled)
 {
     <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
