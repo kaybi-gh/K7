@@ -53,7 +53,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         }
     }
 
-    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, CancellationToken cancellationToken)
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, string? fallbackLanguage, CancellationToken cancellationToken)
     {
         if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Movie)
             return [];

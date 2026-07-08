@@ -6,5 +6,5 @@ namespace K7.Server.Application.Common.Interfaces;
 public interface ISearchableMetadataProvider
 {
     string ProviderName { get; }
-    Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, CancellationToken cancellationToken);
+    Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, string? fallbackLanguage, CancellationToken cancellationToken);
 }

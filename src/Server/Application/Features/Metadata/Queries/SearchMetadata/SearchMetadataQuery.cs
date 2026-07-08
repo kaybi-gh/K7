@@ -39,6 +39,10 @@ public class SearchMetadataQueryHandler(
 
         language = string.IsNullOrWhiteSpace(language) ? "en" : language;
 
+        var fallbackLanguage = library?.MetadataFallbackLanguage;
+        if (string.IsNullOrWhiteSpace(fallbackLanguage))
+            fallbackLanguage = null;
+
         var mediaType = request.MediaType ?? library?.MediaType switch
         {
             LibraryMediaType.Movie => MediaType.Movie,
@@ -68,6 +72,7 @@ public class SearchMetadataQueryHandler(
             request.ProviderId,
             mediaType,
             language,
+            fallbackLanguage,
             cancellationToken));
         var results = await Task.WhenAll(tasks);
         return results.SelectMany(r => r);

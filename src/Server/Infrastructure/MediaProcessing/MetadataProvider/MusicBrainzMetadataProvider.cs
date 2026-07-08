@@ -127,7 +127,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     }
 
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(
-        string query, int? year, string? providerId, MediaType? mediaType, string language, CancellationToken cancellationToken)
+        string query, int? year, string? providerId, MediaType? mediaType, string language, string? fallbackLanguage, CancellationToken cancellationToken)
     {
         if (mediaType.HasValue && mediaType != MediaType.MusicAlbum)
             return [];
