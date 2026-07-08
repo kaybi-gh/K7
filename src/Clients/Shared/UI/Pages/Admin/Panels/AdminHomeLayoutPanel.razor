@@ -9,67 +9,65 @@
 }
 else
 {
-    <div class="d-flex flex-col pa-4 gap-4">
-        <div class="d-flex align-center justify-between">
-            <div>
-                <h6 class="mb-1">@L["PageTitle"]</h6>
-                <p class="text-sm" Color="secondary">@L["Description"]</p>
-            </div>
-            <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
-                      OnClick="AddRow" Disabled="_saving">
-                @L["AddRow"]
-            </K7Button>
-        </div>
-
-        <div class="d-flex flex-col gap-2">
-            @for (var i = 0; i < _rows.Count; i++)
-            {
-                var row = _rows[i];
-                var isFirst = i == 0;
-                var isLast = i == _rows.Count - 1;
-                <K7Paper Outlined="true" Elevation="0" Class="pa-3 d-flex align-center justify-between gap-3">
-                    <div class="d-flex align-center gap-2">
-                        <div class="d-flex flex-col gap-1">
-                            <K7IconButton Icon="@Phosphor.ArrowUp" Disabled="@isFirst"
-                                    OnClick="() => MoveUp(row)" AriaLabel="@L["MoveUp"]" />
-                            <K7IconButton Icon="@Phosphor.ArrowDown" Disabled="@isLast"
-                                    OnClick="() => MoveDown(row)" AriaLabel="@L["MoveDown"]" />
-                        </div>
-                        <span class="text-sm">@GetRowTitle(row.Title)</span>
-                    </div>
-                    <div class="d-flex align-center gap-2">
-                        <K7Switch Value="@row.IsVisible" ValueChanged="@(v => row.IsVisible = v)" />
-                        <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="() => EditRow(row)"
-                                AriaLabel="@L["EditRow"]" />
-                        <K7IconButton Icon="@Phosphor.Trash" OnClick="() => DeleteRow(row)"
-                                AriaLabel="@L["DeleteRow"]" />
-                    </div>
-                </K7Paper>
-            }
-        </div>
-
-        <div class="d-flex justify-between">
-            <K7Button Color="secondary" Variant="outlined" OnClick="ResetLayout" Disabled="_saving">
-                @L["ResetToDefault"]
-            </K7Button>
-            <K7Button Color="primary" Variant="filled" OnClick="SaveLayout" Disabled="_saving">
-                @if (_saving) { <K7Spinner Size="sm" /> }
-                @S["Save"]
-            </K7Button>
-        </div>
-
-        <K7ExpansionPanel>
-            <TitleContent>@L["PreviewTitle"]</TitleContent>
-            <ChildContent>
-                <div class="d-flex justify-end mb-2">
-                    <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
-                              OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
-                        @L["PreviewRefresh"]
-                    </K7Button>
+    <div class="settings-form-page">
+        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
+            <div class="d-flex align-center justify-between">
+                <div>
+                    <h6 class="mb-1">@L["PageTitle"]</h6>
+                    <p class="text-sm" Color="secondary">@L["Description"]</p>
                 </div>
-                <HomeLayoutPreview @ref="_preview" Rows="_rows" />
-            </ChildContent>
-        </K7ExpansionPanel>
+                <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
+                          OnClick="AddRow" Disabled="_saving">
+                    @L["AddRow"]
+                </K7Button>
+            </div>
 
+            <div class="d-flex flex-col gap-2">
+                @for (var i = 0; i < _rows.Count; i++)
+                {
+                    var row = _rows[i];
+                    var isFirst = i == 0;
+                    var isLast = i == _rows.Count - 1;
+                    <K7Paper Outlined="true" Elevation="0" Class="pa-3 d-flex align-center justify-between gap-3">
+                        <div class="d-flex align-center gap-2">
+                            <div class="d-flex flex-col gap-1">
+                                <K7IconButton Icon="@Phosphor.ArrowUp" Disabled="@isFirst"
+                                        OnClick="() => MoveUp(row)" AriaLabel="@L["MoveUp"]" />
+                                <K7IconButton Icon="@Phosphor.ArrowDown" Disabled="@isLast"
+                                        OnClick="() => MoveDown(row)" AriaLabel="@L["MoveDown"]" />
+                            </div>
+                            <span class="text-sm">@GetRowTitle(row.Title)</span>
+                        </div>
+                        <div class="d-flex align-center gap-2">
+                            <K7Switch Value="@row.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(row, v))" />
+                            <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="() => EditRow(row)"
+                                    AriaLabel="@L["EditRow"]" />
+                            <K7IconButton Icon="@Phosphor.Trash" OnClick="() => DeleteRow(row)"
+                                    AriaLabel="@L["DeleteRow"]" />
+                        </div>
+                    </K7Paper>
+                }
+            </div>
+
+            <K7ExpansionPanel>
+                <TitleContent>@L["PreviewTitle"]</TitleContent>
+                <ChildContent>
+                    <div class="d-flex justify-end mb-2">
+                        <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
+                                  OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
+                            @L["PreviewRefresh"]
+                        </K7Button>
+                    </div>
+                    <HomeLayoutPreview @ref="_preview" Rows="_rows" />
+                </ChildContent>
+            </K7ExpansionPanel>
+        </div>
+
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ResetDisabled="ResetDisabled"
+                             OnSave="SaveLayout"
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetLayout" />
     </div>
 }

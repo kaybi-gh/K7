@@ -1,8 +1,9 @@
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Pages;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -11,6 +12,8 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminHomeLayoutPanel
 {
+    private sealed record HomeFormState(List<HomeRowEditModel> Rows);
+
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -23,6 +26,11 @@ public partial class AdminHomeLayoutPanel
     private bool _saving;
     private HomeLayoutPreview? _preview;
     private bool _previewLoading;
+    private bool _hasServerOverride;
+    private readonly SettingsFormTracker<HomeFormState> _formTracker = new();
+
+    private bool IsDirty => _formTracker.IsDirty(new HomeFormState(_rows));
+    private bool ResetDisabled => !IsDirty && !_hasServerOverride;
 
     protected override async Task OnInitializedAsync()
     {
@@ -37,11 +45,26 @@ public partial class AdminHomeLayoutPanel
         {
             var layout = await ServerPreferencesService.GetEffectiveServerHomeLayoutAsync();
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private void CaptureFormState() => _formTracker.Capture(new HomeFormState(_rows));
+
+    private void CancelChanges()
+    {
+        _rows = _formTracker.Restore().Rows;
+    }
+
+    private void OnRowVisibilityChanged(HomeRowEditModel row, bool value)
+    {
+        row.IsVisible = value;
+        StateHasChanged();
     }
 
     private void MoveUp(HomeRowEditModel row)
@@ -81,6 +104,7 @@ public partial class AdminHomeLayoutPanel
         var model = (HomeRowEditModel)result.Data!;
         model.Order = _rows.Count;
         _rows.Add(model);
+        RenumberRows();
     }
 
     private async Task EditRow(HomeRowEditModel row)
@@ -96,12 +120,14 @@ public partial class AdminHomeLayoutPanel
         updated.Order = row.Order;
         var index = _rows.IndexOf(row);
         _rows[index] = updated;
+        StateHasChanged();
     }
 
     private void RenumberRows()
     {
         for (var i = 0; i < _rows.Count; i++)
             _rows[i].Order = i;
+        StateHasChanged();
     }
 
     private async Task SaveLayout()
@@ -112,6 +138,8 @@ public partial class AdminHomeLayoutPanel
             RenumberRows();
             var layout = new HomeLayoutDto { Rows = _rows.Select(m => m.ToDto()).ToList() };
             await ServerPreferencesService.UpdateServerHomeLayoutAsync(layout);
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -132,6 +160,8 @@ public partial class AdminHomeLayoutPanel
             await ServerPreferencesService.DeleteServerHomeLayoutAsync();
             var layout = await ServerPreferencesService.GetEffectiveServerHomeLayoutAsync();
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
             Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -146,7 +176,9 @@ public partial class AdminHomeLayoutPanel
 
     private async Task RefreshPreviewAsync()
     {
-        if (_preview is null) return;
+        if (_preview is null)
+            return;
+
         _previewLoading = true;
         StateHasChanged();
         await _preview.RefreshAsync();
@@ -154,5 +186,7 @@ public partial class AdminHomeLayoutPanel
     }
 
     private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(HomeL, rowTitle);
-}
 
+    private async Task RefreshOverrideStateAsync() =>
+        _hasServerOverride = await ServerPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(ServerPreferencesService);
+}

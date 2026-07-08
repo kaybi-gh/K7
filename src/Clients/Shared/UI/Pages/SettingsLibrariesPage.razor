@@ -8,35 +8,47 @@
 
 <h4 class="mb-4">@L["LibrariesPageTitle"]</h4>
 
-<div class="settings-libraries">
-    <p class="settings-libraries__description">@L["LibrariesPageDescription"]</p>
+<div class="settings-form-page">
+    <div class="settings-form-page__body settings-libraries">
+        <p class="settings-libraries__description">@L["LibrariesPageDescription"]</p>
 
-    @if (_loading)
-    {
-        <K7ProgressBar Indeterminate="true" />
-    }
-    else if (_libraries.Count == 0)
-    {
-        <p class="settings-libraries__empty">@L["LibrariesPageEmpty"]</p>
-    }
-    else
-    {
-        <div class="settings-libraries__groups">
-            @foreach (var group in _groups)
-            {
-                var libs = GetLibrariesForGroup(group).ToList();
-                @if (libs.Count > 0)
+        @if (_loading)
+        {
+            <K7ProgressBar Indeterminate="true" />
+        }
+        else if (_libraries.Count == 0)
+        {
+            <p class="settings-libraries__empty">@L["LibrariesPageEmpty"]</p>
+        }
+        else
+        {
+            <div class="settings-libraries__groups">
+                @foreach (var group in _groups)
                 {
-                    <K7Paper Outlined="true" Class="settings-libraries__group">
-                        <span class="settings-libraries__group-title">@group.Title</span>
-                        <K7CheckboxList TItem="LibraryDto"
-                                        Items="libs"
-                                        IsChecked="@(lib => !_selfExcludedIds.Contains(lib.Id))"
-                                        CheckedChanged="@(async e => await ToggleLibrary(e.Item.Id, !e.Checked))"
-                                        ItemLabel="@(lib => lib.Title)" />
-                    </K7Paper>
+                    var libs = GetLibrariesForGroup(group).ToList();
+                    @if (libs.Count > 0)
+                    {
+                        <K7Paper Outlined="true" Class="settings-libraries__group">
+                            <span class="settings-libraries__group-title">@group.Title</span>
+                            <K7CheckboxList TItem="LibraryDto"
+                                            Items="libs"
+                                            IsChecked="@(lib => !_selfExcludedIds.Contains(lib.Id))"
+                                            CheckedChanged="@(e => ToggleLibrary(e.Item.Id, !e.Checked))"
+                                            ItemLabel="@(lib => lib.Title)" />
+                        </K7Paper>
+                    }
                 }
-            }
-        </div>
+            </div>
+        }
+    </div>
+
+    @if (!_loading && _libraries.Count > 0)
+    {
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ResetDisabled="ResetDisabled"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetToDefaultsAsync" />
     }
 </div>

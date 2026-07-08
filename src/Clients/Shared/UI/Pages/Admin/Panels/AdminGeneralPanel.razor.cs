@@ -1,17 +1,25 @@
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services.Resources;
-using K7.Shared.Dtos;
+using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminGeneralPanel
 {
+    private sealed record GeneralFormState(string Language, string ThemeCssDataAttribute);
+
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private string _defaultLanguage = "en";
     private ThemeDefinition _defaultTheme = Themes.DefaultDark;
     private bool _isLoading = true;
+    private bool _saving;
+    private readonly SettingsFormTracker<GeneralFormState> _formTracker = new();
+
+    private bool IsDirty => _formTracker.IsDirty(new GeneralFormState(_defaultLanguage, _defaultTheme.CssDataAttribute));
 
     protected override async Task OnInitializedAsync()
     {
@@ -23,6 +31,8 @@ public partial class AdminGeneralPanel
                 _defaultLanguage = serverInfo.DefaultLanguage;
                 _defaultTheme = Themes.FromCssDataAttribute(serverInfo.DefaultTheme) ?? Themes.DefaultDark;
             }
+
+            CaptureFormState();
         }
         finally
         {
@@ -30,15 +40,48 @@ public partial class AdminGeneralPanel
         }
     }
 
-    private async Task OnDefaultLanguageChanged(string language)
+    private void CaptureFormState() =>
+        _formTracker.Capture(new GeneralFormState(_defaultLanguage, _defaultTheme.CssDataAttribute));
+
+    private void CancelChanges()
     {
-        _defaultLanguage = language;
-        await ServerInfoService.UpdateDefaultLanguageAsync(language);
+        var state = _formTracker.Restore();
+        _defaultLanguage = state.Language;
+        _defaultTheme = Themes.FromCssDataAttribute(state.ThemeCssDataAttribute) ?? Themes.DefaultDark;
     }
 
-    private async Task OnDefaultThemeChanged(ThemeDefinition theme)
+    private void OnDefaultLanguageChanged(string language)
+    {
+        _defaultLanguage = language;
+        StateHasChanged();
+    }
+
+    private void OnDefaultThemeChanged(ThemeDefinition theme)
     {
         _defaultTheme = theme;
-        await ServerInfoService.UpdateDefaultThemeAsync(theme.CssDataAttribute);
+        StateHasChanged();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || !IsDirty)
+            return;
+
+        _saving = true;
+        try
+        {
+            await ServerInfoService.UpdateDefaultLanguageAsync(_defaultLanguage);
+            await ServerInfoService.UpdateDefaultThemeAsync(_defaultTheme.CssDataAttribute);
+            CaptureFormState();
+            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 }
