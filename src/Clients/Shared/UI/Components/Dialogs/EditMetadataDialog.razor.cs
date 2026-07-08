@@ -294,19 +294,30 @@ public partial class EditMetadataDialog : IDisposable
 
     private void OnMediaMetadataRefreshed(Guid mediaId)
     {
-        if (Media?.Id != mediaId)
-            return;
-
-        _ = InvokeAsync(ReloadMediaFromServerAsync);
-    }
-
-    private void OnMediaPicturesUpdated(Guid mediaId)
-    {
-        if (Media?.Id != mediaId)
+        if (!IsWatchedMediaId(mediaId))
             return;
 
         SchedulePicturesReload();
     }
+
+    private void OnMediaPicturesUpdated(Guid mediaId)
+    {
+        if (!IsWatchedMediaId(mediaId))
+            return;
+
+        SchedulePicturesReload();
+    }
+
+    private bool IsWatchedMediaId(Guid mediaId) =>
+        Media switch
+        {
+            null => false,
+            { Id: var id } when id == mediaId => true,
+            SerieSeasonDto season => season.SerieId == mediaId,
+            SerieEpisodeDto episode => episode.SerieId == mediaId || episode.SeasonId == mediaId,
+            MusicTrackDto track => track.AlbumId == mediaId,
+            _ => false
+        };
 
     private void OnPersonPicturesUpdated(Guid personId)
     {
@@ -379,7 +390,7 @@ public partial class EditMetadataDialog : IDisposable
         if (Person is null)
             return;
 
-        var fresh = await MediaService.GetPersonAsync(Person.Id);
+        var fresh = await MediaService.GetPersonAsync(Person.Id, bypassCache: true);
         if (fresh is null)
             return;
 

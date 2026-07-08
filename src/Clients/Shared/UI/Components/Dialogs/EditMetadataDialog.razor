@@ -253,9 +253,12 @@
                         </div>
 
                         <div class="picture-slot-preview @GetPictureSlotPreviewClass(type)">
-                            @if (picture is not null)
+                            @{
+                                var pictureUrl = picture is not null ? GetPictureDisplayUrl(picture) : null;
+                            }
+                            @if (!string.IsNullOrEmpty(pictureUrl))
                             {
-                                <img @key="@GetPictureRenderKey(picture)" src="@GetPictureDisplayUrl(picture)" alt="@type" loading="lazy" />
+                                <img @key="@GetPictureRenderKey(picture!)" src="@pictureUrl" alt="@type" loading="lazy" />
                             }
                             else
                             {
