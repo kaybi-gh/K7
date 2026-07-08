@@ -1,4 +1,6 @@
-﻿using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
@@ -48,8 +50,12 @@ public partial class Person : IDisposable
 
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
 
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
+        K7HubClient.PersonPicturesUpdated += OnPersonPicturesUpdated;
+
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
@@ -267,6 +273,30 @@ public partial class Person : IDisposable
         return age;
     }
 
+    private void OnPersonPicturesUpdated(Guid personId)
+    {
+        if (_person is null || _person.Id != personId)
+            return;
+
+        _ = InvokeAsync(ReloadPortraitAsync);
+    }
+
+    private async Task ReloadPortraitAsync()
+    {
+        if (!Guid.TryParse(Id, out var personId))
+            return;
+
+        var person = await k7ServerService.GetPersonAsync(personId);
+        if (person is null)
+            return;
+
+        _person = person;
+        var portraitUri = apiClient.GetAbsoluteUri(
+            person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _portraitUrl = MediaPictureUrlHelper.WithCacheBuster(portraitUri, DateTimeOffset.UtcNow);
+        StateHasChanged();
+    }
+
     private async Task RefreshMetadataAsync()
     {
         if (_person is null) return;
@@ -301,7 +331,11 @@ public partial class Person : IDisposable
         }
     }
 
-    public void Dispose() => _backdropTimer?.Dispose();
+    public void Dispose()
+    {
+        K7HubClient.PersonPicturesUpdated -= OnPersonPicturesUpdated;
+        _backdropTimer?.Dispose();
+    }
 
     private readonly record struct PersonBackdropSlide(string Url, string? DominantColor);
 }
