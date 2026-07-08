@@ -67,4 +67,36 @@ public class MetadataImageUrlHelperTests
             .Should().Be(".png");
         MetadataImageUrlHelper.IsVectorContentType("image/svg+xml").Should().BeTrue();
     }
+
+    [Test]
+    public void FilterHdEpisodeStills_ShouldExcludeLowResolutionStills()
+    {
+        var images = new List<ProviderImageDto>
+        {
+            new()
+            {
+                Url = "https://tvdb.example/still.jpg",
+                ThumbnailUrl = "https://tvdb.example/still.jpg",
+                Type = MetadataPictureType.Still,
+                Provider = "tvdb",
+                Width = 640,
+                Height = 360
+            },
+            new()
+            {
+                Url = "https://tmdb.example/still.jpg",
+                ThumbnailUrl = "https://tmdb.example/still.jpg",
+                Type = MetadataPictureType.Still,
+                Provider = "tmdb",
+                Width = 1920,
+                Height = 1080,
+                VoteAverage = 5
+            }
+        };
+
+        var filtered = MetadataImageUrlHelper.FilterHdEpisodeStills(images);
+
+        filtered.Should().ContainSingle();
+        filtered[0].Provider.Should().Be("tmdb");
+    }
 }

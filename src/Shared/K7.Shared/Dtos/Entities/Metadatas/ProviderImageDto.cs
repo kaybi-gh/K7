@@ -7,6 +7,7 @@ public sealed record ProviderImageDto
     public required string Url { get; init; }
     public required string ThumbnailUrl { get; init; }
     public required MetadataPictureType Type { get; init; }
+    public string? Provider { get; init; }
     public int Width { get; init; }
     public int Height { get; init; }
     public double VoteAverage { get; init; }

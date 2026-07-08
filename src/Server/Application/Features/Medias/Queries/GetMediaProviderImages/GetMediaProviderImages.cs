@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas;
@@ -81,7 +82,7 @@ public class GetMediaProviderImagesQueryHandler(
             if (!provider.SupportsMediaType(mediaType))
                 continue;
 
-            var externalId = externalIds.FirstOrDefault(e => e.ProviderName == provider.ProviderName);
+            var externalId = ResolveProviderExternalId(externalIds, provider.ProviderName);
             if (externalId is null)
                 continue;
 
@@ -96,7 +97,21 @@ public class GetMediaProviderImagesQueryHandler(
             results.AddRange(images);
         }
 
-        return MetadataImageUrlHelper.FilterProviderImages(results);
+        return mediaType == MediaType.SerieEpisode
+            ? MetadataImageUrlHelper.FilterHdEpisodeStills(results)
+            : MetadataImageUrlHelper.FilterProviderImages(results);
+    }
+
+    private static ExternalId? ResolveProviderExternalId(IEnumerable<ExternalId> externalIds, string providerName)
+    {
+        var externalId = externalIds.FirstOrDefault(e => e.ProviderName == providerName);
+        if (externalId is not null)
+            return externalId;
+
+        if (!string.Equals(providerName, "tmdb", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return externalIds.FirstOrDefault(e => e.ProviderName == "imdb");
     }
 
     private async Task<string> ResolveLanguageAsync(BaseMedia media, CancellationToken cancellationToken)

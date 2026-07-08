@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+using K7.Shared.Helpers;
 using K7.Shared.Dtos.Entities.Metadatas;
 
 namespace K7.Server.Application.Helpers;
@@ -68,11 +70,25 @@ public static class MetadataImageUrlHelper
         };
     }
 
+    public static bool MeetsHdStillThreshold(int width, int height) =>
+        MetadataPictureThresholds.MeetsHdStillThreshold(width, height);
+
+    public static bool MeetsHdStillThreshold(ProviderImageDto image) =>
+        image.Width <= 0 && image.Height <= 0
+        || MeetsHdStillThreshold(image.Width, image.Height);
+
     public static IReadOnlyList<ProviderImageDto> FilterProviderImages(IEnumerable<ProviderImageDto> images) =>
         images
             .Select(NormalizeProviderImage)
             .Where(image => image is not null)
             .Cast<ProviderImageDto>()
+            .ToList();
+
+    public static IReadOnlyList<ProviderImageDto> FilterHdEpisodeStills(IEnumerable<ProviderImageDto> images) =>
+        FilterProviderImages(images)
+            .Where(image => image.Type != MetadataPictureType.Still || MeetsHdStillThreshold(image))
+            .OrderByDescending(image => image.Type == MetadataPictureType.Still ? image.Width : 0)
+            .ThenByDescending(image => image.VoteAverage)
             .ToList();
 
     public static string? GetExtensionFromContentType(string? contentType)
