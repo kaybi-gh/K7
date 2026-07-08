@@ -23,4 +23,5 @@
   <data name="DefaultLanguageHelp" xml:space="preserve"><value>Language used by default for all users who haven't set a preference.</value></data>
   <data name="DefaultTheme" xml:space="preserve"><value>Default theme</value></data>
   <data name="DefaultThemeHelp" xml:space="preserve"><value>Theme used by default for all users who haven't set a preference.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Settings saved</value></data>
 </root>

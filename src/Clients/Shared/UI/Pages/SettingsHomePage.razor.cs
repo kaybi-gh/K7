@@ -1,6 +1,6 @@
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Pages;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
@@ -10,6 +10,8 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SettingsHomePage
 {
+    private sealed record HomeFormState(List<HomeRowEditModel> Rows);
+
     [Inject] private IUserPreferencesService PreferencesService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
@@ -19,6 +21,11 @@ public partial class SettingsHomePage
     private bool _saving;
     private HomeLayoutPreview? _preview;
     private bool _previewLoading;
+    private bool _hasUserOverride;
+    private readonly SettingsFormTracker<HomeFormState> _formTracker = new();
+
+    private bool IsDirty => _formTracker.IsDirty(new HomeFormState(_rows));
+    private bool ResetDisabled => !IsDirty && !_hasUserOverride;
 
     protected override async Task OnInitializedAsync()
     {
@@ -26,15 +33,32 @@ public partial class SettingsHomePage
         {
             var layout = await PreferencesService.GetHomeLayoutAsync();
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
         }
         catch
         {
             _rows = [];
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private void CaptureFormState() => _formTracker.Capture(new HomeFormState(_rows));
+
+    private void CancelChanges()
+    {
+        _rows = _formTracker.Restore().Rows;
+    }
+
+    private void OnRowVisibilityChanged(HomeRowEditModel row, bool value)
+    {
+        row.IsVisible = value;
+        StateHasChanged();
     }
 
     private void MoveUp(HomeRowEditModel row)
@@ -61,6 +85,7 @@ public partial class SettingsHomePage
     {
         for (var i = 0; i < _rows.Count; i++)
             _rows[i].Order = i;
+        StateHasChanged();
     }
 
     private async Task SaveLayout()
@@ -71,6 +96,8 @@ public partial class SettingsHomePage
             RenumberRows();
             var layout = new HomeLayoutDto { Rows = _rows.Select(m => m.ToDto()).ToList() };
             await PreferencesService.UpdateHomeLayoutAsync(layout);
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
             Snackbar.Add(L["HomeSaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -91,6 +118,8 @@ public partial class SettingsHomePage
             await PreferencesService.ResetHomeLayoutAsync();
             var layout = await PreferencesService.GetHomeLayoutAsync();
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
+            CaptureFormState();
+            await RefreshOverrideStateAsync();
             Snackbar.Add(L["HomeResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -105,7 +134,9 @@ public partial class SettingsHomePage
 
     private async Task RefreshPreviewAsync()
     {
-        if (_preview is null) return;
+        if (_preview is null)
+            return;
+
         _previewLoading = true;
         StateHasChanged();
         await _preview.RefreshAsync();
@@ -113,4 +144,7 @@ public partial class SettingsHomePage
     }
 
     private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(HomeL, rowTitle);
+
+    private async Task RefreshOverrideStateAsync() =>
+        _hasUserOverride = await UserPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(PreferencesService);
 }

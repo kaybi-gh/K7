@@ -3,6 +3,7 @@
 @using K7.Clients.Shared.Models
 @using K7.Clients.Shared.Services.Resources
 @inject IStringLocalizer<AdminGeneralPanel> L
+@inject IStringLocalizer<SharedResource> S
 
 @if (_isLoading)
 {
@@ -10,24 +11,35 @@
 }
 else
 {
-    <div class="d-flex flex-col pa-4 gap-4">
-        <div>
-            <K7LanguageSelect Value="@_defaultLanguage" ValueChanged="OnDefaultLanguageChanged" Label="@L["DefaultLanguage"]" Languages="SupportedLanguages.Interface" />
-            <span class="text-caption mt-1" Color="secondary">@L["DefaultLanguageHelp"]</span>
+    <div class="settings-form-page">
+        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
+            <div>
+                <K7LanguageSelect Value="@_defaultLanguage"
+                                  ValueChanged="OnDefaultLanguageChanged"
+                                  Label="@L["DefaultLanguage"]"
+                                  Languages="SupportedLanguages.Interface" />
+                <span class="text-caption mt-1" Color="secondary">@L["DefaultLanguageHelp"]</span>
+            </div>
+
+            <div>
+                <K7Select TValue="ThemeDefinition"
+                          Label="@L["DefaultTheme"]"
+                          Value="_defaultTheme"
+                          ValueChanged="OnDefaultThemeChanged"
+                          ToStringFunc="@(t => t?.Name)">
+                    @foreach (var theme in Themes.Collection)
+                    {
+                        <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
+                    }
+                </K7Select>
+                <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>
+            </div>
         </div>
 
-        <div>
-            <K7Select TValue="ThemeDefinition"
-                      Label="@L["DefaultTheme"]"
-                      Value="_defaultTheme"
-                      ValueChanged="OnDefaultThemeChanged"
-                      ToStringFunc="@(t => t?.Name)">
-                @foreach (var theme in Themes.Collection)
-                {
-                    <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
-                }
-            </K7Select>
-            <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>
-        </div>
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ShowResetToDefaults="false"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges" />
     </div>
 }
