@@ -1,0 +1,5 @@
+@namespace K7.Clients.Shared.UI.Components
+@using Microsoft.AspNetCore.Components.Forms
+
+<InputFile id="@_inputId" OnChange="HandleFileSelectedAsync" accept="@Accept" disabled="@Disabled" style="display:none" />
+<K7IconButton Icon="@Icon" OnClick="OpenFilePickerAsync" Disabled="@Disabled" Title="@Label" Size="@Size" Class="@Class" />
