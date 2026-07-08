@@ -9,40 +9,21 @@
             {
                 <div>
                     <p class="text-sm mb-1">Biblioth&egrave;ques</p>
-                    <div class="d-flex flex-col gap-1 pl-1">
-                        @foreach (var lib in Libraries)
-                        {
-                            <label class="d-flex align-center gap-2" style="cursor: pointer;">
-                                <input type="checkbox"
-                                       checked="@_libraryIds.Contains(lib.Id)"
-                                       @onchange="@(e => ToggleLibrary(lib.Id, (bool)(e.Value ?? false)))" />
-                                <span class="text-sm">@lib.Title</span>
-                            </label>
-                        }
-                    </div>
+                    <K7CheckboxList TItem="LibraryDto"
+                                      Items="Libraries"
+                                      IsChecked="@(lib => _libraryIds.Contains(lib.Id))"
+                                      CheckedChanged="@(e => ToggleLibrary(e.Item.Id, e.Checked))"
+                                      ItemLabel="@(lib => lib.Title)" />
                 </div>
             }
 
             <div>
                 <p class="text-sm mb-1">Types de m&eacute;dia</p>
-                <div class="d-flex flex-col gap-1 pl-1">
-                    @foreach (var type in new[] { MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie })
-                    {
-                        var label = type switch
-                        {
-                            MediaType.Movie => "Films",
-                            MediaType.MusicAlbum => "Albums musicaux",
-                            MediaType.Serie => "S&eacute;ries",
-                            _ => type.ToString()
-                        };
-                        <label class="d-flex align-center gap-2" style="cursor: pointer;">
-                            <input type="checkbox"
-                                   checked="@_mediaTypes.Contains(type)"
-                                   @onchange="@(e => ToggleMediaType(type, (bool)(e.Value ?? false)))" />
-                            <span class="text-sm">@((MarkupString)label)</span>
-                        </label>
-                    }
-                </div>
+                <K7CheckboxList TItem="MediaType"
+                                  Items="_availableMediaTypes"
+                                  IsChecked="@(type => _mediaTypes.Contains(type))"
+                                  CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
+                                  ItemLabel="@(GetMediaTypeLabel)" />
                 <p class="text-xs mt-1" style="color: var(--color-text-secondary);">Laisser vide pour afficher tous les types.</p>
             </div>
 
