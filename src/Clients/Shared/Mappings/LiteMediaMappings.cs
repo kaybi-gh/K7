@@ -131,8 +131,8 @@ public static class LiteMediaMappings
             MediaType = item.MediaType,
             Title = item.Title,
             AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
-            PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-            BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
+            PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient),
+            BackdropUrl = ResolveCardPictureUrl(backdropPicture, apiClient, MetadataPictureSize.Medium),
             Watched = item.Watched,
             Progress = item.Progress,
             GroupCount = item.GroupCount,
@@ -204,6 +204,22 @@ public static class LiteMediaMappings
             return null;
 
         return Math.Round(rating.Value.Value / rating.MaximumValue.Value * 10, 1);
+    }
+
+    private static string? ResolveCardPictureUrl(
+        MetadataPictureDto? picture,
+        IK7ServerService apiClient,
+        MetadataPictureSize preferredSize = MetadataPictureSize.Small)
+    {
+        if (picture?.Uri is null)
+            return null;
+
+        var size = MetadataPictureDisplayHelper.GetBestDisplaySize(
+            picture,
+            preferredSize,
+            MetadataPictureSize.Medium);
+        var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
+        return MediaPictureUrlHelper.WithCacheBuster(uri, DateTimeOffset.UtcNow);
     }
 
     private static MediaType GetMediaType(LiteMediaDto item) => item switch

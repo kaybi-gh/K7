@@ -161,6 +161,7 @@ public partial class LibraryGroup : IDisposable
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
 
         _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterPicturesUpdatedAsync, InvokeAsync);
@@ -663,6 +664,14 @@ public partial class LibraryGroup : IDisposable
         });
     }
 
+    private void OnMediaMetadataRefreshed(Guid mediaId)
+    {
+        if (_loading)
+            return;
+
+        _picturesRefreshRunner?.Schedule();
+    }
+
     private void OnMediaPicturesUpdated(Guid mediaId)
     {
         if (_loading)
@@ -899,6 +908,7 @@ public partial class LibraryGroup : IDisposable
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
         _picturesRefreshRunner?.Dispose();
     }
