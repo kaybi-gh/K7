@@ -4,14 +4,16 @@ using K7.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Layout;
 
-public partial class SidebarLayout : IDisposable
+public partial class SidebarLayout : IAsyncDisposable
 {
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter, EditorRequired] public RenderFragment SidebarContent { get; set; } = default!;
@@ -19,16 +21,26 @@ public partial class SidebarLayout : IDisposable
 
     private bool _sidebarOpen;
     private bool _desktopCollapsed;
+    private bool _isMobileViewport = true;
+    private bool _isPhoneDevice;
     private bool _isTv;
     private bool _showDesktopCollapseToggle;
+    private bool _disposed;
     private SidebarLayoutContext _sidebarContext = new(false);
+    private IJSObjectReference? _jsModule;
+    private DotNetObjectReference<SidebarLayout>? _dotnetRef;
+
+    private bool UseMobileDrawer => _isMobileViewport || _isPhoneDevice;
+    private bool IsCollapsed => _desktopCollapsed && !UseMobileDrawer;
 
     protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
 
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-        _showDesktopCollapseToggle = !_isTv;
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        _isTv = deviceType == DeviceType.TV;
+        _isPhoneDevice = deviceType == DeviceType.Phone;
+        _showDesktopCollapseToggle = !_isTv && !_isPhoneDevice;
 
         if (_showDesktopCollapseToggle)
         {
@@ -51,7 +63,35 @@ public partial class SidebarLayout : IDisposable
             return "sidebar-open";
         }
 
-        return _desktopCollapsed ? "page-sidebar--collapsed" : string.Empty;
+        return IsCollapsed ? "page-sidebar--collapsed" : string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _jsModule = await JS.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+        _dotnetRef ??= DotNetObjectReference.Create(this);
+        _isMobileViewport = await _jsModule.InvokeAsync<bool>("observeViewport", _dotnetRef);
+        UpdateSidebarContext();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnViewportChanged(bool isMobile)
+    {
+        if (_disposed || _isMobileViewport == isMobile)
+        {
+            return Task.CompletedTask;
+        }
+
+        _isMobileViewport = isMobile;
+        UpdateSidebarContext();
+        return InvokeAsync(StateHasChanged);
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -74,10 +114,29 @@ public partial class SidebarLayout : IDisposable
     }
 
     private void UpdateSidebarContext() =>
-        _sidebarContext = new SidebarLayoutContext(_desktopCollapsed);
+        _sidebarContext = new SidebarLayoutContext(IsCollapsed);
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
+        _disposed = true;
         NavigationManager.LocationChanged -= OnLocationChanged;
+
+        if (_jsModule is not null)
+        {
+            try
+            {
+                if (_dotnetRef is not null)
+                {
+                    await _jsModule.InvokeVoidAsync("disposeViewport", _dotnetRef);
+                }
+
+                await _jsModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _dotnetRef?.Dispose();
     }
 }

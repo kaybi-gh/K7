@@ -171,7 +171,7 @@
     min-width: 0;
 }
 
-/* ── Mobile ── */
+/* ── Mobile drawer (narrow viewport or phone device, including landscape) ── */
 
 @media (max-width: 599.98px) {
     .page-with-sidebar {
@@ -239,33 +239,97 @@
     }
 }
 
+.page-with-sidebar.page-with-sidebar--mobile-drawer {
+    flex-direction: column;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .sidebar-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-drawer);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .sidebar-mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    padding: var(--space-1);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .sidebar-mobile-toggle:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .sidebar-mobile-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar {
+    display: none;
+    width: 100%;
+    border-right: none;
+    flex: 1;
+    overflow: hidden;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar.sidebar-open {
+    display: flex;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar .page-sidebar-title {
+    display: none;
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar ::deep .nav-link,
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar ::deep .nav-group-toggle {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
+}
+
+.page-with-sidebar.page-with-sidebar--mobile-drawer .page-sidebar-body.sidebar-body-hidden {
+    display: none;
+}
+
 /* ── Desktop collapsed rail (nav rules live in layout.css) ── */
 
 @media (min-width: 600px) {
-    .page-sidebar-collapse-toggle {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar-collapse-toggle {
         display: inline-flex;
         position: relative;
         z-index: 1;
     }
 
-    .page-sidebar.page-sidebar--collapsed {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar.page-sidebar--collapsed {
         width: var(--page-sidebar-width-collapsed, 56px);
         overflow: visible;
         position: relative;
         z-index: var(--z-above);
     }
 
-    .page-sidebar.page-sidebar--collapsed .page-sidebar-scroll {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar.page-sidebar--collapsed .page-sidebar-scroll {
         overflow: visible;
     }
 
-    .page-sidebar--collapsed ::deep .page-sidebar-nav {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .page-sidebar-nav {
         align-items: center;
         padding-inline: var(--space-1);
     }
 
-    .page-sidebar--collapsed ::deep .nav-link,
-    .page-sidebar--collapsed ::deep .nav-group-toggle {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-link,
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-group-toggle {
         justify-content: center;
         width: 2.75rem;
         min-width: 2.75rem;
@@ -275,12 +339,12 @@
         overflow: visible;
     }
 
-    .page-sidebar--collapsed .page-sidebar-header {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed .page-sidebar-header {
         justify-content: center;
         padding-inline: var(--space-1);
     }
 
-    .page-sidebar--collapsed .page-sidebar-collapse-toggle {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed .page-sidebar-collapse-toggle {
         margin-inline-start: 0;
     }
 }

@@ -615,12 +615,12 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
    Page sidebar collapsed rail (admin / settings, desktop)
    ============================================================ */
 
-.page-with-sidebar.page-with-sidebar--rail {
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) {
     overflow: visible;
 }
 
-.app-main:has(.page-with-sidebar--rail),
-.page-viewport:has(.page-with-sidebar--rail) {
+.app-main:has(.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer)),
+.page-viewport:has(.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer)) {
     overflow: visible;
 }
 
@@ -629,7 +629,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 }
 
 @media (min-width: 600px) {
-    .page-sidebar.page-sidebar--collapsed {
+    .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar.page-sidebar--collapsed {
         width: var(--page-sidebar-width-collapsed, 56px);
         overflow: visible;
         position: relative;
