@@ -1,0 +1,72 @@
+@inject IStringLocalizer<PlaybackPolicySettingsFields> L
+
+@if (VideoPolicy is not null)
+{
+    <section class="d-flex flex-col gap-4">
+        <h6>@L["ResumeSection"]</h6>
+        <span class="text-caption video-playback-hint">@L["ResumeSectionHint"]</span>
+
+        <K7Slider TValue="int" Min="0" Max="50" Step="1" Immediate="true"
+                  Label="@L["MinResumePercent"]"
+                  Hint="@string.Format(L["MinResumePercentHint"], VideoPolicy.MinResumePercent)"
+                  Value="VideoPolicy.MinResumePercent"
+                  ValueChanged="v => OnVideoChanged(p => p with { MinResumePercent = v })" />
+
+        <K7Slider TValue="int" Min="0" Max="900" Step="30" Immediate="true"
+                  Label="@L["MinResumeDurationSeconds"]"
+                  Hint="@string.Format(L["MinResumeDurationHint"], VideoPolicy.MinResumeDurationSeconds)"
+                  Value="VideoPolicy.MinResumeDurationSeconds"
+                  ValueChanged="v => OnVideoChanged(p => p with { MinResumeDurationSeconds = v })" />
+
+        <K7Slider TValue="int" Min="50" Max="100" Step="1" Immediate="true"
+                  Label="@L["CompletedThresholdPercent"]"
+                  Hint="@string.Format(L["CompletedThresholdHint"], VideoPolicy.CompletedThresholdPercent)"
+                  Value="VideoPolicy.CompletedThresholdPercent"
+                  ValueChanged="v => OnVideoChanged(p => p with { CompletedThresholdPercent = v })" />
+
+        <K7Slider TValue="int" Min="0" Max="90" Step="1" Immediate="true"
+                  Label="@L["ContinueWatchingMaxAgeDays"]"
+                  Hint="@string.Format(L["ContinueWatchingMaxAgeDaysHint"], VideoPolicy.ContinueWatchingMaxAgeDays)"
+                  Value="VideoPolicy.ContinueWatchingMaxAgeDays"
+                  ValueChanged="v => OnVideoChanged(p => p with { ContinueWatchingMaxAgeDays = v })" />
+    </section>
+}
+
+@if (AudioPolicy is not null)
+{
+    <section class="d-flex flex-col gap-4">
+        <h6>@L["MusicResumeSection"]</h6>
+
+        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+            @L["MusicResumeSectionHint"]
+        </K7Alert>
+
+        <K7Slider TValue="int" Min="0" Max="50" Step="1" Immediate="true"
+                  Label="@L["MinResumePercent"]"
+                  Hint="@L["MusicMinResumePercentHint"]"
+                  FormatValue="FormatPercent"
+                  Value="AudioPolicy.MinResumePercent"
+                  ValueChanged="v => OnAudioChanged(p => p with { MinResumePercent = v })" />
+
+        <K7Slider TValue="int" Min="0" Max="300" Step="10" Immediate="true"
+                  Label="@L["MinResumeDurationSeconds"]"
+                  Hint="@L["MusicMinResumeDurationHint"]"
+                  FormatValue="FormatSeconds"
+                  Value="AudioPolicy.MinResumeDurationSeconds"
+                  ValueChanged="v => OnAudioChanged(p => p with { MinResumeDurationSeconds = v })" />
+
+        <K7Slider TValue="int" Min="10" Max="100" Step="5" Immediate="true"
+                  Label="@L["MusicCompletedThresholdPercent"]"
+                  Hint="@L["MusicCompletedThresholdHint"]"
+                  FormatValue="FormatPercent"
+                  Value="AudioPolicy.CompletedThresholdPercent"
+                  ValueChanged="v => OnAudioChanged(p => p with { CompletedThresholdPercent = v })" />
+
+        <K7Slider TValue="int" Min="30" Max="600" Step="30" Immediate="true"
+                  Label="@L["MusicCompletedMinDurationSeconds"]"
+                  Hint="@L["MusicCompletedMinDurationHint"]"
+                  FormatValue="FormatSeconds"
+                  Value="AudioPolicy.CompletedMinDurationSeconds"
+                  ValueChanged="v => OnAudioChanged(p => p with { CompletedMinDurationSeconds = v })" />
+    </section>
+}

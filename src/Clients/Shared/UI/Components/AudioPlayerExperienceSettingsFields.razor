@@ -1,0 +1,130 @@
+@using K7.Clients.Shared.UI.Pages
+@inject IStringLocalizer<SettingsAudioPlayerPage> L
+
+@if (Settings is not null)
+{
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["LoudnessNormalization"]</h6>
+        <K7Switch Label="@L["EnableLoudness"]" Value="Settings.LoudnessEnabled" ValueChanged="v => OnChanged(s => s.LoudnessEnabled = v)" />
+
+        @if (Settings.LoudnessEnabled)
+        {
+            <K7Slider TValue="double" Min="-26" Max="-6" Step="1" Immediate="true"
+                      Label="@L["TargetLoudness"]"
+                      FormatValue="FormatLufs"
+                      Value="Settings.LoudnessTargetLufs"
+                      ValueChanged="v => OnChanged(s => s.LoudnessTargetLufs = v)" />
+
+            <K7Slider TValue="double" Min="-6" Max="6" Step="0.5" Immediate="true"
+                      Label="@L["PreAmp"]"
+                      FormatValue="FormatPreampDb"
+                      Value="Settings.LoudnessPreampDb"
+                      ValueChanged="v => OnChanged(s => s.LoudnessPreampDb = v)" />
+
+            <K7Switch Label="@L["EnableLimiter"]" Value="Settings.LimiterEnabled" ValueChanged="v => OnChanged(s => s.LimiterEnabled = v)" />
+        }
+    </section>
+
+    <K7Divider />
+
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["Equalizer"]</h6>
+        <K7Switch Label="@L["EnableEqualizer"]" Value="Settings.EqEnabled" ValueChanged="v => OnChanged(s => s.EqEnabled = v)" />
+
+        @if (Settings.EqEnabled)
+        {
+            <div class="d-flex flex-col gap-2">
+                <K7Select Label="@L["Preset"]" Value="Settings.EqPresetName" ValueChanged="OnPresetChanged" TValue="string">
+                    <K7SelectItem Value="@("flat")" Text="@L["PresetFlat"]">@L["PresetFlat"]</K7SelectItem>
+                    <K7SelectItem Value="@("bass-boost")" Text="@L["PresetBassBoost"]">@L["PresetBassBoost"]</K7SelectItem>
+                    <K7SelectItem Value="@("treble-boost")" Text="@L["PresetTrebleBoost"]">@L["PresetTrebleBoost"]</K7SelectItem>
+                    <K7SelectItem Value="@("vocal")" Text="@L["PresetVocal"]">@L["PresetVocal"]</K7SelectItem>
+                    <K7SelectItem Value="@("rock")" Text="@L["PresetRock"]">@L["PresetRock"]</K7SelectItem>
+                    <K7SelectItem Value="@("electronic")" Text="@L["PresetElectronic"]">@L["PresetElectronic"]</K7SelectItem>
+                    <K7SelectItem Value="@("custom")" Text="@L["PresetCustom"]">@L["PresetCustom"]</K7SelectItem>
+                </K7Select>
+            </div>
+
+            <div class="eq-bands">
+                @for (var i = 0; i < Settings.EqBands.Length; i++)
+                {
+                    var index = i;
+                    var bandValue = Settings.EqBands[index];
+                    <div class="eq-band">
+                        <span class="eq-band-value text-caption">@FormatEqBandValue(bandValue)</span>
+                        <div class="eq-band-slider">
+                            <K7Slider TValue="double" Min="-12" Max="12" Step="0.5"
+                                      Vertical="true"
+                                      Immediate="true"
+                                      Value="bandValue"
+                                      ValueChanged="v => OnBandChanged(index, v)" />
+                        </div>
+                        <span class="text-caption eq-band-label">@EqFrequencyLabels[index]</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <K7Divider />
+
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["Crossfade"]</h6>
+        <K7Slider TValue="double" Min="0" Max="12" Step="1" Immediate="true"
+                  Label="@L["CrossfadeDuration"]"
+                  FormatValue="FormatCrossfadeDuration"
+                  Value="Settings.CrossfadeDuration"
+                  ValueChanged="v => OnChanged(s => s.CrossfadeDuration = v)" />
+        <K7Switch Label="@L["AdaptiveCrossfade"]" Value="Settings.AdaptiveCrossfade" ValueChanged="v => OnChanged(s => s.AdaptiveCrossfade = v)" />
+        @if (Settings.AdaptiveCrossfade)
+        {
+            <span class="text-caption video-playback-hint">@L["AdaptiveCrossfadeHint"]</span>
+        }
+    </section>
+
+    <K7Divider />
+
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["Autoplay"]</h6>
+        <K7Switch Label="@L["AutoplayDescription"]" Value="Settings.AutoplayEnabled" ValueChanged="v => OnChanged(s => s.AutoplayEnabled = v)" />
+    </section>
+
+    <K7Divider />
+
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["StreamingQuality"]</h6>
+        <K7Select Label="@L["QualityWifi"]" Value="Settings.StreamingQualityWifi" ValueChanged="v => OnChanged(s => s.StreamingQualityWifi = v)" TValue="int">
+            <K7SelectItem Value="0" Text="@L["Original"]">@L["Original"]</K7SelectItem>
+            <K7SelectItem Value="320" Text="320 kbps">320 kbps</K7SelectItem>
+            <K7SelectItem Value="256" Text="256 kbps">256 kbps</K7SelectItem>
+            <K7SelectItem Value="192" Text="192 kbps">192 kbps</K7SelectItem>
+            <K7SelectItem Value="128" Text="128 kbps">128 kbps</K7SelectItem>
+        </K7Select>
+        <K7Select Label="@L["QualityMobile"]" Value="Settings.StreamingQualityMobile" ValueChanged="v => OnChanged(s => s.StreamingQualityMobile = v)" TValue="int">
+            <K7SelectItem Value="0" Text="@L["Original"]">@L["Original"]</K7SelectItem>
+            <K7SelectItem Value="320" Text="320 kbps">320 kbps</K7SelectItem>
+            <K7SelectItem Value="256" Text="256 kbps">256 kbps</K7SelectItem>
+            <K7SelectItem Value="192" Text="192 kbps">192 kbps</K7SelectItem>
+            <K7SelectItem Value="128" Text="128 kbps">128 kbps</K7SelectItem>
+        </K7Select>
+        <K7Switch Label="@L["DownmixToStereo"]" Value="Settings.DownmixToStereo" ValueChanged="v => OnChanged(s => s.DownmixToStereo = v)" />
+    </section>
+
+    <K7Divider />
+
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["PlayerBehavior"]</h6>
+        <K7Switch Label="@L["ShowFullscreenOnPlay"]" Value="Settings.ShowFullscreenOnPlay" ValueChanged="v => OnChanged(s => s.ShowFullscreenOnPlay = v)" />
+        <K7Switch Label="@L["KeepScreenOn"]" Value="Settings.KeepScreenOn" ValueChanged="v => OnChanged(s => s.KeepScreenOn = v)" />
+        <K7Slider TValue="int" Min="5" Max="30" Step="5" Immediate="true"
+                  Label="@L["SkipBackDuration"]"
+                  FormatValue="FormatSkipSeconds"
+                  Value="Settings.SkipBackSeconds"
+                  ValueChanged="v => OnChanged(s => s.SkipBackSeconds = v)" />
+        <K7Slider TValue="int" Min="5" Max="30" Step="5" Immediate="true"
+                  Label="@L["SkipForwardDuration"]"
+                  FormatValue="FormatSkipSeconds"
+                  Value="Settings.SkipForwardSeconds"
+                  ValueChanged="v => OnChanged(s => s.SkipForwardSeconds = v)" />
+    </section>
+}

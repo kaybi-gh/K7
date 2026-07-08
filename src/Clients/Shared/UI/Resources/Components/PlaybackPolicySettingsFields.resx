@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ResumeSection" xml:space="preserve">
+    <value>Reprise et Reprendre</value>
+  </data>
+  <data name="ResumeSectionHint" xml:space="preserve">
+    <value>Contrôle quand un contenu apparaît dans Reprendre et quand il est marqué comme terminé.</value>
+  </data>
+  <data name="MinResumePercent" xml:space="preserve">
+    <value>Seuil minimum de reprise (%)</value>
+  </data>
+  <data name="MinResumePercentHint" xml:space="preserve">
+    <value>En dessous de {0} %, le contenu n'apparaît pas dans Reprendre.</value>
+  </data>
+  <data name="MinResumeDurationSeconds" xml:space="preserve">
+    <value>Durée minimum pour la reprise (secondes)</value>
+  </data>
+  <data name="MinResumeDurationHint" xml:space="preserve">
+    <value>Les vidéos plus courtes que {0} s ne proposent pas de reprise.</value>
+  </data>
+  <data name="CompletedThresholdPercent" xml:space="preserve">
+    <value>Seuil de terminé (%)</value>
+  </data>
+  <data name="CompletedThresholdHint" xml:space="preserve">
+    <value>Au-delà de {0} %, le contenu est marqué comme vu.</value>
+  </data>
+  <data name="ContinueWatchingMaxAgeDays" xml:space="preserve">
+    <value>Fenêtre Reprendre (jours)</value>
+  </data>
+  <data name="ContinueWatchingMaxAgeDaysHint" xml:space="preserve">
+    <value>Seuls les contenus visionnés dans les {0} derniers jours apparaissent dans Reprendre (0 = illimité).</value>
+  </data>
+  <data name="MusicResumeSection" xml:space="preserve">
+    <value>Suivi musical</value>
+  </data>
+  <data name="MusicResumeSectionHint" xml:space="preserve">
+    <value>Définit quand une piste est considérée comme écoutée et comment la reprise est gérée.</value>
+  </data>
+  <data name="MusicMinResumePercentHint" xml:space="preserve">
+    <value>En dessous de ce seuil, la lecture reprend depuis le début.</value>
+  </data>
+  <data name="MusicMinResumeDurationHint" xml:space="preserve">
+    <value>Les pistes plus courtes que cette durée reprennent toujours depuis le début.</value>
+  </data>
+  <data name="MusicCompletedThresholdPercent" xml:space="preserve">
+    <value>Seuil minimum de complétion de lecture (%)</value>
+  </data>
+  <data name="MusicCompletedThresholdHint" xml:space="preserve">
+    <value>Au-delà de ce seuil, la piste est marquée comme écoutée.</value>
+  </data>
+  <data name="MusicCompletedMinDurationSeconds" xml:space="preserve">
+    <value>Durée minimum écoutée (secondes)</value>
+  </data>
+  <data name="MusicCompletedMinDurationHint" xml:space="preserve">
+    <value>Après cette durée d'écoute, la piste est marquée comme écoutée, même en dessous du seuil en pourcentage.</value>
+  </data>
+</root>
