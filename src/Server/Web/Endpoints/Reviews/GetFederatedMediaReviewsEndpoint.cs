@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Federation.Queries.GetFederatedMediaReviews;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Reviews;
@@ -18,6 +19,7 @@ public class GetFederatedMediaReviewsEndpoint : IEndpoint
             var reviews = await sender.Send(new GetFederatedMediaReviewsQuery(mediaId), cancellationToken);
             return Results.Ok(reviews);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

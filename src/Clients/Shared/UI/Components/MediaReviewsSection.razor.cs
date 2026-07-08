@@ -25,15 +25,23 @@ public partial class MediaReviewsSection : ComponentBase
 
     public async Task RefreshAsync()
     {
-        var localReviews = await ReviewService.GetMediaReviewsAsync(MediaId);
-        var federatedReviews = await ReviewService.GetFederatedMediaReviewsAsync(MediaId);
+        try
+        {
+            var localReviews = await ReviewService.GetMediaReviewsAsync(MediaId);
+            var federatedReviews = await ReviewService.GetFederatedMediaReviewsAsync(MediaId);
 
-        _reviews.Clear();
-        _reviews.AddRange(localReviews.Select(MediaReviewCardModel.FromLocal));
-        _reviews.AddRange(federatedReviews.Select(MediaReviewCardModel.FromFederated));
-        _reviews.Sort((a, b) => b.Created.CompareTo(a.Created));
+            _reviews.Clear();
+            _reviews.AddRange(localReviews.Select(MediaReviewCardModel.FromLocal));
+            _reviews.AddRange(federatedReviews.Select(MediaReviewCardModel.FromFederated));
+            _reviews.Sort((a, b) => b.Created.CompareTo(a.Created));
 
-        await UpdateSpoilerStateAsync();
+            await UpdateSpoilerStateAsync();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _reviews.Clear();
+        }
+
         await InvokeAsync(StateHasChanged);
 
         if (_carousel is not null)

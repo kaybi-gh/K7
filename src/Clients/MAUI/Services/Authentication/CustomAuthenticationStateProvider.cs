@@ -87,20 +87,23 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
-            if (!string.IsNullOrEmpty(result.BackchannelAccessToken))
-            {
-                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", result.BackchannelAccessToken);
-                _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, result.BackchannelAccessToken);
-            }
+            var accessToken = ResolveInteractiveAccessToken(result);
+            StoreAccessToken(accessToken);
 
             if (!string.IsNullOrEmpty(result.RefreshToken))
-            {
                 _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
-            }
 
-            await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
-            await TryAttachCurrentUserToDeviceAsync(cancellationToken);
+            if (!HasPersistedSessionTokens())
+            {
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+                ClearStoredTokens();
+                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+            }
+            else
+            {
+                await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
+                await TryAttachCurrentUserToDeviceAsync(cancellationToken);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -196,16 +199,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
-        if (!string.IsNullOrEmpty(result.AccessToken))
-        {
-            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", result.AccessToken);
-            _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, result.AccessToken);
-        }
+        StoreAccessToken(result.AccessToken);
 
         if (!string.IsNullOrEmpty(result.RefreshToken))
-        {
             _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+
+        if (!HasPersistedSessionTokens())
+        {
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            ClearStoredTokens();
+            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            return;
         }
 
         // Device code flow may not return an identity token with the name claim.
@@ -263,6 +268,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Offline", Claims.Name, ClaimTypes.Role));
+        _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+        _deviceStorageService.Remove(PreferenceKeys.ACCESS_TOKEN);
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
     }
 
@@ -334,17 +341,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
-            if (!string.IsNullOrEmpty(result.AccessToken))
-            {
-                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", result.AccessToken);
-                _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, result.AccessToken);
-            }
+            StoreAccessToken(result.AccessToken);
 
             if (!string.IsNullOrEmpty(result.RefreshToken))
-            {
                 _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
-            }
+
+            if (!HasPersistedSessionTokens())
+                return false;
 
             // Refresh token flow may not include the name claim in the principal.
             if (_currentUser.Identity?.Name is null)
@@ -446,6 +449,27 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         _deviceStorageService.Remove(PreferenceKeys.ACCESS_TOKEN);
         _deviceStorageService.Remove(PreferenceKeys.REFRESH_TOKEN);
+    }
+
+    private static string? ResolveInteractiveAccessToken(OpenIddictClientModels.InteractiveAuthenticationResult result) =>
+        result.BackchannelAccessToken ?? result.FrontchannelAccessToken;
+
+    private void StoreAccessToken(string? accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            return;
+
+        _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", accessToken);
+        _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
+    }
+
+    private bool HasPersistedSessionTokens()
+    {
+        if (!string.IsNullOrEmpty(_deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN)))
+            return true;
+
+        return !string.IsNullOrEmpty(_deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN));
     }
 
     private async Task TryAttachCurrentUserToDeviceAsync(CancellationToken cancellationToken)
