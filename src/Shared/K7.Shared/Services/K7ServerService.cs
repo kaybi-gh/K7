@@ -240,6 +240,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<SetMediaWatchStateResultDto>(_serializerOptions, cancellationToken);
     }
 
+    public async Task DismissFromContinueWatchingAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/medias/{mediaId}/dismiss-continue-watching", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"period={Uri.EscapeDataString(period)}" };
@@ -1086,6 +1092,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task DeleteUserLanguageAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/language", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     private sealed record UserLanguageResponse(string? Language);
 
     public async Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default)
@@ -1459,6 +1471,27 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<AudioPlayerSettingsDto?> GetServerAudioPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/audio-player", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<AudioPlayerSettingsDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateServerAudioPlayerSettingsAsync(AudioPlayerSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/audio-player", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerAudioPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/audio-player", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<VideoPlayerSettingsDto>("api/users/me/preferences/video-player", _serializerOptions, cancellationToken);
@@ -1474,6 +1507,63 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync("api/users/me/preferences/video-player", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<AudioPlayerSettingsDto> GetEffectiveAudioPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<AudioPlayerSettingsDto>(
+            "api/users/me/preferences/audio-player", _serializerOptions, cancellationToken);
+        return result ?? new AudioPlayerSettingsDto();
+    }
+
+    public async Task UpdateUserAudioPlayerSettingsAsync(AudioPlayerSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/audio-player", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserAudioPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/audio-player", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<VideoPlaybackPolicySettingsDto> GetEffectiveVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<VideoPlaybackPolicySettingsDto>(
+            "api/users/me/preferences/video-playback-policy", _serializerOptions, cancellationToken);
+        return result ?? new VideoPlaybackPolicySettingsDto();
+    }
+
+    public async Task UpdateUserVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/video-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/video-playback-policy", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<AudioPlaybackPolicySettingsDto> GetEffectiveAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<AudioPlaybackPolicySettingsDto>(
+            "api/users/me/preferences/audio-playback-policy", _serializerOptions, cancellationToken);
+        return result ?? new AudioPlaybackPolicySettingsDto();
+    }
+
+    public async Task UpdateUserAudioPlaybackPolicySettingsAsync(AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/audio-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/audio-playback-policy", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1502,6 +1592,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             : "api/users/me/preferences/track-selection";
         var response = await HttpClient.DeleteAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> UserSettingExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        var url = $"api/users/me/settings/exists?key={Uri.EscapeDataString(key)}";
+        var result = await HttpClient.GetFromJsonAsync<SettingExistsResponse>(url, _serializerOptions, cancellationToken);
+        return result?.Exists ?? false;
     }
 
     public async Task<SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default)
@@ -1555,6 +1652,48 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             ? $"api/server/preferences/track-selection?libraryId={libraryId.Value}"
             : "api/server/preferences/track-selection";
         var response = await HttpClient.DeleteAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<VideoPlaybackPolicySettingsDto?> GetServerVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/video-playback-policy", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<VideoPlaybackPolicySettingsDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateServerVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/video-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/video-playback-policy", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<AudioPlaybackPolicySettingsDto?> GetServerAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/audio-playback-policy", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<AudioPlaybackPolicySettingsDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateServerAudioPlaybackPolicySettingsAsync(AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/audio-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/audio-playback-policy", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1854,4 +1993,6 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<SocialDiscoveryStateDto>("api/users/social/discovery", _serializerOptions, cancellationToken)
             ?? new SocialDiscoveryStateDto();
     }
+
+    private sealed record SettingExistsResponse(bool Exists);
 }
