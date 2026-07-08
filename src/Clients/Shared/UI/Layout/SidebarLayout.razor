@@ -1,6 +1,6 @@
 @inject IStringLocalizer<SidebarLayout> L
 
-<div class="page-with-sidebar @(_desktopCollapsed ? "page-with-sidebar--rail" : "")">
+<div class="page-with-sidebar @(UseMobileDrawer ? "page-with-sidebar--mobile-drawer" : "") @(IsCollapsed ? "page-with-sidebar--rail" : "")">
     <header class="sidebar-mobile-topbar">
         <button class="sidebar-mobile-toggle focusable" @onclick="ToggleSidebar" aria-label="@L["MobileMenu"]">
             <K7Icon Icon="@(_sidebarOpen ? Phosphor.X : Phosphor.List)" />
@@ -11,7 +11,7 @@
     <CascadingValue Value="_sidebarContext">
         <aside class="page-sidebar @GetSidebarClass()" data-sn-section="sidebar-nav" data-sn-enter="last-focused" data-sn-restrict="self-first">
             <div class="page-sidebar-header">
-                @if (!_desktopCollapsed)
+                @if (!IsCollapsed)
                 {
                     <div class="page-sidebar-title">@Title</div>
                 }
@@ -19,11 +19,11 @@
                 {
                     <button type="button"
                             class="page-sidebar-collapse-toggle focusable"
-                            aria-label="@(_desktopCollapsed ? L["ExpandSidebar"] : L["CollapseSidebar"])"
-                            aria-expanded="@(!_desktopCollapsed)"
+                            aria-label="@(IsCollapsed ? L["ExpandSidebar"] : L["CollapseSidebar"])"
+                            aria-expanded="@(!IsCollapsed)"
                             @onclick="ToggleDesktopCollapse"
                             @onclick:stopPropagation="true">
-                        <K7Icon Icon="@(_desktopCollapsed ? Phosphor.CaretRight : Phosphor.CaretLeft)" />
+                        <K7Icon Icon="@(IsCollapsed ? Phosphor.CaretRight : Phosphor.CaretLeft)" />
                     </button>
                 }
             </div>
