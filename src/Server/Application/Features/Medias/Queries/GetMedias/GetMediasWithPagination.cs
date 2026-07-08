@@ -35,7 +35,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
@@ -52,7 +52,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         RuleGroupDto? filter,
         CancellationToken cancellationToken)
     {
-        var cacheKey = BuildCacheKey(request, currentUser.Id, filter);
+        var cacheKey = await BuildCacheKeyAsync(request, currentUser.Id, filter, cancellationToken);
         var version = cacheInvalidator.Version;
 
         if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<BaseMedia> Result) cached) && cached.Version == version)
@@ -63,7 +63,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return result;
     }
 
-    private static string BuildCacheKey(GetMediasWithPaginationQuery request, Guid? userId, RuleGroupDto? filter)
+    private async Task<string> BuildCacheKeyAsync(
+        GetMediasWithPaginationQuery request,
+        Guid? userId,
+        RuleGroupDto? filter,
+        CancellationToken cancellationToken)
     {
         var parts = new List<string> { "medias", $"u:{userId}" };
 
@@ -75,6 +79,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"ids:{string.Join(',', request.Ids.OrderBy(x => x))}");
         if (request.ContinueWatching.HasValue)
             parts.Add($"cw:{request.ContinueWatching.Value}");
+        if (request.ContinueWatching == true && userId.HasValue)
+        {
+            var policy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
+            parts.Add($"cwMin:{policy.MinResumePercent}:{policy.MinResumeDurationSeconds}:{policy.ContinueWatchingMaxAgeDays}");
+        }
         if (request.UnwatchedOnly.HasValue)
             parts.Add($"uw:{request.UnwatchedOnly.Value}");
         if (request.PersonIds is { Length: > 0 })
@@ -112,7 +121,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .AsNoTracking()
             .AsQueryable();
 
-        filterQuery = ApplyFilters(request, filterQuery, userId);
+        filterQuery = await ApplyFiltersAsync(request, filterQuery, userId, cancellationToken);
 
         if (filter is { Items.Count: > 0 } filterDto)
             filterQuery = MediaRuleEvaluator.ApplyFilter(filterQuery, filterDto.ToRuleGroup(), userId);
@@ -194,6 +203,23 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
 
+    private async Task<IQueryable<BaseMedia>> ApplyFiltersAsync(
+        GetMediasWithPaginationQuery request,
+        IQueryable<BaseMedia> query,
+        Guid? userId,
+        CancellationToken cancellationToken)
+    {
+        query = ApplyFilters(request, query, userId);
+
+        if (request.ContinueWatching == true && userId.HasValue)
+        {
+            var policy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
+            query = query.WhereEligibleForContinueWatching(userId.Value, policy, DateTime.UtcNow);
+        }
+
+        return query;
+    }
+
     internal static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
     {
         var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
@@ -242,16 +268,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (request.MediaTypes?.Count > 0)
         {
             query = query.Where(x => request.MediaTypes.Contains(x.Type));
-        }
-
-        if (request.ContinueWatching == true && userId.HasValue)
-        {
-            query = query.Where(x =>
-                !(x is MusicAlbum) && !(x is MusicTrack)
-                && x.UserMediaStates.Any(s =>
-                    s.UserId == userId.Value
-                    && !s.IsCompleted
-                    && s.LastInteractedAt != null));
         }
 
         if (request.PersonIds?.Length > 0)

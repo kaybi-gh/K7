@@ -49,4 +49,7 @@ public class UserSettingsService(IApplicationDbContext context) : IUserSettingsS
             await context.SaveChangesAsync(cancellationToken);
         }
     }
+
+    public Task<bool> ExistsAsync(Guid userId, string key, CancellationToken cancellationToken = default) =>
+        context.UserSettings.AnyAsync(s => s.UserId == userId && s.Key == key, cancellationToken);
 }

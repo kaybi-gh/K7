@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -23,7 +24,10 @@ public interface IUserMediaStateUpdater
         CancellationToken cancellationToken = default);
 }
 
-public class UserMediaStateUpdater(IApplicationDbContext context) : IUserMediaStateUpdater
+public class UserMediaStateUpdater(
+    IApplicationDbContext context,
+    IPlaybackPolicySettingsProvider policyProvider,
+    IContinueWatchingExclusionService exclusionService) : IUserMediaStateUpdater
 {
     public async Task<UserMediaStateUpdateResult> ApplyAsync(
         Guid userId,
@@ -51,12 +55,18 @@ public class UserMediaStateUpdater(IApplicationDbContext context) : IUserMediaSt
         }
 
         state.LastInteractedAt = timeNow;
+        state.LastKnownDurationSeconds = duration;
 
         var progress = duration > 0 ? position / duration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
+
+        var videoPolicy = await policyProvider.GetEffectiveVideoPolicyAsync(userId, cancellationToken);
+        var audioPolicy = await policyProvider.GetEffectiveAudioPolicyAsync(userId, cancellationToken);
+
         var completed = isMusic
-            ? progress >= 0.50 || position >= 240
-            : progress >= 0.80;
+            ? progress >= audioPolicy.CompletedThresholdPercent / 100.0
+              || position >= audioPolicy.CompletedMinDurationSeconds
+            : progress >= videoPolicy.CompletedThresholdPercent / 100.0;
 
         var wasNewlyCompleted = false;
         Guid? episodeIdForEnqueue = null;
@@ -72,19 +82,24 @@ public class UserMediaStateUpdater(IApplicationDbContext context) : IUserMediaSt
 
             state.LastPlaybackPosition = 0;
             state.ProgressPercentage = 100;
+            state.ExcludedFromContinueWatching = false;
 
             if (media is SerieEpisode episode)
                 episodeIdForEnqueue = episode.Id;
         }
         else
         {
-            if (state.IsCompleted && position < (duration * 0.1))
-                state.IsCompleted = false;
-
             if (!isMusic)
             {
                 state.LastPlaybackPosition = position;
                 state.ProgressPercentage = Math.Clamp(progress * 100, 0, 100);
+            }
+
+            if (!isMusic && ContinueWatchingEligibility.MeetsResumeThreshold(state, videoPolicy))
+            {
+                state.ExcludedFromContinueWatching = false;
+                await exclusionService.ClearExclusionCascadeAsync(
+                    userId, media, videoPolicy, timeNow, cancellationToken);
             }
         }
 

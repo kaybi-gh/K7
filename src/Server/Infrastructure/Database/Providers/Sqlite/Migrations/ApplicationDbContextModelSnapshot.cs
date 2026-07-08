@@ -2419,11 +2419,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("ExcludedFromContinueWatching")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastInteractedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<double>("LastKnownDurationSeconds")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("LastModified")
                         .IsRequired()

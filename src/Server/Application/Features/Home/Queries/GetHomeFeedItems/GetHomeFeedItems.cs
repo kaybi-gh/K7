@@ -9,6 +9,7 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
@@ -28,7 +29,7 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = 20;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
@@ -43,7 +44,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         request = request with { LibraryIds = libraryIds, LibraryGroupIds = null };
 
         var strategy = InferStrategy(request);
-        var cacheKey = BuildCacheKey(request, userId);
+        VideoPlaybackPolicySettingsDto? continueWatchingPolicy = null;
+        if (strategy == FeedStrategy.ContinueWatching && userId.HasValue)
+            continueWatchingPolicy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
+
+        var cacheKey = BuildCacheKey(request, userId, continueWatchingPolicy);
         var version = cacheInvalidator.Version;
 
         if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<HomeFeedItemDto> Result) cached) && cached.Version == version)
@@ -76,7 +81,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         return FeedStrategy.TopLevel;
     }
 
-    private static string BuildCacheKey(GetHomeFeedItemsQuery request, Guid? userId)
+    private static string BuildCacheKey(GetHomeFeedItemsQuery request, Guid? userId, VideoPlaybackPolicySettingsDto? continueWatchingPolicy = null)
     {
         var parts = new List<string> { "home-feed", $"u:{userId}" };
 
@@ -86,6 +91,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             parts.Add($"lg:{string.Join(',', request.LibraryGroupIds.OrderBy(x => x))}");
         if (request.ContinueWatching.HasValue)
             parts.Add($"cw:{request.ContinueWatching.Value}");
+        if (continueWatchingPolicy is not null)
+            parts.Add($"cwMin:{continueWatchingPolicy.MinResumePercent}:{continueWatchingPolicy.MinResumeDurationSeconds}:{continueWatchingPolicy.ContinueWatchingMaxAgeDays}");
         if (request.MediaTypes is { Count: > 0 })
             parts.Add($"mt:{string.Join(',', request.MediaTypes.Order())}");
         if (request.OrderBy is { Count: > 0 })
@@ -104,13 +111,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         if (!userId.HasValue)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
+        var videoPolicy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
+        var utcNow = DateTime.UtcNow;
+
         var query = context.Medias
             .AsNoTracking()
-            .Where(x => !(x is MusicAlbum) && !(x is MusicTrack))
-            .Where(x => x.UserMediaStates.Any(s =>
-                s.UserId == userId.Value
-                && !s.IsCompleted
-                && s.LastInteractedAt != null))
+            .WhereEligibleForContinueWatching(userId.Value, videoPolicy, utcNow)
             .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
 
         query = ApplyFamilyFilter(query, request.MediaTypes);
