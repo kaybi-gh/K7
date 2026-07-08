@@ -46,6 +46,7 @@ public partial class HomeFeedCarouselRow : IDisposable
         K7HubClient.MediaBatchAdded += OnCatalogChanged;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
 
         _picturesRefreshRunner = new DebouncedActionRunner(ReloadAsync, InvokeAsync);
@@ -56,6 +57,7 @@ public partial class HomeFeedCarouselRow : IDisposable
         K7HubClient.MediaBatchAdded -= OnCatalogChanged;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
         _picturesRefreshRunner?.Dispose();
     }
@@ -81,13 +83,18 @@ public partial class HomeFeedCarouselRow : IDisposable
         _ = ReloadAsync();
     }
 
-    private void OnMediaPicturesUpdated(Guid mediaId)
+    private void OnMediaMetadataRefreshed(Guid mediaId) =>
+        ScheduleCatalogRefreshIfAffected(mediaId);
+
+    private void OnMediaPicturesUpdated(Guid mediaId) =>
+        ScheduleCatalogRefreshIfAffected(mediaId);
+
+    private void ScheduleCatalogRefreshIfAffected(Guid mediaId)
     {
         if (_loading)
             return;
 
-        var id = mediaId.ToString();
-        if (!_items.Any(i => i.Id == id || i.ParentId == id))
+        if (!CatalogMediaRefreshMatcher.IsCardAffected(_items, mediaId))
             return;
 
         _picturesRefreshRunner?.Schedule();

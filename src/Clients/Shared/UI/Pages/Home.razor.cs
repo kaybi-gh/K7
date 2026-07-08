@@ -56,6 +56,7 @@ public partial class Home : IDisposable
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
         CacheStore.HomeFeedInvalidated += OnHomeFeedInvalidated;
 
@@ -167,18 +168,24 @@ public partial class Home : IDisposable
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
         CacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
         _picturesRefreshRunner?.Dispose();
     }
 
-    private void OnMediaPicturesUpdated(Guid mediaId)
+    private void OnMediaMetadataRefreshed(Guid mediaId) =>
+        ScheduleCatalogRefreshIfAffected(mediaId);
+
+    private void OnMediaPicturesUpdated(Guid mediaId) =>
+        ScheduleCatalogRefreshIfAffected(mediaId);
+
+    private void ScheduleCatalogRefreshIfAffected(Guid mediaId)
     {
         if (isLoading || _isOffline)
             return;
 
-        var id = mediaId.ToString();
-        if (!_rows.Any(r => r.Items.Any(i => i.Id == id || i.ParentId == id)))
+        if (!_rows.Any(r => CatalogMediaRefreshMatcher.IsCardAffected(r.Items, mediaId)))
             return;
 
         _picturesRefreshRunner?.Schedule();
@@ -188,7 +195,7 @@ public partial class Home : IDisposable
     {
         Interlocked.Increment(ref _catalogRefreshGeneration);
         CacheStore.InvalidateByPrefix("home-feed");
-        await RefreshNonContinueWatchingRowsAsync();
+        await RefreshAllRowsAsync();
         StateHasChanged();
     }
 
