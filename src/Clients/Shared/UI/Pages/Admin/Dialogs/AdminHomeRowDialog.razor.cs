@@ -5,6 +5,9 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
 public partial class AdminHomeRowDialog
 {
+    private static readonly MediaType[] _availableMediaTypes =
+        [MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie];
+
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public HomeRowEditModel? InitialModel { get; set; }
@@ -57,6 +60,14 @@ public partial class AdminHomeRowDialog
             _mediaTypes.Remove(type);
         }
     }
+
+    private static string GetMediaTypeLabel(MediaType type) => type switch
+    {
+        MediaType.Movie => "Films",
+        MediaType.MusicAlbum => "Albums musicaux",
+        MediaType.Serie => "Séries",
+        _ => type.ToString()
+    };
 
     private void Cancel() => Dialog.Cancel();
 
