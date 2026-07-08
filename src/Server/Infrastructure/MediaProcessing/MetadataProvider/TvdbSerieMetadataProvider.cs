@@ -151,7 +151,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             ReleaseDate = ParseDate(series.FirstAired),
             Overview = overview,
             Status = series.Status?.Name,
-            OriginalLanguage = series.OriginalLanguage,
+            OriginalLanguage = TvdbLanguageHelper.ToIso6391(series.OriginalLanguage),
             ContentRating = ExtractContentRating(series.ContentRatings, language),
             Network = series.OriginalNetwork?.Name ?? series.LatestNetwork?.Name,
             TotalSeasons = series.Seasons?.Count(s => s.Number > 0),

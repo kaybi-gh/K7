@@ -74,7 +74,7 @@ internal static class TvdbTranslationResolver
             AddIfNew(languages, TvdbLanguageHelper.ToTvdbLanguage(fallbackLanguage));
 
         if (!string.IsNullOrWhiteSpace(originalLanguage))
-            AddIfNew(languages, originalLanguage);
+            AddIfNew(languages, TvdbLanguageHelper.ToTvdbLanguage(originalLanguage));
 
         return languages;
     }

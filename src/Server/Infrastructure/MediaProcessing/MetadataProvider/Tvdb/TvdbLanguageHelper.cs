@@ -24,7 +24,19 @@ internal static class TvdbLanguageHelper
         ["hu"] = "hun",
         ["tr"] = "tur",
         ["ar"] = "ara",
+        ["uk"] = "ukr",
+        ["hi"] = "hin",
+        ["th"] = "tha",
+        ["vi"] = "vie",
+        ["el"] = "ell",
+        ["he"] = "heb",
+        ["ro"] = "ron",
+        ["id"] = "ind",
     };
+
+    private static readonly Dictionary<string, string> TvdbToIso6391 = Iso6391ToTvdb
+        .GroupBy(kvp => kvp.Value, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(g => g.Key, g => g.First().Key, StringComparer.OrdinalIgnoreCase);
 
     public static string ToTvdbLanguage(string language)
     {
@@ -32,10 +44,26 @@ internal static class TvdbLanguageHelper
             return "eng";
 
         var normalized = language.Trim();
-        if (normalized.Length >= 3 && normalized.Length <= 3)
+        if (normalized.Length == 3)
             return normalized.ToLowerInvariant();
 
         var twoLetter = normalized.Length >= 2 ? normalized[..2] : normalized;
         return Iso6391ToTvdb.TryGetValue(twoLetter, out var tvdb) ? tvdb : "eng";
+    }
+
+    public static string? ToIso6391(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+            return null;
+
+        var normalized = language.Trim().ToLowerInvariant();
+
+        if (normalized.Length == 2)
+            return normalized;
+
+        if (normalized.Length == 3 && TvdbToIso6391.TryGetValue(normalized, out var iso))
+            return iso;
+
+        return null;
     }
 }
