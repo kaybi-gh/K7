@@ -1,15 +1,11 @@
-﻿using K7.Clients.Shared.Helpers;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class K7Image : IDisposable
+public partial class K7Image
 {
-    private const int MaxMetadataPictureRetries = 40;
-    private static readonly TimeSpan MetadataPictureRetryDelay = TimeSpan.FromSeconds(3);
-
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public string Src { get; set; } = "";
@@ -28,15 +24,11 @@ public partial class K7Image : IDisposable
 
     private ElementReference _imgRef;
     private string? _trackedSrc;
-    private string? _loadSrc;
     private bool _loaded;
     private bool _failed;
     private bool _checkedCachedLoad;
-    private int _retryCount;
-    private CancellationTokenSource? _retryCts;
 
     private bool HasSource => !string.IsNullOrEmpty(Src);
-    private string EffectiveSrc => _loadSrc ?? Src;
     private bool HasCustomFallback => FallbackContent is not null;
     private bool ShowFallback => !HasSource || _failed;
     private bool ShowLoading => HasSource && !_loaded && !_failed && ShowLoadingState;
@@ -110,13 +102,10 @@ public partial class K7Image : IDisposable
         if (_trackedSrc == Src)
             return;
 
-        CancelRetry();
         _trackedSrc = Src;
-        _loadSrc = null;
         _loaded = false;
         _failed = false;
         _checkedCachedLoad = false;
-        _retryCount = 0;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -145,59 +134,13 @@ public partial class K7Image : IDisposable
 
     private void OnLoad()
     {
-        CancelRetry();
         _loaded = true;
         _failed = false;
-        _retryCount = 0;
     }
 
     private void OnError()
     {
-        if (ShouldRetryMetadataPicture())
-        {
-            _loaded = false;
-            _failed = false;
-            _retryCount++;
-            ScheduleMetadataPictureRetry();
-            return;
-        }
-
         _failed = true;
         _loaded = false;
     }
-
-    private bool ShouldRetryMetadataPicture() =>
-        MediaPictureUrlHelper.IsMetadataPictureUrl(Src)
-        && _retryCount < MaxMetadataPictureRetries;
-
-    private void ScheduleMetadataPictureRetry()
-    {
-        CancelRetry();
-        _retryCts = new CancellationTokenSource();
-        var token = _retryCts.Token;
-        _ = RetryMetadataPictureAsync(token);
-    }
-
-    private async Task RetryMetadataPictureAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(MetadataPictureRetryDelay, cancellationToken);
-            _loadSrc = MediaPictureUrlHelper.WithRetryToken(Src, _retryCount);
-            _checkedCachedLoad = false;
-            await InvokeAsync(StateHasChanged);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private void CancelRetry()
-    {
-        _retryCts?.Cancel();
-        _retryCts?.Dispose();
-        _retryCts = null;
-    }
-
-    public void Dispose() => CancelRetry();
 }

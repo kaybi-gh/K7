@@ -119,6 +119,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
             await _context.SaveChangesAsync(cancellationToken);
 
+            await _pictureReadyNotifier.NotifyIfMediaPictureReadyAsync(entity.Id, cancellationToken);
+
             if (entity.Type != MetadataPictureType.Thumbnail)
             {
                 await _sender.Send(new CreateBackgroundTaskCommand
@@ -133,10 +135,6 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     MaxAttempts = 3,
                     ConcurrencyGroup = "image-processing"
                 }, cancellationToken);
-            }
-            else
-            {
-                await _pictureReadyNotifier.NotifyIfMediaPictureReadyAsync(entity.Id, cancellationToken);
             }
         }
         catch (HttpRequestException ex)

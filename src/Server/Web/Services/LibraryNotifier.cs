@@ -42,6 +42,12 @@ internal sealed class LibraryNotifier(
         await hubContext.Clients.All.ReceiveMediaPicturesUpdated(mediaId);
     }
 
+    public async Task NotifyPersonPicturesUpdatedAsync(Guid personId, CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Broadcasting PersonPicturesUpdated: {PersonId}", personId);
+        await hubContext.Clients.All.ReceivePersonPicturesUpdated(personId);
+    }
+
     public async Task NotifyMediaIndexedFilesUpdatedAsync(Guid mediaId, Guid libraryId, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Broadcasting MediaIndexedFilesUpdated: {MediaId} in library {LibraryId}", mediaId, libraryId);
