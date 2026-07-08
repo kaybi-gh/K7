@@ -41,6 +41,7 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .HasOne(mp => mp.PersonRole)
             .WithOne(pr => pr.PortraitPicture)
             .HasForeignKey<MetadataPicture>(mp => mp.PersonRoleId)
+            .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 
         builder

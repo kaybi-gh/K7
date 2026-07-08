@@ -3503,7 +3503,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole", "PersonRole")
                         .WithMany("ExternalIds")
-                        .HasForeignKey("PersonRoleId");
+                        .HasForeignKey("PersonRoleId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Media");
 
@@ -3800,7 +3801,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole", "PersonRole")
                         .WithOne("PortraitPicture")
-                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PersonRoleId");
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PersonRoleId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.Playlists.Playlist", "Playlist")
                         .WithOne("CoverPicture")

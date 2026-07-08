@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708072938_CascadeDeleteExternalIdsOnPersonRoleDelete")]
+    partial class CascadeDeleteExternalIdsOnPersonRoleDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -3866,8 +3869,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole", "PersonRole")
                         .WithOne("PortraitPicture")
-                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PersonRoleId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PersonRoleId");
 
                     b.HasOne("K7.Server.Domain.Entities.Playlists.Playlist", "Playlist")
                         .WithOne("CoverPicture")

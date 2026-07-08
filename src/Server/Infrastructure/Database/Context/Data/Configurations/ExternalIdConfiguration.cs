@@ -24,6 +24,7 @@ public class ExternalIdConfiguration : IEntityTypeConfiguration<ExternalId>
             .HasOne(e => e.PersonRole)
             .WithMany(pr => pr.ExternalIds)
             .HasForeignKey(e => e.PersonRoleId)
+            .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
     }
 }
