@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Federation.Commands.CopyFederatedPlaylist;
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Federation.Social;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,7 +26,7 @@ public class GetSocialUserDirectoryEndpoint : IEndpoint
             var entries = await profileService.GetDirectoryAsync(userId, cancellationToken);
             return Results.Ok(entries);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -50,7 +51,7 @@ public class GetLocalSocialUserProfileEndpoint : IEndpoint
             var profile = await profileService.GetLocalProfileAsync(userId, viewerUserId, cancellationToken);
             return profile is null ? Results.NotFound() : Results.Ok(profile);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -74,7 +75,7 @@ public class GetSharedCollectionsEndpoint : IEndpoint
             var collections = await profileService.GetSharedCollectionsAsync(userId, cancellationToken);
             return Results.Ok(collections);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -98,7 +99,7 @@ public class GetSharedPlaylistsEndpoint : IEndpoint
             var playlists = await profileService.GetSharedPlaylistsAsync(userId, cancellationToken);
             return Results.Ok(playlists);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -122,7 +123,7 @@ public class GetSocialDiscoveryStateEndpoint : IEndpoint
             var showDirectory = await profileService.IsDirectoryVisibleAsync(userId, cancellationToken);
             return Results.Ok(new SocialDiscoveryStateDto { ShowDirectory = showDirectory });
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

@@ -52,15 +52,20 @@ public partial class ExplorePage
 
         try
         {
-            var groupsTask = LibraryService.GetLibraryGroupsAsync();
-            var discoveryTask = SocialUserService.GetSocialDiscoveryStateAsync();
-            await Task.WhenAll(groupsTask, discoveryTask);
-            _libraryGroups = await groupsTask;
-            _showSocialDirectory = (await discoveryTask).ShowDirectory;
+            _libraryGroups = await LibraryService.GetLibraryGroupsAsync();
         }
         catch
         {
             _libraryGroups = [];
+        }
+
+        try
+        {
+            var discovery = await SocialUserService.GetSocialDiscoveryStateAsync();
+            _showSocialDirectory = discovery.ShowDirectory;
+        }
+        catch
+        {
             _showSocialDirectory = false;
         }
 

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace K7.Clients.MAUI.Services.Authentication;
 
@@ -23,6 +24,13 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         {
             var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
             var token = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
+            if (string.IsNullOrEmpty(token))
+            {
+                var authProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
+                await authProvider.GetAuthenticationStateAsync();
+                token = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
+            }
+
             if (!string.IsNullOrEmpty(token))
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }

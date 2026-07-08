@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Federation.Social;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,7 @@ public class GetFederationPrivacySettings : IEndpoint
             var settings = await privacyService.GetPrivacyAsync(userId, cancellationToken);
             return Results.Ok(settings);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -48,6 +50,7 @@ public class UpdateFederationPrivacySettings : IEndpoint
             await privacyService.SetPrivacyAsync(userId, settings, cancellationToken);
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -71,6 +74,7 @@ public class GetReviewPreferences : IEndpoint
             var settings = await privacyService.GetReviewPreferencesAsync(userId, cancellationToken);
             return Results.Ok(settings);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -95,6 +99,7 @@ public class UpdateReviewPreferences : IEndpoint
             await privacyService.SetReviewPreferencesAsync(userId, settings, cancellationToken);
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

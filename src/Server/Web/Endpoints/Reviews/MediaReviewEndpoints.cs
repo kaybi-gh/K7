@@ -5,6 +5,7 @@ using K7.Server.Application.Features.Reviews.Queries.GetMyMediaReview;
 using K7.Server.Application.Features.Reviews.Queries.GetMyMediaReviewCount;
 using K7.Server.Application.Features.Reviews.Queries.GetMyMediaReviews;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,6 +27,7 @@ public class UpsertMediaReviewEndpoint : IEndpoint
             var id = await sender.Send(new UpsertMediaReviewCommand(mediaId, request), cancellationToken);
             return Results.Ok(id);
         })
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -46,6 +48,7 @@ public class GetMediaReviewsEndpoint : IEndpoint
             var reviews = await sender.Send(new GetMediaReviewsQuery(mediaId), cancellationToken);
             return Results.Ok(reviews);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -66,7 +69,7 @@ public class GetMyMediaReviewEndpoint : IEndpoint
             var state = await sender.Send(new GetMyMediaReviewQuery(mediaId), cancellationToken);
             return state is null ? Results.NotFound() : Results.Ok(state);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -87,7 +90,7 @@ public class DeleteMediaReviewEndpoint : IEndpoint
             await sender.Send(new DeleteMediaReviewCommand(mediaId), cancellationToken);
             return Results.NoContent();
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -107,7 +110,7 @@ public class GetMyMediaReviewsEndpoint : IEndpoint
             var reviews = await sender.Send(new GetMyMediaReviewsQuery(), cancellationToken);
             return Results.Ok(reviews);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -127,7 +130,7 @@ public class GetMyMediaReviewCountEndpoint : IEndpoint
             var count = await sender.Send(new GetMyMediaReviewCountQuery(), cancellationToken);
             return Results.Ok(count);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
