@@ -25,7 +25,10 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
             .Include(p => p.Variants)
             .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
 
-        Guard.Against.NotFound(query.Id, entity);
+        if (entity is null)
+        {
+            return Results.NotFound();
+        }
 
         // Resolve the file path: use variant if requested, fallback to original
         string? localPath = entity.LocalPath;
