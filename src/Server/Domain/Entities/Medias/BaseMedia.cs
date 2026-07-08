@@ -3,6 +3,8 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Helpers;
 
 namespace K7.Server.Domain.Entities.Medias;
 
@@ -35,5 +37,31 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public IList<MediaSegment> Segments { get; set; } = [];
 
     public bool IsFieldLocked(string fieldName) => LockedFields.Contains(fieldName);
+
+    public bool IsPictureTypeLocked(MetadataPictureType type) =>
+        MetadataPictureLockHelper.IsPictureTypeLocked(LockedFields, type);
+
+    public void RemovePicturesOfType(MetadataPictureType type)
+    {
+        var existing = Pictures.Where(picture => picture.Type == type).ToList();
+        foreach (var picture in existing)
+            Pictures.Remove(picture);
+    }
+
+    protected void ApplyMetadataPictures(IEnumerable<MetadataPicture>? incomingPictures)
+    {
+        if (incomingPictures is null)
+            return;
+
+        foreach (var picture in incomingPictures)
+        {
+            if (IsPictureTypeLocked(picture.Type))
+                continue;
+
+            RemovePicturesOfType(picture.Type);
+            Pictures.Add(picture);
+        }
+    }
+
     public bool IsRemoteOrigin => PeerServerId is not null;
 }
