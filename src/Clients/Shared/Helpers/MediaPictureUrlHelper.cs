@@ -11,6 +11,6 @@ public static class MediaPictureUrlHelper
             return url;
 
         var separator = url.Contains('?', StringComparison.Ordinal) ? '&' : '?';
-        return $"{url}{separator}v={version.Value.ToUnixTimeSeconds()}";
+        return $"{url}{separator}v={version.Value.ToUnixTimeMilliseconds()}";
     }
 }
