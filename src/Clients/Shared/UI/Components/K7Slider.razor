@@ -1,15 +1,49 @@
 @namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
-<div class="k7-slider-wrap @(Vertical ? "k7-slider-wrap--vertical" : "") @Class">
-    <input type="range"
-           class="k7-range focusable @(Vertical ? "k7-range--vertical" : "")"
-           min="@MinString"
-           max="@MaxString"
-           step="@StepString"
-           value="@CurrentValueString"
-           disabled="@Disabled"
-           data-sn-activatable
-           @oninput="OnInput"
-           @onchange="OnChange" />
-</div>
+@if (HasChrome)
+{
+    <div class="k7-slider-field @FieldClass">
+        @if (Label is not null)
+        {
+            <div class="k7-slider-field__header">
+                <span class="field-label">@Label</span>
+                @if (FormattedValue is not null)
+                {
+                    <span class="text-caption video-playback-hint">@FormattedValue</span>
+                }
+            </div>
+        }
+        <div class="k7-slider-wrap @(Vertical ? "k7-slider-wrap--vertical" : "") @Class">
+            <input type="range"
+                   class="k7-range focusable @(Vertical ? "k7-range--vertical" : "")"
+                   min="@MinString"
+                   max="@MaxString"
+                   step="@StepString"
+                   value="@CurrentValueString"
+                   disabled="@Disabled"
+                   data-sn-activatable
+                   @oninput="OnInput"
+                   @onchange="OnChange" />
+        </div>
+        @if (Hint is not null)
+        {
+            <span class="text-caption video-playback-hint">@Hint</span>
+        }
+    </div>
+}
+else
+{
+    <div class="k7-slider-wrap @(Vertical ? "k7-slider-wrap--vertical" : "") @Class">
+        <input type="range"
+               class="k7-range focusable @(Vertical ? "k7-range--vertical" : "")"
+               min="@MinString"
+               max="@MaxString"
+               step="@StepString"
+               value="@CurrentValueString"
+               disabled="@Disabled"
+               data-sn-activatable
+               @oninput="OnInput"
+               @onchange="OnChange" />
+    </div>
+}

@@ -14,9 +14,22 @@ public partial class K7Slider<TValue>
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Vertical { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string FieldClass { get; set; } = "";
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public Func<TValue, string>? FormatValue { get; set; }
 
     private TValue? _currentValue;
     private TValue? _lastParameterValue;
+
+    private bool HasChrome => Label is not null || Hint is not null;
+
+    private TValue? EffectiveValue => _currentValue ?? Value;
+
+    private string? FormattedValue =>
+        FormatValue is null || EffectiveValue is null
+            ? null
+            : FormatValue(EffectiveValue);
 
     protected override void OnParametersSet()
     {
@@ -39,15 +52,23 @@ public partial class K7Slider<TValue>
     private async Task OnInput(ChangeEventArgs e)
     {
         var val = Parse(e);
-        if (val is null) return;
+        if (val is null)
+            return;
+
         _currentValue = val;
-        if (Immediate) await ValueChanged.InvokeAsync(val);
+        if (FormatValue is not null)
+            StateHasChanged();
+
+        if (Immediate)
+            await ValueChanged.InvokeAsync(val);
     }
 
     private async Task OnChange(ChangeEventArgs e)
     {
         var val = Parse(e);
-        if (val is null) return;
+        if (val is null)
+            return;
+
         _currentValue = val;
         await ValueChanged.InvokeAsync(val);
     }
@@ -55,7 +76,9 @@ public partial class K7Slider<TValue>
     private static TValue? Parse(ChangeEventArgs e)
     {
         var raw = e.Value?.ToString();
-        if (string.IsNullOrEmpty(raw)) return default;
+        if (string.IsNullOrEmpty(raw))
+            return default;
+
         try
         {
             return (TValue)Convert.ChangeType(raw, typeof(TValue), CultureInfo.InvariantCulture);
