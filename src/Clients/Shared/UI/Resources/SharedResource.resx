@@ -96,6 +96,11 @@
   <data name="NowPlaying" xml:space="preserve"><value>En cours de lecture</value></data>
   <data name="ItemCount" xml:space="preserve"><value>{0} élément(s)</value></data>
   <data name="Reset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="ResetToDefaults" xml:space="preserve"><value>Réinitialiser par défaut</value></data>
+  <data name="ResetToDefaultsTitle" xml:space="preserve"><value>Réinitialiser par défaut</value></data>
+  <data name="ResetToDefaultsMessage" xml:space="preserve"><value>Supprimer vos personnalisations et revenir aux valeurs par défaut ?</value></data>
+  <data name="UnsavedChangesTitle" xml:space="preserve"><value>Modifications non enregistrées</value></data>
+  <data name="UnsavedChangesMessage" xml:space="preserve"><value>Vous avez des modifications non enregistrées. Les abandonner ?</value></data>
   <data name="SeasonNumber" xml:space="preserve"><value>Saison {0}</value></data>
   <data name="Specials" xml:space="preserve"><value>Hors-série</value></data>
   <data name="EpisodeCount" xml:space="preserve"><value>{0} épisode(s)</value></data>

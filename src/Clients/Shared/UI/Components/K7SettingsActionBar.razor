@@ -1,0 +1,36 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<SharedResource> S
+@inject IK7DialogService DialogService
+
+<div class="k7-settings-action-bar">
+    @if (ShowResetToDefaults)
+    {
+        <K7Button Variant="outlined"
+                  Color="secondary"
+                  Disabled="IsSaving || ResetDisabled"
+                  OnClick="ResetToDefaultsAsync">
+            @S["ResetToDefaults"]
+        </K7Button>
+    }
+    else
+    {
+        <span></span>
+    }
+
+    <div class="k7-settings-action-bar__primary">
+        <K7Button Variant="outlined"
+                  Disabled="!IsDirty || IsSaving"
+                  OnClick="OnCancel">
+            @S["Cancel"]
+        </K7Button>
+        <K7Button Color="primary"
+                  Disabled="!IsDirty || IsSaving"
+                  OnClick="OnSave">
+            @if (IsSaving)
+            {
+                <K7Spinner Size="sm" />
+            }
+            @S["Save"]
+        </K7Button>
+    </div>
+</div>

@@ -96,6 +96,11 @@
   <data name="NowPlaying" xml:space="preserve"><value>Now playing</value></data>
   <data name="ItemCount" xml:space="preserve"><value>{0} item(s)</value></data>
   <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="ResetToDefaults" xml:space="preserve"><value>Reset to defaults</value></data>
+  <data name="ResetToDefaultsTitle" xml:space="preserve"><value>Reset to defaults</value></data>
+  <data name="ResetToDefaultsMessage" xml:space="preserve"><value>Remove your customizations and revert to default values?</value></data>
+  <data name="UnsavedChangesTitle" xml:space="preserve"><value>Unsaved changes</value></data>
+  <data name="UnsavedChangesMessage" xml:space="preserve"><value>You have unsaved changes. Discard them?</value></data>
   <data name="SeasonNumber" xml:space="preserve"><value>Season {0}</value></data>
   <data name="Specials" xml:space="preserve"><value>Specials</value></data>
   <data name="EpisodeCount" xml:space="preserve"><value>{0} episode(s)</value></data>
