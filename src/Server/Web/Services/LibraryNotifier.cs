@@ -10,6 +10,7 @@ namespace K7.Server.Web.Services;
 internal sealed class LibraryNotifier(
     IHubContext<K7Hub, IK7HubClient> hubContext,
     MediaNotificationBatcher batcher,
+    IMediaQueryCacheInvalidator cacheInvalidator,
     ILogger<LibraryNotifier> logger) : ILibraryNotifier
 {
     public Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, CancellationToken cancellationToken = default)
@@ -38,12 +39,14 @@ internal sealed class LibraryNotifier(
 
     public async Task NotifyMediaPicturesUpdatedAsync(Guid mediaId, CancellationToken cancellationToken = default)
     {
+        cacheInvalidator.InvalidateAll();
         logger.LogDebug("Broadcasting MediaPicturesUpdated: {MediaId}", mediaId);
         await hubContext.Clients.All.ReceiveMediaPicturesUpdated(mediaId);
     }
 
     public async Task NotifyPersonPicturesUpdatedAsync(Guid personId, CancellationToken cancellationToken = default)
     {
+        cacheInvalidator.InvalidateAll();
         logger.LogDebug("Broadcasting PersonPicturesUpdated: {PersonId}", personId);
         await hubContext.Clients.All.ReceivePersonPicturesUpdated(personId);
     }
