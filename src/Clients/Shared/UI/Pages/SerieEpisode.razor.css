@@ -6,6 +6,50 @@
     overflow-x: hidden;
 }
 
+.episode-page--low-res-still {
+    background: var(--color-bg);
+}
+
+.episode-low-res-wash {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            ellipse 120% 80% at 85% 12%,
+            color-mix(in srgb, var(--media-dominant-color, var(--color-bg)) 28%, transparent) 0%,
+            transparent 55%
+        ),
+        linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--media-dominant-color, var(--color-bg)) 18%, var(--color-bg)) 0%,
+            var(--color-bg) 72%
+        );
+}
+
+.episode-low-res-still {
+    position: fixed;
+    top: var(--space-6);
+    right: var(--space-6);
+    z-index: 1;
+    width: min(42vw, 360px);
+    pointer-events: none;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 82%, transparent 100%);
+}
+
+.episode-low-res-still img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
 .episode-main {
     position: relative;
     display: flex;

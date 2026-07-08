@@ -46,6 +46,7 @@
   <data name="DiscNumber" xml:space="preserve"><value>Disc number</value></data>
   <data name="Lyrics" xml:space="preserve"><value>Lyrics</value></data>
   <data name="Pictures" xml:space="preserve"><value>Pictures (lock prevents refresh override)</value></data>
+  <data name="PicturesAll" xml:space="preserve"><value>All images</value></data>
   <data name="LockField" xml:space="preserve"><value>Lock field (prevent metadata refresh from overwriting)</value></data>
   <data name="UnlockField" xml:space="preserve"><value>Unlock field (allow metadata refresh to update)</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -66,4 +67,9 @@
   <data name="Provider" xml:space="preserve"><value>Provider</value></data>
   <data name="Value" xml:space="preserve"><value>Value</value></data>
   <data name="AddExternalId" xml:space="preserve"><value>Add an ID</value></data>
+  <data name="GenerateStillFromSource" xml:space="preserve"><value>Generate from video file</value></data>
+  <data name="GenerateStillFromSourceSuccess" xml:space="preserve"><value>Still generated from video file</value></data>
+  <data name="GenerateStillFromSourceSkipped" xml:space="preserve"><value>No still generated (HD still already present)</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="ImagesApplyImmediately" xml:space="preserve"><value>Images are saved immediately. Lock by type or lock all images to prevent refresh from overwriting them.</value></data>
 </root>

@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SerieEpisode
+public partial class SerieEpisode : IAsyncDisposable
 {
     [Parameter] public string SerieId { get; set; } = "";
     [Parameter] public int SeasonNumber { get; set; }
@@ -23,6 +23,7 @@ public partial class SerieEpisode
     private SerieEpisodeDto? _episode;
     private IndexedFileDto? _indexedFile;
     private string? _stillUrl;
+    private bool _useHdStillBackdrop;
     private string? _dominantColor;
     private string _pageTitle = "";
     private bool _loading = true;
@@ -36,11 +37,43 @@ public partial class SerieEpisode
     private List<LiteSerieEpisodeDto> _moreEpisodes = [];
     private MediaReviewsSection? _reviewsSection;
     private ElementReference _scrollRoot;
+    private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+    private Guid? _watchedEpisodeId;
 
     private string DominantColorStyle => DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor);
 
+    protected override void OnInitialized()
+    {
+        _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+    }
+
     protected override async Task OnParametersSetAsync()
     {
+        await LoadEpisodeAsync();
+    }
+
+    private async Task LoadEpisodeAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
+    {
+        if (isBackgroundRefresh || isPicturesRefresh)
+        {
+            if (_episode is null)
+                return;
+
+            var refreshedMedia = await k7ServerService.GetMediaAsync(_episode.Id, bypassCache: true);
+            _episode = refreshedMedia as SerieEpisodeDto;
+            if (_episode is null)
+                return;
+
+            _indexedFile = _episode.IndexedFiles?.FirstOrDefault();
+            UpdateStillFromEpisode(isPicturesRefresh ? DateTimeOffset.UtcNow : _episode.LastMetadataRefreshedAt);
+
+            if (isBackgroundRefresh)
+                Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
+
+            StateHasChanged();
+            return;
+        }
+
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
@@ -92,12 +125,8 @@ public partial class SerieEpisode
         _episodeUserRating = GetUserRating(_episode.Ratings);
         _pageTitle = $"{_episode.SerieTitle} - S{SeasonNumber:00}E{EpisodeNumber:00} - {_episode.Title}";
 
-        var still = _episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-                    ?? _episode.Pictures?.FirstOrDefault();
-        _stillUrl = still is not null
-            ? apiClient.GetAbsoluteUri(still.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
-            : null;
-        _dominantColor = still?.DominantColor;
+        UpdateStillFromEpisode(_episode.LastMetadataRefreshedAt);
+        SetupMetadataRefreshWatcher(_episode.Id);
 
         var episodeIndex = episodes.FindIndex(e => e.EpisodeNumber == EpisodeNumber);
         _previousEpisode = episodeIndex > 0 ? episodes[episodeIndex - 1] : null;
@@ -105,6 +134,32 @@ public partial class SerieEpisode
         _moreEpisodes = episodes.Where(e => e.EpisodeNumber != EpisodeNumber).ToList();
 
         _loading = false;
+    }
+
+    private void SetupMetadataRefreshWatcher(Guid episodeId)
+    {
+        if (_watchedEpisodeId == episodeId)
+            return;
+
+        _watchedEpisodeId = episodeId;
+        _metadataRefreshWatcher?.Watch(
+            episodeId,
+            () => LoadEpisodeAsync(isBackgroundRefresh: true),
+            () => LoadEpisodeAsync(isPicturesRefresh: true));
+    }
+
+    private void UpdateStillFromEpisode(DateTimeOffset? cacheVersion = null)
+    {
+        if (_episode is null)
+            return;
+
+        var still = _episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                    ?? _episode.Pictures?.FirstOrDefault();
+        var stillUri = apiClient.GetAbsoluteUri(
+            still?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _stillUrl = MediaPictureUrlHelper.WithCacheBuster(stillUri, cacheVersion);
+        _useHdStillBackdrop = MetadataPictureDisplayHelper.IsHdStill(still);
+        _dominantColor = still?.DominantColor;
     }
 
     private async Task PlayAsync()
@@ -153,8 +208,9 @@ public partial class SerieEpisode
 
         if (result is { Canceled: false })
         {
-            var media = await k7ServerService.GetMediaAsync(_episode.Id);
+            var media = await k7ServerService.GetMediaAsync(_episode.Id, bypassCache: true);
             _episode = media as SerieEpisodeDto;
+            UpdateStillFromEpisode(DateTimeOffset.UtcNow);
             StateHasChanged();
         }
     }
@@ -223,10 +279,17 @@ public partial class SerieEpisode
         if (_episode is null)
             return;
 
-        var media = await k7ServerService.GetMediaAsync(_episode.Id);
+        var media = await k7ServerService.GetMediaAsync(_episode.Id, bypassCache: true);
         _episode = media as SerieEpisodeDto;
         _indexedFile = _episode?.IndexedFiles?.FirstOrDefault();
+        UpdateStillFromEpisode(DateTimeOffset.UtcNow);
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _metadataRefreshWatcher?.Dispose();
+        await ValueTask.CompletedTask;
     }
 
     private async Task ToggleWatchStateAsync()

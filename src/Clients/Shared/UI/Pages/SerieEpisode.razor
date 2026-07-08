@@ -19,6 +19,7 @@
 @inject MediaCacheStore CacheStore
 @inject IK7Snackbar Snackbar
 @inject IUserAdminService UserAdminService
+@inject K7HubClient K7HubClient
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -32,10 +33,20 @@
 }
 else if (_episode is not null)
 {
-    <div @ref="_scrollRoot" class="episode-page" style="@DominantColorStyle">
-        <MediaPageBackdrop ImageUrl="@_stillUrl"
-                           DominantColor="@_dominantColor"
-                           ScrollTarget="@_scrollRoot" />
+    <div @ref="_scrollRoot" class="episode-page @(_useHdStillBackdrop ? "" : "episode-page--low-res-still")" style="@DominantColorStyle">
+        @if (_useHdStillBackdrop)
+        {
+            <MediaPageBackdrop ImageUrl="@_stillUrl"
+                               DominantColor="@_dominantColor"
+                               ScrollTarget="@_scrollRoot" />
+        }
+        else if (_stillUrl is not null)
+        {
+            <div class="episode-low-res-wash" aria-hidden="true" />
+            <div class="episode-low-res-still" aria-hidden="true">
+                <img src="@_stillUrl" alt="" />
+            </div>
+        }
 
         <div class="episode-main media-hero-main">
             <K7BackButton Class="episode-back-btn" />

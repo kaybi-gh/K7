@@ -208,15 +208,25 @@
     {
     <div class="d-flex flex-col images-tab">
         <div class="image-locks">
+            <div class="image-lock-row image-lock-row--global">
+                <span class="image-lock-label">@L["PicturesAll"]</span>
+                <K7IconButton Icon="@GetLockIcon("Pictures")" OnClick="ToggleAllPicturesLockAsync"
+                              Title="@GetLockTooltip("Pictures")" Class="@GetLockClass("Pictures")" />
+            </div>
             @foreach (var type in _allowedPictureTypes)
             {
                 <div class="image-lock-row">
                     <span class="image-lock-label">@type</span>
-                    <K7IconButton Icon="@GetLockIcon($"Pictures:{type}")" OnClick="@(() => ToggleLock($"Pictures:{type}"))"
-                                  Title="@GetLockTooltip($"Pictures:{type}")" Class="@GetLockClass($"Pictures:{type}")" />
+                    <K7IconButton Icon="@GetPictureTypeLockIcon(type)"
+                                  OnClick="@(() => TogglePictureTypeLockAsync(type))"
+                                  Title="@GetPictureTypeLockTooltip(type)"
+                                  Class="@GetPictureTypeLockClass(type)"
+                                  Disabled="@IsAllPicturesLocked()" />
                 </div>
             }
         </div>
+
+        <p class="images-tab-hint">@L["ImagesApplyImmediately"]</p>
 
         @if (Media?.Pictures is { Count: > 0 })
         {
@@ -226,7 +236,13 @@
                     {
                         <div class="picture-item @GetPictureItemClass(pic.Type)">
                             <img src="@GetPictureDisplayUrl(pic)" alt="@pic.Type" loading="lazy" />
-                            <span class="picture-type">@pic.Type</span>
+                            <span class="picture-type">
+                                @pic.Type
+                                @if (pic.OriginalWidth is > 0 && pic.OriginalHeight is > 0)
+                                {
+                                    <span class="picture-resolution"> - @pic.OriginalWidth x @pic.OriginalHeight</span>
+                                }
+                            </span>
                             <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
                                           OnClick="@(() => DeletePictureAsync(pic.Id))" Title="@L["Delete"]" />
                         </div>
@@ -240,7 +256,13 @@
                 <div class="pictures-grid">
                     <div class="picture-item picture-item--poster">
                         <img src="@GetPersonPortraitDisplayUrl()" alt="Portrait" loading="lazy" />
-                        <span class="picture-type">@MetadataPictureType.Portrait</span>
+                        <span class="picture-type">
+                            @MetadataPictureType.Portrait
+                            @if (Person.PortraitPicture.OriginalWidth is > 0 && Person.PortraitPicture.OriginalHeight is > 0)
+                            {
+                                <span class="picture-resolution"> - @Person.PortraitPicture.OriginalWidth x @Person.PortraitPicture.OriginalHeight</span>
+                            }
+                        </span>
                         <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
                                       OnClick="@(() => DeletePictureAsync(Person.PortraitPicture.Id))" Title="@L["Delete"]" />
                     </div>
@@ -273,6 +295,24 @@
             </div>
         </div>
 
+        @if (_canGenerateStillFromSource)
+        {
+            <div class="generate-still-section">
+                <K7Button Variant="outlined" Size="sm" OnClick="GenerateStillFromSourceAsync"
+                          Disabled="@(_isGeneratingStillFromSource || IsPictureTypeLocked(MetadataPictureType.Still))">
+                    @if (_isGeneratingStillFromSource)
+                    {
+                        <K7Spinner Size="sm" />
+                    }
+                    else
+                    {
+                        <K7Icon Icon="@Phosphor.FilmStrip" />
+                    }
+                    @L["GenerateStillFromSource"]
+                </K7Button>
+            </div>
+        }
+
         @if (_canBrowseProviderImages)
         {
             <div class="provider-images-section">
@@ -304,7 +344,13 @@
                                  @onclick="@(() => _selectedProviderImage = img)"
                                  @onkeydown="@(e => { if (e.Key is "Enter" or " ") _selectedProviderImage = img; })">
                                 <img src="@img.ThumbnailUrl" alt="@img.Type" loading="lazy" />
-                                <span class="provider-image-meta">@(img.Width)x@(img.Height)</span>
+                                <span class="provider-image-meta">
+                                    @(string.IsNullOrWhiteSpace(img.Provider) ? img.Type.ToString() : img.Provider)
+                                    @if (img.Width > 0 && img.Height > 0)
+                                    {
+                                        <span> - @img.Width x @img.Height</span>
+                                    }
+                                </span>
                             </div>
                         }
                     </div>
@@ -322,7 +368,14 @@
     }
 
     <div class="k7-dialog-actions">
-        <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>
-        <K7Button Variant="filled" OnClick="Submit" Disabled="@_isSubmitting">@L["Save"]</K7Button>
+        @if (_activeTab == 0)
+        {
+            <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>
+            <K7Button Variant="filled" OnClick="Submit" Disabled="@_isSubmitting">@L["Save"]</K7Button>
+        }
+        else
+        {
+            <K7Button Variant="filled" OnClick="CloseImagesTab">@L["Close"]</K7Button>
+        }
     </div>
 </div>

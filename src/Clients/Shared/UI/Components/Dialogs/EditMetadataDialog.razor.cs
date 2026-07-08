@@ -8,6 +8,7 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -17,6 +18,7 @@ public partial class EditMetadataDialog : IDisposable
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
+    [Inject] private IK7ServerService ApiClient { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
 
@@ -104,6 +106,9 @@ public partial class EditMetadataDialog : IDisposable
 
     // Provider images
     private bool _canBrowseProviderImages;
+    private bool _canGenerateStillFromSource;
+    private bool _isGeneratingStillFromSource;
+    private CancellationTokenSource? _picturesDebounceCts;
     private IReadOnlyList<ProviderImageDto>? _providerImages;
     private MetadataPictureType _providerImageFilter = MetadataPictureType.Poster;
     private ProviderImageDto? _selectedProviderImage;
@@ -156,6 +161,7 @@ public partial class EditMetadataDialog : IDisposable
     private void InitFromMedia(MediaDto media)
     {
         _isPersonMode = false;
+        _canGenerateStillFromSource = false;
         _title = media.Title;
         _sortTitle = media.SortTitle;
         _originalTitle = media.OriginalTitle;
@@ -218,6 +224,7 @@ public partial class EditMetadataDialog : IDisposable
                 _showOverview = true;
                 _showRuntime = true;
                 _canBrowseProviderImages = true;
+                _canGenerateStillFromSource = true;
                 _overview = episode.Overview;
                 _releaseDateStr = (episode.AirDate ?? media.ReleaseDate)?.ToString("yyyy-MM-dd");
                 _runtime = episode.Runtime;
@@ -270,12 +277,34 @@ public partial class EditMetadataDialog : IDisposable
             return;
 
         _pictureCacheVersion = DateTimeOffset.UtcNow;
-        _ = InvokeAsync(ReloadMediaFromServerAsync);
+        _picturesDebounceCts?.Cancel();
+        _picturesDebounceCts?.Dispose();
+        _picturesDebounceCts = new CancellationTokenSource();
+        var token = _picturesDebounceCts.Token;
+        _ = DebouncedReloadPicturesAsync(token);
+    }
+
+    private async Task DebouncedReloadPicturesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(500, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            await InvokeAsync(async () =>
+            {
+                await ReloadPicturesAsync();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private string? GetPictureDisplayUrl(MetadataPictureDto picture, MetadataPictureSize size = MetadataPictureSize.Small)
     {
-        var uri = picture.GetUri(size)?.OriginalString;
+        var uri = ApiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
         var cacheVersion = _pictureCacheVersion
             ?? (Media as MediaDto)?.LastMetadataRefreshedAt;
         return MediaPictureUrlHelper.WithCacheBuster(uri, cacheVersion);
@@ -283,7 +312,7 @@ public partial class EditMetadataDialog : IDisposable
 
     private string? GetPersonPortraitDisplayUrl(MetadataPictureSize size = MetadataPictureSize.Small)
     {
-        var uri = Person?.PortraitPicture?.GetUri(size)?.OriginalString;
+        var uri = ApiClient.GetAbsoluteUri(Person?.PortraitPicture?.GetUri(size)?.OriginalString)?.AbsoluteUri;
         return MediaPictureUrlHelper.WithCacheBuster(uri, _pictureCacheVersion);
     }
 
@@ -333,6 +362,8 @@ public partial class EditMetadataDialog : IDisposable
     {
         K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
+        _picturesDebounceCts?.Cancel();
+        _picturesDebounceCts?.Dispose();
     }
 
     private string GetLockIcon(string fieldName)
@@ -353,10 +384,80 @@ public partial class EditMetadataDialog : IDisposable
     private void ToggleLock(string fieldName)
     {
         if (!_lockedFields.Remove(fieldName))
-        {
             _lockedFields.Add(fieldName);
+    }
+
+    private async Task ToggleAllPicturesLockAsync()
+    {
+        if (IsAllPicturesLocked())
+        {
+            _lockedFields.Remove("Pictures");
+        }
+        else
+        {
+            _lockedFields.Add("Pictures");
+            _lockedFields.RemoveWhere(field => field.StartsWith("Pictures:", StringComparison.Ordinal));
+        }
+
+        StateHasChanged();
+        await SaveLockedFieldsAsync();
+    }
+
+    private async Task TogglePictureTypeLockAsync(MetadataPictureType type)
+    {
+        if (IsAllPicturesLocked())
+            return;
+
+        var fieldName = GetPictureTypeLockField(type);
+        if (!_lockedFields.Remove(fieldName))
+            _lockedFields.Add(fieldName);
+
+        StateHasChanged();
+        await SaveLockedFieldsAsync();
+    }
+
+    private static string GetPictureTypeLockField(MetadataPictureType type) => $"Pictures:{type}";
+
+    private bool IsAllPicturesLocked() => _lockedFields.Contains("Pictures");
+
+    private bool IsPictureTypeLocked(MetadataPictureType type) =>
+        IsAllPicturesLocked() || _lockedFields.Contains(GetPictureTypeLockField(type));
+
+    private string GetPictureTypeLockIcon(MetadataPictureType type) =>
+        IsPictureTypeLocked(type) ? Phosphor.Lock : Phosphor.LockOpen;
+
+    private string GetPictureTypeLockClass(MetadataPictureType type) =>
+        IsPictureTypeLocked(type) ? "lock-btn lock-btn--locked" : "lock-btn";
+
+    private string GetPictureTypeLockTooltip(MetadataPictureType type) =>
+        IsPictureTypeLocked(type) ? L["UnlockField"].Value : L["LockField"].Value;
+
+    private async Task SaveLockedFieldsAsync()
+    {
+        try
+        {
+            if (_isPersonMode && Person is not null)
+            {
+                await MediaService.UpdatePersonMetadataAsync(Person.Id, new UpdatePersonMetadataRequest
+                {
+                    LockedFields = [.. _lockedFields]
+                });
+            }
+            else if (Media is not null)
+            {
+                await MediaService.UpdateMediaMetadataAsync(Media.Id, new UpdateMediaMetadataRequest
+                {
+                    LockedFields = [.. _lockedFields]
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, K7Severity.Error);
         }
     }
+
+    private void CloseImagesTab() => Dialog.Close(K7DialogResult.Ok());
 
     private void OnReleaseDateChanged(string? value) => _releaseDateStr = value;
 
@@ -499,6 +600,31 @@ public partial class EditMetadataDialog : IDisposable
         finally
         {
             _isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GenerateStillFromSourceAsync()
+    {
+        if (Media is null || !_canGenerateStillFromSource)
+            return;
+
+        _isGeneratingStillFromSource = true;
+        StateHasChanged();
+
+        try
+        {
+            var pictureId = await MediaService.GenerateEpisodeStillFromSourceAsync(Media.Id);
+            Snackbar.Add(L["GenerateStillFromSourceSuccess"].Value, K7Severity.Success);
+            await ReloadPicturesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, K7Severity.Error);
+        }
+        finally
+        {
+            _isGeneratingStillFromSource = false;
             StateHasChanged();
         }
     }
