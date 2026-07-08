@@ -218,10 +218,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         }
 
         var externalIds = new List<ExternalId>();
-        if (!string.IsNullOrEmpty(episode.ExternalIds?.ImdbId))
-            externalIds.Add(new ExternalId { ProviderName = "imdb", Value = episode.ExternalIds.ImdbId });
-        if (!string.IsNullOrEmpty(episode.ExternalIds?.TvdbId))
-            externalIds.Add(new ExternalId { ProviderName = "tvdb", Value = episode.ExternalIds.TvdbId });
+        if (episode.Id is int tmdbEpisodeId and > 0)
+            externalIds.Add(new ExternalId { ProviderName = "tmdb", Value = tmdbEpisodeId.ToString() });
+        if (episode.ExternalIds?.ImdbId is { } imdbId)
+            externalIds.Add(new ExternalId { ProviderName = "imdb", Value = imdbId });
+        if (episode.ExternalIds?.TvdbId is { } tvdbId)
+            externalIds.Add(new ExternalId { ProviderName = "tvdb", Value = tvdbId });
 
         return new ExternalEpisodeMetadata
         {
@@ -592,6 +594,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 Url = url,
                 ThumbnailUrl = thumbUrl,
                 Type = type,
+                Provider = ProviderName,
                 Width = img.Width,
                 Height = img.Height,
                 VoteAverage = img.VoteAverage,

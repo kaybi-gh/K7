@@ -99,7 +99,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
                     results.Add(new MetadataSearchResult
                     {
-                        Provider = ProviderName,
+                        Provider = "tvdb",
                         ExternalId = id,
                         Title = item.NameTranslated ?? item.Name ?? string.Empty,
                         Year = ParseYear(item.FirstAirTime, item.Year),
@@ -408,7 +408,8 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 {
                     Url = stillUrl,
                     ThumbnailUrl = stillUrl,
-                    Type = MetadataPictureType.Still
+                    Type = MetadataPictureType.Still,
+                    Provider = ProviderName
                 });
             }
 
@@ -602,36 +603,8 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return roles;
     }
 
-    private static List<ExternalId> BuildExternalIds(string primaryId, IReadOnlyList<TvdbRemoteId>? remoteIds)
-    {
-        var ids = new List<ExternalId>
-        {
-            new() { ProviderName = "tvdb", Value = primaryId }
-        };
-
-        if (remoteIds is null)
-            return ids;
-
-        foreach (var remote in remoteIds)
-        {
-            if (string.IsNullOrWhiteSpace(remote.Id) || string.IsNullOrWhiteSpace(remote.SourceName))
-                continue;
-
-            var providerName = remote.SourceName.ToLowerInvariant() switch
-            {
-                "imdb" or "imdb id" => "imdb",
-                "tmdb" or "themoviedb" or "the movie db" => "tmdb",
-                _ => null
-            };
-
-            if (providerName is null || ids.Any(i => i.ProviderName == providerName))
-                continue;
-
-            ids.Add(new ExternalId { ProviderName = providerName, Value = remote.Id });
-        }
-
-        return ids;
-    }
+    private static List<ExternalId> BuildExternalIds(string primaryId, IReadOnlyList<TvdbRemoteId>? remoteIds) =>
+        TvdbExternalIdMapper.BuildExternalIds(primaryId, remoteIds);
 
     private async Task<List<TvdbArtwork>> ResolveSeriesArtworksAsync(
         int seriesId,
@@ -758,6 +731,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 Url = url,
                 ThumbnailUrl = thumb,
                 Type = pictureType.Value,
+                Provider = "tvdb",
                 Width = artwork.Width is null ? 0 : (int)artwork.Width,
                 Height = artwork.Height is null ? 0 : (int)artwork.Height,
                 Language = artwork.Language
