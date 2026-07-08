@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
@@ -32,19 +33,22 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly ISender _sender;
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
         IServiceProvider serviceProvider,
         ISender sender,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders,
-        IMediaMetadataTagSyncService metadataTagSyncService)
+        IMediaMetadataTagSyncService metadataTagSyncService,
+        MetadataPictureDeletionService pictureDeletionService)
     {
         _context = context;
         _serviceProvider = serviceProvider;
         _sender = sender;
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
         _metadataTagSyncService = metadataTagSyncService;
+        _pictureDeletionService = pictureDeletionService;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -58,6 +62,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 .ThenInclude(pr => pr.ExternalIds)
             .Include(m => m.PersonRoles)
                 .ThenInclude(pr => pr.PortraitPicture)
+                    .ThenInclude(p => p!.Variants)
             .Include(m => m.Ratings)
             .Include(m => m.MetadataTags)
                 .ThenInclude(mt => mt.MetadataTag)
@@ -76,6 +81,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     .ThenInclude(pr => pr.ExternalIds)
                 .Include(m => m.PersonRoles)
                     .ThenInclude(pr => pr.PortraitPicture)
+                        .ThenInclude(p => p!.Variants)
                 .Include(m => m.Ratings)
                 .Include(m => m.MetadataTags)
                     .ThenInclude(mt => mt.MetadataTag)
@@ -156,6 +162,9 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     personRole.Person = existingPerson;
                 }
             }
+
+            if (!movie.IsFieldLocked(nameof(Movie.PersonRoles)) && metadata.PersonRoles.Count > 0)
+                RemovePersonRolePortraits(movie.PersonRoles);
 
             movie.ApplyMetadata(metadata);
             await _metadataTagSyncService.ApplyTagsAsync(
@@ -361,12 +370,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Include(s => s.Episodes).ThenInclude(e => e.ExternalIds)
             .Include(s => s.Episodes).ThenInclude(e => e.Pictures)
             .Include(s => s.Episodes).ThenInclude(e => e.PersonRoles)
+                .ThenInclude(pr => pr.PortraitPicture!)
+                    .ThenInclude(p => p.Variants)
             .LoadAsync(cancellationToken);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
 
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
+
+        if (!serie.IsFieldLocked(nameof(Serie.PersonRoles)) && serieMetadata.PersonRoles?.Count > 0)
+        {
+            await ResolvePersonReferencesAsync(serieMetadata.PersonRoles, cancellationToken);
+            RemovePersonRolePortraits(serie.PersonRoles);
+        }
+
         serie.ApplyMetadata(serieMetadata);
         await _metadataTagSyncService.ApplyTagsAsync(
             serie,
@@ -391,16 +409,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     RecommendedIds = [.. serieMetadata.RecommendedExternalIds]
                 });
             }
-        }
-
-        // Person dedup
-        if (!serie.IsFieldLocked(nameof(Serie.PersonRoles)) && serieMetadata.PersonRoles?.Count > 0)
-        {
-            await ResolvePersonReferencesAsync(serieMetadata.PersonRoles, cancellationToken);
-
-            serie.PersonRoles.Clear();
-            foreach (var role in serieMetadata.PersonRoles)
-                serie.PersonRoles.Add(role);
         }
 
         // Ratings
@@ -466,6 +474,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 {
                     await ResolvePersonReferencesAsync(episodeMetadata.PersonRoles, cancellationToken);
 
+                    RemovePersonRolePortraits(episode.PersonRoles);
                     episode.PersonRoles.Clear();
                     foreach (var role in episodeMetadata.PersonRoles)
                         episode.PersonRoles.Add(role);
@@ -851,6 +860,18 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             if (existingPerson is not null)
                 role.Person = existingPerson;
+        }
+    }
+
+    private void RemovePersonRolePortraits(IEnumerable<BasePersonRole> roles)
+    {
+        foreach (var role in roles)
+        {
+            if (role.PortraitPicture is null)
+                continue;
+
+            _pictureDeletionService.Remove(role.PortraitPicture);
+            role.PortraitPicture = null;
         }
     }
 }

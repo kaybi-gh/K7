@@ -2,7 +2,8 @@ namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider.Tvdb;
 
 internal static class TvdbImageUrlHelper
 {
-    private const string ArtworkBaseUrl = "https://artworks.thetvdb.com/banners/";
+    private const string ArtworkHostUrl = "https://artworks.thetvdb.com/";
+    private const string ArtworkBannersUrl = "https://artworks.thetvdb.com/banners/";
 
     public static string? BuildImageUrl(string? imagePath)
     {
@@ -13,6 +14,11 @@ internal static class TvdbImageUrlHelper
             || imagePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             return imagePath;
 
-        return $"{ArtworkBaseUrl}{imagePath.TrimStart('/')}";
+        var normalized = imagePath.TrimStart('/');
+
+        if (normalized.StartsWith("banners/", StringComparison.OrdinalIgnoreCase))
+            return $"{ArtworkHostUrl}{normalized}";
+
+        return $"{ArtworkBannersUrl}{normalized}";
     }
 }
