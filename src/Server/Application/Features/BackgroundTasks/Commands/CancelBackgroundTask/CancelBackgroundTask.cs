@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.CancelBackgroundTask;
@@ -28,8 +29,7 @@ public class CancelBackgroundTaskCommandHandler : IRequestHandler<CancelBackgrou
             return;
         }
 
-        entity.Status = BackgroundTaskStatus.Failed;
-        entity.CompletedAt = DateTimeOffset.UtcNow;
+        BackgroundTaskFailure.MarkCancelled(entity);
         entity.ErrorDetails = "Cancelled by user";
         await _context.SaveChangesAsync(cancellationToken);
         await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);

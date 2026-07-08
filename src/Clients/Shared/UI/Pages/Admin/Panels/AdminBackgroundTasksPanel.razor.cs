@@ -21,7 +21,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.InProgress,
         BackgroundTaskStatus.WaitingForRetry,
         BackgroundTaskStatus.Completed,
-        BackgroundTaskStatus.Failed
+        BackgroundTaskStatus.Failed,
+        BackgroundTaskStatus.Cancelled
     ];
 
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
@@ -463,6 +464,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.WaitingForRetry => L["StatusWaitingForRetry"],
         BackgroundTaskStatus.Completed => L["StatusCompleted"],
         BackgroundTaskStatus.Failed => L["StatusFailed"],
+        BackgroundTaskStatus.Cancelled => L["StatusCancelled"],
         _ => status.ToString()
     };
 
@@ -480,6 +482,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.WaitingForRetry => "arrow-clockwise",
         BackgroundTaskStatus.Completed => "check-circle",
         BackgroundTaskStatus.Failed => "x-circle",
+        BackgroundTaskStatus.Cancelled => "prohibit",
         _ => "circle"
     };
 
@@ -488,6 +491,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.InProgress => "color: var(--color-info);",
         BackgroundTaskStatus.Completed => "color: var(--color-success);",
         BackgroundTaskStatus.Failed => "color: var(--color-error);",
+        BackgroundTaskStatus.Cancelled => "color: var(--color-warning);",
         BackgroundTaskStatus.WaitingForRetry => "color: var(--color-warning);",
         _ => "color: var(--color-text-muted);"
     };
@@ -497,6 +501,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.InProgress => "color: var(--color-info);",
         BackgroundTaskStatus.Completed => "color: var(--color-success);",
         BackgroundTaskStatus.Failed => "color: var(--color-error);",
+        BackgroundTaskStatus.Cancelled => "color: var(--color-warning);",
         BackgroundTaskStatus.WaitingForRetry => "color: var(--color-warning);",
         _ => ""
     };

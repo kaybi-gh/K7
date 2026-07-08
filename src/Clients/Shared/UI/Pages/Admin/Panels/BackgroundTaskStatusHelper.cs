@@ -11,6 +11,7 @@ public static class BackgroundTaskStatusHelper
         BackgroundTaskStatus.WaitingForRetry => "secondary",
         BackgroundTaskStatus.Completed => "success",
         BackgroundTaskStatus.Failed => "error",
+        BackgroundTaskStatus.Cancelled => "warning",
         _ => "default"
     };
 }
