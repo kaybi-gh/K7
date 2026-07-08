@@ -30,9 +30,11 @@
   <data name="SubtitleFontSize" xml:space="preserve"><value>Subtitle font size</value></data>
   <data name="SubtitleFontColor" xml:space="preserve"><value>Subtitle font color</value></data>
   <data name="SubtitleBackgroundOpacity" xml:space="preserve"><value>Subtitle background opacity</value></data>
+  <data name="SubtitleBackgroundOpacityHint" xml:space="preserve"><value>0 = transparent, 1 = opaque background behind text.</value></data>
   <data name="SubtitleShadow" xml:space="preserve"><value>Subtitle shadow</value></data>
   <data name="SubtitleShadowColor" xml:space="preserve"><value>Shadow color</value></data>
   <data name="SubtitleShadowBlur" xml:space="preserve"><value>Shadow blur</value></data>
+  <data name="SubtitleShadowBlurHint" xml:space="preserve"><value>Blur strength around letters to improve readability.</value></data>
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Show thumbnails on seekbar hover</value></data>
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>This option has no effect if thumbnail generation is disabled on the server.</value></data>
   <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>This option has no effect if thumbnail generation is disabled for the relevant library.</value></data>

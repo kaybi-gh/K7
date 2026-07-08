@@ -17,10 +17,13 @@
 }
 else
 {
-    <div class="pa-4 d-flex flex-col gap-6">
+    <div class="settings-form-page">
+        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
         <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
             @L["DefaultsInfo"]
         </K7Alert>
+
+        <K7Divider />
 
         <section id="tracks" class="d-flex flex-col gap-4">
             <h6>@Lt["SectionTitle"]</h6>
@@ -76,6 +79,8 @@ else
             }
         </section>
 
+        <K7Divider />
+
         @if (_settings is not null)
         {
             <section class="d-flex flex-col gap-4">
@@ -84,6 +89,8 @@ else
                 <K7Switch Label="@L["ShowSeekbarThumbnails"]" @bind-Value="_settings.ShowSeekbarThumbnails" />
                 <span class="text-caption video-playback-hint">@L["ShowSeekbarThumbnailsHintLibrary"]</span>
             </section>
+
+            <K7Divider />
 
             <section class="d-flex flex-col gap-4">
                 <h6>@L["IntroSkipSection"]</h6>
@@ -100,6 +107,8 @@ else
                     <K7SelectItem Value="IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
                 </K7Select>
             </section>
+
+            <K7Divider />
 
             <section class="d-flex flex-col gap-4">
                 <h6>@L["SubtitleSection"]</h6>
@@ -121,12 +130,12 @@ else
 
                     <K7ColorPicker Label="@L["SubtitleFontColor"]" @bind-Value="_settings.SubtitleFontColor" />
 
-                    <div class="d-flex flex-col gap-1">
-                        <span class="field-label">@L["SubtitleBackgroundOpacity"]</span>
-                        <K7Slider TValue="double" Min="0" Max="1" Step="0.1"
-                                  Value="_settings.SubtitleBackgroundOpacity"
-                                  ValueChanged="v => { _settings.SubtitleBackgroundOpacity = v; }" />
-                    </div>
+                    <K7Slider TValue="double" Min="0" Max="1" Step="0.1" Immediate="true"
+                              Label="@L["SubtitleBackgroundOpacity"]"
+                              Hint="@L["SubtitleBackgroundOpacityHint"]"
+                              FormatValue="FormatOpacity"
+                              Value="_settings.SubtitleBackgroundOpacity"
+                              ValueChanged="OnSubtitleBackgroundOpacityChanged" />
 
                     <K7Switch Label="@L["SubtitleShadow"]" @bind-Value="_settings.SubtitleShadowEnabled" />
 
@@ -134,12 +143,12 @@ else
                     {
                         <K7ColorPicker Label="@L["SubtitleShadowColor"]" @bind-Value="_settings.SubtitleShadowColor" />
 
-                        <div class="d-flex flex-col gap-1">
-                            <span class="field-label">@L["SubtitleShadowBlur"]</span>
-                            <K7Slider TValue="double" Min="0" Max="10" Step="0.5"
-                                      Value="_settings.SubtitleShadowBlur"
-                                      ValueChanged="v => { _settings.SubtitleShadowBlur = v; }" />
-                        </div>
+                        <K7Slider TValue="double" Min="0" Max="10" Step="0.5" Immediate="true"
+                                  Label="@L["SubtitleShadowBlur"]"
+                                  Hint="@L["SubtitleShadowBlurHint"]"
+                                  FormatValue="FormatBlur"
+                                  Value="_settings.SubtitleShadowBlur"
+                                  ValueChanged="OnSubtitleShadowBlurChanged" />
                     }
 
                     <SubtitlePreview Family="_settings.SubtitleFontFamily"
@@ -152,12 +161,22 @@ else
             </section>
         }
 
-        @if (_settings is not null && _preferences is not null)
+        @if (_settings is not null && _preferences is not null && _videoPolicy is not null)
         {
-            <div class="d-flex gap-2">
-                <K7Button Color="primary" Disabled="_saving" OnClick="SaveAsync">@L["Save"]</K7Button>
-                <K7Button Disabled="_saving" OnClick="ResetAsync">@L["Reset"]</K7Button>
-            </div>
+            <K7Divider />
+
+            <PlaybackPolicySettingsFields VideoPolicy="_videoPolicy" VideoPolicyChanged="OnVideoPolicyChanged" />
+        }
+        </div>
+
+        @if (_settings is not null && _preferences is not null && _videoPolicy is not null)
+        {
+            <K7SettingsActionBar IsDirty="IsDirty"
+                                 IsSaving="_saving"
+                                 ResetDisabled="ResetDisabled"
+                                 OnSave="SaveAsync"
+                                 OnCancel="CancelChanges"
+                                 OnResetToDefaults="ResetAsync" />
         }
     </div>
 }
