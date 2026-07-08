@@ -143,6 +143,13 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                 entity.LocalPath = webpFilePath;
             }
 
+            var dimensions = _imageProcessor.TryGetImageDimensions(entity.LocalPath);
+            if (dimensions is not null)
+            {
+                entity.OriginalWidth = dimensions.Value.Width;
+                entity.OriginalHeight = dimensions.Value.Height;
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
 
             await _pictureReadyNotifier.NotifyIfMediaPictureReadyAsync(entity.Id, cancellationToken);

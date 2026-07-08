@@ -29,4 +29,9 @@ public interface IImageProcessor
     /// Extracts the dominant color from an image. Returns an "R,G,B" string or null.
     /// </summary>
     Task<string?> ExtractDominantColorAsync(string inputPath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the pixel dimensions of a raster image, or null when unavailable.
+    /// </summary>
+    (int Width, int Height)? TryGetImageDimensions(string path);
 }

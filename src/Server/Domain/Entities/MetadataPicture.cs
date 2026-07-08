@@ -12,6 +12,8 @@ public class MetadataPicture : BaseAuditableEntity
     public required MetadataPictureType Type { get; set; }
     public Uri? OriginalRemoteUri { get; set; }
     public string? LocalPath { get; set; }
+    public int? OriginalWidth { get; set; }
+    public int? OriginalHeight { get; set; }
     public string? DominantColor { get; set; }
 
     public Guid? MediaId { get; set; }

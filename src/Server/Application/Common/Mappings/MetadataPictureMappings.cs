@@ -17,6 +17,8 @@ public static class MetadataPictureMappings
                     ? new Uri($"/api/metadata-pictures/{domain.Id}", UriKind.Relative)
                     : null,
                 DominantColor = domain.DominantColor,
+                OriginalWidth = domain.OriginalWidth,
+                OriginalHeight = domain.OriginalHeight,
                 AvailableSizes = availableSizesByPictureId is not null
                 && availableSizesByPictureId.TryGetValue(domain.Id, out var sizes)
                 ? sizes
