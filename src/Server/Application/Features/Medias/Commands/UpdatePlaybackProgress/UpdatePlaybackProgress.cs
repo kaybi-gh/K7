@@ -69,12 +69,20 @@ public class UpdatePlaybackProgressCommandHandler(
 
         var timeNow = DateTime.UtcNow;
 
-        var session = await _context.MediaPlaybackSessions
+        var existingSession = await _context.MediaPlaybackSessions
             .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
 
-        var previousState = session?.State ?? PlaybackState.Unknown;
+        var previousState = existingSession?.State ?? PlaybackState.Unknown;
 
-        if (session is null)
+        MediaPlaybackSession session;
+        var isNewSession = existingSession is null;
+        if (existingSession is not null)
+        {
+            session = existingSession;
+            ApplyExistingSessionProgress(session, request, timeNow);
+            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
+        }
+        else
         {
             session = new MediaPlaybackSession
             {
@@ -94,28 +102,6 @@ public class UpdatePlaybackProgressCommandHandler(
             {
                 session.Details = CreateDetailsFromStreamDecision(sd);
             }
-        }
-        else
-        {
-            if (session.State == PlaybackState.Playing && session.LastUpdateAt.HasValue)
-            {
-                var delta = (timeNow - session.LastUpdateAt.Value).TotalSeconds;
-                if (delta is > 0 and < 120)
-                {
-                    session.WatchedDurationSeconds += delta;
-                }
-            }
-
-            if (request.State is PlaybackState.Paused or PlaybackState.Ended or PlaybackState.Idle
-                && session.State == PlaybackState.Playing)
-            {
-                session.StoppedAt = timeNow;
-            }
-
-            session.LastUpdateAt = timeNow;
-            session.State = request.State;
-
-            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
         }
 
         session.PositionSeconds = request.Position;
@@ -225,19 +211,26 @@ public class UpdatePlaybackProgressCommandHandler(
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException) when (session.Id == default)
+        catch (DbUpdateException ex) when (isNewSession && IsDuplicateSessionId(ex))
         {
-            _context.Entry(session).State = EntityState.Detached;
+            DetachSessionGraph(session);
 
             session = await _context.MediaPlaybackSessions
-                .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
+                .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken)
+                ?? throw new InvalidOperationException(
+                    $"Playback session {request.SessionId} was not found after duplicate insert conflict.");
 
-            if (session is null) return;
+            ApplyExistingSessionProgress(session, request, timeNow);
+            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
 
             session.PositionSeconds = request.Position;
             session.DurationSeconds = request.Duration;
-            session.LastUpdateAt = timeNow;
-            session.State = request.State;
+
+            if (completed && session.CompletedAt is null)
+            {
+                session.CompletedAt = timeNow;
+                session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -348,6 +341,42 @@ public class UpdatePlaybackProgressCommandHandler(
                 cancellationToken);
         }
     }
+
+    private static void ApplyExistingSessionProgress(
+        MediaPlaybackSession session,
+        UpdatePlaybackProgressCommand request,
+        DateTime timeNow)
+    {
+        if (session.State == PlaybackState.Playing && session.LastUpdateAt.HasValue)
+        {
+            var delta = (timeNow - session.LastUpdateAt.Value).TotalSeconds;
+            if (delta is > 0 and < 120)
+            {
+                session.WatchedDurationSeconds += delta;
+            }
+        }
+
+        if (request.State is PlaybackState.Paused or PlaybackState.Ended or PlaybackState.Idle
+            && session.State == PlaybackState.Playing)
+        {
+            session.StoppedAt = timeNow;
+        }
+
+        session.LastUpdateAt = timeNow;
+        session.State = request.State;
+    }
+
+    private void DetachSessionGraph(MediaPlaybackSession session)
+    {
+        if (session.Details is not null)
+            _context.Entry(session.Details).State = EntityState.Detached;
+
+        _context.Entry(session).State = EntityState.Detached;
+    }
+
+    private static bool IsDuplicateSessionId(DbUpdateException ex) =>
+        ex.InnerException?.Message.Contains("IX_MediaPlaybackSessions_SessionId", StringComparison.OrdinalIgnoreCase) == true
+        || ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true;
 
     private async Task EnsureCoViewersAsync(
         Guid referenceId,
