@@ -85,6 +85,7 @@ public static class DependencyInjection
             limiter.ConfigureHost("upload.wikimedia.org", TimeSpan.FromSeconds(2));
             return limiter;
         });
+        services.AddScoped<IBackgroundTaskExecutionContext, BackgroundTaskExecutionContext>();
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<ILibraryScanProgressReporter, LibraryScanProgressReporter>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();

@@ -36,6 +36,7 @@
   <data name="StatusWaitingForRetry" xml:space="preserve"><value>Waiting for retry</value></data>
   <data name="StatusCompleted" xml:space="preserve"><value>Completed</value></data>
   <data name="StatusFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="StatusCancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="NoTasks" xml:space="preserve"><value>No tasks.</value></data>
   <data name="ColName" xml:space="preserve"><value>Name</value></data>
   <data name="ColStatus" xml:space="preserve"><value>Status</value></data>

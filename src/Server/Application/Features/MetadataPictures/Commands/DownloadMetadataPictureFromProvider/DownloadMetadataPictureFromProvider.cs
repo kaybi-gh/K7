@@ -9,6 +9,7 @@ using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
@@ -27,6 +28,9 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly OutboundRateLimiter _rateLimiter;
     private readonly MediaPictureReadyNotifier _pictureReadyNotifier;
+    private readonly MetadataPictureDeletionService _pictureDeletionService;
+    private readonly IBackgroundTaskExecutionContext _taskExecutionContext;
+    private readonly ILogger<DownloadMetadataPictureFromProviderCommandHandler> _logger;
 
     public DownloadMetadataPictureFromProviderCommandHandler(
         IApplicationDbContext context,
@@ -35,7 +39,10 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
         OutboundRateLimiter rateLimiter,
-        MediaPictureReadyNotifier pictureReadyNotifier)
+        MediaPictureReadyNotifier pictureReadyNotifier,
+        MetadataPictureDeletionService pictureDeletionService,
+        IBackgroundTaskExecutionContext taskExecutionContext,
+        ILogger<DownloadMetadataPictureFromProviderCommandHandler> logger)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
@@ -44,11 +51,15 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         _pathsConfiguration = pathsConfiguration.Value;
         _rateLimiter = rateLimiter;
         _pictureReadyNotifier = pictureReadyNotifier;
+        _pictureDeletionService = pictureDeletionService;
+        _taskExecutionContext = taskExecutionContext;
+        _logger = logger;
     }
 
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.MetadataPictures
+            .Include(p => p.Variants)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
         Guard.Against.NotFound(request.Id, entity);
 
@@ -77,6 +88,21 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     ?? TimeSpan.FromSeconds(5);
                 _rateLimiter.ReportRetryAfter(entity.OriginalRemoteUri.Host, retryAfter);
                 throw new HttpRequestException($"Rate limited (429) by {entity.OriginalRemoteUri.Host}. Retry after {retryAfter.TotalSeconds}s.");
+            }
+
+            if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning(
+                    "Remote metadata picture unavailable ({StatusCode}) for {PictureId} at {Uri}",
+                    (int)response.StatusCode,
+                    entity.Id,
+                    entity.OriginalRemoteUri);
+
+                _pictureDeletionService.Remove(entity);
+                await _context.SaveChangesAsync(cancellationToken);
+                _taskExecutionContext.Cancel(
+                    $"Remote metadata picture unavailable ({(int)response.StatusCode}): {entity.OriginalRemoteUri}");
+                return;
             }
 
             response.EnsureSuccessStatusCode();

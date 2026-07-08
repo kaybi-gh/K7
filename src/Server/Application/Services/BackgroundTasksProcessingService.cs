@@ -253,6 +253,8 @@ public class BackgroundTasksProcessingService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        var executionContext = scope.ServiceProvider.GetRequiredService<IBackgroundTaskExecutionContext>();
+        executionContext.Reset();
 
         var limits = await ReadConcurrencyLimitsAsync(stoppingToken);
         var saturatedGroups = _activeCountByGroup
@@ -345,11 +347,23 @@ public class BackgroundTasksProcessingService : BackgroundService
             await sender.Send(request, timeoutCts.Token);
 
             sw.Stop();
-            task.Status = BackgroundTaskStatus.Completed;
-            task.CompletedAt = DateTimeOffset.UtcNow;
-            task.ErrorDetails = null;
-            _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
-                task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
+
+            if (executionContext.IsCancelled)
+            {
+                task.ErrorDetails = TruncateErrorDetails(executionContext.CancellationDetails);
+                BackgroundTaskFailure.MarkCancelled(task);
+                _logger.LogWarning(
+                    "Task {TaskId} ({TaskName}) cancelled after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}): {ErrorDetails}",
+                    task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ErrorDetails);
+            }
+            else
+            {
+                task.Status = BackgroundTaskStatus.Completed;
+                task.CompletedAt = DateTimeOffset.UtcNow;
+                task.ErrorDetails = null;
+                _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
+                    task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
+            }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
@@ -361,15 +375,17 @@ public class BackgroundTasksProcessingService : BackgroundService
             sw.Stop();
             _logger.LogError("Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s", task.Id, task.Name, task.TimeoutSeconds);
             task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
-            HandleTaskFailure(task);
+            BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
+            LogTaskFailureOutcome(task);
         }
         catch (Exception ex)
         {
             sw.Stop();
             _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
                 task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
-            task.ErrorDetails = ex.Message.Length > 2000 ? ex.Message[..2000] : ex.Message;
-            HandleTaskFailure(task);
+            task.ErrorDetails = TruncateErrorDetails(ex.Message);
+            BackgroundTaskFailure.Handle(task, ex, MaxBackoff);
+            LogTaskFailureOutcome(task);
         }
         finally
         {
@@ -385,26 +401,22 @@ public class BackgroundTasksProcessingService : BackgroundService
         await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
     }
 
-    private void HandleTaskFailure(BackgroundTask task)
+    private void LogTaskFailureOutcome(BackgroundTask task)
     {
-        if (task.AttemptCount + 1 >= task.MaxAttempts)
+        if (task.Status == BackgroundTaskStatus.Failed)
         {
-            task.Status = BackgroundTaskStatus.Failed;
-            task.CompletedAt = DateTimeOffset.UtcNow;
             _logger.LogError("Task {TaskId} ({TaskName}) exhausted all {MaxAttempts} attempts, marked as failed",
                 task.Id, task.Name, task.MaxAttempts);
         }
-        else
+        else if (task.Status == BackgroundTaskStatus.WaitingForRetry)
         {
-            var delay = TimeSpan.FromSeconds(Math.Min(30 * Math.Pow(2, task.AttemptCount), MaxBackoff.TotalSeconds));
-            task.Status = BackgroundTaskStatus.WaitingForRetry;
-            task.NextRetryAfter = DateTimeOffset.UtcNow.Add(delay);
-            task.StartedAt = null;
-            task.CompletedAt = null;
             _logger.LogWarning("Task {TaskId} ({TaskName}) will retry after {Delay} (attempt {Attempt}/{MaxAttempts})",
-                task.Id, task.Name, delay, task.AttemptCount + 1, task.MaxAttempts);
+                task.Id, task.Name, task.NextRetryAfter - DateTimeOffset.UtcNow, task.AttemptCount + 1, task.MaxAttempts);
         }
     }
+
+    private static string? TruncateErrorDetails(string? errorDetails) =>
+        errorDetails is { Length: > 2000 } ? errorDetails[..2000] : errorDetails;
 
     private async Task RunOrphanPollerAsync(CancellationToken stoppingToken)
     {
@@ -462,19 +474,22 @@ public class BackgroundTasksProcessingService : BackgroundService
                     .Where(t => t.Status == BackgroundTaskStatus.Completed && t.LastModified < completedCutoff)
                     .ToListAsync(stoppingToken);
 
-                var staleFailed = await context.BackgroundTasks
-                    .Where(t => t.Status == BackgroundTaskStatus.Failed && t.LastModified < failedCutoff)
+                var staleTerminal = await context.BackgroundTasks
+                    .Where(t => (t.Status == BackgroundTaskStatus.Failed || t.Status == BackgroundTaskStatus.Cancelled)
+                        && t.LastModified < failedCutoff)
                     .ToListAsync(stoppingToken);
 
-                var totalRemoved = staleCompleted.Count + staleFailed.Count;
+                var totalRemoved = staleCompleted.Count + staleTerminal.Count;
                 if (totalRemoved > 0)
                 {
                     context.BackgroundTasks.RemoveRange(staleCompleted);
-                    context.BackgroundTasks.RemoveRange(staleFailed);
+                    context.BackgroundTasks.RemoveRange(staleTerminal);
                     await context.SaveChangesAsync(stoppingToken);
                     await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
-                    _logger.LogInformation("Cleaned up {CompletedCount} completed and {FailedCount} failed tasks",
-                        staleCompleted.Count, staleFailed.Count);
+                    _logger.LogInformation(
+                        "Cleaned up {CompletedCount} completed and {TerminalCount} failed/cancelled tasks",
+                        staleCompleted.Count,
+                        staleTerminal.Count);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

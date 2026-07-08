@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -36,7 +37,10 @@ public class DeleteLibraryCommandHandler(
             .ToListAsync(cancellationToken);
 
         foreach (var task in staleTasks)
-            task.Status = BackgroundTaskStatus.Failed;
+        {
+            BackgroundTaskFailure.MarkCancelled(task);
+            task.ErrorDetails = "Library deleted";
+        }
 
         context.Libraries.Remove(library);
         await homeLayoutMaintenanceService.RemoveLibraryReferencesAsync(request.Id, cancellationToken);

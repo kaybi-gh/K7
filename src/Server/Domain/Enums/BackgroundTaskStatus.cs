@@ -6,5 +6,6 @@ public enum BackgroundTaskStatus
     InProgress,
     WaitingForRetry,
     Completed,
-    Failed
+    Failed,
+    Cancelled
 }
