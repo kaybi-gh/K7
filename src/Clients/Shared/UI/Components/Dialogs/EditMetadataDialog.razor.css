@@ -115,6 +115,10 @@
     background: var(--color-surface);
 }
 
+.picture-resolution {
+    opacity: 0.85;
+}
+
 .picture-item ::deep .picture-delete-btn {
     position: absolute;
     top: 2px;
@@ -135,6 +139,16 @@
 
 .images-tab {
     gap: 0;
+}
+
+.image-lock-row--global .image-lock-label {
+    font-weight: 600;
+}
+
+.images-tab-hint {
+    margin: 0 0 12px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
 }
 
 .provider-images-section {

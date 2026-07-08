@@ -46,6 +46,7 @@
   <data name="DiscNumber" xml:space="preserve"><value>Numéro de disque</value></data>
   <data name="Lyrics" xml:space="preserve"><value>Paroles</value></data>
   <data name="Pictures" xml:space="preserve"><value>Images (verrouiller empêche l'écrasement au rafraichissement)</value></data>
+  <data name="PicturesAll" xml:space="preserve"><value>Toutes les images</value></data>
   <data name="LockField" xml:space="preserve"><value>Verrouiller le champ (empêcher le rafraichissement de l'écraser)</value></data>
   <data name="UnlockField" xml:space="preserve"><value>Déverrouiller le champ (autoriser la mise a jour au rafraichissement)</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
@@ -66,4 +67,9 @@
   <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
   <data name="Value" xml:space="preserve"><value>Valeur</value></data>
   <data name="AddExternalId" xml:space="preserve"><value>Ajouter un identifiant</value></data>
+  <data name="GenerateStillFromSource" xml:space="preserve"><value>Générer depuis le fichier vidéo</value></data>
+  <data name="GenerateStillFromSourceSuccess" xml:space="preserve"><value>Image générée depuis le fichier vidéo</value></data>
+  <data name="GenerateStillFromSourceSkipped" xml:space="preserve"><value>Aucune image générée (image HD déjà présente)</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+  <data name="ImagesApplyImmediately" xml:space="preserve"><value>Les images sont enregistrées immédiatement. Verrouillez par type ou toutes les images pour empêcher le rafraîchissement de les écraser.</value></data>
 </root>
