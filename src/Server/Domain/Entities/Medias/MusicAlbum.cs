@@ -34,15 +34,23 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
             }
         }
 
-        if (!IsFieldLocked(nameof(Pictures)) && metadata.Pictures is { Count: > 0 })
+        if (metadata.Pictures is { Count: > 0 })
         {
-            var hasLocalCover = Pictures.Any(p => p.Type == MetadataPictureType.Cover && p.LocalPath is not null);
             foreach (var pic in metadata.Pictures)
             {
+                if (IsPictureTypeLocked(pic.Type))
+                    continue;
+
+                var hasLocalCover = Pictures.Any(p => p.Type == MetadataPictureType.Cover && p.LocalPath is not null);
                 if (hasLocalCover && pic.Type == MetadataPictureType.Cover)
                     continue;
-                if (pic.OriginalRemoteUri != null && !Pictures.Any(p => p.OriginalRemoteUri == pic.OriginalRemoteUri))
+
+                if (pic.OriginalRemoteUri is not null
+                    && !Pictures.Any(p => p.OriginalRemoteUri == pic.OriginalRemoteUri))
+                {
+                    RemovePicturesOfType(pic.Type);
                     Pictures.Add(pic);
+                }
             }
         }
     }

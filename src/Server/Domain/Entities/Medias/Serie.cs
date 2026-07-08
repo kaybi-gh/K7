@@ -48,10 +48,7 @@ public class Serie() : BaseMedia(MediaType.Serie)
             foreach (var fed in federationIds) ExternalIds.Add(fed);
         }
 
-        if (!IsFieldLocked(nameof(Pictures)) && metadata.Pictures?.Count > 0)
-        {
-            Pictures.Clear();
-            foreach (var pic in metadata.Pictures) Pictures.Add(pic);
-        }
+        if (metadata.Pictures?.Count > 0)
+            ApplyMetadataPictures(metadata.Pictures);
     }
 }
