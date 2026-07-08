@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -38,6 +39,7 @@ public class UpdatePlaybackProgressCommandHandler(
     IMediaQueryCacheInvalidator cacheInvalidator,
     INextEpisodeEnqueueService nextEpisodeEnqueueService,
     IUserMediaStateUpdater userMediaStateUpdater,
+    IPlaybackPolicySettingsProvider playbackPolicySettingsProvider,
     ISharedProfilePlaybackResolver viewingGroupPlaybackResolver,
     ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
@@ -51,6 +53,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
     private readonly INextEpisodeEnqueueService _nextEpisodeEnqueueService = nextEpisodeEnqueueService;
     private readonly IUserMediaStateUpdater _userMediaStateUpdater = userMediaStateUpdater;
+    private readonly IPlaybackPolicySettingsProvider _playbackPolicySettingsProvider = playbackPolicySettingsProvider;
     private readonly ISharedProfilePlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
     private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
     private readonly ILogger _logger = logger;
@@ -138,11 +141,14 @@ public class UpdatePlaybackProgressCommandHandler(
         var hostResult = await _userMediaStateUpdater.ApplyAsync(
             userId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken);
 
+        var videoPolicy = await _playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId, cancellationToken);
+        var audioPolicy = await _playbackPolicySettingsProvider.GetEffectiveAudioPolicyAsync(userId, cancellationToken);
         var progress = request.Duration > 0 ? request.Position / request.Duration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
         var completed = isMusic
-            ? progress >= 0.50 || request.Position >= 240
-            : progress >= 0.80;
+            ? progress >= audioPolicy.CompletedThresholdPercent / 100.0
+              || request.Position >= audioPolicy.CompletedMinDurationSeconds
+            : progress >= videoPolicy.CompletedThresholdPercent / 100.0;
 
         if (completed && session.CompletedAt is null)
         {
