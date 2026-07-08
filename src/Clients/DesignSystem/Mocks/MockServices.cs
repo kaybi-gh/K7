@@ -446,6 +446,7 @@ public sealed class MockMediaService : IMediaService
     public Task<List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult(new List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>());
     public Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default) =>
         Task.FromResult<SetMediaWatchStateResultDto?>(new SetMediaWatchStateResultDto { AffectedMediaIds = [mediaId] });
+    public Task DismissFromContinueWatchingAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockLibraryService : ILibraryService
@@ -527,6 +528,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default) => Task.FromResult(new List<RestrictedMediaPreviewDto>());
     public Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteUserLanguageAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new UserDto { Id = Guid.Empty, UserName = null, Role = "Admin", Created = DateTimeOffset.UtcNow, IsActive = true, IsGuest = false, HasPin = false, CapabilityOverrides = [], LibraryExclusions = [], MediaExclusions = [] });
     public Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -719,13 +721,23 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.VideoPlayerSettingsDto());
     public Task UpdateUserVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<AudioPlayerSettingsDto> GetEffectiveAudioPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new AudioPlayerSettingsDto());
+    public Task UpdateUserAudioPlayerSettingsAsync(AudioPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserAudioPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.TrackSelectionPreferencesDto());
     public Task UpdateUserTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<VideoPlaybackPolicySettingsDto> GetEffectiveVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new VideoPlaybackPolicySettingsDto());
+    public Task UpdateUserVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<AudioPlaybackPolicySettingsDto> GetEffectiveAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new AudioPlaybackPolicySettingsDto());
+    public Task UpdateUserAudioPlaybackPolicySettingsAsync(AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SyncPlayPreferencesDto());
     public Task UpdateSyncPlayPreferencesAsync(K7.Shared.Dtos.SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.SharedProfilePreferencesDto> GetSharedProfilePreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SharedProfilePreferencesDto());
     public Task UpdateSharedProfilePreferencesAsync(K7.Shared.Dtos.SharedProfilePreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<bool> UserSettingExistsAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(false);
 }
 
 public sealed class MockServerPreferencesService : IServerPreferencesService
@@ -741,9 +753,18 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.VideoPlayerSettingsDto?>(null);
     public Task UpdateServerVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<AudioPlayerSettingsDto?> GetServerAudioPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<AudioPlayerSettingsDto?>(null);
+    public Task UpdateServerAudioPlayerSettingsAsync(AudioPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerAudioPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto?> GetServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.TrackSelectionPreferencesDto?>(null);
     public Task UpdateServerTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<VideoPlaybackPolicySettingsDto?> GetServerVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<VideoPlaybackPolicySettingsDto?>(null);
+    public Task UpdateServerVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<AudioPlaybackPolicySettingsDto?> GetServerAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<AudioPlaybackPolicySettingsDto?>(null);
+    public Task UpdateServerAudioPlaybackPolicySettingsAsync(AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerAudioPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockCollectionService : ICollectionService
