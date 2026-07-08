@@ -45,6 +45,10 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
         // Logos
         [(MetadataPictureType.Logo, MetadataPictureSize.Small)] = 200,
         [(MetadataPictureType.Logo, MetadataPictureSize.Medium)] = 400,
+
+        // Episode stills (16:9 ratio)
+        [(MetadataPictureType.Still, MetadataPictureSize.Small)] = 640,
+        [(MetadataPictureType.Still, MetadataPictureSize.Medium)] = 1280,
     };
 
     public GenerateMetadataPictureVariantsCommandHandler(
@@ -101,6 +105,16 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
         var directory = Path.GetDirectoryName(picture.LocalPath)!;
         var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
         var sourcePath = picture.LocalPath;
+
+        if (picture.OriginalWidth is null || picture.OriginalHeight is null)
+        {
+            var dimensions = _imageProcessor.TryGetImageDimensions(sourcePath);
+            if (dimensions is not null)
+            {
+                picture.OriginalWidth = dimensions.Value.Width;
+                picture.OriginalHeight = dimensions.Value.Height;
+            }
+        }
 
         foreach (var ((pictureType, size), maxWidth) in VariantWidths)
         {

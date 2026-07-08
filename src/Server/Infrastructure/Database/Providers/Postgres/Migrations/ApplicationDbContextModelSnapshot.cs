@@ -1271,8 +1271,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid?>("MediaId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("OriginalHeight")
+                        .HasColumnType("integer");
+
                     b.Property<string>("OriginalRemoteUri")
                         .HasColumnType("text");
+
+                    b.Property<int?>("OriginalWidth")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("PersonId")
                         .HasColumnType("uuid");

@@ -7,6 +7,8 @@ public sealed record MetadataPictureDto
     public Guid Id { get; init; }
     public MetadataPictureType Type { get; init; }
     public Uri? Uri { get; init; }
+    public int? OriginalWidth { get; init; }
+    public int? OriginalHeight { get; init; }
     public string? DominantColor { get; init; }
     public IReadOnlyList<MetadataPictureSize> AvailableSizes { get; init; } = [];
 

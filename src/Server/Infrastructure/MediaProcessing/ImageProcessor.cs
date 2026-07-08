@@ -200,4 +200,20 @@ public class ImageProcessor : IImageProcessor
 
         return null;
     }
+
+    public (int Width, int Height)? TryGetImageDimensions(string path)
+    {
+        if (!File.Exists(path) || IsSvgFile(path))
+            return null;
+
+        using var stream = File.OpenRead(path);
+        using var codec = SKCodec.Create(stream);
+        if (codec is null)
+            return null;
+
+        var info = codec.Info;
+        return info.Width > 0 && info.Height > 0
+            ? (info.Width, info.Height)
+            : null;
+    }
 }
