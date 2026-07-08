@@ -120,6 +120,7 @@ public partial class EditMetadataDialog : IDisposable
     {
         K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
+        K7HubClient.PersonPicturesUpdated += OnPersonPicturesUpdated;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -304,7 +305,19 @@ public partial class EditMetadataDialog : IDisposable
         if (Media?.Id != mediaId)
             return;
 
-        _pictureCacheVersion = DateTimeOffset.UtcNow;
+        SchedulePicturesReload();
+    }
+
+    private void OnPersonPicturesUpdated(Guid personId)
+    {
+        if (Person?.Id != personId)
+            return;
+
+        SchedulePicturesReload();
+    }
+
+    private void SchedulePicturesReload()
+    {
         _picturesDebounceCts?.Cancel();
         _picturesDebounceCts?.Dispose();
         _picturesDebounceCts = new CancellationTokenSource();
@@ -330,13 +343,20 @@ public partial class EditMetadataDialog : IDisposable
         }
     }
 
-    private string? GetPictureDisplayUrl(MetadataPictureDto picture, MetadataPictureSize size = MetadataPictureSize.Small)
+    private string? GetPictureDisplayUrl(MetadataPictureDto picture)
     {
+        var size = MetadataPictureDisplayHelper.GetBestDisplaySize(
+            picture,
+            MetadataPictureSize.Small,
+            MetadataPictureSize.Medium);
         var uri = ApiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
         var cacheVersion = _pictureCacheVersion
             ?? (Media as MediaDto)?.LastMetadataRefreshedAt;
         return MediaPictureUrlHelper.WithCacheBuster(uri, cacheVersion);
     }
+
+    private string GetPictureRenderKey(MetadataPictureDto picture) =>
+        $"{picture.Id}:{_pictureCacheVersion?.ToUnixTimeMilliseconds() ?? 0}:{string.Join('-', picture.AvailableSizes)}";
 
     private async Task ReloadMediaFromServerAsync()
     {
@@ -384,6 +404,7 @@ public partial class EditMetadataDialog : IDisposable
     {
         K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
+        K7HubClient.PersonPicturesUpdated -= OnPersonPicturesUpdated;
         _picturesDebounceCts?.Cancel();
         _picturesDebounceCts?.Dispose();
     }
