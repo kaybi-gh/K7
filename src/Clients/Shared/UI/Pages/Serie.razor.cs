@@ -205,6 +205,7 @@ public partial class Serie : IAsyncDisposable
         {
             { x => x.MediaId, _serie.Id },
             { x => x.InitialSearchQuery, _serie.Title },
+            { x => x.InitialSearchYear, _serie.ReleaseDate?.Year },
             { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie },
             { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };

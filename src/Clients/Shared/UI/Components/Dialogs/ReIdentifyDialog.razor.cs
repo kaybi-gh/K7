@@ -1,6 +1,7 @@
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -21,6 +22,9 @@ public partial class ReIdentifyDialog
     public string? InitialSearchQuery { get; set; }
 
     [Parameter]
+    public int? InitialSearchYear { get; set; }
+
+    [Parameter]
     public K7.Server.Domain.Enums.MediaType? MediaType { get; set; }
 
     [Parameter]
@@ -39,11 +43,15 @@ public partial class ReIdentifyDialog
     protected override void OnInitialized()
     {
         _searchQuery = InitialSearchQuery ?? "";
+        _searchYear = InitialSearchYear;
         base.OnInitialized();
     }
 
     private async Task SearchAsync()
     {
+        if (_isSearching)
+            return;
+
         if (string.IsNullOrWhiteSpace(_searchQuery) && string.IsNullOrWhiteSpace(_searchProviderId))
         {
             Snackbar.Add(L["EnterTitleOrId"], K7Severity.Warning);
@@ -108,6 +116,14 @@ public partial class ReIdentifyDialog
             _isSubmitting = false;
             StateHasChanged();
         }
+    }
+
+    private void SelectResult(MetadataSearchResult result) => _selectedResult = result;
+
+    private void OnResultKeyDown(KeyboardEventArgs args, MetadataSearchResult result)
+    {
+        if (args.Key is "Enter" or " " or "Spacebar")
+            SelectResult(result);
     }
 
     private void Cancel() => Dialog.Cancel();

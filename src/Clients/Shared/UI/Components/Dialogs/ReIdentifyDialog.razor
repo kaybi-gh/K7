@@ -2,25 +2,25 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
-        <div class="d-flex flex-col">
-            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" Adornment="end" AdornmentIcon="@Phosphor.MagnifyingGlass" OnAdornmentClick="SearchAsync" Immediate="true" DebounceInterval="500" OnDebounceIntervalElapsed="@((string? _) => SearchAsync())" />
-            
-            <div class="d-flex">
+        <div class="reidentify-form">
+            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" />
+
+            <div class="reidentify-fields-row">
                 <K7TextField Type="number" @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="outlined" Clearable="true" />
-                <K7TextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="outlined" Clearable="true" Adornment="end" AdornmentIcon="@Phosphor.MagnifyingGlass" OnAdornmentClick="SearchAsync" />
+                <K7TextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="outlined" Clearable="true" />
             </div>
-            
-            <K7Button Variant="filled" Color="primary" OnClick="SearchAsync" Disabled="_isSearching">
-                @if (_isSearching)
-                {
+
+            <K7Button Class="reidentify-search-btn" Variant="filled" Color="primary" OnClick="SearchAsync" Disabled="_isSearching">
+                <span>@L["SearchButton"]</span>
+            </K7Button>
+
+            @if (_isSearching)
+            {
+                <div class="reidentify-search-status" aria-live="polite">
                     <K7Spinner Size="sm" />
                     <span>@L["Searching"]</span>
-                }
-                else
-                {
-                    <span>@L["SearchButton"]</span>
-                }
-            </K7Button>
+                </div>
+            }
 
             @if (_results != null)
             {
@@ -33,7 +33,11 @@
                     <ul class="k7-list">
                         @foreach (var result in _results)
                         {
-                            <li class="focusable @(_selectedResult == result ? "selected" : "")" @onclick="() => _selectedResult = result">
+                            <li class="focusable @(_selectedResult == result ? "selected" : "")"
+                                tabindex="0"
+                                role="button"
+                                @onclick="() => SelectResult(result)"
+                                @onkeydown="e => OnResultKeyDown(e, result)">
                                 <div class="grid">
                                     <div>
                                         @if (!string.IsNullOrEmpty(result.PosterUrl))

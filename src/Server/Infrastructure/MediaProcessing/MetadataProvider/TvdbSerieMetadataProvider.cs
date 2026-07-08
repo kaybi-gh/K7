@@ -62,6 +62,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         string? providerId,
         MediaType? mediaType,
         string language,
+        string? fallbackLanguage,
         CancellationToken cancellationToken)
     {
         if (!_apiClient.IsConfigured)
@@ -82,7 +83,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 {
                     var series = await _apiClient.GetSeriesExtendedAsync(seriesId.Value, cancellationToken);
                     if (series is not null)
-                        results.Add(await MapSeriesToSearchResultAsync(series, language, cancellationToken));
+                        results.Add(await MapSeriesToSearchResultAsync(series, language, fallbackLanguage, cancellationToken));
                 }
 
                 return results;
@@ -91,22 +92,9 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             if (!string.IsNullOrWhiteSpace(query))
             {
                 var searchResults = await _apiClient.SearchSeriesAsync(query, year, cancellationToken);
-                foreach (var item in searchResults)
-                {
-                    var id = ResolveSearchResultId(item);
-                    if (string.IsNullOrWhiteSpace(id))
-                        continue;
-
-                    results.Add(new MetadataSearchResult
-                    {
-                        Provider = "tvdb",
-                        ExternalId = id,
-                        Title = item.NameTranslated ?? item.Name ?? string.Empty,
-                        Year = ParseYear(item.FirstAirTime, item.Year),
-                        PosterUrl = TvdbImageUrlHelper.BuildImageUrl(item.ImageUrl),
-                        Overview = item.Overview
-                    });
-                }
+                var mappedResults = await Task.WhenAll(searchResults.Select(item =>
+                    MapSearchResultToMetadataAsync(item, language, fallbackLanguage, cancellationToken)));
+                results.AddRange(mappedResults.Where(result => result is not null)!);
             }
         }
         catch (Exception ex)
@@ -454,9 +442,41 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return null;
     }
 
+    private async Task<MetadataSearchResult?> MapSearchResultToMetadataAsync(
+        TvdbSearchResult item,
+        string language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
+        var id = ResolveSearchResultId(item);
+        if (string.IsNullOrWhiteSpace(id) || !int.TryParse(id, out var seriesId))
+            return null;
+
+        var (title, overview) = await TvdbTranslationResolver.ResolveSeriesTextAsync(
+            _apiClient,
+            seriesId,
+            item.Name,
+            item.Overview,
+            originalLanguage: null,
+            language,
+            fallbackLanguage,
+            cancellationToken);
+
+        return new MetadataSearchResult
+        {
+            Provider = ProviderName,
+            ExternalId = id,
+            Title = title,
+            Year = ParseYear(item.FirstAirTime, item.Year),
+            PosterUrl = TvdbImageUrlHelper.BuildImageUrl(item.ImageUrl),
+            Overview = overview
+        };
+    }
+
     private async Task<MetadataSearchResult> MapSeriesToSearchResultAsync(
         TvdbSeriesExtended series,
         string language,
+        string? fallbackLanguage,
         CancellationToken cancellationToken)
     {
         var (title, overview) = await TvdbTranslationResolver.ResolveSeriesTextAsync(
@@ -466,7 +486,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             series.Overview,
             series.OriginalLanguage,
             language,
-            fallbackLanguage: null,
+            fallbackLanguage,
             cancellationToken);
 
         return new MetadataSearchResult

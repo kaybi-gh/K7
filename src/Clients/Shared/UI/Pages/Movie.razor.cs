@@ -325,6 +325,7 @@ public partial class Movie : IAsyncDisposable
         {
             { x => x.MediaId, _movie.Id },
             { x => x.InitialSearchQuery, _movie.Title },
+            { x => x.InitialSearchYear, _movie.ReleaseDate?.Year },
             { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
             { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };
@@ -346,6 +347,7 @@ public partial class Movie : IAsyncDisposable
         {
             { x => x.IndexedFileId, indexedFileId },
             { x => x.InitialSearchQuery, _movie?.Title },
+            { x => x.InitialSearchYear, _movie?.ReleaseDate?.Year },
             { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
             { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
         };
