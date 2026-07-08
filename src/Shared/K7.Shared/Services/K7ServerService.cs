@@ -376,6 +376,17 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
+    public async Task<Guid?> GenerateEpisodeStillFromSourceAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/medias/{mediaId}/pictures/generate-from-source", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
     public async Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsync($"api/persons/{id}/refresh-metadata", null, cancellationToken);
