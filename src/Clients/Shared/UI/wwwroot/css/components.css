@@ -294,6 +294,16 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
 .k7-input-wrap { position: relative; display: flex; align-items: center; }
 .k7-input-wrap .k7-input { flex: 1; }
 .k7-input--has-adornment { padding-right: 2.5rem; }
+.k7-input-wrap:has(.k7-input-adornment) .k7-input { padding-right: 2.5rem; }
+.k7-input-wrap:has(.k7-input-adornment) .k7-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.k7-input-wrap:has(.k7-input-adornment) .k7-input[type="number"]::-webkit-inner-spin-button,
+.k7-input-wrap:has(.k7-input-adornment) .k7-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 .k7-input-adornment { position: absolute; right: var(--space-2); background: none; border: none; cursor: pointer; color: var(--color-text-muted); display: flex; align-items: center; padding: var(--space-1); border-radius: var(--radius-sm); }
 .k7-input-adornment:hover { color: var(--color-text); background: var(--color-surface-hover); }
 .k7-select {
