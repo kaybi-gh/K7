@@ -111,7 +111,13 @@ public partial class MediaCard : IDisposable
     {
         _menuOpen = open;
         if (!open)
+        {
+            _longPressTriggered = false;
+            _preventNextClick = false;
+            _menuOpenedViaKeyboard = false;
+            CancelLongPress();
             return;
+        }
 
         _longPressTriggered = true;
         _preventNextClick = true;
@@ -138,6 +144,7 @@ public partial class MediaCard : IDisposable
         _longPressTriggered = true;
         _preventNextClick = true;
         _menuOpen = true;
+        StateHasChanged();
     }
 
     private void OnKeyDown(KeyboardEventArgs e)
@@ -153,14 +160,6 @@ public partial class MediaCard : IDisposable
         _longPressTriggered = false;
         _longPressCts = new CancellationTokenSource();
         _ = WaitForLongPressAsync(_longPressCts.Token, fromKeyboard: true);
-
-        try
-        {
-            _ = JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
-        }
-        catch (JSDisconnectedException)
-        {
-        }
     }
 
     private void OnKeyUp(KeyboardEventArgs e)
