@@ -520,6 +520,9 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   justify-content: center;
   padding: calc(var(--space-4) + var(--k7-safe-top)) var(--space-4) calc(var(--space-4) + var(--k7-safe-bottom));
   backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  touch-action: none;
+  overscroll-behavior: none;
   animation: k7-fade-in 0.15s ease;
 }
 @keyframes k7-fade-in { from { opacity: 0; } to { opacity: 1; } }
