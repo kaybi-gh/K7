@@ -58,6 +58,7 @@ public partial class AppNav : IDisposable
         UpdateBadge(HubClient.State);
         UpdateSharedProfileLabel();
         UpdateActiveNav();
+        await AuthenticationStateProvider.GetAuthenticationStateAsync();
         await LoadAvatarAsync();
     }
 

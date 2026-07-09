@@ -2,9 +2,9 @@
 
 <span class="k7-avatar @(Size == "sm" ? "k7-avatar--sm" : Size == "lg" ? "k7-avatar--lg" : Size == "xl" ? "k7-avatar--xl" : "") @(string.IsNullOrEmpty(Color) ? "" : $"color-{Color}") @Class">
     <span class="k7-avatar__clip" style="@ComputedStyle">
-        @if (!string.IsNullOrEmpty(Image))
+        @if (!string.IsNullOrEmpty(ResolvedImage))
         {
-            <img src="@Image" alt="@Alt" />
+            <img src="@ResolvedImage" alt="@Alt" @onerror="OnImageError" />
         }
         else if (!string.IsNullOrEmpty(DisplayLetter))
         {
@@ -15,7 +15,7 @@
             @ChildContent
         }
     </span>
-    @if (!string.IsNullOrEmpty(Image) || !string.IsNullOrEmpty(DisplayLetter))
+    @if (!string.IsNullOrEmpty(ResolvedImage) || !string.IsNullOrEmpty(DisplayLetter))
     {
         @ChildContent
     }

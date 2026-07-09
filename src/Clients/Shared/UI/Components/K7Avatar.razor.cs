@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -22,6 +23,37 @@ public partial class K7Avatar
     [Parameter] public string Letter { get; set; } = "";
     [Parameter] public Guid? UserId { get; set; }
 
+    [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+
+    private bool _imageFailed;
+    private string? _previousImage;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.Equals(_previousImage, Image, StringComparison.Ordinal))
+        {
+            _previousImage = Image;
+            _imageFailed = false;
+        }
+    }
+
+    private string? ResolvedImage
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(Image) || _imageFailed)
+                return null;
+
+            if (Image.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || Image.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return Image;
+
+            return ApiClient.GetAbsoluteUri(Image)?.AbsoluteUri ?? Image;
+        }
+    }
+
+    private void OnImageError() => _imageFailed = true;
+
     private string DisplayLetter
     {
         get
@@ -40,7 +72,7 @@ public partial class K7Avatar
     {
         get
         {
-            if (!string.IsNullOrEmpty(Image) || string.IsNullOrEmpty(DisplayLetter))
+            if (!string.IsNullOrEmpty(ResolvedImage) || string.IsNullOrEmpty(DisplayLetter))
                 return string.IsNullOrEmpty(Style) ? null : Style;
 
             var bgColor = UserId is not null ? GetColorForUser(UserId.Value) : null;
