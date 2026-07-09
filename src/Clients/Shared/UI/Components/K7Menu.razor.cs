@@ -90,6 +90,14 @@ public partial class K7Menu : IAsyncDisposable
         if (!_open)
         {
             _layerPushed = false;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
+            }
+
             return;
         }
 
@@ -139,6 +147,15 @@ public partial class K7Menu : IAsyncDisposable
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
+        else
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+
         _closeCallbackRef?.Dispose();
     }
 }

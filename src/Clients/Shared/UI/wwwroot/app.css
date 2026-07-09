@@ -331,11 +331,11 @@ body.no-scroll {
     overflow: hidden;
 }
 
-body.k7-dialog-open {
+body.k7-overlay-locked {
     overflow: hidden;
 }
 
-body.k7-dialog-open .app-shell {
+body.k7-overlay-locked .app-main {
     pointer-events: none;
     touch-action: none;
 }

@@ -2,8 +2,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
 <div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")"
-     @onpointerdown="CloseAllAsync" @onpointerdown:preventDefault="true" @onpointerdown:stopPropagation="true"
-     @onclick="CloseAllAsync" @onclick:stopPropagation="true"></div>
+     @onpointerdown:preventDefault="true"
+     @onpointerdown:stopPropagation="true"
+     @onclick="CloseAllAsync"
+     @onclick:preventDefault="true"
+     @onclick:stopPropagation="true"></div>
 
 <header class="app-nav">
     <div class="app-nav-bar" data-sn-section="app-navbar" data-sn-enter="last-focused">

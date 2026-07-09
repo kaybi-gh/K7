@@ -16,6 +16,7 @@ namespace K7.Clients.Shared.UI.Layout;
 public partial class AppNav : IDisposable
 {
     private bool _profileMenuOpen;
+    private bool _profileOverlayLockActive;
     private ElementReference _profilePopoverRef;
     private ElementReference _profileButtonRef;
     private DotNetObjectReference<LayerCloseCallback>? _profileCloseRef;
@@ -41,6 +42,7 @@ public partial class AppNav : IDisposable
     [Inject] private ISharedProfileSessionService? SharedProfileSession { get; set; }
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     public bool IsAnyMenuOpen => _profileMenuOpen;
 
@@ -129,11 +131,13 @@ public partial class AppNav : IDisposable
         if (_profileMenuOpen)
         {
             StateHasChanged();
+            await UpdateProfileOverlayLockAsync();
             await Task.Yield();
             _profileCloseRef?.Dispose();
             _profileCloseRef = DotNetObjectReference.Create(new LayerCloseCallback(() =>
             {
                 _profileMenuOpen = false;
+                _ = ReleaseProfileOverlayLockAsync();
                 InvokeAsync(StateHasChanged);
             }));
             try
@@ -147,6 +151,7 @@ public partial class AppNav : IDisposable
         }
         else if (wasOpen)
         {
+            await ReleaseProfileOverlayLockAsync();
             try { await SpatialNav.PopLayerAsync(_profilePopoverRef); }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
             StateHasChanged();
@@ -161,6 +166,7 @@ public partial class AppNav : IDisposable
         if (_profileMenuOpen)
         {
             _profileMenuOpen = false;
+            await ReleaseProfileOverlayLockAsync();
             try { await SpatialNav.PopLayerAsync(_profilePopoverRef); }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
@@ -169,6 +175,37 @@ public partial class AppNav : IDisposable
     public void CloseAll()
     {
         _profileMenuOpen = false;
+        _ = ReleaseProfileOverlayLockAsync();
+    }
+
+    private async Task UpdateProfileOverlayLockAsync()
+    {
+        if (!_profileMenuOpen || _profileOverlayLockActive)
+            return;
+
+        try
+        {
+            _profileOverlayLockActive = await JS.InvokeAsync<bool>("K7.acquireMobileBackgroundInteractionLock");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
+        {
+        }
+    }
+
+    private async Task ReleaseProfileOverlayLockAsync()
+    {
+        if (!_profileOverlayLockActive)
+            return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.releaseMobileBackgroundInteractionLock");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
+        {
+        }
+
+        _profileOverlayLockActive = false;
     }
 
     private void OnConnectionStateChanged(HubConnectionState state)
@@ -228,6 +265,7 @@ public partial class AppNav : IDisposable
             SharedProfileSession.ActiveGroupChanged -= OnSharedProfileChanged;
         if (_profileMenuOpen)
         {
+            _ = ReleaseProfileOverlayLockAsync();
             try { _ = SpatialNav.PopLayerAsync(_profilePopoverRef); }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }

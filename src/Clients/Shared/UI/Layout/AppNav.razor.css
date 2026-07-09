@@ -11,6 +11,8 @@
 
 .app-nav-backdrop.open {
     pointer-events: all;
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 /* Desktop: covers area below nav bar, transparent (only intercepts clicks) */
@@ -24,6 +26,7 @@
 @media (max-width: 599.98px) {
     .app-nav-backdrop {
         inset: 0 0 calc(var(--nav-height) + var(--k7-safe-bottom)) 0;
+        z-index: calc(var(--z-dropdown, 1000) - 1);
     }
     .app-nav-backdrop.open {
         opacity: 1;
@@ -281,6 +284,7 @@
         left: 0;
         right: 0;
         bottom: calc(var(--nav-height) + var(--k7-safe-bottom));
+        z-index: var(--z-dropdown, 1000);
         max-height: 75dvh;
         overflow-y: auto;
         background: var(--color-surface);
@@ -294,6 +298,7 @@
     .app-nav-popover.open {
         opacity: 1;
         visibility: visible;
+        pointer-events: all;
         transform: translateY(0);
     }
 

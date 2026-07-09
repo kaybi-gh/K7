@@ -741,6 +741,8 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   inset: 0;
   z-index: calc(var(--z-dropdown, 1000) - 1);
   background: transparent;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 /* Teleported with select/menu inside dialog: sit above dialog, below dropdown */
@@ -990,7 +992,8 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     transition: background 0.25s ease;
-    touch-action: manipulation;
+    touch-action: none;
+    overscroll-behavior: none;
   }
   .fullscreen-player .k7-backdrop {
     inset: 0;
@@ -1020,6 +1023,28 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+  }
+
+  /* Grow bottom sheet only as much as needed when search hints are open */
+  .k7-menu-dropdown--teleported.k7-menu-dropdown--open:has(.k7-search-select--open) > .library-browse-filters__search,
+  .k7-menu-portal.k7-menu-dropdown.k7-menu-dropdown--open:has(.k7-search-select--open) > .library-browse-filters__search,
+  .k7-menu--open > .k7-menu-dropdown:has(.k7-search-select--open) > .library-browse-filters__search {
+    overflow: visible;
+    padding-bottom: min(240px, 40dvh);
+  }
+
+  .k7-menu-dropdown .k7-search-select-dropdown,
+  .k7-menu-portal.k7-menu-dropdown .k7-search-select-dropdown {
+    top: calc(100% + var(--space-1));
+    bottom: auto;
+    max-height: min(240px, 40dvh);
+  }
+
+  .k7-menu-dropdown .k7-search-select-option,
+  .k7-menu-portal.k7-menu-dropdown .k7-search-select-option {
+    min-height: 44px;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
   }
 
   .k7-select-dropdown--teleported {
