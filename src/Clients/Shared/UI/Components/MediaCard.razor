@@ -26,6 +26,7 @@ else
              @ontouchstart="OnTouchStart"
              @ontouchmove="OnTouchMove"
              @ontouchend="OnTouchEnd"
+             @ontouchend:preventDefault="@_longPressTriggered"
              @ontouchcancel="OnTouchCancel"
              @oncontextmenu="OnContextMenu"
              @oncontextmenu:preventDefault="@LongPressEnabled">
@@ -34,7 +35,7 @@ else
             <a class="media-card-link focusable"
                href="@Href"
                @onclick="OnLinkClick"
-               @onclick:preventDefault="@_preventNextClick"
+               @onclick:preventDefault="@ShouldPreventLinkActivation"
                @onkeydown="OnKeyDown"
                @onkeyup="OnKeyUp">
                 @CoverVisual

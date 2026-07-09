@@ -43,6 +43,7 @@ public partial class MediaCard : IDisposable
 
     private bool _menuOpen;
     private bool _longPressTriggered;
+    private bool _keyHeldDown;
     private bool _menuOpenedViaKeyboard;
     private bool _preventNextClick;
     private bool _watchStateMenuVisible;
@@ -51,7 +52,6 @@ public partial class MediaCard : IDisposable
     private bool _showPlaylist;
     private bool _showCollection;
     private CancellationTokenSource? _longPressCts;
-    private CancellationTokenSource? _shortPressCts;
     private double _touchStartX;
     private double _touchStartY;
 
@@ -116,7 +116,6 @@ public partial class MediaCard : IDisposable
         _longPressTriggered = true;
         _preventNextClick = true;
         CancelLongPress();
-        _shortPressCts?.Cancel();
 
         if (_menuOpenedViaKeyboard)
         {
@@ -146,15 +145,22 @@ public partial class MediaCard : IDisposable
         if (!LongPressEnabled || !IsEnterKey(e.Key))
             return;
 
-        _shortPressCts?.Cancel();
-
         if (e.Repeat && _longPressCts is not null)
             return;
 
+        _keyHeldDown = true;
         CancelLongPress();
         _longPressTriggered = false;
         _longPressCts = new CancellationTokenSource();
-        _ = WaitForLongPressAsync(_longPressCts.Token);
+        _ = WaitForLongPressAsync(_longPressCts.Token, fromKeyboard: true);
+
+        try
+        {
+            _ = JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     private void OnKeyUp(KeyboardEventArgs e)
@@ -162,35 +168,18 @@ public partial class MediaCard : IDisposable
         if (!LongPressEnabled || !IsEnterKey(e.Key))
             return;
 
+        CancelLongPress();
+
+        var wasShortPress = _keyHeldDown && !_longPressTriggered;
+        _keyHeldDown = false;
+
         if (_longPressTriggered)
         {
             _preventNextClick = true;
-            CancelLongPress();
             return;
         }
 
-        _shortPressCts?.Cancel();
-        _shortPressCts = new CancellationTokenSource();
-        _ = CompleteShortPressAsync(_shortPressCts.Token);
-    }
-
-    private async Task CompleteShortPressAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(120, cancellationToken);
-        }
-        catch (TaskCanceledException)
-        {
-            return;
-        }
-
-        if (_longPressTriggered)
-            return;
-
-        CancelLongPress();
-
-        if (!string.IsNullOrEmpty(Href))
+        if (wasShortPress && !string.IsNullOrEmpty(Href))
             NavigationManager.NavigateTo(Href);
     }
 
@@ -231,19 +220,24 @@ public partial class MediaCard : IDisposable
 
     private void OnTouchCancel(TouchEventArgs e) => CancelLongPress();
 
-    private async Task WaitForLongPressAsync(CancellationToken cancellationToken)
+    private async Task WaitForLongPressAsync(CancellationToken cancellationToken, bool fromKeyboard = false)
     {
         try
         {
             await Task.Delay(LongPressDelayMs, cancellationToken);
             _longPressTriggered = true;
-            _menuOpenedViaKeyboard = true;
-            try
+            _preventNextClick = true;
+
+            if (fromKeyboard)
             {
-                await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
-            }
-            catch (JSDisconnectedException)
-            {
+                _menuOpenedViaKeyboard = true;
+                try
+                {
+                    await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+                }
+                catch (JSDisconnectedException)
+                {
+                }
             }
 
             _menuOpen = true;
@@ -261,17 +255,18 @@ public partial class MediaCard : IDisposable
         _longPressCts = null;
     }
 
+    private bool ShouldPreventLinkActivation =>
+        _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen;
+
     private void OnLinkClick(MouseEventArgs e)
     {
-        if (_preventNextClick)
-            _preventNextClick = false;
+        if (ShouldPreventLinkActivation)
+            _preventNextClick = true;
     }
 
     public void Dispose()
     {
         CancelLongPress();
-        _shortPressCts?.Cancel();
-        _shortPressCts?.Dispose();
     }
 
     private string ResolvedPlaceholderIcon => PlaceholderIcon ?? Variant switch
