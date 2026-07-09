@@ -30,6 +30,7 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public Func<TValue?, string?>? Validation { get; set; }
     [Parameter] public EventCallback<FocusEventArgs> OnFocus { get; set; }
     [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
+    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyDown { get; set; }
 
     private readonly string _id = $"k7tf-{Guid.NewGuid():N}";
     private bool _hasError;

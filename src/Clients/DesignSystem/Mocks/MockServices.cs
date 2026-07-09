@@ -408,7 +408,7 @@ public sealed class MockMediaService : IMediaService
         };
 
         if (string.IsNullOrWhiteSpace(query.SearchText))
-            return Task.FromResult<IReadOnlyList<string>?>([]);
+            return Task.FromResult<IReadOnlyList<string>?>(samples.Take(query.Limit).ToList());
 
         var term = query.SearchText.Trim();
         var matches = samples

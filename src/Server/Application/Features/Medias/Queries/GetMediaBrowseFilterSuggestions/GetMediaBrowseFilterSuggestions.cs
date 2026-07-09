@@ -32,8 +32,6 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
         var limit = Math.Clamp(request.Limit, 1, MaxLimit);
         var search = request.SearchText?.Trim();
-        if (string.IsNullOrEmpty(search))
-            return [];
 
         var mediaIds = await BrowseMediaScope.GetMediaIdsAsync(
             context,
@@ -54,16 +52,22 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
     private async Task<IReadOnlyList<string>> SearchActorNamesAsync(
         IQueryable<Guid> mediaIds,
-        string search,
+        string? search,
         int limit,
         CancellationToken cancellationToken)
     {
-        var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
-
-        return await context.PersonRoles.AsNoTracking()
+        var query = context.PersonRoles.AsNoTracking()
             .Where(r => mediaIds.Contains(r.MediaId)
                 && (r.Type == PersonRoleType.Actor || r.Type == PersonRoleType.VoiceActor)
-                && EF.Functions.Like(r.Person.Name.ToLower(), pattern))
+                && r.Person.Name != null);
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
+            query = query.Where(r => r.Person.Name!.ToLower().Contains(term));
+        }
+
+        return await query
             .Select(r => r.Person.Name)
             .Distinct()
             .OrderBy(name => name)
@@ -73,26 +77,27 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
     private async Task<IReadOnlyList<string>> SearchArtistNamesAsync(
         IQueryable<Guid> mediaIds,
-        string search,
+        string? search,
         int limit,
         CancellationToken cancellationToken)
     {
-        var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
+        var term = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToLowerSearchTerm(search);
 
         var artistTitles = context.Medias.OfType<MusicArtist>().AsNoTracking()
-            .Where(a => mediaIds.Contains(a.Id) && a.Title != null && EF.Functions.Like(a.Title.ToLower(), pattern))
+            .Where(a => mediaIds.Contains(a.Id) && a.Title != null
+                && (term == null || a.Title.ToLower().Contains(term)))
             .Select(a => a.Title!);
 
         var albumArtists = context.Medias.OfType<MusicAlbum>().AsNoTracking()
             .Where(a => mediaIds.Contains(a.Id) && a.Artist != null && a.Artist.Title != null
-                && EF.Functions.Like(a.Artist.Title.ToLower(), pattern))
+                && (term == null || a.Artist.Title.ToLower().Contains(term)))
             .Select(a => a.Artist!.Title!);
 
         var trackArtists = context.Medias.OfType<MusicTrack>().AsNoTracking()
             .Where(t => mediaIds.Contains(t.Id)
-                && ((t.Artist != null && t.Artist.Title != null && EF.Functions.Like(t.Artist.Title.ToLower(), pattern))
+                && ((t.Artist != null && t.Artist.Title != null && (term == null || t.Artist.Title.ToLower().Contains(term)))
                     || (t.Artist == null && t.Album.Artist != null && t.Album.Artist.Title != null
-                        && EF.Functions.Like(t.Album.Artist.Title.ToLower(), pattern))))
+                        && (term == null || t.Album.Artist.Title.ToLower().Contains(term)))))
             .Select(t => t.Artist != null ? t.Artist.Title! : t.Album.Artist!.Title!);
 
         return await artistTitles

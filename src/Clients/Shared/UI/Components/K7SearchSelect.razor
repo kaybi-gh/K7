@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="k7-search-select @Class" style="@Style" @ref="_root">
+<div class="k7-search-select @(_open ? "k7-search-select--open" : "") @Class" style="@Style" @ref="_root">
     <K7TextField TValue="string"
                  Value="@Value"
                  ValueChanged="OnInputChanged"
@@ -11,11 +11,12 @@
                  Adornment="end"
                  AdornmentIcon="@Phosphor.MagnifyingGlass"
                  OnFocus="OnFocus"
-                 OnFocusOut="OnFocusOut" />
+                 OnFocusOut="OnFocusOut"
+                 OnKeyDown="OnInputKeyDown" />
 
     @if (_open)
     {
-        <div class="k7-search-select-dropdown" role="listbox">
+        <div class="k7-search-select-dropdown" role="listbox" @ref="_dropdown">
             @if (_loading)
             {
                 <div class="k7-search-select-status">
@@ -24,11 +25,14 @@
             }
             else
             {
-                @foreach (var suggestion in _suggestions)
+                @for (var i = 0; i < _suggestions.Count; i++)
                 {
+                    var suggestion = _suggestions[i];
+                    var highlighted = i == _highlightedIndex;
                     <button type="button"
-                            class="k7-search-select-option focusable"
+                            class="k7-search-select-option focusable @(highlighted ? "k7-search-select-option--active" : "")"
                             role="option"
+                            aria-selected="@highlighted"
                             @onclick="() => SelectSuggestionAsync(suggestion)"
                             @onmousedown:preventDefault="true">
                         @suggestion
