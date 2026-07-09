@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="k7-search-select @(_open ? "k7-search-select--open" : "") @Class" style="@Style" @ref="_root">
+<div class="k7-search-select @(_open ? "k7-search-select--open" : "") @(_editing ? "k7-search-select--editing" : "") @Class" style="@Style" @ref="_root">
     <K7TextField TValue="string"
                  Value="@Value"
                  ValueChanged="OnInputChanged"

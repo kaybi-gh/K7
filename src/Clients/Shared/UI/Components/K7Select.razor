@@ -10,8 +10,11 @@
     @if (_open)
     {
         <div class="k7-backdrop" @ref="_backdrop"
-             @onpointerdown="CloseAsync" @onpointerdown:preventDefault="true" @onpointerdown:stopPropagation="true"
-             @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
+             @onpointerdown:preventDefault="true"
+             @onpointerdown:stopPropagation="true"
+             @onclick="CloseAsync"
+             @onclick:preventDefault="true"
+             @onclick:stopPropagation="true"></div>
     }
     <div class="k7-select-wrap @(_open ? "k7-select-wrap--open" : "")" @ref="_root">
         @* Items must render before the trigger so DisplayText can resolve labels on first paint. *@

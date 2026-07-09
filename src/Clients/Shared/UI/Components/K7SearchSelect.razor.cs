@@ -25,6 +25,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     private bool _editing;
     private bool _disposed;
     private bool _scrollToHighlighted;
+    private bool _scrollIntoMenuView;
     private bool _editingListenerBound;
     private int _highlightedIndex = -1;
     private IReadOnlyList<string> _suggestions = [];
@@ -93,6 +94,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             _open = _suggestions.Count > 0;
             _highlightedIndex = _open ? 0 : -1;
             _scrollToHighlighted = _open;
+            _scrollIntoMenuView = _open;
 
             if (!CommitOnSelectOnly)
             {
@@ -222,6 +224,14 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         _editing = false;
         _suggestions = [];
         CloseDropdown();
+        try
+        {
+            await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
+
         if (!_disposed)
             await InvokeAsync(StateHasChanged);
     }
@@ -254,6 +264,19 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             }
         }
 
+        if (_scrollIntoMenuView && _open && !_disposed)
+        {
+            _scrollIntoMenuView = false;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.scrollSearchSelectIntoMenuView", _root);
+                await JS.InvokeVoidAsync("K7.bindSearchSelectMenuDismiss", _root);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
         if (!_scrollToHighlighted || _highlightedIndex < 0 || _disposed)
             return;
 
@@ -273,6 +296,14 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         _disposed = true;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        try
+        {
+            _ = JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
+
         _dotNetRef?.Dispose();
         return ValueTask.CompletedTask;
     }

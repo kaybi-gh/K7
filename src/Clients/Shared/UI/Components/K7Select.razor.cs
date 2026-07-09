@@ -112,6 +112,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
         try
         {
             await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
+            await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
             await SpatialNav.PopLayerAsync(_dropdown);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
@@ -127,6 +128,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
         try
         {
             await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
+            await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {

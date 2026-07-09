@@ -1146,8 +1146,40 @@ var SpatialNav = (function () {
 // RatingStars JS helper
 window.K7 = window.K7 || {};
 
+K7._backgroundLockCount = 0;
+K7._dialogLockActive = false;
+
+K7._updateBackgroundLock = function () {
+    var locked = K7._backgroundLockCount > 0 || K7._dialogLockActive;
+    document.body.classList.toggle('k7-overlay-locked', locked);
+};
+
+K7.acquireBackgroundInteractionLock = function () {
+    K7._backgroundLockCount++;
+    K7._updateBackgroundLock();
+};
+
+K7.releaseBackgroundInteractionLock = function () {
+    K7._backgroundLockCount = Math.max(0, K7._backgroundLockCount - 1);
+    K7._updateBackgroundLock();
+};
+
+K7.acquireMobileBackgroundInteractionLock = function () {
+    if (window.innerWidth >= 600) return false;
+    K7.acquireBackgroundInteractionLock();
+    return true;
+};
+
+K7.releaseMobileBackgroundInteractionLock = function () {
+    if (window.innerWidth >= 600) return;
+    K7.releaseBackgroundInteractionLock();
+};
+
 K7.setDialogOpen = function (open) {
-    document.body.classList.toggle('k7-dialog-open', !!open);
+    var shouldLock = !!open;
+    if (shouldLock === !!K7._dialogLockActive) return;
+    K7._dialogLockActive = shouldLock;
+    K7._updateBackgroundLock();
 };
 
 K7.isImageLoaded = function (element) {
@@ -1159,6 +1191,48 @@ K7.scrollSearchSelectOptionIntoView = function (dropdown, index) {
     var options = dropdown.querySelectorAll('.k7-search-select-option');
     var option = options[index];
     if (option) option.scrollIntoView({ block: 'nearest' });
+};
+
+K7.scrollSearchSelectIntoMenuView = function (root) {
+    if (!root || window.innerWidth >= 600) return;
+    var menu = root.closest('.k7-menu-dropdown');
+    if (!menu) return;
+    root.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+};
+
+K7.bindSearchSelectMenuDismiss = function (root) {
+    if (!root || window.innerWidth >= 600) return;
+    var menu = root.closest('.k7-menu-dropdown');
+    if (!menu) return;
+
+    if (menu.__k7SearchSelectRoot === root && menu.__k7SearchDismissHandler) return;
+
+    if (menu.__k7SearchDismissHandler) {
+        menu.removeEventListener('pointerdown', menu.__k7SearchDismissHandler, true);
+    }
+
+    menu.__k7SearchSelectRoot = root;
+    menu.__k7SearchDismissHandler = function (e) {
+        if (!root.classList.contains('k7-search-select--editing')
+            && !root.classList.contains('k7-search-select--open')) {
+            return;
+        }
+        if (root.contains(e.target)) return;
+        var input = root.querySelector('input, textarea');
+        if (input) input.blur();
+    };
+    menu.addEventListener('pointerdown', menu.__k7SearchDismissHandler, true);
+};
+
+K7.unbindSearchSelectMenuDismiss = function (root) {
+    if (!root) return;
+    var menu = root.closest('.k7-menu-dropdown');
+    if (!menu || menu.__k7SearchSelectRoot !== root) return;
+    if (menu.__k7SearchDismissHandler) {
+        menu.removeEventListener('pointerdown', menu.__k7SearchDismissHandler, true);
+    }
+    menu.__k7SearchDismissHandler = null;
+    menu.__k7SearchSelectRoot = null;
 };
 
 K7.isFocusWithin = function (root) {
@@ -1405,6 +1479,23 @@ K7._restoreMenuElement = function (el, root) {
     el.classList.remove('k7-menu-portal', 'k7-menu-dropdown--teleported');
 };
 
+K7._releaseMobileOverlayLock = function (owner) {
+    if (owner && owner._k7MobileLockAcquired) {
+        K7.releaseBackgroundInteractionLock();
+        owner._k7MobileLockAcquired = false;
+    }
+};
+
+K7._acquireMobileOverlayLock = function (owner) {
+    if (window.innerWidth >= 600 || !owner || owner._k7MobileLockAcquired) return;
+    K7.acquireBackgroundInteractionLock();
+    owner._k7MobileLockAcquired = true;
+};
+
+K7.releaseMobileOverlayLock = function (owner) {
+    K7._releaseMobileOverlayLock(owner);
+};
+
 K7._hasFixedContainingBlockAncestor = function (el) {
     var parent = el.parentElement;
     while (parent && parent !== document.body) {
@@ -1453,6 +1544,7 @@ K7.attachMobileMenu = function (root, dropdown, backdrop) {
             K7._restoreMenuElement(dropdown, root);
             K7._restoreMenuElement(backdrop, root);
         }
+        K7._releaseMobileOverlayLock(root);
         dropdown.classList.remove('k7-menu-dropdown--video-player');
         if (backdrop) backdrop.classList.remove('k7-backdrop--video-player');
         if (dropdown) dropdown.classList.remove('k7-menu-dropdown--teleported');
@@ -1463,8 +1555,10 @@ K7.attachMobileMenu = function (root, dropdown, backdrop) {
     if (backdrop) K7._teleportMenuElement(backdrop, root);
     if (window.innerWidth < 600) {
         dropdown.classList.add('k7-menu-dropdown--teleported');
+        K7._acquireMobileOverlayLock(root);
     } else {
         dropdown.classList.remove('k7-menu-dropdown--teleported');
+        K7._releaseMobileOverlayLock(root);
     }
     if (root.closest('.video-controls-overlay')) {
         dropdown.classList.add('k7-menu-dropdown--video-player');
@@ -1510,6 +1604,7 @@ K7.positionPlaybackSettingsDetail = function (stack, detail) {
 
 K7.detachMobileMenu = function (root, dropdown, backdrop) {
     if (!root) return;
+    K7._releaseMobileOverlayLock(root);
     K7._restoreMenuElement(dropdown, root);
     K7._restoreMenuElement(backdrop, root);
     if (dropdown) {
@@ -1526,10 +1621,12 @@ K7.attachSelectPortal = function (root, dropdown, backdrop) {
         backdrop.classList.add('k7-backdrop--teleported');
     }
     dropdown.classList.add('k7-select-dropdown--teleported');
+    K7._acquireMobileOverlayLock(root);
 };
 
 K7.detachSelectPortal = function (root, dropdown, backdrop) {
     if (!root) return;
+    K7._releaseMobileOverlayLock(root);
     K7._restoreMenuElement(dropdown, root);
     if (backdrop) {
         K7._restoreMenuElement(backdrop, root);
