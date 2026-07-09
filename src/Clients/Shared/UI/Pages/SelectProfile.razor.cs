@@ -57,6 +57,16 @@ public partial class SelectProfile
             {
                 // Use cached groups
             }
+
+            try
+            {
+                await AuthService.RefreshStoredUserProfilesAsync();
+                _users = LocalUserService.GetAll();
+            }
+            catch
+            {
+                // Keep cached user profiles
+            }
         }
 
         ReloadPinnedGroups();

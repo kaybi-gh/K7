@@ -55,4 +55,7 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
     {
         // Not applicable for web client
     }
+
+    public Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

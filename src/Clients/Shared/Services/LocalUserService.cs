@@ -38,7 +38,11 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         var existing = users.FindIndex(u => u.IdentityUserId == user.IdentityUserId);
         if (existing >= 0)
         {
-            user.PinHash = users[existing].PinHash;
+            var previous = users[existing];
+            user.PinHash = previous.PinHash;
+            user.AvatarUrl ??= previous.AvatarUrl;
+            user.DisplayName ??= previous.DisplayName;
+            user.UserId ??= previous.UserId;
             users[existing] = user;
         }
         else
