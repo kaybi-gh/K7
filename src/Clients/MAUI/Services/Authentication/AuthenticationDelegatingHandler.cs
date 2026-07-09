@@ -67,8 +67,12 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
                 }
             }
 
-            // Refresh failed or retry still 401 -- logout
-            if (Interlocked.CompareExchange(ref _logoutTriggered, 1, 0) == 0)
+            // Refresh failed or retry still 401 -- logout unless offline session (no bearer token by design)
+            var authStateProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
+            var authState = await authStateProvider.GetAuthenticationStateAsync();
+            var isOfflineSession = authState.User.Identity?.AuthenticationType == "Offline";
+
+            if (!isOfflineSession && Interlocked.CompareExchange(ref _logoutTriggered, 1, 0) == 0)
             {
                 var authProvider2 = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
                 await authProvider2.LogoutAsync(cancellationToken);
