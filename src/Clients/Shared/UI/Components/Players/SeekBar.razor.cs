@@ -179,11 +179,12 @@ public partial class SeekBar : IAsyncDisposable
         HoverPercent = CurrentPercent;
         HoverTime = _scrubTime;
         IsHovering = true;
+        _ = OnDragChanged.InvokeAsync(true);
         InvokeAsync(StateHasChanged);
     }
 
     [JSInvokable("OnEditCommit")]
-    public void OnEditCommit()
+    public async Task OnEditCommit()
     {
         if (_isScrubbing)
         {
@@ -192,16 +193,18 @@ public partial class SeekBar : IAsyncDisposable
         _isScrubbing = false;
         _scrubRepeatCount = 0;
         IsHovering = false;
-        InvokeAsync(StateHasChanged);
+        await OnDragChanged.InvokeAsync(false);
+        await InvokeAsync(StateHasChanged);
     }
 
     [JSInvokable("OnEditCancel")]
-    public void OnEditCancel()
+    public async Task OnEditCancel()
     {
         _isScrubbing = false;
         _scrubRepeatCount = 0;
         IsHovering = false;
-        InvokeAsync(StateHasChanged);
+        await OnDragChanged.InvokeAsync(false);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnFocus(FocusEventArgs e)

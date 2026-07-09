@@ -160,6 +160,17 @@ html.platform-tv .app-nav {
     backdrop-filter: none;
 }
 
+html.platform-tv .app-nav-bar {
+    background: var(--color-surface);
+    backdrop-filter: none;
+}
+
+html.platform-tv .app-nav-popover.open,
+html.platform-tv .k7-menu-dropdown.k7-menu-dropdown--open {
+    background: var(--color-surface);
+    opacity: 1;
+}
+
 html.platform-tv .avatar--sm {
     width: 40px;
     height: 40px;
