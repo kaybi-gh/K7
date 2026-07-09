@@ -13,7 +13,7 @@
                   placeholder="@Placeholder"
                   disabled="@Disabled"
                   readonly="@ReadOnly"
-                  data-sn-activatable="@(!ReadOnly && !Disabled ? "" : null)"
+                  data-sn-activatable="@SpatialActivatable"
                   rows="@Lines"
                   maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                   value="@Value"
@@ -21,7 +21,8 @@
                   @onchange="OnChange"
                   @onfocus="OnFocus"
                   @onfocusout="OnFocusOut"
-                  @onkeydown="OnKeyDown"></textarea>
+                  @onkeydown="OnKeyDown"
+                  @onclick="OnClick"></textarea>
     }
     else
     {
@@ -32,14 +33,15 @@
                    placeholder="@Placeholder"
                    disabled="@Disabled"
                    readonly="@ReadOnly"
-                   data-sn-activatable="@(!ReadOnly && !Disabled ? "" : null)"
+                   data-sn-activatable="@SpatialActivatable"
                    maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                    value="@Value"
                    @oninput="OnInput"
                    @onchange="OnChange"
                    @onfocus="OnFocus"
                    @onfocusout="OnFocusOut"
-                   @onkeydown="OnKeyDown" />
+                   @onkeydown="OnKeyDown"
+                   @onclick="OnClick" />
             @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
             {
                 <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />

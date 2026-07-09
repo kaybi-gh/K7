@@ -6,13 +6,16 @@
                  ValueChanged="OnInputChanged"
                  Variant="@Variant"
                  Placeholder="@Placeholder"
+                 ReadOnly="@(!_editing)"
+                 ForceSpatialActivatable="true"
                  DebounceInterval="@DebounceInterval"
                  OnDebounceIntervalElapsed="OnDebouncedSearch"
                  Adornment="end"
                  AdornmentIcon="@Phosphor.MagnifyingGlass"
                  OnFocus="OnFocus"
                  OnFocusOut="OnFocusOut"
-                 OnKeyDown="OnInputKeyDown" />
+                 OnKeyDown="OnInputKeyDown"
+                 OnClick="OnInputClick" />
 
     @if (_open)
     {
@@ -29,14 +32,14 @@
                 {
                     var suggestion = _suggestions[i];
                     var highlighted = i == _highlightedIndex;
-                    <button type="button"
-                            class="k7-search-select-option focusable @(highlighted ? "k7-search-select-option--active" : "")"
-                            role="option"
-                            aria-selected="@highlighted"
-                            @onclick="() => SelectSuggestionAsync(suggestion)"
-                            @onmousedown:preventDefault="true">
+                    <div class="k7-search-select-option @(highlighted ? "k7-search-select-option--active" : "")"
+                         role="option"
+                         aria-selected="@highlighted"
+                         @onclick="() => SelectSuggestionAsync(suggestion)"
+                         @onmousedown:preventDefault="true"
+                         @onmousedown:stopPropagation="true">
                         @suggestion
-                    </button>
+                    </div>
                 }
             }
         </div>
