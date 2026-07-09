@@ -22,16 +22,22 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     private bool _open;
     private bool _loading;
+    private bool _editing;
     private bool _disposed;
     private bool _scrollToHighlighted;
+    private bool _editingListenerBound;
     private int _highlightedIndex = -1;
     private IReadOnlyList<string> _suggestions = [];
     private CancellationTokenSource? _searchCts;
     private ElementReference _root;
     private ElementReference _dropdown;
+    private DotNetObjectReference<K7SearchSelect>? _dotNetRef;
 
     private async Task OnInputChanged(string? value)
     {
+        if (!_editing)
+            return;
+
         Value = value;
         if (!CommitOnSelectOnly)
             await ValueChanged.InvokeAsync(value);
@@ -39,7 +45,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     private async Task OnDebouncedSearch(string? value)
     {
-        if (_disposed)
+        if (_disposed || !_editing)
             return;
 
         Value = value;
@@ -116,11 +122,20 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         await ValueChanged.InvokeAsync(suggestion);
         if (OnDebouncedCommit.HasDelegate)
             await OnDebouncedCommit.InvokeAsync(suggestion);
-        CloseDropdown();
+        await EndEditingAsync();
     }
 
     private async Task OnInputKeyDown(KeyboardEventArgs e)
     {
+        if (e.Key is "Enter" && !_editing)
+        {
+            await BeginEditingAsync();
+            return;
+        }
+
+        if (!_editing)
+            return;
+
         if (!_open || _loading || _suggestions.Count == 0)
         {
             if (e.Key is "Escape" && _open)
@@ -161,26 +176,61 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         }
     }
 
-    private async Task OnFocus(FocusEventArgs _)
+    private void OnFocus(FocusEventArgs _)
     {
-        if (_suggestions.Count > 0)
-        {
+        if (_editing && _suggestions.Count > 0)
             _open = true;
+    }
+
+    private Task OnInputClick(MouseEventArgs _) =>
+        !_editing ? BeginEditingAsync() : Task.CompletedTask;
+
+    private Task OnFocusOut(FocusEventArgs _) => CloseDropdownIfFocusLeftAsync();
+
+    private async Task CloseDropdownIfFocusLeftAsync()
+    {
+        await Task.Yield();
+        if (_disposed)
             return;
+
+        try
+        {
+            if (await JS.InvokeAsync<bool>("K7.isFocusWithin", _root))
+                return;
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
         }
 
-        if (SearchAsync is null)
+        await EndEditingAsync();
+    }
+
+    private async Task BeginEditingAsync()
+    {
+        if (_editing)
             return;
 
-        var trimmed = Value?.Trim() ?? "";
-        if (trimmed.Length >= MinSearchLength)
-            await OnDebouncedSearch(Value);
+        _editing = true;
+        if (!_disposed)
+            StateHasChanged();
+
+        await OnDebouncedSearch(Value);
     }
 
-    private void OnFocusOut(FocusEventArgs _)
+    private async Task EndEditingAsync()
     {
+        _editing = false;
+        _suggestions = [];
         CloseDropdown();
+        if (!_disposed)
+            await InvokeAsync(StateHasChanged);
     }
+
+    [JSInvokable]
+    public Task OnSpatialEditStarted() => BeginEditingAsync();
+
+    [JSInvokable]
+    public Task OnSpatialEditEnded() => EndEditingAsync();
 
     private void CloseDropdown()
     {
@@ -191,6 +241,19 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!_editingListenerBound && SearchAsync is not null)
+        {
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            try
+            {
+                await JS.InvokeVoidAsync("K7.bindSearchSelectEditing", _root, _dotNetRef);
+                _editingListenerBound = true;
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
         if (!_scrollToHighlighted || _highlightedIndex < 0 || _disposed)
             return;
 
@@ -210,6 +273,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         _disposed = true;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        _dotNetRef?.Dispose();
         return ValueTask.CompletedTask;
     }
 }

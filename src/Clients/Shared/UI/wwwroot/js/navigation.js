@@ -670,6 +670,10 @@ var SpatialNav = (function () {
         return !!(el && el.closest && el.closest('.k7-search-select--open'));
     }
 
+    function isPrintableCharacterKey(e) {
+        return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+    }
+
     function handleKeyDown(e) {
         var key = e.key;
         var layer = peekLayer();
@@ -685,10 +689,27 @@ var SpatialNav = (function () {
         }
 
         var activeEl = document.activeElement;
-        if (isOpenSearchSelectInput(activeEl)) {
-            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Escape' || isEnterKey(key)) {
-                if (window.SpatialNavigation) SpatialNavigation.pause();
-                return;
+        var searchRoot = activeEl && activeEl.closest ? activeEl.closest('.k7-search-select') : null;
+        if (searchRoot) {
+            if (isPrintableCharacterKey(e)) {
+                var searchInput = searchRoot.querySelector('input, textarea');
+                if (searchInput && isEditing(searchInput)) {
+                    if (window.SpatialNavigation) SpatialNavigation.pause();
+                    return;
+                }
+            }
+            if (searchRoot.classList.contains('k7-search-select--open')) {
+                if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Escape') {
+                    if (window.SpatialNavigation) SpatialNavigation.pause();
+                    return;
+                }
+                if (isEnterKey(key)) {
+                    var enterInput = searchRoot.querySelector('input, textarea');
+                    if (enterInput && isEditing(enterInput)) {
+                        if (window.SpatialNavigation) SpatialNavigation.pause();
+                        return;
+                    }
+                }
             }
         }
 
@@ -1188,6 +1209,26 @@ K7.scrollSearchSelectOptionIntoView = function (dropdown, index) {
     var options = dropdown.querySelectorAll('.k7-search-select-option');
     var option = options[index];
     if (option) option.scrollIntoView({ block: 'nearest' });
+};
+
+K7.isFocusWithin = function (root) {
+    return !!(root && document.activeElement && root.contains(document.activeElement));
+};
+
+K7.bindSearchSelectEditing = function (root, dotNetRef) {
+    if (!root || !dotNetRef) return;
+    var input = root.querySelector('input, textarea');
+    if (!input || input.__k7SearchSelectBound) return;
+    input.__k7SearchSelectBound = true;
+    input.addEventListener('sn:editstart', function () {
+        dotNetRef.invokeMethodAsync('OnSpatialEditStarted');
+    });
+    input.addEventListener('sn:editcancel', function () {
+        dotNetRef.invokeMethodAsync('OnSpatialEditEnded');
+    });
+    input.addEventListener('sn:editcommit', function () {
+        dotNetRef.invokeMethodAsync('OnSpatialEditEnded');
+    });
 };
 
 K7.setSafeArea = function (top, bottom, left, right) {
