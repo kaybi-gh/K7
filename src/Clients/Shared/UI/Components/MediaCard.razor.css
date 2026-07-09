@@ -67,13 +67,15 @@
 
 .media-card:hover .media-card-progress-bar,
 .media-card:focus-within .media-card-progress-bar,
-.media-card-link:focus-visible .media-card-progress-bar {
+.media-card-link:focus-visible .media-card-progress-bar,
+.media-card--menu-open .media-card-progress-bar {
     display: none;
 }
 
 .media-card:hover .media-card-overlay,
 .media-card:focus-within .media-card-overlay,
-.media-card-link:focus-visible .media-card-overlay {
+.media-card-link:focus-visible .media-card-overlay,
+.media-card--menu-open .media-card-overlay {
     display: flex;
 }
 
@@ -134,8 +136,13 @@
 
 .media-card:hover .media-card-menu,
 .media-card:focus-within .media-card-menu,
-.media-card-menu--open {
+.media-card-menu--open,
+.media-card--menu-open .media-card-menu {
     display: block;
+}
+
+.media-card--menu-open {
+    z-index: 2;
 }
 
 .media-card--menu-open,

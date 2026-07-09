@@ -393,9 +393,6 @@ var SpatialNav = (function () {
         var longPressContainer = active.closest('[data-longpress]');
         if (longPressContainer) {
             e.preventDefault();
-            if (window.K7 && window.K7.suppressEnterUntilKeyUp) {
-                window.K7.suppressEnterUntilKeyUp();
-            }
             var card = longPressContainer.closest('.media-card');
             var openMenu = card && card.querySelector('.k7-menu-dropdown--open');
             if (openMenu) {
@@ -446,6 +443,12 @@ var SpatialNav = (function () {
         if (!isEnterKey(e.key)) return;
 
         if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
+            var openMenu = document.querySelector('.k7-menu-dropdown--open');
+            if (!openMenu) {
+                window.K7._suppressEnterUntilKeyUp = false;
+                return;
+            }
+
             window.K7._suppressEnterUntilKeyUp = false;
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -461,11 +464,8 @@ var SpatialNav = (function () {
                     try { callbacks[i](); } catch (err) { /* ignore */ }
                 }
             }, 0);
-            var openMenu = document.querySelector('.k7-menu-dropdown--open');
-            if (openMenu) {
-                var item = openMenu.querySelector('.k7-menu-item');
-                if (item) item.focus({ preventScroll: true });
-            }
+            var menuItem = openMenu.querySelector('.k7-menu-item');
+            if (menuItem) menuItem.focus({ preventScroll: true });
         }
     }
 
@@ -1344,7 +1344,9 @@ K7.positionDropdown = function (root, dropdown) {
         var mediaCard = root.closest('.media-card');
         if (mediaCard) {
             dropdown.classList.add('k7-menu-dropdown--card-corner');
-            K7._positionMediaCardDropdown(dropdown, anchorRect, ddRect, cbOffset, vw, vh);
+            var cardEl = mediaCard.querySelector('.media-card-container') || anchor;
+            var cardRect = cardEl.getBoundingClientRect();
+            K7._positionMediaCardDropdown(dropdown, mediaCard, cardRect, ddRect, cbOffset, vw, vh);
             return;
         }
 
@@ -1374,36 +1376,37 @@ K7.positionDropdown = function (root, dropdown) {
     }
 };
 
-K7._positionMediaCardDropdown = function (dropdown, anchorRect, ddRect, cbOffset, vw, vh) {
+K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect, cbOffset, vw, vh) {
     var margin = 8;
-    dropdown.style.bottom = '';
+    var gap = 4;
+
     dropdown.style.transform = 'none';
     dropdown.style.zIndex = '100014';
-    dropdown.style.maxHeight = 'min(320px, calc(100vh - 16px))';
     dropdown.style.overflowY = 'auto';
-    dropdown.style.minWidth = '180px';
     dropdown.style.width = 'max-content';
+    dropdown.style.minWidth = '180px';
     dropdown.style.maxWidth = Math.min(280, vw - margin * 2) + 'px';
+    dropdown.style.maxHeight = 'min(320px, calc(100vh - ' + (margin * 2) + 'px))';
 
-    // top-start + left-start: menu top-left on card top-left, overlapping the corner
-    var left = anchorRect.left;
-    var top = anchorRect.top;
+    var activator = mediaCard.querySelector('.media-card-menu .k7-menu-activator-inner');
+    var trigger = activator ? activator.getBoundingClientRect() : null;
+    var triggerTop = trigger && trigger.height > 0 ? trigger.top : cardRect.bottom - 48;
 
-    // top-end + right-start: flip when menu would overflow the viewport on the right
+    // Anchor bottom edge just above the three-dots trigger (immune to height measure drift)
+    var menuBottom = triggerTop - gap;
+    dropdown.style.top = '';
+    dropdown.style.bottom = (vh - menuBottom - cbOffset.top) + 'px';
+
+    // Left-aligned to card when there is room on the right; otherwise right-aligned to card
+    var left = cardRect.left;
     if (left + ddRect.width > vw - margin) {
-        left = anchorRect.right - ddRect.width;
+        left = cardRect.right - ddRect.width;
     }
-
-    if (left < margin) left = margin;
-    if (left + ddRect.width > vw - margin) left = vw - ddRect.width - margin;
-
-    if (top + ddRect.height > vh - margin) {
-        top = Math.max(margin, vh - ddRect.height - margin);
+    if (left < margin) {
+        left = margin;
     }
-    if (top < margin) top = margin;
 
     dropdown.style.left = (left - cbOffset.left) + 'px';
-    dropdown.style.top = (top - cbOffset.top) + 'px';
 };
 
 K7._suppressEnterUntilKeyUp = false;
@@ -1430,7 +1433,8 @@ K7._resolveMenuAnchor = function (root) {
     if (!root) return root;
     var mediaCard = root.closest('.media-card');
     if (mediaCard) {
-        var cardContainer = mediaCard.querySelector('[data-longpress]');
+        var cardContainer = mediaCard.querySelector('.media-card-container')
+            || mediaCard.querySelector('[data-longpress]');
         if (cardContainer) return cardContainer;
     }
     var activatorEl = root.querySelector('.k7-menu-activator');
@@ -1472,11 +1476,27 @@ K7._teleportMenuElement = function (el, root) {
 };
 
 K7._restoreMenuElement = function (el, root) {
-    if (!el || !el._k7MenuAnchor) return;
-    if (el._k7MenuAnchor.parentNode === root) {
+    if (!el) return;
+    if (el._k7MenuAnchor && el._k7MenuAnchor.parentNode === root) {
         root.insertBefore(el, el._k7MenuAnchor);
+    } else if (el.parentElement === document.body) {
+        // Blazor loses track of reparented nodes; drop body orphans.
+        el.remove();
+        return;
     }
     el.classList.remove('k7-menu-portal', 'k7-menu-dropdown--teleported');
+};
+
+K7._pruneOrphanedMenuBackdrops = function () {
+    if (document.querySelector('.k7-menu-dropdown--open')) return;
+    var orphans = document.body.querySelectorAll('.k7-menu-portal.k7-backdrop');
+    for (var i = 0; i < orphans.length; i++) {
+        orphans[i].remove();
+    }
+    var menus = document.querySelectorAll('.k7-menu');
+    for (var m = 0; m < menus.length; m++) {
+        K7._releaseMobileOverlayLock(menus[m]);
+    }
 };
 
 K7._releaseMobileOverlayLock = function (owner) {
@@ -1539,7 +1559,8 @@ K7._needsMenuPortal = function (root) {
 K7.attachMobileMenu = function (root, dropdown, backdrop) {
     if (!root || !dropdown) return;
 
-    if (!K7._needsMenuPortal(root)) {
+    var inMediaCard = !!root.closest('.media-card');
+    if (!inMediaCard && !K7._needsMenuPortal(root)) {
         if (dropdown.classList.contains('k7-menu-portal')) {
             K7._restoreMenuElement(dropdown, root);
             K7._restoreMenuElement(backdrop, root);
@@ -1605,12 +1626,18 @@ K7.positionPlaybackSettingsDetail = function (stack, detail) {
 K7.detachMobileMenu = function (root, dropdown, backdrop) {
     if (!root) return;
     K7._releaseMobileOverlayLock(root);
-    K7._restoreMenuElement(dropdown, root);
-    K7._restoreMenuElement(backdrop, root);
     if (dropdown) {
-        dropdown.classList.remove('k7-menu-dropdown--video-player', 'k7-menu-dropdown--teleported');
+        K7._restoreMenuElement(dropdown, root);
+        dropdown.classList.remove('k7-menu-dropdown--video-player', 'k7-menu-dropdown--teleported', 'k7-menu-dropdown--open');
     }
-    if (backdrop) backdrop.classList.remove('k7-backdrop--video-player');
+    if (backdrop) {
+        K7._restoreMenuElement(backdrop, root);
+        if (backdrop.isConnected && backdrop.parentElement === document.body) {
+            backdrop.remove();
+        }
+        backdrop.classList.remove('k7-backdrop--video-player');
+    }
+    K7._pruneOrphanedMenuBackdrops();
 };
 
 K7.attachSelectPortal = function (root, dropdown, backdrop) {
