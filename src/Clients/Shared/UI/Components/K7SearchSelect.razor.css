@@ -29,7 +29,8 @@
 }
 
 .k7-search-select-option:hover,
-.k7-search-select-option:focus-visible {
+.k7-search-select-option:focus-visible,
+.k7-search-select-option--active {
     background: var(--color-surface-hover);
 }
 

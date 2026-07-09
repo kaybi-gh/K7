@@ -60,6 +60,16 @@ public class MediaRuleEvaluatorTests
     }
 
     [Test]
+    public async Task ApplyFilter_ActorNameContains_ShouldBeCaseInsensitive()
+    {
+        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "dicaprio");
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().BeEquivalentTo([_inception.Id, _titanic.Id]);
+    }
+
+    [Test]
     public async Task ApplyFilter_ActorNameEquals_ShouldMatchExactName()
     {
         var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Equals, "Tom Hanks");

@@ -87,7 +87,7 @@ public class GetMediaBrowseFilterSuggestionsTests
     }
 
     [Test]
-    public async Task Handle_EmptySearch_ShouldReturnEmpty()
+    public async Task Handle_EmptySearch_ShouldReturnTopSuggestions()
     {
         var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
         var query = new GetMediaBrowseFilterSuggestionsQuery
@@ -99,7 +99,7 @@ public class GetMediaBrowseFilterSuggestionsTests
 
         var results = await handler.Handle(query, CancellationToken.None);
 
-        results.Should().BeEmpty();
+        results.Should().Contain("Leonardo DiCaprio");
     }
 
     private void SeedData()

@@ -20,7 +20,8 @@
                   @oninput="OnInput"
                   @onchange="OnChange"
                   @onfocus="OnFocus"
-                  @onfocusout="OnFocusOut"></textarea>
+                  @onfocusout="OnFocusOut"
+                  @onkeydown="OnKeyDown"></textarea>
     }
     else
     {
@@ -37,7 +38,8 @@
                    @oninput="OnInput"
                    @onchange="OnChange"
                    @onfocus="OnFocus"
-                   @onfocusout="OnFocusOut" />
+                   @onfocusout="OnFocusOut"
+                   @onkeydown="OnKeyDown" />
             @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
             {
                 <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />

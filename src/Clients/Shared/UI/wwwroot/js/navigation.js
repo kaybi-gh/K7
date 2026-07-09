@@ -488,6 +488,8 @@ var SpatialNav = (function () {
 
     function handleEscape(e) {
         var active = document.activeElement;
+        if (isOpenSearchSelectInput(active)) return;
+
         if (active && isEditing(active)) {
             stopEditing(active);
             if (window.SpatialNavigation) SpatialNavigation.resume();
@@ -664,6 +666,10 @@ var SpatialNav = (function () {
 
     // Key Handler
 
+    function isOpenSearchSelectInput(el) {
+        return !!(el && el.closest && el.closest('.k7-search-select--open'));
+    }
+
     function handleKeyDown(e) {
         var key = e.key;
         var layer = peekLayer();
@@ -676,6 +682,14 @@ var SpatialNav = (function () {
                     if (window.SpatialNavigation) SpatialNavigation.resume();
                 }
             }, true);
+        }
+
+        var activeEl = document.activeElement;
+        if (isOpenSearchSelectInput(activeEl)) {
+            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Escape' || isEnterKey(key)) {
+                if (window.SpatialNavigation) SpatialNavigation.pause();
+                return;
+            }
         }
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
@@ -1167,6 +1181,13 @@ window.K7 = window.K7 || {};
 
 K7.isImageLoaded = function (element) {
     return !!element && element.complete && element.naturalHeight > 0;
+};
+
+K7.scrollSearchSelectOptionIntoView = function (dropdown, index) {
+    if (!dropdown || index < 0) return;
+    var options = dropdown.querySelectorAll('.k7-search-select-option');
+    var option = options[index];
+    if (option) option.scrollIntoView({ block: 'nearest' });
 };
 
 K7.setSafeArea = function (top, bottom, left, right) {

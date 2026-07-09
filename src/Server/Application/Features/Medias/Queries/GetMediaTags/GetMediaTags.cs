@@ -86,8 +86,9 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
 
         if (!string.IsNullOrEmpty(search))
         {
-            var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
-            query = query.Where(mmt => EF.Functions.Like(mmt.MetadataTag.DisplayName.ToLower(), pattern));
+            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
+            query = query.Where(mmt => mmt.MetadataTag.DisplayName != null
+                && mmt.MetadataTag.DisplayName.ToLower().Contains(term));
         }
 
         var values = await query

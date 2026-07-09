@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
 public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
     [Parameter] public string? Value { get; set; }
     [Parameter] public EventCallback<string?> ValueChanged { get; set; }
     [Parameter] public string Placeholder { get; set; } = "";
@@ -12,6 +15,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public int DebounceInterval { get; set; } = 300;
+    [Parameter] public int MinSearchLength { get; set; }
     [Parameter] public bool CommitOnSelectOnly { get; set; }
     [Parameter] public EventCallback<string?> OnDebouncedCommit { get; set; }
     [Parameter] public Func<string, CancellationToken, Task<IReadOnlyList<string>>>? SearchAsync { get; set; }
@@ -19,9 +23,12 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     private bool _open;
     private bool _loading;
     private bool _disposed;
+    private bool _scrollToHighlighted;
+    private int _highlightedIndex = -1;
     private IReadOnlyList<string> _suggestions = [];
     private CancellationTokenSource? _searchCts;
     private ElementReference _root;
+    private ElementReference _dropdown;
 
     private async Task OnInputChanged(string? value)
     {
@@ -35,12 +42,27 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         if (_disposed)
             return;
 
-        if (SearchAsync is null || string.IsNullOrWhiteSpace(value))
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+        _highlightedIndex = -1;
+
+        if (SearchAsync is null)
         {
             _suggestions = [];
             _open = false;
-            if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
+            if (!CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
                 await OnDebouncedCommit.InvokeAsync(null);
+            if (!_disposed)
+                StateHasChanged();
+            return;
+        }
+
+        var trimmed = value?.Trim() ?? "";
+        if (trimmed.Length < MinSearchLength)
+        {
+            _suggestions = [];
+            _open = false;
+            _searchCts?.Cancel();
             if (!_disposed)
                 StateHasChanged();
             return;
@@ -58,14 +80,19 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
         try
         {
-            _suggestions = await SearchAsync(value.Trim(), token);
+            _suggestions = await SearchAsync(trimmed, token);
             if (_disposed || token.IsCancellationRequested)
                 return;
 
             _open = _suggestions.Count > 0;
+            _highlightedIndex = _open ? 0 : -1;
+            _scrollToHighlighted = _open;
 
-            if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
-                await OnDebouncedCommit.InvokeAsync(value.Trim());
+            if (!CommitOnSelectOnly)
+            {
+                if (OnDebouncedCommit.HasDelegate)
+                    await OnDebouncedCommit.InvokeAsync(trimmed);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -87,16 +114,67 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
         Value = suggestion;
         await ValueChanged.InvokeAsync(suggestion);
-        if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
+        if (OnDebouncedCommit.HasDelegate)
             await OnDebouncedCommit.InvokeAsync(suggestion);
-        _open = false;
-        _suggestions = [];
+        CloseDropdown();
     }
 
-    private void OnFocus(FocusEventArgs _)
+    private async Task OnInputKeyDown(KeyboardEventArgs e)
+    {
+        if (!_open || _loading || _suggestions.Count == 0)
+        {
+            if (e.Key is "Escape" && _open)
+            {
+                CloseDropdown();
+                if (!_disposed)
+                    StateHasChanged();
+            }
+
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _highlightedIndex = Math.Min(_highlightedIndex + 1, _suggestions.Count - 1);
+                if (_highlightedIndex < 0)
+                    _highlightedIndex = 0;
+                _scrollToHighlighted = true;
+                if (!_disposed)
+                    StateHasChanged();
+                break;
+            case "ArrowUp":
+                _highlightedIndex = Math.Max(_highlightedIndex - 1, 0);
+                _scrollToHighlighted = true;
+                if (!_disposed)
+                    StateHasChanged();
+                break;
+            case "Enter":
+                if (_highlightedIndex >= 0 && _highlightedIndex < _suggestions.Count)
+                    await SelectSuggestionAsync(_suggestions[_highlightedIndex]);
+                break;
+            case "Escape":
+                CloseDropdown();
+                if (!_disposed)
+                    StateHasChanged();
+                break;
+        }
+    }
+
+    private async Task OnFocus(FocusEventArgs _)
     {
         if (_suggestions.Count > 0)
+        {
             _open = true;
+            return;
+        }
+
+        if (SearchAsync is null)
+            return;
+
+        var trimmed = Value?.Trim() ?? "";
+        if (trimmed.Length >= MinSearchLength)
+            await OnDebouncedSearch(Value);
     }
 
     private void OnFocusOut(FocusEventArgs _)
@@ -107,6 +185,24 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     private void CloseDropdown()
     {
         _open = false;
+        _highlightedIndex = -1;
+        _scrollToHighlighted = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollToHighlighted || _highlightedIndex < 0 || _disposed)
+            return;
+
+        _scrollToHighlighted = false;
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.scrollSearchSelectOptionIntoView", _dropdown, _highlightedIndex);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 
     public ValueTask DisposeAsync()
