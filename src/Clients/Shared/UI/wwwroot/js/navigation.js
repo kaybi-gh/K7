@@ -21,6 +21,8 @@ var SpatialNav = (function () {
     var _homeEscapeCallback = null;
     var _homeEscapeTimer = null;
     var _homePattern = /^\/$/;
+    var _videoPlayerBackCallback = null;
+    var _videoPlayerRemoteRef = null;
     var _refreshTimer = null;
 
     var FOCUSABLE = [
@@ -156,6 +158,14 @@ var SpatialNav = (function () {
             var container = layer.el;
             if (!container || !container.isConnected) return;
             if (window.K7 && window.K7._suppressEnterUntilKeyUp) return;
+            // When video controls are hidden, keep focus on the overlay root.
+            // Focusing a control bar button on TV/Android WebView triggers stale
+            // mouseenter events that immediately re-show the overlay.
+            if (container.classList && container.classList.contains('video-controls-overlay')
+                && container.classList.contains('controls-hidden')) {
+                container.focus({ preventScroll: true });
+                return;
+            }
             var target = null;
             if (layer.focusSelector) {
                 target = container.querySelector(layer.focusSelector);
@@ -360,8 +370,131 @@ var SpatialNav = (function () {
     }
 
     // Long-press helpers for spatial navigation on media cards
-    function isEnterKey(key) {
-        return key === 'Enter' || key === 'NumpadEnter';
+    function isEnterKey(key, code, keyCode) {
+        key = key || '';
+        code = code || '';
+        if (keyCode === 13 || keyCode === 23 || keyCode === 66) return true;
+        if (key === 'Enter' || key === 'NumpadEnter' || key === 'Select' || key === 'DpadCenter') return true;
+        if (code === 'Enter' || code === 'NumpadEnter' || code === 'Select' || code === 'DpadCenter') return true;
+        return false;
+    }
+
+    function getVideoControlsOverlay(el) {
+        return el && el.closest ? el.closest('.video-controls-overlay') : null;
+    }
+
+    function isVideoControlsHidden(overlay) {
+        return !!(overlay && overlay.classList.contains('controls-hidden'));
+    }
+
+    function swallowNextEnterClick() {
+        window.K7 = window.K7 || {};
+        window.K7._swallowNextEnterClick = true;
+        setTimeout(function () {
+            if (window.K7) window.K7._swallowNextEnterClick = false;
+        }, 50);
+    }
+
+    var _mediaCardLongPress = null;
+
+    function cancelMediaCardLongPress() {
+        if (_mediaCardLongPress && _mediaCardLongPress.timer) {
+            clearTimeout(_mediaCardLongPress.timer);
+        }
+        _mediaCardLongPress = null;
+    }
+
+    function getLongPressContainer(el) {
+        if (!el || !el.closest) return null;
+        var container = el.closest('[data-longpress]');
+        if (!container) return null;
+        var value = container.getAttribute('data-longpress');
+        if (value === 'false') return null;
+        return container;
+    }
+
+    function handleMediaCardLongPressKeyDown(e, activeEl) {
+        if (!document.documentElement.classList.contains('platform-tv')) return false;
+        var container = getLongPressContainer(activeEl);
+        if (!container) return false;
+        var card = container.closest('.media-card');
+        if (!card) return false;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        cancelMediaCardLongPress();
+        _mediaCardLongPress = {
+            card: card,
+            link: card.querySelector('a.media-card-link[href]'),
+            triggered: false,
+            timer: setTimeout(function () {
+                if (!_mediaCardLongPress) return;
+                _mediaCardLongPress.triggered = true;
+                var activator = card.querySelector('[data-longpress-target] .k7-icon-btn, [data-longpress-target] button');
+                if (activator) activator.click();
+                swallowNextEnterClick();
+                window.K7 = window.K7 || {};
+                window.K7._suppressEnterUntilKeyUp = true;
+            }, 600)
+        };
+        return true;
+    }
+
+    function handleMediaCardLongPressKeyUp(e) {
+        if (!document.documentElement.classList.contains('platform-tv')) return false;
+        if (!isEnterKey(e.key, e.code, e.keyCode) || !_mediaCardLongPress) return false;
+
+        var activeEl = document.activeElement;
+        var state = _mediaCardLongPress;
+        if (!activeEl || !state.card.contains(activeEl)) {
+            cancelMediaCardLongPress();
+            return false;
+        }
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        var triggered = state.triggered;
+        var link = state.link;
+        cancelMediaCardLongPress();
+
+        if (triggered) {
+            swallowNextEnterClick();
+            return true;
+        }
+
+        if (link) link.click();
+        return true;
+    }
+
+    function handleHiddenVideoPlayerArrow(key, code, e) {
+        if (!_videoPlayerRemoteRef) return false;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (window.SpatialNavigation) SpatialNavigation.pause();
+
+        var keyCode = e.keyCode || 0;
+        if (key === 'ArrowLeft' || code === 'ArrowLeft' || keyCode === 37 || keyCode === 21) {
+            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekLeft');
+        } else if (key === 'ArrowRight' || code === 'ArrowRight' || keyCode === 39 || keyCode === 22) {
+            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekRight');
+        } else if (key === 'ArrowUp' || code === 'ArrowUp' || keyCode === 38 || keyCode === 19) {
+            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteVolumeUp');
+        } else if (key === 'ArrowDown' || code === 'ArrowDown' || keyCode === 40 || keyCode === 20) {
+            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteVolumeDown');
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    function handleHiddenVideoPlayerSelect(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        swallowNextEnterClick();
+        if (_videoPlayerRemoteRef) invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSelect');
     }
 
     // Enter Handling
@@ -382,10 +515,10 @@ var SpatialNav = (function () {
         // Textareas need Enter for line breaks (only when in edit mode)
         if (active.tagName && active.tagName.toLowerCase() === 'textarea' && isEditing(active)) return;
 
-        // If inside a hidden overlay, suppress button click but let keydown reach Blazor
-        var overlay = active.closest('.video-controls-overlay');
-        if (overlay && overlay.style.opacity === '0') {
-            e.preventDefault();
+        // If inside a hidden overlay, route OK/Enter to the player instead of focused controls.
+        var videoOverlay = getVideoControlsOverlay(active);
+        if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
+            handleHiddenVideoPlayerSelect(e);
             return;
         }
 
@@ -440,7 +573,22 @@ var SpatialNav = (function () {
     }
 
     function handleKeyUp(e) {
-        if (!isEnterKey(e.key)) return;
+        var key = e.key;
+        var code = e.code || '';
+
+        if (key === 'ArrowLeft' || key === 'ArrowRight' || code === 'ArrowLeft' || code === 'ArrowRight'
+            || e.keyCode === 37 || e.keyCode === 39 || e.keyCode === 21 || e.keyCode === 22) {
+            var overlay = getVideoControlsOverlay(document.activeElement);
+            if (overlay && isVideoControlsHidden(overlay)) {
+                e.preventDefault();
+                if (_videoPlayerRemoteRef) invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekCommit');
+                return;
+            }
+        }
+
+        if (!isEnterKey(key, code, e.keyCode)) return;
+
+        if (handleMediaCardLongPressKeyUp(e)) return;
 
         if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
             var openMenu = document.querySelector('.k7-menu-dropdown--open');
@@ -515,7 +663,7 @@ var SpatialNav = (function () {
             if (layer.onClose) {
                 var isOverlay = layer.type === 'overlay';
                 var staleCallback = layer.onClose;
-                layer.onClose = null;
+                if (!isOverlay) layer.onClose = null;
                 if (!isOverlay) popLayer(layer.el);
                 invokeCallback(staleCallback, 'OnLayerClosed', function (ok) {
                     if (!ok) closeLayerDom(layer);
@@ -530,6 +678,10 @@ var SpatialNav = (function () {
                     var activator = submenuRoot.querySelector('.k7-menu-activator');
                     if (activator) activator.click();
                 }
+                return;
+            }
+
+            if (layer.type === 'overlay' && isVideoPlayerActive() && handleVideoPlayerBack()) {
                 return;
             }
 
@@ -569,6 +721,11 @@ var SpatialNav = (function () {
     }
 
     function handleBackNav() {
+        if (isVideoPlayerActive()) {
+            if (handleVideoPlayerBack()) return;
+            return;
+        }
+
         var path = window.location.pathname;
         if (_homePattern.test(path)) {
             if (_homeEscapeTimer) {
@@ -688,7 +845,7 @@ var SpatialNav = (function () {
                     if (window.SpatialNavigation) SpatialNavigation.pause();
                     return;
                 }
-                if (isEnterKey(key)) {
+                if (isEnterKey(key, e.code, e.keyCode)) {
                     var enterInput = searchRoot.querySelector('input, textarea');
                     if (enterInput && isEditing(enterInput)) {
                         if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -698,7 +855,9 @@ var SpatialNav = (function () {
             }
         }
 
-        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1
+            || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.code || '') !== -1
+            || [19, 20, 21, 22, 37, 38, 39, 40].indexOf(e.keyCode || 0) !== -1) {
             var el = document.activeElement;
             // Next-episode overlay: keep focus and navigation inside the overlay
             var nepOverlay = document.querySelector('.nep-overlay');
@@ -721,12 +880,10 @@ var SpatialNav = (function () {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
                 return;
             }
-            // When overlay is hidden, block spatial navigation so arrows go to Blazor for seek/volume
-            var hiddenOverlay = el && el.closest('.video-controls-overlay');
-            if (hiddenOverlay && hiddenOverlay.style.opacity === '0') {
-                if (window.SpatialNavigation) SpatialNavigation.pause();
-                e.preventDefault();
-                return;
+            // When overlay is hidden, route arrows to the player for seek/volume HUD.
+            var videoOverlay = getVideoControlsOverlay(el);
+            if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
+                if (handleHiddenVideoPlayerArrow(key, e.code || '', e)) return;
             }
             if (el && el.closest('[data-carousel]') && handleCarouselNav(el, key)) {
                 e.preventDefault();
@@ -756,7 +913,13 @@ var SpatialNav = (function () {
             }
         }
 
-        if (isEnterKey(key)) {
+        if (isEnterKey(key, e.code, e.keyCode)) {
+            if (handleMediaCardLongPressKeyDown(e, activeEl)) return;
+            var videoOverlay = getVideoControlsOverlay(activeEl);
+            if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
+                handleHiddenVideoPlayerSelect(e);
+                return;
+            }
             if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -966,6 +1129,43 @@ var SpatialNav = (function () {
         if (homePattern) _homePattern = new RegExp(homePattern);
     }
 
+    function isVideoPlayerActive() {
+        var container = document.querySelector('.video-container');
+        return !!(container && isElementVisible(container));
+    }
+
+    function registerVideoPlayerBack(dotNetRef) {
+        _videoPlayerBackCallback = dotNetRef;
+    }
+
+    function unregisterVideoPlayerBack() {
+        _videoPlayerBackCallback = null;
+    }
+
+    function registerVideoPlayerRemote(dotNetRef) {
+        _videoPlayerRemoteRef = dotNetRef;
+    }
+
+    function unregisterVideoPlayerRemote() {
+        _videoPlayerRemoteRef = null;
+    }
+
+    function handleVideoPlayerBack() {
+        if (!_videoPlayerBackCallback) return false;
+        invokeCallback(_videoPlayerBackCallback, 'OnLayerClosed');
+        return true;
+    }
+
+    function cancelEditingIn(rootSelector) {
+        var root = rootSelector ? document.querySelector(rootSelector) : document;
+        if (!root) return;
+        var editing = root.querySelector('[data-sn-editing]');
+        if (!editing) return;
+        stopEditing(editing);
+        if (window.SpatialNavigation) SpatialNavigation.resume();
+        editing.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+    }
+
     // Utility
 
     function isFocusInside(el) {
@@ -1136,6 +1336,11 @@ var SpatialNav = (function () {
         addSection: addSection,
         removeSection: removeSection,
         registerHomeEscape: registerHomeEscape,
+        registerVideoPlayerBack: registerVideoPlayerBack,
+        unregisterVideoPlayerBack: unregisterVideoPlayerBack,
+        registerVideoPlayerRemote: registerVideoPlayerRemote,
+        unregisterVideoPlayerRemote: unregisterVideoPlayerRemote,
+        cancelEditingIn: cancelEditingIn,
         isFocusInside: isFocusInside,
         isElementEditing: isElementEditing,
         handleBack: handleBack
@@ -1148,6 +1353,23 @@ window.K7 = window.K7 || {};
 
 K7._backgroundLockCount = 0;
 K7._dialogLockActive = false;
+
+K7.setNativePlayerActive = function (active) {
+    document.documentElement.classList.toggle('native-player-active', !!active);
+    document.body.classList.toggle('native-player-active', !!active);
+    if (!active) {
+        requestAnimationFrame(function () {
+            var app = document.getElementById('app');
+            if (app) app.style.removeProperty('visibility');
+            var chrome = document.querySelectorAll('.app-nav, .app-nav-bar, .app-nav-popover, .k7-menu-dropdown');
+            for (var i = 0; i < chrome.length; i++) {
+                chrome[i].style.removeProperty('visibility');
+                chrome[i].style.removeProperty('opacity');
+            }
+            if (window.SpatialNav && window.SpatialNav.refresh) window.SpatialNav.refresh();
+        });
+    }
+};
 
 K7._updateBackgroundLock = function () {
     var locked = K7._backgroundLockCount > 0 || K7._dialogLockActive;

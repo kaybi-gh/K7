@@ -100,10 +100,12 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         StateHasChanged();
 
+        // On MAUI Native, MediaElement sits behind the transparent WebView.
+        // native-player-active hides the app shell and keeps only .video-container
+        // visible so the native video shows through the Blazor overlay.
         if (DeviceService.GetClientType() == ClientType.Native)
         {
-            var method = PlayerService.IsVisible ? "add" : "remove";
-            _ = JSRuntime.InvokeVoidAsync("eval", $"document.documentElement.classList.{method}('native-player-active'); document.body.classList.{method}('native-player-active')");
+            _ = JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", PlayerService.IsVisible);
         }
     }
 
@@ -167,6 +169,20 @@ public partial class VideoPlayer : IAsyncDisposable
         RemoteControl.SessionChanged -= OnRemoteSessionChanged;
         RemoteControl.StateChanged -= OnRemoteSessionChanged;
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
+
+        if (DeviceService.GetClientType() == ClientType.Native)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", false);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {

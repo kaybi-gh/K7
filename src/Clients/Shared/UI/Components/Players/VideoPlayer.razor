@@ -28,7 +28,9 @@ else if (PlayerService.IsVisible)
             containerClass += " syncplay-sidebar-open";
         }
 
-        <div class="@containerClass" @ref="_videoContainer" @onkeydown="OnContainerKeyDown">
+        <div class="@containerClass" @ref="_videoContainer" @onkeydown="OnContainerKeyDown"
+             data-sn-layer="@(_syncPlaySidebarOpen ? "overlay" : null)"
+             data-sn-layer-close=".video-player-close-btn">
             <div class="video-main">
                 <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" OnSyncPlayToggle="ToggleSyncPlaySidebar" SyncPlaySidebarOpen="_syncPlaySidebarOpen" ContainerRef="_videoContainer" />
                 @if (SyncPlay.IsInGroup && SyncPlay.ShowReactions)

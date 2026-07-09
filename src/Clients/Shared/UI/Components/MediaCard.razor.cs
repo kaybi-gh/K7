@@ -147,9 +147,18 @@ public partial class MediaCard : IDisposable
         StateHasChanged();
     }
 
+    private static bool IsEnterKey(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or "NumpadEnter" or "Select" or "DpadCenter")
+            return true;
+
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
+        return code is "Enter" or "NumpadEnter" or "Select" or "DpadCenter";
+    }
+
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        if (!LongPressEnabled || !IsEnterKey(e.Key))
+        if (!LongPressEnabled || !IsEnterKey(e))
             return;
 
         if (e.Repeat && _longPressCts is not null)
@@ -164,7 +173,7 @@ public partial class MediaCard : IDisposable
 
     private void OnKeyUp(KeyboardEventArgs e)
     {
-        if (!LongPressEnabled || !IsEnterKey(e.Key))
+        if (!LongPressEnabled || !IsEnterKey(e))
             return;
 
         CancelLongPress();
@@ -181,9 +190,6 @@ public partial class MediaCard : IDisposable
         if (wasShortPress && !string.IsNullOrEmpty(Href))
             NavigationManager.NavigateTo(Href);
     }
-
-    private static bool IsEnterKey(string? key) =>
-        key is "Enter" or "NumpadEnter";
 
     private void OnTouchStart(TouchEventArgs e)
     {

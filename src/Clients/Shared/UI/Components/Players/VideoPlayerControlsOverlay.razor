@@ -21,6 +21,8 @@
 @inject ISyncPlayService SyncPlay
 
 <div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"
+     data-sn-layer="@(SyncPlaySidebarOpen ? null : "overlay")"
+     data-sn-layer-close=".video-player-close-btn"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
      @ontouchstart="OnTouchStart" @ontouchstart:preventDefault
      @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
@@ -29,7 +31,7 @@
      @onfocusin="OnFocusIn">
 
     <div class="controls-bar top d-flex align-right" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
-        <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" />
+        <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" Class="video-player-close-btn" />
     </div>
 
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
@@ -140,6 +142,7 @@
     private Timer? _hudTimer;
     private double _seekTarget;
     private double _seekOffset;
+    private double _seekBaseTime;
     private bool _isSeeking;
     private string? _hudText;
     private string _hudIcon = Phosphor.FastForward;
@@ -168,6 +171,7 @@
     private double _viewportWidth;
     private const double SwipeThreshold = 15;
     private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
+    private DateTime _suppressOverlayShowUntil;
     private bool _wasSidebarOpen;
 
     private enum SwipeSide { Left, Right }
@@ -220,50 +224,31 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            _overlayCloseRef = DotNetObjectReference.Create(new LayerCloseCallback(HandleBack));
-            try
-            {
-                await SpatialNav.PushLayerAsync(_overlayRef, "overlay", new SpatialNavLayerOptions
-                {
-                    OnClose = _overlayCloseRef,
-                    FocusSelector = ".play-pause-btn"
-                });
-            }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
-        }
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        _overlayCloseRef ??= DotNetObjectReference.Create(new LayerCloseCallback(HandleBack));
 
-        if (SyncPlaySidebarOpen != _wasSidebarOpen)
+        try
         {
-            _wasSidebarOpen = SyncPlaySidebarOpen;
-            try
+            await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerBack", _overlayCloseRef);
+            await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerRemote", _dotNetRef);
+
+            if (SyncPlaySidebarOpen != _wasSidebarOpen)
             {
+                _wasSidebarOpen = SyncPlaySidebarOpen;
                 if (SyncPlaySidebarOpen)
-                {
-                    // Switch to container-scoped layer so d-pad/keyboard can navigate
-                    // both overlay controls AND sidebar elements.
                     await SpatialNav.PopLayerAsync(_overlayRef);
-                    await SpatialNav.PushLayerAsync(ContainerRef, "overlay", new SpatialNavLayerOptions
-                    {
-                        OnClose = _overlayCloseRef,
-                        FocusSelector = ".play-pause-btn"
-                    });
-                }
                 else
-                {
-                    // Restore overlay-only layer when sidebar closes
                     await SpatialNav.PopLayerAsync(ContainerRef);
-                    await SpatialNav.PushLayerAsync(_overlayRef, "overlay", new SpatialNavLayerOptions
-                    {
-                        OnClose = _overlayCloseRef,
-                        FocusSelector = ".play-pause-btn"
-                    });
-                }
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+
+            var activeLayer = SyncPlaySidebarOpen ? ContainerRef : _overlayRef;
+            await SpatialNav.PushLayerAsync(activeLayer, "overlay", new SpatialNavLayerOptions
+            {
+                OnClose = _overlayCloseRef,
+                FocusSelector = ".play-pause-btn"
+            });
         }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
     private void OnKeyDown(KeyboardEventArgs e)
@@ -281,20 +266,9 @@
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
-                if (_isMenuOpen && _playbackSettingsMenu?.TryHandleBack() == true)
-                {
-                    StateHasChanged();
-                    return;
-                }
-
-                if (_showOverlay)
-                {
-                    HideOverlay();
-                }
-                else
-                {
-                    OnCloseButtonClick();
-                }
+                PerformBackStep();
+                _ = ReattachLayerCallbackAsync();
+                StateHasChanged();
                 return;
             case "MediaStop":
                 OnCloseButtonClick();
@@ -314,17 +288,21 @@
 
         if (!_showOverlay)
         {
+            if (IsSelectKey(e))
+            {
+                if (_skipOverlay?.CanSkip == true)
+                {
+                    _skipOverlay.SkipSegment();
+                    return;
+                }
+
+                ShowOverlay();
+                return;
+            }
+
             // Overlay hidden: arrows control playback
             switch (code)
             {
-                case "Enter":
-                    if (_skipOverlay?.CanSkip == true)
-                    {
-                        _skipOverlay.SkipSegment();
-                        return;
-                    }
-                    ShowOverlay();
-                    return;
                 case "ArrowLeft":
                     AccumulateSeek(-10);
                     return;
@@ -340,6 +318,12 @@
             }
         }
         // When overlay is visible, JS handles arrow navigation between controls.
+    }
+
+    private static bool IsSelectKey(KeyboardEventArgs e)
+    {
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
+        return code is "Enter" or "NumpadEnter" or "Select" or "DpadCenter";
     }
 
     private void ShowOverlay()
@@ -362,23 +346,109 @@
     {
         _showOverlay = false;
         _overlayVisibleTimer?.Stop();
+        _suppressOverlayShowUntil = DateTime.UtcNow.AddMilliseconds(500);
+        _isMouseOverControlsBar = false;
+        _ = CancelSeekBarEditingAsync();
         _ = _overlayRef.FocusAsync();
     }
+
+    private async Task CancelSeekBarEditingAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("SpatialNav.cancelEditingIn", ".video-controls-overlay");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    private bool ShouldIgnoreMouseOverlayShow() =>
+        _deviceType == DeviceType.TV || DateTime.UtcNow < _suppressOverlayShowUntil;
 
     private void AccumulateSeek(double offset)
     {
         if (!_isSeeking)
         {
-            _seekTarget = PlayerService.CurrentTime;
+            _seekBaseTime = PlayerService.CurrentTime;
             _seekOffset = 0;
         }
         _seekOffset += offset;
-        _seekTarget = Math.Clamp(PlayerService.CurrentTime + _seekOffset, 0, PlayerService.Duration);
+        _seekTarget = Math.Clamp(_seekBaseTime + _seekOffset, 0, PlayerService.Duration);
         _isSeeking = true;
         _hudIcon = _seekOffset >= 0 ? Phosphor.FastForward : Phosphor.Rewind;
         ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
         _seekDebounceTimer?.Stop();
         _seekDebounceTimer?.Start();
+    }
+
+    private void CommitSeek()
+    {
+        if (!_isSeeking)
+            return;
+
+        _seekDebounceTimer?.Stop();
+        PlayerService.Seek(_seekTarget);
+        _isSeeking = false;
+        _seekOffset = 0;
+    }
+
+    [JSInvokable]
+    public void OnRemoteSelect()
+    {
+        InvokeAsync(() =>
+        {
+            if (_isMenuOpen) return;
+
+            if (!_showOverlay)
+            {
+                ShowOverlay();
+                StateHasChanged();
+            }
+        });
+    }
+
+    [JSInvokable]
+    public void OnRemoteSeekLeft() => OnRemoteSeekAccumulate(-10);
+
+    [JSInvokable]
+    public void OnRemoteSeekRight() => OnRemoteSeekAccumulate(10);
+
+    [JSInvokable]
+    public void OnRemoteSeekAccumulate(double offset)
+    {
+        InvokeAsync(() =>
+        {
+            if (_showOverlay || _isMenuOpen) return;
+            AccumulateSeek(offset);
+            StateHasChanged();
+        });
+    }
+
+    [JSInvokable]
+    public void OnRemoteSeekCommit()
+    {
+        InvokeAsync(() =>
+        {
+            if (_showOverlay || _isMenuOpen) return;
+            CommitSeek();
+            StateHasChanged();
+        });
+    }
+
+    [JSInvokable]
+    public void OnRemoteVolumeUp() => OnRemoteVolumeStep(0.1);
+
+    [JSInvokable]
+    public void OnRemoteVolumeDown() => OnRemoteVolumeStep(-0.1);
+
+    [JSInvokable]
+    public void OnRemoteVolumeStep(double delta)
+    {
+        InvokeAsync(() =>
+        {
+            if (_showOverlay || _isMenuOpen) return;
+            AdjustVolume(delta);
+            StateHasChanged();
+        });
     }
 
     private void AdjustVolume(double delta)
@@ -434,9 +504,7 @@
     {
         InvokeAsync(() =>
         {
-            PlayerService.Seek(_seekTarget);
-            _isSeeking = false;
-            _seekOffset = 0;
+            CommitSeek();
             StateHasChanged();
         });
     }
@@ -471,33 +539,55 @@
         PlayerService.HideAsync();
     }
 
+    private void PerformBackStep()
+    {
+        if (_isMenuOpen && _playbackSettingsMenu?.TryHandleBack() == true)
+            return;
+
+        if (_isVolumeSliderVisible || _isMouseOverVolumeSlider)
+        {
+            _isVolumeSliderVisible = false;
+            _isMouseOverVolumeSlider = false;
+            return;
+        }
+
+        if (_showOverlay)
+        {
+            HideOverlay();
+            return;
+        }
+
+        OnCloseButtonClick();
+    }
+
     private void HandleBack()
     {
         InvokeAsync(async () =>
         {
-            if (_isMenuOpen && _playbackSettingsMenu?.TryHandleBack() == true)
-            {
-                StateHasChanged();
-                return;
-            }
-
-            if (_showOverlay)
-            {
-                HideOverlay();
-            }
-            else
-            {
-                OnCloseButtonClick();
-            }
+            PerformBackStep();
+            await ReattachLayerCallbackAsync();
             StateHasChanged();
         });
+    }
+
+    private async Task ReattachLayerCallbackAsync()
+    {
+        if (_overlayCloseRef is null)
+            return;
+
+        try
+        {
+            var activeLayer = SyncPlaySidebarOpen ? ContainerRef : _overlayRef;
+            await SpatialNav.AttachLayerCallbackAsync(activeLayer, _overlayCloseRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
     private void OnBackPressed() => HandleBack();
 
     private void OnOverlayMouseMove(MouseEventArgs args)
     {
-        if (_isMouseOverControlsBar || _isMenuOpen)
+        if (ShouldIgnoreMouseOverlayShow() || _isMouseOverControlsBar || _isMenuOpen)
         {
             return;
         }
@@ -687,6 +777,9 @@
 
     private void OnControlsBarMouseEnter(MouseEventArgs args)
     {
+        if (ShouldIgnoreMouseOverlayShow())
+            return;
+
         _overlayVisibleTimer?.Stop();
         _isMouseOverControlsBar = true;
         _showOverlay = true;
@@ -694,6 +787,9 @@
 
     private void OnControlsBarMouseOut(MouseEventArgs args)
     {
+        if (ShouldIgnoreMouseOverlayShow())
+            return;
+
         _isMouseOverControlsBar = false;
         _showOverlay = true;
         _overlayVisibleTimer?.Start();
@@ -859,10 +955,21 @@
         BrightnessService.ResetBrightness();
         try
         {
-            if (!SyncPlaySidebarOpen)
-            {
-                await SpatialNav.PopLayerAsync(_overlayRef);
-            }
+            await JSRuntime.InvokeVoidAsync("SpatialNav.unregisterVideoPlayerBack");
+            await JSRuntime.InvokeVoidAsync("SpatialNav.unregisterVideoPlayerRemote");
+            await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", false);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+
+        try
+        {
+            await SpatialNav.PopLayerAsync(_overlayRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+
+        try
+        {
+            await SpatialNav.PopLayerAsync(ContainerRef);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         _dotNetRef?.Dispose();

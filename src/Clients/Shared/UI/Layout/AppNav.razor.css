@@ -65,8 +65,14 @@
     padding: 0 var(--space-5);
     gap: var(--space-1);
     border-bottom: 1px solid var(--color-border-subtle);
-    background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    background: var(--color-surface);
     backdrop-filter: blur(8px);
+}
+
+@supports (background: color-mix(in srgb, white 50%, black)) {
+    .app-nav-bar {
+        background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    }
 }
 
 @media (min-width: 600px) {
