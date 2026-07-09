@@ -359,27 +359,9 @@ var SpatialNav = (function () {
         }
     }
 
-    // Long-press helpers for touch fallback in navigation.js
-    var LONG_PRESS_MS = 600;
-
+    // Long-press helpers for spatial navigation on media cards
     function isEnterKey(key) {
         return key === 'Enter' || key === 'NumpadEnter';
-    }
-
-    function findLongPressTarget(container) {
-        if (!container) return null;
-        var root = container.closest('.media-card') || container.parentElement;
-        if (!root) return null;
-        return root.querySelector('[data-longpress-target]');
-    }
-
-    function openLongPressMenu(container) {
-        var targetRoot = findLongPressTarget(container);
-        if (!targetRoot) return;
-        var activator = targetRoot.querySelector('.k7-menu-activator-inner')
-            || targetRoot.querySelector('.k7-menu-activator')
-            || targetRoot.querySelector('button');
-        if (activator) activator.click();
     }
 
     // Enter Handling
@@ -411,6 +393,9 @@ var SpatialNav = (function () {
         var longPressContainer = active.closest('[data-longpress]');
         if (longPressContainer) {
             e.preventDefault();
+            if (window.K7 && window.K7.suppressEnterUntilKeyUp) {
+                window.K7.suppressEnterUntilKeyUp();
+            }
             var card = longPressContainer.closest('.media-card');
             var openMenu = card && card.querySelector('.k7-menu-dropdown--open');
             if (openMenu) {
@@ -1124,52 +1109,13 @@ var SpatialNav = (function () {
             }
         }, true);
 
-        // Touch long-press on [data-longpress] containers (mobile)
-        var _touchLongPress = null;
-        document.addEventListener('touchstart', function (e) {
+        document.addEventListener('contextmenu', function (e) {
             var target = e.target;
             if (!target || !target.closest) return;
-            var container = target.closest('[data-longpress]');
-            if (!container) return;
-            _touchLongPress = {
-                container: container,
-                timer: setTimeout(function () {
-                    if (!_touchLongPress) return;
-                    _touchLongPress.triggered = true;
-                    openLongPressMenu(container);
-                }, LONG_PRESS_MS),
-                triggered: false,
-                startX: e.touches[0].clientX,
-                startY: e.touches[0].clientY
-            };
-        }, { passive: true });
-
-        document.addEventListener('touchmove', function (e) {
-            if (!_touchLongPress) return;
-            var dx = e.touches[0].clientX - _touchLongPress.startX;
-            var dy = e.touches[0].clientY - _touchLongPress.startY;
-            if (dx * dx + dy * dy > 100) {
-                clearTimeout(_touchLongPress.timer);
-                _touchLongPress = null;
-            }
-        }, { passive: true });
-
-        document.addEventListener('touchend', function (e) {
-            if (!_touchLongPress) return;
-            clearTimeout(_touchLongPress.timer);
-            var state = _touchLongPress;
-            _touchLongPress = null;
-            if (state.triggered) {
+            if (target.closest('[data-longpress]')) {
                 e.preventDefault();
             }
-        });
-
-        document.addEventListener('touchcancel', function () {
-            if (_touchLongPress) {
-                clearTimeout(_touchLongPress.timer);
-                _touchLongPress = null;
-            }
-        }, { passive: true });
+        }, true);
     }
 
     // Public API
@@ -1199,6 +1145,10 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+
+K7.setDialogOpen = function (open) {
+    document.body.classList.toggle('k7-dialog-open', !!open);
+};
 
 K7.isImageLoaded = function (element) {
     return !!element && element.complete && element.naturalHeight > 0;

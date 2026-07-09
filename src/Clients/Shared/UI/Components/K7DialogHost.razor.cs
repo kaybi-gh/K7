@@ -10,6 +10,7 @@ public partial class K7DialogHost : IDisposable
 {
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private readonly List<K7DialogEntry> _dialogs = [];
 
@@ -24,6 +25,7 @@ public partial class K7DialogHost : IDisposable
         var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged), OnDialogClosed);
         _dialogs.Add(entry);
         await InvokeAsync(StateHasChanged);
+        await UpdatePageInteractionLockAsync();
 
         // Allow two render cycles so the backdrop element is available
         await Task.Yield();
@@ -50,6 +52,22 @@ public partial class K7DialogHost : IDisposable
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
             // Element already removed
+        }
+
+        await UpdatePageInteractionLockAsync();
+    }
+
+    private async Task UpdatePageInteractionLockAsync()
+    {
+        var hasOpenDialogs = _dialogs.Exists(d => !d.Result.IsCompleted);
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.setDialogOpen", hasOpenDialogs);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
+        {
+            // Host disconnected during teardown
         }
     }
 
@@ -83,6 +101,15 @@ public partial class K7DialogHost : IDisposable
     {
         if (DialogService is K7DialogService svc)
             svc.OnShow -= HandleShow;
+
+        try
+        {
+            _ = JS.InvokeVoidAsync("K7.setDialogOpen", false);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
+        {
+            // Host disconnected during teardown
+        }
     }
 }
 

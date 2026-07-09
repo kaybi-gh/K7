@@ -331,6 +331,15 @@ body.no-scroll {
     overflow: hidden;
 }
 
+body.k7-dialog-open {
+    overflow: hidden;
+}
+
+body.k7-dialog-open .app-shell {
+    pointer-events: none;
+    touch-action: none;
+}
+
 html.native-player-active,
 body.native-player-active {
     background: transparent !important;
