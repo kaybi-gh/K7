@@ -52,6 +52,7 @@ public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProv
     public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public void SignInOffline(LocalUser user) { }
+    public Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 

@@ -10,6 +10,7 @@ public interface ICustomAuthenticationStateProvider
     Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default);
     Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default);
     void SignInOffline(LocalUser user);
+    Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default);
     Task LogoutAsync(CancellationToken cancellationToken = default);
 }
 

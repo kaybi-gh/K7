@@ -1,11 +1,14 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
+using K7.Shared.Json;
 using Microsoft.AspNetCore.Components.Authorization;
 using OpenIddict.Client;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -15,6 +18,8 @@ namespace K7.Clients.MAUI.Services.Authentication;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
 {
+    private static readonly JsonSerializerOptions SerializerOptions = K7JsonSerializerOptions.CreateDefault();
+
     private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IUserAdminService _userAdminService;
@@ -407,6 +412,26 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         return true;
     }
 
+    public async Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var user in _localUserService.GetAll())
+        {
+            if (!string.IsNullOrEmpty(user.AvatarUrl))
+                continue;
+
+            var profile = await FetchUserProfileAsync(user.RefreshToken, cancellationToken);
+            if (profile is null)
+                continue;
+
+            user.UserId = profile.Id;
+            user.AvatarUrl = profile.AvatarUrl;
+            if (profile.DisplayName is not null)
+                user.DisplayName = profile.DisplayName;
+
+            _localUserService.SaveOrUpdate(user);
+        }
+    }
+
     private async Task SaveLocalUserFromCurrentUserAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
@@ -414,6 +439,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (string.IsNullOrEmpty(identityUserId))
             return;
 
+        var existing = _localUserService.GetAll().FirstOrDefault(u => u.IdentityUserId == identityUserId);
         var currentRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
 
         var localUser = new LocalUser
@@ -422,10 +448,15 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             UserName = _currentUser.FindFirst(ClaimTypes.Name)?.Value
                        ?? _currentUser.FindFirst("preferred_username")?.Value
                        ?? _currentUser.FindFirst("name")?.Value
+                       ?? existing?.UserName
                        ?? "User",
             Email = _currentUser.FindFirst(ClaimTypes.Email)?.Value
-                    ?? _currentUser.FindFirst("email")?.Value,
-            RefreshToken = currentRefreshToken ?? refreshToken
+                    ?? _currentUser.FindFirst("email")?.Value
+                    ?? existing?.Email,
+            RefreshToken = currentRefreshToken ?? refreshToken,
+            AvatarUrl = existing?.AvatarUrl,
+            DisplayName = existing?.DisplayName,
+            UserId = existing?.UserId
         };
 
         try
@@ -433,16 +464,55 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             var serverUser = await _userAdminService.GetCurrentUserAsync(cancellationToken);
             if (serverUser is not null)
             {
+                localUser.UserId = serverUser.Id;
                 localUser.PinHash = serverUser.PinHash;
                 if (serverUser.UserName is not null)
                     localUser.UserName = serverUser.UserName;
                 if (serverUser.Email is not null)
                     localUser.Email = serverUser.Email;
+                if (serverUser.DisplayName is not null)
+                    localUser.DisplayName = serverUser.DisplayName;
+                localUser.AvatarUrl = serverUser.AvatarUrl;
             }
         }
         catch { }
 
         _localUserService.SaveOrUpdate(localUser);
+    }
+
+    private async Task<UserDto?> FetchUserProfileAsync(string refreshToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(refreshToken))
+            return null;
+
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(15));
+
+            var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
+            {
+                CancellationToken = cts.Token,
+                RefreshToken = refreshToken,
+                ProviderName = "K7"
+            });
+
+            if (string.IsNullOrEmpty(result.AccessToken))
+                return null;
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
+
+            var response = await _k7ServerService.HttpClient.SendAsync(request, cts.Token);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await response.Content.ReadFromJsonAsync<UserDto>(SerializerOptions, cts.Token);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void ClearStoredTokens()
