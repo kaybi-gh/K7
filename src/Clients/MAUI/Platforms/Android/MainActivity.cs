@@ -3,7 +3,6 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
-using Android.Util;
 using AndroidX.Core.View;
 using K7.Clients.MAUI.Platforms.Android.Services;
 
@@ -13,7 +12,6 @@ namespace K7.Clients.MAUI;
 [IntentFilter([Android.Content.Intent.ActionMain], Categories = [Android.Content.Intent.CategoryLeanbackLauncher])]
 public class MainActivity : MauiAppCompatActivity
 {
-    private const string RemoteLogTag = "K7-Remote";
     private long _selectDownTime;
     private bool _selectLongPressFired;
 
@@ -100,21 +98,18 @@ public class MainActivity : MauiAppCompatActivity
                         return false;
 
                     _selectLongPressFired = true;
-                    Log.Info(RemoteLogTag, "select long key={0} held={1}", (int)e.KeyCode, heldRepeat);
                     page.NotifyTvRemoteSelect("long", (int)e.KeyCode, heldRepeat);
                     return true;
                 }
 
                 _selectDownTime = e.EventTime;
                 _selectLongPressFired = false;
-                Log.Info(RemoteLogTag, "select down key={0}", (int)e.KeyCode);
                 page.NotifyTvRemoteSelect("down", (int)e.KeyCode, 0);
                 return true;
 
             case KeyEventActions.Up:
                 var heldMs = e.EventTime - _selectDownTime;
                 var phase = _selectLongPressFired ? "long-up" : "up";
-                Log.Info(RemoteLogTag, "select {0} key={1} held={2}", phase, (int)e.KeyCode, heldMs);
                 page.NotifyTvRemoteSelect(phase, (int)e.KeyCode, heldMs);
                 return true;
 

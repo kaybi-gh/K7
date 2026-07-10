@@ -12,7 +12,6 @@
             var rewrote = false;
             if (isTv) {
                 document.documentElement.classList.add('platform-tv');
-                window.__k7LongPressDebug = true;
                 // Compensate for the TV's high pixel density: rendering at
                 // initial-scale = 1/dpr makes 1 CSS px == 1 physical px so
                 // the UI is no longer zoomed in. We must drop maximum-scale

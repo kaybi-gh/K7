@@ -395,17 +395,6 @@ var SpatialNav = (function () {
         }, 50);
     }
 
-    function logLongPress(tag, data) {
-        window.K7 = window.K7 || {};
-        if (!window.K7._longPressLog) window.K7._longPressLog = [];
-        var entry = { t: Date.now(), tag: tag, data: data || {} };
-        window.K7._longPressLog.push(entry);
-        if (window.K7._longPressLog.length > 200) window.K7._longPressLog.shift();
-        try {
-            console.log('[K7 longpress]', tag, entry.data);
-        } catch (ex) { }
-    }
-
     function isTvLongPressMode() {
         return document.documentElement.classList.contains('platform-tv')
             || window.__k7TvNativeRemote === true;
@@ -433,7 +422,6 @@ var SpatialNav = (function () {
 
     function handleTvRemoteSelect(phase, keyCode, heldMs) {
         window.__k7TvNativeRemote = true;
-        logLongPress('native-' + phase, { keyCode: keyCode, heldMs: heldMs });
 
         var active = document.activeElement;
         var openMenuEl = active && active.closest ? active.closest('.k7-menu-dropdown--open') : null;
@@ -574,17 +562,10 @@ var SpatialNav = (function () {
 
     function openMediaCardMenu(card) {
         if (isMediaCardMenuOpen(card)) {
-            logLongPress('openMenu-skipped', { reason: 'already-open' });
             return true;
         }
 
         var container = card.querySelector('[data-longpress]');
-        var hasDotNet = !!(container && container._k7MediaCardDotNet);
-        logLongPress('openMenu', {
-            hasCard: !!card,
-            hasContainer: !!container,
-            hasDotNet: hasDotNet
-        });
         if (container && container._k7MediaCardDotNet) {
             invokeCallback(container._k7MediaCardDotNet, 'OpenContextMenuFromLongPressAsync');
             return true;
@@ -605,16 +586,6 @@ var SpatialNav = (function () {
         if (!isTvLongPressMode()) return false;
         if (window.__k7TvNativeRemote) return false;
         var ctx = resolveMediaCardLongPress(e);
-        logLongPress('keydown', {
-            key: e.key,
-            code: e.code,
-            keyCode: e.keyCode,
-            which: e.which,
-            repeat: e.repeat,
-            hasCtx: !!ctx,
-            activeTag: document.activeElement && document.activeElement.tagName,
-            targetTag: e.target && e.target.tagName
-        });
         if (!ctx) return false;
 
         e.preventDefault();
@@ -669,18 +640,6 @@ var SpatialNav = (function () {
         var pressStart = _mediaCardPressStart;
         var state = _mediaCardLongPress;
         var card = (ctx && ctx.card) || (state && state.card) || (pressStart && pressStart.card);
-
-        logLongPress('keyup', {
-            key: e.key,
-            code: e.code,
-            keyCode: e.keyCode,
-            which: e.which,
-            hasCtx: !!ctx,
-            hasCard: !!card,
-            hasPressStart: !!pressStart,
-            triggered: !!(state && state.triggered),
-            heldMs: pressStart ? (Date.now() - pressStart.startTime) : 0
-        });
 
         if (!card) {
             cancelMediaCardLongPress();
@@ -1238,16 +1197,6 @@ var SpatialNav = (function () {
         }
 
         if (isEnterKey(key, e.code, e.keyCode)) {
-            if (document.documentElement.classList.contains('platform-tv')
-                && (activeEl && activeEl.closest && activeEl.closest('.media-card'))) {
-                logLongPress('enter-keydown', {
-                    key: key,
-                    code: e.code,
-                    keyCode: e.keyCode,
-                    which: e.which,
-                    activeTag: activeEl.tagName
-                });
-            }
             if (handleMediaCardLongPressKeyDown(e)) return;
             var videoOverlay = getVideoControlsOverlay(activeEl);
             if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
@@ -1714,10 +1663,6 @@ var SpatialNav = (function () {
             if (!target || !target.closest) return;
             var link = target.closest('a.media-card-link[href]');
             if (!link || !link.closest('[data-longpress]')) return;
-            logLongPress('click', {
-                href: link.getAttribute('href'),
-                allowed: !!(window.K7 && window.K7._allowMediaCardLinkClick === link)
-            });
             if (window.K7 && window.K7._allowMediaCardLinkClick === link) {
                 window.K7._allowMediaCardLinkClick = null;
                 return;
@@ -2103,32 +2048,15 @@ K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect,
 K7._suppressEnterUntilKeyUp = false;
 K7._swallowNextEnterClick = false;
 K7._enterSuppressCallbacks = [];
-K7._longPressLog = [];
 
 K7.registerMediaCardLongPress = function (el, dotNetRef) {
     if (!el) return;
     el._k7MediaCardDotNet = dotNetRef;
-    window.K7._longPressLog = window.K7._longPressLog || [];
-    var entry = { t: Date.now(), tag: 'register', data: { hasEl: true, hasDotNet: !!dotNetRef } };
-    window.K7._longPressLog.push(entry);
-    try { console.log('[K7 longpress]', entry.tag, entry.data); } catch (ex) { }
 };
 
 K7.unregisterMediaCardLongPress = function (el) {
     if (!el) return;
     el._k7MediaCardDotNet = null;
-};
-
-K7.dumpLongPressLog = function () {
-    try {
-        return JSON.stringify(window.K7._longPressLog || [], null, 2);
-    } catch (ex) {
-        return '[]';
-    }
-};
-
-K7.clearLongPressLog = function () {
-    window.K7._longPressLog = [];
 };
 
 K7.suppressEnterUntilKeyUp = function (callback) {
