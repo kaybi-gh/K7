@@ -42,6 +42,11 @@ public partial class Home : IDisposable
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
     private int _catalogRefreshGeneration;
     private DebouncedActionRunner? _picturesRefreshRunner;
+    private bool _homeFocusApplied;
+
+    private string? _homeFocusSelector => _isTv
+        ? "[data-carousel-item] a, [data-carousel-item] button"
+        : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,19 +114,23 @@ public partial class Home : IDisposable
         }
 
         isLoading = false;
+        _homeFocusApplied = false;
         Shared.Services.AppReadySignal.Signal();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || !_isTv)
+        if (!_isTv || isLoading || _homeFocusApplied)
             return;
 
         try
         {
             await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+            _homeFocusApplied = true;
         }
-        catch (InvalidOperationException) { }
+        catch (InvalidOperationException)
+        {
+        }
     }
 
     private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted)

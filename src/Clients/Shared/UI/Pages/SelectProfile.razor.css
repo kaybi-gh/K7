@@ -21,7 +21,11 @@
     align-items: center;
     gap: var(--spacing-4);
     padding: var(--spacing-4);
+    border: none;
     border-radius: var(--radius-lg);
+    background: transparent;
+    color: inherit;
+    font: inherit;
     cursor: pointer;
     min-width: 140px;
     outline: none !important;
@@ -29,6 +33,8 @@
 }
 
 .select-profile-page ::deep .select-profile-card:hover .k7-avatar,
+.select-profile-page ::deep .select-profile-card:focus .k7-avatar,
+.select-profile-page ::deep .select-profile-card:focus-within .k7-avatar,
 .select-profile-page ::deep .select-profile-card:focus-visible .k7-avatar {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
