@@ -21,13 +21,15 @@ public partial class Carousel : IAsyncDisposable
     {
         if (!firstRender) return;
 
-        _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+        await EnsureInitializedAsync();
+    }
+
+    public async Task EnsureInitializedAsync()
+    {
+        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
             "import", "./_content/K7.Clients.Shared.UI/js/carousel.js");
 
-        if (_root.Id is not null)
-        {
-            await _module.InvokeVoidAsync("init", _root);
-        }
+        await _module.InvokeVoidAsync("init", _root);
     }
 
     public async Task NotifyItemsChangedAsync()

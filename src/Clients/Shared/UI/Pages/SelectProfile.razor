@@ -23,14 +23,15 @@
     else
     {
         <section class="select-profile-section">
-            <Carousel Title="@L["Prompt"]">
+            <Carousel @ref="_carousel" Title="@L["Prompt"]">
                 @foreach (var user in _users)
                 {
                     <CarouselItem @key="@($"user-{user.IdentityUserId}")">
-                        <div class="select-profile-card focusable my-2"
-                             tabindex="0" role="button"
-                             @onclick="() => SelectUserAsync(user)"
-                             @onkeydown="(e) => OnUserKeyDown(e, user)">
+                        <button type="button"
+                                class="select-profile-card focusable my-2"
+                                @attributes="GetInitialFocusAttributes(user.IdentityUserId == _initialFocusUserId)"
+                                @onclick="() => SelectUserAsync(user)"
+                                @onkeydown="(e) => OnUserKeyDown(e, user)">
                             <K7Avatar Class="ma-2" Size="xl" Color="primary"
                                       Image="@user.AvatarUrl"
                                       Letter="@GetInitial(user)"
@@ -42,17 +43,18 @@
                                     <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                                 }
                             </div>
-                        </div>
+                        </button>
                     </CarouselItem>
                 }
 
                 @foreach (var group in _pinnedGroups)
                 {
                     <CarouselItem @key="@($"group-{group.Id}")">
-                        <div class="select-profile-card select-profile-card--group focusable my-2"
-                             tabindex="0" role="button"
-                             @onclick="() => SelectGroupAsync(group)"
-                             @onkeydown="(e) => OnGroupKeyDown(e, group)">
+                        <button type="button"
+                                class="select-profile-card select-profile-card--group focusable my-2"
+                                @attributes="GetInitialFocusAttributes(group.Id == _initialFocusGroupId)"
+                                @onclick="() => SelectGroupAsync(group)"
+                                @onkeydown="(e) => OnGroupKeyDown(e, group)">
                             <div class="select-profile-group-avatars">
                                 @foreach (var member in group.Members.Take(3))
                                 {
@@ -68,20 +70,21 @@
                                     <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                                 }
                             </div>
-                        </div>
+                        </button>
                     </CarouselItem>
                 }
 
                 <CarouselItem>
-                    <div class="select-profile-card focusable my-2"
-                         tabindex="0" role="button"
-                         @onclick="AddUserAsync"
-                         @onkeydown="OnAddUserKeyDown">
+                    <button type="button"
+                            class="select-profile-card focusable my-2"
+                            @attributes="GetInitialFocusAttributes(_initialFocusAddCard)"
+                            @onclick="AddUserAsync"
+                            @onkeydown="OnAddUserKeyDown">
                         <K7Avatar Class="ma-2" Size="xl" Color="default">
                             <K7Icon Icon="@Phosphor.Plus" IconSize="@K7IconSize.Lg" />
                         </K7Avatar>
                         <span class="select-profile-name">@L["AddServer"]</span>
-                    </div>
+                    </button>
                 </CarouselItem>
             </Carousel>
         </section>

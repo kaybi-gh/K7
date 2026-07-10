@@ -1,30 +1,35 @@
 using System.Net.Http;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos.SharedProfiles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SelectProfile
 {
+    private const string ProfileSelectKindUser = "user";
+    private const string ProfileSelectKindGroup = "group";
+
     [Inject] private ILocalUserService LocalUserService { get; set; } = default!;
     [Inject] private ICustomAuthenticationStateProvider AuthService { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private ISharedProfileLocalCache SharedProfileCache { get; set; } = default!;
     [Inject] private ISharedProfileService SharedProfileService { get; set; } = default!;
     [Inject] private ISharedProfileSessionService SharedProfileSession { get; set; } = default!;
     [Inject] private ISharedProfileDevicePinService SharedProfileDevicePin { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
+    [Inject] private IDeviceStorageService Storage { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private List<LocalUser> _users = [];
     private List<SharedProfileDto> _pinnedGroups = [];
@@ -34,6 +39,15 @@ public partial class SelectProfile
     private bool _showOfflineButton;
     private LocalUser? _pendingUser;
     private CancellationTokenSource? _offlineTimerCts;
+    private Carousel? _carousel;
+    private string? _initialFocusUserId;
+    private Guid? _initialFocusGroupId;
+    private bool _initialFocusAddCard;
+    private int _initialFocusCarouselIndex;
+    private bool _profileFocusApplied;
+
+    private static IReadOnlyDictionary<string, object>? GetInitialFocusAttributes(bool isTarget) =>
+        isTarget ? new Dictionary<string, object> { ["data-initial-focus"] = true } : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,6 +84,7 @@ public partial class SelectProfile
         }
 
         ReloadPinnedGroups();
+        ComputeInitialFocusTarget();
         K7.Clients.Shared.Services.AppReadySignal.Signal();
     }
 
@@ -81,13 +96,120 @@ public partial class SelectProfile
             .ToList();
     }
 
+    private void ComputeInitialFocusTarget()
+    {
+        _initialFocusUserId = null;
+        _initialFocusGroupId = null;
+        _initialFocusAddCard = false;
+        _initialFocusCarouselIndex = 0;
+
+        if (!TryResolveStoredFocusTarget())
+            FocusFirstCarouselItem();
+    }
+
+    private bool TryResolveStoredFocusTarget()
+    {
+        if (Storage.Get(PreferenceKeys.LAST_PROFILE_SELECT_AT) <= 0)
+            return false;
+
+        var kind = Storage.Get(PreferenceKeys.LAST_PROFILE_SELECT_KIND);
+        var id = Storage.Get(PreferenceKeys.LAST_PROFILE_SELECT_ID);
+        if (string.IsNullOrEmpty(kind) || string.IsNullOrEmpty(id))
+            return false;
+
+        if (kind == ProfileSelectKindGroup && Guid.TryParse(id, out var groupId))
+        {
+            var groupIndex = _pinnedGroups.FindIndex(g => g.Id == groupId);
+            if (groupIndex < 0)
+                return false;
+
+            _initialFocusGroupId = groupId;
+            _initialFocusCarouselIndex = _users.Count + groupIndex;
+            return true;
+        }
+
+        if (kind == ProfileSelectKindUser)
+        {
+            var userIndex = _users.FindIndex(u => u.IdentityUserId == id);
+            if (userIndex < 0)
+                return false;
+
+            _initialFocusUserId = id;
+            _initialFocusCarouselIndex = userIndex;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void FocusFirstCarouselItem()
+    {
+        if (_users.Count > 0)
+        {
+            _initialFocusUserId = _users[0].IdentityUserId;
+            return;
+        }
+
+        if (_pinnedGroups.Count > 0)
+        {
+            _initialFocusGroupId = _pinnedGroups[0].Id;
+            return;
+        }
+
+        _initialFocusAddCard = true;
+    }
+
+    private void RecordUserSelection(string identityUserId)
+    {
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_KIND, ProfileSelectKindUser);
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_ID, identityUserId);
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_AT, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private void RecordSharedProfileSelection(Guid groupId)
+    {
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_KIND, ProfileSelectKindGroup);
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_ID, groupId.ToString());
+        Storage.Set(PreferenceKeys.LAST_PROFILE_SELECT_AT, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private async Task ApplyInitialTvFocusAsync()
+    {
+        if (_carousel is not null)
+        {
+            await _carousel.EnsureInitializedAsync();
+
+            if (_initialFocusCarouselIndex > 0)
+            {
+                var itemCount = _users.Count + _pinnedGroups.Count + 1;
+                if (_initialFocusCarouselIndex < itemCount)
+                    await _carousel.ScrollToIndexAsync(_initialFocusCarouselIndex);
+            }
+        }
+
+        await SpatialNav.RefreshAsync();
+        await SpatialNav.FocusFirstAsync("[data-initial-focus]");
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && _isTv && !_loading)
+        if (!_isTv || _loading || _profileFocusApplied)
+            return;
+
+        try
         {
-            await JSRuntime.InvokeVoidAsync("eval",
-                "document.querySelector('.select-profile-card.focusable')?.focus()");
+            await ApplyInitialTvFocusAsync();
+            _profileFocusApplied = true;
         }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private void ShowCarousel()
+    {
+        _loading = false;
+        _profileFocusApplied = false;
     }
 
     private async Task SelectUserAsync(LocalUser user)
@@ -147,6 +269,7 @@ public partial class SelectProfile
             {
                 SharedProfileSession.SetActiveGroup(group);
                 LocalUserService.SetLastActiveId(host.IdentityUserId);
+                RecordSharedProfileSelection(group.Id);
                 Navigation.NavigateTo("/");
             }
             else
@@ -154,7 +277,7 @@ public partial class SelectProfile
                 LocalUserService.Remove(host.IdentityUserId);
                 _users = LocalUserService.GetAll();
                 Snackbar.Add(string.Format(L["SessionExpired"], host.UserName), K7Severity.Error);
-                _loading = false;
+                ShowCarousel();
             }
         }
         catch (HttpRequestException)
@@ -163,6 +286,7 @@ public partial class SelectProfile
             AuthService.SignInOffline(host);
             SharedProfileSession.SetActiveGroup(group);
             LocalUserService.SetLastActiveId(host.IdentityUserId);
+            RecordSharedProfileSelection(group.Id);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
         }
@@ -172,6 +296,7 @@ public partial class SelectProfile
             AuthService.SignInOffline(host);
             SharedProfileSession.SetActiveGroup(group);
             LocalUserService.SetLastActiveId(host.IdentityUserId);
+            RecordSharedProfileSelection(group.Id);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
         }
@@ -179,7 +304,7 @@ public partial class SelectProfile
         {
             CancelOfflineTimer();
             Snackbar.Add(ex.Message, K7Severity.Error);
-            _loading = false;
+            ShowCarousel();
         }
 
         StateHasChanged();
@@ -201,6 +326,7 @@ public partial class SelectProfile
             if (success)
             {
                 LocalUserService.SetLastActiveId(user.IdentityUserId);
+                RecordUserSelection(user.IdentityUserId);
                 Navigation.NavigateTo("/");
             }
             else
@@ -208,7 +334,7 @@ public partial class SelectProfile
                 LocalUserService.Remove(user.IdentityUserId);
                 _users = LocalUserService.GetAll();
                 Snackbar.Add(string.Format(L["SessionExpired"], user.UserName), K7Severity.Error);
-                _loading = false;
+                ShowCarousel();
             }
         }
         catch (HttpRequestException)
@@ -216,6 +342,7 @@ public partial class SelectProfile
             CancelOfflineTimer();
             AuthService.SignInOffline(user);
             LocalUserService.SetLastActiveId(user.IdentityUserId);
+            RecordUserSelection(user.IdentityUserId);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
         }
@@ -224,6 +351,7 @@ public partial class SelectProfile
             CancelOfflineTimer();
             AuthService.SignInOffline(user);
             LocalUserService.SetLastActiveId(user.IdentityUserId);
+            RecordUserSelection(user.IdentityUserId);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
         }
@@ -231,7 +359,7 @@ public partial class SelectProfile
         {
             CancelOfflineTimer();
             Snackbar.Add(ex.Message, K7Severity.Error);
-            _loading = false;
+            ShowCarousel();
         }
 
         StateHasChanged();
@@ -342,7 +470,7 @@ public partial class SelectProfile
             }
             else
             {
-                _loading = false;
+                ShowCarousel();
                 _users = LocalUserService.GetAll();
                 StateHasChanged();
             }
@@ -350,7 +478,7 @@ public partial class SelectProfile
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, K7Severity.Error);
-            _loading = false;
+            ShowCarousel();
             StateHasChanged();
         }
     }

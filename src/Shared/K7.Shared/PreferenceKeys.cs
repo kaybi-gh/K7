@@ -23,6 +23,9 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
     public static readonly PreferenceKey<string> ACTIVE_SHARED_PROFILE_ID = new("ActiveSharedProfileId");
     public static readonly PreferenceKey<string> LAST_ACTIVE_SHARED_PROFILE_ID = new("LastActiveSharedProfileId");
+    public static readonly PreferenceKey<string> LAST_PROFILE_SELECT_KIND = new("LastProfileSelectKind");
+    public static readonly PreferenceKey<string> LAST_PROFILE_SELECT_ID = new("LastProfileSelectId");
+    public static readonly PreferenceKey<long> LAST_PROFILE_SELECT_AT = new("LastProfileSelectAt");
     public static readonly PreferenceKey<string> SHARED_PROFILES_CACHE = new("SharedProfilesCache");
     public static readonly PreferenceKey<string> PINNED_SHARED_PROFILE_IDS = new("PinnedSharedProfileIds");
     public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");

@@ -1024,28 +1024,69 @@ var SpatialNav = (function () {
 
     function queryFocusSelector(selector) {
         if (!selector) return null;
-        var main = document.querySelector('.app-main');
-        var el = main ? main.querySelector(selector) : null;
-        if (!el) el = document.querySelector(selector);
-        return el;
+        var roots = [
+            document.querySelector('.app-main .page-viewport'),
+            document.querySelector('.empty-layout'),
+            document.querySelector('.app-main')
+        ];
+        for (var i = 0; i < roots.length; i++) {
+            if (roots[i]) {
+                var scoped = roots[i].querySelector(selector);
+                if (scoped) return scoped;
+            }
+        }
+        return document.querySelector(selector);
+    }
+
+    function isStandaloneAuthPage() {
+        return /^\/(welcome|sign-in|linkdevice|select-profile|select-user)(\/|$)/.test(window.location.pathname);
+    }
+
+    function applyDomFocus(el) {
+        if (!el) return;
+        if (window.SpatialNavigation && SpatialNavigation.focus) {
+            try {
+                if (SpatialNavigation.focus(el, true)) return;
+            } catch (ex) { }
+        }
+        try {
+            el.focus({ preventScroll: true, focusVisible: true });
+        } catch (ex) {
+            el.focus({ preventScroll: true });
+        }
     }
 
     function focusTargetElement(el) {
         if (!el || !el.isConnected) return false;
+        if (el.closest('[data-carousel-item]')) {
+            scrollCarouselToElement(el);
+        }
         if (el.matches(FOCUSABLE)) {
-            el.focus({ preventScroll: true });
+            applyDomFocus(el);
             return true;
         }
         var focusable = el.querySelector(FOCUSABLE);
         if (focusable) {
-            focusable.focus({ preventScroll: true });
+            applyDomFocus(focusable);
             return true;
         }
         if (el.matches('input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])')) {
-            el.focus({ preventScroll: true });
+            applyDomFocus(el);
             return true;
         }
         return false;
+    }
+
+    function getPageFocusRoot() {
+        return document.querySelector('[data-page-focus]')
+            || document.querySelector('.app-main .page-viewport')
+            || document.querySelector('.empty-layout')
+            || document.querySelector('.app-main');
+    }
+
+    function getFocusablesInPageContent() {
+        var root = getPageFocusRoot();
+        return root ? getFocusables(root) : [];
     }
 
     function getPageFocusTarget() {
@@ -1054,7 +1095,7 @@ var SpatialNav = (function () {
             var marker = markers[i];
             var selector = marker.getAttribute('data-initial-focus');
             if (selector) {
-                var target = queryFocusSelector(selector);
+                var target = marker.querySelector(selector) || queryFocusSelector(selector);
                 if (target) return target;
                 continue;
             }
@@ -1064,11 +1105,34 @@ var SpatialNav = (function () {
     }
 
     function focusFirst(selector) {
-        setTimeout(function () {
+        var delays = selector
+            ? (isStandaloneAuthPage() ? [100, 300, 600, 1200, 2000] : [100, 300, 600])
+            : [100];
+        var resolved = false;
+
+        function attempt(index) {
+            if (resolved) return;
+
             var el = selector ? queryFocusSelector(selector) : null;
-            if (el && focusTargetElement(el)) return;
-            focusFirstInPage();
-        }, 100);
+            if (el && focusTargetElement(el)) {
+                resolved = true;
+                return;
+            }
+
+            var pageTarget = getPageFocusTarget();
+            if (pageTarget && focusTargetElement(pageTarget)) {
+                resolved = true;
+                return;
+            }
+
+            if (index < delays.length - 1) {
+                setTimeout(function () { attempt(index + 1); }, delays[index + 1] - delays[index]);
+            } else if (!resolved) {
+                focusFirstInPage();
+            }
+        }
+
+        setTimeout(function () { attempt(0); }, delays[0]);
     }
 
     function focusFirstFocusableInPage() {
@@ -1077,12 +1141,16 @@ var SpatialNav = (function () {
             var items = getFocusables(layer.el);
             if (items.length > 0) { items[0].focus({ preventScroll: true }); return; }
         }
-        var main = document.querySelector('.app-main');
-        if (main) {
-            var items = getFocusables(main);
-            if (items.length > 0) { items[0].focus({ preventScroll: true }); return; }
+
+        var items = getFocusablesInPageContent();
+        if (items.length > 0) {
+            items[0].focus({ preventScroll: true });
+            return;
         }
-        var all = getFocusables(document.body);
+
+        var all = getFocusables(document.body).filter(function (el) {
+            return !el.closest('.app-nav');
+        });
         if (all.length > 0) all[0].focus({ preventScroll: true });
     }
 
@@ -1096,6 +1164,11 @@ var SpatialNav = (function () {
         if (!el || el === document.body || el === document.documentElement) return true;
         if (/^H[1-6]$/.test(el.tagName)) return true;
         if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') === '-1' && !el.matches(FOCUSABLE)) return true;
+        if (el.closest && el.closest('.app-nav') && getPageFocusTarget()) return true;
+        if (isStandaloneAuthPage()) {
+            var authTarget = getPageFocusTarget();
+            if (authTarget && el !== authTarget && !authTarget.contains(el)) return true;
+        }
         return false;
     }
 
@@ -1105,7 +1178,11 @@ var SpatialNav = (function () {
 
         var pageTarget = getPageFocusTarget();
         if (pageTarget) {
-            focusTargetElement(pageTarget);
+            if (isStandaloneAuthPage()) {
+                focusFirst('[data-initial-focus]');
+            } else {
+                focusTargetElement(pageTarget);
+            }
             return;
         }
 
@@ -1115,7 +1192,7 @@ var SpatialNav = (function () {
     }
 
     function focusElement(el) {
-        if (el) el.focus({ preventScroll: true });
+        applyDomFocus(el);
     }
 
     function onPageNavigated() {
