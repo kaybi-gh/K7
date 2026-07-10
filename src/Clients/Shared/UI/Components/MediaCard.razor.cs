@@ -54,6 +54,9 @@ public partial class MediaCard : IDisposable
     private CancellationTokenSource? _longPressCts;
     private double _touchStartX;
     private double _touchStartY;
+    private ElementReference _longPressContainerRef;
+    private DotNetObjectReference<MediaCard>? _longPressDotNetRef;
+    private bool _longPressRegistered;
 
     private bool LongPressEnabled =>
         ContextMenuEnabled
@@ -105,6 +108,62 @@ public partial class MediaCard : IDisposable
         _showReview = hasValidMediaId && canRate && MediaCardMenuActions.SupportsReview(mediaType);
         _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
         _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_longPressRegistered || !LongPressEnabled)
+            return;
+
+        try
+        {
+            _longPressDotNetRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("K7.registerMediaCardLongPress", _longPressContainerRef, _longPressDotNetRef);
+            _longPressRegistered = true;
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (JSException)
+        {
+        }
+    }
+
+    [JSInvokable]
+    public async Task OpenContextMenuFromLongPressAsync()
+    {
+        if (!LongPressEnabled)
+            return;
+
+        _longPressTriggered = true;
+        _preventNextClick = true;
+        _menuOpenedViaKeyboard = true;
+        CancelLongPress();
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
+        _menuOpen = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task CloseContextMenuFromBackAsync()
+    {
+        if (!_menuOpen)
+            return;
+
+        _menuOpen = false;
+        _longPressTriggered = false;
+        _preventNextClick = false;
+        _menuOpenedViaKeyboard = false;
+        CancelLongPress();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void OnMenuOpenChanged(bool open)
@@ -272,6 +331,19 @@ public partial class MediaCard : IDisposable
     public void Dispose()
     {
         CancelLongPress();
+
+        if (_longPressRegistered)
+        {
+            try
+            {
+                _ = JS.InvokeVoidAsync("K7.unregisterMediaCardLongPress", _longPressContainerRef);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _longPressDotNetRef?.Dispose();
     }
 
     private string ResolvedPlaceholderIcon => PlaceholderIcon ?? Variant switch

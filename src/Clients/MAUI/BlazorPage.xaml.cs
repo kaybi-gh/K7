@@ -131,6 +131,27 @@ public partial class BlazorPage : ContentPage
         });
     }
 
+    internal void NotifyTvRemoteSelect(string phase, int keyCode, long heldMs)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _ = blazorWebView.TryDispatchAsync(async sp =>
+            {
+                try
+                {
+                    var js = sp.GetRequiredService<IJSRuntime>();
+                    await js.InvokeVoidAsync("K7.onTvRemoteSelect", phase, keyCode, heldMs);
+                }
+                catch (JSException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            });
+        });
+    }
+
     internal void HandleMediaPlayPause()
     {
         MainThread.BeginInvokeOnMainThread(() =>

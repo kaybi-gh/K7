@@ -55,9 +55,21 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         }
     }
 
+    private static bool IsAndroidTv(global::Android.Content.Context? context)
+    {
+        if (context is null)
+            return false;
+
+        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
+        return (uiMode & global::Android.Content.Res.UiMode.TypeMask) == global::Android.Content.Res.UiMode.TypeTelevision;
+    }
+
+    private static bool ShouldUseTvMode(global::Android.Webkit.WebView webView) =>
+        DeviceInfo.Idiom == DeviceIdiom.TV || IsAndroidTv(webView.Context);
+
     private static void ApplyTvScalingIfNeeded(global::Android.Webkit.WebView webView)
     {
-        if (DeviceInfo.Idiom != DeviceIdiom.TV)
+        if (!ShouldUseTvMode(webView))
         {
             return;
         }

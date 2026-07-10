@@ -22,6 +22,7 @@ else
 {
     <div class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocused">
         <div class="media-card-container"
+             @ref="_longPressContainerRef"
              data-longpress="@(LongPressEnabled ? "true" : null)"
              @ontouchstart="OnTouchStart"
              @ontouchmove="OnTouchMove"

@@ -73,6 +73,11 @@
     .app-nav-bar {
         background: color-mix(in srgb, var(--color-surface) 70%, transparent);
     }
+
+    html.platform-tv .app-nav-bar,
+    html.platform-tv .app-nav-bar:hover {
+        background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    }
 }
 
 @media (min-width: 600px) {
