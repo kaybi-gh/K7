@@ -102,6 +102,10 @@ dotnet build -tl
 dotnet test
 ```
 
+## Screenshots
+
+README gallery images live in [`screenshots/`](../screenshots/). To regenerate them from the live demo, see [`tools/screenshot-demo/README.md`](../tools/screenshot-demo/README.md).
+
 ## Code style
 
 Enforced via [`.editorconfig`](.editorconfig) at the repository root. Key rules:

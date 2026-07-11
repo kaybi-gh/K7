@@ -13,43 +13,13 @@ The name comes from the French pronunciation `/ka.sɛt/` *(cassette)*. The idea 
 
 ## See it in action
 
+![K7 on TV, desktop, and mobile](screenshots/movie-showcase-devices.png)
+More screenshots: [`screenshots/README.md`](screenshots/README.md).
+
 ### Demo
 
 Access the live demo right [here](https://k7.kaybi.dev): connect either as a guest.
 Only guest access is available for the demo meaning that a ton of features are hidden.
-
-### Screenshots
-
-![K7 on TV, desktop, and mobile](screenshots/movie-showcase-devices.png)
-
-Captured from the [live demo](https://k7.kaybi.dev) in guest mode. PNG files live in [`screenshots/`](screenshots/).
-Device mockup: `npm run composite:movie` in [`tools/screenshot-demo/`](tools/screenshot-demo/).
-
-| Home (desktop) | Home (TV) | Home (mobile) |
-| --- | --- | --- |
-| ![Home desktop](screenshots/home-desktop.png) | ![Home TV](screenshots/home-tv.png) | ![Home mobile](screenshots/home-mobile.png) |
-
-| Explore (desktop) | Explore (mobile) |
-| --- | --- |
-| ![Explore desktop](screenshots/explore-desktop.png) | ![Explore mobile](screenshots/explore-mobile.png) |
-
-| Movies library (desktop) | Movies library (mobile) |
-| --- | --- |
-| ![Movies library desktop](screenshots/movies-desktop.png) | ![Movies library mobile](screenshots/movies-mobile.png) |
-
-| Movie detail (desktop) | Movie detail (mobile) |
-| --- | --- |
-| ![Big Buck Bunny desktop](screenshots/movie-detail-desktop.png) | ![Big Buck Bunny mobile](screenshots/movie-detail-mobile.png) |
-
-| Music album (desktop) | Music album (mobile) |
-| --- | --- |
-| ![Goldberg Variations desktop](screenshots/music-album-desktop.png) | ![Goldberg Variations mobile](screenshots/music-album-mobile.png) |
-
-| Series (desktop) | Series (mobile) |
-| --- | --- |
-| ![Superman (1941) desktop](screenshots/series-desktop.png) | ![Superman (1941) mobile](screenshots/series-mobile.png) |
-
-Regenerate with `npm run capture` in [`tools/screenshot-demo/`](tools/screenshot-demo/).
 
 ## Quick start (Docker)
 
