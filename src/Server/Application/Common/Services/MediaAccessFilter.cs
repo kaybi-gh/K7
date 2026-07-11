@@ -55,6 +55,9 @@ public sealed class MediaAccessFilter(IApplicationDbContext context)
         return query.WhereNotUserExcluded(excludedMediaIds);
     }
 
+    public IQueryable<Guid> GetAccessibleMediaIds(Guid userId) =>
+        ApplyExclusions(context.Medias, userId).Select(m => m.Id);
+
     public async Task<ContentRestrictionProfile?> GetRestrictionProfileAsync(
         Guid userId,
         CancellationToken cancellationToken = default) =>
