@@ -74,7 +74,6 @@ public partial class AdminLibrariesPanel : IDisposable
         try
         {
             _libraries = await K7ServerService.GetLibrariesAsync();
-            await Task.WhenAll(LoadIssueCounts(), LoadStatistics());
         }
         catch
         {
@@ -84,6 +83,14 @@ public partial class AdminLibrariesPanel : IDisposable
         {
             _isLoading = false;
         }
+
+        _ = LoadSecondaryDataAsync();
+    }
+
+    private async Task LoadSecondaryDataAsync()
+    {
+        await Task.WhenAll(LoadIssueCounts(), LoadStatistics());
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadStatistics()
