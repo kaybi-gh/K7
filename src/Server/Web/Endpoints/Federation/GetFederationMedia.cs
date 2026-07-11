@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -50,9 +51,8 @@ public class GetFederationMedia : IEndpoint
 
             // Expose top-level entities: Movies directly, Series/Albums via their children's files
             var directMedia = await context.Medias
-                .Where(m => m.PeerServerId == null
-                    && m is Movie
-                    && m.IndexedFiles.Any(f => f.LibraryId == libraryId))
+                .Where(m => m.PeerServerId == null && m is Movie)
+                .WhereLinkedToLibrary(context, libraryId)
                 .Include(m => m.ExternalIds)
                 .Include(m => m.Pictures)
                 .Include(m => m.MetadataTags).ThenInclude(mt => mt.MetadataTag)
@@ -70,8 +70,8 @@ public class GetFederationMedia : IEndpoint
 
             var albums = await context.Medias
                 .OfType<MusicAlbum>()
-                .Where(a => a.PeerServerId == null
-                    && a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == libraryId)))
+                .Where(a => a.PeerServerId == null)
+                .WhereLinkedToLibrary(context, libraryId)
                 .Include(a => a.ExternalIds)
                 .Include(a => a.Pictures)
                 .Include(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
@@ -84,8 +84,8 @@ public class GetFederationMedia : IEndpoint
 
             var series = await context.Medias
                 .OfType<Serie>()
-                .Where(s => s.PeerServerId == null
-                    && s.Seasons.Any(ss => ss.Episodes.Any(e => e.IndexedFiles.Any(f => f.LibraryId == libraryId))))
+                .Where(s => s.PeerServerId == null)
+                .WhereLinkedToLibrary(context, libraryId)
                 .Include(s => s.ExternalIds)
                 .Include(s => s.Pictures)
                 .Include(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
