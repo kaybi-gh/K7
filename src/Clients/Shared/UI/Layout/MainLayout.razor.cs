@@ -1,5 +1,4 @@
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -20,6 +19,7 @@ public partial class MainLayout : IDisposable
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
+    [Inject] private ITvHubHostService TvHubHost { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
@@ -87,7 +87,13 @@ public partial class MainLayout : IDisposable
         {
             Console.WriteLine($"[MainLayout] Hub startup failed: {ex}");
         }
+
+        var isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        TvHubHost.SetEnabled(isTv);
+        TvHubHost.Changed += OnTvHubHostChanged;
     }
+
+    private void OnTvHubHostChanged() => _ = InvokeAsync(StateHasChanged);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -166,6 +172,7 @@ public partial class MainLayout : IDisposable
     {
         ThemeService.ThemeOnChange -= OnThemeChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
+        TvHubHost.Changed -= OnTvHubHostChanged;
         _overlayTimer?.Dispose();
         _selfRef?.Dispose();
     }

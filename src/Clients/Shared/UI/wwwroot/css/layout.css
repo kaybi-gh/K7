@@ -64,12 +64,26 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
-.page-viewport > * {
+.page-route {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page-route--hub-delegated {
+    display: none;
+}
+
+.page-viewport > .tv-hub-host--active {
     flex: 1;
     min-height: 0;
 }
+
 
 /* Mobile: nav is fixed at bottom, no grid row needed */
 @media (max-width: 599.98px) {

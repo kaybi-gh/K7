@@ -13,6 +13,7 @@
 @inject IK7ServerService K7ServerService
 @inject IServerInfoService ServerInfoService
 @inject IStringLocalizer<MainLayout> L
+@using K7.Clients.Shared.UI.Components.TvHub
 
 <div class="app-shell">
     @if (_showOverlay)
@@ -34,19 +35,22 @@
         <FullScreenMusicPlayer />
         <SyncPlayListener />
         <div class="page-viewport">
-            <K7ErrorBoundary @ref="_errorBoundary">
-                <ChildContent>
-                    @Body
-                </ChildContent>
-                <ErrorContent>
-                    <div class="error-state">
-                        <K7Icon Name="warning-circle"  IconSize="@K7IconSize.Xl" class="error-icon" />
-                        <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
-                        <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
-                        <button class="btn btn--primary mt-4 focusable" @onclick="Recover">@L["Retry"]</button>
-                    </div>
-                </ErrorContent>
-            </K7ErrorBoundary>
+            <TvHubPageHost />
+            <div class="page-route @(TvHubHost.IsEnabled && TvHubHost.IsHubRouteActive ? "page-route--hub-delegated" : null)">
+                <K7ErrorBoundary @ref="_errorBoundary">
+                    <ChildContent>
+                        @Body
+                    </ChildContent>
+                    <ErrorContent>
+                        <div class="error-state">
+                            <K7Icon Name="warning-circle"  IconSize="@K7IconSize.Xl" class="error-icon" />
+                            <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
+                            <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
+                            <button class="btn btn--primary mt-4 focusable" @onclick="Recover">@L["Retry"]</button>
+                        </div>
+                    </ErrorContent>
+                </K7ErrorBoundary>
+            </div>
         </div>
     </main>
 </div>

@@ -1,0 +1,40 @@
+@using K7.Clients.Shared.UI.Components.Explore
+@using K7.Clients.Shared.UI.Pages
+@inject IExploreGroupStore ExploreGroupStore
+@inject IStringLocalizer<ExplorePage> L
+
+@if (_loading)
+{
+    <div class="explore-page page-scrollable">
+        <div class="d-flex flex-col pa-16">
+            <K7Spinner />
+        </div>
+    </div>
+}
+else if (_group is null)
+{
+    <div class="explore-page page-scrollable">
+        <K7EmptyState Title="@L["NoLibraryGroup"]" />
+    </div>
+}
+else
+{
+    <div class="tv-feed-page" data-initial-focus="[data-carousel-item] a, [data-carousel-item] button">
+        <ExploreLibraryGroupView Group="_group" IsTv="true" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid GroupId { get; set; }
+
+    private bool _loading = true;
+    private K7.Shared.Dtos.Entities.LibraryGroupDto? _group;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        var snapshot = await ExploreGroupStore.EnsureGroupAsync(GroupId);
+        _group = snapshot?.Group;
+        _loading = false;
+    }
+}

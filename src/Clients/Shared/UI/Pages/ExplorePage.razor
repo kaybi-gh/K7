@@ -1,11 +1,13 @@
 @page "/explore"
 @layout ExploreLayout
 @using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Interfaces
 @using K7.Clients.Shared.UI.Components.Explore
 @inject ILibraryService LibraryService
 @inject IDeviceService DeviceService
 @inject IStringLocalizer<ExplorePage> L
 @inject NavigationManager NavigationManager
+@inject ITvHubHostService TvHubHost
 
 <PageTitle>@PageTitleText</PageTitle>
 
@@ -25,7 +27,7 @@ else if (LibraryGroupId.HasValue)
           <K7EmptyState Title="@L["NoLibraryGroup"]" />
       </div>
   }
-  else
+  else if (!_isTv || !TvHubHost.ShouldDelegateRoute(NavigationManager.Uri))
   {
       <div class="@_libraryGroupPageClass" data-initial-focus="@_libraryGroupInitialFocus">
           <ExploreLibraryGroupView Group="_activeGroup" IsTv="_isTv" />

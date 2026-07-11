@@ -1,0 +1,52 @@
+@implements IDisposable
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.UI.Pages
+@inject ITvHubHostService TvHubHost
+@inject NavigationManager Navigation
+
+@if (TvHubHost.IsEnabled)
+{
+    <div class="tv-hub-host @(TvHubHost.IsHubRouteActive ? "tv-hub-host--active" : null)">
+        @foreach (var key in TvHubHost.MountedKeys)
+        {
+            var isActive = TvHubHost.ActiveKey == key;
+            <div class="tv-hub-page @(isActive ? "tv-hub-page--active" : "")"
+                 hidden="@(!isActive)"
+                 aria-hidden="@(!isActive ? "true" : "false")">
+                @switch (key.Kind)
+                {
+                    case TvHubKind.Home:
+                        <HomeView />
+                        break;
+                    case TvHubKind.LibraryGroup when key.GroupId is { } libraryGroupId:
+                        <LibraryGroupView Id="@libraryGroupId.ToString()" />
+                        break;
+                    case TvHubKind.ExploreGroup when key.GroupId is { } exploreGroupId:
+                        <ExploreTvHubView GroupId="exploreGroupId" />
+                        break;
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        TvHubHost.Changed += OnHostChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        TvHubHost.UpdateLocation(Navigation.Uri);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        TvHubHost.UpdateLocation(e.Location);
+
+    private void OnHostChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        TvHubHost.Changed -= OnHostChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}
