@@ -39,12 +39,14 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     [Parameter]
     public double SoftStillMaxBlurPx { get; set; } = 10;
 
+    [Parameter]
+    public bool SoftStillBlurEnabled { get; set; }
+
     private ElementReference _rootRef;
     private IJSObjectReference? _module;
     private bool _scrollAttached;
     private bool _softStillAttached;
-    private int? _attachedSoftStillWidth;
-    private int? _attachedSoftStillHeight;
+    private string? _attachedSoftStillImageUrl;
 
     private string StyleAttribute => DominantColorCss.ToVariableStyle("--media-dominant-color", DominantColor);
 
@@ -60,22 +62,20 @@ public partial class MediaPageBackdrop : IAsyncDisposable
                 _scrollAttached = true;
         }
 
-        if (SoftStillSourceWidth is > 0
-            && SoftStillSourceHeight is > 0
-            && (!_softStillAttached
-                || _attachedSoftStillWidth != SoftStillSourceWidth
-                || _attachedSoftStillHeight != SoftStillSourceHeight))
+        if (SoftStillBlurEnabled
+            && !string.IsNullOrEmpty(ImageUrl)
+            && (!_softStillAttached || _attachedSoftStillImageUrl != ImageUrl))
         {
             await _module.InvokeAsync<bool>(
                 "attachSoftStillBlur",
                 _rootRef,
+                ImageUrl,
                 SoftStillSourceWidth,
                 SoftStillSourceHeight,
                 SoftStillMaxBlurPx);
 
             _softStillAttached = true;
-            _attachedSoftStillWidth = SoftStillSourceWidth;
-            _attachedSoftStillHeight = SoftStillSourceHeight;
+            _attachedSoftStillImageUrl = ImageUrl;
         }
     }
 

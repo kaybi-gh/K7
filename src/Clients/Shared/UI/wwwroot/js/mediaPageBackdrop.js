@@ -37,6 +37,44 @@ function updateSoftStillBlur(backdropEl) {
     backdropEl.style.setProperty('--media-soft-still-blur', blur.toFixed(2) + 'px');
 }
 
+function loadSoftStillDimensions(backdropEl, imageUrl, fallbackWidth, fallbackHeight) {
+    var instance = getInstance(backdropEl);
+
+    if (instance.imageLoadToken) {
+        instance.imageLoadToken.cancelled = true;
+    }
+
+    if (fallbackWidth > 0 && fallbackHeight > 0) {
+        instance.imageWidth = fallbackWidth;
+        instance.imageHeight = fallbackHeight;
+        updateSoftStillBlur(backdropEl);
+    }
+
+    var loadToken = { cancelled: false };
+    instance.imageLoadToken = loadToken;
+
+    var img = new Image();
+    img.onload = function () {
+        if (loadToken.cancelled) {
+            return;
+        }
+
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+            instance.imageWidth = img.naturalWidth;
+            instance.imageHeight = img.naturalHeight;
+            updateSoftStillBlur(backdropEl);
+        }
+    };
+    img.onerror = function () {
+        if (loadToken.cancelled) {
+            return;
+        }
+
+        updateSoftStillBlur(backdropEl);
+    };
+    img.src = imageUrl;
+}
+
 export function attachScrollFade(scrollRoot, backdropEl) {
     if (!scrollRoot || !backdropEl || typeof scrollRoot.addEventListener !== 'function') {
         return false;
@@ -57,8 +95,8 @@ export function attachScrollFade(scrollRoot, backdropEl) {
     return true;
 }
 
-export function attachSoftStillBlur(backdropEl, imageWidth, imageHeight, maxBlurPx) {
-    if (!backdropEl || !imageWidth || !imageHeight) {
+export function attachSoftStillBlur(backdropEl, imageUrl, fallbackWidth, fallbackHeight, maxBlurPx) {
+    if (!backdropEl || !imageUrl) {
         return false;
     }
 
@@ -72,8 +110,6 @@ export function attachSoftStillBlur(backdropEl, imageWidth, imageHeight, maxBlur
         instance.resizeObserver.disconnect();
     }
 
-    instance.imageWidth = imageWidth;
-    instance.imageHeight = imageHeight;
     instance.maxBlurPx = maxBlurPx;
 
     function onResize() {
@@ -88,9 +124,7 @@ export function attachSoftStillBlur(backdropEl, imageWidth, imageHeight, maxBlur
         instance.resizeObserver.observe(backdropEl);
     }
 
-    requestAnimationFrame(function () {
-        updateSoftStillBlur(backdropEl);
-    });
+    loadSoftStillDimensions(backdropEl, imageUrl, fallbackWidth, fallbackHeight);
 
     return true;
 }
@@ -99,6 +133,10 @@ export function dispose(backdropEl) {
     var instance = _instances.get(backdropEl);
     if (!instance) {
         return;
+    }
+
+    if (instance.imageLoadToken) {
+        instance.imageLoadToken.cancelled = true;
     }
 
     if (instance.scrollRoot && typeof instance.scrollRoot.removeEventListener === 'function') {
