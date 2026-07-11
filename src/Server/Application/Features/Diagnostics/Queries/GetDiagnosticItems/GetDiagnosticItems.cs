@@ -33,6 +33,15 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
     public async Task<PaginatedList<DiagnosticItemDto>> Handle(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
     {
+        if (request.EntityType == DiagnosticEntityType.IndexedFile)
+            return await GetIndexedFileIssuesPaginatedAsync(request, cancellationToken);
+
+        if (request.EntityType == DiagnosticEntityType.Library)
+            return await GetScanIssuesPaginatedAsync(request, cancellationToken);
+
+        if (request.EntityType == DiagnosticEntityType.Media)
+            return await GetMediaIssuesPaginatedAsync(request, cancellationToken);
+
         var items = new List<DiagnosticItemDto>();
 
         if (request.EntityType is null or DiagnosticEntityType.IndexedFile)
@@ -65,6 +74,62 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
         items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
 
+        var totalCount = items.Count;
+        var paged = items
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        return new PaginatedList<DiagnosticItemDto>(paged, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetIndexedFileIssuesPaginatedAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var items = ExpandToOneRowPerIssue(await GetIndexedFileIssuesAsync(request, cancellationToken));
+        items = ApplyIssueFilters(items, request);
+        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
+        return Paginate(items, request);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetScanIssuesPaginatedAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var items = ExpandToOneRowPerIssue(await GetScanIssuesAsync(request, cancellationToken));
+        items = ApplyIssueFilters(items, request);
+        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
+        return Paginate(items, request);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetMediaIssuesPaginatedAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var items = ExpandToOneRowPerIssue(await GetMediaIssuesAsync(request, cancellationToken));
+        items = ApplyIssueFilters(items, request);
+        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
+        return Paginate(items, request);
+    }
+
+    private static List<DiagnosticItemDto> ApplyIssueFilters(
+        List<DiagnosticItemDto> items,
+        GetDiagnosticItemsQuery request)
+    {
+        if (request.Issue.HasValue)
+            items = items.Where(i => i.Issues.Contains(request.Issue.Value)).ToList();
+
+        if (request.Issues is { Count: > 0 })
+            items = items.Where(i => i.Issues.Any(iss => request.Issues.Contains(iss))).ToList();
+
+        return items;
+    }
+
+    private static PaginatedList<DiagnosticItemDto> Paginate(
+        List<DiagnosticItemDto> items,
+        GetDiagnosticItemsQuery request)
+    {
         var totalCount = items.Count;
         var paged = items
             .Skip((request.PageNumber - 1) * request.PageSize)
@@ -148,24 +213,23 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
     private async Task<List<DiagnosticItemDto>> GetMediaIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
     {
-        var libraryMediaQuery = _context.IndexedFiles
-            .Where(f => f.MediaId != null)
-            .Where(f => !_context.Libraries.Any(l => l.Id == f.LibraryId && l.PeerServerId != null))
+        var libraryMediaQuery = _context.MediaLibraryAvailabilities
+            .Where(a => !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null))
             .AsQueryable();
 
         if (request.LibraryId.HasValue)
         {
-            libraryMediaQuery = libraryMediaQuery.Where(f => f.LibraryId == request.LibraryId.Value);
+            libraryMediaQuery = libraryMediaQuery.Where(a => a.LibraryId == request.LibraryId.Value);
         }
 
         var libraryMediaPairs = await libraryMediaQuery
-            .Select(f => new { f.MediaId, f.LibraryId })
+            .Select(a => new { MediaId = a.MediaId, a.LibraryId })
             .Distinct()
             .ToListAsync(cancellationToken);
 
         var mediaToLibrary = libraryMediaPairs
             .DistinctBy(x => x.MediaId)
-            .ToDictionary(x => x.MediaId!.Value, x => x.LibraryId);
+            .ToDictionary(x => x.MediaId, x => x.LibraryId);
 
         var mediaIds = mediaToLibrary.Keys.ToHashSet();
 
@@ -184,7 +248,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 m.LastMetadataRefreshedAt,
                 HasExternalIds = m.ExternalIds.Any(),
                 GenreCount = m.MetadataTags.Count(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre),
-                HasIndexedFiles = m.IndexedFiles.Any(),
+                HasLibraryAvailability = _context.MediaLibraryAvailabilities.Any(a => a.MediaId == m.Id),
                 IsMusicTrack = m is MusicTrack,
                 HasAudioAnalysis = m is MusicTrack && ((MusicTrack)m).AudioAnalysis != null
             })
@@ -254,7 +318,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 issues.Remove(DiagnosticIssue.MissingMetadata);
             }
 
-            if (!m.HasIndexedFiles) issues.Add(DiagnosticIssue.MissingFiles);
+            if (!m.HasLibraryAvailability) issues.Add(DiagnosticIssue.MissingFiles);
 
             var isStale = MetadataStalenessHelper.IsStale(
                 m.LastMetadataRefreshedAt, threshold, DateTimeOffset.UtcNow);
