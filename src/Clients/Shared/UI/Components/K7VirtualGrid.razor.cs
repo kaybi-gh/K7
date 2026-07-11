@@ -1,3 +1,4 @@
+using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
@@ -191,21 +192,11 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             .ToList();
     }
 
-    private int CalculateColumnCount()
-    {
-        if (_containerWidth <= 0) return 4;
-        var spacing = GetEffectiveSpacing();
-        var cols = (_containerWidth + spacing) / (ItemWidth + spacing);
-        return Math.Max(cols, 1);
-    }
-
-    private const int CompactSpacing = 12;
-    private const int DesktopMinSpacing = 24;
-
-    private int EffectiveSpacing => GetEffectiveSpacing();
+    private int CalculateColumnCount() =>
+        VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio);
 
     private int GetEffectiveSpacing() =>
-        IsCompactGrid ? CompactSpacing : Math.Max(Spacing, DesktopMinSpacing);
+        VirtualGridLayout.GetEffectiveSpacing(_containerWidth, Spacing);
 
     private void UpdateEstimatedRowHeight()
     {
@@ -226,7 +217,9 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         _estimatedRowHeight = (float)Math.Floor(actualItemWidth * AspectRatio) + FooterHeight + spacing;
     }
 
-    private bool IsCompactGrid => _containerWidth > 0 && _containerWidth < 600;
+    private bool IsCompactGrid => _containerWidth > 0 && _containerWidth < VirtualGridLayout.CompactBreakpoint;
+
+    private int EffectiveSpacing => GetEffectiveSpacing();
 
     private string GetRowGridStyle()
     {
