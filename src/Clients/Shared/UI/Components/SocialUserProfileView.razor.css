@@ -104,4 +104,9 @@
     .social-user-profile {
         --carousel-margin-start: 16px;
     }
+
+    .social-user-profile__media-grid {
+        gap: var(--space-3);
+        grid-template-columns: repeat(auto-fill, minmax(var(--media-card-grid-column-min-poster), 1fr));
+    }
 }
