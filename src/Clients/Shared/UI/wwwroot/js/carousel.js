@@ -7,7 +7,7 @@ export function init(rootElement) {
     var container = viewportNode.querySelector('.carousel-container') || viewportNode.firstElementChild;
     var padStart = container ? parseInt(getComputedStyle(container).paddingInlineStart) || 0 : 0;
 
-    var embla = EmblaCarousel(viewportNode, {
+    var embla = globalThis.EmblaCarousel(viewportNode, {
         containScroll: 'trimSnaps',
         skipSnaps: true,
         align: function () { return padStart; },
