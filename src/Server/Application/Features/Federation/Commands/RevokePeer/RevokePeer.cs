@@ -22,7 +22,6 @@ public class RevokePeerCommandHandler(
     {
         var peer = await context.PeerServers
             .Include(p => p.ShareAgreements)
-            .Include(p => p.RemoteIndexedFiles)
             .FirstOrDefaultAsync(p => p.Id == request.PeerId, cancellationToken);
 
         Guard.Against.NotFound(request.PeerId, peer);
@@ -82,6 +81,10 @@ public class RevokePeerCommandHandler(
         await context.StreamSessions
             .Where(ss => ss.PeerServerId == peer.Id)
             .ExecuteUpdateAsync(s => s.SetProperty(ss => ss.PeerServerId, (Guid?)null), cancellationToken);
+
+        await context.RemoteIndexedFiles
+            .Where(r => r.PeerServerId == peer.Id)
+            .ExecuteDeleteAsync(cancellationToken);
 
         var remoteLibraries = await context.Libraries
             .Where(l => l.PeerServerId == peer.Id)

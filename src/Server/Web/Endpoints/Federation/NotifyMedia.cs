@@ -103,12 +103,9 @@ public class NotifyMedia : IEndpoint
         IApplicationDbContext context,
         CancellationToken cancellationToken)
     {
-        var remoteFiles = await context.RemoteIndexedFiles
+        await context.RemoteIndexedFiles
             .Where(r => r.PeerServerId == peer.Id && r.RemoteMediaId == body.MediaId)
-            .ToListAsync(cancellationToken);
-
-        context.RemoteIndexedFiles.RemoveRange(remoteFiles);
-        await context.SaveChangesAsync(cancellationToken);
+            .ExecuteDeleteAsync(cancellationToken);
     }
 }
 
