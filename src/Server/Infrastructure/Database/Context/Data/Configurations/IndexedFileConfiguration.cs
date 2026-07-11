@@ -18,5 +18,7 @@ public class IndexedFileConfiguration : IEntityTypeConfiguration<IndexedFile>
             .HasForeignKey<BaseFileMetadata>(x => x.IndexedFileId);
 
         builder.HasIndex(x => new { x.LibraryId, x.Created });
+        builder.HasIndex(x => x.Path).IsUnique();
+        builder.HasIndex(x => x.Hash);
     }
 }

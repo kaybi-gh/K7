@@ -452,6 +452,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasIndex("PersonRoleId");
 
+                    b.HasIndex("ProviderName", "Value");
+
                     b.ToTable("ExternalIds");
                 });
 
@@ -857,7 +859,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasIndex("MediaId");
 
+                    b.HasIndex("Hash");
+
                     b.HasIndex("LibraryId", "Created");
+
+                    b.HasIndex("Path")
+                        .IsUnique();
 
                     b.ToTable("IndexedFiles");
                 });

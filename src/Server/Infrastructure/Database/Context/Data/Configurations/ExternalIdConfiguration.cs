@@ -26,5 +26,7 @@ public class ExternalIdConfiguration : IEntityTypeConfiguration<ExternalId>
             .HasForeignKey(e => e.PersonRoleId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
+
+        builder.HasIndex(e => new { e.ProviderName, e.Value });
     }
 }
