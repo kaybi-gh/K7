@@ -27,13 +27,15 @@ public class ApplicationDbContextInitializer(
     RoleManager<IdentityRole> roleManager,
     UserManager<ApplicationUser> userManager,
     IServerSettingsService settingsService,
-    ISetupService setupService)
+    ISetupService setupService,
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
 {
     public async Task InitializeAsync()
     {
         try
         {
             await context.Database.MigrateAsync();
+            await mediaLibraryAvailabilityService.EnsurePopulatedAsync();
         }
         catch (Exception ex)
         {
