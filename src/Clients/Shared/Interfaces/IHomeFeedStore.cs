@@ -8,6 +8,8 @@ public interface IHomeFeedStore
 
     bool IsLoading { get; }
 
+    bool IsLoaded { get; }
+
     bool IsOffline { get; }
 
     bool CanTrackProgress { get; }

@@ -32,6 +32,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     public bool IsLoading { get; private set; }
 
+    public bool IsLoaded => _isLoaded;
+
     public bool IsOffline { get; private set; }
 
     public bool CanTrackProgress { get; private set; }
