@@ -149,14 +149,21 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             .Select(u => new { u.Id, u.DisplayName, u.IdentityUserId })
             .ToListAsync(cancellationToken);
 
-        var userNames = new Dictionary<Guid, string?>();
-        foreach (var u in users)
-        {
-            var name = u.DisplayName;
-            if (name is null && u.IdentityUserId is not null)
-                name = await identityService.GetUserNameAsync(u.IdentityUserId);
-            userNames[u.Id] = name;
-        }
+        var identityIdsNeedingLookup = users
+            .Where(u => u.DisplayName is null && u.IdentityUserId is not null)
+            .Select(u => u.IdentityUserId!)
+            .Distinct()
+            .ToList();
+
+        var identityUserNames = identityIdsNeedingLookup.Count > 0
+            ? await identityService.GetUserNamesAsync(identityIdsNeedingLookup)
+            : new Dictionary<string, string?>();
+
+        var userNames = users.ToDictionary(
+            u => u.Id,
+            u => u.DisplayName ?? (u.IdentityUserId is not null
+                ? identityUserNames.GetValueOrDefault(u.IdentityUserId)
+                : null));
 
         Dictionary<Guid, Domain.Entities.Users.PlaybackSessionDetails?>? detailsByRef = null;
         if (request.IncludeStreamQuality)

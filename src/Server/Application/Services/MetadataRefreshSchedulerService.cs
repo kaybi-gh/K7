@@ -46,42 +46,45 @@ public class MetadataRefreshSchedulerService(
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-        var libraries = await context.Libraries
+        var refreshLibraries = await context.Libraries
+            .AsNoTracking()
             .Where(l => l.MetadataRefreshIntervalDays != null && l.MetadataRefreshIntervalDays > 0)
+            .Select(l => new { l.Id, l.Title, l.MetadataRefreshIntervalDays })
             .ToListAsync(cancellationToken);
 
-        if (libraries.Count == 0)
+        if (refreshLibraries.Count == 0)
             return;
 
-        logger.LogInformation("Checking {Count} libraries for stale metadata", libraries.Count);
+        logger.LogInformation("Checking {Count} libraries for stale metadata", refreshLibraries.Count);
 
-        foreach (var library in libraries)
+        var now = DateTimeOffset.UtcNow;
+        var staleMediaIds = await context.Medias
+            .Where(m => m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist)
+            .Where(m => context.Libraries.Any(l =>
+                l.MetadataRefreshIntervalDays != null
+                && l.MetadataRefreshIntervalDays > 0
+                && (m.IndexedFiles.Any(f => f.LibraryId == l.Id) || m.RemoteIndexedFiles.Any(r => r.LibraryId == l.Id))
+                && (m.LastMetadataRefreshedAt == null
+                    || m.LastMetadataRefreshedAt < now.AddDays(-l.MetadataRefreshIntervalDays.Value))))
+            .Select(m => m.Id)
+            .Distinct()
+            .Take(refreshLibraries.Count * 50)
+            .ToListAsync(cancellationToken);
+
+        if (staleMediaIds.Count == 0)
+            return;
+
+        logger.LogInformation("Queueing metadata refresh for {Count} stale media", staleMediaIds.Count);
+
+        foreach (var mediaId in staleMediaIds)
         {
-            var threshold = DateTimeOffset.UtcNow.AddDays(-library.MetadataRefreshIntervalDays!.Value);
-
-            var staleMediaIds = await context.Medias
-                .Where(m => m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist)
-                .WhereLinkedToLibrary(library.Id)
-                .Where(m => m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < threshold)
-                .Select(m => m.Id)
-                .Take(50)
-                .ToListAsync(cancellationToken);
-
-            if (staleMediaIds.Count == 0)
-                continue;
-
-            logger.LogInformation("Library '{Title}': queueing metadata refresh for {Count} stale media", library.Title, staleMediaIds.Count);
-
-            foreach (var mediaId in staleMediaIds)
+            try
             {
-                try
-                {
-                    await sender.Send(new QueueRefreshMediaMetadataCommand { MediaId = mediaId }, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Failed to queue metadata refresh for media {MediaId}", mediaId);
-                }
+                await sender.Send(new QueueRefreshMediaMetadataCommand { MediaId = mediaId }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to queue metadata refresh for media {MediaId}", mediaId);
             }
         }
     }

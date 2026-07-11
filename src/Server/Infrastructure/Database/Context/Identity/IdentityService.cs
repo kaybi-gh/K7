@@ -32,6 +32,36 @@ public class IdentityService : IIdentityService
         return user.UserName;
     }
 
+    public async Task<IReadOnlyDictionary<string, string?>> GetUserNamesAsync(IEnumerable<string> userIds)
+    {
+        var idList = userIds.Distinct().ToList();
+        if (idList.Count == 0)
+            return new Dictionary<string, string?>();
+
+        var users = await _userManager.Users
+            .Where(u => idList.Contains(u.Id))
+            .Select(u => new { u.Id, u.UserName })
+            .ToListAsync();
+
+        var lookup = users.ToDictionary(u => u.Id, u => u.UserName);
+        return idList.ToDictionary(id => id, id => lookup.GetValueOrDefault(id));
+    }
+
+    public async Task<IReadOnlyDictionary<string, string?>> GetEmailsAsync(IEnumerable<string> userIds)
+    {
+        var idList = userIds.Distinct().ToList();
+        if (idList.Count == 0)
+            return new Dictionary<string, string?>();
+
+        var users = await _userManager.Users
+            .Where(u => idList.Contains(u.Id))
+            .Select(u => new { u.Id, u.Email })
+            .ToListAsync();
+
+        var lookup = users.ToDictionary(u => u.Id, u => u.Email);
+        return idList.ToDictionary(id => id, id => lookup.GetValueOrDefault(id));
+    }
+
     public async Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password)
     {
         var user = new ApplicationUser

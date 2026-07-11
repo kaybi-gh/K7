@@ -24,41 +24,53 @@ public class GetSimilarMediaQueryHandler(IApplicationDbContext context)
         var media = await context.Medias
             .AsNoTracking()
             .Include(m => m.Recommendations)
-            .Include(m => m.ExternalIds)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
-        if (media is null)
+        if (media is null || media.Recommendations.Count == 0)
             return [];
 
-        var results = new List<BaseMedia>();
+        var recommendationPairs = media.Recommendations
+            .SelectMany(rec => rec.RecommendedIds.Select(id => (rec.ProviderName, RecommendedId: id)))
+            .ToList();
 
-        // Strategy 1: Find local media matching persisted recommendation IDs
-        var recommendations = media.Recommendations;
-        if (recommendations.Count > 0)
-        {
-            foreach (var rec in recommendations)
-            {
-                var matchingMedia = await context.Medias
-                    .AsNoTracking()
-                    .IncludeMetadataTagsForMapping()
-                    .Include(m => m.Pictures)
-                        .ThenInclude(p => p.Variants)
-                    .Include(m => m.UserMediaStates)
-                    .Where(m => m.Id != request.MediaId)
-                    .Where(m => m.ExternalIds.Any(e =>
-                        e.ProviderName == rec.ProviderName &&
-                        rec.RecommendedIds.Contains(e.Value)))
-                    .Take(request.PageSize)
-                    .ToListAsync(cancellationToken);
+        if (recommendationPairs.Count == 0)
+            return [];
 
-                results.AddRange(matchingMedia);
-            }
-        }
+        var pairSet = recommendationPairs.ToHashSet();
+        var recommendedValues = recommendationPairs.Select(p => p.RecommendedId).Distinct().ToList();
+        var providerNames = recommendationPairs.Select(p => p.ProviderName).Distinct().ToList();
 
-        return results
-            .DistinctBy(m => m.Id)
+        var matchedMediaIds = (await context.ExternalIds
+            .AsNoTracking()
+            .Where(e => e.MediaId != null
+                && e.MediaId != request.MediaId
+                && recommendedValues.Contains(e.Value)
+                && providerNames.Contains(e.ProviderName))
+            .Select(e => new { e.ProviderName, e.Value, MediaId = e.MediaId!.Value })
+            .ToListAsync(cancellationToken))
+            .Where(e => pairSet.Contains((e.ProviderName, e.Value)))
+            .Select(e => e.MediaId)
+            .Distinct()
             .Take(request.PageSize)
-            .Select(m => m.ToLiteMediaDto())
+            .ToList();
+
+        if (matchedMediaIds.Count == 0)
+            return [];
+
+        var items = await context.Medias
+            .AsNoTracking()
+            .Where(m => matchedMediaIds.Contains(m.Id))
+            .IncludeMetadataTagsForMapping()
+            .Include(m => m.Pictures)
+                .ThenInclude(p => p.Variants)
+            .Include(m => m.UserMediaStates)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        var itemsById = items.ToDictionary(m => m.Id);
+        return matchedMediaIds
+            .Where(itemsById.ContainsKey)
+            .Select(id => itemsById[id].ToLiteMediaDto())
             .ToList();
     }
 }
