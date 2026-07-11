@@ -12,6 +12,7 @@ public record DeleteIndexedFileCommand(Guid Id) : IRequest;
 public class DeleteIndexedFileCommandHandler(
     IApplicationDbContext context,
     ILibraryNotifier notifier,
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
     ILogger<DeleteIndexedFileCommandHandler> logger) : IRequestHandler<DeleteIndexedFileCommand>
 {
     public async Task Handle(DeleteIndexedFileCommand request, CancellationToken cancellationToken)
@@ -51,6 +52,7 @@ public class DeleteIndexedFileCommandHandler(
         context.IndexedFiles.Remove(entity);
         entity.AddDomainEvent(new IndexedFileDeletedEvent(entity, formerMediaId, libraryId));
         await context.SaveChangesAsync(cancellationToken);
+        await mediaLibraryAvailabilityService.RebuildForLibraryAsync(libraryId, cancellationToken);
 
         if (formerMediaId is not Guid mediaId)
             return;

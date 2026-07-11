@@ -15,6 +15,7 @@ public class RevokePeerCommandHandler(
     IPeerApplicationManager peerAppManager,
     IPeerClient peerClient,
     IConfiguration configuration,
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
     ILogger<RevokePeerCommandHandler> logger)
     : IRequestHandler<RevokePeerCommand>
 {
@@ -82,6 +83,12 @@ public class RevokePeerCommandHandler(
             .Where(ss => ss.PeerServerId == peer.Id)
             .ExecuteUpdateAsync(s => s.SetProperty(ss => ss.PeerServerId, (Guid?)null), cancellationToken);
 
+        var affectedLibraryIds = await context.RemoteIndexedFiles
+            .Where(r => r.PeerServerId == peer.Id)
+            .Select(r => r.LibraryId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         await context.RemoteIndexedFiles
             .Where(r => r.PeerServerId == peer.Id)
             .ExecuteDeleteAsync(cancellationToken);
@@ -94,5 +101,8 @@ public class RevokePeerCommandHandler(
         context.PeerServers.Remove(peer);
 
         await context.SaveChangesAsync(cancellationToken);
+
+        foreach (var libraryId in affectedLibraryIds)
+            await mediaLibraryAvailabilityService.RebuildForLibraryAsync(libraryId, cancellationToken);
     }
 }

@@ -30,6 +30,7 @@ public class FileIndexer : IFileIndexer
     private readonly IAudioTagReader _audioTagReader;
     private readonly ILibraryScanProgressReporter _progressReporter;
     private readonly ILibraryNotifier _libraryNotifier;
+    private readonly IMediaLibraryAvailabilityService _mediaLibraryAvailabilityService;
 
     public FileIndexer(
         ILogger<FileIndexer> logger,
@@ -37,7 +38,8 @@ public class FileIndexer : IFileIndexer
         ISender sender,
         IAudioTagReader audioTagReader,
         ILibraryScanProgressReporter progressReporter,
-        ILibraryNotifier libraryNotifier)
+        ILibraryNotifier libraryNotifier,
+        IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
     {
         _logger = logger;
         _context = context;
@@ -45,6 +47,7 @@ public class FileIndexer : IFileIndexer
         _audioTagReader = audioTagReader;
         _progressReporter = progressReporter;
         _libraryNotifier = libraryNotifier;
+        _mediaLibraryAvailabilityService = mediaLibraryAvailabilityService;
     }
 
     public Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken = default)
@@ -172,6 +175,8 @@ public class FileIndexer : IFileIndexer
 
             await _context.SaveChangesAsync(cancellationToken);
             ClearChangeTracker();
+
+            await _mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
 
             if (backgroundTasks.Count > 0)
             {
