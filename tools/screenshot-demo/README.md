@@ -53,6 +53,6 @@ Optional: `K7_SHOWCASE_PADDING=32` (crop margin around devices, default 32).
 | --- | --- | --- |
 | `desktop` | 1440x900 | Default browser layout |
 | `tv` | 1920x1080 | Couch mode (`platform-tv` + `getParsedUserAgent` override) |
-| `mobile` | iPhone 14 preset | Bottom navigation layout |
+| `mobile` | 412x915 @2x (824x1830 PNG) | Pixel 8/9 viewport, bottom navigation layout |
 
 Guest login is enabled by default against `https://k7.kaybi.dev`.
