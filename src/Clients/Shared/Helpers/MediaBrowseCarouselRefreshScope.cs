@@ -1,8 +1,8 @@
-namespace K7.Clients.Shared.UI.Components;
+namespace K7.Clients.Shared.Helpers;
 
-internal static class CatalogCarouselRefreshScope
+public static class MediaBrowseCarouselRefreshScope
 {
-    internal static bool IsAffected(Guid[]? libraryIds, Guid[]? libraryGroupIds, Guid eventLibraryId)
+    public static bool IsAffected(Guid[]? libraryIds, Guid[]? libraryGroupIds, Guid eventLibraryId)
     {
         if (libraryIds is { Length: > 0 })
             return libraryIds.Contains(eventLibraryId);

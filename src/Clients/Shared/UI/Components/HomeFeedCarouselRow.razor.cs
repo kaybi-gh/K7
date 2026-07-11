@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
@@ -13,7 +14,7 @@ public partial class HomeFeedCarouselRow : IDisposable
 {
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
-    [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private IMediaBrowseHubCoordinator HubCoordinator { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
@@ -36,69 +37,17 @@ public partial class HomeFeedCarouselRow : IDisposable
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
-    private DebouncedActionRunner? _picturesRefreshRunner;
+    private IDisposable? _hubSubscription;
 
     protected override async Task OnInitializedAsync()
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
-        K7HubClient.MediaBatchAdded += OnCatalogChanged;
-        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
-        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
-        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
-        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
-
-        _picturesRefreshRunner = new DebouncedActionRunner(ReloadAsync, InvokeAsync);
+        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => _ = ReloadAsync());
     }
 
-    public void Dispose()
-    {
-        K7HubClient.MediaBatchAdded -= OnCatalogChanged;
-        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
-        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
-        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
-        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
-        _picturesRefreshRunner?.Dispose();
-    }
-
-    private void OnCatalogChanged(List<K7.Shared.Dtos.Notifications.MediaBatchItem> items)
-    {
-        _ = ReloadAsync();
-    }
-
-    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
-    {
-        if (!CatalogCarouselRefreshScope.IsAffected(LibraryIds, LibraryGroupIds, libraryId))
-            return;
-
-        _ = ReloadAsync();
-    }
-
-    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
-    {
-        if (!CatalogCarouselRefreshScope.IsAffected(LibraryIds, LibraryGroupIds, libraryId))
-            return;
-
-        _ = ReloadAsync();
-    }
-
-    private void OnMediaMetadataRefreshed(Guid mediaId) =>
-        ScheduleCatalogRefreshIfAffected(mediaId);
-
-    private void OnMediaPicturesUpdated(Guid mediaId) =>
-        ScheduleCatalogRefreshIfAffected(mediaId);
-
-    private void ScheduleCatalogRefreshIfAffected(Guid mediaId)
-    {
-        if (_loading)
-            return;
-
-        if (!CatalogMediaRefreshMatcher.IsCardAffected(_items, mediaId))
-            return;
-
-        _picturesRefreshRunner?.Schedule();
-    }
+    public void Dispose() => _hubSubscription?.Dispose();
 
     private async Task ReloadAsync()
     {
