@@ -35,6 +35,15 @@ internal static class MediaCoverPictureResolver
     internal static string? ToSmallPictureUrl(Guid? pictureId) =>
         pictureId is Guid id ? $"/api/metadata-pictures/{id}?size=Small" : null;
 
+    internal static async Task<Dictionary<Guid, string?>> GetCoverImageUrlsByMediaIdAsync(
+        IApplicationDbContext context,
+        IReadOnlyList<Guid> mediaIds,
+        CancellationToken cancellationToken)
+    {
+        var coverIds = await GetCoverPictureIdsByMediaIdAsync(context, mediaIds, cancellationToken);
+        return coverIds.ToDictionary(kvp => kvp.Key, kvp => ToSmallPictureUrl(kvp.Value));
+    }
+
     internal static async Task<IReadOnlyList<T>> EnrichTopItemsAsync<T>(
         IApplicationDbContext context,
         IReadOnlyList<T> items,
