@@ -89,6 +89,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MetadataTag> MetadataTags => Set<MetadataTag>();
     public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities => Set<MediaLibraryAvailability>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
