@@ -33,19 +33,15 @@
 }
 else if (_episode is not null)
 {
-    <div @ref="_scrollRoot" class="episode-page @(_useHdStillBackdrop ? "" : "episode-page--low-res-still")" style="@DominantColorStyle">
-        @if (_useHdStillBackdrop)
+    <div @ref="_scrollRoot" class="episode-page" style="@DominantColorStyle">
+        @if (_stillUrl is not null)
         {
             <MediaPageBackdrop ImageUrl="@_stillUrl"
                                DominantColor="@_dominantColor"
-                               ScrollTarget="@_scrollRoot" />
-        }
-        else if (_stillUrl is not null)
-        {
-            <div class="episode-low-res-wash" aria-hidden="true" />
-            <div class="episode-low-res-still" aria-hidden="true">
-                <img src="@_stillUrl" alt="" />
-            </div>
+                               ScrollTarget="@_scrollRoot"
+                               Class="@(_useHdStillBackdrop ? "" : "media-page-backdrop--soft-still")"
+                               SoftStillSourceWidth="@(_useHdStillBackdrop ? null : _stillSourceWidth)"
+                               SoftStillSourceHeight="@(_useHdStillBackdrop ? null : _stillSourceHeight)" />
         }
 
         <div class="episode-main media-hero-main">

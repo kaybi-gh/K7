@@ -62,6 +62,44 @@
     to { opacity: 1; }
 }
 
+.media-page-backdrop--soft-still .media-page-backdrop__image {
+    filter: blur(var(--media-soft-still-blur, 0px));
+}
+
+.media-page-backdrop--soft-still .media-page-backdrop__scrim-side {
+    background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.84) 0%,
+        rgba(0, 0, 0, 0.66) 26%,
+        rgba(0, 0, 0, 0.42) 46%,
+        rgba(0, 0, 0, 0.2) 62%,
+        transparent 84%
+    );
+}
+
+.media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.52) 28%,
+        rgba(0, 0, 0, 0.26) 50%,
+        transparent 78%
+    );
+}
+
+.media-page-backdrop--soft-still::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse 90% 75% at 50% 28%,
+        transparent 18%,
+        rgba(0, 0, 0, 0.28) 58%,
+        rgba(0, 0, 0, 0.52) 100%
+    );
+    transform: translateZ(0);
+}
+
 @media (max-width: 599.98px) {
     .media-page-backdrop {
         --media-backdrop-height: 50vh;
@@ -116,5 +154,31 @@
 
     .media-page-backdrop__scroll-fade {
         z-index: 2;
+    }
+
+    .media-page-backdrop--soft-still .media-page-backdrop__image {
+        filter: blur(var(--media-soft-still-blur, 0px));
+    }
+
+    .media-page-backdrop--soft-still .media-page-backdrop__scrim-side {
+        background:
+            linear-gradient(to right, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.34) 14%, transparent 30%),
+            linear-gradient(to left, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.34) 14%, transparent 30%);
+    }
+
+    .media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
+        background:
+            radial-gradient(
+                ellipse 140% 90% at 50% 100%,
+                rgba(0, 0, 0, 0.82) 0%,
+                rgba(0, 0, 0, 0.48) 34%,
+                transparent 68%
+            ),
+            linear-gradient(
+                to top,
+                var(--media-wash-color, var(--color-bg)) 0%,
+                color-mix(in srgb, var(--media-wash-color, var(--color-bg)) 62%, transparent) 42%,
+                transparent 72%
+            );
     }
 }
