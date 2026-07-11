@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260714173000_AddSqliteTextSearchLowerIndexes")]
+    partial class AddSqliteTextSearchLowerIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -857,14 +860,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("MediaId");
+
                     b.HasIndex("Hash");
 
-                    b.HasIndex("MediaId");
+                    b.HasIndex("LibraryId", "Created");
 
                     b.HasIndex("Path")
                         .IsUnique();
-
-                    b.HasIndex("LibraryId", "Created");
 
                     b.ToTable("IndexedFiles");
                 });
@@ -1049,23 +1052,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasDatabaseName("IX_Library_ScanIssues_LibraryId");
 
                     b.ToTable("Library_ScanIssues", (string)null);
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.MediaLibraryAvailability", b =>
-                {
-                    b.Property<Guid>("LibraryId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("MediaId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("LibraryId", "MediaId");
-
-                    b.HasIndex("LibraryId");
-
-                    b.HasIndex("MediaId");
-
-                    b.ToTable("MediaLibraryAvailabilities");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
@@ -3780,25 +3766,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasForeignKey("LibraryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.MediaLibraryAvailability", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
-                        .WithMany()
-                        .HasForeignKey("LibraryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany()
-                        .HasForeignKey("MediaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Library");
-
-                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
