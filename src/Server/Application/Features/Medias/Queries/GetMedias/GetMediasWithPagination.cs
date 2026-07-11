@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
@@ -40,6 +42,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
+    private const int CacheEntrySize = 1;
 
     public Task<PaginatedList<BaseMedia>> Handle(QueryMediasQuery request, CancellationToken cancellationToken) =>
         HandleInternal(MapQueryRequest(request.Request), request.Request.Filter, cancellationToken);
@@ -52,14 +55,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         RuleGroupDto? filter,
         CancellationToken cancellationToken)
     {
-        var cacheKey = await BuildCacheKeyAsync(request, currentUser.Id, filter, cancellationToken);
+        var cacheKey = await BuildCacheKeyAsync(request, currentUser.Id, filter, includePagination: true, cancellationToken);
         var version = cacheInvalidator.Version;
 
         if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<BaseMedia> Result) cached) && cached.Version == version)
             return cached.Result;
 
         var result = await ExecuteQueryAsync(request, filter, cancellationToken);
-        cache.Set(cacheKey, (version, result), CacheDuration);
+        cache.Set(cacheKey, (version, result), new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = CacheDuration,
+            Size = CacheEntrySize
+        });
         return result;
     }
 
@@ -67,6 +74,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         GetMediasWithPaginationQuery request,
         Guid? userId,
         RuleGroupDto? filter,
+        bool includePagination,
         CancellationToken cancellationToken)
     {
         var parts = new List<string> { "medias", $"u:{userId}" };
@@ -88,6 +96,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"uw:{request.UnwatchedOnly.Value}");
         if (request.PersonIds is { Length: > 0 })
             parts.Add($"pid:{string.Join(',', request.PersonIds.OrderBy(x => x))}");
+        if (request.ArtistIds is { Length: > 0 })
+            parts.Add($"aid:{string.Join(',', request.ArtistIds.OrderBy(x => x))}");
         if (request.Genres is { Length: > 0 })
             parts.Add($"g:{string.Join(',', request.Genres.Order())}");
         if (request.MediaTypes is { Count: > 0 })
@@ -99,11 +109,21 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (!string.IsNullOrWhiteSpace(request.SearchText))
             parts.Add($"st:{request.SearchText.Trim()}");
         if (filter is { Items.Count: > 0 })
-            parts.Add($"f:{JsonSerializer.Serialize(filter)}");
-        parts.Add($"p:{request.PageNumber}");
-        parts.Add($"ps:{request.PageSize}");
+            parts.Add($"f:{HashFilter(filter)}");
+        if (includePagination)
+        {
+            parts.Add($"p:{request.PageNumber}");
+            parts.Add($"ps:{request.PageSize}");
+        }
 
         return string.Join('|', parts);
+    }
+
+    private static string HashFilter(RuleGroupDto filter)
+    {
+        var json = JsonSerializer.Serialize(filter);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return Convert.ToHexString(hash)[..16];
     }
 
     private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(
@@ -128,7 +148,24 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (userId.HasValue)
             filterQuery = await mediaAccessFilter.ApplyAllAsync(filterQuery, userId.Value, cancellationToken);
 
-        var totalCount = await filterQuery.CountAsync(cancellationToken);
+        var version = cacheInvalidator.Version;
+        var countCacheKey = await BuildCacheKeyAsync(request, userId, filter, includePagination: false, cancellationToken);
+        var countCacheKeyWithVersion = $"count|v:{version}|{countCacheKey}";
+
+        int totalCount;
+        if (cache.TryGetValue(countCacheKeyWithVersion, out int cachedCount))
+        {
+            totalCount = cachedCount;
+        }
+        else
+        {
+            totalCount = await filterQuery.CountAsync(cancellationToken);
+            cache.Set(countCacheKeyWithVersion, totalCount, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = CacheDuration,
+                Size = CacheEntrySize
+            });
+        }
 
         var applicableProviders = await MediaOrderingHelper.ResolveApplicableProvidersAsync(
             context, request.LibraryIds, cancellationToken);
@@ -144,7 +181,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (pageIds.Count == 0)
             return new PaginatedList<BaseMedia>([], totalCount, request.PageNumber, request.PageSize);
 
-        var ordered = await liteMediaProjection.LoadMediasForLiteAsync(pageIds, userId, cancellationToken);
+        var ordered = await liteMediaProjection.GetLiteMediasAsync(pageIds, userId, cancellationToken);
 
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
