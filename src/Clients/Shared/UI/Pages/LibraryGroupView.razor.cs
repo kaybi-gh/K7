@@ -20,10 +20,10 @@ using System.Text.Json;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class LibraryGroup : IDisposable
+public partial class LibraryGroupView : IDisposable
 {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private ILibraryGroupContextStore ContextStore { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IMusicIntelligenceClientService MusicIntelligence { get; set; } = default!;
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
@@ -99,6 +99,8 @@ public partial class LibraryGroup : IDisposable
 
     private string FilterStorageKey => $"library-group.{Id}";
 
+    protected override void OnInitialized() => ContextStore.Changed += OnContextStoreChanged;
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
@@ -110,10 +112,9 @@ public partial class LibraryGroup : IDisposable
 
         if (groupId.HasValue)
         {
-            var groups = await LibraryService.GetLibraryGroupsAsync();
-            var group = groups.FirstOrDefault(g => g.Id == groupId.Value);
-            _libraryMediaType = group?.MediaType;
-            _libraryIds = group?.LibraryIds;
+            var snapshot = await ContextStore.EnsureContextAsync(groupId.Value);
+            _libraryMediaType = snapshot?.MediaType;
+            _libraryIds = snapshot?.LibraryIds;
             _libraryGroupIds = [groupId.Value];
         }
         else
@@ -158,13 +159,7 @@ public partial class LibraryGroup : IDisposable
             _pendingQuerySync = true;
         }
 
-        K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
-        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
-        K7HubClient.LibraryScanCompleted += OnLibraryScanCompleted;
-        K7HubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
-        K7HubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
-
-        _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterPicturesUpdatedAsync, InvokeAsync);
+        _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterContextChangedAsync, InvokeAsync);
 
         await LoadTagsAsync();
 
@@ -439,30 +434,15 @@ public partial class LibraryGroup : IDisposable
 
     private async Task LoadTagsAsync()
     {
-        try
-        {
-            _tags = await k7ServerService.GetMediaTagsAsync(new GetMediaTagsQuery
-            {
-                LibraryIds = _libraryIds?.ToArray(),
-                LibraryGroupIds = _libraryGroupIds,
-                MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
-                Kinds =
-                [
-                    MetadataTagKind.Genre,
-                    MetadataTagKind.ContentRating,
-                    MetadataTagKind.Studio,
-                    MetadataTagKind.Network
-                ],
-                OrderBy = [MediaTagOrderingOption.MediaCountDesc],
-                PageNumber = 1,
-                PageSize = 100
-            });
-
-        }
-        catch
+        if (!Guid.TryParse(Id, out var groupId))
         {
             _tags = null;
+            return;
         }
+
+        _tags = await ContextStore.EnsureTagsAsync(
+            groupId,
+            _selectedMediaType != default ? _selectedMediaType : null);
     }
 
     private async Task OnFilterChanged(RuleGroupDto value)
@@ -631,57 +611,21 @@ public partial class LibraryGroup : IDisposable
         }
     }
 
-    private void OnMediaBatchAdded(List<MediaBatchItem> items)
+    private void OnContextStoreChanged(Guid groupId)
     {
-        _ = InvokeAsync(async () =>
-        {
-            await RefreshAllAsync();
-            StateHasChanged();
-        });
-    }
-
-    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
-    {
-        if (_libraryIds is { Count: > 0 } && !_libraryIds.Contains(libraryId))
-            return;
-
-        _ = InvokeAsync(async () =>
-        {
-            await RefreshAllAsync();
-            StateHasChanged();
-        });
-    }
-
-    private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
-    {
-        if (_libraryIds is { Count: > 0 } && !_libraryIds.Contains(libraryId))
-            return;
-
-        _ = InvokeAsync(async () =>
-        {
-            await RefreshAllAsync();
-            StateHasChanged();
-        });
-    }
-
-    private void OnMediaMetadataRefreshed(Guid mediaId)
-    {
-        if (_loading)
+        if (!Guid.TryParse(Id, out var currentId) || currentId != groupId || _loading)
             return;
 
         _picturesRefreshRunner?.Schedule();
     }
 
-    private void OnMediaPicturesUpdated(Guid mediaId)
+    private async Task RefreshAfterContextChangedAsync()
     {
-        if (_loading)
+        if (!Guid.TryParse(Id, out var groupId))
             return;
 
-        _picturesRefreshRunner?.Schedule();
-    }
-
-    private async Task RefreshAfterPicturesUpdatedAsync()
-    {
+        await ContextStore.EnsureContextAsync(groupId);
+        await LoadTagsAsync();
         await RefreshAllAsync();
         StateHasChanged();
     }
@@ -905,11 +849,7 @@ public partial class LibraryGroup : IDisposable
 
     public void Dispose()
     {
-        K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
-        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
-        K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
-        K7HubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
-        K7HubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
+        ContextStore.Changed -= OnContextStoreChanged;
         _picturesRefreshRunner?.Dispose();
     }
 }
