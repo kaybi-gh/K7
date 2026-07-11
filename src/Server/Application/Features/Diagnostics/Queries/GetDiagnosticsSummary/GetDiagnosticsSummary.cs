@@ -98,18 +98,39 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
     private async Task<Dictionary<Guid, IndexedFileLibraryStats>> GetIndexedFileStatsAsync(CancellationToken cancellationToken)
     {
-        var stats = await _context.IndexedFiles
+        var baseStats = await _context.IndexedFiles
             .AsNoTracking()
             .GroupBy(f => f.LibraryId)
-            .Select(g => new IndexedFileLibraryStats(
-                g.Key,
-                g.Count(),
-                g.Count(f => f.MediaId == null),
-                g.Count(f => f.Identification == null),
-                g.Count(f => f.FileMetadata == null)))
+            .Select(g => new
+            {
+                LibraryId = g.Key,
+                TotalCount = g.Count(),
+                OrphanCount = g.Count(f => f.MediaId == null)
+            })
             .ToListAsync(cancellationToken);
 
-        return stats.ToDictionary(s => s.LibraryId);
+        var unidentifiedCounts = await _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.Identification == null)
+            .GroupBy(f => f.LibraryId)
+            .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
+
+        var missingFileMetadataCounts = await _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.FileMetadata == null)
+            .GroupBy(f => f.LibraryId)
+            .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
+
+        return baseStats.ToDictionary(
+            s => s.LibraryId,
+            s => new IndexedFileLibraryStats(
+                s.LibraryId,
+                s.TotalCount,
+                s.OrphanCount,
+                unidentifiedCounts.GetValueOrDefault(s.LibraryId),
+                missingFileMetadataCounts.GetValueOrDefault(s.LibraryId)));
     }
 
     private async Task<Dictionary<Guid, int>> GetMissingHlsSegmentCountsAsync(CancellationToken cancellationToken)
@@ -201,21 +222,37 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         CancellationToken cancellationToken)
     {
         var linkedMedia = _context.Medias.AsNoTracking().WhereLinkedToLibrary(libraryId);
+        var refreshableLinkedMedia = linkedMedia
+            .Where(m => m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist);
 
-        var stats = await linkedMedia
-            .GroupBy(_ => 1)
-            .Select(g => new LinkedMediaLibraryStats(
-                g.Count(),
-                g.Count(m => !m.Pictures.Any()),
-                g.Count(m => (m is Movie || m is Serie || m is MusicAlbum) && !m.ExternalIds.Any()),
-                g.Count(m => m.ExternalIds.Any() && !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)),
-                staleMetadataThreshold == null
-                    ? 0
-                    : g.Count(m => (m is Movie || m is MusicAlbum || m is Serie || m is MusicArtist)
-                        && (m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < staleMetadataThreshold))))
-            .FirstOrDefaultAsync(cancellationToken);
+        var totalMediaCount = await linkedMedia.CountAsync(cancellationToken);
 
-        return stats ?? new LinkedMediaLibraryStats(0, 0, 0, 0, 0);
+        var mediaMissingPicturesCount = await linkedMedia
+            .Where(m => !m.Pictures.Any())
+            .CountAsync(cancellationToken);
+
+        var mediaMissingExternalIdCount = await refreshableLinkedMedia
+            .Where(m => m is Movie || m is Serie || m is MusicAlbum)
+            .Where(m => !m.ExternalIds.Any())
+            .CountAsync(cancellationToken);
+
+        var mediaMissingMetadataCount = await linkedMedia
+            .Where(m => m.ExternalIds.Any())
+            .Where(m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+            .CountAsync(cancellationToken);
+
+        var staleMetadataCount = staleMetadataThreshold is null
+            ? 0
+            : await refreshableLinkedMedia
+                .Where(m => m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < staleMetadataThreshold)
+                .CountAsync(cancellationToken);
+
+        return new LinkedMediaLibraryStats(
+            totalMediaCount,
+            mediaMissingPicturesCount,
+            mediaMissingExternalIdCount,
+            mediaMissingMetadataCount,
+            staleMetadataCount);
     }
 
     private async Task<BackgroundTaskLibraryStats> GetBackgroundTaskStatsAsync(
@@ -224,16 +261,19 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
     {
         var linkedMediaIds = _context.Medias.WhereLinkedToLibrary(libraryId).Select(m => m.Id);
 
-        var stats = await _context.BackgroundTasks
+        var pendingCount = await _context.BackgroundTasks
             .AsNoTracking()
+            .Where(t => PendingBackgroundTaskStatuses.Contains(t.Status))
             .Where(t => t.TargetEntityId != null && linkedMediaIds.Contains(t.TargetEntityId.Value))
-            .GroupBy(_ => 1)
-            .Select(g => new BackgroundTaskLibraryStats(
-                g.Count(t => PendingBackgroundTaskStatuses.Contains(t.Status)),
-                g.Count(t => t.Status == BackgroundTaskStatus.Failed)))
-            .FirstOrDefaultAsync(cancellationToken);
+            .CountAsync(cancellationToken);
 
-        return stats ?? new BackgroundTaskLibraryStats(0, 0);
+        var failedCount = await _context.BackgroundTasks
+            .AsNoTracking()
+            .Where(t => t.Status == BackgroundTaskStatus.Failed)
+            .Where(t => t.TargetEntityId != null && linkedMediaIds.Contains(t.TargetEntityId.Value))
+            .CountAsync(cancellationToken);
+
+        return new BackgroundTaskLibraryStats(pendingCount, failedCount);
     }
 
     private sealed record LibrarySnapshot(
