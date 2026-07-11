@@ -1,6 +1,6 @@
 {
   "baseUrl": "https://k7.kaybi.dev",
-  "outputDir": "../../screenshots",
+  "outputDir": "../../../screenshots",
   "viewport": {
     "width": 1440,
     "height": 900

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '../..');
+const repoRoot = path.resolve(__dirname, '../../..');
 const screenshotsDir = path.resolve(repoRoot, 'screenshots');
 const outputFile = path.join(screenshotsDir, 'movie-showcase-devices.png');
 

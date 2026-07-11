@@ -498,7 +498,7 @@ $RECYCLE.BIN/
 /.vscode/tasks.json
 /docs
 experiments/
-demo-media/movies/
-demo-media/series/
-demo-media/music/
-demo-media/*.zip
+tools/K7.Demo/demo-media/movies/
+tools/K7.Demo/demo-media/series/
+tools/K7.Demo/demo-media/music/
+tools/K7.Demo/demo-media/*.zip
