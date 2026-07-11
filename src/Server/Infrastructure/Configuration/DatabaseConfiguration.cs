@@ -8,4 +8,5 @@ public class DatabaseConfiguration
     public string Server { get; set; } = "";
     public int Port { get; set; } = 5432;
     public string Name { get; set; } = "";
+    public int MaxPoolSize { get; set; } = 50;
 }
