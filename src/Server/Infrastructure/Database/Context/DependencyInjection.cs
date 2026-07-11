@@ -32,11 +32,16 @@ public static class DependencyInjection
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
+        services.AddSingleton<SqliteWalInterceptor>();
+
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
             var isDevelopment = sp.GetRequiredService<IHostEnvironment>().IsDevelopment();
-            options.ConfigureDbContext(sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value, isDevelopment);
+            var databaseConfiguration = sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value;
+            options.ConfigureDbContext(databaseConfiguration, isDevelopment);
+            if (databaseConfiguration.Provider.Equals("sqlite", StringComparison.OrdinalIgnoreCase))
+                options.AddInterceptors(sp.GetRequiredService<SqliteWalInterceptor>());
             options.UseOpenIddict();
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.OptionalDependentWithoutIdentifyingPropertyWarning));
         });
@@ -208,7 +213,6 @@ public static class DependencyInjection
             case "sqlite":
                 options.UseSqlite(connectionString!, x => x
                     .MigrationsAssembly(DatabaseProvider.Sqlite.Assembly));
-                options.AddInterceptors(new SqliteWalInterceptor());
                 break;
 
             default:
@@ -220,7 +224,7 @@ public static class DependencyInjection
     {
         return databaseConfiguration.Provider.ToLowerInvariant() switch
         {
-            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;Maximum Pool Size=200;Timeout=30;",
+            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;Maximum Pool Size={databaseConfiguration.MaxPoolSize};Timeout=30;",
             "sqlite" => $"Data Source={databaseConfiguration.Name}.db",
             _ => throw new Exception($"Unsupported database provider: {databaseConfiguration.Provider}")
         };

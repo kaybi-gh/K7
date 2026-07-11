@@ -1,33 +1,51 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.Database.Context.Data.Interceptors;
 
-public class SqliteWalInterceptor : DbConnectionInterceptor
+public class SqliteWalInterceptor(ILogger<SqliteWalInterceptor> logger) : DbConnectionInterceptor
 {
+    private const int BusyTimeoutMs = 15000;
+
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
         TrySetPragmas(connection);
     }
 
-    public override Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
+    public override async Task ConnectionOpenedAsync(
+        DbConnection connection,
+        ConnectionEndEventData eventData,
+        CancellationToken cancellationToken = default)
     {
-        TrySetPragmas(connection);
-        return Task.CompletedTask;
+        await TrySetPragmasAsync(connection, cancellationToken);
     }
 
-    private static void TrySetPragmas(DbConnection connection)
+    private void TrySetPragmas(DbConnection connection)
     {
         try
         {
             using var command = connection.CreateCommand();
-            command.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;";
+            command.CommandText = $"PRAGMA journal_mode=WAL; PRAGMA busy_timeout={BusyTimeoutMs}; PRAGMA synchronous=NORMAL;";
             command.ExecuteNonQuery();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore - the DB may not be writable yet (e.g. during existence check).
-            // PRAGMAs will succeed on subsequent connections once the DB is created.
+            logger.LogWarning(ex, "Failed to apply SQLite WAL pragmas on connection open");
+        }
+    }
+
+    private async Task TrySetPragmasAsync(DbConnection connection, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA journal_mode=WAL; PRAGMA busy_timeout={BusyTimeoutMs}; PRAGMA synchronous=NORMAL;";
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to apply SQLite WAL pragmas on connection open");
         }
     }
 }
