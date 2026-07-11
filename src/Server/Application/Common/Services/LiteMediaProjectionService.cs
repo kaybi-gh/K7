@@ -41,7 +41,7 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
         return list.Select(m => m.ToLiteMediaDto(counts, pictureSizes)).ToList();
     }
 
-    public async Task<List<BaseMedia>> LoadMediasForLiteAsync(
+    public async Task<List<BaseMedia>> GetLiteMediasAsync(
         IReadOnlyList<Guid> mediaIds,
         Guid? userId,
         CancellationToken cancellationToken = default)

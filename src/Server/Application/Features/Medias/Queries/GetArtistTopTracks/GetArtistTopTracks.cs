@@ -1,6 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -21,7 +23,8 @@ public record GetArtistTopTracksQuery : IRequest<IReadOnlyList<LiteMusicTrackDto
 public class GetArtistTopTracksQueryHandler(
     IApplicationDbContext context,
     IUser currentUser,
-    IMediaAccessGuard accessGuard)
+    IMediaAccessGuard accessGuard,
+    LiteMediaProjectionService liteMediaProjection)
     : IRequestHandler<GetArtistTopTracksQuery, IReadOnlyList<LiteMusicTrackDto>>
 {
     public async Task<IReadOnlyList<LiteMusicTrackDto>> Handle(
@@ -125,7 +128,7 @@ public class GetArtistTopTracksQueryHandler(
             from album in albumJoin.DefaultIfEmpty()
             let resolvedArtistId = track.ArtistId ?? album!.ArtistId
             where resolvedArtistId == artistId
-            where track.IndexedFiles.Any() || track.RemoteIndexedFiles.Any()
+            where context.MediaLibraryAvailabilities.Any(a => a.MediaId == track.Id)
             orderby album!.ReleaseDate descending, track.DiscNumber, track.TrackNumber, track.SortTitle ?? track.Title
             select track.Id)
             .Take(count)
@@ -137,38 +140,13 @@ public class GetArtistTopTracksQueryHandler(
         Guid? userId,
         CancellationToken cancellationToken)
     {
-        var trackQuery = context.Medias
-            .AsNoTracking()
-            .OfType<MusicTrack>()
-            .Include(t => t.Pictures)
-                .ThenInclude(p => p.Variants)
-            .Include(t => t.IndexedFiles)
-                .ThenInclude(f => f.FileMetadata)
-            .Include(t => t.RemoteIndexedFiles)
-            .Include(t => t.Album)
-                .ThenInclude(a => a.Pictures)
-                    .ThenInclude(p => p.Variants)
-            .Include(t => t.Artist)
-            .Include(t => t.AudioAnalysis)
-            .Include(t => t.ArtistCredits)
-                .ThenInclude(c => c.MusicArtist)
-            .Where(t => topTrackIds.Contains(t.Id))
-            .AsSplitQuery()
-            .AsQueryable();
-
-        if (userId.HasValue)
-        {
-            trackQuery = trackQuery.Include(t => t.UserMediaStates.Where(s => s.UserId == userId.Value));
-        }
-
-        var tracks = await trackQuery.ToListAsync(cancellationToken);
-        var tracksById = tracks.ToDictionary(t => t.Id);
+        var loaded = await liteMediaProjection.GetLiteMediasAsync(topTrackIds, userId, cancellationToken);
+        var liteTracks = await liteMediaProjection.ToLiteListAsync(loaded, cancellationToken);
+        var liteById = liteTracks.OfType<LiteMusicTrackDto>().ToDictionary(t => t.Id);
 
         return topTrackIds
-            .Where(tracksById.ContainsKey)
-            .Select(id => tracksById[id])
-            .Where(t => t.IndexedFiles.Count > 0 || t.RemoteIndexedFiles.Count > 0)
-            .Select(t => (LiteMusicTrackDto)t.ToLiteMediaDto())
+            .Where(liteById.ContainsKey)
+            .Select(id => liteById[id])
             .ToList();
     }
 }
