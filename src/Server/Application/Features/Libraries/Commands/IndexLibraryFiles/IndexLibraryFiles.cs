@@ -34,10 +34,9 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
 
         var result = await _fileIndexerService.IndexAsync(entity, cancellationToken);
 
-        var existingIssues = await _context.ScanIssues
+        await _context.ScanIssues
             .Where(s => s.LibraryId == entity.Id)
-            .ToListAsync(cancellationToken);
-        _context.ScanIssues.RemoveRange(existingIssues);
+            .ExecuteDeleteAsync(cancellationToken);
 
         if (result.InaccessiblePaths.Count > 0)
         {

@@ -5,6 +5,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -470,26 +471,23 @@ public class BackgroundTasksProcessingService : BackgroundService
                 var completedCutoff = now - CompletedRetention;
                 var failedCutoff = now - FailedRetention;
 
-                var staleCompleted = await context.BackgroundTasks
+                var completedRemoved = await context.BackgroundTasks
                     .Where(t => t.Status == BackgroundTaskStatus.Completed && t.LastModified < completedCutoff)
-                    .ToListAsync(stoppingToken);
+                    .ExecuteDeleteAsync(stoppingToken);
 
-                var staleTerminal = await context.BackgroundTasks
+                var terminalRemoved = await context.BackgroundTasks
                     .Where(t => (t.Status == BackgroundTaskStatus.Failed || t.Status == BackgroundTaskStatus.Cancelled)
                         && t.LastModified < failedCutoff)
-                    .ToListAsync(stoppingToken);
+                    .ExecuteDeleteAsync(stoppingToken);
 
-                var totalRemoved = staleCompleted.Count + staleTerminal.Count;
+                var totalRemoved = completedRemoved + terminalRemoved;
                 if (totalRemoved > 0)
                 {
-                    context.BackgroundTasks.RemoveRange(staleCompleted);
-                    context.BackgroundTasks.RemoveRange(staleTerminal);
-                    await context.SaveChangesAsync(stoppingToken);
                     await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                     _logger.LogInformation(
                         "Cleaned up {CompletedCount} completed and {TerminalCount} failed/cancelled tasks",
-                        staleCompleted.Count,
-                        staleTerminal.Count);
+                        completedRemoved,
+                        terminalRemoved);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
