@@ -1,4 +1,5 @@
 using System.Text.Json;
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Settings;
@@ -25,7 +26,7 @@ public class ServerSettingsService(IApplicationDbContext context, IMemoryCache c
             ? key.DefaultValue
             : JsonSerializer.Deserialize<T>(setting.Value);
 
-        cache.Set(cacheKey, value);
+        cache.SetWithSize(cacheKey, value);
         return value;
     }
 
@@ -49,7 +50,7 @@ public class ServerSettingsService(IApplicationDbContext context, IMemoryCache c
             ? key.BoxedDefaultValue
             : JsonSerializer.Deserialize(setting.Value, key.ValueType);
 
-        cache.Set(cacheKey, value);
+        cache.SetWithSize(cacheKey, value);
         return value;
     }
 

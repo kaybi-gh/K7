@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
@@ -42,7 +43,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
-    private const int CacheEntrySize = 1;
 
     public Task<PaginatedList<BaseMedia>> Handle(QueryMediasQuery request, CancellationToken cancellationToken) =>
         HandleInternal(MapQueryRequest(request.Request), request.Request.Filter, cancellationToken);
@@ -62,10 +62,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             return cached.Result;
 
         var result = await ExecuteQueryAsync(request, filter, cancellationToken);
-        cache.Set(cacheKey, (version, result), new MemoryCacheEntryOptions
+        cache.SetWithSize(cacheKey, (version, result), new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = CacheDuration,
-            Size = CacheEntrySize
+            AbsoluteExpirationRelativeToNow = CacheDuration
         });
         return result;
     }
@@ -160,10 +159,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         else
         {
             totalCount = await filterQuery.CountAsync(cancellationToken);
-            cache.Set(countCacheKeyWithVersion, totalCount, new MemoryCacheEntryOptions
+            cache.SetWithSize(countCacheKeyWithVersion, totalCount, new MemoryCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = CacheDuration,
-                Size = CacheEntrySize
+                AbsoluteExpirationRelativeToNow = CacheDuration
             });
         }
 

@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Shared.Dtos;
 using Microsoft.Extensions.Caching.Memory;
@@ -30,7 +31,7 @@ public class MusicIntelligenceService(
         try
         {
             var ids = await adapter.GetSimilarTracksAsync(trackId, count, cancellationToken);
-            cache.Set(cacheKey, ids, SimilarTracksCacheDuration);
+            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
             return ids;
         }
         catch (Exception ex)
@@ -136,7 +137,7 @@ public class MusicIntelligenceService(
         try
         {
             var matches = await adapter.GetSimilarArtistsAsync(artistId, artistName, count, cancellationToken);
-            cache.Set(cacheKey, matches, SimilarTracksCacheDuration);
+            cache.SetWithSize(cacheKey, matches, SimilarTracksCacheDuration);
             return matches;
         }
         catch (Exception ex)
@@ -158,7 +159,7 @@ public class MusicIntelligenceService(
         try
         {
             var ids = await adapter.SearchTracksBySonicTextAsync(query, count, cancellationToken);
-            cache.Set(cacheKey, ids, SimilarTracksCacheDuration);
+            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
             return ids;
         }
         catch (Exception ex)
@@ -180,7 +181,7 @@ public class MusicIntelligenceService(
         try
         {
             var ids = await adapter.SearchTracksByLyricsAsync(query, count, cancellationToken);
-            cache.Set(cacheKey, ids, SimilarTracksCacheDuration);
+            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
             return ids;
         }
         catch (Exception ex)
