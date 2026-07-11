@@ -45,6 +45,7 @@ public class GetPlaylistsWithPaginationQueryHandler(IApplicationDbContext contex
 
         query = query
             .ApplyOrdering(request.OrderBy, userId)
+            .AsSplitQuery()
             .AsNoTracking();
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);

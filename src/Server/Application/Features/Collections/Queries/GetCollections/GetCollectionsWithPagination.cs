@@ -47,6 +47,7 @@ public class GetCollectionsWithPaginationQueryHandler(IApplicationDbContext cont
 
         query = query
             .ApplyOrdering(request.OrderBy)
+            .AsSplitQuery()
             .AsNoTracking();
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);
