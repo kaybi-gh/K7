@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Entities.Medias;
@@ -35,7 +36,7 @@ internal static class BrowseMediaScope
             context, libraryIds, libraryGroupIds, cancellationToken);
 
         var mediasQuery = context.Medias.AsNoTracking().AsQueryable();
-        mediasQuery = ApplyMediaFilters(libraryIds, mediaTypes, unwatchedOnly, mediasQuery, userId);
+        mediasQuery = ApplyMediaFilters(context, libraryIds, mediaTypes, unwatchedOnly, mediasQuery, userId);
 
         if (userId.HasValue)
         {
@@ -43,35 +44,14 @@ internal static class BrowseMediaScope
                 .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
-            mediasQuery = mediasQuery.Where(x =>
-                x is MusicAlbum
-                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                    : x is MusicArtist
-                        ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                    : x is MusicTrack
-                        ? x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((MusicTrack)x).Album.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((MusicTrack)x).Album.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                    : x is Serie
-                        ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                        : x is SerieSeason
-                            ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                            : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
+            mediasQuery = mediasQuery.WhereAvailableOutsideExcludedLibraries(context, excludedLibraryIds);
         }
 
         return mediasQuery;
     }
 
     private static IQueryable<BaseMedia> ApplyMediaFilters(
+        IApplicationDbContext context,
         Guid[]? libraryIds,
         EnumHashSetQueryParam<MediaType>? mediaTypes,
         bool? unwatchedOnly,
@@ -87,6 +67,6 @@ internal static class BrowseMediaScope
             PageSize = 1
         };
 
-        return GetMediasQueryHandler.ApplyFilters(paginationRequest, query, userId);
+        return GetMediasQueryHandler.ApplyFilters(context, paginationRequest, query, userId);
     }
 }

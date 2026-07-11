@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
@@ -347,7 +348,7 @@ public class GetMusicRadioQueryHandler(
     {
         var query = context.Medias
             .OfType<MusicTrack>()
-            .Where(t => t.IndexedFiles.Any() || t.RemoteIndexedFiles.Any())
+            .WhereHasLibraryAvailability(context)
             .AsNoTracking();
 
         query = ApplyLibraryFilter(query, libraryIds);
@@ -370,7 +371,7 @@ public class GetMusicRadioQueryHandler(
             .Include(t => t.Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
             .Include(t => t.Album).ThenInclude(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(t => t.Album).ThenInclude(a => a.Artist)
-            .Where(t => t.IndexedFiles.Any() || t.RemoteIndexedFiles.Any())
+            .WhereHasLibraryAvailability(context)
             .AsSplitQuery()
             .AsNoTracking();
 
@@ -384,19 +385,10 @@ public class GetMusicRadioQueryHandler(
         return query;
     }
 
-    private static IQueryable<MusicTrack> ApplyLibraryFilter(IQueryable<MusicTrack> query, Guid[]? libraryIds)
-    {
-        if (libraryIds is not { Length: > 0 })
-            return query;
-
-        return query.Where(t =>
-            t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-            || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-            || t.Album.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-            || t.Album.Tracks.Any(track =>
-                track.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                || track.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))));
-    }
+    private IQueryable<MusicTrack> ApplyLibraryFilter(IQueryable<MusicTrack> query, Guid[]? libraryIds) =>
+        libraryIds is not { Length: > 0 }
+            ? query
+            : query.WhereAvailableInLibraries(context, libraryIds);
 
     private static IQueryable<MusicTrack> ApplyExcludeIdsFilter(IQueryable<MusicTrack> query, Guid[]? excludeIds)
     {

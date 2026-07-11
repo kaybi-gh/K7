@@ -672,30 +672,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             (includeMusic && (x is MusicAlbum || x is MusicTrack)));
     }
 
-    private static IQueryable<BaseMedia> ApplyLibraryFilter(IQueryable<BaseMedia> query, Guid[]? libraryIds)
-    {
-        if (libraryIds is not { Length: > 0 })
-            return query;
-
-        return query.Where(x =>
-            x is MusicAlbum
-                ? x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                        || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)))
-                : x is MusicArtist
-                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))))
-                : x is Serie
-                    ? x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))))
-                    : x is SerieSeason
-                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)))
-                        : x.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                            || x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)));
-    }
+    private IQueryable<BaseMedia> ApplyLibraryFilter(IQueryable<BaseMedia> query, Guid[]? libraryIds) =>
+        query.WhereAvailableInLibraries(context, libraryIds ?? []);
 
     private Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
         IQueryable<BaseMedia> query, Guid userId, CancellationToken cancellationToken) =>
