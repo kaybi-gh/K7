@@ -866,7 +866,7 @@ public class K7Hub(
                 IsReady = m.IsReady,
                 IsGuest = m.IsGuest
             }).ToList(),
-            Queue = group.Queue.ToList(),
+            Queue = group.SnapshotQueue(),
             GuestToken = requestingUserId == group.CreatorUserId ? group.GuestToken : null
         };
     }
