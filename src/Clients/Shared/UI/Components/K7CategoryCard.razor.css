@@ -93,7 +93,7 @@
     font-style: italic;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    color: #ffffff;
+    color: var(--color-text);
     line-height: var(--leading-tight);
     white-space: nowrap;
     overflow: hidden;
@@ -123,7 +123,7 @@
     border-radius: var(--radius-lg);
     background: var(--card-icon-color);
     font-size: 1.5rem;
-    color: #ffffff;
+    color: var(--color-text);
 }
 
 @media (max-width: 599.98px) {

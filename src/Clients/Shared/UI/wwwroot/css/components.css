@@ -22,15 +22,17 @@
 }
 /* .k7-btn:focus-visible { outline: 2px solid var(--color-accent); } */
 .k7-btn:disabled,
-.k7-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.k7-btn[disabled],
+.k7-btn--disabled,
+.k7-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 /* variants */
 .k7-btn--filled { background: var(--color-surface-2); color: var(--color-text); }
 .k7-btn--filled:hover:not(:disabled) { filter: brightness(1.15); }
 .k7-btn--filled.k7-btn--primary { background: var(--color-accent); color: var(--color-accent-fg); }
 .k7-btn--filled.k7-btn--primary:hover:not(:disabled) { filter: brightness(1.1); }
-.k7-btn--filled.k7-btn--error { background: var(--color-error); color: #fff; }
-.k7-btn--filled.k7-btn--success { background: var(--color-success); color: #fff; }
+.k7-btn--filled.k7-btn--error { background: var(--color-error); color: var(--color-text); }
+.k7-btn--filled.k7-btn--success { background: var(--color-success); color: var(--color-text); }
 .k7-btn--outlined, .k7-btn--outline { background: transparent; border: 1px solid var(--color-text-muted); color: var(--color-text); }
 .k7-btn--outlined.k7-btn--primary, .k7-btn--outline.k7-btn--primary { border-color: var(--color-accent); color: var(--color-accent); }
 .k7-btn--outlined:hover:not(:disabled), .k7-btn--outline:hover:not(:disabled) { background: var(--color-surface-hover); }
@@ -170,6 +172,7 @@
 .k7-alert--warning { background: color-mix(in srgb, var(--color-warning) 15%, transparent); border-color: var(--color-warning); color: var(--color-text); }
 .k7-alert--error { background: color-mix(in srgb, var(--color-error) 15%, transparent); border-color: var(--color-error); color: var(--color-text); }
 .k7-alert--normal { background: var(--color-surface-2); border-color: var(--color-text-muted); color: var(--color-text); }
+.k7-alert--outlined { background: transparent; border: 1px solid var(--color-border); border-left-width: 4px; }
 
 /* ── Chip ────────────────────────────────────────────────────────────────────── */
 .k7-chip {
@@ -186,6 +189,9 @@
   white-space: nowrap;
   line-height: 1.5;
 }
+.k7-chip--xs { padding: 0 var(--space-2); font-size: 0.65rem; min-height: 20px; }
+.k7-chip--sm { padding: var(--space-1) var(--space-2); font-size: 0.7rem; }
+.k7-chip--lg { padding: var(--space-2) var(--space-4); font-size: var(--text-sm); }
 .k7-chip--outlined { background: transparent; border: 1px solid var(--color-text-muted); }
 .k7-chip--primary { background: var(--color-accent); color: var(--color-accent-fg); }
 .k7-chip--primary.k7-chip--outlined { background: transparent; border-color: var(--color-accent); color: var(--color-accent); }
