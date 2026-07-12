@@ -10,7 +10,11 @@ namespace K7.Server.Web.Components.Pages.Setup;
 public partial class SetupWizard
 {
     private string? _statusMessage;
+    private bool _requiresSetupToken;
     private AuthenticationScheme[] _externalProviders = [];
+
+    [Inject]
+    private ISetupTokenProvider SetupTokenProvider { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
@@ -18,6 +22,8 @@ public partial class SetupWizard
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+
+        _requiresSetupToken = await SetupService.RequiresSetupTokenAsync();
 
         if (AuthConfig.Value.Oidc.Enabled)
         {
@@ -33,7 +39,11 @@ public partial class SetupWizard
             return;
         }
 
-        var result = await SetupService.CompleteSetupAsync(Input!.Email, Input.Password);
+        var setupToken = _requiresSetupToken
+            ? Input!.SetupToken ?? SetupTokenProvider.CurrentToken
+            : null;
+
+        var result = await SetupService.CompleteSetupAsync(Input!.Email, Input.Password, setupToken);
 
         if (result.Succeeded)
         {
@@ -58,5 +68,7 @@ public partial class SetupWizard
         [Required(ErrorMessage = "Password confirmation is required.")]
         [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
+
+        public string? SetupToken { get; set; }
     }
 }

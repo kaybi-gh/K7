@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Settings;
@@ -13,37 +14,84 @@ public class SetupService(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole> roleManager,
     IApplicationDbContext dbContext,
-    IServerSettingsService settingsService) : ISetupService
+    IServerSettingsService settingsService,
+    ISetupTokenProvider setupTokenProvider) : ISetupService
 {
+    private static readonly SemaphoreSlim _setupLock = new(1, 1);
+
     public async Task<bool> IsSetupCompletedAsync(CancellationToken cancellationToken = default)
     {
         return await settingsService.GetAsync(ServerSettingKeys.SetupCompleted, cancellationToken) == true;
     }
 
-    public async Task<Result> CompleteSetupAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<bool> RequiresSetupTokenAsync(CancellationToken cancellationToken = default)
     {
         if (await IsSetupCompletedAsync(cancellationToken))
-            return Result.Failure(["Setup has already been completed."]);
+            return false;
 
-        var adminResult = await CreateAdminAsync(email, password, cancellationToken);
-        if (!adminResult.Succeeded)
-            return adminResult;
-
-        await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
-        return Result.Success();
+        var storedHash = await settingsService.GetAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
+        return !string.IsNullOrWhiteSpace(storedHash);
     }
 
-    public async Task<Result> CompleteSetupWithExternalLoginAsync(string email, string loginProvider, string providerKey, CancellationToken cancellationToken = default)
+    public async Task<Result> CompleteSetupAsync(string email, string password, string? setupToken = null, CancellationToken cancellationToken = default)
     {
-        if (await IsSetupCompletedAsync(cancellationToken))
-            return Result.Failure(["Setup has already been completed."]);
+        await _setupLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (await IsSetupCompletedAsync(cancellationToken))
+                return Result.Failure(["Setup has already been completed."]);
 
-        var adminResult = await CreateAdminWithExternalLoginAsync(email, loginProvider, providerKey, cancellationToken);
-        if (!adminResult.Succeeded)
-            return adminResult;
+            if (!await ValidateSetupTokenAsync(setupToken, cancellationToken))
+                return Result.Failure(["A valid setup token is required. Check the server logs from first boot or set K7_SETUP_TOKEN."]);
 
-        await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
-        return Result.Success();
+            var adminResult = await CreateAdminAsync(email, password, cancellationToken);
+            if (!adminResult.Succeeded)
+                return adminResult;
+
+            await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
+            await settingsService.RemoveAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
+            setupTokenProvider.Clear();
+            return Result.Success();
+        }
+        finally
+        {
+            _setupLock.Release();
+        }
+    }
+
+    public async Task<Result> CompleteSetupWithExternalLoginAsync(string email, string loginProvider, string providerKey, string? setupToken = null, CancellationToken cancellationToken = default)
+    {
+        await _setupLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (await IsSetupCompletedAsync(cancellationToken))
+                return Result.Failure(["Setup has already been completed."]);
+
+            if (!await ValidateSetupTokenAsync(setupToken, cancellationToken))
+                return Result.Failure(["A valid setup token is required. Check the server logs from first boot or set K7_SETUP_TOKEN."]);
+
+            var adminResult = await CreateAdminWithExternalLoginAsync(email, loginProvider, providerKey, cancellationToken);
+            if (!adminResult.Succeeded)
+                return adminResult;
+
+            await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
+            await settingsService.RemoveAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
+            setupTokenProvider.Clear();
+            return Result.Success();
+        }
+        finally
+        {
+            _setupLock.Release();
+        }
+    }
+
+    private async Task<bool> ValidateSetupTokenAsync(string? setupToken, CancellationToken cancellationToken)
+    {
+        var storedHash = await settingsService.GetAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
+        if (string.IsNullOrWhiteSpace(storedHash))
+            return true;
+
+        return SetupTokenHelper.VerifyToken(setupToken, storedHash);
     }
 
     private async Task<Result> CreateAdminAsync(string email, string password, CancellationToken cancellationToken)
