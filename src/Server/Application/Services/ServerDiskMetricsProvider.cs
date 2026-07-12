@@ -145,9 +145,8 @@ public sealed class ServerDiskMetricsProvider(
         {
             return Path.GetFullPath(path);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogDebug(ex, "Failed to resolve path {Path}", path);
             return path;
         }
     }

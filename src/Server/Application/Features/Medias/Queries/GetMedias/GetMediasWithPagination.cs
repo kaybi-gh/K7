@@ -38,7 +38,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, IDatabaseCapabilities databaseCapabilities)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, IDatabaseCapabilities databaseCapabilities)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
