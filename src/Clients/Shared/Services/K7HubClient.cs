@@ -80,21 +80,18 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
                 await _hubConnection.DisposeAsync();
             }
 
-            var query = $"/hub?userId={Uri.EscapeDataString(userId)}";
+            var queryParams = new List<string>();
             if (!string.IsNullOrEmpty(deviceId))
-            {
-                query += $"&deviceId={Uri.EscapeDataString(deviceId)}";
-            }
+                queryParams.Add($"deviceId={Uri.EscapeDataString(deviceId)}");
             if (!string.IsNullOrEmpty(deviceName))
-            {
-                query += $"&deviceName={Uri.EscapeDataString(deviceName)}";
-            }
+                queryParams.Add($"deviceName={Uri.EscapeDataString(deviceName)}");
             if (!string.IsNullOrEmpty(deviceType))
-            {
-                query += $"&deviceType={Uri.EscapeDataString(deviceType)}";
-            }
+                queryParams.Add($"deviceType={Uri.EscapeDataString(deviceType)}");
 
-            var hubUrl = new Uri(baseUri, query);
+            var hubPath = queryParams.Count > 0
+                ? $"/hub?{string.Join('&', queryParams)}"
+                : "/hub";
+            var hubUrl = new Uri(baseUri, hubPath);
 
             _accessToken = accessToken;
 
