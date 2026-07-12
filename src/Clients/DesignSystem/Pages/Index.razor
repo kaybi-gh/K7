@@ -35,4 +35,18 @@
             <p>Shell structure, sidebar, mobile footer, breakpoints, and CSS custom properties.</p>
         </a>
     </div>
+
+    @if (UncataloguedComponents.Count > 0)
+    {
+        <section class="ds-section mt-8">
+            <h2>Uncatalogued K7 components</h2>
+            <p class="ds-lead">K7* components in Shared.UI not yet listed on the Components page.</p>
+            <ul class="ds-uncatalogued-list">
+                @foreach (var name in UncataloguedComponents)
+                {
+                    <li><code>@name</code></li>
+                }
+            </ul>
+        </section>
+    }
 </div>
