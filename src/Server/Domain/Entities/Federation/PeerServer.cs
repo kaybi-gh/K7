@@ -14,6 +14,7 @@ public class PeerServer : BaseAuditableEntity
     public DateTimeOffset? LastSeen { get; set; }
     public bool? LastTestSucceeded { get; set; }
     public string? FederationAssertionSecret { get; set; }
+    public string? PeeringToken { get; set; }
 
     public IList<PeerShareAgreement> ShareAgreements { get; set; } = [];
     public IList<PeerSocialAgreement> SocialAgreements { get; set; } = [];

@@ -12,14 +12,16 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Web.Services;
 
-public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPeerClient
+public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogger<PeerClient> logger) : IPeerClient
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
     };
+
     public async Task SendPeerRequestAsync(string remoteUrl, string localServerName, string localServerUrl, string token, CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(remoteUrl);
         var url = $"{remoteUrl.TrimEnd('/')}/api/federation/peer-request";
         var payload = new { RequesterUrl = localServerUrl, RequesterName = localServerName, Token = token };
         var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
@@ -28,6 +30,7 @@ public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPe
 
     public async Task SendPeerConfirmAsync(string remoteUrl, string token, string clientId, string clientSecret, string? federationAssertionSecret = null, CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(remoteUrl);
         var url = $"{remoteUrl.TrimEnd('/')}/api/federation/peer-confirm";
         var payload = new { Token = token, ClientId = clientId, ClientSecret = clientSecret, FederationAssertionSecret = federationAssertionSecret };
         var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
@@ -36,6 +39,7 @@ public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPe
 
     public async Task SendPeerRejectAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(requesterUrl);
         var url = $"{requesterUrl.TrimEnd('/')}/api/federation/peer-reject";
         var payload = new { ProviderUrl = providerUrl };
         var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
@@ -44,6 +48,7 @@ public class PeerClient(HttpClient httpClient, ILogger<PeerClient> logger) : IPe
 
     public async Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
         var url = $"{baseUrl.TrimEnd('/')}/connect/token";
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {

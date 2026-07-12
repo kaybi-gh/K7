@@ -28,6 +28,9 @@ public class PeerServerConfiguration : IEntityTypeConfiguration<PeerServer>
         builder.Property(p => p.FederationAssertionSecret)
             .HasMaxLength(256);
 
+        builder.Property(p => p.PeeringToken)
+            .HasMaxLength(128);
+
         builder.Property(p => p.Status)
             .HasConversion<string>()
             .HasMaxLength(50);
