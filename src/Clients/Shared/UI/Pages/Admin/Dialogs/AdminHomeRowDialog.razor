@@ -27,42 +27,27 @@
                                   IsChecked="@(type => _mediaTypes.Contains(type))"
                                   CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
                                   ItemLabel="@GetMediaTypeLabel" />
-                <p class="text-xs mt-1" style="color: var(--color-text-secondary);">@L["MediaTypesHint"]</p>
+                <p class="text-xs mt-1 field-hint">@L["MediaTypesHint"]</p>
             </div>
 
-            <div class="k7-field">
-                <label class="k7-label">@L["Sort"]</label>
-                <select class="k7-select" @bind="_orderBy">
-                    <option value="CreatedDesc">@L["OrderCreatedDesc"]</option>
-                    <option value="CreatedAsc">@L["OrderCreatedAsc"]</option>
-                    <option value="TitleAsc">@L["OrderTitleAsc"]</option>
-                    <option value="TitleDesc">@L["OrderTitleDesc"]</option>
-                    <option value="ReleaseDateDesc">@L["OrderReleaseDateDesc"]</option>
-                    <option value="ReleaseDateAsc">@L["OrderReleaseDateAsc"]</option>
-                    <option value="LastInteractedDesc">@L["OrderLastInteractedDesc"]</option>
-                    <option value="PopularityDesc">@L["OrderPopularityDesc"]</option>
-                    <option value="LocalRatingDesc">@L["OrderLocalRatingDesc"]</option>
-                    <option value="PlayCountDesc">@L["OrderPlayCountDesc"]</option>
-                </select>
-            </div>
+            <K7Select TValue="MediaOrderingOption" @bind-Value="_orderBy" Label="@L["Sort"]" Variant="outlined">
+                @foreach (var option in _orderOptions)
+                {
+                    <K7SelectItem Value="@option" Text="@GetOrderLabel(option)">@GetOrderLabel(option)</K7SelectItem>
+                }
+            </K7Select>
         }
 
-        <div class="k7-field">
-            <label class="k7-label">@L["Display"]</label>
-            <select class="k7-select" @bind="_displayType">
-                <option value="Carousel">@L["DisplayCarousel"]</option>
-            </select>
-        </div>
+        <K7Select TValue="HomeRowDisplayType" @bind-Value="_displayType" Label="@L["Display"]" Variant="outlined">
+            <K7SelectItem Value="@HomeRowDisplayType.Carousel" Text="@L["DisplayCarousel"]">@L["DisplayCarousel"]</K7SelectItem>
+        </K7Select>
 
-        <div class="k7-field">
-            <label class="k7-label">@L["ItemCount"]</label>
-            <select class="k7-select" @bind="_pageSize">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-        </div>
+        <K7Select TValue="int" @bind-Value="_pageSize" Label="@L["ItemCount"]" Variant="outlined">
+            @foreach (var size in _pageSizeOptions)
+            {
+                <K7SelectItem Value="@size" Text="@size.ToString()">@size</K7SelectItem>
+            }
+        </K7Select>
     </div>
 </div>
 <div class="k7-dialog-actions">

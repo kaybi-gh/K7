@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
@@ -17,6 +18,7 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
     private OfflineStorageInfo? _storageInfo;
     private DownloadTab _activeTab = DownloadTab.All;
     private string _searchQuery = string.Empty;
+    private IReadOnlyList<ButtonGroupOption<DownloadTab>> _filterOptions = [];
     private long _maxDownloadBytes;
     private long _maxCacheBytes;
     private bool _progressDirty;
@@ -39,6 +41,25 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
     private void SetTab(DownloadTab tab)
     {
         _activeTab = tab;
+    }
+
+    private void RebuildFilterOptions()
+    {
+        var options = new List<ButtonGroupOption<DownloadTab>>
+        {
+            new(DownloadTab.All, L["All"])
+        };
+
+        if (_musicGroups.Count > 0)
+            options.Add(new(DownloadTab.Music, $"{L["Music"]} ({_musicGroups.Count})"));
+
+        if (_videoItems.Count > 0)
+            options.Add(new(DownloadTab.Videos, $"{L["Videos"]} ({_videoItems.Count})"));
+
+        if (_cachedItems.Count > 0)
+            options.Add(new(DownloadTab.Cache, $"{L["CacheUsed"]} ({_cachedItems.Count})"));
+
+        _filterOptions = options;
     }
 
     protected override async Task OnInitializedAsync()
@@ -96,6 +117,8 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
                 Items = g.ToList()
             })
             .ToList();
+
+        RebuildFilterOptions();
     }
 
     private void NavigateToQueue()

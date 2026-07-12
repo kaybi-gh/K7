@@ -8,6 +8,22 @@ public partial class AdminHomeRowDialog
     private static readonly MediaType[] _availableMediaTypes =
         [MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie];
 
+    private static readonly MediaOrderingOption[] _orderOptions =
+    [
+        MediaOrderingOption.CreatedDesc,
+        MediaOrderingOption.CreatedAsc,
+        MediaOrderingOption.TitleAsc,
+        MediaOrderingOption.TitleDesc,
+        MediaOrderingOption.ReleaseDateDesc,
+        MediaOrderingOption.ReleaseDateAsc,
+        MediaOrderingOption.LastInteractedDesc,
+        MediaOrderingOption.PopularityDesc,
+        MediaOrderingOption.LocalRatingDesc,
+        MediaOrderingOption.PlayCountDesc
+    ];
+
+    private static readonly int[] _pageSizeOptions = [10, 20, 50, 100];
+
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public HomeRowEditModel? InitialModel { get; set; }
@@ -67,6 +83,21 @@ public partial class AdminHomeRowDialog
         MediaType.MusicAlbum => L["MediaTypeMusicAlbum"],
         MediaType.Serie => L["MediaTypeSerie"],
         _ => type.ToString()
+    };
+
+    private string GetOrderLabel(MediaOrderingOption option) => option switch
+    {
+        MediaOrderingOption.CreatedDesc => L["OrderCreatedDesc"],
+        MediaOrderingOption.CreatedAsc => L["OrderCreatedAsc"],
+        MediaOrderingOption.TitleAsc => L["OrderTitleAsc"],
+        MediaOrderingOption.TitleDesc => L["OrderTitleDesc"],
+        MediaOrderingOption.ReleaseDateDesc => L["OrderReleaseDateDesc"],
+        MediaOrderingOption.ReleaseDateAsc => L["OrderReleaseDateAsc"],
+        MediaOrderingOption.LastInteractedDesc => L["OrderLastInteractedDesc"],
+        MediaOrderingOption.PopularityDesc => L["OrderPopularityDesc"],
+        MediaOrderingOption.LocalRatingDesc => L["OrderLocalRatingDesc"],
+        MediaOrderingOption.PlayCountDesc => L["OrderPlayCountDesc"],
+        _ => option.ToString()
     };
 
     private void Cancel() => Dialog.Cancel();

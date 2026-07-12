@@ -90,6 +90,25 @@
     flex-wrap: wrap;
 }
 
+.downloads-filter-bar.k7-button-group {
+    flex-wrap: wrap;
+}
+
+.downloads-filter-bar .k7-button-group-item {
+    padding: 6px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--k7-outline-variant);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.downloads-filter-bar .k7-button-group-item--active {
+    background: var(--k7-primary);
+    color: var(--k7-on-primary);
+    border-color: var(--k7-primary);
+}
+
 .downloads-filter-chip {
     padding: 6px 14px;
     border-radius: 16px;

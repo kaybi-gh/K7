@@ -1,13 +1,2 @@
 @page "/admin"
 @page "/admin/{Tab}"
-@inject NavigationManager NavigationManager
-
-@code {
-    [Parameter] public string? Tab { get; set; }
-
-    protected override void OnParametersSet()
-    {
-        var target = string.IsNullOrEmpty(Tab) ? "/admin/dashboard?sidebar=open" : $"/admin/{Tab}";
-        NavigationManager.NavigateTo(target, replace: true);
-    }
-}
