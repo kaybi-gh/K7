@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Shared.Dtos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Services;
@@ -14,7 +15,8 @@ public interface IServerDiskMetricsProvider
 
 public sealed class ServerDiskMetricsProvider(
     IOptions<PathsConfiguration> pathsOptions,
-    IServiceScopeFactory scopeFactory) : IServerDiskMetricsProvider
+    IServiceScopeFactory scopeFactory,
+    ILogger<ServerDiskMetricsProvider> logger) : IServerDiskMetricsProvider
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
     private readonly PathsConfiguration _paths = pathsOptions.Value;
@@ -65,8 +67,9 @@ public sealed class ServerDiskMetricsProvider(
                 if (!entry.Sources.Contains(label, StringComparer.OrdinalIgnoreCase))
                     entry.Sources.Add(label);
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogDebug(ex, "Skipping monitored path {Label} at {Path}", label, resolvedPath);
             }
         }
 
@@ -113,8 +116,9 @@ public sealed class ServerDiskMetricsProvider(
             foreach (var library in libraries)
                 AddConfiguredPath(paths, library.Title, library.RootPath!);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Failed to load library paths for disk metrics");
         }
 
         return paths;
@@ -141,8 +145,9 @@ public sealed class ServerDiskMetricsProvider(
         {
             return Path.GetFullPath(path);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogDebug(ex, "Failed to resolve path {Path}", path);
             return path;
         }
     }
