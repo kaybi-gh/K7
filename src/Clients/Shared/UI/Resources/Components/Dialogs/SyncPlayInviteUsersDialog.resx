@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="NoUsersOnline" xml:space="preserve"><value>Aucun autre utilisateur en ligne</value></data>
+  <data name="InGroup" xml:space="preserve"><value>Dans le groupe</value></data>
+  <data name="Failed" xml:space="preserve"><value>Echec</value></data>
+  <data name="Retry" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="Sent" xml:space="preserve"><value>Envoyé</value></data>
+  <data name="Invite" xml:space="preserve"><value>Inviter</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+</root>

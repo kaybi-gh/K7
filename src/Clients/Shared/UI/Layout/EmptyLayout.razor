@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject Microsoft.JSInterop.IJSRuntime JS
+@inject IStringLocalizer<EmptyLayout> L
 
 <div class="empty-layout">
     <K7ErrorBoundary>
@@ -8,8 +9,8 @@
         </ChildContent>
         <ErrorContent>
             <div class="error-state">
-                <p style="font-size:var(--text-lg);font-weight:600;color:var(--color-text-primary)">An unexpected error occurred.</p>
-                <button class="btn btn--primary mt-4" onclick="location.reload()">Reload</button>
+                <p style="font-size:var(--text-lg);font-weight:600;color:var(--color-text-primary)">@L["UnexpectedError"]</p>
+                <button class="k7-btn k7-btn--filled k7-btn--primary mt-4" onclick="location.reload()">@L["Reload"]</button>
             </div>
         </ErrorContent>
     </K7ErrorBoundary>
@@ -28,7 +29,7 @@
 <K7SnackbarHost />
 
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    @L["UnhandledError"]
+    <a href="." class="reload">@L["Reload"]</a>
     <span class="dismiss">&#x2715;</span>
 </div>

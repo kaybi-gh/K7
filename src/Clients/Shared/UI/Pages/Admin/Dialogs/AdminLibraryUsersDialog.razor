@@ -1,4 +1,6 @@
 @using K7.Shared.Dtos.Users
+@inject IStringLocalizer<AdminLibraryUsersDialog> L
+@inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
         @if (_loading)
@@ -7,12 +9,12 @@
         }
         else if (_users.Count == 0)
         {
-            <p class="library-users__empty">Aucun utilisateur.</p>
+            <p class="library-users__empty">@L["Empty"]</p>
         }
         else
         {
             <p class="library-users__hint">
-                Activez ou desactivez l'acces a cette librairie pour chaque utilisateur.
+                @L["Hint"]
             </p>
             <K7CheckboxList TItem="UserDto"
                             Items="_users"
@@ -25,7 +27,7 @@
                             @(user.UserName ?? user.Email ?? "-")
                             @if (IsSelfExcluded(user))
                             {
-                                <K7Chip Size="sm" Color="secondary" Variant="outlined">auto</K7Chip>
+                                <K7Chip Size="sm" Color="secondary" Variant="outlined">@L["AutoExcluded"]</K7Chip>
                             }
                         </span>
                         <span class="library-users__role">@user.Role</span>
@@ -35,9 +37,9 @@
         }
     </div>
     <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
         <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
             @if (_saving) { <K7Spinner Size="sm" /> }
-            Enregistrer
+            @S["Save"]
         </K7Button>
     </div>

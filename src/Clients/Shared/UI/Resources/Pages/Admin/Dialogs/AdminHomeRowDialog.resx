@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Titre</value></data>
+  <data name="ContinueWatching" xml:space="preserve"><value>Reprise de lecture</value></data>
+  <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="MediaTypes" xml:space="preserve"><value>Types de média</value></data>
+  <data name="MediaTypesHint" xml:space="preserve"><value>Laisser vide pour afficher tous les types.</value></data>
+  <data name="Sort" xml:space="preserve"><value>Tri</value></data>
+  <data name="Display" xml:space="preserve"><value>Affichage</value></data>
+  <data name="ItemCount" xml:space="preserve"><value>Nombre d'éléments</value></data>
+  <data name="OrderCreatedDesc" xml:space="preserve"><value>Ajout récent (décroissant)</value></data>
+  <data name="OrderCreatedAsc" xml:space="preserve"><value>Ajout ancien (croissant)</value></data>
+  <data name="OrderTitleAsc" xml:space="preserve"><value>Titre (A-Z)</value></data>
+  <data name="OrderTitleDesc" xml:space="preserve"><value>Titre (Z-A)</value></data>
+  <data name="OrderReleaseDateDesc" xml:space="preserve"><value>Date de sortie (récente)</value></data>
+  <data name="OrderReleaseDateAsc" xml:space="preserve"><value>Date de sortie (ancienne)</value></data>
+  <data name="OrderLastInteractedDesc" xml:space="preserve"><value>Récemment regardé</value></data>
+  <data name="OrderPopularityDesc" xml:space="preserve"><value>Popularité</value></data>
+  <data name="OrderLocalRatingDesc" xml:space="preserve"><value>Mieux noté</value></data>
+  <data name="OrderPlayCountDesc" xml:space="preserve"><value>Plus regardé</value></data>
+  <data name="DisplayCarousel" xml:space="preserve"><value>Carrousel</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Films</value></data>
+  <data name="MediaTypeMusicAlbum" xml:space="preserve"><value>Albums musicaux</value></data>
+  <data name="MediaTypeSerie" xml:space="preserve"><value>Séries</value></data>
+</root>

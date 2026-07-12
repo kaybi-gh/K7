@@ -1,6 +1,8 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Restrictions;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
@@ -32,12 +34,12 @@ public partial class AdminRestrictedMediasDialog
         }
     }
 
-    private static string FormatType(MediaType type) => type switch
+    private string FormatType(MediaType type) => type switch
     {
-        MediaType.Movie => "Film",
-        MediaType.Serie => "Série",
-        MediaType.MusicTrack => "Musique",
-        MediaType.MusicAlbum => "Album",
+        MediaType.Movie => L["TypeMovie"],
+        MediaType.Serie => L["TypeSerie"],
+        MediaType.MusicTrack => L["TypeMusicTrack"],
+        MediaType.MusicAlbum => L["TypeMusicAlbum"],
         _ => type.ToString()
     };
 

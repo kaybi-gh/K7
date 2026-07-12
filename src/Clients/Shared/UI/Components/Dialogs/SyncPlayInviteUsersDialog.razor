@@ -1,4 +1,5 @@
 @inject ISyncPlayService SyncPlay
+@inject IStringLocalizer<SyncPlayInviteUsersDialog> L
 
 <div class="k7-dialog-content">
     @if (SyncPlay.OnlineUsers.Count == 0 && _loading)
@@ -10,7 +11,7 @@
     else if (SyncPlay.OnlineUsers.Count == 0)
     {
         <div class="d-flex justify-center py-4">
-            <span class="text-on-surface-variant">No other users online</span>
+            <span class="text-on-surface-variant">@L["NoUsersOnline"]</span>
         </div>
     }
     else
@@ -29,31 +30,31 @@
                     </div>
                     @if (user.IsInSyncPlayGroup)
                     {
-                        <span class="syncplay-invite-badge">In group</span>
+                        <span class="syncplay-invite-badge">@L["InGroup"]</span>
                     }
                     else if (_failedUsers.Contains(user.UserId))
                     {
                         <span class="syncplay-invite-badge error">
                             <K7Icon Icon="@Phosphor.Warning"  IconSize="@K7IconSize.Xs" />
-                            Failed
+                            @L["Failed"]
                         </span>
                         <K7Button Variant="tonal" Size="sm" OnClick="@(() => InviteUser(user.UserId))">
                             <K7Icon Icon="@Phosphor.ArrowClockwise"  IconSize="@K7IconSize.Xs" />
-                            Retry
+                            @L["Retry"]
                         </K7Button>
                     }
                     else if (_invitedUsers.Contains(user.UserId))
                     {
                         <span class="syncplay-invite-badge sent">
                             <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Xs" />
-                            Sent
+                            @L["Sent"]
                         </span>
                     }
                     else
                     {
                         <K7Button Variant="tonal" Size="sm" OnClick="@(() => InviteUser(user.UserId))">
                             <K7Icon Icon="@Phosphor.UserPlus"  IconSize="@K7IconSize.Xs" />
-                            Invite
+                            @L["Invite"]
                         </K7Button>
                     }
                 </div>
@@ -62,5 +63,5 @@
     }
 </div>
 <div class="k7-dialog-actions">
-    <K7Button OnClick="Close">Close</K7Button>
+    <K7Button OnClick="Close">@L["Close"]</K7Button>
 </div>
