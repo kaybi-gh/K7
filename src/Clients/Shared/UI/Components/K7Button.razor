@@ -2,9 +2,12 @@
 
 @if (!string.IsNullOrEmpty(Href))
 {
-    <a class="k7-btn k7-btn--@Variant @FocusableClass @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+    <a class="@CssClass"
        style="@Style"
-       href="@Href"
+       href="@(Disabled ? null : Href)"
+       aria-label="@ResolvedAriaLabel"
+       aria-disabled="@(Disabled ? "true" : null)"
+       tabindex="@(Disabled ? -1 : null)"
        @attributes="AdditionalAttributes">
         @if (!string.IsNullOrEmpty(StartIcon))
         {
@@ -19,10 +22,11 @@
 }
 else
 {
-    <button class="k7-btn k7-btn--@Variant @FocusableClass @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+    <button class="@CssClass"
             style="@Style"
             type="@Type"
             disabled="@Disabled"
+            aria-label="@ResolvedAriaLabel"
             @onclick="OnClick"
             @attributes="AdditionalAttributes">
         @if (!string.IsNullOrEmpty(StartIcon))

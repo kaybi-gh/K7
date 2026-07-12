@@ -45,6 +45,18 @@ public partial class AdminUsersPanel : IDisposable
     {
         HubClient.OnlineUsersPresenceUpdated -= OnOnlineUsersPresenceUpdated;
         HubClient.ConnectionStateChanged -= OnHubConnectionStateChanged;
+        _ = LeavePresenceGroupAsync();
+    }
+
+    private async Task LeavePresenceGroupAsync()
+    {
+        try
+        {
+            await HubClient.LeaveAdminStreamsGroupAsync();
+        }
+        catch
+        {
+        }
     }
 
     private async Task JoinPresenceGroupAsync()
@@ -185,7 +197,6 @@ public partial class AdminUsersPanel : IDisposable
 
         var parameters = new K7DialogParameters<AdminUserCapabilitiesDialog>
         {
-            { x => x.UserName, user.UserName ?? user.Email ?? "" },
             { x => x.Role, user.Role },
             { x => x.Overrides, overrides }
         };

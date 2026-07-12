@@ -20,5 +20,10 @@ public partial class K7Button
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
-    private string FocusableClass => Focusable ? "focusable" : "";
+    private string FocusableClass => Focusable && !Disabled ? "focusable" : "";
+
+    private string CssClass =>
+        $"k7-btn k7-btn--{Variant} {FocusableClass} {(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}")} {(Size switch { "sm" => "k7-btn--sm", "lg" => "k7-btn--lg", "xl" => "k7-btn--xl", _ => "" })} {(Disabled ? "k7-btn--disabled" : "")} {Class}".Trim();
+
+    private string? ResolvedAriaLabel => string.IsNullOrEmpty(AriaLabel) ? null : AriaLabel;
 }
