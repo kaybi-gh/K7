@@ -7,7 +7,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddExternalServices(this IServiceCollection services)
     {
-        services.AddMemoryCache(options => options.SizeLimit = 4096);
+        services.AddMemoryCache();
         services.AddHttpClient<AudioMuseMusicIntelligenceAdapter>();
         services.AddScoped<IMusicIntelligenceService, MusicIntelligenceService>();
         return services;
