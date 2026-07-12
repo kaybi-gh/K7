@@ -19,34 +19,41 @@ builder.Services.AddAuthenticationStateDeserialization();
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 builder.Services.AddTransient<UnauthorizedRedirectHandler>();
-builder.Services.AddHttpClient<K7ServerService>(httpClient =>
+builder.Services.AddHttpClient(nameof(K7ServerService), httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
 })
 .AddHttpMessageHandler<UnauthorizedRedirectHandler>();
 
-builder.Services.AddTransient<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<ILibraryService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IPlaylistService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<ICollectionService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<ISearchService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IStreamingService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IDeviceApiService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IUserAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IRatingService>(sp => sp.GetRequiredService<K7ServerService>());
-        builder.Services.AddTransient<IReviewService>(sp => sp.GetRequiredService<K7ServerService>());
-        builder.Services.AddTransient<ISocialUserService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IBackgroundTaskService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IDiagnosticsService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<K7ServerService>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var client = factory.CreateClient(nameof(K7ServerService));
+    return new K7ServerService(client);
+});
+
+builder.Services.AddSingleton<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ILibraryService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IPlaylistService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ICollectionService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ISearchService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IStreamingService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IDeviceApiService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IUserAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IRatingService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IReviewService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ISocialUserService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IBackgroundTaskService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IDiagnosticsService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<ISharedProfileApi>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<ISharedProfileLocalCache, SharedProfileLocalCache>();
