@@ -210,6 +210,13 @@ public class TranscodeJobManager : ITranscodeJobManager
             }
             else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
             {
+                if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
+                {
+                    var fault = job.FfmpegTask.Exception?.GetBaseException();
+                    _logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", jobId);
+                    job.FfmpegTask = null;
+                }
+
                 // Extend the target or start/restart ffmpeg
                 var newTarget = Math.Max(job.TargetSegmentIndex, requestedSegmentIndex + job.BufferSize);
 
@@ -269,11 +276,7 @@ public class TranscodeJobManager : ITranscodeJobManager
             {
                 try
                 {
-                    job.FfmpegCancellation.Cancel();
-                    if (job.FfmpegTask != null)
-                    {
-                        await job.FfmpegTask;
-                    }
+                    await StopFfmpegAsync(job);
                 }
                 catch (Exception ex)
                 {
@@ -322,22 +325,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         List<HlsSegment> allSegments,
         CancellationToken cancellationToken)
     {
-        // Kill existing process
-        if (job.FfmpegCancellation != null && !job.FfmpegCancellation.IsCancellationRequested)
-        {
-            try
-            {
-                job.FfmpegCancellation.Cancel();
-                if (job.FfmpegTask != null)
-                {
-                    await job.FfmpegTask;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error cancelling ffmpeg task for job {JobId}", job.JobId);
-            }
-        }
+        await StopFfmpegAsync(job);
 
         // Update target
         job.TargetSegmentIndex = startSegmentIndex + job.BufferSize;
@@ -407,37 +395,44 @@ public class TranscodeJobManager : ITranscodeJobManager
 
         try
         {
-            // Create a cancellation token for this specific ffmpeg task
+            job.FfmpegCancellation?.Dispose();
             job.FfmpegCancellation = new CancellationTokenSource();
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, job.FfmpegCancellation.Token);
 
             // Start ffmpeg in background
             job.FfmpegTask = Task.Run(async () =>
             {
-                if (job.IsAudioOnly)
+                try
                 {
-                    await _mediaTranscoder.StartAudioStreamingTranscodeAsync(
-                        job.InputFilePath,
-                        job.OutputDirectory,
-                        allSegments,
-                        startSegmentIndex,
-                        endSegmentIndex,
-                        linkedCts.Token,
-                        job.AudioTrackIndex,
-                        audioCodec);
+                    if (job.IsAudioOnly)
+                    {
+                        await _mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                            job.InputFilePath,
+                            job.OutputDirectory,
+                            allSegments,
+                            startSegmentIndex,
+                            endSegmentIndex,
+                            linkedCts.Token,
+                            job.AudioTrackIndex,
+                            audioCodec);
+                    }
+                    else
+                    {
+                        await _mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                            job.InputFilePath,
+                            job.OutputDirectory,
+                            allSegments,
+                            startSegmentIndex,
+                            endSegmentIndex,
+                            linkedCts.Token,
+                            videoCodec,
+                            job.Quality,
+                            job.SubtitleBurnInStreamIndex);
+                    }
                 }
-                else
+                finally
                 {
-                    await _mediaTranscoder.StartVideoStreamingTranscodeAsync(
-                        job.InputFilePath,
-                        job.OutputDirectory,
-                        allSegments,
-                        startSegmentIndex,
-                        endSegmentIndex,
-                        linkedCts.Token,
-                        videoCodec,
-                        job.Quality,
-                        job.SubtitleBurnInStreamIndex);
+                    linkedCts.Dispose();
                 }
             }, linkedCts.Token);
 
@@ -486,5 +481,35 @@ public class TranscodeJobManager : ITranscodeJobManager
         var endTimestamp = allSegments[toIndex].StartTimestamp;
 
         return TimeSpan.FromMilliseconds(endTimestamp - startTimestamp);
+    }
+
+    private async Task StopFfmpegAsync(TranscodeJob job)
+    {
+        if (job.FfmpegCancellation is null)
+            return;
+
+        try
+        {
+            if (!job.FfmpegCancellation.IsCancellationRequested)
+                job.FfmpegCancellation.Cancel();
+
+            if (job.FfmpegTask is not null)
+            {
+                try
+                {
+                    await job.FfmpegTask;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "ffmpeg task ended with error for job {JobId}", job.JobId);
+                }
+            }
+        }
+        finally
+        {
+            job.FfmpegCancellation.Dispose();
+            job.FfmpegCancellation = null;
+            job.FfmpegTask = null;
+        }
     }
 }
