@@ -1455,6 +1455,40 @@
         }
       }
     },
+    "/api/users/{userId}/verify-pin": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "VerifyUserPin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyUserPinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/tracks/{trackId}/similar": {
       "get": {
         "tags": [
@@ -2236,6 +2270,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LeaveSharedProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/verify-pin": {
+      "post": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "VerifySharedProfilePinEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySharedProfilePinRequest"
               }
             }
           },
@@ -10515,7 +10583,8 @@
       "CompleteSetupRequest": {
         "required": [
           "email",
-          "password"
+          "password",
+          "setupToken"
         ],
         "type": "object",
         "properties": {
@@ -10524,6 +10593,12 @@
           },
           "password": {
             "type": "string"
+          },
+          "setupToken": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19508,6 +19583,17 @@
           }
         }
       },
+      "VerifySharedProfilePinRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string"
+          }
+        }
+      },
       "VerifyTwoFactorRequest": {
         "required": [
           "code"
@@ -19515,6 +19601,17 @@
         "type": "object",
         "properties": {
           "code": {
+            "type": "string"
+          }
+        }
+      },
+      "VerifyUserPinRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
             "type": "string"
           }
         }
