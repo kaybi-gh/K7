@@ -149,12 +149,11 @@ public partial class BlazorPage
         });
     }
 
-    private static async Task<RandomAccessStreamReference?> FetchThumbnailAsync(Uri uri)
+    private async Task<RandomAccessStreamReference?> FetchThumbnailAsync(Uri uri)
     {
         try
         {
-            using var client = new HttpClient();
-            var bytes = await client.GetByteArrayAsync(uri);
+            var bytes = await _k7ServerService.HttpClient.GetByteArrayAsync(uri);
 
             // SMTC does not support WebP - convert to JPEG via SkiaSharp
             using var original = SKBitmap.Decode(bytes);

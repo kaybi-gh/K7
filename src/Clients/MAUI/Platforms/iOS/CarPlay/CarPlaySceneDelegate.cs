@@ -138,10 +138,9 @@ public class CarPlaySceneDelegate : UIResponder, ICPTemplateApplicationSceneDele
         {
             var k7Server = IPlatformApplication.Current?.Services?.GetService<IK7ServerService>();
             var absoluteUri = k7Server?.GetAbsoluteUri(artworkUrl);
-            if (absoluteUri is null) return;
+            if (absoluteUri is null || k7Server is null) return;
 
-            using var client = new HttpClient();
-            var data = await client.GetByteArrayAsync(absoluteUri);
+            var data = await k7Server.HttpClient.GetByteArrayAsync(absoluteUri);
             var nsData = NSData.FromArray(data);
             var image = UIKit.UIImage.LoadFromData(nsData);
 
