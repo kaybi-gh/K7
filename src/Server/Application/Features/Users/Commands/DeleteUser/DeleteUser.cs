@@ -45,10 +45,14 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand>
                     new ValidationFailure("Id", "Cannot delete the guest account. Disable guest mode instead.")
                 ]);
 
-            await _identityService.DeleteUserAsync(domainUser.IdentityUserId);
         }
+
+        var identityUserId = domainUser.IdentityUserId;
 
         _context.Users.Remove(domainUser);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (identityUserId is not null)
+            await _identityService.DeleteUserAsync(identityUserId);
     }
 }
