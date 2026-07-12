@@ -35,8 +35,8 @@
     </div>
 
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
-        <div style="width:100%; display:flex; align-items:center; gap:0.5rem;">
-            <div style="display:flex; align-items:center; flex-shrink:0;">
+        <div class="controls-bar-row">
+            <div class="controls-bar-left">
                 <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" Class="play-pause-btn" />
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
@@ -63,11 +63,11 @@
                 <span class="time-display">@FormatTime(_isSeeking ? _seekTarget : PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
             </div>
 
-            <div style="flex:1; min-width:0;">
+            <div class="controls-bar-seek">
                 <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
             </div>
 
-            <div style="display:flex; align-items:center; flex-shrink:0;">
+            <div class="controls-bar-right">
                 <PlaybackSettingsMenu @ref="_playbackSettingsMenu" @bind-Open="_isMenuOpen" />
 
                         <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />

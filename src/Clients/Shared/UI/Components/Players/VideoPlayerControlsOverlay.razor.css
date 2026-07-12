@@ -247,6 +247,26 @@
         bottom: 0;
     }
 
+.controls-bar-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controls-bar-left,
+.controls-bar-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.controls-bar-seek {
+    flex: 1;
+    min-width: 0;
+}
+
+/* video.js volume slider: !important overrides third-party control bar specificity */
 ::deep .volume-slider .k7-range {
     -webkit-appearance: none !important;
     background-color: rgba(255, 255, 255, 0.2) !important;

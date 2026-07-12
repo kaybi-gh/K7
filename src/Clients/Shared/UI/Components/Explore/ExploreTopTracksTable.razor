@@ -25,12 +25,12 @@ else if (_tracks.Count > 0)
                  OnRowClick="OnTrackClick"
                  RowClass="cursor-pointer">
             <HeaderContent>
-                <th style="width: 40px;">#</th>
+                <th class="explore-top-tracks__col-rank">#</th>
                 <th>@S["Title"]</th>
                 <th>@S["Artist"]</th>
                 <th>@S["Album"]</th>
-                <th style="width: 80px;"><K7Icon Icon="@Phosphor.Clock"  IconSize="@K7IconSize.Sm" /></th>
-                <th style="width: 100px;">@L["Plays"]</th>
+                <th class="explore-top-tracks__col-duration"><K7Icon Icon="@Phosphor.Clock"  IconSize="@K7IconSize.Sm" /></th>
+                <th class="explore-top-tracks__col-plays">@L["Plays"]</th>
             </HeaderContent>
             <RowTemplate>
                 <td>

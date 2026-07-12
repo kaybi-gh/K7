@@ -24,4 +24,7 @@ public partial class K7Chip
         if (e.Key is "Enter" or " ")
             await OnClick.InvokeAsync();
     }
+
+    private string ResolvedIcon =>
+        Icon.StartsWith("ph ", StringComparison.Ordinal) ? Icon : $"ph ph-{Icon}";
 }

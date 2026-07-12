@@ -165,6 +165,11 @@
     background: var(--color-bg-gray);
 }
 
+.media-card-placeholder-icon {
+    font-size: 48px;
+    opacity: 0.3;
+}
+
 .media-card-footer {
     width: 100%;
 }
