@@ -1,6 +1,12 @@
+using K7.Server.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
+
 namespace K7.Server.Web.Middleware;
 
-public sealed class SecurityHeadersMiddleware(RequestDelegate next)
+public sealed class SecurityHeadersMiddleware(
+    RequestDelegate next,
+    IOptions<AuthenticationConfiguration> authOptions,
+    IWebHostEnvironment environment)
 {
     public Task InvokeAsync(HttpContext context)
     {
@@ -9,19 +15,48 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-        headers["Content-Security-Policy"] =
-            "default-src 'self'; " +
-            "script-src 'self' 'wasm-unsafe-eval'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data: blob:; " +
-            "font-src 'self' data:; " +
-            "connect-src 'self' ws: wss:; " +
-            "media-src 'self' blob:; " +
-            "frame-ancestors 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self'";
+        headers["Content-Security-Policy"] = BuildContentSecurityPolicy(authOptions.Value, environment);
 
         return next(context);
+    }
+
+    internal static string BuildContentSecurityPolicy(
+        AuthenticationConfiguration auth,
+        IWebHostEnvironment environment)
+    {
+        var scriptSources = new List<string> { "'self'", "'wasm-unsafe-eval'", "'unsafe-inline'", "https://www.gstatic.com" };
+        var connectSources = new List<string> { "'self'", "ws:", "wss:" };
+        var formActions = new List<string> { "'self'" };
+
+        if (auth.Oidc.Enabled
+            && Uri.TryCreate(auth.Oidc.Authority, UriKind.Absolute, out var authorityUri))
+        {
+            var origin = authorityUri.GetLeftPart(UriPartial.Authority);
+            connectSources.Add(origin);
+            formActions.Add(origin);
+        }
+
+        if (environment.IsDevelopment())
+        {
+            connectSources.Add("http://localhost:*");
+            connectSources.Add("https://localhost:*");
+            connectSources.Add("ws://localhost:*");
+            connectSources.Add("wss://localhost:*");
+        }
+
+        return string.Join("; ",
+            "default-src 'self'",
+            $"script-src {string.Join(' ', scriptSources)}",
+            "script-src-attr 'unsafe-inline'",
+            "worker-src 'self' blob:",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: blob:",
+            "font-src 'self' data:",
+            $"connect-src {string.Join(' ', connectSources)}",
+            "media-src 'self' blob:",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            $"form-action {string.Join(' ', formActions)}");
     }
 }
 
