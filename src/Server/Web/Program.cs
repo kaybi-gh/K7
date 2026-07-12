@@ -1,19 +1,19 @@
 using K7.Clients.Shared.UI.Pages.Utils;
 using K7.Server.Application;
+using K7.Server.Domain.Constants;
 using K7.Server.Infrastructure.Database.Context;
-using K7.Shared;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Oidc;
+using K7.Server.Infrastructure.ExternalServices;
 using K7.Server.Infrastructure.FileSystem;
 using K7.Server.Infrastructure.MediaProcessing;
-using K7.Server.Infrastructure.ExternalServices;
 using K7.Server.Web;
 using K7.Server.Web.Components;
 using K7.Server.Web.Components.Account;
 using K7.Server.Web.Endpoints.Hubs;
-using K7.Server.Domain.Constants;
+using K7.Server.Web.Infrastructure;
 using K7.Server.Web.Middleware;
-using K7.Server.Web.Services;
+using K7.Shared;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -35,21 +35,27 @@ try
     builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddMediaProcessingServices();
     builder.Services.AddExternalServices();
-    builder.Services.AddWebServices(builder.Configuration);
+    builder.Services.AddWebServices(builder.Configuration, builder.Environment);
     builder.Services.AddEndpoints();
-    builder.Services.ConfigureCors(builder.Configuration);
+    builder.Services.ConfigureCors(builder.Configuration, builder.Environment);
     builder.Host.UseSerilog();
     builder.Configuration.ConfigureSerilog();
 
     var app = builder.Build();
     app.InitializeMediaProcessing();
-    app.UseSerilogRequestLogging();
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            if (httpContext.Request.Query.ContainsKey(EphemeralStreamTokenDefaults.QueryParameterName))
+                diagnosticContext.Set("QueryString", "[Redacted]");
+        };
+    });
     app.MapDefaultEndpoints();
 
     await app.InitializeDatabaseAsync();
     await app.InitializeOidcClientsAsync();
 
-    // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
         app.UseWebAssemblyDebugging();
@@ -57,11 +63,12 @@ try
     else
     {
         app.UseExceptionHandler("/Error", createScopeForErrors: true);
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
     }
 
+    app.UseSecurityHeaders();
     app.UseForwardedHeaders();
+    app.UseRateLimiter();
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
     app.UseAuthLegacyRedirects();
@@ -95,9 +102,13 @@ try
             typeof(K7.Clients.Web._Imports).Assembly,
             typeof(ISharedPagesPointer).Assembly);
 
-    app.MapScalarApiReference(o => {
-        o.WithOpenApiRoutePattern("/openapi/specification.json");
-    });
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapScalarApiReference(o =>
+        {
+            o.WithOpenApiRoutePattern("/openapi/specification.json");
+        });
+    }
 
     app.Run();
 }
