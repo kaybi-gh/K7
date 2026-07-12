@@ -45,28 +45,14 @@ public class K7Hub(
         await Groups.AddToGroupAsync(Context.ConnectionId, identityUserId);
 
         // Update device LastSeen timestamp and track connection
-        var httpContext = Context.GetHttpContext();
-        if (Guid.TryParse(httpContext?.Request.Query["deviceId"], out var deviceId))
+        if (TryRegisterCallerDeviceFromQuery(out var deviceId, out _))
         {
             await sender.Send(new UpdateDeviceLastSeenCommand(deviceId));
-
-            var deviceName = httpContext!.Request.Query["deviceName"].ToString();
-            var deviceType = httpContext.Request.Query["deviceType"].ToString();
-            var userDisplayName = Context.User?.FindFirstValue(ClaimTypes.Name) ?? deviceName;
-
-            var syncPlayEnabled = !bool.TryParse(httpContext.Request.Query["syncPlayEnabled"], out var spEnabled) || spEnabled;
-
-            presenceTracker.RegisterDevice(deviceId, new HubDeviceConnection(
-                Context.ConnectionId,
-                identityUserId,
-                userDisplayName,
-                deviceName,
-                deviceType,
-                syncPlayEnabled));
-
             await BroadcastConnectedDevices(identityUserId);
             await BroadcastOnlineUsersPresenceToAdminsAsync();
         }
+
+        var httpContext = Context.GetHttpContext();
         if (Guid.TryParse(httpContext?.Request.Query["indexedFileId"], out Guid indexedFileId))
         {
             double position = 0;
@@ -126,14 +112,14 @@ public class K7Hub(
 
     // --- Client-to-server methods (streaming session) ---
 
-    public Task ChangePlaybackSettings(Guid streamId, PlaybackSettingsDto playbackSettings)
+    public async Task ChangePlaybackSettings(Guid streamId, PlaybackSettingsDto playbackSettings)
     {
-        return Clients.Caller.ChangePlaybackSettings(streamId, playbackSettings);
+        await Clients.Caller.ChangePlaybackSettings(streamId, playbackSettings);
     }
 
-    public Task SendPlaybackState(Guid streamId, PlaybackState state, double position)
+    public async Task SendPlaybackState(Guid streamId, PlaybackState state, double position)
     {
-        return Clients.Caller.SendPlaybackState(streamId, state, position);
+        await Clients.Caller.SendPlaybackState(streamId, state, position);
     }
 
     public async Task SendIndexedFileStreamUri(Guid streamId, Guid indexedFileId, Guid deviceId, PlaybackSettingsDto playbackSettings)
@@ -247,10 +233,11 @@ public class K7Hub(
         await Clients.Client(controller.ConnectionId).ReceiveRemotePlaybackState(state);
     }
 
-    public Task GetConnectedDevices()
+    public async Task GetConnectedDevices()
     {
         var identityUserId = ResolveIdentityUserId();
-        if (string.IsNullOrEmpty(identityUserId)) return Task.CompletedTask;
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
 
         var devices = presenceTracker.GetDevicesForUser(identityUserId)
             .Select(kvp => new ConnectedDeviceDto
@@ -261,7 +248,7 @@ public class K7Hub(
             })
             .ToList();
 
-        return Clients.Caller.ReceiveConnectedDevicesUpdated(devices);
+        await Clients.Caller.ReceiveConnectedDevicesUpdated(devices);
     }
 
     private async Task BroadcastConnectedDevices(string identityUserId)
@@ -292,7 +279,12 @@ public class K7Hub(
         if (string.IsNullOrEmpty(identityUserId)) return;
 
         var device = ResolveCallerDevice();
-        if (device is null) return;
+        if (device is null)
+        {
+            logger.LogWarning("CreateSyncPlayGroup aborted: device not registered. ConnectionId='{ConnectionId}'", Context.ConnectionId);
+            await Clients.Caller.ReceiveSyncPlayError("device_not_registered");
+            return;
+        }
 
         SyncPlayQueueItemDto? initialMedia = request.InitialMediaReferenceId is not null
             ? new SyncPlayQueueItemDto
@@ -306,7 +298,7 @@ public class K7Hub(
             }
             : null;
 
-        var group = syncPlay.CreateGroup(identityUserId, device.Value.DeviceId, device.Value.UserDisplayName, device.Value.DeviceType, initialMedia, request.InitialPosition, request.IsPlaying);
+        var group = syncPlay.CreateGroup(identityUserId, device.Value.DeviceId, device.Value.UserDisplayName, device.Value.DeviceName, initialMedia, request.InitialPosition, request.IsPlaying);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, SyncPlayGroupName(group.GroupId));
         await Clients.Caller.ReceiveSyncPlayGroupUpdated(ToGroupDto(group, identityUserId));
@@ -333,7 +325,7 @@ public class K7Hub(
             ? guestDisplayName
             : isGuest ? "Guest" : device.Value.UserDisplayName;
 
-        var group = syncPlay.JoinGroup(groupId, identityUserId, device.Value.DeviceId, displayName, device.Value.DeviceType, isGuest);
+        var group = syncPlay.JoinGroup(groupId, identityUserId, device.Value.DeviceId, displayName, device.Value.DeviceName, isGuest);
         if (group is null)
         {
             await Clients.Caller.ReceiveSyncPlayError("group_not_found");
@@ -718,7 +710,8 @@ public class K7Hub(
     public async Task SyncPlayGetOnlineUsers()
     {
         var identityUserId = ResolveIdentityUserId();
-        if (string.IsNullOrEmpty(identityUserId)) return;
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
 
         var onlineUsers = presenceTracker.GetAllDevices()
             .Select(kvp => kvp.Value)
@@ -758,7 +751,8 @@ public class K7Hub(
     public async Task SyncPlayGetInviteLink(Guid groupId)
     {
         var identityUserId = ResolveIdentityUserId();
-        if (string.IsNullOrEmpty(identityUserId)) return;
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
 
         var token = syncPlay.GenerateInviteToken(groupId);
         if (string.IsNullOrEmpty(token))
@@ -795,7 +789,7 @@ public class K7Hub(
             ? guestDisplayName
             : isGuest ? "Guest" : device.Value.UserDisplayName;
 
-        var group = syncPlay.JoinGroup(groupId.Value, identityUserId, device.Value.DeviceId, displayName, device.Value.DeviceType, isGuest);
+        var group = syncPlay.JoinGroup(groupId.Value, identityUserId, device.Value.DeviceId, displayName, device.Value.DeviceName, isGuest);
         if (group is null)
         {
             await Clients.Caller.ReceiveSyncPlayError("group_not_found");
@@ -814,13 +808,46 @@ public class K7Hub(
         return ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
     }
 
+    private bool TryRegisterCallerDeviceFromQuery(out Guid deviceId, out HubDeviceConnection connection)
+    {
+        deviceId = default;
+        connection = null!;
+
+        var httpContext = Context.GetHttpContext();
+        if (!Guid.TryParse(httpContext?.Request.Query["deviceId"], out deviceId))
+            return false;
+
+        var identityUserId = ResolveIdentityUserId();
+        if (string.IsNullOrEmpty(identityUserId))
+            return false;
+
+        var deviceName = httpContext!.Request.Query["deviceName"].ToString();
+        var deviceType = httpContext.Request.Query["deviceType"].ToString();
+        var userDisplayName = Context.User?.FindFirstValue(ClaimTypes.Name) ?? deviceName;
+        var syncPlayEnabled = !bool.TryParse(httpContext.Request.Query["syncPlayEnabled"], out var spEnabled) || spEnabled;
+
+        connection = new HubDeviceConnection(
+            Context.ConnectionId,
+            identityUserId,
+            userDisplayName,
+            deviceName,
+            deviceType,
+            syncPlayEnabled);
+
+        presenceTracker.RegisterDevice(deviceId, connection);
+        return true;
+    }
+
     private (Guid DeviceId, string DeviceName, string DeviceType, string UserDisplayName)? ResolveCallerDevice()
     {
         var entry = presenceTracker.FindByConnectionId(Context.ConnectionId);
-        if (entry is null)
+        if (entry is not null)
+            return (entry.Value.DeviceId, entry.Value.Connection.DeviceName, entry.Value.Connection.DeviceType, entry.Value.Connection.UserDisplayName);
+
+        if (!TryRegisterCallerDeviceFromQuery(out var deviceId, out var connection))
             return null;
 
-        return (entry.Value.DeviceId, entry.Value.Connection.DeviceName, entry.Value.Connection.DeviceType, entry.Value.Connection.UserDisplayName);
+        return (deviceId, connection.DeviceName, connection.DeviceType, connection.UserDisplayName);
     }
 
     private string ResolveGroupDisplayName(Guid groupId, Guid deviceId, string fallback)
