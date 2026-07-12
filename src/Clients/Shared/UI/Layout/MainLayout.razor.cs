@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Layout;
@@ -20,6 +21,7 @@ public partial class MainLayout : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
     [Inject] private ITvHubHostService TvHubHost { get; set; } = default!;
+    [Inject] private ILogger<MainLayout> Logger { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
@@ -40,7 +42,7 @@ public partial class MainLayout : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainLayout] Theme bootstrap failed: {ex.Message}");
+            Logger.LogWarning(ex, "Theme bootstrap failed");
         }
 
         if (DeviceService.GetClientType() == ClientType.Web)
@@ -85,7 +87,7 @@ public partial class MainLayout : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainLayout] Hub startup failed: {ex}");
+            Logger.LogError(ex, "Hub startup failed");
         }
 
         var isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;

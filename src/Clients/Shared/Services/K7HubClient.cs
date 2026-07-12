@@ -3,6 +3,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.Services;
 
@@ -10,11 +11,19 @@ namespace K7.Clients.Shared.Services;
 /// Singleton service that manages a persistent SignalR connection to the K7 hub.
 /// Survives page navigation.
 /// </summary>
-public sealed class K7HubClient : IAsyncDisposable
+public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
 {
+    private static class HubGroups
+    {
+        public const string AdminStreams = nameof(AdminStreams);
+        public const string AdminFederation = nameof(AdminFederation);
+    }
+
     private HubConnection? _hubConnection;
     private bool _started;
+    private string? _accessToken;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly HashSet<string> _joinedGroups = new(StringComparer.Ordinal);
 
     public HubConnectionState State => _hubConnection?.State ?? HubConnectionState.Disconnected;
     public string? ConnectedUserId { get; private set; }
@@ -87,13 +96,12 @@ public sealed class K7HubClient : IAsyncDisposable
 
             var hubUrl = new Uri(baseUri, query);
 
+            _accessToken = accessToken;
+
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl, options =>
                 {
-                    if (!string.IsNullOrEmpty(accessToken))
-                    {
-                        options.Headers["Authorization"] = $"Bearer {accessToken}";
-                    }
+                    options.AccessTokenProvider = () => Task.FromResult<string?>(_accessToken);
                 })
                 .WithAutomaticReconnect(new InfiniteRetryPolicy())
                 .Build();
@@ -104,10 +112,10 @@ public sealed class K7HubClient : IAsyncDisposable
                 return Task.CompletedTask;
             };
 
-            _hubConnection.Reconnected += _ =>
+            _hubConnection.Reconnected += async _ =>
             {
                 ConnectionStateChanged?.Invoke(HubConnectionState.Connected);
-                return Task.CompletedTask;
+                await RejoinGroupsAsync();
             };
 
             _hubConnection.Closed += _ =>
@@ -269,6 +277,7 @@ public sealed class K7HubClient : IAsyncDisposable
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await _hubConnection.StartAsync(cts.Token);
             _started = true;
+            await RejoinGroupsAsync();
             ConnectionStateChanged?.Invoke(HubConnectionState.Connected);
         }
         finally
@@ -279,167 +288,98 @@ public sealed class K7HubClient : IAsyncDisposable
 
     public async Task JoinAdminStreamsGroupAsync()
     {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("JoinAdminStreamsGroup");
+        _joinedGroups.Add(HubGroups.AdminStreams);
+        await InvokeIfConnectedAsync("JoinAdminStreamsGroup");
     }
 
     public async Task LeaveAdminStreamsGroupAsync()
     {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("LeaveAdminStreamsGroup");
+        _joinedGroups.Remove(HubGroups.AdminStreams);
+        await InvokeIfConnectedAsync("LeaveAdminStreamsGroup");
     }
 
     public async Task JoinAdminFederationGroupAsync()
     {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("JoinAdminFederationGroup");
+        _joinedGroups.Add(HubGroups.AdminFederation);
+        await InvokeIfConnectedAsync("JoinAdminFederationGroup");
     }
 
     public async Task LeaveAdminFederationGroupAsync()
     {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("LeaveAdminFederationGroup");
+        _joinedGroups.Remove(HubGroups.AdminFederation);
+        await InvokeIfConnectedAsync("LeaveAdminFederationGroup");
     }
 
-    public async Task RequestRemotePlaybackAsync(Guid targetDeviceId, RemotePlaybackRequestDto request)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("RequestRemotePlayback", targetDeviceId, request);
-    }
+    public Task RequestRemotePlaybackAsync(Guid targetDeviceId, RemotePlaybackRequestDto request) =>
+        InvokeIfConnectedAsync("RequestRemotePlayback", targetDeviceId, request);
 
-    public async Task SendRemoteTransportCommandAsync(Guid targetDeviceId, RemoteTransportCommandDto command)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SendRemoteTransportCommand", targetDeviceId, command);
-    }
+    public Task SendRemoteTransportCommandAsync(Guid targetDeviceId, RemoteTransportCommandDto command) =>
+        InvokeIfConnectedAsync("SendRemoteTransportCommand", targetDeviceId, command);
 
-    public async Task RequestConnectedDevicesAsync()
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("GetConnectedDevices");
-    }
+    public Task RequestConnectedDevicesAsync() =>
+        InvokeIfConnectedAsync("GetConnectedDevices");
 
-    public async Task ReportRemotePlaybackStateAsync(Guid controllerDeviceId, RemotePlaybackStateDto state)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("ReportRemotePlaybackState", controllerDeviceId, state);
-    }
+    public Task ReportRemotePlaybackStateAsync(Guid controllerDeviceId, RemotePlaybackStateDto state) =>
+        InvokeIfConnectedAsync("ReportRemotePlaybackState", controllerDeviceId, state);
 
     // --- SyncPlay ---
 
-    public async Task CreateSyncPlayGroupAsync(SyncPlayCreateGroupDto request)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("CreateSyncPlayGroup", request);
-    }
+    public Task CreateSyncPlayGroupAsync(SyncPlayCreateGroupDto request) =>
+        InvokeIfConnectedAsync("CreateSyncPlayGroup", request);
 
-    public async Task JoinSyncPlayGroupAsync(Guid groupId, string? guestToken = null, string? guestDisplayName = null)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("JoinSyncPlayGroup", groupId, guestToken, guestDisplayName);
-    }
+    public Task JoinSyncPlayGroupAsync(Guid groupId, string? guestToken = null, string? guestDisplayName = null) =>
+        InvokeIfConnectedAsync("JoinSyncPlayGroup", groupId, guestToken, guestDisplayName);
 
-    public async Task LeaveSyncPlayGroupAsync(Guid groupId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("LeaveSyncPlayGroup", groupId);
-    }
+    public Task LeaveSyncPlayGroupAsync(Guid groupId) =>
+        InvokeIfConnectedAsync("LeaveSyncPlayGroup", groupId);
 
-    public async Task SyncPlayCommandAsync(Guid groupId, SyncPlayCommandType commandType, double? value = null)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayCommand", groupId, commandType, value);
-    }
+    public Task SyncPlayCommandAsync(Guid groupId, SyncPlayCommandType commandType, double? value = null) =>
+        InvokeIfConnectedAsync("SyncPlayCommand", groupId, commandType, value);
 
-    public async Task SyncPlayReportReadyAsync(Guid groupId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayReportReady", groupId);
-    }
+    public Task SyncPlayReportReadyAsync(Guid groupId) =>
+        InvokeIfConnectedAsync("SyncPlayReportReady", groupId);
 
-    public async Task SyncPlayReportPositionAsync(Guid groupId, double position)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayReportPosition", groupId, position);
-    }
+    public Task SyncPlayReportPositionAsync(Guid groupId, double position) =>
+        InvokeIfConnectedAsync("SyncPlayReportPosition", groupId, position);
 
-    public async Task SyncPlayAddToQueueAsync(Guid groupId, SyncPlayQueueItemDto item)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayAddToQueue", groupId, item);
-    }
+    public Task SyncPlayAddToQueueAsync(Guid groupId, SyncPlayQueueItemDto item) =>
+        InvokeIfConnectedAsync("SyncPlayAddToQueue", groupId, item);
 
-    public async Task SyncPlayBulkAddToQueueAsync(Guid groupId, IReadOnlyList<SyncPlayQueueItemDto> items)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayBulkAddToQueue", groupId, items);
-    }
+    public Task SyncPlayBulkAddToQueueAsync(Guid groupId, IReadOnlyList<SyncPlayQueueItemDto> items) =>
+        InvokeIfConnectedAsync("SyncPlayBulkAddToQueue", groupId, items);
 
-    public async Task SyncPlaySetCurrentMediaAsync(Guid groupId, SyncPlayQueueItemDto item)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlaySetCurrentMedia", groupId, item);
-    }
+    public Task SyncPlaySetCurrentMediaAsync(Guid groupId, SyncPlayQueueItemDto item) =>
+        InvokeIfConnectedAsync("SyncPlaySetCurrentMedia", groupId, item);
 
-    public async Task SyncPlayRemoveFromQueueAsync(Guid groupId, Guid queueItemId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayRemoveFromQueue", groupId, queueItemId);
-    }
+    public Task SyncPlayRemoveFromQueueAsync(Guid groupId, Guid queueItemId) =>
+        InvokeIfConnectedAsync("SyncPlayRemoveFromQueue", groupId, queueItemId);
 
-    public async Task SyncPlayKickAsync(Guid groupId, Guid targetDeviceId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayKick", groupId, targetDeviceId);
-    }
+    public Task SyncPlayKickAsync(Guid groupId, Guid targetDeviceId) =>
+        InvokeIfConnectedAsync("SyncPlayKick", groupId, targetDeviceId);
 
-    public async Task SyncPlaySendChatAsync(Guid groupId, string text)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlaySendChat", groupId, text);
-    }
+    public Task SyncPlaySendChatAsync(Guid groupId, string text) =>
+        InvokeIfConnectedAsync("SyncPlaySendChat", groupId, text);
 
-    public async Task SyncPlaySendReactionAsync(Guid groupId, string emoji)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlaySendReaction", groupId, emoji);
-    }
+    public Task SyncPlaySendReactionAsync(Guid groupId, string emoji) =>
+        InvokeIfConnectedAsync("SyncPlaySendReaction", groupId, emoji);
 
-    public async Task SyncPlayGenerateGuestTokenAsync(Guid groupId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayGenerateGuestToken", groupId);
-    }
+    public Task SyncPlayGenerateGuestTokenAsync(Guid groupId) =>
+        InvokeIfConnectedAsync("SyncPlayGenerateGuestToken", groupId);
 
-    public async Task SyncPlayInviteUserAsync(string targetUserId, Guid groupId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayInviteUser", targetUserId, groupId);
-    }
+    public Task SyncPlayInviteUserAsync(string targetUserId, Guid groupId) =>
+        InvokeIfConnectedAsync("SyncPlayInviteUser", targetUserId, groupId);
 
-    public async Task SyncPlayGetOnlineUsersAsync()
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayGetOnlineUsers");
-    }
+    public Task SyncPlayGetOnlineUsersAsync() =>
+        InvokeIfConnectedAsync("SyncPlayGetOnlineUsers");
 
-    public async Task SyncPlaySetEnabledAsync(bool enabled)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlaySetEnabled", enabled);
-    }
+    public Task SyncPlaySetEnabledAsync(bool enabled) =>
+        InvokeIfConnectedAsync("SyncPlaySetEnabled", enabled);
 
-    public async Task SyncPlayGetInviteLinkAsync(Guid groupId)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayGetInviteLink", groupId);
-    }
+    public Task SyncPlayGetInviteLinkAsync(Guid groupId) =>
+        InvokeIfConnectedAsync("SyncPlayGetInviteLink", groupId);
 
-    public async Task SyncPlayJoinViaInviteTokenAsync(string token, string? guestDisplayName = null)
-    {
-        if (_hubConnection?.State == HubConnectionState.Connected)
-            await _hubConnection.InvokeAsync("SyncPlayJoinViaInviteToken", token, guestDisplayName);
-    }
+    public Task SyncPlayJoinViaInviteTokenAsync(string token, string? guestDisplayName = null) =>
+        InvokeIfConnectedAsync("SyncPlayJoinViaInviteToken", token, guestDisplayName);
 
     public async ValueTask DisposeAsync()
     {
@@ -452,9 +392,32 @@ public sealed class K7HubClient : IAsyncDisposable
         _lock.Dispose();
     }
 
+    private async Task InvokeIfConnectedAsync(string methodName, params object?[] args)
+    {
+        if (_hubConnection?.State != HubConnectionState.Connected)
+        {
+            logger.LogWarning("Hub invoke dropped: {Method} (state={State})", methodName, State);
+            return;
+        }
+
+        await _hubConnection.InvokeAsync(methodName, args);
+    }
+
+    private async Task RejoinGroupsAsync()
+    {
+        if (_hubConnection?.State != HubConnectionState.Connected)
+            return;
+
+        if (_joinedGroups.Contains(HubGroups.AdminStreams))
+            await _hubConnection.InvokeAsync("JoinAdminStreamsGroup");
+
+        if (_joinedGroups.Contains(HubGroups.AdminFederation))
+            await _hubConnection.InvokeAsync("JoinAdminFederationGroup");
+    }
+
     private sealed class InfiniteRetryPolicy : IRetryPolicy
     {
         public TimeSpan? NextRetryDelay(RetryContext retryContext) =>
-            TimeSpan.FromSeconds(Math.Min(retryContext.PreviousRetryCount * 2, 10));
+            TimeSpan.FromSeconds(Math.Min((retryContext.PreviousRetryCount + 1) * 2, 10));
     }
 }
