@@ -12,6 +12,7 @@ public partial class SyncPlayDialog : IDisposable
 
     private View _view = View.Main;
     private Guid _currentDeviceId;
+    private bool _isCreating;
 
     private enum View { Main, Members }
 
@@ -22,13 +23,35 @@ public partial class SyncPlayDialog : IDisposable
             _currentDeviceId = parsed;
 
         SyncPlay.GroupUpdated += OnGroupUpdated;
+        SyncPlay.ErrorReceived += OnSyncPlayError;
         UpdateHeaderActions();
+    }
+
+    private void OnSyncPlayError(string errorCode)
+    {
+        InvokeAsync(() =>
+        {
+            _isCreating = false;
+
+            var message = errorCode switch
+            {
+                "device_not_registered" => L["SyncPlayDeviceNotRegistered"],
+                "hub_not_connected" => L["SyncPlayHubNotConnected"],
+                _ => null
+            };
+
+            if (message is not null)
+                Snackbar.Add(message, K7Severity.Warning);
+
+            StateHasChanged();
+        });
     }
 
     private void OnGroupUpdated()
     {
         InvokeAsync(() =>
         {
+            _isCreating = false;
             UpdateHeaderActions();
             StateHasChanged();
         });
@@ -146,6 +169,12 @@ public partial class SyncPlayDialog : IDisposable
 
     private async Task CreateGroup()
     {
+        if (_isCreating)
+            return;
+
+        _isCreating = true;
+        StateHasChanged();
+
         Guid? mediaReferenceId = null;
         string? mediaTitle = null;
         double mediaDuration = 0;
@@ -192,5 +221,6 @@ public partial class SyncPlayDialog : IDisposable
     public void Dispose()
     {
         SyncPlay.GroupUpdated -= OnGroupUpdated;
+        SyncPlay.ErrorReceived -= OnSyncPlayError;
     }
 }

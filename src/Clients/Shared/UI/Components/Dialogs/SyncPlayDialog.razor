@@ -90,7 +90,7 @@ else
             <K7Icon Icon="@Phosphor.UsersThree"  IconSize="@K7IconSize.Lg" />
             <span>@L["SyncPlayEmpty"]</span>
         </div>
-        <K7Button Color="primary" Variant="filled" OnClick="CreateGroup">
+        <K7Button Color="primary" Variant="filled" OnClick="CreateGroup" Disabled="_isCreating">
             <K7Icon Icon="@Phosphor.Plus"  IconSize="@K7IconSize.Sm" />
             <span>@L["CreateSyncPlay"]</span>
         </K7Button>
