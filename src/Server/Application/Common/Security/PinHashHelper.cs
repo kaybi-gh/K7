@@ -4,11 +4,13 @@ namespace K7.Server.Application.Common.Security;
 
 public static class PinHashHelper
 {
+    private const int DefaultIterations = 600_000;
+
     public static string Hash(string pin)
     {
         var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, 10_000, HashAlgorithmName.SHA256, 32);
-        return $"$PBKDF2$iterations=10000${Convert.ToHexStringLower(salt)}${Convert.ToHexStringLower(hash)}";
+        var hash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, DefaultIterations, HashAlgorithmName.SHA256, 32);
+        return $"$PBKDF2$iterations={DefaultIterations}${Convert.ToHexStringLower(salt)}${Convert.ToHexStringLower(hash)}";
     }
 
     public static bool Verify(string storedHash, string pin)

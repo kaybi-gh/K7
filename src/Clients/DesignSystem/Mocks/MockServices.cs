@@ -542,6 +542,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<bool> VerifyUserPinAsync(Guid userId, string pin, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [] });
     public Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorStatusDto { IsEnabled = false, HasAuthenticator = false, RecoveryCodesLeft = 0 });
@@ -821,7 +822,8 @@ public sealed class MockSharedProfileService : ISharedProfileService
     public Task LeaveAsync(Guid id, Guid? newHostUserId = null, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
-    public bool VerifyGroupPin(SharedProfileDto group, string pin) => true;
+    public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
+        Task.FromResult(true);
 }
 
 public sealed class MockSharedProfileSessionService : ISharedProfileSessionService

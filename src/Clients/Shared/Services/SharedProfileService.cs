@@ -1,5 +1,4 @@
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
@@ -55,6 +54,6 @@ public class SharedProfileService(
         await cache.RefreshAsync(cancellationToken);
     }
 
-    public bool VerifyGroupPin(SharedProfileDto group, string pin) =>
-        PinVerifier.Verify(group.PinHash, pin);
+    public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
+        api.VerifySharedProfilePinAsync(group.Id, pin, cancellationToken);
 }

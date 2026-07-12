@@ -465,7 +465,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             if (serverUser is not null)
             {
                 localUser.UserId = serverUser.Id;
-                localUser.PinHash = serverUser.PinHash;
+                localUser.HasPin = serverUser.HasPin;
                 if (serverUser.UserName is not null)
                     localUser.UserName = serverUser.UserName;
                 if (serverUser.Email is not null)

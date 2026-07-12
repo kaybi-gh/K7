@@ -38,7 +38,7 @@
                                       UserId="@user.UserId" />
                             <div class="select-profile-name">
                                 <span>@(user.DisplayName ?? user.UserName)</span>
-                                @if (user.PinHash is not null)
+                                @if (user.HasPin)
                                 {
                                     <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                                 }
