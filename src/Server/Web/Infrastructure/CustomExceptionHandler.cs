@@ -8,21 +8,20 @@ namespace K7.Server.Web.Infrastructure;
 
 public class CustomExceptionHandler : IExceptionHandler
 {
-    private readonly Dictionary<Type, Func<HttpContext, Exception, Task>> _exceptionHandlers;
+    private readonly Dictionary<Type, Func<HttpContext, Exception, CancellationToken, Task>> _exceptionHandlers;
 
     public CustomExceptionHandler()
     {
-        // Register known exception types and handlers.
         _exceptionHandlers = new()
-            {
-                { typeof(ValidationException), HandleValidationException },
-                { typeof(NotFoundException), HandleNotFoundException },
-                { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
-                { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
-                { typeof(BadHttpRequestException), HandleBadRequestException },
-                { typeof(HttpRequestException), HandleBadGatewayException },
-                { typeof(DbUpdateConcurrencyException), HandleConcurrencyException },
-            };
+        {
+            { typeof(ValidationException), HandleValidationException },
+            { typeof(NotFoundException), HandleNotFoundException },
+            { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
+            { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
+            { typeof(BadHttpRequestException), HandleBadRequestException },
+            { typeof(HttpRequestException), HandleBadGatewayException },
+            { typeof(DbUpdateConcurrencyException), HandleConcurrencyException },
+        };
     }
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
@@ -31,16 +30,18 @@ public class CustomExceptionHandler : IExceptionHandler
         while (current is not null)
         {
             var exceptionType = current.GetType();
-            if (_exceptionHandlers.TryGetValue(exceptionType, out var handler))
+            foreach (var (registeredType, handler) in _exceptionHandlers)
             {
-                await handler.Invoke(httpContext, current);
+                if (!registeredType.IsAssignableFrom(exceptionType))
+                    continue;
+
+                await handler.Invoke(httpContext, current, cancellationToken);
                 return true;
             }
+
             current = current.InnerException;
         }
 
-        // For API routes, return a generic 500 JSON response instead of letting the
-        // fallback exception handler serve the Blazor HTML error page.
         var path = httpContext.Request.Path.Value;
         if (path is not null && path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
         {
@@ -57,94 +58,94 @@ public class CustomExceptionHandler : IExceptionHandler
         return false;
     }
 
-    private async Task HandleValidationException(HttpContext httpContext, Exception ex)
+    private static Task HandleValidationException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         var exception = (ValidationException)ex;
 
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
+        return httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
         {
             Status = StatusCodes.Status400BadRequest,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleNotFoundException(HttpContext httpContext, Exception ex)
+    private static Task HandleNotFoundException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         var exception = (NotFoundException)ex;
 
         httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails()
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails()
         {
             Status = StatusCodes.Status404NotFound,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
             Title = "The specified resource was not found.",
             Detail = exception.Message
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleUnauthorizedAccessException(HttpContext httpContext, Exception ex)
+    private static Task HandleUnauthorizedAccessException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status401Unauthorized,
             Title = "Unauthorized",
             Type = "https://tools.ietf.org/html/rfc7235#section-3.1"
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleForbiddenAccessException(HttpContext httpContext, Exception ex)
+    private static Task HandleForbiddenAccessException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3"
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleBadRequestException(HttpContext httpContext, Exception ex)
+    private static Task HandleBadRequestException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status400BadRequest,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
             Title = "Bad request",
             Detail = ex.Message
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleBadGatewayException(HttpContext httpContext, Exception ex)
+    private static Task HandleBadGatewayException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status502BadGateway;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status502BadGateway,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.6.3",
             Title = "Bad Gateway",
             Detail = "The remote server is unreachable."
-        });
+        }, cancellationToken);
     }
 
-    private async Task HandleConcurrencyException(HttpContext httpContext, Exception ex)
+    private static Task HandleConcurrencyException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status409Conflict,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.8",
             Title = "Conflict",
             Detail = "The resource was modified by another request. Please retry."
-        });
+        }, cancellationToken);
     }
 }
