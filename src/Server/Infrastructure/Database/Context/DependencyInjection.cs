@@ -49,10 +49,14 @@ public static class DependencyInjection
         services.AddIdentityCore<ApplicationUser>(options =>
         {
             options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 6;
+            options.Password.RequiredLength = 10;
             options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
+            options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
+            options.Password.RequiredUniqueChars = 4;
+            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             options.SignIn.RequireConfirmedEmail = false;
             options.User.RequireUniqueEmail = true;
         })
@@ -87,6 +91,10 @@ public static class DependencyInjection
                        .AllowDeviceAuthorizationFlow()
                        .AllowClientCredentialsFlow()
                        .RequireProofKeyForCodeExchange();
+
+                options.SetAccessTokenLifetime(TimeSpan.FromHours(1))
+                       .SetRefreshTokenLifetime(TimeSpan.FromDays(7))
+                       .SetIdentityTokenLifetime(TimeSpan.FromMinutes(30));
 
                 options.RegisterScopes("api", Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, K7.Server.Domain.Constants.FederationScopes.Peer);
 
@@ -187,6 +195,8 @@ public static class DependencyInjection
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
+        services.AddSingleton<ISetupTokenProvider, SetupTokenProvider>();
+        services.AddSingleton<IPeerUrlGuard, PeerUrlGuard>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddSingleton<IDatabaseCapabilities, DatabaseCapabilities>();
 
@@ -198,7 +208,7 @@ public static class DependencyInjection
 
     private static void ConfigureDbContext(this DbContextOptionsBuilder options, DatabaseConfiguration databaseConfiguration, bool isDevelopment)
     {
-        var connectionString = databaseConfiguration.BuildConnectionString();
+        var connectionString = databaseConfiguration.BuildConnectionString(isDevelopment);
         Guard.Against.Null(connectionString, message: $"Database {databaseConfiguration.Provider} connection string is empty.");
 
         switch (databaseConfiguration.Provider.ToLowerInvariant())
@@ -220,14 +230,20 @@ public static class DependencyInjection
         }
     }
 
-    private static string BuildConnectionString(this DatabaseConfiguration databaseConfiguration)
+    private static string BuildConnectionString(this DatabaseConfiguration databaseConfiguration, bool isDevelopment)
     {
         return databaseConfiguration.Provider.ToLowerInvariant() switch
         {
-            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;Maximum Pool Size={databaseConfiguration.MaxPoolSize};Timeout=30;",
+            "postgres" => BuildPostgresConnectionString(databaseConfiguration, isDevelopment),
             "sqlite" => $"Data Source={databaseConfiguration.Name}.db",
             _ => throw new Exception($"Unsupported database provider: {databaseConfiguration.Provider}")
         };
+    }
+
+    private static string BuildPostgresConnectionString(DatabaseConfiguration databaseConfiguration, bool isDevelopment)
+    {
+        var errorDetail = isDevelopment ? "Include Error Detail=true;" : string.Empty;
+        return $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};{errorDetail}Maximum Pool Size={databaseConfiguration.MaxPoolSize};Timeout=30;";
     }
 
     private static X509Certificate2 LoadOrCreateCertificate(string path, string subject)
