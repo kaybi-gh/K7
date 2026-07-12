@@ -1,7 +1,7 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="k7-alert k7-alert--@Severity.ToString().ToLower() @Class" role="alert">
-    @if (!string.IsNullOrEmpty(Icon))
+<div class="k7-alert k7-alert--@Severity.ToString().ToLower() @(Variant == "outlined" ? "k7-alert--outlined" : "") @Class" role="alert">
+    @if (!NoIcon && !string.IsNullOrEmpty(Icon))
     {
         <K7Icon Icon="@Icon"  IconSize="@K7IconSize.Md" />
     }

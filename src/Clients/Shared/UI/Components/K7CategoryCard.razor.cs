@@ -16,9 +16,6 @@ public partial class K7CategoryCard
     /// <summary>CSS color used as the gradient tone when no dominant color is set.</summary>
     [Parameter] public string GradientStart { get; set; } = "rgba(80,20,20,0.85)";
 
-    /// <summary>Legacy gradient end color. Kept for API compatibility.</summary>
-    [Parameter] public string GradientEnd { get; set; } = "rgba(20,20,20,0.85)";
-
     /// <summary>Background color of the icon badge.</summary>
     [Parameter] public string IconColor { get; set; } = "rgba(0,0,0,0.55)";
 

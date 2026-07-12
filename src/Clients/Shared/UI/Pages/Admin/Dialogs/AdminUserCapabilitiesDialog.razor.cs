@@ -2,15 +2,12 @@ using K7.Clients.Shared.UI;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
 public partial class AdminUserCapabilitiesDialog
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
-    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
-    [Parameter] public string UserName { get; set; } = "";
     [Parameter] public string Role { get; set; } = Roles.User;
     [Parameter] public Dictionary<Capability, bool> Overrides { get; set; } = new();
 
@@ -38,28 +35,28 @@ public partial class AdminUserCapabilitiesDialog
     private void Cancel() => Dialog.Cancel();
     private void Submit() => Dialog.Close(K7DialogResult.Ok(Overrides));
 
-    private static string GetRoleLabel(string role) => role switch
+    private string GetRoleLabel(string role) => role switch
     {
-        Roles.Administrator => "Administrateur",
-        Roles.User => "Utilisateur",
-        Roles.Guest => "Invité",
+        Roles.Administrator => L["RoleAdministrator"],
+        Roles.User => L["RoleUser"],
+        Roles.Guest => L["RoleGuest"],
         _ => role
     };
 
-    private static string GetCapabilityLabel(Capability cap) => cap switch
+    private string GetCapabilityLabel(Capability cap) => cap switch
     {
-        Capability.CanRate => "Noter les médias",
-        Capability.CanCreatePlaylist => "Créer des playlists",
-        Capability.CanViewStats => "Voir les statistiques",
-        Capability.CanResumePlayback => "Reprendre la lecture",
-        Capability.CanViewHistory => "Voir l'historique",
-        Capability.CanManageDevices => "Gérer les appareils",
-        Capability.CanModifySettings => "Modifier les paramètres",
-        Capability.CanAccessAdmin => "Accéder à l'admin",
-        Capability.CanManageLibraries => "Gérer les librairies",
-        Capability.CanManageUsers => "Gérer les utilisateurs",
-        Capability.CanReportPlaybackProgress => "Reporter la progression",
-        Capability.CanTranscode => "Transcoder les medias",
+        Capability.CanRate => L["CapCanRate"],
+        Capability.CanCreatePlaylist => L["CapCanCreatePlaylist"],
+        Capability.CanViewStats => L["CapCanViewStats"],
+        Capability.CanResumePlayback => L["CapCanResumePlayback"],
+        Capability.CanViewHistory => L["CapCanViewHistory"],
+        Capability.CanManageDevices => L["CapCanManageDevices"],
+        Capability.CanModifySettings => L["CapCanModifySettings"],
+        Capability.CanAccessAdmin => L["CapCanAccessAdmin"],
+        Capability.CanManageLibraries => L["CapCanManageLibraries"],
+        Capability.CanManageUsers => L["CapCanManageUsers"],
+        Capability.CanReportPlaybackProgress => L["CapCanReportPlaybackProgress"],
+        Capability.CanTranscode => L["CapCanTranscode"],
         _ => cap.ToString()
     };
 }

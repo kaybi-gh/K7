@@ -53,9 +53,7 @@ else
                                 Title="@group.Title"
                                 Description="@(group.Description ?? "")"
                                 Icon="@icon"
-                                GradientStart="@gs"
-                                GradientEnd="@ge"
-                                IconColor="@ic"
+                                GradientStart="@gs"                                IconColor="@ic"
                                 ImageUrl="@imageUrl"
                                 DominantColor="@group.CoverDominantColor"
                                 CardColor="@group.CardColor"
@@ -67,9 +65,7 @@ else
                 <K7CategoryCard Title="@L["OtherUsers"]"
                                 Description="@L["OtherUsersDesc"]"
                                 Icon="users"
-                                GradientStart="rgba(60,40,80,0.85)"
-                                GradientEnd="rgba(30,20,40,0.85)"
-                                IconColor="rgba(120,80,160,0.6)"
+                                GradientStart="rgba(60,40,80,0.85)"                                IconColor="rgba(120,80,160,0.6)"
                                 Class="k7-category-card--lg"
                                 OnClick="@(() => NavigationManager.NavigateTo("/users"))" />
             }

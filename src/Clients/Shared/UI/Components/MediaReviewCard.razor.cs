@@ -23,7 +23,6 @@ public partial class MediaReviewCard
     [Parameter] public bool HideAuthor { get; set; }
     [Parameter] public RenderFragment? LeadingContent { get; set; }
     [Parameter] public string? LeadingLabel { get; set; }
-    [Parameter] public string? LeadingHref { get; set; }
     [Parameter] public MediaCardVariant? LeadingArtworkVariant { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
