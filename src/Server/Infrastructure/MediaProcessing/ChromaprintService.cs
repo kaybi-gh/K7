@@ -67,7 +67,14 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 logger.LogWarning("Chromaprint extraction timed out for '{FilePath}'", filePath);
-                try { process.Kill(entireProcessTree: true); } catch { }
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                    logger.LogDebug(ex, "Chromaprint process kill failed for '{FilePath}'", filePath);
+                }
                 return null;
             }
 

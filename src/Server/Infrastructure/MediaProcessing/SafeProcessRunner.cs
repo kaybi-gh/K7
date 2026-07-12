@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -83,18 +84,23 @@ public class SafeProcessRunner
                     {
                         await onBeforeKill(process);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"SafeProcessRunner: onBeforeKill callback failed: {ex.Message}");
+                    }
                     await Task.Delay(500, CancellationToken.None);
                 }
 
+                TryKillProcess(process);
+
                 try
                 {
-                    if (!process.HasExited)
-                        process.Kill(entireProcessTree: true);
+                    await Task.WhenAll(readerTasks);
                 }
-                catch { }
-
-                await Task.WhenAll(readerTasks.Where(t => !t.IsCompleted));
+                catch (OperationCanceledException)
+                {
+                    // Expected after linkedCts.Cancel() for timeout.
+                }
 
                 throw new TimeoutException($"Process '{fileName}' timed out after {timeout!.Value.TotalSeconds} seconds.");
             }
@@ -107,18 +113,25 @@ public class SafeProcessRunner
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            try
-            {
-                if (!process.HasExited)
-                    process.Kill(entireProcessTree: true);
-            }
-            catch { }
-
+            TryKillProcess(process);
             throw;
         }
         finally
         {
             linkedCts.Cancel();
+        }
+    }
+
+    private static void TryKillProcess(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+        {
+            Debug.WriteLine($"SafeProcessRunner: process kill failed: {ex.Message}");
         }
     }
 }
