@@ -16,7 +16,12 @@ public partial class BlazorPage : ContentPage
     private readonly BackButtonService _backButtonService;
     private readonly IK7ServerService _k7ServerService;
 
-    private static readonly string DownloadsBasePath = Path.Combine(FileSystem.AppDataDirectory, "downloads");
+    private static readonly string DownloadsBasePath = Path.GetFullPath(Path.Combine(FileSystem.AppDataDirectory, "downloads"));
+    private static readonly string DownloadsBasePathPrefix = DownloadsBasePath.EndsWith(Path.DirectorySeparatorChar)
+        ? DownloadsBasePath
+        : DownloadsBasePath + Path.DirectorySeparatorChar;
+
+    private bool _eventsDetached;
 
     public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService, IK7ServerService k7ServerService)
     {
@@ -39,9 +44,9 @@ public partial class BlazorPage : ContentPage
             return;
 
         var relativePath = Uri.UnescapeDataString(url[localFileHost.Length..]);
-        var filePath = Path.Combine(DownloadsBasePath, relativePath);
+        var filePath = Path.GetFullPath(Path.Combine(DownloadsBasePath, relativePath));
 
-        if (!filePath.StartsWith(DownloadsBasePath, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
+        if (!filePath.StartsWith(DownloadsBasePathPrefix, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
             return;
 
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
@@ -200,47 +205,94 @@ public partial class BlazorPage : ContentPage
         NativePlayer.MediaEnded += NativePlayer_MediaEnded;
         NativePlayer.MediaFailed += NativePlayer_MediaFailed;
         NativePlayer.PositionChanged += NativePlayer_PositionChanged;
+        NativePlayer.PropertyChanged += NativePlayer_PropertyChanged;
 
         _playerService.SourceChanged += OnSourceChanged;
         _playerService.IsVisibleChanged += OnIsVisibleChanged;
-        _playerService.PlayRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Play); return Task.CompletedTask; };
-        _playerService.PauseRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Pause); return Task.CompletedTask; };
-        _playerService.MuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = true); return Task.CompletedTask; };
-        _playerService.UnmuteRequest += () => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = false); return Task.CompletedTask; };
-        _playerService.VolumeChangeRequested += (volume) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.Volume = volume); return Task.CompletedTask; };
-        _playerService.PlaybackRateChangeRequested += (rate) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.Speed = rate); return Task.CompletedTask; };
-        _playerService.StopRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Stop); return Task.CompletedTask; };
-        _playerService.SeekRequested += (position) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.SeekTo(TimeSpan.FromSeconds(position))); return Task.CompletedTask; };
+        _playerService.PlayRequested += HandleVideoPlayRequested;
+        _playerService.PauseRequested += HandleVideoPauseRequested;
+        _playerService.MuteRequested += HandleVideoMuteRequested;
+        _playerService.UnmuteRequest += HandleVideoUnmuteRequested;
+        _playerService.VolumeChangeRequested += HandleVideoVolumeChangeRequested;
+        _playerService.PlaybackRateChangeRequested += HandleVideoPlaybackRateChangeRequested;
+        _playerService.StopRequested += HandleVideoStopRequested;
+        _playerService.SeekRequested += HandleVideoSeekRequested;
         _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
         InitializePlayerPlatform();
+    }
 
-        NativePlayer.PropertyChanged += (sender, e) =>
+    private Task HandleVideoPlayRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativePlayer.Play);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoPauseRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativePlayer.Pause);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoMuteRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = true);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoUnmuteRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = false);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoVolumeChangeRequested(double volume)
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativePlayer.Volume = volume);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoPlaybackRateChangeRequested(double rate)
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativePlayer.Speed = rate);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoStopRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativePlayer.Stop);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleVideoSeekRequested(double position)
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativePlayer.SeekTo(TimeSpan.FromSeconds(position)));
+        return Task.CompletedTask;
+    }
+
+    private void NativePlayer_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MediaElement.Duration))
         {
-            if (e.PropertyName == nameof(MediaElement.Duration))
+            var duration = NativePlayer.Duration.TotalSeconds;
+            if (duration > 0 && duration != _playerService.Duration)
+                _playerService.Duration = duration;
+        }
+
+        if (e.PropertyName == nameof(MediaElement.ShouldMute))
+            _playerService.IsMuted = NativePlayer.ShouldMute;
+
+        if (e.PropertyName == nameof(MediaElement.CurrentState))
+        {
+            _playerService.PlaybackState = NativePlayer.CurrentState switch
             {
-                var duration = NativePlayer.Duration.TotalSeconds;
-                if (duration > 0 && duration != _playerService.Duration)
-                {
-                    _playerService.Duration = duration;
-                }
-            }
-            if (e.PropertyName == nameof(MediaElement.ShouldMute))
-            {
-                _playerService.IsMuted = NativePlayer.ShouldMute;
-            }
-            if (e.PropertyName == nameof(MediaElement.CurrentState))
-            {
-                _playerService.PlaybackState = NativePlayer.CurrentState switch
-                {
-                    MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
-                    MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
-                    MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
-                    MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
-                    MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
-                    _ => Server.Domain.Enums.PlaybackState.Unknown,
-                };
-            }
-        };
+                MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
+                MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
+                MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
+                MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
+                MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
+                _ => Server.Domain.Enums.PlaybackState.Unknown,
+            };
+        }
     }
 
     private void OnSourceChanged(PlayerSource source)
@@ -357,6 +409,7 @@ public partial class BlazorPage : ContentPage
         base.OnDisappearing();
         NativePlayer.Stop();
         NativeAudioPlayer.Stop();
+        DetachEventHandlers();
     }
 
     private async void OnNativePlayerCloseClicked(object? sender, EventArgs e)
@@ -378,40 +431,133 @@ public partial class BlazorPage : ContentPage
         NativeAudioPlayer.PositionChanged += AudioPlayer_PositionChanged;
         NativeAudioPlayer.MediaEnded += AudioPlayer_MediaEnded;
         NativeAudioPlayer.MediaFailed += AudioPlayer_MediaFailed;
+        NativeAudioPlayer.PropertyChanged += NativeAudioPlayer_PropertyChanged;
 
         _audioPlayerService.CurrentTrackChanged += OnAudioCurrentTrackChanged;
         _audioPlayerService.SourceChanged += OnAudioSourceChanged;
-        _audioPlayerService.PlayRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Play); return Task.CompletedTask; };
-        _audioPlayerService.PauseRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Pause); return Task.CompletedTask; };
-        _audioPlayerService.StopRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Stop); return Task.CompletedTask; };
-        _audioPlayerService.SeekRequested += (position) => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.SeekTo(TimeSpan.FromSeconds(position))); return Task.CompletedTask; };
-        _audioPlayerService.MuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = true); return Task.CompletedTask; };
-        _audioPlayerService.UnmuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = false); return Task.CompletedTask; };
-        _audioPlayerService.VolumeChangeRequested += (volume) => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = volume); return Task.CompletedTask; };
-
-        NativeAudioPlayer.PropertyChanged += (sender, e) =>
-        {
-            if (e.PropertyName == nameof(MediaElement.Duration))
-            {
-                var duration = NativeAudioPlayer.Duration.TotalSeconds;
-                if (duration > 0 && duration != _audioPlayerService.Duration)
-                    _audioPlayerService.Duration = duration;
-            }
-            if (e.PropertyName == nameof(MediaElement.CurrentState))
-            {
-                _audioPlayerService.PlaybackState = NativeAudioPlayer.CurrentState switch
-                {
-                    MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
-                    MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
-                    MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
-                    MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
-                    MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
-                    _ => Server.Domain.Enums.PlaybackState.Unknown,
-                };
-            }
-        };
+        _audioPlayerService.PlayRequested += HandleAudioPlayRequested;
+        _audioPlayerService.PauseRequested += HandleAudioPauseRequested;
+        _audioPlayerService.StopRequested += HandleAudioStopRequested;
+        _audioPlayerService.SeekRequested += HandleAudioSeekRequested;
+        _audioPlayerService.MuteRequested += HandleAudioMuteRequested;
+        _audioPlayerService.UnmuteRequested += HandleAudioUnmuteRequested;
+        _audioPlayerService.VolumeChangeRequested += HandleAudioVolumeChangeRequested;
 #endif
     }
+
+    private Task HandleAudioPlayRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Play);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioPauseRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Pause);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioStopRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Stop);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioSeekRequested(double position)
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.SeekTo(TimeSpan.FromSeconds(position)));
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioMuteRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = true);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioUnmuteRequested()
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = false);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAudioVolumeChangeRequested(double volume)
+    {
+        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = volume);
+        return Task.CompletedTask;
+    }
+
+    private void NativeAudioPlayer_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MediaElement.Duration))
+        {
+            var duration = NativeAudioPlayer.Duration.TotalSeconds;
+            if (duration > 0 && duration != _audioPlayerService.Duration)
+                _audioPlayerService.Duration = duration;
+        }
+
+        if (e.PropertyName == nameof(MediaElement.CurrentState))
+        {
+            _audioPlayerService.PlaybackState = NativeAudioPlayer.CurrentState switch
+            {
+                MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
+                MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
+                MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
+                MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
+                MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
+                _ => Server.Domain.Enums.PlaybackState.Unknown,
+            };
+        }
+    }
+
+    private void DetachEventHandlers()
+    {
+        if (_eventsDetached)
+            return;
+
+        _eventsDetached = true;
+
+        blazorWebView.WebResourceRequested -= OnWebResourceRequested;
+
+        NativePlayer.MediaOpened -= NativePlayer_MediaOpened;
+        NativePlayer.MediaEnded -= NativePlayer_MediaEnded;
+        NativePlayer.MediaFailed -= NativePlayer_MediaFailed;
+        NativePlayer.PositionChanged -= NativePlayer_PositionChanged;
+        NativePlayer.PropertyChanged -= NativePlayer_PropertyChanged;
+
+        _playerService.SourceChanged -= OnSourceChanged;
+        _playerService.IsVisibleChanged -= OnIsVisibleChanged;
+        _playerService.PlayRequested -= HandleVideoPlayRequested;
+        _playerService.PauseRequested -= HandleVideoPauseRequested;
+        _playerService.MuteRequested -= HandleVideoMuteRequested;
+        _playerService.UnmuteRequest -= HandleVideoUnmuteRequested;
+        _playerService.VolumeChangeRequested -= HandleVideoVolumeChangeRequested;
+        _playerService.PlaybackRateChangeRequested -= HandleVideoPlaybackRateChangeRequested;
+        _playerService.StopRequested -= HandleVideoStopRequested;
+        _playerService.SeekRequested -= HandleVideoSeekRequested;
+        _playerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChanged;
+
+#if !ANDROID && !IOS
+        NativeAudioPlayer.PositionChanged -= AudioPlayer_PositionChanged;
+        NativeAudioPlayer.MediaEnded -= AudioPlayer_MediaEnded;
+        NativeAudioPlayer.MediaFailed -= AudioPlayer_MediaFailed;
+        NativeAudioPlayer.PropertyChanged -= NativeAudioPlayer_PropertyChanged;
+
+        _audioPlayerService.CurrentTrackChanged -= OnAudioCurrentTrackChanged;
+        _audioPlayerService.SourceChanged -= OnAudioSourceChanged;
+        _audioPlayerService.PlayRequested -= HandleAudioPlayRequested;
+        _audioPlayerService.PauseRequested -= HandleAudioPauseRequested;
+        _audioPlayerService.StopRequested -= HandleAudioStopRequested;
+        _audioPlayerService.SeekRequested -= HandleAudioSeekRequested;
+        _audioPlayerService.MuteRequested -= HandleAudioMuteRequested;
+        _audioPlayerService.UnmuteRequested -= HandleAudioUnmuteRequested;
+        _audioPlayerService.VolumeChangeRequested -= HandleAudioVolumeChangeRequested;
+#endif
+
+        DetachPlayerPlatform();
+    }
+
+    partial void DetachPlayerPlatform();
 
     private void OnAudioCurrentTrackChanged(AudioQueueItem? track)
     {
