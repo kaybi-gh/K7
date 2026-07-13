@@ -182,6 +182,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     private AudioQueueItem? _currentTrack;
     private List<AudioQueueItem> _queue = [];
     private int _currentIndex;
+    private readonly object _timerLock = new();
     private Timer? _progressTimer;
 
     public bool IsVisible => _audioVisible;
@@ -208,31 +209,60 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         if (_currentTrack is null) return;
         PlaybackState = PlaybackState.Playing;
         PlaybackStateChanged?.Invoke(PlaybackState);
-        _progressTimer ??= new Timer(_ =>
-        {
-            CurrentTime = Math.Min(CurrentTime + 1, Duration);
-            CurrentTimeChanged?.Invoke(CurrentTime);
-            if (CurrentTime >= Duration && Duration > 0)
-                _ = OnTrackEndedAsync();
-        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        StartProgressTimer();
     }
 
     public void Pause()
     {
-        _progressTimer?.Dispose();
-        _progressTimer = null;
+        StopProgressTimer();
         PlaybackState = PlaybackState.Paused;
         PlaybackStateChanged?.Invoke(PlaybackState);
     }
 
     public void Stop()
     {
-        _progressTimer?.Dispose();
-        _progressTimer = null;
+        StopProgressTimer();
         PlaybackState = PlaybackState.Idle;
         CurrentTime = 0;
         PlaybackStateChanged?.Invoke(PlaybackState);
         CurrentTimeChanged?.Invoke(0);
+    }
+
+    private void StartProgressTimer()
+    {
+        lock (_timerLock)
+        {
+            _progressTimer?.Dispose();
+            _progressTimer = new Timer(_ => TickProgress(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        }
+    }
+
+    private void StopProgressTimer()
+    {
+        lock (_timerLock)
+        {
+            _progressTimer?.Dispose();
+            _progressTimer = null;
+        }
+    }
+
+    private void TickProgress()
+    {
+        double currentTime;
+        double duration;
+        lock (_timerLock)
+        {
+            if (_progressTimer is null || PlaybackState != PlaybackState.Playing)
+                return;
+
+            duration = Duration;
+            CurrentTime = Math.Min(CurrentTime + 1, duration);
+            currentTime = CurrentTime;
+        }
+
+        CurrentTimeChanged?.Invoke(currentTime);
+        if (currentTime >= duration && duration > 0)
+            _ = OnTrackEndedAsync();
     }
 
     public void Seek(double time)
@@ -360,8 +390,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
 
     private void SetCurrentTrack(AudioQueueItem track)
     {
-        _progressTimer?.Dispose();
-        _progressTimer = null;
+        StopProgressTimer();
         _currentTrack = track;
         Duration = track.Duration ?? 180;
         CurrentTime = 0;
@@ -376,7 +405,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     // Legacy helper kept for compat
     public void SetDemoTrack(AudioQueueItem track) => SetCurrentTrack(track);
 
-    public void Dispose() { _progressTimer?.Dispose(); _progressTimer = null; }
+    public void Dispose() => StopProgressTimer();
 }
 
 // --- Server API mocks ---
@@ -1036,9 +1065,8 @@ public sealed class MockSleepTimerService : ISleepTimerService
 
     public void Start(SleepTimerMode mode, TimeSpan? duration = null)
     {
-        TimerChanged?.Clone();
-        TimerExpired?.Clone();
-        return;
+        TimerChanged?.Invoke();
+        TimerExpired?.Invoke();
     }
 }
 
