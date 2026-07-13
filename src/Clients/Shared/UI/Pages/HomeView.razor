@@ -1,0 +1,108 @@
+@using K7.Shared.Dtos.Home
+@inject IStringLocalizer<Home> L
+@inject IStringLocalizer<SharedResource> S
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="@(_isTv ? "tv-feed-page home-page home-page--tv" : "home-page")" data-initial-focus="@_homeFocusSelector">
+    @if (_isOffline)
+    {
+        <div class="home-offline-banner">
+            <K7Icon Icon="@Phosphor.WifiSlash" Style="font-size: 48px; opacity: 0.4;" />
+            <p class="home-offline-banner__title">@L["OfflineTitle"]</p>
+            <p class="home-offline-banner__subtitle">@L["OfflineSubtitle"]</p>
+            <K7Button Href="/my-space/downloads" Variant="filled" Color="primary">
+                @L["GoToDownloads"]
+            </K7Button>
+        </div>
+    }
+    else if (_isTv)
+    {
+        <HomeTvHero Model="_focusedItem" />
+    }
+    @if (isLoading)
+    {
+        @if (_isTv)
+        {
+            <VerticalCarousel>
+                @for (int i = 0; i < 3; i++)
+                {
+                    <Carousel Skeleton="true">
+                        @for (int j = 0; j < 10; j++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+            </VerticalCarousel>
+        }
+        else
+        {
+            @for (int i = 0; i < 3; i++)
+            {
+                <Carousel Skeleton="true">
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <CarouselItem>
+                            <MediaCard Skeleton="true" FooterVisible="true" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            }
+        }
+    }
+    else
+    {
+        var hasAnyCarousel = GetVisibleRows().Any();
+
+        @if (_isTv)
+        {
+            <VerticalCarousel>
+                @foreach (var row in GetVisibleRows())
+                {
+                    @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                }
+            </VerticalCarousel>
+        }
+        else
+        {
+            @foreach (var row in GetVisibleRows())
+            {
+                @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+            }
+        }
+
+        @if (!hasAnyCarousel)
+        {
+            <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
+        }
+    }
+</div>
+
+@{ RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
+{
+    return @<Carousel Title="@GetRowTitle(row.Title)">
+        @for (var cardIndex = 0; cardIndex < items.Count; cardIndex++)
+        {
+            var item = items[cardIndex];
+            <CarouselItem @key="item.Id" ItemId="@GetHomeCardId(item.Id)">
+                <MediaCard Model="@item"
+                           Variant="GetVariant(item)"
+                           Href="@GetHref(item)"
+                           OverlayEnabled="true"
+                           ProgressEnabled="progress"
+                           WatchedStatusEnabled="watched"
+                           FooterVisible="true"
+                           ExcludeMenuEnabled="_canExclude"
+                           ContinueWatchingMenuEnabled="continueWatching && _canTrackProgress"
+                           WatchStateMenuEnabled="_canSetWatchState"
+                           IsAdmin="_isAdmin"
+                           OnFocused="() => OnItemFocused(row, item, cardIndex)"
+                           OnExcludeForSelf="() => ExcludeForSelf(item)"
+                           OnExcludeForOthers="() => ExcludeForOthers(item)"
+                           OnDismissFromContinueWatching="() => DismissFromContinueWatching(item)" />
+            </CarouselItem>
+        }
+    </Carousel>;
+} }
