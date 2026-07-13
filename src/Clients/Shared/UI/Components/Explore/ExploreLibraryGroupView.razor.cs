@@ -3,14 +3,13 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
-using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Explore;
 
-public partial class ExploreLibraryGroupView
+public partial class ExploreLibraryGroupView : IDisposable
 {
-    [Inject] private IMediaService MediaService { get; set; } = default!;
+    [Inject] private IExploreGroupStore ExploreGroupStore { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     [Parameter, EditorRequired] public LibraryGroupDto Group { get; set; } = default!;
@@ -31,60 +30,41 @@ public partial class ExploreLibraryGroupView
     private static readonly HashSet<MediaOrderingOption> CreatedOrder = [MediaOrderingOption.CreatedDesc];
     private static readonly HashSet<MediaOrderingOption> TrendingOrder = [MediaOrderingOption.TrendingDesc];
     private static readonly HashSet<MediaOrderingOption> ProviderRatingOrder = [MediaOrderingOption.ProviderRatingDesc];
-    private static readonly MediaTagOrderingOption[] GenreOrder =
-    [
-        MediaTagOrderingOption.UserPlayCountDesc,
-        MediaTagOrderingOption.MediaCountDesc
-    ];
+
+    protected override void OnInitialized() => ExploreGroupStore.Changed += OnExploreGroupChanged;
 
     protected override async Task OnParametersSetAsync()
     {
         if (Group.Id == _loadedGroupId)
             return;
 
+        await LoadGroupAsync(showLoading: true);
+    }
+
+    public void Dispose() => ExploreGroupStore.Changed -= OnExploreGroupChanged;
+
+    private void OnExploreGroupChanged(Guid groupId)
+    {
+        if (groupId != Group.Id)
+            return;
+
+        _ = InvokeAsync(() => LoadGroupAsync(showLoading: false));
+    }
+
+    private async Task LoadGroupAsync(bool showLoading)
+    {
+        if (showLoading)
+            _loading = true;
+
         _loadedGroupId = Group.Id;
-        _loading = true;
-        _genres = [];
         _libraryGroupIds = [Group.Id];
         _libraryIds = Group.LibraryIds.ToArray();
 
-        if (Group.MediaType is LibraryMediaType.Movie or LibraryMediaType.Serie)
-            _genres = await LoadGenresAsync(Group.MediaType);
+        var snapshot = await ExploreGroupStore.EnsureGroupAsync(Group.Id);
+        _genres = snapshot?.Genres.ToList() ?? [];
 
         _loading = false;
     }
 
     private void GoBack() => NavigationManager.NavigateTo("/explore");
-
-    private async Task<List<MediaTagValueDto>> LoadGenresAsync(LibraryMediaType mediaType)
-    {
-        var mediaTypes = mediaType switch
-        {
-            LibraryMediaType.Movie => _movieTypes,
-            LibraryMediaType.Serie => _serieTypes,
-            _ => null
-        };
-
-        if (mediaTypes is null)
-            return [];
-
-        try
-        {
-            var result = await MediaService.GetMediaTagsAsync(new GetMediaTagsQuery
-            {
-                LibraryGroupIds = _libraryGroupIds,
-                MediaTypes = [.. mediaTypes],
-                Kinds = [MetadataTagKind.Genre],
-                OrderBy = GenreOrder,
-                PageNumber = 1,
-                PageSize = 3
-            });
-
-            return result.GetTagValues(MetadataTagKind.Genre).ToList();
-        }
-        catch
-        {
-            return [];
-        }
-    }
 }
