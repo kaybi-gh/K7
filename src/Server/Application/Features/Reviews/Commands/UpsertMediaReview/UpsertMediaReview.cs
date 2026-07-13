@@ -42,6 +42,7 @@ public class UpsertMediaReviewCommandHandler(
         {
             rating = new UserRating
             {
+                Id = Guid.NewGuid(),
                 UserId = userId,
                 MediaId = command.MediaId,
                 Value = command.Request.Rating,
@@ -49,7 +50,6 @@ public class UpsertMediaReviewCommandHandler(
                 MaximumValue = 10
             };
             context.Ratings.Add(rating);
-            await context.SaveChangesAsync(cancellationToken);
         }
         else
         {
