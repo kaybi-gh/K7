@@ -156,7 +156,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         {
             AudioFileMetadata x => GenerateAudioFileMasterPlaylist(x, query),
             VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query, hlsSegmentsAvailable),
-            _ => throw new InvalidOperationException()
+            _ => throw new InvalidOperationException(
+                $"Indexed file has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.")
         };
         return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
     }

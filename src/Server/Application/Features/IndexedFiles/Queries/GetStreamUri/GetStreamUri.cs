@@ -131,7 +131,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             return uri;
         }
 
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(
+            $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.");
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
