@@ -1,6 +1,8 @@
-<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly" NotFoundPage="typeof(NotFound)">
-    <Found Context="routeData">
-        <CascadingAuthenticationState>
+@using Microsoft.AspNetCore.Components.Authorization
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly" NotFoundPage="typeof(NotFound)">
+        <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <Authorizing>
                     @* Preload only renders for WASM pages; nothing needed here *@
@@ -23,8 +25,8 @@
                     }
                 </NotAuthorized>
             </AuthorizeRouteView>
-        </CascadingAuthenticationState>
-    </Found>
-</Router>
+        </Found>
+    </Router>
+</CascadingAuthenticationState>
 
 @* Preload is dismissed by MainLayout once auth is resolved *@

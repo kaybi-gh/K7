@@ -1,9 +1,10 @@
 @using System.Reflection
 @using K7.Clients.Shared.UI.Pages.Utils
+@using Microsoft.AspNetCore.Components.Authorization
 
-<Router AppAssembly="@typeof(MauiSignIn).Assembly" AdditionalAssemblies="@_sharedAssemblies" NotFoundPage="typeof(K7.Clients.Shared.UI.Pages.NotFound)">
-    <Found Context="routeData">
-        <CascadingAuthenticationState>
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(MauiSignIn).Assembly" AdditionalAssemblies="@_sharedAssemblies" NotFoundPage="typeof(K7.Clients.Shared.UI.Pages.NotFound)">
+        <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(K7.Clients.Shared.UI.Layout.MainLayout)">
                 <Authorizing>
                 </Authorizing>
@@ -25,9 +26,9 @@
                     }
                 </NotAuthorized>
             </AuthorizeRouteView>
-        </CascadingAuthenticationState>
-    </Found>
-</Router>
+        </Found>
+    </Router>
+</CascadingAuthenticationState>
 
 @code {
     private static readonly Assembly[] _sharedAssemblies = [typeof(ISharedPagesPointer).Assembly];
