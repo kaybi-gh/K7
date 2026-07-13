@@ -30,7 +30,7 @@ try
     builder.AddServiceDefaults();
 
     builder.Services.AddConfigurations(builder.Configuration);
-    builder.Services.EnsurePathsExist();
+    builder.Services.EnsurePathsExist(builder.Configuration);
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddMediaProcessingServices();
@@ -56,18 +56,19 @@ try
     await app.InitializeDatabaseAsync();
     await app.InitializeOidcClientsAsync();
 
+    app.UseForwardedHeaders();
+    app.UseExceptionHandler(_ => { });
+
     if (app.Environment.IsDevelopment())
     {
         app.UseWebAssemblyDebugging();
     }
     else
     {
-        app.UseExceptionHandler("/Error", createScopeForErrors: true);
         app.UseHsts();
     }
 
     app.UseSecurityHeaders();
-    app.UseForwardedHeaders();
     app.UseRateLimiter();
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
@@ -90,7 +91,6 @@ try
     app.UseAntiforgery();
     app.UseMiddleware<FederationGuardMiddleware>();
 
-    app.UseExceptionHandler(options => { });
     app.MapEndpoints();
     app.MapAdditionalIdentityEndpoints();
     app.MapHub<K7Hub>("/hub").RequireAuthorization(Policies.GuestOrAbove);

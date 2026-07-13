@@ -1,15 +1,16 @@
 ﻿using K7.Server.Application.Helpers;
 using K7.Server.Application.Common.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace K7.Server.Infrastructure.FileSystem;
 
 public static class FileSystemInitializerExtensions
 {
-    public static IServiceCollection EnsurePathsExist(this IServiceCollection services)
+    public static IServiceCollection EnsurePathsExist(this IServiceCollection services, IConfiguration configuration)
     {
-        var paths = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
+        var paths = configuration.GetSection("Paths").Get<PathsConfiguration>()
+            ?? throw new InvalidOperationException("Paths configuration section is missing.");
 
         var requiredPaths = new Dictionary<string, string>
         {
