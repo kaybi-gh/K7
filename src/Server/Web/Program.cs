@@ -11,6 +11,7 @@ using K7.Server.Web;
 using K7.Server.Web.Components;
 using K7.Server.Web.Components.Account;
 using K7.Server.Web.Endpoints.Hubs;
+using K7.Server.Domain.Constants;
 using K7.Server.Web.Middleware;
 using K7.Server.Web.Services;
 using Scalar.AspNetCore;
@@ -76,6 +77,7 @@ try
     app.UseSetupRequired();
 
     app.UseCors();
+    app.UseMiddleware<SignalRAccessTokenMiddleware>();
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseAntiforgery();
@@ -84,7 +86,7 @@ try
     app.UseExceptionHandler(options => { });
     app.MapEndpoints();
     app.MapAdditionalIdentityEndpoints();
-    app.MapHub<K7Hub>("/hub");
+    app.MapHub<K7Hub>("/hub").RequireAuthorization(Policies.GuestOrAbove);
     app.MapRazorComponents<App>()
         .WithStaticAssets()
         .AddInteractiveServerRenderMode()

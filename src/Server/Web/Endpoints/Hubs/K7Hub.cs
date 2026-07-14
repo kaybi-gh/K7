@@ -5,10 +5,12 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
@@ -17,9 +19,9 @@ namespace K7.Server.Web.Endpoints.Hubs;
 /// <summary>
 /// Central SignalR hub for all real-time communication between the server and connected clients.
 /// Each connection is associated with a user identity and added to a user-scoped group.
-/// The identity is resolved from the auth cookie when available, with a fallback to a query string
-/// parameter for environments where cookies are not transmitted (e.g. Blazor WASM WebSocket connections).
+/// The identity is resolved from authenticated claims (cookie or bearer token).
 /// </summary>
+[Authorize(Policy = Policies.GuestOrAbove)]
 public class K7Hub(
     ISender sender,
     ILogger<K7Hub> logger,
@@ -181,19 +183,9 @@ public class K7Hub(
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminFederationGroup);
     }
 
-    /// <summary>
-    /// Resolves the identity user ID from cookie auth or query string fallback.
-    /// </summary>
     private string? ResolveIdentityUserId()
     {
         var identityUserId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(identityUserId))
-        {
-            var httpContext = Context.GetHttpContext();
-            identityUserId = httpContext?.Request.Query["userId"].ToString();
-        }
-
         return string.IsNullOrEmpty(identityUserId) ? null : identityUserId;
     }
 
