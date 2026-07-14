@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
@@ -28,6 +29,7 @@ public class ApplicationDbContextInitializer(
     UserManager<ApplicationUser> userManager,
     IServerSettingsService settingsService,
     ISetupService setupService,
+    ISetupTokenProvider setupTokenProvider,
     IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
 {
     public async Task InitializeAsync()
@@ -52,6 +54,7 @@ public class ApplicationDbContextInitializer(
             await SeedGuestUserAsync();
             await MigrateExistingAdminAsync();
             await AutoSetupFromEnvAsync();
+            await EnsureSetupTokenAsync();
         }
         catch (Exception ex)
         {
@@ -121,5 +124,23 @@ public class ApplicationDbContextInitializer(
 
         if (!result.Succeeded)
             logger.LogError("Auto-setup failed: {Errors}", string.Join(", ", result.Errors));
+    }
+
+    private async Task EnsureSetupTokenAsync()
+    {
+        if (await setupService.IsSetupCompletedAsync())
+            return;
+
+        var existingHash = await settingsService.GetAsync(ServerSettingKeys.SetupTokenHash);
+        if (!string.IsNullOrWhiteSpace(existingHash))
+            return;
+
+        var token = Environment.GetEnvironmentVariable("K7_SETUP_TOKEN");
+        if (string.IsNullOrWhiteSpace(token))
+            token = SetupTokenHelper.GenerateToken();
+
+        await settingsService.SetAsync(ServerSettingKeys.SetupTokenHash, SetupTokenHelper.HashToken(token));
+        setupTokenProvider.SetToken(token);
+        logger.LogWarning("K7 setup token required for initial admin creation: {SetupToken}", token);
     }
 }

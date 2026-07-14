@@ -13,7 +13,8 @@ public class GetSetupStatus : IEndpoint
         endpointRouteBuilder.MapGet("/api/setup/status", async ([FromServices] ISetupService setupService, CancellationToken cancellationToken) =>
         {
             var isCompleted = await setupService.IsSetupCompletedAsync(cancellationToken);
-            return Results.Ok(new { isCompleted });
+            var requiresSetupToken = await setupService.RequiresSetupTokenAsync(cancellationToken);
+            return Results.Ok(new { isCompleted, requiresSetupToken });
         })
         .AllowAnonymous()
         .WithName(type.Name)

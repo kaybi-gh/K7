@@ -57,6 +57,15 @@
                     <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
                 </div>
 
+                @if (_requiresSetupToken)
+                {
+                    <div class="auth-form-field">
+                        <label>@L["SetupToken"]</label>
+                        <InputText @bind-Value="Input!.SetupToken" class="auth-input focusable" autocomplete="off" aria-required="true" />
+                        <ValidationMessage For="@(() => Input!.SetupToken)" class="auth-validation" />
+                    </div>
+                }
+
                 <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["CompleteSetup"]</button>
             </div>
         </EditForm>

@@ -53,6 +53,9 @@
   <data name="CompleteSetup" xml:space="preserve">
     <value>Create local admin account</value>
   </data>
+  <data name="SetupToken" xml:space="preserve">
+    <value>Setup token</value>
+  </data>
   <data name="EmailRequired" xml:space="preserve">
     <value>Email is required.</value>
   </data>
