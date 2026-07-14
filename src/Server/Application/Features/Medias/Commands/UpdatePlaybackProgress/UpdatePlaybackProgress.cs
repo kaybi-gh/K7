@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
@@ -42,6 +43,7 @@ public class UpdatePlaybackProgressCommandHandler(
     IPlaybackPolicySettingsProvider playbackPolicySettingsProvider,
     ISharedProfilePlaybackResolver viewingGroupPlaybackResolver,
     ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
+    IFfmpegCapabilitiesService ffmpegCapabilitiesService,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
@@ -56,6 +58,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly IPlaybackPolicySettingsProvider _playbackPolicySettingsProvider = playbackPolicySettingsProvider;
     private readonly ISharedProfilePlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
     private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
+    private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -71,6 +74,9 @@ public class UpdatePlaybackProgressCommandHandler(
         if (media is null) return;
 
         var timeNow = DateTime.UtcNow;
+
+        if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
+            await TryHydrateStreamDecisionAsync(request.SessionId, cancellationToken);
 
         var existingSession = await _context.MediaPlaybackSessions
             .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
@@ -407,6 +413,19 @@ public class UpdatePlaybackProgressCommandHandler(
         }
     }
 
+    private async Task TryHydrateStreamDecisionAsync(
+        Guid streamSessionId,
+        CancellationToken cancellationToken)
+    {
+        await StreamDecisionHydrator.TryHydrateTrackerAsync(
+            streamSessionId,
+            _activeStreamTracker,
+            _context,
+            _ffmpegCapabilitiesService,
+            _logger,
+            cancellationToken);
+    }
+
     private async Task SyncSessionDetailsFromStreamDecisionAsync(
         MediaPlaybackSession session,
         Guid streamSessionId,
@@ -470,8 +489,14 @@ public class UpdatePlaybackProgressCommandHandler(
     }
 
     private static bool IsVideoTranscoded(StreamDecisionDto sd) =>
-        sd.IsSubtitleBurnIn
+        sd.Mode == PlaybackMode.Transcode
+        || sd.IsSubtitleBurnIn
         || sd.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn)
+        || sd.Reason.HasFlag(TranscodeReason.ResolutionNotSupported)
+        || sd.Reason.HasFlag(TranscodeReason.QualityDownscale)
+        || (sd.SourceResolution is not null
+            && sd.StreamResolution is not null
+            && !string.Equals(sd.SourceResolution, sd.StreamResolution, StringComparison.OrdinalIgnoreCase))
         || (sd.SourceVideoCodec is not null
             && sd.StreamVideoCodec is not null
             && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase));

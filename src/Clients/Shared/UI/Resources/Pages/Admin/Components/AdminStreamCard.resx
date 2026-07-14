@@ -36,5 +36,6 @@
   <data name="ReasonContainer" xml:space="preserve"><value>Conteneur non supporte</value></data>
   <data name="ReasonHlsSegments" xml:space="preserve"><value>Segments HLS non disponibles</value></data>
   <data name="ReasonSubtitles" xml:space="preserve"><value>Incrustation des sous-titres</value></data>
-  <data name="ReasonResolution" xml:space="preserve"><value>Résolution non supportée</value></data>
+  <data name="ReasonResolution" xml:space="preserve"><value>R&#233;solution non support&#233;e</value></data>
+  <data name="ReasonQualityDownscale" xml:space="preserve"><value>Qualit&#233; r&#233;duite</value></data>
 </root>

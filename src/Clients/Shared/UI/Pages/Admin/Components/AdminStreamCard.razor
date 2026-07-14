@@ -32,6 +32,18 @@
             {
                 <span class="stream-card__mode-badge @OverallModeBadgeClass">@OverallModeLabel</span>
             }
+            @if (ShowEncoderBadge)
+            {
+                <span class="stream-card__encoder-badge @(IsHardwareEncoder ? "stream-card__encoder-badge--hw" : "stream-card__encoder-badge--sw")">
+                    @(IsHardwareEncoder ? L["Hardware"] : L["Software"])
+                </span>
+            }
+            @if (ShowAudioEncoderBadge)
+            {
+                <span class="stream-card__encoder-badge stream-card__encoder-badge--sw" title="@L["Software"]">
+                    @Stream.StreamDecision!.AudioEncoder
+                </span>
+            }
             @if (!string.IsNullOrEmpty(Stream.SharedProfileName))
             {
                 <K7Chip Size="sm" Color="secondary" Variant="outlined">@Stream.SharedProfileName</K7Chip>
@@ -82,6 +94,10 @@
                         <span class="stream-card__track-decision @(IsAudioTranscoded ? "stream-card__track-decision--transcode" : "stream-card__track-decision--direct")">
                             @(IsAudioTranscoded ? L["Transcode"] : L["DirectPlay"])
                         </span>
+                        @if (decision.AudioEncoder is { } audioEncoder)
+                        {
+                            <span class="stream-card__encoder">@audioEncoder (@L["Software"])</span>
+                        }
                     </div>
                 }
                 @if (HasSubtitleTrack)
@@ -134,7 +150,17 @@
             </span>
             @if (Stream.StreamDecision?.SourceResolution is { } res)
             {
-                <span class="stream-card__resolution">@FormatResolution(res)</span>
+                <span class="stream-card__resolution">
+                    @if (Stream.StreamDecision.StreamResolution is { } streamRes
+                        && !string.Equals(res, streamRes, StringComparison.OrdinalIgnoreCase))
+                    {
+                        @($"{FormatResolution(res)} {L["Arrow"]} {FormatResolution(streamRes)}")
+                    }
+                    else
+                    {
+                        @FormatResolution(res)
+                    }
+                </span>
             }
             @if (Stream.StreamDecision?.Bitrate is > 0)
             {

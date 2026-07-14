@@ -113,11 +113,31 @@
                         <span class="detail-sidebar__value">@Model.VideoDecision</span>
                     </div>
                 }
+                @if (Model.VideoEncoder is not null || Model.IsHardwareAccelerated is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["VideoEncoder"]</span>
+                        <span class="detail-sidebar__value">
+                            @(Model.VideoEncoder ?? "-")
+                            @if (Model.IsHardwareAccelerated is not null)
+                            {
+                                <span> (@(Model.IsHardwareAccelerated == true ? L["Hardware"] : L["Software"]))</span>
+                            }
+                        </span>
+                    </div>
+                }
                 @if (Model.AudioDecision is not null)
                 {
                     <div class="detail-sidebar__row">
                         <span class="detail-sidebar__label">@L["AudioDecision"]</span>
                         <span class="detail-sidebar__value">@Model.AudioDecision</span>
+                    </div>
+                }
+                @if (Model.AudioEncoder is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["AudioEncoder"]</span>
+                        <span class="detail-sidebar__value">@Model.AudioEncoder (@L["Software"])</span>
                     </div>
                 }
 

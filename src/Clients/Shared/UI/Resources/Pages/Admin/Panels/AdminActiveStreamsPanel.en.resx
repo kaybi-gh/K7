@@ -47,6 +47,7 @@
   <data name="ReasonHlsSegments" xml:space="preserve"><value>HLS segments unavailable</value></data>
   <data name="ReasonSubtitles" xml:space="preserve"><value>Subtitle burn-in</value></data>
   <data name="ReasonResolution" xml:space="preserve"><value>Unsupported resolution</value></data>
+  <data name="ReasonQualityDownscale" xml:space="preserve"><value>Reduced quality</value></data>
   <data name="Playing" xml:space="preserve"><value>Playing</value></data>
   <data name="Paused" xml:space="preserve"><value>Paused</value></data>
   <data name="Buffering" xml:space="preserve"><value>Buffering</value></data>

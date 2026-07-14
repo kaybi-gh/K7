@@ -37,6 +37,10 @@
   <data name="StreamDetails" xml:space="preserve"><value>Détails du flux</value></data>
   <data name="Mode" xml:space="preserve"><value>Mode</value></data>
   <data name="VideoDecision" xml:space="preserve"><value>Decision video</value></data>
+  <data name="VideoEncoder" xml:space="preserve"><value>Encodeur vid&#233;o</value></data>
+  <data name="AudioEncoder" xml:space="preserve"><value>Encodeur audio</value></data>
+  <data name="Hardware" xml:space="preserve"><value>mat&#233;riel</value></data>
+  <data name="Software" xml:space="preserve"><value>logiciel</value></data>
   <data name="AudioDecision" xml:space="preserve"><value>Decision audio</value></data>
   <data name="Video" xml:space="preserve"><value>Video</value></data>
   <data name="Audio" xml:space="preserve"><value>Audio</value></data>

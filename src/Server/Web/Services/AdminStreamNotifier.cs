@@ -1,8 +1,8 @@
 using K7.Server.Application.Services;
 using K7.Server.Web.Endpoints.Hubs;
-using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +10,7 @@ namespace K7.Server.Web.Services;
 
 internal sealed class AdminStreamNotifier(
     IHubContext<K7Hub, IK7HubClient> hubContext,
-    IActiveStreamTracker activeStreamTracker,
+    IServiceScopeFactory scopeFactory,
     ILogger<AdminStreamNotifier> logger) : BackgroundService
 {
     private static readonly TimeSpan BroadcastInterval = TimeSpan.FromSeconds(10);
@@ -23,28 +23,9 @@ internal sealed class AdminStreamNotifier(
         {
             try
             {
-                var streams = activeStreamTracker.GetActiveStreams()
-                    .Select(s => new ActiveStreamDto
-                    {
-                        ConnectionId = s.SessionId.ToString(),
-                        UserId = s.UserId,
-                        UserName = s.UserName,
-                        MediaId = s.MediaId,
-                        MediaTitle = s.MediaTitle,
-                        MediaType = s.MediaType,
-                        ParentId = s.ParentId,
-                        DeviceId = s.DeviceId,
-                        DeviceName = s.DeviceName,
-                        DeviceType = s.DeviceType,
-                        ThumbnailUrl = s.ThumbnailUrl,
-                        StreamDecision = s.StreamDecision,
-                        StartedAt = s.StartedAt,
-                        Position = s.Position,
-                        Duration = s.Duration,
-                        State = s.State,
-                        SharedProfileName = s.SharedProfileName
-                    })
-                    .ToList();
+                using var scope = scopeFactory.CreateScope();
+                var snapshotService = scope.ServiceProvider.GetRequiredService<IActiveStreamsSnapshotService>();
+                var streams = await snapshotService.BuildAsync(stoppingToken);
 
                 await hubContext.Clients.Group(K7Hub.AdminStreamsGroup)
                     .ReceiveActiveStreamsUpdated(streams);
