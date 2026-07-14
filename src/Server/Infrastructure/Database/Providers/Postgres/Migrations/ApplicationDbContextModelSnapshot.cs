@@ -1023,6 +1023,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("Library_ScanIssues", (string)null);
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.MediaLibraryAvailability", b =>
+                {
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("LibraryId", "MediaId");
+
+                    b.HasIndex("LibraryId");
+
+                    b.HasIndex("MediaId");
+
+                    b.ToTable("MediaLibraryAvailabilities");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
                 {
                     b.Property<Guid>("MediaId")
@@ -3698,6 +3715,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("LibraryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.MediaLibraryAvailability", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
+                        .WithMany()
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany()
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
