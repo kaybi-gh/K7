@@ -54,18 +54,21 @@ public sealed class LibraryScanSchedulerService(
         if (libraries.Count == 0)
             return;
 
-        var libraryIds = libraries.Select(l => l.Id).ToList();
-        var lastCompletedScans = await context.BackgroundTasks
-            .Where(t => t.TargetEntityId != null
-                && libraryIds.Contains(t.TargetEntityId.Value)
-                && t.Name == nameof(IndexLibraryFilesCommand)
-                && t.Status == BackgroundTaskStatus.Completed
-                && t.CompletedAt != null)
-            .GroupBy(t => t.TargetEntityId!.Value)
-            .Select(g => new { LibraryId = g.Key, CompletedAt = g.Max(t => t.CompletedAt) })
-            .ToListAsync(cancellationToken);
+        var lastScanMap = new Dictionary<Guid, DateTimeOffset?>();
+        foreach (var library in libraries)
+        {
+            var lastCompletedAt = await context.BackgroundTasks
+                .AsNoTracking()
+                .Where(t => t.TargetEntityId == library.Id
+                    && t.Name == nameof(IndexLibraryFilesCommand)
+                    && t.Status == BackgroundTaskStatus.Completed
+                    && t.CompletedAt != null)
+                .Select(t => t.CompletedAt)
+                .MaxAsync(cancellationToken);
 
-        var lastScanMap = lastCompletedScans.ToDictionary(x => x.LibraryId, x => x.CompletedAt);
+            lastScanMap[library.Id] = lastCompletedAt;
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         foreach (var library in libraries)
