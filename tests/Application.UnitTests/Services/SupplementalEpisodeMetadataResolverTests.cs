@@ -4,7 +4,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Application.UnitTests.Services;
 

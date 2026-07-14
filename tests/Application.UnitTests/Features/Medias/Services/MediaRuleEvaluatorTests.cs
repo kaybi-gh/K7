@@ -5,7 +5,7 @@ using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

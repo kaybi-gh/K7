@@ -1,5 +1,5 @@
-﻿using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Domain.Interfaces;
 public interface IMetadataProvider<T> where T : IExternalMetadata

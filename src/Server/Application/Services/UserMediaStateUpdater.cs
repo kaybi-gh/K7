@@ -54,59 +54,28 @@ public class UserMediaStateUpdater(
             context.UserMediaStates.Add(state);
         }
 
-        state.LastInteractedAt = timeNow;
-        state.LastKnownDurationSeconds = duration;
-
-        var progress = duration > 0 ? position / duration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
-
         var videoPolicy = await policyProvider.GetEffectiveVideoPolicyAsync(userId, cancellationToken);
         var audioPolicy = await policyProvider.GetEffectiveAudioPolicyAsync(userId, cancellationToken);
 
-        var completed = isMusic
-            ? progress >= audioPolicy.CompletedThresholdPercent / 100.0
-              || position >= audioPolicy.CompletedMinDurationSeconds
-            : progress >= videoPolicy.CompletedThresholdPercent / 100.0;
+        var policy = isMusic
+            ? new PlaybackProgressPolicy(true, audioPolicy.CompletedThresholdPercent, audioPolicy.CompletedMinDurationSeconds)
+            : new PlaybackProgressPolicy(false, videoPolicy.CompletedThresholdPercent, 0);
 
-        var wasNewlyCompleted = false;
-        Guid? episodeIdForEnqueue = null;
+        var result = state.RecordProgress(position, duration, policy, media, timeNow);
 
-        if (completed)
+        if (!result.IsCompleted && !isMusic
+            && ContinueWatchingEligibility.MeetsResumeThreshold(state, videoPolicy))
         {
-            if (!state.IsCompleted)
-            {
-                state.PlayCount++;
-                state.IsCompleted = true;
-                wasNewlyCompleted = true;
-            }
-
-            state.LastPlaybackPosition = 0;
-            state.ProgressPercentage = 100;
             state.ExcludedFromContinueWatching = false;
-
-            if (media is SerieEpisode episode)
-                episodeIdForEnqueue = episode.Id;
-        }
-        else
-        {
-            if (!isMusic)
-            {
-                state.LastPlaybackPosition = position;
-                state.ProgressPercentage = Math.Clamp(progress * 100, 0, 100);
-            }
-
-            if (!isMusic && ContinueWatchingEligibility.MeetsResumeThreshold(state, videoPolicy))
-            {
-                state.ExcludedFromContinueWatching = false;
-                await exclusionService.ClearExclusionCascadeAsync(
-                    userId, media, videoPolicy, timeNow, cancellationToken);
-            }
+            await exclusionService.ClearExclusionCascadeAsync(
+                userId, media, videoPolicy, timeNow, cancellationToken);
         }
 
         return new UserMediaStateUpdateResult(
-            state.ProgressPercentage,
-            state.IsCompleted,
-            wasNewlyCompleted,
-            episodeIdForEnqueue);
+            result.ProgressPercentage,
+            result.IsCompleted,
+            result.WasNewlyCompleted,
+            result.EpisodeIdForEnqueue);
     }
 }

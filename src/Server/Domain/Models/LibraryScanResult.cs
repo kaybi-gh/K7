@@ -1,4 +1,4 @@
-namespace K7.Server.Domain.ValueObjects;
+namespace K7.Server.Domain.Models;
 
 public record LibraryScanResult(
     int UnchangedCount,

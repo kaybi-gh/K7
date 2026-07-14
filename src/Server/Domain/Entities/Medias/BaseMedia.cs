@@ -38,6 +38,14 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
 
     public bool IsFieldLocked(string fieldName) => LockedFields.Contains(fieldName);
 
+    public void LockField(string fieldName)
+    {
+        if (!LockedFields.Contains(fieldName))
+            LockedFields.Add(fieldName);
+    }
+
+    public void UnlockField(string fieldName) => LockedFields.Remove(fieldName);
+
     public bool IsPictureTypeLocked(MetadataPictureType type) =>
         MetadataPictureLockHelper.IsPictureTypeLocked(LockedFields, type);
 

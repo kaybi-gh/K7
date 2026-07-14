@@ -1,4 +1,4 @@
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Domain.Interfaces;
 

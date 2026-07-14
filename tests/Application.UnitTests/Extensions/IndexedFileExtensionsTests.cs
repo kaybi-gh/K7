@@ -1,7 +1,7 @@
-﻿using K7.Server.Application.Extensions;
+using K7.Server.Application.Extensions;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using K7.Tests.Helpers.Fixtures;
 using K7.Tests.Helpers.Helpers;
 

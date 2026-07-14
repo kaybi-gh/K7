@@ -1,5 +1,5 @@
 using K7.Server.Domain.Interfaces;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing;

@@ -41,7 +41,7 @@ public class IndexLibraryPathsCommandHandler : IRequestHandler<IndexLibraryPaths
         await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, result.SkippedCount, result.InaccessiblePaths.Count, cancellationToken);
     }
 
-    private async Task UpdateScanIssuesAsync(Library entity, Domain.ValueObjects.LibraryScanResult result, CancellationToken cancellationToken)
+    private async Task UpdateScanIssuesAsync(Library entity, Domain.Models.LibraryScanResult result, CancellationToken cancellationToken)
     {
         if (result.InaccessiblePaths.Count == 0)
             return;

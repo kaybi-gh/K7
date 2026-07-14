@@ -1,6 +1,6 @@
 using System.Text.Json;
 using K7.Server.Domain.Entities.Playlists;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

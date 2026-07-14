@@ -1,6 +1,6 @@
 using System.Globalization;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Application.Features.Notifications.Services;
 

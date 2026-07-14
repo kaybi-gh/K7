@@ -1,7 +1,7 @@
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Domain.Entities.Restrictions;
 

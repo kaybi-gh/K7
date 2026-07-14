@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using K7.Server.Domain.Enums;
 
-namespace K7.Server.Domain.ValueObjects;
+namespace K7.Server.Domain.Models;
 
 public class RuleGroup
 {

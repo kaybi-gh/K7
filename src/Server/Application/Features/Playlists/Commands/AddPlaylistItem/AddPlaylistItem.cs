@@ -1,23 +1,21 @@
+using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Features.Playlists.Commands.CreatePlaylist;
-using K7.Server.Application.Services;
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities.Playlists;
-using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Playlists.Commands.AddPlaylistItem;
 
-public record AddPlaylistItemCommand : IRequest<Guid>
+public record AddPlaylistItemCommand : IRequest<Guid>, IMediaScopedRequest
 {
     public required Guid PlaylistId { get; init; }
     public required Guid MediaId { get; init; }
 }
 
-public class AddPlaylistItemCommandHandler(IApplicationDbContext context, IUser currentUser, IMediaAccessGuard accessGuard)
+public class AddPlaylistItemCommandHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<AddPlaylistItemCommand, Guid>
 {
     public async Task<Guid> Handle(AddPlaylistItemCommand request, CancellationToken cancellationToken)
     {
-        await accessGuard.EnsureAccessAsync(request.MediaId, cancellationToken);
         var playlist = await context.Playlists
             .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == currentUser.Id!.Value, cancellationToken);
 
@@ -30,23 +28,22 @@ public class AddPlaylistItemCommandHandler(IApplicationDbContext context, IUser 
 
         Guard.Against.NotFound(request.MediaId, media);
 
-        if (media.Type != playlist.MediaType)
-            throw new ValidationException($"Cannot add a media of type {media.Type} to a playlist of type {playlist.MediaType}.");
-
         var maxOrder = await context.PlaylistItems
             .Where(i => i.PlaylistId == request.PlaylistId)
             .Select(i => (int?)i.Order)
             .MaxAsync(cancellationToken) ?? -1;
 
-        var item = new PlaylistItem
+        PlaylistItem item;
+        try
         {
-            PlaylistId = playlist.Id,
-            MediaId = request.MediaId,
-            Order = maxOrder + 1
-        };
+            item = playlist.AddItem(media.Type, request.MediaId, maxOrder);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ValidationException(ex.Message);
+        }
 
         context.PlaylistItems.Add(item);
-        playlist.AddDomainEvent(new PlaylistItemAddedEvent(playlist, item));
         await context.SaveChangesAsync(cancellationToken);
 
         return item.Id;

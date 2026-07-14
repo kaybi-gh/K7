@@ -6,7 +6,7 @@ using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using K7.Shared.Dtos.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

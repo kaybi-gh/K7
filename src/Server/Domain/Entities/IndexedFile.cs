@@ -1,6 +1,6 @@
-﻿using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Domain.Entities;
 public class IndexedFile : BaseAuditableEntity
