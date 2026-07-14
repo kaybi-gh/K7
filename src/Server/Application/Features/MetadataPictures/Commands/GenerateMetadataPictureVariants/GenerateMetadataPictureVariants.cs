@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Entities;
@@ -21,35 +22,6 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly ILogger<GenerateMetadataPictureVariantsCommandHandler> _logger;
     private readonly MediaPictureReadyNotifier _pictureReadyNotifier;
-
-    /// <summary>
-    /// Target widths per picture type and size.
-    /// Key: (PictureType, Size) -> maxWidth in pixels.
-    /// </summary>
-    private static readonly Dictionary<(MetadataPictureType, MetadataPictureSize), int> VariantWidths = new()
-    {
-        // Posters and covers (2:3 ratio)
-        [(MetadataPictureType.Poster, MetadataPictureSize.Small)] = 200,
-        [(MetadataPictureType.Poster, MetadataPictureSize.Medium)] = 342,
-        [(MetadataPictureType.Cover, MetadataPictureSize.Small)] = 200,
-        [(MetadataPictureType.Cover, MetadataPictureSize.Medium)] = 342,
-
-        // Backdrops (16:9 ratio)
-        [(MetadataPictureType.Backdrop, MetadataPictureSize.Small)] = 780,
-        [(MetadataPictureType.Backdrop, MetadataPictureSize.Medium)] = 1280,
-
-        // Portraits (2:3 ratio)
-        [(MetadataPictureType.Portrait, MetadataPictureSize.Small)] = 185,
-        [(MetadataPictureType.Portrait, MetadataPictureSize.Medium)] = 342,
-
-        // Logos
-        [(MetadataPictureType.Logo, MetadataPictureSize.Small)] = 200,
-        [(MetadataPictureType.Logo, MetadataPictureSize.Medium)] = 400,
-
-        // Episode stills (16:9 ratio)
-        [(MetadataPictureType.Still, MetadataPictureSize.Small)] = 640,
-        [(MetadataPictureType.Still, MetadataPictureSize.Medium)] = 1280,
-    };
 
     public GenerateMetadataPictureVariantsCommandHandler(
         IApplicationDbContext context,
@@ -116,13 +88,24 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             }
         }
 
-        foreach (var ((pictureType, size), maxWidth) in VariantWidths)
+        foreach (MetadataPictureSize size in Enum.GetValues<MetadataPictureSize>())
         {
-            if (pictureType != picture.Type)
+            if (!MetadataPictureVariantRules.TryGetTargetWidth(picture.Type, size, out var maxWidth))
                 continue;
 
             if (existingSizes.Contains(size))
                 continue;
+
+            if (picture.OriginalWidth is > 0
+                && !MetadataPictureVariantRules.ShouldGenerateVariant(picture.Type, size, picture.OriginalWidth.Value))
+            {
+                _logger.LogDebug(
+                    "Skipping {Size} variant for MetadataPicture {PictureId}: original width {OriginalWidth}px is not larger than target",
+                    size,
+                    picture.Id,
+                    picture.OriginalWidth);
+                continue;
+            }
 
             var variantFileName = $"{picture.Id}_{size.ToString().ToLowerInvariant()}.webp";
             var variantPath = Path.Combine(directory, variantFileName);
