@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using OpenIddict.Abstractions;
@@ -34,7 +35,8 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-            options.ConfigureDbContext(sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value);
+            var isDevelopment = sp.GetRequiredService<IHostEnvironment>().IsDevelopment();
+            options.ConfigureDbContext(sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value, isDevelopment);
             options.UseOpenIddict();
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.OptionalDependentWithoutIdentifyingPropertyWarning));
         });
@@ -189,7 +191,7 @@ public static class DependencyInjection
         return services;
     }
 
-    private static void ConfigureDbContext(this DbContextOptionsBuilder options, DatabaseConfiguration databaseConfiguration)
+    private static void ConfigureDbContext(this DbContextOptionsBuilder options, DatabaseConfiguration databaseConfiguration, bool isDevelopment)
     {
         var connectionString = databaseConfiguration.BuildConnectionString();
         Guard.Against.Null(connectionString, message: $"Database {databaseConfiguration.Provider} connection string is empty.");
@@ -198,8 +200,9 @@ public static class DependencyInjection
         {
             case "postgres":
                 options.UseNpgsql(connectionString!, x => x
-                    .MigrationsAssembly(DatabaseProvider.Postgres.Assembly))
-                    .EnableSensitiveDataLogging();
+                    .MigrationsAssembly(DatabaseProvider.Postgres.Assembly));
+                if (isDevelopment)
+                    options.EnableSensitiveDataLogging();
                 break;
 
             case "sqlite":
