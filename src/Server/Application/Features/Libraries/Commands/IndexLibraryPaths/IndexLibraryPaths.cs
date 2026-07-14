@@ -46,10 +46,9 @@ public class IndexLibraryPathsCommandHandler : IRequestHandler<IndexLibraryPaths
         if (result.InaccessiblePaths.Count == 0)
             return;
 
-        var existingIssues = await _context.ScanIssues
+        await _context.ScanIssues
             .Where(s => s.LibraryId == entity.Id)
-            .ToListAsync(cancellationToken);
-        _context.ScanIssues.RemoveRange(existingIssues);
+            .ExecuteDeleteAsync(cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         var newIssues = result.InaccessiblePaths.Select(p => new LibraryScanIssue
