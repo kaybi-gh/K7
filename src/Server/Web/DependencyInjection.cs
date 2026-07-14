@@ -142,23 +142,6 @@ public static class DependencyInjection
         services.AddHostedService<AdminMetricsNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
 
-        services.AddHttpClient<IPeerClient, PeerClient>()
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                AllowAutoRedirect = false,
-                UseCookies = false
-            })
-            .AddStandardResilienceHandler(options =>
-            {
-                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-                options.CircuitBreaker.MinimumThroughput = 5;
-                options.CircuitBreaker.BreakDuration = TimeSpan.FromMinutes(2);
-                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
-            })
-            .SelectPipelineByAuthority();
-
-        services.AddScoped<IPeerApplicationManager, PeerApplicationManager>();
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();

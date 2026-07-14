@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Application.Common.Interfaces;
@@ -10,7 +10,7 @@ using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 using Microsoft.Extensions.Logging;
 
-namespace K7.Server.Web.Services;
+namespace K7.Server.Infrastructure.ExternalServices.Federation;
 
 public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogger<PeerClient> logger) : IPeerClient
 {
@@ -319,5 +319,5 @@ public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogg
     }
 
     private sealed record TokenResponse(
-        [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string? AccessToken);
+        [property: JsonPropertyName("access_token")] string? AccessToken);
 }
