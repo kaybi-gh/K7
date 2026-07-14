@@ -14,11 +14,12 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
 {
     public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
     {
-        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent");
+        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
+            ?? new ParsedUserAgent();
         var displayHeight = await jsRuntime.InvokeAsync<int>("getDisplayHeight");
         var displayWidth = await jsRuntime.InvokeAsync<int>("getDisplayWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
-        var webDeviceDetails = await GetWebDeviceDetailsAsync();
+        var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
         var deviceType = MapDeviceType(parsedUserAgent.PlatformType);
         var browser = MapBrowser(parsedUserAgent.BrowserName);
         var operatingSystem = MapOperatingSystem(parsedUserAgent.OsName);
@@ -63,13 +64,15 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
 
     public async Task<DeviceType> GetDeviceTypeAsync()
     {
-        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent");
+        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
+            ?? new ParsedUserAgent();
         return MapDeviceType(parsedUserAgent.PlatformType);
     }
 
     public async Task<OperatingSystem> GetOperatingSystemAsync()
     {
-        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent");
+        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
+            ?? new ParsedUserAgent();
         return MapOperatingSystem(parsedUserAgent.OsName);
     }
 
@@ -167,7 +170,13 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
 
     public async Task<WebDeviceDetailsDto> GetWebDeviceDetailsAsync()
     {
-        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent");
+        var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
+            ?? new ParsedUserAgent();
+        return await GetWebDeviceDetailsAsync(parsedUserAgent);
+    }
+
+    private async Task<WebDeviceDetailsDto> GetWebDeviceDetailsAsync(ParsedUserAgent parsedUserAgent)
+    {
         return new WebDeviceDetailsDto
         {
             Browser = MapBrowser(parsedUserAgent.BrowserName),
