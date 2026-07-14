@@ -38,81 +38,61 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 (s, _) => s);
 
         if (since.HasValue)
-        {
             sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt >= since.Value);
-        }
 
         if (until.HasValue)
-        {
             sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt <= until.Value);
+
+        var sessions = await sessionsWithMedia
+            .Select(s => new SessionRow(
+                s.MediaId,
+                s.ReferenceId,
+                s.StartedAt,
+                s.WatchedDurationSeconds,
+                s.DurationSeconds,
+                s.DeviceId,
+                s.Device != null ? s.Device.DeviceName : null))
+            .ToListAsync(cancellationToken);
+
+        if (sessions.Count == 0)
+        {
+            return new WatchStatsDto
+            {
+                Period = request.Period,
+                PlaysByDayOfWeek = BuildEmptyDayOfWeek(),
+                PlaysByHourOfDay = BuildEmptyHourOfDay()
+            };
         }
 
-        var totalPlays = await sessionsWithMedia.Select(s => s.ReferenceId).Distinct().CountAsync(cancellationToken);
-        var uniqueItems = await sessionsWithMedia.Select(s => s.MediaId).Distinct().CountAsync(cancellationToken);
+        var totalPlays = sessions.Select(s => s.ReferenceId).Distinct().Count();
+        var uniqueItems = sessions.Select(s => s.MediaId).Distinct().Count();
+        var totalSeconds = sessions.Sum(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds);
 
-        var totalSeconds = await sessionsWithMedia
-            .SumAsync(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds, cancellationToken);
+        var mediaIds = sessions.Select(s => s.MediaId).Distinct().ToList();
+        var mediaLookup = await context.Medias
+            .AsNoTracking()
+            .Where(m => mediaIds.Contains(m.Id))
+            .Select(m => new MediaInfo(m.Id, m.Title, m.Type))
+            .ToDictionaryAsync(m => m.Id, cancellationToken);
 
-        var topItems = await sessionsWithMedia
-            .Join(
-                context.Medias,
-                s => s.MediaId,
-                m => m.Id,
-                (s, m) => new { s.MediaId, s.ReferenceId, m.Title, m.Type })
-            .GroupBy(x => new { x.MediaId, x.Title, x.Type })
-            .Select(g => new TopItemDto
+        var topItems = sessions
+            .GroupBy(s => s.MediaId)
+            .Select(g =>
             {
-                Id = g.Key.MediaId,
-                Name = g.Key.Title ?? "Unknown",
-                MediaType = g.Key.Type.ToString(),
-                PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                var media = mediaLookup[g.Key];
+                return new TopItemDto
+                {
+                    Id = g.Key,
+                    Name = media.Title ?? "Unknown",
+                    MediaType = media.Type.ToString(),
+                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                };
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        var topGenres = new List<GenreStatDto>();
-
-        var genreSessionPairs = await sessionsWithMedia
-            .Join(
-                context.Medias,
-                s => s.MediaId,
-                m => m.Id,
-                (s, m) => new { s.ReferenceId, m.Id })
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        if (genreSessionPairs.Count > 0)
-        {
-            var genreMediaIds = genreSessionPairs.Select(x => x.Id).Distinct().ToHashSet();
-
-            var mediaGenres = await context.Medias
-                .Where(m => genreMediaIds.Contains(m.Id))
-                .Select(m => new
-                {
-                    m.Id,
-                    Genres = m.MetadataTags
-                        .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
-                        .Select(mt => mt.MetadataTag.DisplayName)
-                        .ToList()
-                })
-                .ToListAsync(cancellationToken);
-
-            var genreLookup = mediaGenres.ToDictionary(x => x.Id, x => (IList<string>)x.Genres);
-
-            topGenres = genreSessionPairs
-                .SelectMany(x => genreLookup.GetValueOrDefault(x.Id, []),
-                    (x, genre) => new { x.ReferenceId, Genre = genre })
-                .GroupBy(x => x.Genre)
-                .Select(g => new GenreStatDto
-                {
-                    Genre = g.Key,
-                    PlayCount = g.DistinctBy(x => x.ReferenceId).Count()
-                })
-                .OrderByDescending(x => x.PlayCount)
-                .Take(10)
-                .ToList();
-        }
+        var topGenres = await BuildTopGenresAsync(sessions, mediaIds, cancellationToken);
 
         var topArtists = new List<TopItemDto>();
         var topAlbums = new List<TopItemDto>();
@@ -120,82 +100,99 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (request.MediaType is null or MediaType.MusicTrack)
         {
-            topArtists = await sessionsWithMedia
-                .Join(
-                    context.Medias.OfType<MusicTrack>(),
-                    s => s.MediaId,
-                    t => t.Id,
-                    (s, t) => new { s.ReferenceId, ArtistId = t.ArtistId ?? t.Album!.ArtistId, ArtistTitle = t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title })
-                .Where(x => x.ArtistId != null)
-                .GroupBy(x => new { x.ArtistId, x.ArtistTitle })
-                .Select(g => new TopItemDto
-                {
-                    Id = g.Key.ArtistId!.Value,
-                    Name = g.Key.ArtistTitle ?? "Unknown artist",
-                    MediaType = nameof(MediaType.MusicArtist),
-                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
-                })
-                .OrderByDescending(x => x.PlayCount)
-                .Take(10)
-                .ToListAsync(cancellationToken);
+            var trackIds = mediaLookup.Values
+                .Where(m => m.Type == MediaType.MusicTrack)
+                .Select(m => m.Id)
+                .ToList();
 
-            topAlbums = await sessionsWithMedia
-                .Join(
-                    context.Medias.OfType<MusicTrack>(),
-                    s => s.MediaId,
-                    t => t.Id,
-                    (s, t) => new { s.ReferenceId, t.AlbumId })
-                .Join(
-                    context.Medias.OfType<MusicAlbum>(),
-                    x => x.AlbumId,
-                    a => a.Id,
-                    (x, a) => new { x.ReferenceId, a.Id, a.Title })
-                .GroupBy(x => new { x.Id, x.Title })
-                .Select(g => new TopItemDto
-                {
-                    Id = g.Key.Id,
-                    Name = g.Key.Title ?? "Unknown album",
-                    MediaType = nameof(MediaType.MusicAlbum),
-                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
-                })
-                .OrderByDescending(x => x.PlayCount)
-                .Take(10)
-                .ToListAsync(cancellationToken);
+            if (trackIds.Count > 0)
+            {
+                var trackRelations = await context.Medias
+                    .AsNoTracking()
+                    .OfType<MusicTrack>()
+                    .Where(t => trackIds.Contains(t.Id))
+                    .Select(t => new TrackRelation(
+                        t.Id,
+                        t.ArtistId ?? t.Album!.ArtistId,
+                        t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title,
+                        t.AlbumId,
+                        t.Album!.Title))
+                    .ToDictionaryAsync(t => t.TrackId, cancellationToken);
+
+                topArtists = sessions
+                    .Where(s => trackRelations.ContainsKey(s.MediaId))
+                    .Select(s => new { s.ReferenceId, Relation = trackRelations[s.MediaId] })
+                    .Where(x => x.Relation.ArtistId.HasValue)
+                    .GroupBy(x => new { ArtistId = x.Relation.ArtistId!.Value, x.Relation.ArtistTitle })
+                    .Select(g => new TopItemDto
+                    {
+                        Id = g.Key.ArtistId,
+                        Name = g.Key.ArtistTitle ?? "Unknown artist",
+                        MediaType = nameof(MediaType.MusicArtist),
+                        PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                    })
+                    .OrderByDescending(x => x.PlayCount)
+                    .Take(10)
+                    .ToList();
+
+                topAlbums = sessions
+                    .Where(s => trackRelations.ContainsKey(s.MediaId))
+                    .Select(s => new { s.ReferenceId, Relation = trackRelations[s.MediaId] })
+                    .Where(x => x.Relation.AlbumId.HasValue)
+                    .GroupBy(x => new { AlbumId = x.Relation.AlbumId!.Value, x.Relation.AlbumTitle })
+                    .Select(g => new TopItemDto
+                    {
+                        Id = g.Key.AlbumId,
+                        Name = g.Key.AlbumTitle ?? "Unknown album",
+                        MediaType = nameof(MediaType.MusicAlbum),
+                        PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                    })
+                    .OrderByDescending(x => x.PlayCount)
+                    .Take(10)
+                    .ToList();
+            }
         }
 
         if (request.MediaType is null or MediaType.SerieEpisode)
         {
-            topShows = await sessionsWithMedia
-                .Join(
-                    context.Medias.OfType<SerieEpisode>(),
-                    s => s.MediaId,
-                    e => e.Id,
-                    (s, e) => new { s.ReferenceId, e.SerieId })
-                .Join(
-                    context.Medias.OfType<Serie>(),
-                    x => x.SerieId,
-                    se => se.Id,
-                    (x, se) => new { x.ReferenceId, se.Id, se.Title })
-                .GroupBy(x => new { x.Id, x.Title })
-                .Select(g => new TopItemDto
-                {
-                    Id = g.Key.Id,
-                    Name = g.Key.Title ?? "Unknown show",
-                    MediaType = nameof(MediaType.Serie),
-                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
-                })
-                .OrderByDescending(x => x.PlayCount)
-                .Take(10)
-                .ToListAsync(cancellationToken);
+            var episodeIds = mediaLookup.Values
+                .Where(m => m.Type == MediaType.SerieEpisode)
+                .Select(m => m.Id)
+                .ToList();
+
+            if (episodeIds.Count > 0)
+            {
+                var episodeRelations = await context.Medias
+                    .AsNoTracking()
+                    .OfType<SerieEpisode>()
+                    .Where(e => episodeIds.Contains(e.Id))
+                    .Select(e => new EpisodeRelation(e.Id, e.SerieId, e.Serie!.Title))
+                    .ToDictionaryAsync(e => e.EpisodeId, cancellationToken);
+
+                topShows = sessions
+                    .Where(s => episodeRelations.ContainsKey(s.MediaId))
+                    .Select(s => new { s.ReferenceId, Relation = episodeRelations[s.MediaId] })
+                    .GroupBy(x => new { x.Relation.SerieId, x.Relation.SerieTitle })
+                    .Select(g => new TopItemDto
+                    {
+                        Id = g.Key.SerieId,
+                        Name = g.Key.SerieTitle ?? "Unknown show",
+                        MediaType = nameof(MediaType.Serie),
+                        PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                    })
+                    .OrderByDescending(x => x.PlayCount)
+                    .Take(10)
+                    .ToList();
+            }
         }
 
-        var timeSeries = await BuildTimeSeriesAsync(sessionsWithMedia, request.Period, cancellationToken);
-        var byDayOfWeek = await BuildByDayOfWeekAsync(sessionsWithMedia, cancellationToken);
-        var byHourOfDay = await BuildByHourOfDayAsync(sessionsWithMedia, cancellationToken);
+        var timeSeries = BuildTimeSeries(sessions);
+        var byDayOfWeek = BuildByDayOfWeek(sessions);
+        var byHourOfDay = BuildByHourOfDay(sessions);
 
-        var topDevices = await sessionsWithMedia
-            .Where(s => s.DeviceId != null)
-            .GroupBy(s => new { s.DeviceId, s.Device!.DeviceName })
+        var topDevices = sessions
+            .Where(s => s.DeviceId.HasValue)
+            .GroupBy(s => new { s.DeviceId, s.DeviceName })
             .Select(g => new TopItemDto
             {
                 Id = g.Key.DeviceId!.Value,
@@ -204,32 +201,22 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        topItems = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
+        var imageUrls = await MediaCoverPictureResolver.GetCoverImageUrlsByMediaIdAsync(
             context,
-            topItems,
-            item => item.Id,
-            (item, imageUrl) => item with { ImageUrl = imageUrl },
-            cancellationToken)).ToList();
-        topArtists = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
-            context,
-            topArtists,
-            item => item.Id,
-            (item, imageUrl) => item with { ImageUrl = imageUrl },
-            cancellationToken)).ToList();
-        topAlbums = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
-            context,
-            topAlbums,
-            item => item.Id,
-            (item, imageUrl) => item with { ImageUrl = imageUrl },
-            cancellationToken)).ToList();
-        topShows = (await MediaCoverPictureResolver.EnrichTopItemsAsync(
-            context,
-            topShows,
-            item => item.Id,
-            (item, imageUrl) => item with { ImageUrl = imageUrl },
-            cancellationToken)).ToList();
+            topItems.Select(i => i.Id)
+                .Concat(topArtists.Select(i => i.Id))
+                .Concat(topAlbums.Select(i => i.Id))
+                .Concat(topShows.Select(i => i.Id))
+                .Distinct()
+                .ToList(),
+            cancellationToken);
+
+        topItems = topItems.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
+        topArtists = topArtists.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
+        topAlbums = topAlbums.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
+        topShows = topShows.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
 
         var playbackDetails = request.MediaType == MediaType.MusicTrack
             ? null
@@ -254,6 +241,40 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         };
     }
 
+    private async Task<List<GenreStatDto>> BuildTopGenresAsync(
+        IReadOnlyList<SessionRow> sessions,
+        IReadOnlyList<Guid> mediaIds,
+        CancellationToken cancellationToken)
+    {
+        var mediaGenres = await context.Medias
+            .AsNoTracking()
+            .Where(m => mediaIds.Contains(m.Id))
+            .Select(m => new
+            {
+                m.Id,
+                Genres = m.MetadataTags
+                    .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                    .Select(mt => mt.MetadataTag.DisplayName)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        var genreLookup = mediaGenres.ToDictionary(x => x.Id, x => (IList<string>)x.Genres);
+
+        return sessions
+            .SelectMany(s => genreLookup.GetValueOrDefault(s.MediaId, []),
+                (s, genre) => new { s.ReferenceId, Genre = genre })
+            .GroupBy(x => x.Genre)
+            .Select(g => new GenreStatDto
+            {
+                Genre = g.Key,
+                PlayCount = g.DistinctBy(x => x.ReferenceId).Count()
+            })
+            .OrderByDescending(x => x.PlayCount)
+            .Take(10)
+            .ToList();
+    }
+
     private static DateTime? GetPeriodStart(string period) => period switch
     {
         "week" => DateTime.UtcNow.AddDays(-7),
@@ -270,10 +291,8 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         _ => [MediaType.MusicTrack, MediaType.Movie, MediaType.SerieEpisode]
     };
 
-    private static async Task<List<TimeSeriesPointDto>> BuildTimeSeriesAsync(
-        IQueryable<MediaPlaybackSession> sessions, string period, CancellationToken cancellationToken)
-    {
-        var data = await sessions
+    private static List<TimeSeriesPointDto> BuildTimeSeries(IReadOnlyList<SessionRow> sessions) =>
+        sessions
             .GroupBy(s => s.StartedAt.Date)
             .Select(g => new TimeSeriesPointDto
             {
@@ -281,20 +300,15 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 Count = g.Select(s => s.ReferenceId).Distinct().Count()
             })
             .OrderBy(x => x.Date)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        return data;
-    }
-
-    private static async Task<List<DayOfWeekPointDto>> BuildByDayOfWeekAsync(
-        IQueryable<MediaPlaybackSession> sessions, CancellationToken cancellationToken)
+    private static List<DayOfWeekPointDto> BuildByDayOfWeek(IReadOnlyList<SessionRow> sessions)
     {
         var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
-
-        var data = await sessions
+        var data = sessions
             .GroupBy(s => (int)s.StartedAt.DayOfWeek)
             .Select(g => new { Day = g.Key, Count = g.Select(s => s.ReferenceId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Enumerable.Range(0, 7)
             .Select(d => new DayOfWeekPointDto
@@ -306,13 +320,12 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .ToList();
     }
 
-    private static async Task<List<HourOfDayPointDto>> BuildByHourOfDayAsync(
-        IQueryable<MediaPlaybackSession> sessions, CancellationToken cancellationToken)
+    private static List<HourOfDayPointDto> BuildByHourOfDay(IReadOnlyList<SessionRow> sessions)
     {
-        var data = await sessions
+        var data = sessions
             .GroupBy(s => s.StartedAt.Hour)
             .Select(g => new { Hour = g.Key, Count = g.Select(s => s.ReferenceId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Enumerable.Range(0, 24)
             .Select(h => new HourOfDayPointDto
@@ -322,6 +335,19 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             })
             .ToList();
     }
+
+    private static List<DayOfWeekPointDto> BuildEmptyDayOfWeek()
+    {
+        var dayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+        return Enumerable.Range(0, 7)
+            .Select(d => new DayOfWeekPointDto { Day = d, Name = dayNames[d], Count = 0 })
+            .ToList();
+    }
+
+    private static List<HourOfDayPointDto> BuildEmptyHourOfDay() =>
+        Enumerable.Range(0, 24)
+            .Select(h => new HourOfDayPointDto { Hour = h, Count = 0 })
+            .ToList();
 
     private static async Task<PlaybackDetailsStatsDto?> BuildPlaybackDetailsStatsAsync(
         IQueryable<MediaPlaybackSession> sessions, CancellationToken cancellationToken)
@@ -406,4 +432,24 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         TranscodeReason.ResolutionNotSupported => "Resolution",
         _ => reason.ToString()
     };
+
+    private sealed record SessionRow(
+        Guid MediaId,
+        Guid ReferenceId,
+        DateTime StartedAt,
+        double WatchedDurationSeconds,
+        double DurationSeconds,
+        Guid? DeviceId,
+        string? DeviceName);
+
+    private sealed record MediaInfo(Guid Id, string? Title, MediaType Type);
+
+    private sealed record TrackRelation(
+        Guid TrackId,
+        Guid? ArtistId,
+        string? ArtistTitle,
+        Guid? AlbumId,
+        string? AlbumTitle);
+
+    private sealed record EpisodeRelation(Guid EpisodeId, Guid SerieId, string? SerieTitle);
 }
