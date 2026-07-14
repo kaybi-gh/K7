@@ -1,7 +1,9 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Services;
+using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Downloads.Queries.GetDownloadFile;
 
@@ -11,11 +13,16 @@ public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery,
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly PathsConfiguration _pathsConfiguration;
 
-    public GetDownloadFileQueryHandler(IApplicationDbContext context, IUser user)
+    public GetDownloadFileQueryHandler(
+        IApplicationDbContext context,
+        IUser user,
+        IOptions<PathsConfiguration> pathsConfiguration)
     {
         _context = context;
         _user = user;
+        _pathsConfiguration = pathsConfiguration.Value;
     }
 
     public async Task<IResult> Handle(GetDownloadFileQuery request, CancellationToken cancellationToken)
@@ -33,6 +40,18 @@ public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery,
 
         var filePath = download.OutputPath;
         Guard.Against.NullOrEmpty(filePath);
+
+        var allowedRoots = new List<string> { _pathsConfiguration.Transcoding };
+        var libraryRootPath = await _context.Libraries
+            .AsNoTracking()
+            .Where(l => l.Id == download.IndexedFile.LibraryId)
+            .Select(l => l.RootPath)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(libraryRootPath))
+            allowedRoots.Add(libraryRootPath);
+
+        PathContainmentHelper.EnsurePathContained(filePath, allowedRoots, "Download path is outside allowed media roots.");
 
         var file = new FileInfo(filePath);
         if (!file.Exists)

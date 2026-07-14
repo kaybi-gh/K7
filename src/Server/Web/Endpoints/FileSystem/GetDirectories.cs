@@ -1,6 +1,10 @@
+using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Web.Endpoints.FileSystem;
 
@@ -11,8 +15,13 @@ public class GetDirectories : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/filesystem/directories", ([FromQuery] string? path, CancellationToken cancellationToken) =>
+        endpointRouteBuilder.MapGet("/api/filesystem/directories", (
+            [FromQuery] string? path,
+            [FromServices] IOptions<PathsConfiguration> pathsConfiguration,
+            CancellationToken cancellationToken) =>
         {
+            var allowedRoots = GetAllowedRoots(pathsConfiguration.Value);
+
             if (string.IsNullOrWhiteSpace(path))
             {
                 var drives = DriveInfo.GetDrives()
@@ -32,6 +41,9 @@ public class GetDirectories : IEndpoint
             }
 
             var fullPath = Path.GetFullPath(path);
+
+            if (!PathContainmentHelper.IsPathContained(fullPath, allowedRoots))
+                return Results.Forbid();
 
             if (!Directory.Exists(fullPath))
             {
@@ -66,4 +78,12 @@ public class GetDirectories : IEndpoint
         .WithName(type.Name)
         .WithTags(groupName);
     }
+
+    private static IEnumerable<string> GetAllowedRoots(PathsConfiguration paths) =>
+    [
+        paths.Config,
+        paths.Metadatas,
+        paths.Transcoding,
+        paths.FFMpegBinaryFolder
+    ];
 }
