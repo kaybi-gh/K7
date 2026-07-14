@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -70,7 +71,7 @@ public class TMDbPersonCreditsProvider(
                 .Take(30)
                 .ToList();
 
-            cache.Set(cacheKey, (IReadOnlyList<ExternalPersonCredit>)sorted, CacheDuration);
+            cache.SetWithSize(cacheKey, (IReadOnlyList<ExternalPersonCredit>)sorted, CacheDuration);
             return sorted;
         }
         catch (Exception ex)

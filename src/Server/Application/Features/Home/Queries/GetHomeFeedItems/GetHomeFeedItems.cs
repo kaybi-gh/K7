@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
@@ -63,7 +64,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
 
         var ttl = strategy == FeedStrategy.ContinueWatching ? ContinueWatchingCacheDuration : DefaultCacheDuration;
-        cache.Set(cacheKey, (version, result), ttl);
+        cache.SetWithSize(cacheKey, (version, result), ttl);
         return result;
     }
 
