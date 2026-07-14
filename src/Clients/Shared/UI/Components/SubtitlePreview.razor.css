@@ -11,7 +11,7 @@
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: var(--radius-md, 8px);
-    background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: linear-gradient(to bottom, var(--color-surface) 0%, var(--color-surface-2) 50%, var(--color-bg) 100%);
     overflow: hidden;
     padding: 12px;
 }
