@@ -30,6 +30,9 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly ConcurrentDictionary<string, int> _activeCountByGroup = new();
     private readonly List<WorkerHandle> _workers = [];
     private readonly Lock _workersLock = new();
+    private int _cachedWorkerCount = 1;
+    private Dictionary<string, int> _cachedConcurrencyLimits = new();
+    private readonly Lock _settingsCacheLock = new();
 
     public BackgroundTasksProcessingService(
         ILogger<BackgroundTasksProcessingService> logger,
@@ -61,6 +64,7 @@ public class BackgroundTasksProcessingService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var desiredCount = await ReadWorkerCountAsync(stoppingToken);
+        UpdateSettingsCache(desiredCount, await ReadConcurrencyLimitsAsync(stoppingToken));
         _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", desiredCount);
 
         await RecoverStuckTasksAsync(stoppingToken);
@@ -84,12 +88,33 @@ public class BackgroundTasksProcessingService : BackgroundService
         _logger.LogInformation("BackgroundTasksProcessingService stopped");
     }
 
+    private void UpdateSettingsCache(int workerCount, Dictionary<string, int> concurrencyLimits)
+    {
+        lock (_settingsCacheLock)
+        {
+            _cachedWorkerCount = workerCount;
+            _cachedConcurrencyLimits = concurrencyLimits;
+        }
+    }
+
+    private Dictionary<string, int> GetCachedConcurrencyLimits()
+    {
+        lock (_settingsCacheLock)
+            return _cachedConcurrencyLimits;
+    }
+
     private async Task<int> ReadWorkerCountAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
         var count = await settings.GetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, cancellationToken);
         return Math.Max(1, count);
+    }
+
+    private void SignalWorkers(int count)
+    {
+        for (var i = 0; i < count; i++)
+            _taskQueue.Enqueue(Guid.Empty);
     }
 
     private async Task<Dictionary<string, int>> ReadConcurrencyLimitsAsync(CancellationToken cancellationToken)
@@ -131,6 +156,7 @@ public class BackgroundTasksProcessingService : BackgroundService
                 }
 
                 var desired = await ReadWorkerCountAsync(stoppingToken);
+                UpdateSettingsCache(desired, await ReadConcurrencyLimitsAsync(stoppingToken));
                 int currentActive;
 
                 lock (_workersLock)
@@ -207,14 +233,11 @@ public class BackgroundTasksProcessingService : BackgroundService
             .Select(t => t.Id)
             .ToListAsync(cancellationToken);
 
-        foreach (var id in pendingIds)
-        {
-            _taskQueue.Enqueue(id);
-        }
-
         if (pendingIds.Count > 0)
         {
-            _logger.LogInformation("Requeued {Count} pending tasks at startup", pendingIds.Count);
+            var signals = Math.Min(pendingIds.Count, Math.Max(1, _cachedWorkerCount));
+            SignalWorkers(signals);
+            _logger.LogInformation("Signaled {SignalCount} workers for {PendingCount} pending tasks at startup", signals, pendingIds.Count);
         }
     }
 
@@ -257,7 +280,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         var executionContext = scope.ServiceProvider.GetRequiredService<IBackgroundTaskExecutionContext>();
         executionContext.Reset();
 
-        var limits = await ReadConcurrencyLimitsAsync(stoppingToken);
+        var limits = GetCachedConcurrencyLimits();
         var saturatedGroups = _activeCountByGroup
             .Where(kvp => kvp.Value >= limits.GetValueOrDefault(kvp.Key, DefaultConcurrencyLimit))
             .Select(kvp => kvp.Key)
@@ -438,11 +461,10 @@ public class BackgroundTasksProcessingService : BackgroundService
 
                 if (eligibleCount > 0)
                 {
-                    _logger.LogDebug("Orphan poller found {Count} eligible tasks, requeueing", eligibleCount);
-                    for (var i = 0; i < eligibleCount; i++)
-                    {
-                        _taskQueue.Enqueue(Guid.Empty);
-                    }
+                    var workers = ActiveWorkerCount;
+                    var signals = Math.Min(eligibleCount, Math.Max(1, workers));
+                    _logger.LogDebug("Orphan poller found {Count} eligible tasks, signaling {SignalCount} workers", eligibleCount, signals);
+                    SignalWorkers(signals);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
