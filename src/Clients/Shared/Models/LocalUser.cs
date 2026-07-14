@@ -8,6 +8,7 @@ public sealed class LocalUser
     public string? DisplayName { get; set; }
     public string? AvatarUrl { get; set; }
     public string? Email { get; set; }
+    public bool HasPin { get; set; }
     public string? PinHash { get; set; }
     public required string RefreshToken { get; set; }
 }

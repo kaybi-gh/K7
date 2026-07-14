@@ -12,5 +12,5 @@ public interface ISharedProfileService
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task SetPinAsync(Guid id, string? pin, CancellationToken cancellationToken = default);
     Task LeaveAsync(Guid id, Guid? newHostUserId = null, CancellationToken cancellationToken = default);
-    bool VerifyGroupPin(SharedProfileDto group, string pin);
+    Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default);
 }

@@ -5,9 +5,12 @@ using K7.Server.Application.Features.SharedProfiles.Commands.SetSharedProfilePin
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfile;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
+using K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
 using K7.Server.Domain.Constants;
+using K7.Server.Web.Infrastructure;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace K7.Server.Web.Endpoints.SharedProfiles;
 
@@ -160,3 +163,28 @@ public class LeaveSharedProfile : IEndpoint
         .WithTags(groupName);
     }
 }
+
+public class VerifySharedProfilePinEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPost("/api/shared-profiles/{id:guid}/verify-pin", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] VerifySharedProfilePinRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            var isValid = await sender.Send(new VerifySharedProfilePinCommand(id, request.Pin), cancellationToken);
+            return isValid ? Results.Ok() : Results.Unauthorized();
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public sealed record VerifySharedProfilePinRequest(string Pin);

@@ -11,5 +11,6 @@ public interface ISharedProfileApi
     Task UpdateSharedProfileAsync(Guid id, UpdateSharedProfileRequest request, CancellationToken cancellationToken = default);
     Task DeleteSharedProfileAsync(Guid id, CancellationToken cancellationToken = default);
     Task SetSharedProfilePinAsync(Guid id, SetSharedProfilePinRequest request, CancellationToken cancellationToken = default);
+    Task<bool> VerifySharedProfilePinAsync(Guid id, string pin, CancellationToken cancellationToken = default);
     Task LeaveSharedProfileAsync(Guid id, LeaveSharedProfileRequest request, CancellationToken cancellationToken = default);
 }

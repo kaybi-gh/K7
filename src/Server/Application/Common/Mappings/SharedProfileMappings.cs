@@ -11,7 +11,7 @@ public static class SharedProfileMappings
             IReadOnlyDictionary<Guid, string?> displayNames,
             IReadOnlyDictionary<Guid, string?> identityUserIds,
             IReadOnlyDictionary<Guid, string?> avatarUrls,
-            bool includePinHash = true) => new()
+            bool includePinHash = false) => new()
             {
                 Id = group.Id,
                 Name = group.Name,

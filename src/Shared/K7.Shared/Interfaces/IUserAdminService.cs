@@ -41,6 +41,7 @@ public interface IUserAdminService
     Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default);
     Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default);
     Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<bool> VerifyUserPinAsync(Guid userId, string pin, CancellationToken cancellationToken = default);
     Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default);
     Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default);
     Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default);

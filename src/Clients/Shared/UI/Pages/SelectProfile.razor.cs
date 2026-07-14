@@ -5,6 +5,7 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Interfaces;
 using K7.Shared.Dtos.SharedProfiles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -28,6 +29,7 @@ public partial class SelectProfile
     [Inject] private ISharedProfileSessionService SharedProfileSession { get; set; } = default!;
     [Inject] private ISharedProfileDevicePinService SharedProfileDevicePin { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IDeviceStorageService Storage { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
@@ -216,7 +218,7 @@ public partial class SelectProfile
     {
         SharedProfileSession.ClearActiveGroup();
 
-        if (user.PinHash is not null)
+        if (user.HasPin)
         {
             var pinValid = await PromptPinAsync(user);
             if (!pinValid)
@@ -248,7 +250,7 @@ public partial class SelectProfile
             return;
         }
 
-        if (host.PinHash is not null)
+        if (host.HasPin)
         {
             var pinValid = await PromptPinAsync(host);
             if (!pinValid)
@@ -417,13 +419,30 @@ public partial class SelectProfile
         if (result is null || result.Canceled || result.Data is not string pin)
             return false;
 
-        if (!LocalUserService.VerifyPin(user.IdentityUserId, pin))
+        if (!await VerifyUserPinAsync(user, pin))
         {
             Snackbar.Add(L["IncorrectPin"], K7Severity.Error);
             return false;
         }
 
         return true;
+    }
+
+    private async Task<bool> VerifyUserPinAsync(LocalUser user, string pin)
+    {
+        if (Connectivity.IsOnline && user.UserId is { } userId)
+        {
+            try
+            {
+                return await UserAdminService.VerifyUserPinAsync(userId, pin);
+            }
+            catch
+            {
+                // Fall back to locally cached PIN verification when offline.
+            }
+        }
+
+        return LocalUserService.VerifyPin(user.IdentityUserId, pin);
     }
 
     private async Task<bool> PromptGroupPinAsync(SharedProfileDto group)
@@ -439,7 +458,7 @@ public partial class SelectProfile
         if (result is null || result.Canceled || result.Data is not string pin)
             return false;
 
-        if (!SharedProfileService.VerifyGroupPin(group, pin))
+        if (!await SharedProfileService.VerifyGroupPinAsync(group, pin))
         {
             Snackbar.Add(L["IncorrectPin"], K7Severity.Error);
             return false;

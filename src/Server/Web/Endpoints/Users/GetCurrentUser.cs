@@ -21,7 +21,7 @@ public class GetCurrentUser : IEndpoint
             var avatarUrl = result.AvatarPictureId is not null
                 ? $"/api/metadata-pictures/{result.AvatarPictureId}"
                 : null;
-            return Results.Ok(result.User.ToUserDto(includePinHash: true, avatarUrl: avatarUrl));
+            return Results.Ok(result.User.ToUserDto(avatarUrl: avatarUrl));
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

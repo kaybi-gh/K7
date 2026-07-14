@@ -547,6 +547,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<bool> VerifySharedProfilePinAsync(Guid id, string pin, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/shared-profiles/{id}/verify-pin", new { Pin = pin }, _serializerOptions, cancellationToken);
+        return response.IsSuccessStatusCode;
+    }
+
     public async Task LeaveSharedProfileAsync(Guid id, LeaveSharedProfileRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync($"api/shared-profiles/{id}/leave", request, _serializerOptions, cancellationToken);
@@ -1071,6 +1077,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/pin", new { Pin = pin }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> VerifyUserPinAsync(Guid userId, string pin, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/users/{userId}/verify-pin", new { Pin = pin }, _serializerOptions, cancellationToken);
+        return response.IsSuccessStatusCode;
     }
 
     public async Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default)
