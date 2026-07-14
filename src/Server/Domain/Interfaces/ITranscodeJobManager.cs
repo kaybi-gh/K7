@@ -75,7 +75,7 @@ public class TranscodeJob
     /// Highest segment index the currently running ffmpeg process will produce (inclusive).
     /// </summary>
     public int GeneratingUntilSegmentIndex { get; set; } = -1;
-    public int BufferSize { get; init; } = 15;
+    public int BufferSize { get; init; } = 10;
 
     /// <summary>
     /// Per-job lock to prevent concurrent FFmpeg process starts from parallel segment requests.
