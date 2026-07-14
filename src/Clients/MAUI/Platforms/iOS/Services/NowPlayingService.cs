@@ -104,8 +104,7 @@ public class NowPlayingService
             var absoluteUri = _k7ServerService.GetAbsoluteUri(coverUrl);
             if (absoluteUri is null) return;
 
-            using var client = new HttpClient();
-            var data = await client.GetByteArrayAsync(absoluteUri);
+            var data = await _k7ServerService.HttpClient.GetByteArrayAsync(absoluteUri);
             var nsData = NSData.FromArray(data);
             var image = UIKit.UIImage.LoadFromData(nsData);
 

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -21,7 +22,7 @@ public class DownloadManager : IDownloadManager
     private readonly SemaphoreSlim _audioSemaphore = new(2, 2);
     private readonly SemaphoreSlim _videoSemaphore = new(1, 1);
     private CancellationTokenSource _globalCts = new();
-    private readonly Dictionary<Guid, CancellationTokenSource> _downloadCts = [];
+    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _downloadCts = new();
 
     public event Action<DownloadProgressInfo>? ProgressChanged;
     public event Action<DownloadCompletedInfo>? DownloadCompleted;
@@ -96,7 +97,7 @@ public class DownloadManager : IDownloadManager
         if (_downloadCts.TryGetValue(downloadId, out var cts))
         {
             cts.Cancel();
-            _downloadCts.Remove(downloadId);
+            _downloadCts.TryRemove(downloadId, out _);
         }
 
         var item = _queue.FirstOrDefault(q => q.DownloadId == downloadId);
@@ -228,22 +229,13 @@ public class DownloadManager : IDownloadManager
         finally
         {
             semaphore.Release();
-            _downloadCts.Remove(item.DownloadId);
+            _downloadCts.TryRemove(item.DownloadId, out _);
         }
     }
 
     private async Task DownloadFileAsync(string url, string localPath, DownloadQueueItem item, long? totalBytes, CancellationToken cancellationToken)
     {
-        using var httpClient = new HttpClient();
-        var sourceClient = _serverService.HttpClient;
-        if (sourceClient.BaseAddress is not null)
-        {
-            httpClient.BaseAddress = sourceClient.BaseAddress;
-        }
-        if (sourceClient.DefaultRequestHeaders.Authorization is not null)
-        {
-            httpClient.DefaultRequestHeaders.Authorization = sourceClient.DefaultRequestHeaders.Authorization;
-        }
+        var httpClient = _serverService.HttpClient;
 
         using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
