@@ -86,7 +86,7 @@ public partial class AdminLibraryUsersDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", K7Severity.Error);
+            Snackbar.Add(string.Format(L["SaveError"], ex.Message), K7Severity.Error);
         }
         finally
         {

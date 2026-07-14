@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Title</value></data>
+  <data name="ContinueWatching" xml:space="preserve"><value>Continue watching</value></data>
+  <data name="Libraries" xml:space="preserve"><value>Libraries</value></data>
+  <data name="MediaTypes" xml:space="preserve"><value>Media types</value></data>
+  <data name="MediaTypesHint" xml:space="preserve"><value>Leave empty to show all types.</value></data>
+  <data name="Sort" xml:space="preserve"><value>Sort</value></data>
+  <data name="Display" xml:space="preserve"><value>Display</value></data>
+  <data name="ItemCount" xml:space="preserve"><value>Item count</value></data>
+  <data name="OrderCreatedDesc" xml:space="preserve"><value>Recently added (newest first)</value></data>
+  <data name="OrderCreatedAsc" xml:space="preserve"><value>Oldest added first</value></data>
+  <data name="OrderTitleAsc" xml:space="preserve"><value>Title (A-Z)</value></data>
+  <data name="OrderTitleDesc" xml:space="preserve"><value>Title (Z-A)</value></data>
+  <data name="OrderReleaseDateDesc" xml:space="preserve"><value>Release date (newest)</value></data>
+  <data name="OrderReleaseDateAsc" xml:space="preserve"><value>Release date (oldest)</value></data>
+  <data name="OrderLastInteractedDesc" xml:space="preserve"><value>Recently watched</value></data>
+  <data name="OrderPopularityDesc" xml:space="preserve"><value>Popularity</value></data>
+  <data name="OrderLocalRatingDesc" xml:space="preserve"><value>Highest rated</value></data>
+  <data name="OrderPlayCountDesc" xml:space="preserve"><value>Most watched</value></data>
+  <data name="DisplayCarousel" xml:space="preserve"><value>Carousel</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Movies</value></data>
+  <data name="MediaTypeMusicAlbum" xml:space="preserve"><value>Music albums</value></data>
+  <data name="MediaTypeSerie" xml:space="preserve"><value>TV series</value></data>
+</root>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Empty" xml:space="preserve"><value>Aucun média ne correspond aux règles de ce profil.</value></data>
+  <data name="Summary" xml:space="preserve"><value>{0} média(s) masqué(s) par ce profil{1}.</value></data>
+  <data name="SummaryLimited" xml:space="preserve"><value> (limité à 200)</value></data>
+  <data name="ColumnTitle" xml:space="preserve"><value>Titre</value></data>
+  <data name="ColumnType" xml:space="preserve"><value>Type</value></data>
+  <data name="ColumnYear" xml:space="preserve"><value>Année</value></data>
+  <data name="TypeMovie" xml:space="preserve"><value>Film</value></data>
+  <data name="TypeSerie" xml:space="preserve"><value>Série</value></data>
+  <data name="TypeMusicTrack" xml:space="preserve"><value>Musique</value></data>
+  <data name="TypeMusicAlbum" xml:space="preserve"><value>Album</value></data>
+</root>

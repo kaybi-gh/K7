@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="RoleHint" xml:space="preserve"><value>Current role: {0}. Checked defaults are inherited from the role.</value></data>
+  <data name="RemoveOverride" xml:space="preserve"><value>Remove override</value></data>
+  <data name="RoleAdministrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="RoleUser" xml:space="preserve"><value>User</value></data>
+  <data name="RoleGuest" xml:space="preserve"><value>Guest</value></data>
+  <data name="CapCanRate" xml:space="preserve"><value>Rate media</value></data>
+  <data name="CapCanCreatePlaylist" xml:space="preserve"><value>Create playlists</value></data>
+  <data name="CapCanViewStats" xml:space="preserve"><value>View statistics</value></data>
+  <data name="CapCanResumePlayback" xml:space="preserve"><value>Resume playback</value></data>
+  <data name="CapCanViewHistory" xml:space="preserve"><value>View history</value></data>
+  <data name="CapCanManageDevices" xml:space="preserve"><value>Manage devices</value></data>
+  <data name="CapCanModifySettings" xml:space="preserve"><value>Modify settings</value></data>
+  <data name="CapCanAccessAdmin" xml:space="preserve"><value>Access admin</value></data>
+  <data name="CapCanManageLibraries" xml:space="preserve"><value>Manage libraries</value></data>
+  <data name="CapCanManageUsers" xml:space="preserve"><value>Manage users</value></data>
+  <data name="CapCanReportPlaybackProgress" xml:space="preserve"><value>Report playback progress</value></data>
+  <data name="CapCanTranscode" xml:space="preserve"><value>Transcode media</value></data>
+</root>

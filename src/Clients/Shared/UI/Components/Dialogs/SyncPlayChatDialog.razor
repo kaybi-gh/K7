@@ -1,8 +1,9 @@
 @inject ISyncPlayService SyncPlay
+@inject IStringLocalizer<SyncPlayChatDialog> L
 
 <div class="k7-dialog-content syncplay-chat-dialog">
     <SyncPlayChat />
 </div>
 <div class="k7-dialog-actions">
-    <K7Button OnClick="Close">Close</K7Button>
+    <K7Button OnClick="Close">@L["Close"]</K7Button>
 </div>

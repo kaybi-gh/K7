@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Empty" xml:space="preserve"><value>Aucun utilisateur.</value></data>
+  <data name="Hint" xml:space="preserve"><value>Activez ou désactivez l'accès à cette bibliothèque pour chaque utilisateur.</value></data>
+  <data name="AutoExcluded" xml:space="preserve"><value>auto</value></data>
+  <data name="SaveError" xml:space="preserve"><value>Erreur : {0}</value></data>
+</root>

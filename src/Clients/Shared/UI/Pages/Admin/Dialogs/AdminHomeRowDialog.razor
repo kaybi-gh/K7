@@ -1,14 +1,17 @@
+@inject IStringLocalizer<AdminHomeRowDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <div class="k7-dialog-content">
     <div class="d-flex flex-col gap-3 mt-2">
-        <K7TextField @bind-Value="_title" Label="Titre" Required="true" Variant="outlined" />
-        <K7Switch @bind-Value="_continueWatching" Label="Reprise de lecture" />
+        <K7TextField @bind-Value="_title" Label="@L["Title"]" Required="true" Variant="outlined" />
+        <K7Switch @bind-Value="_continueWatching" Label="@L["ContinueWatching"]" />
 
         @if (!_continueWatching)
         {
             @if (Libraries.Count > 0)
             {
                 <div>
-                    <p class="text-sm mb-1">Biblioth&egrave;ques</p>
+                    <p class="text-sm mb-1">@L["Libraries"]</p>
                     <K7CheckboxList TItem="LibraryDto"
                                       Items="Libraries"
                                       IsChecked="@(lib => _libraryIds.Contains(lib.Id))"
@@ -18,41 +21,41 @@
             }
 
             <div>
-                <p class="text-sm mb-1">Types de m&eacute;dia</p>
+                <p class="text-sm mb-1">@L["MediaTypes"]</p>
                 <K7CheckboxList TItem="MediaType"
                                   Items="_availableMediaTypes"
                                   IsChecked="@(type => _mediaTypes.Contains(type))"
                                   CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
-                                  ItemLabel="@(GetMediaTypeLabel)" />
-                <p class="text-xs mt-1" style="color: var(--color-text-secondary);">Laisser vide pour afficher tous les types.</p>
+                                  ItemLabel="@GetMediaTypeLabel" />
+                <p class="text-xs mt-1" style="color: var(--color-text-secondary);">@L["MediaTypesHint"]</p>
             </div>
 
             <div class="k7-field">
-                <label class="k7-label">Tri</label>
+                <label class="k7-label">@L["Sort"]</label>
                 <select class="k7-select" @bind="_orderBy">
-                    <option value="CreatedDesc">Ajout r&eacute;cent (d&eacute;croissant)</option>
-                    <option value="CreatedAsc">Ajout ancien (croissant)</option>
-                    <option value="TitleAsc">Titre (A-Z)</option>
-                    <option value="TitleDesc">Titre (Z-A)</option>
-                    <option value="ReleaseDateDesc">Date de sortie (r&eacute;cente)</option>
-                    <option value="ReleaseDateAsc">Date de sortie (ancienne)</option>
-                    <option value="LastInteractedDesc">R&eacute;cemment regard&eacute;</option>
-                    <option value="PopularityDesc">Popularit&eacute;</option>
-                    <option value="LocalRatingDesc">Mieux not&eacute;</option>
-                    <option value="PlayCountDesc">Plus regard&eacute;</option>
+                    <option value="CreatedDesc">@L["OrderCreatedDesc"]</option>
+                    <option value="CreatedAsc">@L["OrderCreatedAsc"]</option>
+                    <option value="TitleAsc">@L["OrderTitleAsc"]</option>
+                    <option value="TitleDesc">@L["OrderTitleDesc"]</option>
+                    <option value="ReleaseDateDesc">@L["OrderReleaseDateDesc"]</option>
+                    <option value="ReleaseDateAsc">@L["OrderReleaseDateAsc"]</option>
+                    <option value="LastInteractedDesc">@L["OrderLastInteractedDesc"]</option>
+                    <option value="PopularityDesc">@L["OrderPopularityDesc"]</option>
+                    <option value="LocalRatingDesc">@L["OrderLocalRatingDesc"]</option>
+                    <option value="PlayCountDesc">@L["OrderPlayCountDesc"]</option>
                 </select>
             </div>
         }
 
         <div class="k7-field">
-            <label class="k7-label">Affichage</label>
+            <label class="k7-label">@L["Display"]</label>
             <select class="k7-select" @bind="_displayType">
-                <option value="Carousel">Carrousel</option>
+                <option value="Carousel">@L["DisplayCarousel"]</option>
             </select>
         </div>
 
         <div class="k7-field">
-            <label class="k7-label">Nombre d'&eacute;l&eacute;ments</label>
+            <label class="k7-label">@L["ItemCount"]</label>
             <select class="k7-select" @bind="_pageSize">
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -63,9 +66,9 @@
     </div>
 </div>
 <div class="k7-dialog-actions">
-    <K7Button OnClick="Cancel">Annuler</K7Button>
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
     <K7Button Color="primary" Variant="filled" OnClick="Submit"
               Disabled="@(string.IsNullOrWhiteSpace(_title))">
-        Enregistrer
+        @S["Save"]
     </K7Button>
 </div>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="RoleHint" xml:space="preserve"><value>Rôle actuel : {0}. Les cases cochées par défaut sont héritées du rôle.</value></data>
+  <data name="RemoveOverride" xml:space="preserve"><value>Retirer la surcharge</value></data>
+  <data name="RoleAdministrator" xml:space="preserve"><value>Administrateur</value></data>
+  <data name="RoleUser" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="RoleGuest" xml:space="preserve"><value>Invité</value></data>
+  <data name="CapCanRate" xml:space="preserve"><value>Noter les médias</value></data>
+  <data name="CapCanCreatePlaylist" xml:space="preserve"><value>Créer des playlists</value></data>
+  <data name="CapCanViewStats" xml:space="preserve"><value>Voir les statistiques</value></data>
+  <data name="CapCanResumePlayback" xml:space="preserve"><value>Reprendre la lecture</value></data>
+  <data name="CapCanViewHistory" xml:space="preserve"><value>Voir l'historique</value></data>
+  <data name="CapCanManageDevices" xml:space="preserve"><value>Gérer les appareils</value></data>
+  <data name="CapCanModifySettings" xml:space="preserve"><value>Modifier les paramètres</value></data>
+  <data name="CapCanAccessAdmin" xml:space="preserve"><value>Accéder à l'admin</value></data>
+  <data name="CapCanManageLibraries" xml:space="preserve"><value>Gérer les bibliothèques</value></data>
+  <data name="CapCanManageUsers" xml:space="preserve"><value>Gérer les utilisateurs</value></data>
+  <data name="CapCanReportPlaybackProgress" xml:space="preserve"><value>Reporter la progression</value></data>
+  <data name="CapCanTranscode" xml:space="preserve"><value>Transcoder les médias</value></data>
+</root>

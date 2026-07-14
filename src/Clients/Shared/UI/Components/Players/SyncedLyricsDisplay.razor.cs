@@ -1,6 +1,7 @@
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Players;
@@ -8,6 +9,7 @@ namespace K7.Clients.Shared.UI.Components.Players;
 public partial class SyncedLyricsDisplay : ComponentBase
 {
     [Inject] private IJSRuntime Js { get; set; } = default!;
+    [Inject] private IStringLocalizer<SyncedLyricsDisplay> L { get; set; } = default!;
 
     [Parameter] public string? LyricsLrc { get; set; }
     [Parameter] public string? PlainTextLyrics { get; set; }

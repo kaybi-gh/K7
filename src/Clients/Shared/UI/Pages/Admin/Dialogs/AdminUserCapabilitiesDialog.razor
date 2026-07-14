@@ -1,8 +1,10 @@
 @using K7.Server.Domain.Enums
+@inject IStringLocalizer<AdminUserCapabilitiesDialog> L
+@inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
         <p class="exclusions__hint">
-            Role actuel : <strong>@GetRoleLabel(Role)</strong>. Les cases cochees par defaut sont heritees du role.
+            @string.Format(L["RoleHint"], GetRoleLabel(Role))
         </p>
         <K7CheckboxList TItem="Capability"
                         Items="Enum.GetValues<Capability>()"
@@ -12,12 +14,12 @@
                 <span class="exclusions__name">@GetCapabilityLabel(cap)</span>
                 @if (Overrides.ContainsKey(cap))
                 {
-                    <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(cap))" AriaLabel="remove override" />
+                    <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(cap))" AriaLabel="@L["RemoveOverride"]" />
                 }
             </ItemTemplate>
         </K7CheckboxList>
     </div>
     <div class="k7-dialog-actions">
         <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit">Enregistrer</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit">@S["Save"]</K7Button>
     </div>

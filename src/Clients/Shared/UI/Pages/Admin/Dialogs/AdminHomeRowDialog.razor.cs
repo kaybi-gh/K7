@@ -61,11 +61,11 @@ public partial class AdminHomeRowDialog
         }
     }
 
-    private static string GetMediaTypeLabel(MediaType type) => type switch
+    private string GetMediaTypeLabel(MediaType type) => type switch
     {
-        MediaType.Movie => "Films",
-        MediaType.MusicAlbum => "Albums musicaux",
-        MediaType.Serie => "Séries",
+        MediaType.Movie => L["MediaTypeMovie"],
+        MediaType.MusicAlbum => L["MediaTypeMusicAlbum"],
+        MediaType.Serie => L["MediaTypeSerie"],
         _ => type.ToString()
     };
 

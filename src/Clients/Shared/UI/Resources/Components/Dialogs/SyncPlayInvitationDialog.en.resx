@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="InvitedToSession" xml:space="preserve"><value>invited you to join a SyncPlay session</value></data>
+  <data name="ParticipantCount" xml:space="preserve"><value>{0} participant(s) in session</value></data>
+  <data name="Nickname" xml:space="preserve"><value>Nickname</value></data>
+  <data name="JoinFailed" xml:space="preserve"><value>Failed to join session</value></data>
+  <data name="Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Join" xml:space="preserve"><value>Join</value></data>
+</root>

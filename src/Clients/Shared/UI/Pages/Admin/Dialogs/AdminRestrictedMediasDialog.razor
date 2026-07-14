@@ -1,25 +1,26 @@
+@inject IStringLocalizer<AdminRestrictedMediasDialog> L
+@inject IStringLocalizer<SharedResource> S
 
-<!--Médias restreints - @ProfileName-->
-    <div class="k7-dialog-content">
+<div class="k7-dialog-content">
         @if (_loading)
         {
             <K7ProgressBar Indeterminate="true" />
         }
         else if (_medias.Count == 0)
         {
-            <p Color="secondary">Aucun média ne correspond aux règles de ce profil.</p>
+            <p Color="secondary">@L["Empty"]</p>
         }
         else
         {
-            <p class="text-sm mb-3"  Color="secondary" >
-                @_medias.Count média(s) masqué(s) par ce profil@(_medias.Count >= 200 ? " (limité à 200)" : "").
+            <p class="text-sm mb-3" Color="secondary">
+                @string.Format(L["Summary"], _medias.Count, _medias.Count >= 200 ? L["SummaryLimited"] : string.Empty)
             </p>
             <table class="k7-table k7-table--dense">
                 <thead>
                     <tr>
-                        <th>Titre</th>
-                        <th style="width: 100px;">Type</th>
-                        <th style="width: 80px;">Année</th>
+                        <th>@L["ColumnTitle"]</th>
+                        <th class="admin-restricted-medias__type-col">@L["ColumnType"]</th>
+                        <th class="admin-restricted-medias__year-col">@L["ColumnYear"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,5 +37,5 @@
         }
     </div>
     <div class="k7-dialog-actions">
-        <K7Button OnClick="Close">Fermer</K7Button>
+        <K7Button OnClick="Close">@S["Close"]</K7Button>
     </div>

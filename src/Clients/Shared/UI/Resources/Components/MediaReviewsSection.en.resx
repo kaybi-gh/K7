@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Reviews</value></data>
+  <data name="ReviewText" xml:space="preserve"><value>Your review</value></data>
+  <data name="EmojiOptional" xml:space="preserve"><value>Emoji (optional)</value></data>
+  <data name="SaveReview" xml:space="preserve"><value>Publish review</value></data>
+  <data name="SpoilerNotice" xml:space="preserve"><value>Potentially spoiler content - media not watched.</value></data>
+  <data name="RevealSpoilers" xml:space="preserve"><value>Show spoilers</value></data>
+  <data name="Anonymous" xml:space="preserve"><value>Anonymous</value></data>
+  <data name="OpenReview" xml:space="preserve"><value>Open review</value></data>
+</root>
