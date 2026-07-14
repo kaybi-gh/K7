@@ -1,4 +1,5 @@
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Federation.Social;
 
 namespace K7.Clients.Shared.UI.Pages;
@@ -55,6 +56,46 @@ public partial class SettingsSocialPage
     }
 
     private void OnFormChanged() => StateHasChanged();
+
+    private void SetShareScope(FederationContentType contentType, VisibilityScope scope, bool share)
+    {
+        if (share)
+        {
+            switch (contentType)
+            {
+                case FederationContentType.Reviews: _privacy.Share.Reviews = scope; break;
+                case FederationContentType.Collections: _privacy.Share.Collections = scope; break;
+                case FederationContentType.Playlists: _privacy.Share.Playlists = scope; break;
+                case FederationContentType.SmartPlaylists: _privacy.Share.SmartPlaylists = scope; break;
+                case FederationContentType.PlaybackHistory: _privacy.Share.PlaybackHistory = scope; break;
+            }
+        }
+        else
+        {
+            switch (contentType)
+            {
+                case FederationContentType.Reviews: _privacy.View.Reviews = scope; break;
+                case FederationContentType.Collections: _privacy.View.Collections = scope; break;
+                case FederationContentType.Playlists: _privacy.View.Playlists = scope; break;
+                case FederationContentType.SmartPlaylists: _privacy.View.SmartPlaylists = scope; break;
+                case FederationContentType.PlaybackHistory: _privacy.View.PlaybackHistory = scope; break;
+            }
+        }
+
+        OnFormChanged();
+    }
+
+    private void OnShareGrantsChanged(List<FederationVisibilityGrantDto> grants)
+    {
+        _shareGrants = grants;
+        OnFormChanged();
+    }
+
+    private void OnViewGrantsChanged(List<FederationVisibilityGrantDto> grants)
+    {
+        _viewGrants = grants;
+        OnFormChanged();
+    }
 
     private async Task SaveAsync()
     {

@@ -63,33 +63,15 @@
 
             @if (_musicGroups.Count > 0 || _videoItems.Count > 0 || _cachedItems.Count > 0)
             {
-                <div class="downloads-filter-bar mb-3">
-                    <button class="downloads-filter-chip @(_activeTab == DownloadTab.All ? "downloads-filter-chip--active" : "")"
-                            @onclick="() => SetTab(DownloadTab.All)">
-                        @L["All"]
-                    </button>
-                    @if (_musicGroups.Count > 0)
-                    {
-                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Music ? "downloads-filter-chip--active" : "")"
-                                @onclick="() => SetTab(DownloadTab.Music)">
-                            @L["Music"] (@_musicGroups.Count)
-                        </button>
-                    }
-                    @if (_videoItems.Count > 0)
-                    {
-                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Videos ? "downloads-filter-chip--active" : "")"
-                                @onclick="() => SetTab(DownloadTab.Videos)">
-                            @L["Videos"] (@_videoItems.Count)
-                        </button>
-                    }
-                    @if (_cachedItems.Count > 0)
-                    {
-                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Cache ? "downloads-filter-chip--active" : "")"
-                                @onclick="() => SetTab(DownloadTab.Cache)">
-                            @L["CacheUsed"] (@_cachedItems.Count)
-                        </button>
-                    }
-                </div>
+                @if (_filterOptions.Count > 0)
+                {
+                    <K7ButtonGroup TValue="DownloadTab"
+                                   Class="downloads-filter-bar mb-3"
+                                   AriaLabel="@L["All"]"
+                                   Options="_filterOptions"
+                                   Value="_activeTab"
+                                   ValueChanged="SetTab" />
+                }
 
                 <input type="text"
                        class="downloads-search-input mb-3"

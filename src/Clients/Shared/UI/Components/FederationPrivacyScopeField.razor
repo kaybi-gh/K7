@@ -1,0 +1,13 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Federation.Social
+
+<K7VisibilityScopeSelect Label="@Label"
+                         Value="@Value"
+                         ValueChanged="OnScopeChanged" />
+@if (Value == VisibilityScope.SpecificPeople)
+{
+    <FederationVisibilityGrantsEditor ContentType="ContentType"
+                                      Grants="Grants"
+                                      GrantsChanged="OnGrantsChanged" />
+}

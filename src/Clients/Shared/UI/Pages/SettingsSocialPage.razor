@@ -25,11 +25,11 @@ else
 
             <section class="settings-section d-flex flex-col gap-3">
                 <h6 class="mb-0">@L["ShareTitle"]</h6>
-                @RenderShareRow(L["Reviews"], FederationContentType.Reviews, () => _privacy.Share.Reviews, v => _privacy.Share.Reviews = v)
-                @RenderShareRow(L["Collections"], FederationContentType.Collections, () => _privacy.Share.Collections, v => _privacy.Share.Collections = v)
-                @RenderShareRow(L["Playlists"], FederationContentType.Playlists, () => _privacy.Share.Playlists, v => _privacy.Share.Playlists = v)
-                @RenderShareRow(L["SmartPlaylists"], FederationContentType.SmartPlaylists, () => _privacy.Share.SmartPlaylists, v => _privacy.Share.SmartPlaylists = v)
-                @RenderShareRow(L["PlaybackHistory"], FederationContentType.PlaybackHistory, () => _privacy.Share.PlaybackHistory, v => _privacy.Share.PlaybackHistory = v)
+                <FederationPrivacyScopeField Label="@L["Reviews"]" ContentType="@FederationContentType.Reviews" Value="_privacy.Share.Reviews" ValueChanged="@(v => SetShareScope(FederationContentType.Reviews, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["Collections"]" ContentType="@FederationContentType.Collections" Value="_privacy.Share.Collections" ValueChanged="@(v => SetShareScope(FederationContentType.Collections, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["Playlists"]" ContentType="@FederationContentType.Playlists" Value="_privacy.Share.Playlists" ValueChanged="@(v => SetShareScope(FederationContentType.Playlists, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["SmartPlaylists"]" ContentType="@FederationContentType.SmartPlaylists" Value="_privacy.Share.SmartPlaylists" ValueChanged="@(v => SetShareScope(FederationContentType.SmartPlaylists, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["PlaybackHistory"]" ContentType="@FederationContentType.PlaybackHistory" Value="_privacy.Share.PlaybackHistory" ValueChanged="@(v => SetShareScope(FederationContentType.PlaybackHistory, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
             </section>
 
             <hr class="k7-divider" />
@@ -37,11 +37,11 @@ else
             <section class="settings-section d-flex flex-col gap-3">
                 <h6 class="mb-0">@L["ViewTitle"]</h6>
                 <K7Switch @bind-Value="_reviewPreferences.BlurReviewsForUnwatchedMedia" Label="@L["BlurReviewsForUnwatchedMedia"]" />
-                @RenderViewRow(L["Reviews"], FederationContentType.Reviews, () => _privacy.View.Reviews, v => _privacy.View.Reviews = v)
-                @RenderViewRow(L["Collections"], FederationContentType.Collections, () => _privacy.View.Collections, v => _privacy.View.Collections = v)
-                @RenderViewRow(L["Playlists"], FederationContentType.Playlists, () => _privacy.View.Playlists, v => _privacy.View.Playlists = v)
-                @RenderViewRow(L["SmartPlaylists"], FederationContentType.SmartPlaylists, () => _privacy.View.SmartPlaylists, v => _privacy.View.SmartPlaylists = v)
-                @RenderViewRow(L["PlaybackHistory"], FederationContentType.PlaybackHistory, () => _privacy.View.PlaybackHistory, v => _privacy.View.PlaybackHistory = v)
+                <FederationPrivacyScopeField Label="@L["Reviews"]" ContentType="@FederationContentType.Reviews" Value="_privacy.View.Reviews" ValueChanged="@(v => SetShareScope(FederationContentType.Reviews, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["Collections"]" ContentType="@FederationContentType.Collections" Value="_privacy.View.Collections" ValueChanged="@(v => SetShareScope(FederationContentType.Collections, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["Playlists"]" ContentType="@FederationContentType.Playlists" Value="_privacy.View.Playlists" ValueChanged="@(v => SetShareScope(FederationContentType.Playlists, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["SmartPlaylists"]" ContentType="@FederationContentType.SmartPlaylists" Value="_privacy.View.SmartPlaylists" ValueChanged="@(v => SetShareScope(FederationContentType.SmartPlaylists, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
+                <FederationPrivacyScopeField Label="@L["PlaybackHistory"]" ContentType="@FederationContentType.PlaybackHistory" Value="_privacy.View.PlaybackHistory" ValueChanged="@(v => SetShareScope(FederationContentType.PlaybackHistory, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
             </section>
         </div>
 
@@ -51,34 +51,4 @@ else
                              OnSave="SaveAsync"
                              OnCancel="CancelChanges" />
     </div>
-}
-
-@code {
-    private RenderFragment RenderShareRow(
-        string label,
-        FederationContentType contentType,
-        Func<VisibilityScope> getter,
-        Action<VisibilityScope> setter) => __builder =>
-    {
-        var value = getter();
-        <K7VisibilityScopeSelect Label="@label" Value="value" ValueChanged="@(v => { setter(v); OnFormChanged(); })" />
-        if (value == VisibilityScope.SpecificPeople)
-        {
-            <FederationVisibilityGrantsEditor ContentType="contentType" @bind-Grants="_shareGrants" />
-        }
-    };
-
-    private RenderFragment RenderViewRow(
-        string label,
-        FederationContentType contentType,
-        Func<VisibilityScope> getter,
-        Action<VisibilityScope> setter) => __builder =>
-    {
-        var value = getter();
-        <K7VisibilityScopeSelect Label="@label" Value="value" ValueChanged="@(v => { setter(v); OnFormChanged(); })" />
-        if (value == VisibilityScope.SpecificPeople)
-        {
-            <FederationVisibilityGrantsEditor ContentType="contentType" @bind-Grants="_viewGrants" />
-        }
-    };
 }
