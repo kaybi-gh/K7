@@ -35,7 +35,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, IDatabaseCapabilities databaseCapabilities)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
@@ -144,60 +144,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (pageIds.Count == 0)
             return new PaginatedList<BaseMedia>([], totalCount, request.PageNumber, request.PageSize);
 
-        var dataQuery = context.Medias
-            .Where(m => pageIds.Contains(m.Id))
-            .IncludeMetadataTagsForMapping()
-            .Include(x => x.Pictures)
-            .Include(x => x.Ratings)
-            .Include(x => x.IndexedFiles)
-            .AsNoTracking();
-
-        if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true
-            || request.MediaTypes == null)
-        {
-            dataQuery = dataQuery
-                .Include(x => ((MusicTrack)x).Album)
-                    .ThenInclude(a => a.Artist)
-                .Include(x => ((MusicTrack)x).Artist)
-                .Include(x => ((MusicTrack)x).Album)
-                    .ThenInclude(a => a.Pictures)
-                .Include(x => ((MusicTrack)x).AudioAnalysis);
-        }
-
-        if (request.MediaTypes?.Contains(MediaType.MusicAlbum) == true
-            || request.MediaTypes == null)
-        {
-            dataQuery = dataQuery
-                .Include(x => ((MusicAlbum)x).Artist);
-        }
-
-        if (request.MediaTypes?.Contains(MediaType.SerieEpisode) == true
-            || request.ContinueWatching == true
-            || request.MediaTypes == null)
-        {
-            dataQuery = dataQuery
-                .Include(x => ((SerieEpisode)x).Season)
-                    .ThenInclude(s => s.Pictures)
-                .Include(x => ((SerieEpisode)x).Serie)
-                    .ThenInclude(s => s.Pictures);
-        }
-
-        if (request.MediaTypes?.Contains(MediaType.SerieSeason) == true)
-        {
-            dataQuery = dataQuery
-                .Include(x => ((SerieSeason)x).Episodes)
-                .Include(x => ((SerieSeason)x).Serie)
-                    .ThenInclude(s => s.Pictures);
-        }
-
-        if (userId.HasValue)
-        {
-            dataQuery = dataQuery.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));
-        }
-
-        var items = await dataQuery.AsSplitQuery().ToListAsync(cancellationToken);
-        var itemsById = items.ToDictionary(m => m.Id);
-        var ordered = pageIds.Select(id => itemsById[id]).ToList();
+        var ordered = await liteMediaProjection.LoadMediasForLiteAsync(pageIds, userId, cancellationToken);
 
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
@@ -208,7 +155,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         Guid? userId,
         CancellationToken cancellationToken)
     {
-        query = ApplyFilters(request, query, userId);
+        query = ApplyFilters(request, query, userId, BuildSearchPattern(request.SearchText));
 
         if (request.ContinueWatching == true && userId.HasValue)
         {
@@ -219,7 +166,16 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return query;
     }
 
-    internal static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
+    private string? BuildSearchPattern(string? searchText) =>
+        string.IsNullOrWhiteSpace(searchText)
+            ? null
+            : MediaTextSearchHelper.BuildTitlePattern(searchText, databaseCapabilities.SupportsTrigramSearch);
+
+    internal static IQueryable<BaseMedia> ApplyFilters(
+        GetMediasWithPaginationQuery request,
+        IQueryable<BaseMedia> query,
+        Guid? userId,
+        string? searchPattern = null)
     {
         var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
         var includeEpisodes = request.MediaTypes?.Contains(MediaType.SerieEpisode) == true;
@@ -301,10 +257,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             };
         }
 
-        if (!string.IsNullOrWhiteSpace(request.SearchText))
+        if (searchPattern is not null)
         {
-            var term = request.SearchText.Trim().ToLowerInvariant();
-            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), $"%{term}%"));
+            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), searchPattern));
         }
 
         if (request.UnwatchedOnly == true && userId.HasValue)
@@ -466,6 +421,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 _ => throw new InvalidOperationException($"Unsupported media ordering option: {order}")
             };
         }
-        return orderedQueryable!;
+
+        return orderedQueryable!.ThenBy(x => x.Id);
     }
 }
