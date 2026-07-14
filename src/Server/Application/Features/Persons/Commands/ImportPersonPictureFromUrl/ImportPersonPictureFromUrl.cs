@@ -76,7 +76,7 @@ public class ImportPersonPictureFromUrlCommandHandler : IRequestHandler<ImportPe
             Id = pictureId,
             Type = request.PictureType,
             PersonId = request.PersonId,
-            LocalPath = filePath
+            LocalPath = _pathsConfiguration.ToRelativeMetadataPath(filePath)
         };
 
         person.PortraitPicture = picture;
