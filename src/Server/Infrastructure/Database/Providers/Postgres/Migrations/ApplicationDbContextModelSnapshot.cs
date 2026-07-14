@@ -546,6 +546,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("PeeringToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

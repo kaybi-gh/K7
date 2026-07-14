@@ -21,7 +21,8 @@ public record InitiatePeeringCommand : IRequest<Guid>
 public class InitiatePeeringCommandHandler(
     IApplicationDbContext context,
     IPeerClient peerClient,
-    IServerSettingsService serverSettingsService)
+    IServerSettingsService serverSettingsService,
+    IPeerUrlGuard peerUrlGuard)
     : IRequestHandler<InitiatePeeringCommand, Guid>
 {
     public async Task<Guid> Handle(InitiatePeeringCommand request, CancellationToken cancellationToken)
@@ -29,6 +30,9 @@ public class InitiatePeeringCommandHandler(
         var flags = await GetFeatureFlagsAsync(cancellationToken);
         if (!flags.FederationInvitationsEnabled)
             throw new InvalidOperationException("Federation invitations are disabled on this server.");
+
+        peerUrlGuard.EnsureAllowedOutgoingUrl(request.RemoteUrl);
+        peerUrlGuard.EnsureAllowedOutgoingUrl(request.LocalServerUrl);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
@@ -39,7 +43,8 @@ public class InitiatePeeringCommandHandler(
             BaseUrl = request.RemoteUrl.TrimEnd('/'),
             Status = PeerStatus.Pending,
             OutboundClientId = null,
-            OutboundClientSecret = null
+            OutboundClientSecret = null,
+            PeeringToken = token
         };
 
         context.PeerServers.Add(peer);

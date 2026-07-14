@@ -17,7 +17,8 @@ public record ReceivePeerRequestCommand : IRequest
 public class ReceivePeerRequestCommandHandler(
     IApplicationDbContext context,
     IServerSettingsService serverSettingsService,
-    IFederationNotifier federationNotifier)
+    IFederationNotifier federationNotifier,
+    IPeerUrlGuard peerUrlGuard)
     : IRequestHandler<ReceivePeerRequestCommand>
 {
     public async Task Handle(ReceivePeerRequestCommand request, CancellationToken cancellationToken)
@@ -25,6 +26,8 @@ public class ReceivePeerRequestCommandHandler(
         var flags = await GetFeatureFlagsAsync(cancellationToken);
         if (!flags.FederationInvitationsEnabled)
             throw new InvalidOperationException("Federation invitations are disabled on this server.");
+
+        peerUrlGuard.EnsureAllowedOutgoingUrl(request.RequesterUrl);
 
         var existing = await context.PeerRequests
             .FirstOrDefaultAsync(r => r.RequesterUrl == request.RequesterUrl

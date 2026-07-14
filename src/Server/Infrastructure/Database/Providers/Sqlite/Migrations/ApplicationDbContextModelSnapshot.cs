@@ -560,6 +560,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PeeringToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

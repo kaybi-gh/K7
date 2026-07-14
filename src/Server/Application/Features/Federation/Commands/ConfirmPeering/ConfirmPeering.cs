@@ -24,10 +24,13 @@ public class ConfirmPeeringCommandHandler(
     public async Task Handle(ConfirmPeeringCommand request, CancellationToken cancellationToken)
     {
         var peer = await context.PeerServers
-            .FirstOrDefaultAsync(p => p.Status == PeerStatus.Pending, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Status == PeerStatus.Pending
+                && p.PeeringToken == request.Token, cancellationToken);
 
         if (peer is null)
-            throw new InvalidOperationException("No pending peer found for confirmation.");
+            throw new InvalidOperationException("No pending peer found for the supplied token.");
+
+        peer.PeeringToken = null;
 
         peer.OutboundClientId = request.ClientId;
         peer.OutboundClientSecret = request.ClientSecret;
