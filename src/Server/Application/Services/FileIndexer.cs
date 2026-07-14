@@ -3,15 +3,17 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
-using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Models;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Services;
@@ -27,19 +29,22 @@ public class FileIndexer : IFileIndexer
     private readonly ISender _sender;
     private readonly IAudioTagReader _audioTagReader;
     private readonly ILibraryScanProgressReporter _progressReporter;
+    private readonly ILibraryNotifier _libraryNotifier;
 
     public FileIndexer(
         ILogger<FileIndexer> logger,
         IApplicationDbContext context,
         ISender sender,
         IAudioTagReader audioTagReader,
-        ILibraryScanProgressReporter progressReporter)
+        ILibraryScanProgressReporter progressReporter,
+        ILibraryNotifier libraryNotifier)
     {
         _logger = logger;
         _context = context;
         _sender = sender;
         _audioTagReader = audioTagReader;
         _progressReporter = progressReporter;
+        _libraryNotifier = libraryNotifier;
     }
 
     public Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken = default)
@@ -162,12 +167,11 @@ public class FileIndexer : IFileIndexer
             {
                 _context.IndexedFiles.AddRange(batch);
                 await _context.SaveChangesAsync(cancellationToken);
-
-                foreach (var file in batch)
-                    _context.Entry(file).State = EntityState.Detached;
+                ClearChangeTracker();
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+            ClearChangeTracker();
 
             if (backgroundTasks.Count > 0)
             {
@@ -203,10 +207,22 @@ public class FileIndexer : IFileIndexer
 
         if (scopePaths is { Count: > 0 })
         {
-            var scopedFiles = await query.ToListAsync(cancellationToken);
-            return scopedFiles
-                .Where(f => scopePaths.Any(scope => PathHelper.IsPathInScope(f.Path, scope)))
-                .ToList();
+            IQueryable<IndexedFile>? scopedQuery = null;
+
+            foreach (var scopePath in scopePaths.Select(PathHelper.NormalizePath))
+            {
+                var exactPath = scopePath;
+                var forwardPrefix = scopePath.TrimEnd('/', '\\') + '/';
+                var backPrefix = scopePath.TrimEnd('/', '\\') + '\\';
+                var branch = query.Where(f =>
+                    f.Path == exactPath
+                    || f.Path.StartsWith(forwardPrefix)
+                    || f.Path.StartsWith(backPrefix));
+
+                scopedQuery = scopedQuery is null ? branch : scopedQuery.Union(branch);
+            }
+
+            return await scopedQuery!.ToListAsync(cancellationToken);
         }
 
         return await query.ToListAsync(cancellationToken);
@@ -421,9 +437,51 @@ public class FileIndexer : IFileIndexer
 
         _logger.LogInformation("Removing {Count} indexed files no longer present on disk.", removedFiles.Count);
 
-        foreach (var file in removedFiles)
+        var notifications = new HashSet<(Guid MediaId, Guid LibraryId)>();
+
+        foreach (var batchIds in removedFiles.Select(f => f.Id).Chunk(SaveBatchSize))
         {
-            await _sender.Send(new DeleteIndexedFileCommand(file.Id), cancellationToken);
+            var batch = await _context.IndexedFiles
+                .Include(x => x.FileMetadata)
+                .Where(x => batchIds.Contains(x.Id))
+                .ToListAsync(cancellationToken);
+
+            foreach (var entity in batch)
+            {
+                var formerMediaId = entity.MediaId;
+                entity.MediaId = null;
+
+                if (entity.FileMetadata is VideoFileMetadata videoMetadata)
+                {
+                    if (videoMetadata.Thumbnails is not null)
+                    {
+                        _context.MetadataPictures.Remove(videoMetadata.Thumbnails);
+                        videoMetadata.Thumbnails = null;
+                    }
+
+                    _context.FileMetadatas.Remove(entity.FileMetadata);
+                    entity.FileMetadata = null;
+                }
+                else if (entity.FileMetadata is not null)
+                {
+                    _context.FileMetadatas.Remove(entity.FileMetadata);
+                    entity.FileMetadata = null;
+                }
+
+                _context.IndexedFiles.Remove(entity);
+                entity.AddDomainEvent(new IndexedFileDeletedEvent(entity, formerMediaId, entity.LibraryId));
+
+                if (formerMediaId is Guid mediaId)
+                    notifications.Add((mediaId, entity.LibraryId));
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            ClearChangeTracker();
+        }
+
+        foreach (var (mediaId, libraryId) in notifications)
+        {
+            await _libraryNotifier.NotifyMediaIndexedFilesUpdatedAsync(mediaId, libraryId, cancellationToken);
         }
     }
 
@@ -493,5 +551,11 @@ public class FileIndexer : IFileIndexer
         {
             // Tag reading failure is non-fatal - directory-based identification remains
         }
+    }
+
+    private void ClearChangeTracker()
+    {
+        if (_context is DbContext dbContext)
+            dbContext.ChangeTracker.Clear();
     }
 }
