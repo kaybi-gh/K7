@@ -21,7 +21,6 @@ public partial class K7IconToggleButton
 
     [Parameter] public string Size { get; set; } = "";
     [Parameter] public string Class { get; set; } = "";
-    [Parameter] public string Type { get; set; } = "button";
     [Parameter] public bool Disabled { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 

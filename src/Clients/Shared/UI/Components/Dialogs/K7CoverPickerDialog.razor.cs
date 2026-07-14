@@ -9,8 +9,6 @@ public partial class K7CoverPickerDialog
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter] public List<LibraryPictureDto> Pictures { get; set; } = [];
-    [Parameter] public string FromMediaText { get; set; } = "Pick from library";
-    [Parameter] public string UploadText { get; set; } = "Upload a file";
     [Parameter] public string ChooseFileText { get; set; } = "Choose image...";
     [Parameter] public string NoPicturesText { get; set; } = "No pictures available";
     [Parameter] public string CancelText { get; set; } = "Cancel";

@@ -25,8 +25,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment? ToolbarSecondaryContent { get; set; }
     [Parameter] public RenderFragment? LoadingContent { get; set; }
     [Parameter] public RenderFragment? EmptyContent { get; set; }
-    [Parameter] public RenderFragment? GridPlaceholder { get; set; }
-    [Parameter] public RenderFragment? ListPlaceholder { get; set; }
     [Parameter] public EventCallback OnColumnPickerRequested { get; set; }
 
     [Parameter] public IReadOnlyList<string>? JumpIndexLabels { get; set; }

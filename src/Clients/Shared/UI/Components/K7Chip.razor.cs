@@ -6,7 +6,6 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class K7Chip
 {
     [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter] public object? Value { get; set; }
     [Parameter] public string Text { get; set; } = "";
     [Parameter] public string Variant { get; set; } = "";
     [Parameter] public string Color { get; set; } = "";

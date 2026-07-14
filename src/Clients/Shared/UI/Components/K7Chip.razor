@@ -1,6 +1,6 @@
 ﻿@namespace K7.Clients.Shared.UI.Components
 
-<span class="k7-chip @(Variant == "outlined" ? "k7-chip--outlined" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-chip--{Color}" : "") @(OnClick.HasDelegate ? "k7-chip--clickable focusable" : "") @Class"
+<span class="k7-chip @(Variant == "outlined" ? "k7-chip--outlined" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-chip--{Color}" : "") @(Size switch { "xs" => "k7-chip--xs", "sm" => "k7-chip--sm", "lg" => "k7-chip--lg", _ => "" }) @(OnClick.HasDelegate ? "k7-chip--clickable focusable" : "") @Class"
       style="@(string.IsNullOrEmpty(Style) ? null : Style)"
       role="@(OnClick.HasDelegate ? "button" : null)"
       tabindex="@(OnClick.HasDelegate ? "0" : null)"

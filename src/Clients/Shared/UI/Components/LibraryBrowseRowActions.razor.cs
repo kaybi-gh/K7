@@ -13,8 +13,6 @@ public partial class LibraryBrowseRowActions
     [Parameter] public EventCallback OnRemove { get; set; }
     [Parameter] public string? RemoveAriaLabel { get; set; }
     [Parameter] public bool OverlayEnabled { get; set; } = true;
-    [Parameter] public bool ProgressEnabled { get; set; }
-    [Parameter] public bool WatchedStatusEnabled { get; set; }
     [Parameter] public bool ExcludeMenuEnabled { get; set; }
     [Parameter] public bool WatchStateMenuEnabled { get; set; }
     [Parameter] public bool IsAdmin { get; set; }

@@ -17,7 +17,6 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     [Parameter] public K7SortDirection ActiveSortDirection { get; set; } = K7SortDirection.Ascending;
     [Parameter] public EventCallback<SortChangedEventArgs> OnSortChanged { get; set; }
     [Parameter] public EventCallback<TItem> OnRowClick { get; set; }
-    [Parameter] public string? PersistenceKey { get; set; }
     [Parameter] public float RowHeight { get; set; } = 48;
     [Parameter] public int OverscanCount { get; set; } = 10;
     [Parameter] public bool ShowToolbar { get; set; } = true;

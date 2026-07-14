@@ -235,8 +235,6 @@ else
                                     <LibraryBrowseRowActions Model="vm"
                                                               Href="@GetItemHref(vm)"
                                                               OverlayEnabled="true"
-                                                              ProgressEnabled="_canTrackProgress"
-                                                              WatchedStatusEnabled="_canTrackProgress"
                                                               ExcludeMenuEnabled="_canExclude"
                                                               WatchStateMenuEnabled="_canSetWatchState"
                                                               IsAdmin="_isAdmin"
@@ -253,53 +251,27 @@ else
             </TableContent>
 
             <ListTemplate Context="row">
-
                 @{
-
                     var vm = row.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
-
                 }
-
                 <LibraryListItem Item="row.Media" Href="@GetLiteItemHref(row.Media)">
-
                     <Actions>
-
                         @if (vm is not null)
-
                         {
-
                             <LibraryBrowseRowActions Model="vm"
-
                                                       Href="@GetItemHref(vm)"
-
                                                       OverlayEnabled="true"
-
-                                                      ProgressEnabled="_canTrackProgress"
-
-                                                      WatchedStatusEnabled="_canTrackProgress"
-
                                                       ExcludeMenuEnabled="_canExclude"
-
                                                       WatchStateMenuEnabled="_canSetWatchState"
-
                                                       IsAdmin="_isAdmin"
-
                                                       OnRemove="() => RemoveItemAsync(row)"
-
                                                       RemoveAriaLabel="@S["Remove"]"
-
                                                       OnExcludeForSelf="() => ExcludeForSelf(vm)"
-
                                                       OnExcludeForOthers="() => ExcludeForOthers(vm)"
-
                                                       OnWatchStateChanged="StateHasChanged" />
-
                         }
-
                     </Actions>
-
                 </LibraryListItem>
-
             </ListTemplate>
 
         </BrowseView>
