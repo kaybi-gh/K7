@@ -340,7 +340,6 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
             if (pending.Count >= SaveBatchSize)
             {
-                await context.SaveChangesAsync(cancellationToken);
                 LinkArtistsToTracks(pending, artistCache);
                 await context.SaveChangesAsync(cancellationToken);
                 FlushPending(pending, resultMap);
@@ -349,7 +348,6 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         if (pending.Count > 0)
         {
-            await context.SaveChangesAsync(cancellationToken);
             LinkArtistsToTracks(pending, artistCache);
             await context.SaveChangesAsync(cancellationToken);
             FlushPending(pending, resultMap);
