@@ -22,6 +22,7 @@ public class SyncPeerMetadataCommandHandler(
     IPeerClient peerClient,
     ISender sender,
     IMediaMetadataTagSyncService tagSyncService,
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
     ILogger<SyncPeerMetadataCommandHandler> logger)
     : IRequestHandler<SyncPeerMetadataCommand>
 {
@@ -81,6 +82,7 @@ public class SyncPeerMetadataCommandHandler(
 
             await context.SaveChangesAsync(cancellationToken);
             ClearChangeTracker();
+            await mediaLibraryAvailabilityService.RebuildForLibraryAsync(localLibrary.Id, cancellationToken);
         }
 
         var remoteLibraryTitles = remoteLibraries.Select(r => r.Title).ToHashSet();

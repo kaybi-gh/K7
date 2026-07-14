@@ -8,6 +8,7 @@ using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Server.Web.Endpoints.Federation;
 
@@ -42,7 +43,7 @@ public class NotifyMedia : IEndpoint
                     await HandleAddedOrModifiedAsync(peer, body, context, sender, cancellationToken);
                     break;
                 case PeerMediaNotificationType.Removed:
-                    await HandleRemovedAsync(peer, body, context, cancellationToken);
+                    await HandleRemovedAsync(peer, body, context, httpContext.RequestServices.GetRequiredService<IMediaLibraryAvailabilityService>(), cancellationToken);
                     break;
             }
 
@@ -101,11 +102,21 @@ public class NotifyMedia : IEndpoint
         PeerServer peer,
         PeerMediaNotifyRequest body,
         IApplicationDbContext context,
+        IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
         CancellationToken cancellationToken)
     {
+        var libraryIds = await context.RemoteIndexedFiles
+            .Where(r => r.PeerServerId == peer.Id && r.RemoteMediaId == body.MediaId)
+            .Select(r => r.LibraryId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         await context.RemoteIndexedFiles
             .Where(r => r.PeerServerId == peer.Id && r.RemoteMediaId == body.MediaId)
             .ExecuteDeleteAsync(cancellationToken);
+
+        foreach (var libraryId in libraryIds)
+            await mediaLibraryAvailabilityService.RebuildForLibraryAsync(libraryId, cancellationToken);
     }
 }
 

@@ -18,7 +18,10 @@ public class ReidentifyIndexedFileCommand : IRequest
     public required string SelectedExternalId { get; init; }
 }
 
-public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, ISender sender)
+public class ReidentifyIndexedFileCommandHandler(
+    IApplicationDbContext context,
+    ISender sender,
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
     : IRequestHandler<ReidentifyIndexedFileCommand>
 {
     public async Task Handle(ReidentifyIndexedFileCommand request, CancellationToken cancellationToken)
@@ -55,6 +58,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
         {
             await AttachIndexedFileAsync(existingExternalId.Media, indexedFile, library, cancellationToken);
             await context.SaveChangesAsync(cancellationToken);
+            await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
             if (library.MediaType == LibraryMediaType.Music)
                 await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
             return;
@@ -86,6 +90,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
 
         newMedia.AddDomainEvent(new MediaCreatedEvent(newMedia));
         await context.SaveChangesAsync(cancellationToken);
+        await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
 
         await QueueRefreshAsync(newMedia.Id, request.SelectedExternalId, providerName, library, cancellationToken);
 
