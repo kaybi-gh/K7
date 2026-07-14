@@ -30,6 +30,7 @@ public partial class HomeView : IAsyncDisposable
     private MediaCardViewModel? _focusedItem;
     private bool _focusRestored;
     private bool _emptyFeedRetried;
+    private bool _homeRestoreLoadFailed;
     private IJSObjectReference? _homeRestoreModule;
 
     private bool isLoading => FeedStore.IsLoading;
@@ -76,7 +77,7 @@ public partial class HomeView : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!isLoading && !_isOffline && !_emptyFeedRetried && !GetVisibleRows().Any())
+        if (FeedStore.IsLoaded && !isLoading && !_isOffline && !_emptyFeedRetried && !GetVisibleRows().Any())
         {
             _emptyFeedRetried = true;
             await FeedStore.ResetAndReloadAsync();
@@ -92,8 +93,23 @@ public partial class HomeView : IAsyncDisposable
         if (isLoading || _isOffline || _focusRestored)
             return;
 
-        _homeRestoreModule ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/home-restore.js");
+        if (_homeRestoreModule is null && !_homeRestoreLoadFailed)
+        {
+            try
+            {
+                _homeRestoreModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/K7.Clients.Shared.UI/js/home-restore.js");
+            }
+            catch (JSException)
+            {
+                _homeRestoreLoadFailed = true;
+                _focusRestored = true;
+                return;
+            }
+        }
+
+        if (_homeRestoreModule is null)
+            return;
 
         if (NavigationState.SavedFocus is { } saved)
         {
