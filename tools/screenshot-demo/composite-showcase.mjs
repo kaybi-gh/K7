@@ -9,6 +9,9 @@ const repoRoot = path.resolve(__dirname, '../..');
 const screenshotsDir = path.resolve(repoRoot, 'screenshots');
 const outputFile = path.join(screenshotsDir, 'movie-showcase-devices.png');
 
+const backgroundMode = (process.env.K7_SHOWCASE_BACKGROUND ?? 'transparent').toLowerCase();
+const canvasPadding = Number(process.env.K7_SHOWCASE_PADDING ?? 32);
+
 const sources = {
   tv: 'home-tv.png',
   desktop: 'movie-detail-sintel-desktop.png',
@@ -25,7 +28,25 @@ function readPngSize(filePath) {
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
 }
 
-function buildHtml(images, sizes) {
+function bodyBackgroundCss(mode) {
+  switch (mode) {
+    case 'solid':
+      return 'background: #10141b;';
+    case 'transparent':
+      return 'background: transparent;';
+    case 'fade':
+    default:
+      return `background: transparent;
+      background-image: radial-gradient(
+        ellipse 88% 78% at 50% 58%,
+        rgba(16, 20, 27, 0.42) 0%,
+        rgba(16, 20, 27, 0.1) 48%,
+        transparent 76%
+      );`;
+  }
+}
+
+function buildHtml(images, sizes, mode, padding) {
   const mobileAspect = `${sizes.mobile.width} / ${sizes.mobile.height}`;
   const desktopAspect = `${sizes.desktop.width} / ${sizes.desktop.height}`;
   const tvAspect = `${sizes.tv.width} / ${sizes.tv.height}`;
@@ -39,14 +60,16 @@ function buildHtml(images, sizes) {
 
     body {
       width: 2400px;
-      height: 1350px;
+      min-height: 720px;
       overflow: hidden;
+      padding: ${padding}px;
+      ${bodyBackgroundCss(mode)}
     }
 
     .scene {
       position: relative;
       width: 100%;
-      height: 100%;
+      height: 680px;
     }
 
     .device {
@@ -62,10 +85,10 @@ function buildHtml(images, sizes) {
       background: #000;
     }
 
-    /* TV - back center */
+    /* TV - back left */
     .device-tv {
-      bottom: 20px;
-      left: 20px;
+      bottom: 0;
+      left: 0;
       width: 1020px;
       z-index: 1;
     }
@@ -104,10 +127,10 @@ function buildHtml(images, sizes) {
       background: #1d2128;
     }
 
-    /* Laptop - front left, overlaps TV */
+    /* Laptop - overlaps TV */
     .device-laptop {
-      left: 800px;
-      bottom: 20px;
+      left: 780px;
+      bottom: 0;
       width: 780px;
       z-index: 2;
     }
@@ -158,10 +181,10 @@ function buildHtml(images, sizes) {
       background: #1a1e25;
     }
 
-    /* Phone - front right, overlaps laptop */
+    /* Phone - overlaps laptop */
     .device-phone {
-      left: 1500px;
-      bottom: 60px;
+      left: 1480px;
+      bottom: 0;
       width: 268px;
       z-index: 3;
     }
@@ -242,18 +265,46 @@ async function main() {
     Object.entries(sources).map(([key, file]) => [key, toDataUrl(path.join(screenshotsDir, file))]),
   );
 
-  const html = buildHtml(images, sizes);
+  const html = buildHtml(images, sizes, backgroundMode, canvasPadding);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({
-    viewport: { width: 2400, height: 1350 },
+    viewport: { width: 2400, height: 900 },
     deviceScaleFactor: 1,
   });
 
   try {
     await page.setContent(html, { waitUntil: 'load' });
     await page.waitForTimeout(300);
-    await page.screenshot({ path: outputFile, fullPage: false });
-    console.log(`SHOWCASE -> ${outputFile}`);
+
+    const clip = await page.evaluate(pad => {
+      const devices = [...document.querySelectorAll('.device')];
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = 0;
+      let maxY = 0;
+
+      for (const el of devices) {
+        const rect = el.getBoundingClientRect();
+        minX = Math.min(minX, rect.left);
+        minY = Math.min(minY, rect.top);
+        maxX = Math.max(maxX, rect.right);
+        maxY = Math.max(maxY, rect.bottom);
+      }
+
+      return {
+        x: Math.max(0, Math.floor(minX - pad)),
+        y: Math.max(0, Math.floor(minY - pad)),
+        width: Math.ceil(maxX - minX + pad * 2),
+        height: Math.ceil(maxY - minY + pad * 2),
+      };
+    }, canvasPadding);
+
+    await page.screenshot({
+      path: outputFile,
+      clip,
+      omitBackground: backgroundMode !== 'solid',
+    });
+    console.log(`SHOWCASE -> ${outputFile} (${clip.width}x${clip.height}, background: ${backgroundMode})`);
   } finally {
     await browser.close();
   }
