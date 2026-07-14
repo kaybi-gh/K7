@@ -71,6 +71,10 @@ public class TranscodeJob
     public ConcurrentDictionary<Guid, byte> AttachedStreamSessions { get; } = new();
     public DateTime LastPingTime { get; set; } = DateTime.UtcNow;
     public int TargetSegmentIndex { get; set; }
+    /// <summary>
+    /// Highest segment index the currently running ffmpeg process will produce (inclusive).
+    /// </summary>
+    public int GeneratingUntilSegmentIndex { get; set; } = -1;
     public int BufferSize { get; init; } = 15;
 
     /// <summary>
