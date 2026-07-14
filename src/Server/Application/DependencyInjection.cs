@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<LiteMediaProjectionService>();
         services.AddScoped<MediaAccessFilter>();
+        services.AddScoped<IMediaLibraryAvailabilityService, MediaLibraryAvailabilityService>();
 
         services.AddMediatR(cfg =>
         {
