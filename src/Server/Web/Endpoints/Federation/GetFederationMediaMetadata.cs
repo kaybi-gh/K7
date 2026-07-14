@@ -94,34 +94,36 @@ public class GetFederationMediaMetadata : IEndpoint
             if (media is null)
                 return Results.NotFound();
 
-            // For parent entities (MusicAlbum, Serie), files belong to child media (tracks, episodes).
-            // Check share based on entity type to avoid untranslatable null checks in LINQ.
             bool isShared;
-            if (media is MusicAlbum)
+            if (media is MusicAlbum albumMedia)
             {
+                var trackIds = await context.Medias.OfType<MusicTrack>()
+                    .Where(t => t.AlbumId == albumMedia.Id)
+                    .Select(t => t.Id)
+                    .ToListAsync(cancellationToken);
+
+                var relatedMediaIds = trackIds.Append(mediaId).ToList();
                 isShared = await context.PeerShareAgreements
                     .AnyAsync(a => a.PeerServerId == peer.Id
                         && a.Direction == ShareDirection.Outbound
                         && a.IsEnabled
-                        && context.IndexedFiles.Any(f => f.LibraryId == a.LibraryId
-                            && (f.MediaId == mediaId
-                                || context.Medias.OfType<MusicTrack>()
-                                    .Where(t => t.AlbumId == mediaId)
-                                    .Select(t => (Guid?)t.Id)
-                                    .Contains(f.MediaId))), cancellationToken);
+                        && context.MediaLibraryAvailabilities.Any(av =>
+                            av.LibraryId == a.LibraryId && relatedMediaIds.Contains(av.MediaId)), cancellationToken);
             }
-            else if (media is Serie)
+            else if (media is Serie serieMedia)
             {
+                var episodeIds = await context.Medias.OfType<SerieEpisode>()
+                    .Where(e => e.SerieId == serieMedia.Id)
+                    .Select(e => e.Id)
+                    .ToListAsync(cancellationToken);
+
+                var relatedMediaIds = episodeIds.Append(mediaId).ToList();
                 isShared = await context.PeerShareAgreements
                     .AnyAsync(a => a.PeerServerId == peer.Id
                         && a.Direction == ShareDirection.Outbound
                         && a.IsEnabled
-                        && context.IndexedFiles.Any(f => f.LibraryId == a.LibraryId
-                            && (f.MediaId == mediaId
-                                || context.Medias.OfType<SerieEpisode>()
-                                    .Where(e => e.SerieId == mediaId)
-                                    .Select(e => (Guid?)e.Id)
-                                    .Contains(f.MediaId))), cancellationToken);
+                        && context.MediaLibraryAvailabilities.Any(av =>
+                            av.LibraryId == a.LibraryId && relatedMediaIds.Contains(av.MediaId)), cancellationToken);
             }
             else
             {
@@ -129,8 +131,8 @@ public class GetFederationMediaMetadata : IEndpoint
                     .AnyAsync(a => a.PeerServerId == peer.Id
                         && a.Direction == ShareDirection.Outbound
                         && a.IsEnabled
-                        && context.IndexedFiles.Any(f => f.LibraryId == a.LibraryId
-                            && f.MediaId == mediaId), cancellationToken);
+                        && context.MediaLibraryAvailabilities.Any(av =>
+                            av.LibraryId == a.LibraryId && av.MediaId == mediaId), cancellationToken);
             }
 
             if (!isShared)

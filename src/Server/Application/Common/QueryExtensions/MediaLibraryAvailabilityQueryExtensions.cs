@@ -28,4 +28,12 @@ public static class MediaLibraryAvailabilityQueryExtensions
         where TMedia : BaseMedia =>
         query.Where(m => context.MediaLibraryAvailabilities.Any(a =>
             a.MediaId == m.Id && !excludedLibraryIds.Contains(a.LibraryId)));
+
+    public static IQueryable<TMedia> WhereLinkedToLibrary<TMedia>(
+        this IQueryable<TMedia> query,
+        IApplicationDbContext context,
+        Guid libraryId)
+        where TMedia : BaseMedia =>
+        query.Where(m => context.MediaLibraryAvailabilities.Any(a =>
+            a.MediaId == m.Id && a.LibraryId == libraryId));
 }

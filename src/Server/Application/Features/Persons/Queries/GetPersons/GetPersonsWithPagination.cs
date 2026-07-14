@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
@@ -39,28 +40,10 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
             var roleFilter = request.RoleTypes;
 
             query = query.Where(p => p.Roles.Any(r =>
-                (roleFilter == null || roleFilter.Count == 0 || roleFilter.Contains(r.Type)) &&
-                (
-                    r.Media!.RemoteIndexedFiles.Any()
-                    || (r.Media is MusicAlbum
-                        ? ((MusicAlbum)r.Media).Tracks.Any(t =>
-                            t.RemoteIndexedFiles.Any()
-                            || t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                        : r.Media is Serie
-                            ? ((Serie)r.Media).Seasons.Any(s => s.Episodes.Any(e =>
-                                e.RemoteIndexedFiles.Any()
-                                || e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
-                            : r.Media is SerieEpisode
-                                ? ((SerieEpisode)r.Media).RemoteIndexedFiles.Any()
-                                    || ((SerieEpisode)r.Media).IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                    || ((SerieEpisode)r.Media).Serie!.Seasons.Any(s => s.Episodes.Any(e =>
-                                        e.RemoteIndexedFiles.Any()
-                                        || e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
-                                : r.Media is MusicTrack
-                                    ? ((MusicTrack)r.Media).RemoteIndexedFiles.Any()
-                                        || ((MusicTrack)r.Media).IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                )));
+                (roleFilter == null || roleFilter.Count == 0 || roleFilter.Contains(r.Type))
+                && (r.Media!.RemoteIndexedFiles.Any()
+                    || context.MediaLibraryAvailabilities.Any(a =>
+                        a.MediaId == r.MediaId && !excludedLibraryIds.Contains(a.LibraryId)))));
         }
 
         return await query
