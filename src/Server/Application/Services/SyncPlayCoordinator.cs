@@ -12,21 +12,21 @@ public interface ISyncPlayCoordinator
     SyncPlayGroupInfo CreateGroup(string identityUserId, Guid deviceId, string displayName, string deviceName, SyncPlayQueueItemDto? initialMedia = null, double initialPosition = 0, bool isPlaying = false);
     SyncPlayGroupInfo? JoinGroup(Guid groupId, string? identityUserId, Guid deviceId, string displayName, string deviceName, bool isGuest);
     DisconnectResult LeaveGroup(Guid groupId, Guid deviceId);
-    CommandResult IssueCommand(Guid groupId, string? identityUserId, SyncPlayCommandType commandType, double? value, string displayName);
+    CommandResult IssueCommand(Guid groupId, Guid deviceId, SyncPlayCommandType commandType, double? value);
     ReadyResult ReportReady(Guid groupId, Guid deviceId);
     SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position);
     SyncPlayGroupInfo? GetGroup(Guid groupId);
     void CleanupStaleGroups();
-    bool AddToQueue(Guid groupId, SyncPlayQueueItemDto item);
-    bool SetCurrentMedia(Guid groupId, SyncPlayQueueItemDto item);
-    SyncPlayQueueItemDto? NavigateQueue(Guid groupId, bool forward);
-    bool RemoveFromQueue(Guid groupId, Guid queueItemId);
+    bool AddToQueue(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item);
+    bool SetCurrentMedia(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item);
+    SyncPlayQueueItemDto? NavigateQueue(Guid groupId, Guid deviceId, bool forward);
+    bool RemoveFromQueue(Guid groupId, Guid deviceId, Guid queueItemId);
     KickResult? Kick(Guid groupId, string identityUserId, Guid targetDeviceId);
-    SyncPlayChatMessageDto? SendChat(Guid groupId, string displayName, string text);
-    SyncPlayReactionDto? SendReaction(Guid groupId, string displayName, string emoji);
+    SyncPlayChatMessageDto? SendChat(Guid groupId, Guid deviceId, string text);
+    SyncPlayReactionDto? SendReaction(Guid groupId, Guid deviceId, string emoji);
     string? GenerateGuestToken(Guid groupId, string identityUserId);
     bool ValidateGuestToken(Guid groupId, string token);
-    string GenerateInviteToken(Guid groupId);
+    string? GenerateInviteToken(Guid groupId, string identityUserId);
     Guid? ResolveInviteToken(string token);
     DisconnectResult DisconnectDevice(Guid deviceId);
     bool IsUserInAnyGroup(string identityUserId);
@@ -196,9 +196,9 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return new DisconnectResult { GroupId = groupId, GroupDestroyed = false, DisconnectedDeviceId = deviceId };
     }
 
-    public CommandResult IssueCommand(Guid groupId, string? identityUserId, SyncPlayCommandType commandType, double? value, string displayName)
+    public CommandResult IssueCommand(Guid groupId, Guid deviceId, SyncPlayCommandType commandType, double? value)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return new CommandResult { Permitted = false };
 
         group.LastActivity = DateTime.UtcNow;
@@ -238,7 +238,7 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 
     public ReadyResult ReportReady(Guid groupId, Guid deviceId)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return new ReadyResult { AllReady = false };
 
         lock (group.Gate)
@@ -286,7 +286,7 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 
     public SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return null;
 
         if (group.Members.TryGetValue(deviceId, out var member))
@@ -322,9 +322,9 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         }
     }
 
-    public bool AddToQueue(Guid groupId, SyncPlayQueueItemDto item)
+    public bool AddToQueue(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return false;
 
         lock (group.Gate)
@@ -338,9 +338,9 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         }
     }
 
-    public bool SetCurrentMedia(Guid groupId, SyncPlayQueueItemDto item)
+    public bool SetCurrentMedia(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return false;
 
         lock (group.Gate)
@@ -366,9 +366,12 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         }
     }
 
-    public bool RemoveFromQueue(Guid groupId, Guid queueItemId)
+    public bool RemoveFromQueue(Guid groupId, Guid deviceId, Guid queueItemId)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out var member))
+            return false;
+
+        if (group.CreatorUserId != member.IdentityUserId)
             return false;
 
         lock (group.Gate)
@@ -383,9 +386,9 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         }
     }
 
-    public SyncPlayQueueItemDto? NavigateQueue(Guid groupId, bool forward)
+    public SyncPlayQueueItemDto? NavigateQueue(Guid groupId, Guid deviceId, bool forward)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out _))
             return null;
 
         lock (group.Gate)
@@ -426,9 +429,9 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return new KickResult { TargetDeviceId = targetDeviceId, TargetConnectionId = string.Empty };
     }
 
-    public SyncPlayChatMessageDto? SendChat(Guid groupId, string displayName, string text)
+    public SyncPlayChatMessageDto? SendChat(Guid groupId, Guid deviceId, string text)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out var member))
             return null;
 
         group.LastActivity = DateTime.UtcNow;
@@ -436,22 +439,22 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return new SyncPlayChatMessageDto
         {
             MessageId = Guid.NewGuid(),
-            DisplayName = displayName,
+            DisplayName = member.DisplayName,
             Text = text,
             TimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
     }
 
-    public SyncPlayReactionDto? SendReaction(Guid groupId, string displayName, string emoji)
+    public SyncPlayReactionDto? SendReaction(Guid groupId, Guid deviceId, string emoji)
     {
-        if (!_groups.TryGetValue(groupId, out var group))
+        if (!TryGetMember(groupId, deviceId, out var group, out var member))
             return null;
 
         group.LastActivity = DateTime.UtcNow;
 
         return new SyncPlayReactionDto
         {
-            DisplayName = displayName,
+            DisplayName = member.DisplayName,
             Emoji = emoji,
             TimestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
@@ -493,10 +496,13 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return new DisconnectResult { GroupId = Guid.Empty, GroupDestroyed = false, DisconnectedDeviceId = deviceId };
     }
 
-    public string GenerateInviteToken(Guid groupId)
+    public string? GenerateInviteToken(Guid groupId, string identityUserId)
     {
         if (!_groups.TryGetValue(groupId, out var group))
-            return string.Empty;
+            return null;
+
+        if (group.CreatorUserId != identityUserId)
+            return null;
 
         if (group.InviteToken is not null)
             return group.InviteToken;
@@ -522,6 +528,22 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
     public bool IsUserInAnyGroup(string identityUserId)
     {
         return _groups.Values.Any(g => g.Members.Values.Any(m => m.IdentityUserId == identityUserId));
+    }
+
+    private bool TryGetMember(
+        Guid groupId,
+        Guid deviceId,
+        out SyncPlayGroupInfo group,
+        out SyncPlayMember member)
+    {
+        member = null!;
+        if (!_groups.TryGetValue(groupId, out group!))
+            return false;
+
+        if (!group.Members.TryGetValue(deviceId, out member!))
+            return false;
+
+        return true;
     }
 
     private static void ResetAllReady(SyncPlayGroupInfo group)
