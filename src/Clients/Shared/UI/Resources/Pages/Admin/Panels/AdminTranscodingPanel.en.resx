@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Transcoding</value></data>
+  <data name="EncoderMode" xml:space="preserve"><value>Encoder mode</value></data>
+  <data name="EncoderAuto" xml:space="preserve"><value>Auto</value></data>
+  <data name="EncoderSoftware" xml:space="preserve"><value>Software only</value></data>
+  <data name="EncoderHardwarePreferred" xml:space="preserve"><value>Hardware preferred</value></data>
+  <data name="EnableHdrTonemap" xml:space="preserve"><value>HDR to SDR tonemapping</value></data>
+  <data name="MaxConcurrentTranscodes" xml:space="preserve"><value>Max concurrent transcodes</value></data>
+  <data name="TranscodeTempQuotaMb" xml:space="preserve"><value>Temp storage quota (MB, 0 = unlimited)</value></data>
+  <data name="EncoderThrottleBufferSegments" xml:space="preserve"><value>Encoder buffer segments</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="TestEncoder" xml:space="preserve"><value>Test encoder</value></data>
+  <data name="CapabilitiesTitle" xml:space="preserve"><value>FFmpeg capabilities</value></data>
+  <data name="FfmpegVersion" xml:space="preserve"><value>FFmpeg version</value></data>
+  <data name="HardwareEncoders" xml:space="preserve"><value>Detected hardware encoders</value></data>
+  <data name="NoHardwareEncoders" xml:space="preserve"><value>No hardware encoders detected</value></data>
+  <data name="TestSuccess" xml:space="preserve"><value>Test succeeded:</value></data>
+  <data name="TestFailed" xml:space="preserve"><value>Test failed</value></data>
+  <data name="Hardware" xml:space="preserve"><value>hardware</value></data>
+  <data name="Software" xml:space="preserve"><value>software</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Settings saved</value></data>
+  <data name="SaveError" xml:space="preserve"><value>Failed to save settings</value></data>
+</root>

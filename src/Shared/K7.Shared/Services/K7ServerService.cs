@@ -28,7 +28,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1797,6 +1797,31 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.DeleteAsync($"api/admin/api-keys/{id}", cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    // ITranscodeAdminService
+
+    async Task<TranscodeSettingsDto> ITranscodeAdminService.GetSettingsAsync(CancellationToken cancellationToken)
+    {
+        return (await HttpClient.GetFromJsonAsync<TranscodeSettingsDto>("api/admin/transcode/settings", _serializerOptions, cancellationToken))!;
+    }
+
+    async Task ITranscodeAdminService.UpdateSettingsAsync(TranscodeSettingsDto settings, CancellationToken cancellationToken)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/transcode/settings", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    async Task<FfmpegCapabilitiesDto> ITranscodeAdminService.GetCapabilitiesAsync(CancellationToken cancellationToken)
+    {
+        return (await HttpClient.GetFromJsonAsync<FfmpegCapabilitiesDto>("api/admin/transcode/capabilities", _serializerOptions, cancellationToken))!;
+    }
+
+    async Task<FfmpegTranscodeTestResultDto> ITranscodeAdminService.TestEncoderAsync(CancellationToken cancellationToken)
+    {
+        var response = await HttpClient.PostAsync("api/admin/transcode/test", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<FfmpegTranscodeTestResultDto>(_serializerOptions, cancellationToken))!;
     }
 
     // IMusicIntelligenceAdminService

@@ -1,0 +1,77 @@
+@page "/admin/transcoding"
+@layout AdminLayout
+@inject IStringLocalizer<AdminTranscodingPanel> L
+@inject ITranscodeAdminService TranscodeAdmin
+@inject IK7Snackbar Snackbar
+
+<div class="transcoding-panel">
+    <div class="transcoding-panel__header">
+        <h6>@L["Title"]</h6>
+    </div>
+
+    @if (_loading)
+    {
+        <K7Paper Outlined="true" Style="padding: var(--space-6); text-align: center;">
+            <K7Spinner />
+        </K7Paper>
+    }
+    else if (_settings is not null)
+    {
+        <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+            <div class="d-flex flex-col gap-4">
+                <K7Select TValue="HardwareEncoderMode" Value="_settings.EncoderMode" ValueChanged="OnEncoderModeChanged" Label="@L["EncoderMode"]" Variant="outlined">
+                    <K7SelectItem Value="HardwareEncoderMode.Auto" Text="@L["EncoderAuto"]">@L["EncoderAuto"]</K7SelectItem>
+                    <K7SelectItem Value="HardwareEncoderMode.Software" Text="@L["EncoderSoftware"]">@L["EncoderSoftware"]</K7SelectItem>
+                    <K7SelectItem Value="HardwareEncoderMode.HardwarePreferred" Text="@L["EncoderHardwarePreferred"]">@L["EncoderHardwarePreferred"]</K7SelectItem>
+                </K7Select>
+
+                <K7Switch Label="@L["EnableHdrTonemap"]" Value="_settings.EnableHdrTonemap" ValueChanged="v => _settings = _settings with { EnableHdrTonemap = v }" />
+
+                <K7TextField TValue="int" Label="@L["MaxConcurrentTranscodes"]" Value="_settings.MaxConcurrentTranscodes" ValueChanged="v => _settings = _settings with { MaxConcurrentTranscodes = v }" Type="number" />
+
+                <K7TextField TValue="int" Label="@L["TranscodeTempQuotaMb"]" Value="_settings.TranscodeTempQuotaMb" ValueChanged="v => _settings = _settings with { TranscodeTempQuotaMb = v }" Type="number" />
+
+                <K7TextField TValue="int" Label="@L["EncoderThrottleBufferSegments"]" Value="_settings.EncoderThrottleBufferSegments" ValueChanged="v => _settings = _settings with { EncoderThrottleBufferSegments = v }" Type="number" />
+
+                <div class="d-flex align-center gap-2">
+                    <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
+                    <K7Button OnClick="TestEncoderAsync" Variant="K7ButtonVariant.Outlined" Disabled="_testing">@L["TestEncoder"]</K7Button>
+                    @if (_testing)
+                    {
+                        <K7Spinner Size="20" />
+                    }
+                </div>
+            </div>
+        </K7Paper>
+
+        @if (_capabilities is not null)
+        {
+            <K7Paper Outlined="true" Style="padding: var(--space-4);">
+                <h6>@L["CapabilitiesTitle"]</h6>
+                <p class="text-caption" style="color: var(--color-text-muted);">@L["FfmpegVersion"]: @(_capabilities.FfmpegVersion ?? "-")</p>
+                @if (_capabilities.AvailableHardwareEncoders.Count > 0)
+                {
+                    <p>@L["HardwareEncoders"]: @string.Join(", ", _capabilities.AvailableHardwareEncoders)</p>
+                }
+                else
+                {
+                    <p>@L["NoHardwareEncoders"]</p>
+                }
+            </K7Paper>
+        }
+
+        @if (_testResult is not null)
+        {
+            <K7Paper Outlined="true" Style="padding: var(--space-4); margin-top: var(--space-4);">
+                @if (_testResult.Success)
+                {
+                    <span style="color: var(--color-success);">@L["TestSuccess"] @_testResult.SelectedEncoder (@(_testResult.IsHardwareAccelerated ? L["Hardware"] : L["Software"]))</span>
+                }
+                else
+                {
+                    <span style="color: var(--color-error);">@L["TestFailed"]: @_testResult.Error</span>
+                }
+            </K7Paper>
+        }
+    }
+</div>

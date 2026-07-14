@@ -53,6 +53,7 @@ builder.Services.AddSingleton<INotificationAdminService>(sp => sp.GetRequiredSer
 builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ITranscodeAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<ISharedProfileApi>(sp => sp.GetRequiredService<K7ServerService>());

@@ -9227,6 +9227,19 @@
         }
       }
     },
+    "/api/admin/transcode/capabilities": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetFfmpegCapabilities",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/music-intelligence": {
       "get": {
         "tags": [
@@ -9315,6 +9328,40 @@
         }
       }
     },
+    "/api/admin/transcode/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetTranscodeSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateTranscodeSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscodeSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/api-keys/{id}": {
       "delete": {
         "tags": [
@@ -9332,6 +9379,19 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/transcode/test": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "TestFfmpegEncoder",
         "responses": {
           "200": {
             "description": "OK"
@@ -11839,6 +11899,9 @@
             }
           }
         }
+      },
+      "HardwareEncoderMode": {
+        "type": "integer"
       },
       "HomeLayoutDto": {
         "required": [
@@ -18262,6 +18325,18 @@
           },
           "isSubtitleBurnIn": {
             "type": "boolean"
+          },
+          "videoEncoder": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isHardwareAccelerated": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -18584,6 +18659,41 @@
       },
       "TranscodeReason": {
         "type": "integer"
+      },
+      "TranscodeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "encoderMode": {
+            "$ref": "#/components/schemas/HardwareEncoderMode"
+          },
+          "enableHdrTonemap": {
+            "type": "boolean"
+          },
+          "maxConcurrentTranscodes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "transcodeTempQuotaMb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "encoderThrottleBufferSegments": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "UpdateBackgroundTaskSettingsRequest": {
         "type": "object",
