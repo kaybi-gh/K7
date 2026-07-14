@@ -53,8 +53,11 @@ jobs:
       - name: Build
         run: dotnet build K7.CI.slnf --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test tests/Application.UnitTests/Application.UnitTests.csproj --configuration Release --no-build --verbosity normal
+      - name: Test (fast)
+        run: |
+          dotnet test tests/Domain.UnitTests/Domain.UnitTests.csproj --configuration Release --no-build --verbosity normal
+          dotnet test tests/Application.UnitTests/Application.UnitTests.csproj --configuration Release --no-build --verbosity normal
+          dotnet test tests/Clients.ComponentTests/Clients.ComponentTests.csproj --configuration Release --no-build --verbosity normal
 
   publish-image:
     needs: build-and-test
