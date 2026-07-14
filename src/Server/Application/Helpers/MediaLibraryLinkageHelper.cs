@@ -7,6 +7,12 @@ namespace K7.Server.Application.Helpers;
 
 internal readonly record struct MediaLibraryPair(Guid LibraryId, Guid MediaId);
 
+internal sealed class MediaLibraryPairProjection
+{
+    public Guid LibraryId { get; set; }
+    public Guid MediaId { get; set; }
+}
+
 internal static class MediaLibraryLinkageHelper
 {
     internal static IQueryable<BaseMedia> WhereLinkedToLibrary(
@@ -15,62 +21,51 @@ internal static class MediaLibraryLinkageHelper
         Guid libraryId) =>
         query.Where(m => context.MediaLibraryAvailabilities.Any(a => a.MediaId == m.Id && a.LibraryId == libraryId));
 
-    internal static IQueryable<MediaLibraryPair> SelectMediaLibraryPairs(IApplicationDbContext context)
+    internal static IQueryable<MediaLibraryPairProjection> SelectMediaLibraryPairs(IApplicationDbContext context)
     {
+        var tracks = context.Medias.OfType<MusicTrack>();
+        var albums = context.Medias.OfType<MusicAlbum>();
+        var episodes = context.Medias.OfType<SerieEpisode>();
+
         var fromIndexed = context.IndexedFiles
             .Where(f => f.MediaId != null)
-            .Select(f => new MediaLibraryPair(f.LibraryId, f.MediaId!.Value));
+            .Select(f => new { f.LibraryId, MediaId = f.MediaId!.Value });
 
         var fromRemote = context.RemoteIndexedFiles
-            .Select(r => new MediaLibraryPair(r.LibraryId, r.MediaId));
+            .Select(r => new { r.LibraryId, r.MediaId });
 
-        var albumFromTracksIndexed = context.Medias.OfType<MusicTrack>()
-            .SelectMany(t => context.IndexedFiles
-                .Where(f => f.MediaId == t.Id)
-                .Select(f => new MediaLibraryPair(f.LibraryId, t.AlbumId)));
+        var albumFromTracksIndexed = context.IndexedFiles
+            .Where(f => f.MediaId != null)
+            .Join(tracks, f => f.MediaId!.Value, t => t.Id, (f, t) => new { f.LibraryId, MediaId = t.AlbumId });
 
-        var albumFromTracksRemote = context.Medias.OfType<MusicTrack>()
-            .SelectMany(t => context.RemoteIndexedFiles
-                .Where(r => r.MediaId == t.Id)
-                .Select(r => new MediaLibraryPair(r.LibraryId, t.AlbumId)));
+        var albumFromTracksRemote = context.RemoteIndexedFiles
+            .Join(tracks, r => r.MediaId, t => t.Id, (r, t) => new { r.LibraryId, MediaId = t.AlbumId });
 
-        var artistFromAlbumsRemote = context.Medias.OfType<MusicAlbum>()
-            .Where(a => a.ArtistId != null)
-            .SelectMany(a => context.RemoteIndexedFiles
-                .Where(r => r.MediaId == a.Id)
-                .Select(r => new MediaLibraryPair(r.LibraryId, a.ArtistId!.Value)));
+        var artistFromAlbumsRemote = context.RemoteIndexedFiles
+            .Join(albums.Where(a => a.ArtistId != null), r => r.MediaId, a => a.Id, (r, a) => new { r.LibraryId, MediaId = a.ArtistId!.Value });
 
-        var artistFromTracksIndexed = context.Medias.OfType<MusicTrack>()
-            .Where(t => t.Album!.ArtistId != null)
-            .SelectMany(t => context.IndexedFiles
-                .Where(f => f.MediaId == t.Id)
-                .Select(f => new MediaLibraryPair(f.LibraryId, t.Album!.ArtistId!.Value)));
+        var artistFromTracksIndexed = context.IndexedFiles
+            .Where(f => f.MediaId != null)
+            .Join(tracks, f => f.MediaId!.Value, t => t.Id, (f, t) => new { f.LibraryId, t.AlbumId })
+            .Join(albums.Where(a => a.ArtistId != null), x => x.AlbumId, a => a.Id, (x, a) => new { x.LibraryId, MediaId = a.ArtistId!.Value });
 
-        var artistFromTracksRemote = context.Medias.OfType<MusicTrack>()
-            .Where(t => t.Album!.ArtistId != null)
-            .SelectMany(t => context.RemoteIndexedFiles
-                .Where(r => r.MediaId == t.Id)
-                .Select(r => new MediaLibraryPair(r.LibraryId, t.Album!.ArtistId!.Value)));
+        var artistFromTracksRemote = context.RemoteIndexedFiles
+            .Join(tracks, r => r.MediaId, t => t.Id, (r, t) => new { r.LibraryId, t.AlbumId })
+            .Join(albums.Where(a => a.ArtistId != null), x => x.AlbumId, a => a.Id, (x, a) => new { x.LibraryId, MediaId = a.ArtistId!.Value });
 
-        var serieFromEpisodesIndexed = context.Medias.OfType<SerieEpisode>()
-            .SelectMany(e => context.IndexedFiles
-                .Where(f => f.MediaId == e.Id)
-                .Select(f => new MediaLibraryPair(f.LibraryId, e.SerieId)));
+        var serieFromEpisodesIndexed = context.IndexedFiles
+            .Where(f => f.MediaId != null)
+            .Join(episodes, f => f.MediaId!.Value, e => e.Id, (f, e) => new { f.LibraryId, MediaId = e.SerieId });
 
-        var serieFromEpisodesRemote = context.Medias.OfType<SerieEpisode>()
-            .SelectMany(e => context.RemoteIndexedFiles
-                .Where(r => r.MediaId == e.Id)
-                .Select(r => new MediaLibraryPair(r.LibraryId, e.SerieId)));
+        var serieFromEpisodesRemote = context.RemoteIndexedFiles
+            .Join(episodes, r => r.MediaId, e => e.Id, (r, e) => new { r.LibraryId, MediaId = e.SerieId });
 
-        var seasonFromEpisodesIndexed = context.Medias.OfType<SerieEpisode>()
-            .SelectMany(e => context.IndexedFiles
-                .Where(f => f.MediaId == e.Id)
-                .Select(f => new MediaLibraryPair(f.LibraryId, e.SeasonId)));
+        var seasonFromEpisodesIndexed = context.IndexedFiles
+            .Where(f => f.MediaId != null)
+            .Join(episodes, f => f.MediaId!.Value, e => e.Id, (f, e) => new { f.LibraryId, MediaId = e.SeasonId });
 
-        var seasonFromEpisodesRemote = context.Medias.OfType<SerieEpisode>()
-            .SelectMany(e => context.RemoteIndexedFiles
-                .Where(r => r.MediaId == e.Id)
-                .Select(r => new MediaLibraryPair(r.LibraryId, e.SeasonId)));
+        var seasonFromEpisodesRemote = context.RemoteIndexedFiles
+            .Join(episodes, r => r.MediaId, e => e.Id, (r, e) => new { r.LibraryId, MediaId = e.SeasonId });
 
         return fromIndexed
             .Union(fromRemote)
@@ -82,7 +77,8 @@ internal static class MediaLibraryLinkageHelper
             .Union(serieFromEpisodesIndexed)
             .Union(serieFromEpisodesRemote)
             .Union(seasonFromEpisodesIndexed)
-            .Union(seasonFromEpisodesRemote);
+            .Union(seasonFromEpisodesRemote)
+            .Select(p => new MediaLibraryPairProjection { LibraryId = p.LibraryId, MediaId = p.MediaId });
     }
 
     internal static async Task<Library?> FindLibraryAsync(

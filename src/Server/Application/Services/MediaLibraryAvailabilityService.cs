@@ -50,7 +50,7 @@ public sealed class MediaLibraryAvailabilityService(
         await RebuildAllAsync(cancellationToken);
     }
 
-    private async Task InsertPairsAsync(IReadOnlyList<MediaLibraryPair> pairs, CancellationToken cancellationToken)
+    private async Task InsertPairsAsync(IReadOnlyList<MediaLibraryPairProjection> pairs, CancellationToken cancellationToken)
     {
         if (pairs.Count == 0)
             return;
