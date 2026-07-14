@@ -15,7 +15,7 @@ if (!existsSync(configPath)) {
 
 const config = JSON.parse(readFileSync(configPath, 'utf8'));
 const baseUrl = (process.env.K7_DEMO_URL ?? config.baseUrl).replace(/\/$/, '');
-const outputDir = path.resolve(__dirname, config.outputDir ?? '../../screenshots');
+const outputDir = path.resolve(__dirname, config.outputDir ?? '../../../screenshots');
 const colorScheme = config.colorScheme ?? 'dark';
 const settleMs = Number(config.settleMs ?? 2500);
 const defaultProfile = config.defaultProfile ?? 'desktop';

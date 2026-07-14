@@ -104,7 +104,7 @@ dotnet test
 
 ## Screenshots
 
-README gallery images live in [`screenshots/`](../screenshots/). To regenerate them from the live demo, see [`tools/screenshot-demo/README.md`](../tools/screenshot-demo/README.md).
+README gallery images live in [`screenshots/`](../screenshots/). To regenerate them from the live demo, see [`tools/K7.Demo/generate-screenshots/README.md`](../tools/K7.Demo/generate-screenshots/README.md).
 
 ## Code style
 

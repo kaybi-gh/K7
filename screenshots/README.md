@@ -2,7 +2,7 @@
 
 Captured from the [live demo](https://k7.kaybi.dev) in guest mode.
 
-To regenerate: [`tools/screenshot-demo/README.md`](../tools/screenshot-demo/README.md).
+To regenerate: [`tools/K7.Demo/generate-screenshots/README.md`](../tools/K7.Demo/generate-screenshots/README.md).
 
 ## Device showcase
 

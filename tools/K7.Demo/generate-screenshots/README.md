@@ -2,12 +2,12 @@
 
 Playwright scripts to capture UI screenshots from the live demo for the README gallery.
 
-Output: [`screenshots/`](../../screenshots/) at the repository root.
+Output: [`screenshots/`](../../../screenshots/) at the repository root.
 
 ## Setup
 
 ```bash
-cd tools/screenshot-demo
+cd tools/K7.Demo/generate-screenshots
 npm install
 npx playwright install chromium
 ```
