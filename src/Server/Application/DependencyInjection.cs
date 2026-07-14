@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddSingleton<IServerMetricsCollector>(sp => sp.GetRequiredService<ServerMetricsCollector>());
         services.AddSingleton<SyncPlayCoordinator>();
         services.AddSingleton<ISyncPlayCoordinator>(sp => sp.GetRequiredService<SyncPlayCoordinator>());
+        services.AddHostedService<SyncPlayStaleGroupCleanupService>();
         services.AddSingleton<MediaQueryCacheInvalidator>();
         services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
         services.AddSingleton(sp =>

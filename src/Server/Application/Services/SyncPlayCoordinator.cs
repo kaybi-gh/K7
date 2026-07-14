@@ -16,6 +16,7 @@ public interface ISyncPlayCoordinator
     ReadyResult ReportReady(Guid groupId, Guid deviceId);
     SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position);
     SyncPlayGroupInfo? GetGroup(Guid groupId);
+    void CleanupStaleGroups();
     bool AddToQueue(Guid groupId, SyncPlayQueueItemDto item);
     bool SetCurrentMedia(Guid groupId, SyncPlayQueueItemDto item);
     SyncPlayQueueItemDto? NavigateQueue(Guid groupId, bool forward);
@@ -45,6 +46,14 @@ public sealed record SyncPlayGroupInfo
     public string? InviteToken { get; set; }
     public ConcurrentDictionary<Guid, SyncPlayMember> Members { get; } = new();
     public List<SyncPlayQueueItemDto> Queue { get; } = [];
+    public object Gate { get; } = new();
+
+    public IReadOnlyList<SyncPlayQueueItemDto> SnapshotQueue()
+    {
+        lock (Gate)
+            return Queue.ToList();
+    }
+
     public DateTime? PlayStartedAtUtc { get; set; }
     public double PlayStartedAtPosition { get; set; }
 }
@@ -125,7 +134,8 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 
         if (initialMedia is not null)
         {
-            group.Queue.Add(initialMedia);
+            lock (group.Gate)
+                group.Queue.Add(initialMedia);
         }
 
         var member = new SyncPlayMember
@@ -193,33 +203,36 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 
         group.LastActivity = DateTime.UtcNow;
 
-        switch (commandType)
+        lock (group.Gate)
         {
-            case SyncPlayCommandType.Play:
-                group.State = SyncPlayGroupState.Playing;
-                group.PlayStartedAtUtc = DateTime.UtcNow;
-                group.PlayStartedAtPosition = group.Position;
-                return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.Playing };
+            switch (commandType)
+            {
+                case SyncPlayCommandType.Play:
+                    group.State = SyncPlayGroupState.Playing;
+                    group.PlayStartedAtUtc = DateTime.UtcNow;
+                    group.PlayStartedAtPosition = group.Position;
+                    return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.Playing };
 
-            case SyncPlayCommandType.Pause:
-                group.State = SyncPlayGroupState.Paused;
-                group.Position = value ?? group.Position;
-                group.PlayStartedAtUtc = null;
-                return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.Paused };
+                case SyncPlayCommandType.Pause:
+                    group.State = SyncPlayGroupState.Paused;
+                    group.Position = value ?? group.Position;
+                    group.PlayStartedAtUtc = null;
+                    return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.Paused };
 
-            case SyncPlayCommandType.SeekTo:
-                group.State = SyncPlayGroupState.WaitingForReady;
-                group.Position = value ?? 0;
-                group.PlayStartedAtUtc = null;
-                ResetAllReady(group);
-                return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.WaitingForReady, SeekPosition = value };
+                case SyncPlayCommandType.SeekTo:
+                    group.State = SyncPlayGroupState.WaitingForReady;
+                    group.Position = value ?? 0;
+                    group.PlayStartedAtUtc = null;
+                    ResetAllReady(group);
+                    return new CommandResult { Permitted = true, NewState = SyncPlayGroupState.WaitingForReady, SeekPosition = value };
 
-            case SyncPlayCommandType.NextInQueue:
-            case SyncPlayCommandType.PreviousInQueue:
-                return new CommandResult { Permitted = true, NewState = group.State };
+                case SyncPlayCommandType.NextInQueue:
+                case SyncPlayCommandType.PreviousInQueue:
+                    return new CommandResult { Permitted = true, NewState = group.State };
 
-            default:
-                return new CommandResult { Permitted = false };
+                default:
+                    return new CommandResult { Permitted = false };
+            }
         }
     }
 
@@ -228,43 +241,47 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return new ReadyResult { AllReady = false };
 
-        if (group.Members.TryGetValue(deviceId, out var member))
+        lock (group.Gate)
         {
-            member.IsReady = true;
-            member.LastActivityUtc = DateTime.UtcNow;
-        }
-
-        group.LastActivity = DateTime.UtcNow;
-
-        // If the group is already playing, send a catch-up PlayAt to the joining member
-        if (group.State == SyncPlayGroupState.Playing)
-        {
-            var estimatedPosition = group.PlayStartedAtPosition;
-            if (group.PlayStartedAtUtc is not null)
+            if (group.Members.TryGetValue(deviceId, out var member))
             {
-                var elapsed = (DateTime.UtcNow - group.PlayStartedAtUtc.Value).TotalSeconds;
-                estimatedPosition += elapsed;
+                member.IsReady = true;
+                member.LastActivityUtc = DateTime.UtcNow;
             }
 
-            var catchUpAt = DateTimeOffset.UtcNow.Add(PlayAtBuffer).ToUnixTimeMilliseconds();
-            _logger.LogWarning("[SyncPlay Server] ReportReady: device={Device}, group already Playing - sending catch-up at {Pos}", deviceId, estimatedPosition);
-            return new ReadyResult { AllReady = true, CatchUpOnly = true, PlayAtTimestampMs = catchUpAt, Position = estimatedPosition };
+            group.LastActivity = DateTime.UtcNow;
+
+            // If the group is already playing, send a catch-up PlayAt to the joining member
+            if (group.State == SyncPlayGroupState.Playing)
+            {
+                var estimatedPosition = group.PlayStartedAtPosition;
+                if (group.PlayStartedAtUtc is not null)
+                {
+                    var elapsed = (DateTime.UtcNow - group.PlayStartedAtUtc.Value).TotalSeconds;
+                    estimatedPosition += elapsed;
+                }
+
+                var catchUpAt = DateTimeOffset.UtcNow.Add(PlayAtBuffer).ToUnixTimeMilliseconds();
+                _logger.LogDebug("[SyncPlay Server] ReportReady: device={Device}, group already Playing - sending catch-up at {Pos}", deviceId, estimatedPosition);
+                return new ReadyResult { AllReady = true, CatchUpOnly = true, PlayAtTimestampMs = catchUpAt, Position = estimatedPosition };
+            }
+
+            var members = group.Members.Values.ToList();
+            var readyCount = members.Count(m => m.IsReady);
+            var totalCount = members.Count;
+            _logger.LogDebug("[SyncPlay Server] ReportReady: device={Device}, state={State}, ready={Ready}/{Total}", deviceId, group.State, readyCount, totalCount);
+
+            var allReady = totalCount > 0 && readyCount == totalCount;
+            if (!allReady)
+                return new ReadyResult { AllReady = false };
+
+            var playAt = DateTimeOffset.UtcNow.Add(PlayAtBuffer).ToUnixTimeMilliseconds();
+            group.State = SyncPlayGroupState.Playing;
+            group.PlayStartedAtUtc = DateTime.UtcNow.Add(PlayAtBuffer);
+            group.PlayStartedAtPosition = group.Position;
+
+            return new ReadyResult { AllReady = true, PlayAtTimestampMs = playAt, Position = group.Position };
         }
-
-        var readyCount = group.Members.Values.Count(m => m.IsReady);
-        var totalCount = group.Members.Count;
-        _logger.LogWarning("[SyncPlay Server] ReportReady: device={Device}, state={State}, ready={Ready}/{Total}", deviceId, group.State, readyCount, totalCount);
-
-        var allReady = readyCount == totalCount;
-        if (!allReady)
-            return new ReadyResult { AllReady = false };
-
-        var playAt = DateTimeOffset.UtcNow.Add(PlayAtBuffer).ToUnixTimeMilliseconds();
-        group.State = SyncPlayGroupState.Playing;
-        group.PlayStartedAtUtc = DateTime.UtcNow.Add(PlayAtBuffer);
-        group.PlayStartedAtPosition = group.Position;
-
-        return new ReadyResult { AllReady = true, PlayAtTimestampMs = playAt, Position = group.Position };
     }
 
     public SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position)
@@ -288,8 +305,21 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
     public SyncPlayGroupInfo? GetGroup(Guid groupId)
     {
         _groups.TryGetValue(groupId, out var group);
-        CleanupStaleGroups();
         return group;
+    }
+
+    public void CleanupStaleGroups()
+    {
+        var cutoff = DateTime.UtcNow - StaleThreshold;
+        var staleGroups = _groups.Where(kv => kv.Value.LastActivity < cutoff).Select(kv => kv.Key).ToList();
+
+        foreach (var key in staleGroups)
+        {
+            if (_groups.TryRemove(key, out var removed) && removed.InviteToken is not null)
+            {
+                _inviteTokens.TryRemove(removed.InviteToken, out _);
+            }
+        }
     }
 
     public bool AddToQueue(Guid groupId, SyncPlayQueueItemDto item)
@@ -297,12 +327,15 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return false;
 
-        if (group.Queue.Any(q => q.MediaReferenceId == item.MediaReferenceId))
-            return true;
+        lock (group.Gate)
+        {
+            if (group.Queue.Any(q => q.MediaReferenceId == item.MediaReferenceId))
+                return true;
 
-        group.Queue.Add(item);
-        group.LastActivity = DateTime.UtcNow;
-        return true;
+            group.Queue.Add(item);
+            group.LastActivity = DateTime.UtcNow;
+            return true;
+        }
     }
 
     public bool SetCurrentMedia(Guid groupId, SyncPlayQueueItemDto item)
@@ -310,24 +343,27 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return false;
 
-        var existing = group.Queue.FirstOrDefault(q => q.MediaReferenceId == item.MediaReferenceId);
-        if (existing is not null)
+        lock (group.Gate)
         {
-            item = existing;
-        }
-        else
-        {
-            group.Queue.Add(item);
-        }
+            var existing = group.Queue.FirstOrDefault(q => q.MediaReferenceId == item.MediaReferenceId);
+            if (existing is not null)
+            {
+                item = existing;
+            }
+            else
+            {
+                group.Queue.Add(item);
+            }
 
-        group.CurrentMedia = item;
-        group.Duration = item.Duration;
-        group.Position = 0;
-        group.State = SyncPlayGroupState.WaitingForReady;
-        group.PlayStartedAtUtc = null;
-        group.LastActivity = DateTime.UtcNow;
-        ResetAllReady(group);
-        return true;
+            group.CurrentMedia = item;
+            group.Duration = item.Duration;
+            group.Position = 0;
+            group.State = SyncPlayGroupState.WaitingForReady;
+            group.PlayStartedAtUtc = null;
+            group.LastActivity = DateTime.UtcNow;
+            ResetAllReady(group);
+            return true;
+        }
     }
 
     public bool RemoveFromQueue(Guid groupId, Guid queueItemId)
@@ -335,13 +371,16 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return false;
 
-        var item = group.Queue.FirstOrDefault(q => q.QueueItemId == queueItemId);
-        if (item is null)
-            return false;
+        lock (group.Gate)
+        {
+            var item = group.Queue.FirstOrDefault(q => q.QueueItemId == queueItemId);
+            if (item is null)
+                return false;
 
-        group.Queue.Remove(item);
-        group.LastActivity = DateTime.UtcNow;
-        return true;
+            group.Queue.Remove(item);
+            group.LastActivity = DateTime.UtcNow;
+            return true;
+        }
     }
 
     public SyncPlayQueueItemDto? NavigateQueue(Guid groupId, bool forward)
@@ -349,24 +388,27 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return null;
 
-        if (group.CurrentMedia is null || group.Queue.Count == 0)
-            return null;
+        lock (group.Gate)
+        {
+            if (group.CurrentMedia is null || group.Queue.Count == 0)
+                return null;
 
-        var currentIndex = group.Queue.FindIndex(q => q.QueueItemId == group.CurrentMedia.QueueItemId);
-        var nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+            var currentIndex = group.Queue.FindIndex(q => q.QueueItemId == group.CurrentMedia.QueueItemId);
+            var nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
 
-        if (nextIndex < 0 || nextIndex >= group.Queue.Count)
-            return null;
+            if (nextIndex < 0 || nextIndex >= group.Queue.Count)
+                return null;
 
-        var nextItem = group.Queue[nextIndex];
-        group.CurrentMedia = nextItem;
-        group.Duration = nextItem.Duration;
-        group.Position = 0;
-        group.State = SyncPlayGroupState.WaitingForReady;
-        group.PlayStartedAtUtc = null;
-        group.LastActivity = DateTime.UtcNow;
-        ResetAllReady(group);
-        return nextItem;
+            var nextItem = group.Queue[nextIndex];
+            group.CurrentMedia = nextItem;
+            group.Duration = nextItem.Duration;
+            group.Position = 0;
+            group.State = SyncPlayGroupState.WaitingForReady;
+            group.PlayStartedAtUtc = null;
+            group.LastActivity = DateTime.UtcNow;
+            ResetAllReady(group);
+            return nextItem;
+        }
     }
 
     public KickResult? Kick(Guid groupId, string identityUserId, Guid targetDeviceId)
@@ -485,22 +527,6 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
     private static void ResetAllReady(SyncPlayGroupInfo group)
     {
         foreach (var member in group.Members.Values)
-        {
             member.IsReady = false;
-        }
-    }
-
-    private void CleanupStaleGroups()
-    {
-        var cutoff = DateTime.UtcNow - StaleThreshold;
-        var staleGroups = _groups.Where(kv => kv.Value.LastActivity < cutoff).Select(kv => kv.Key).ToList();
-
-        foreach (var key in staleGroups)
-        {
-            if (_groups.TryRemove(key, out var removed) && removed.InviteToken is not null)
-            {
-                _inviteTokens.TryRemove(removed.InviteToken, out _);
-            }
-        }
     }
 }
