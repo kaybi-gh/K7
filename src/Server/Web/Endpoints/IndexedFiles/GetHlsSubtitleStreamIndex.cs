@@ -17,10 +17,10 @@ public class GetHlsSubtitleStreamIndex : IEndpoint
             [FromRoute] int subtitleTrackIndex,
             [FromQuery] Guid streamSessionId) =>
         {
-            return await sender.Send(new GetHlsSubtitleStreamIndexQuery(
+            return (await sender.Send(new GetHlsSubtitleStreamIndexQuery(
                 id,
                 subtitleTrackIndex,
-                streamSessionId));
+                streamSessionId))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

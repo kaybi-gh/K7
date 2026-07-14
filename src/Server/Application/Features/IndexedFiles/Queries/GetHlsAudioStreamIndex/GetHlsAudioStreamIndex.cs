@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 
@@ -28,9 +28,9 @@ public record GetHlsAudioStreamIndexQuery(
     Guid Id,
     int AudioTrackIndex,
     Guid StreamSessionId,
-    string? TranscodingAudioCodec = null) : IRequest<IResult>;
+    string? TranscodingAudioCodec = null) : IRequest<HttpContentResult>;
 
-public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStreamIndexQuery, IResult>
+public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
 
@@ -39,7 +39,7 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         _context = context;
     }
 
-    public async Task<IResult> Handle(GetHlsAudioStreamIndexQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsAudioStreamIndexQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -52,7 +52,7 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(_context, query.Id, cancellationToken);
@@ -70,7 +70,7 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
             query.StreamSessionId,
             query.TranscodingAudioCodec);
 
-        return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
+        return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
     private static string GenerateHlsAudioIndexContent(

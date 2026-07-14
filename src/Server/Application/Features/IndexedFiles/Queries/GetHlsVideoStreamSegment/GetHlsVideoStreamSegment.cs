@@ -1,12 +1,12 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
@@ -37,9 +37,9 @@ public record GetHlsVideoStreamSegmentQuery(
     int SegmentNumber,
     Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
-    int? SubtitleBurnInStreamIndex = null) : IRequest<IResult>;
+    int? SubtitleBurnInStreamIndex = null) : IRequest<HttpContentResult>;
 
-public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, IResult>
+public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly ITranscodeJobManager _transcodeJobManager;
@@ -61,7 +61,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         _logger = logger;
     }
 
-    public async Task<IResult> Handle(GetHlsVideoStreamSegmentQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsVideoStreamSegmentQuery query, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Handling segment request: Id={Id}, Quality={Quality}, SegmentNumber={SegmentNumber}",
@@ -88,7 +88,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound("Source file not found");
+            return new EmptyHttpContentResult(404);
         }
 
         var isTransmuxing = query.Quality == "original"
@@ -140,7 +140,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
 
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
         {
-            return Results.NotFound($"Segment index {query.SegmentNumber} out of range (0-{allSegments.Count - 1})");
+            return new EmptyHttpContentResult(404);
         }
 
         var videoCodec = effectiveTranscodingVideoCodec
@@ -233,7 +233,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
                 "Segment {SegmentNumber} was not generated within timeout for job {JobId}",
                 query.SegmentNumber,
                 job.JobId);
-            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return new EmptyHttpContentResult(503);
         }
 
         // Wait for the file to be accessible (not locked by FFmpeg)
@@ -253,7 +253,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             }
         }
 
-        return Results.File(segmentPath, "video/mp4", enableRangeProcessing: true);
+        return new FileHttpContentResult(segmentPath, "video/mp4");
     }
 
     /// <summary>

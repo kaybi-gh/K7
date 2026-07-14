@@ -15,10 +15,10 @@ public class CreateDevice : IEndpoint
 
         endpointRouteBuilder.MapPost(CreateDeviceRequestUriBuilder.Route, async ([FromServices] ISender sender, CreateDeviceRequest request, CancellationToken cancellationToken) =>
         {
-            return await sender.Send(new CreateDeviceCommand()
+            return (await sender.Send(new CreateDeviceCommand()
             {
                 CreateDeviceRequest = request
-            }, cancellationToken);
+            }, cancellationToken)).ToIResult();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

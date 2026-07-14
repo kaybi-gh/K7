@@ -14,7 +14,7 @@ public class GetDirectStream : IEndpoint
 
         endpointRouteBuilder.MapMethods(GetIndexedFileDirectStreamQueryUriBuilder.Route, ["GET", "HEAD"], async ([FromServices] ISender sender, [FromRoute] Guid id) =>
         {
-            return await sender.Send(new GetDirectStreamQuery(id));
+            return (await sender.Send(new GetDirectStreamQuery(id))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

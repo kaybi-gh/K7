@@ -1,9 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
@@ -26,9 +26,9 @@ public record GetHlsAudioStreamSegmentQuery(
     int AudioTrackIndex,
     int SegmentNumber,
     Guid StreamSessionId,
-    string? TranscodingAudioCodec = null) : IRequest<IResult>;
+    string? TranscodingAudioCodec = null) : IRequest<HttpContentResult>;
 
-public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioStreamSegmentQuery, IResult>
+public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioStreamSegmentQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly ITranscodeJobManager _transcodeJobManager;
@@ -44,7 +44,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         _logger = logger;
     }
 
-    public async Task<IResult> Handle(GetHlsAudioStreamSegmentQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsAudioStreamSegmentQuery query, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Handling audio segment request: Id={Id}, AudioTrack={AudioTrack}, SegmentNumber={SegmentNumber}",
@@ -63,7 +63,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound("Source file not found");
+            return new EmptyHttpContentResult(404);
         }
 
         var hlsSegments = entity.FileMetadata.GetHlsSegments();
@@ -80,7 +80,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
 
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
         {
-            return Results.NotFound($"Segment index {query.SegmentNumber} out of range (0-{allSegments.Count - 1})");
+            return new EmptyHttpContentResult(404);
         }
 
         var audioCodec = query.TranscodingAudioCodec;
@@ -149,7 +149,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
                 "Audio segment {SegmentNumber} was not generated within timeout for job {JobId}",
                 query.SegmentNumber,
                 job.JobId);
-            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return new EmptyHttpContentResult(503);
         }
 
         // Wait for the file to be accessible (not locked by FFmpeg)
@@ -168,7 +168,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
             }
         }
 
-        return Results.File(segmentPath, "audio/mp4", enableRangeProcessing: true);
+        return new FileHttpContentResult(segmentPath, "audio/mp4");
     }
 
     /// <summary>

@@ -15,7 +15,7 @@ public class GetDownloadFile : IEndpoint
             [FromServices] ISender sender,
             [FromRoute] Guid id) =>
         {
-            return await sender.Send(new GetDownloadFileQuery(id));
+            return (await sender.Send(new GetDownloadFileQuery(id))).ToIResult();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

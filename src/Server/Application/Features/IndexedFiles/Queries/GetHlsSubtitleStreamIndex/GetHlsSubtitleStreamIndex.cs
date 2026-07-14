@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
-using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
 
@@ -27,9 +27,9 @@ public static class GetHlsSubtitleStreamIndexQueryUriBuilder
 public record GetHlsSubtitleStreamIndexQuery(
     Guid Id,
     int SubtitleTrackIndex,
-    Guid StreamSessionId) : IRequest<IResult>;
+    Guid StreamSessionId) : IRequest<HttpContentResult>;
 
-public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubtitleStreamIndexQuery, IResult>
+public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubtitleStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
 
@@ -38,7 +38,7 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
         _context = context;
     }
 
-    public async Task<IResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -51,7 +51,7 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var hlsSegments = entity.FileMetadata.GetHlsSegments();
@@ -66,7 +66,7 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
 
         var indexPlaylist = GenerateSubtitlePlaylist(totalDurationMs, query.StreamSessionId);
 
-        return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
+        return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
     private const int SubtitleSegmentDurationSeconds = 30;

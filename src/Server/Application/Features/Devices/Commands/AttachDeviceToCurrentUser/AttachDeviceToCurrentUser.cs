@@ -1,14 +1,14 @@
 using K7.Server.Application.Common.Interfaces;
-using Microsoft.AspNetCore.Http;
+using K7.Server.Application.Common.Models;
 
 namespace K7.Server.Application.Features.Devices.Commands.AttachDeviceToCurrentUser;
 
-public record AttachDeviceToCurrentUserCommand : IRequest<IResult>
+public record AttachDeviceToCurrentUserCommand : IRequest<HttpContentResult>
 {
     public required Guid DeviceId { get; init; }
 }
 
-public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDeviceToCurrentUserCommand, IResult>
+public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDeviceToCurrentUserCommand, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
@@ -19,11 +19,11 @@ public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDev
         _user = user;
     }
 
-    public async Task<IResult> Handle(AttachDeviceToCurrentUserCommand request, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(AttachDeviceToCurrentUserCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_user.IdentityId))
         {
-            return Results.Unauthorized();
+            return new EmptyHttpContentResult(401);
         }
 
         var device = await _context.Devices
@@ -32,24 +32,24 @@ public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDev
 
         if (device is null)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var domainUser = await _context.Users.SingleOrDefaultAsync(u => u.IdentityUserId == _user.IdentityId, cancellationToken);
 
         if (domainUser is null)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         if (device.Users.Any(u => u.Id == domainUser.Id))
         {
-            return Results.NoContent();
+            return new EmptyHttpContentResult(204);
         }
 
         device.Users.Add(domainUser);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Results.NoContent();
+        return new EmptyHttpContentResult(204);
     }
 }

@@ -1,15 +1,15 @@
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Enums;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Downloads.Queries.GetDownloadFile;
 
-public record GetDownloadFileQuery(Guid Id) : IRequest<IResult>;
+public record GetDownloadFileQuery(Guid Id) : IRequest<HttpContentResult>;
 
-public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery, IResult>
+public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
@@ -25,7 +25,7 @@ public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery,
         _pathsConfiguration = pathsConfiguration.Value;
     }
 
-    public async Task<IResult> Handle(GetDownloadFileQuery request, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetDownloadFileQuery request, CancellationToken cancellationToken)
     {
         var download = await _context.Downloads
             .Include(d => d.IndexedFile)
@@ -35,7 +35,7 @@ public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery,
 
         if (download.Status != DownloadStatus.Ready)
         {
-            return Results.Conflict(new { Message = "Download is not ready yet.", Status = download.Status.ToString() });
+            return new ConflictHttpContentResult(new { Message = "Download is not ready yet.", Status = download.Status.ToString() });
         }
 
         var filePath = download.OutputPath;
@@ -56,12 +56,12 @@ public class GetDownloadFileQueryHandler : IRequestHandler<GetDownloadFileQuery,
         var file = new FileInfo(filePath);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var contentType = download.ContentType ?? "application/octet-stream";
         var fileName = Path.GetFileName(download.IndexedFile.Path);
 
-        return Results.File(filePath, contentType: contentType, fileDownloadName: fileName, enableRangeProcessing: true);
+        return new FileHttpContentResult(filePath, contentType, FileDownloadName: fileName);
     }
 }

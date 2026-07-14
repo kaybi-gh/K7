@@ -16,7 +16,7 @@ public class GetMetadataPicture : IEndpoint
             Guid id,
             [FromQuery] MetadataPictureSize? size) =>
         {
-            return await sender.Send(new GetMetadataPictureQuery(id, size));
+            return (await sender.Send(new GetMetadataPictureQuery(id, size))).ToIResult();
         })
         .AllowAnonymous()
         .WithName(type.Name)

@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
@@ -32,9 +32,9 @@ public record GetHlsVideoStreamIndexQuery(
     string VideoResolutionIdentifier,
     Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
-    int? SubtitleBurnInStreamIndex = null) : IRequest<IResult>;
+    int? SubtitleBurnInStreamIndex = null) : IRequest<HttpContentResult>;
 
-public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, IResult>
+public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -50,7 +50,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         _logger = logger;
     }
 
-    public async Task<IResult> Handle(GetHlsVideoStreamIndexQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsVideoStreamIndexQuery query, CancellationToken cancellationToken)
     {
         if (query.VideoResolutionIdentifier != "original")
         {
@@ -69,7 +69,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var isTransmuxing = query.VideoResolutionIdentifier == "original"
@@ -113,7 +113,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             query.StreamSessionId,
             effectiveTranscodingVideoCodec,
             query.SubtitleBurnInStreamIndex);
-        return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
+        return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
     private static string GenerateHlsIndexContent(

@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
@@ -7,9 +8,9 @@ using Microsoft.Net.Http.Headers;
 namespace K7.Server.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 
 //[Authorize]
-public record GetMetadataPictureQuery(Guid Id, MetadataPictureSize? Size = null) : IRequest<IResult>;
+public record GetMetadataPictureQuery(Guid Id, MetadataPictureSize? Size = null) : IRequest<HttpContentResult>;
 
-public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPictureQuery, IResult>
+public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPictureQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -20,7 +21,7 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<IResult> Handle(GetMetadataPictureQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetMetadataPictureQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.MetadataPictures
             .Include(p => p.Variants)
@@ -28,7 +29,7 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
 
         if (entity is null)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         // Resolve the file path: use variant if requested, fallback to original
@@ -55,13 +56,13 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
 
         if (localPath is null)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var file = new FileInfo(localPath);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var contentType = GetContentType(file.Extension);
@@ -70,7 +71,7 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
 
         if (httpContext is null)
         {
-            return Results.File(file.OpenRead(), contentType: contentType);
+            return new StreamHttpContentResult(file.OpenRead, contentType);
         }
 
         var eTag = new EntityTagHeaderValue($"\"{entityId}-{lastModified.ToUnixTimeSeconds()}\"");
@@ -110,16 +111,16 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         {
             if (requestHeaders.IfNoneMatch.Any(tag => tag.Tag.Equals(eTag.Tag, StringComparison.Ordinal)))
             {
-                return Results.StatusCode(StatusCodes.Status304NotModified);
+                return new EmptyHttpContentResult(StatusCodes.Status304NotModified);
             }
         }
         else if (requestHeaders.IfModifiedSince is { } ifModifiedSince
                  && lastModified <= ifModifiedSince)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return new EmptyHttpContentResult(StatusCodes.Status304NotModified);
         }
 
-        return Results.File(file.OpenRead(), contentType: contentType);
+        return new StreamHttpContentResult(file.OpenRead, contentType);
     }
 
     private static string GetContentType(string extension) => extension.ToLowerInvariant() switch

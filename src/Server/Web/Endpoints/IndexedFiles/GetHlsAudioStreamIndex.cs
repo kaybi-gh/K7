@@ -18,11 +18,11 @@ public class GetHlsAudioStreamIndex : IEndpoint
             [FromQuery] Guid streamSessionId,
             [FromQuery] string? TranscodingAudioCodec) =>
         {
-            return await sender.Send(new GetHlsAudioStreamIndexQuery(
+            return (await sender.Send(new GetHlsAudioStreamIndexQuery(
                 id,
                 audioTrackIndex,
                 streamSessionId,
-                TranscodingAudioCodec));
+                TranscodingAudioCodec))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
