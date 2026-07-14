@@ -19,7 +19,7 @@
     {
         <HomeTvHero Model="_focusedItem" />
     }
-    @if (isLoading)
+    @if (!FeedStore.IsLoaded || isLoading)
     {
         @if (_isTv)
         {
