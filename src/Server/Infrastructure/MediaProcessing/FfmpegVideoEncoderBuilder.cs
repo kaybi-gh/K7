@@ -39,7 +39,7 @@ public static class FfmpegVideoEncoderBuilder
                 if (!capabilities.AvailableHardwareEncoders.Contains(hwEncoder, StringComparer.OrdinalIgnoreCase))
                     continue;
 
-                return CreateHardware(map.LogicalCodec, hwEncoder, settings.EnableHdrTonemap);
+                return CreateHardware(hwEncoder);
             }
 
             if (settings.EncoderMode == HardwareEncoderMode.HardwarePreferred)
@@ -48,6 +48,14 @@ public static class FfmpegVideoEncoderBuilder
 
         return CreateSoftware(map);
     }
+
+    /// <summary>
+    /// Optional HDR to SDR filter chain. Apply only when the source stream is HDR and tonemap is enabled.
+    /// </summary>
+    public static string? GetHdrTonemapFilter(bool enableHdrTonemap) =>
+        enableHdrTonemap
+            ? "zscale=transfer=linear,tonemap=tonemap=hable:desat=0,zscale=transfer=bt709:matrix=bt709:range=tv,format=yuv420p"
+            : null;
 
     private static VideoEncoderSelection CreateSoftware((string LogicalCodec, string SoftwareEncoder, string[] HardwareEncoders) map)
     {
@@ -61,23 +69,19 @@ public static class FfmpegVideoEncoderBuilder
         return new VideoEncoderSelection(map.SoftwareEncoder, args, false, false);
     }
 
-    private static VideoEncoderSelection CreateHardware(string logicalCodec, string encoder, bool enableHdrTonemap)
+    private static VideoEncoderSelection CreateHardware(string encoder)
     {
-        var tonemap = enableHdrTonemap
-            ? "-vf \"zscale=transfer=linear,tonemap=tonemap=hable:desat=0,zscale=transfer=bt709:matrix=bt709:range=tv,format=yuv420p\""
-            : "-pix_fmt yuv420p";
-
         var args = encoder switch
         {
             var e when e.Contains("nvenc", StringComparison.OrdinalIgnoreCase) =>
-                $"-c:v {encoder} -preset p4 {tonemap}",
+                $"-c:v {encoder} -preset p4 -pix_fmt yuv420p",
             var e when e.Contains("qsv", StringComparison.OrdinalIgnoreCase) =>
-                $"-c:v {encoder} -preset medium {tonemap}",
+                $"-c:v {encoder} -preset medium -pix_fmt yuv420p",
             var e when e.Contains("vaapi", StringComparison.OrdinalIgnoreCase) =>
-                $"-vf \"format=nv12,hwupload\" -c:v {encoder} {tonemap}",
+                $"-vf \"format=nv12,hwupload\" -c:v {encoder} -pix_fmt yuv420p",
             var e when e.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase) =>
-                $"-c:v {encoder} -profile:v main {tonemap}",
-            _ => $"-c:v {encoder} {tonemap}"
+                $"-c:v {encoder} -profile:v main -pix_fmt yuv420p",
+            _ => $"-c:v {encoder} -pix_fmt yuv420p"
         };
 
         return new VideoEncoderSelection(encoder, args, true, true);

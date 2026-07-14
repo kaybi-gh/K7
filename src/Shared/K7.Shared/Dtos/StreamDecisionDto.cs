@@ -12,6 +12,7 @@ public sealed record StreamDecisionDto
     public string? StreamVideoCodec { get; init; }
     public string? StreamAudioCodec { get; init; }
     public string? SourceResolution { get; init; }
+    public string? StreamResolution { get; init; }
     public int? SelectedAudioTrackIndex { get; init; }
     public int? Bitrate { get; init; }
     public string? AudioTrackLanguage { get; init; }
@@ -24,4 +25,5 @@ public sealed record StreamDecisionDto
     public bool IsSubtitleBurnIn { get; init; }
     public string? VideoEncoder { get; init; }
     public bool? IsHardwareAccelerated { get; init; }
+    public string? AudioEncoder { get; init; }
 }

@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Services;
@@ -113,33 +114,13 @@ public class GetStreamUriQueryHandler(
             }
 
             var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable, subtitleTrackIndex);
-            decision = await EnrichStreamDecisionAsync(decision, cancellationToken);
+            decision = await StreamDecisionEnrichment.EnrichEncodersAsync(decision, ffmpegCapabilitiesService, cancellationToken);
             activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
             return uri;
         }
 
         throw new InvalidOperationException(
             $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.");
-    }
-
-    private async Task<StreamDecisionDto> EnrichStreamDecisionAsync(StreamDecisionDto decision, CancellationToken cancellationToken)
-    {
-        if (decision.Mode != PlaybackMode.Transcode || string.IsNullOrEmpty(decision.StreamVideoCodec))
-            return decision;
-
-        var encoder = await ffmpegCapabilitiesService.ResolveVideoEncoderAsync(
-            decision.StreamVideoCodec,
-            decision.IsSubtitleBurnIn,
-            cancellationToken);
-
-        if (encoder is null)
-            return decision;
-
-        return decision with
-        {
-            VideoEncoder = encoder.EncoderName,
-            IsHardwareAccelerated = encoder.IsHardwareAccelerated
-        };
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
@@ -403,7 +384,10 @@ public class GetStreamUriQueryHandler(
                 Mode = PlaybackMode.Direct,
                 SourceAudioCodec = audioTrack.Codec,
                 StreamAudioCodec = audioTrack.Codec,
-                SelectedAudioTrackIndex = audioTrack.Index
+                SelectedAudioTrackIndex = audioTrack.Index,
+                AudioTrackLanguage = audioTrack.Language,
+                AudioTrackTitle = audioTrack.Name,
+                AudioChannelLayout = audioTrack.ChannelLayout
             };
 
             return (new IndexedFileStreamUri
@@ -423,7 +407,10 @@ public class GetStreamUriQueryHandler(
             Reason = TranscodeReason.AudioCodecNotSupported,
             SourceAudioCodec = audioTrack.Codec,
             StreamAudioCodec = fallbackFormat.Codec,
-            SelectedAudioTrackIndex = audioTrack.Index
+            SelectedAudioTrackIndex = audioTrack.Index,
+            AudioTrackLanguage = audioTrack.Language,
+            AudioTrackTitle = audioTrack.Name,
+            AudioChannelLayout = audioTrack.ChannelLayout
         };
 
         return (new IndexedFileStreamUri
