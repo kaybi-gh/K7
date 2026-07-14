@@ -126,6 +126,19 @@
 }
 
 @media (min-width: 600px) {
+    /* Fill page-viewport so hero min-height: 100% resolves to one screen. */
+    .movie-page,
+    .serie-page,
+    .person-page,
+    .episode-page {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .media-hero-main {
+        min-height: 100%;
+    }
+
     .media-hero-backdrop-zone {
         height: auto;
         padding: 0;
