@@ -1,16 +1,23 @@
 using System.Net;
 using K7.Clients.Shared.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Web.Services;
 
 public class UnauthorizedRedirectHandler : DelegatingHandler
 {
     private readonly IServiceProvider _serviceProvider;
-    private int _redirecting;
+    private readonly UnauthorizedRedirectGate _redirectGate;
+    private readonly ILogger<UnauthorizedRedirectHandler> _logger;
 
-    public UnauthorizedRedirectHandler(IServiceProvider serviceProvider)
+    public UnauthorizedRedirectHandler(
+        IServiceProvider serviceProvider,
+        UnauthorizedRedirectGate redirectGate,
+        ILogger<UnauthorizedRedirectHandler> logger)
     {
         _serviceProvider = serviceProvider;
+        _redirectGate = redirectGate;
+        _logger = logger;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -20,8 +27,7 @@ public class UnauthorizedRedirectHandler : DelegatingHandler
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
             return response;
 
-        // Only one concurrent call triggers the redirect
-        if (Interlocked.CompareExchange(ref _redirecting, 1, 0) != 0)
+        if (!_redirectGate.TryEnter())
             return response;
 
         try
@@ -29,9 +35,13 @@ public class UnauthorizedRedirectHandler : DelegatingHandler
             var authProvider = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
             await authProvider.LoginAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
-            Interlocked.Exchange(ref _redirecting, 0);
+            _logger.LogWarning(ex, "Failed to redirect after unauthorized API response");
+        }
+        finally
+        {
+            _redirectGate.Exit();
         }
 
         return response;

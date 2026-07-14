@@ -17,6 +17,7 @@ builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddSingleton<UnauthorizedRedirectGate>();
 builder.Services.AddTransient<UnauthorizedRedirectHandler>();
 builder.Services.AddHttpClient(nameof(K7ServerService), httpClient =>
 {
