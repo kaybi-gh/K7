@@ -18,10 +18,6 @@
 /* 4. Phosphor Icons */
 @import url('./dist/phosphor-icons/src/regular/style.css');
 @import url('./dist/phosphor-icons/src/fill/style.css');
-@import url('./dist/phosphor-icons/src/bold/style.css');
-@import url('./dist/phosphor-icons/src/thin/style.css');
-@import url('./dist/phosphor-icons/src/light/style.css');
-@import url('./dist/phosphor-icons/src/duotone/style.css');
 
 /* 4b. Flag Icons */
 @import url('./css/flag-icons.css');
@@ -37,7 +33,6 @@
 @import url('./css/components.css');
 @import url('./css/playlist-detail.css');
 @import url('./css/social-users.css');
-@import url('./css/media-reviews-section.css');
 @import url('./css/media-hero.css');
 
 /* ============================================================
