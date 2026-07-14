@@ -1,6 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Restrictions.Services;
@@ -45,8 +44,60 @@ public class GlobalSearchQueryHandler(
 
         var term = MediaTextSearchHelper.BuildTitlePattern(request.Q, databaseCapabilities.SupportsTrigramSearch);
         var rawQuery = request.Q.Trim().ToLower();
+        Guid? userId = currentUser.Id;
 
         var mediaQuery = BuildMediaSearchQuery(term, rawQuery, request.Studio);
+        IQueryable<Guid>? accessibleMediaIds = null;
+
+        if (userId is { } currentUserId)
+        {
+            var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(currentUserId, cancellationToken);
+
+            mediaQuery = mediaAccessFilter.ApplyExclusions(mediaQuery, currentUserId);
+            if (restrictionProfile is not null)
+                mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
+
+            accessibleMediaIds = mediaAccessFilter.GetAccessibleMediaIds(currentUserId);
+            if (restrictionProfile is not null)
+                accessibleMediaIds = ContentRestrictionEvaluator.ApplyRestriction(
+                    context.Medias.Where(m => accessibleMediaIds.Contains(m.Id)),
+                    restrictionProfile)
+                    .Select(m => m.Id);
+        }
+
+        mediaQuery = mediaQuery.AsNoTracking();
+
+        var movieIds = await mediaQuery
+            .Where(m => m.Type == MediaType.Movie)
+            .Select(m => m.Id)
+            .Take(MovieLimit)
+            .ToListAsync(cancellationToken);
+
+        var serieSeasonIds = await mediaQuery
+            .Where(m => m.Type == MediaType.Serie || m.Type == MediaType.SerieSeason)
+            .Select(m => m.Id)
+            .Take(SerieSeasonLimit)
+            .ToListAsync(cancellationToken);
+
+        var episodeIds = await mediaQuery
+            .Where(m => m.Type == MediaType.SerieEpisode)
+            .Select(m => m.Id)
+            .Take(EpisodeLimit)
+            .ToListAsync(cancellationToken);
+
+        var musicIds = await mediaQuery
+            .Where(m => m.Type == MediaType.MusicArtist || m.Type == MediaType.MusicAlbum || m.Type == MediaType.MusicTrack)
+            .Select(m => m.Id)
+            .Take(MusicLimit)
+            .ToListAsync(cancellationToken);
+
+        var selectedIds = movieIds
+            .Concat(serieSeasonIds)
+            .Concat(episodeIds)
+            .Concat(musicIds)
+            .ToList();
+
+        var medias = await liteMediaProjection.LoadMediasForLiteAsync(selectedIds, userId, cancellationToken);
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
@@ -73,50 +124,11 @@ public class GlobalSearchQueryHandler(
             .Take(CharacterLimit)
             .AsNoTracking();
 
-        if (currentUser.Id is { } userId)
+        if (accessibleMediaIds is not null)
         {
-            var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(userId, cancellationToken);
-
-            mediaQuery = mediaAccessFilter.ApplyExclusions(mediaQuery, userId);
-            if (restrictionProfile is not null)
-                mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
-
-            var accessibleMediaIds = mediaAccessFilter.ApplyExclusions(context.Medias, userId);
-            if (restrictionProfile is not null)
-                accessibleMediaIds = ContentRestrictionEvaluator.ApplyRestriction(accessibleMediaIds, restrictionProfile);
-
-            var accessibleMediaIdQuery = accessibleMediaIds.Select(m => m.Id);
-            characterQuery = characterQuery.Where(r => accessibleMediaIdQuery.Contains(r.MediaId));
-            voiceActorQuery = voiceActorQuery.Where(r => accessibleMediaIdQuery.Contains(r.MediaId));
+            characterQuery = characterQuery.Where(r => accessibleMediaIds.Contains(r.MediaId));
+            voiceActorQuery = voiceActorQuery.Where(r => accessibleMediaIds.Contains(r.MediaId));
         }
-
-        mediaQuery = mediaQuery.AsNoTracking();
-
-        var movies = await mediaQuery
-            .Where(m => m.Type == MediaType.Movie)
-            .Take(MovieLimit)
-            .ToListAsync(cancellationToken);
-
-        var serieSeasons = await mediaQuery
-            .Where(m => m.Type == MediaType.Serie || m.Type == MediaType.SerieSeason)
-            .Take(SerieSeasonLimit)
-            .ToListAsync(cancellationToken);
-
-        var episodes = await mediaQuery
-            .Where(m => m.Type == MediaType.SerieEpisode)
-            .Take(EpisodeLimit)
-            .ToListAsync(cancellationToken);
-
-        var music = await mediaQuery
-            .Where(m => m.Type == MediaType.MusicArtist || m.Type == MediaType.MusicAlbum || m.Type == MediaType.MusicTrack)
-            .Take(MusicLimit)
-            .ToListAsync(cancellationToken);
-
-        var medias = movies
-            .Concat(serieSeasons)
-            .Concat(episodes)
-            .Concat(music)
-            .ToList();
 
         var persons = await personQuery.ToListAsync(cancellationToken);
         var actors = await characterQuery.ToListAsync(cancellationToken);
@@ -158,7 +170,7 @@ public class GlobalSearchQueryHandler(
 
     private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string rawQuery, string? studio)
     {
-        var mediaQuery = ApplySearchMediaIncludes(context.Medias)
+        var mediaQuery = context.Medias
             .Where(m => EF.Functions.Like(m.Title!.ToLower(), term));
 
         if (!string.IsNullOrWhiteSpace(studio))
@@ -175,15 +187,4 @@ public class GlobalSearchQueryHandler(
 
         return mediaQuery;
     }
-
-    private static IQueryable<BaseMedia> ApplySearchMediaIncludes(IQueryable<BaseMedia> query) =>
-        query
-            .IncludeMetadataTagsForMapping()
-            .Include(m => m.Pictures)
-            .Include(m => ((MusicTrack)m).Album)
-                .ThenInclude(a => a!.Pictures)
-            .Include(m => ((SerieEpisode)m).Season)
-                .ThenInclude(s => s!.Pictures)
-            .Include(m => ((SerieEpisode)m).Serie)
-                .ThenInclude(s => s!.Pictures);
 }
