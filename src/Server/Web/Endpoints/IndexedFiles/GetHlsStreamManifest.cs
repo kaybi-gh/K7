@@ -21,7 +21,8 @@ public class GetHlsStreamManifest : IEndpoint
                 [FromQuery] int? defaultSubtitleTrackIndex,
                 [FromQuery] int? subtitleBurnInStreamIndex,
                 [FromQuery] string? quality,
-                [FromQuery] string? audioTrackTranscodings) =>
+                [FromQuery] string? audioTrackTranscodings,
+                [FromQuery] double? startSeconds) =>
         {
             return (await sender.Send(new GetHlsStreamManifestQuery()
             {
@@ -32,7 +33,8 @@ public class GetHlsStreamManifest : IEndpoint
                 DefaultSubtitleTrackIndex = defaultSubtitleTrackIndex,
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 Quality = quality,
-                AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(audioTrackTranscodings)
+                AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(audioTrackTranscodings),
+                StartSeconds = startSeconds is > 0 ? startSeconds : null
             })).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)

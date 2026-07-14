@@ -203,7 +203,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     /// </summary>
     private string? _baseManifestUrl;
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
@@ -248,11 +248,12 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             MediaId = mediaId,
             StreamSessionId = session.Id,
             IndexedFileId = indexedFileId,
-            Url = _baseManifestUrl,
+            Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,
             Title = title,
-            CoverUrl = coverUrl
+            CoverUrl = coverUrl,
+            PendingSeekTime = startPosition is > 0 ? startPosition : null
         };
 
         Source = playerSource;
@@ -261,7 +262,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         QualityChanged?.Invoke(_selectedQuality);
     }
 
-    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
+    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = null;
         _audioTracks = audioTracks.ToList();
@@ -299,10 +300,11 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         {
             MediaId = mediaId,
             StreamSessionId = session.Id,
-            Url = _baseManifestUrl,
+            Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             Title = title,
-            CoverUrl = coverUrl
+            CoverUrl = coverUrl,
+            PendingSeekTime = startPosition is > 0 ? startPosition : null
         };
 
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
@@ -367,7 +369,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
         Source = new PlayerSource
         {
-            Url = newUrl,
+            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
             MimeType = "application/vnd.apple.mpegurl",
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
@@ -402,7 +404,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
         Source = new PlayerSource
         {
-            Url = newUrl,
+            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
             MimeType = "application/vnd.apple.mpegurl",
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
@@ -504,5 +506,17 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         }
 
         return url;
+    }
+
+    private static string BuildManifestUrlWithStartPosition(string baseUrl, double? startPosition)
+    {
+        var url = System.Text.RegularExpressions.Regex.Replace(baseUrl, @"[&?]startSeconds=[^&]*", "");
+        url = url.TrimEnd('?', '&');
+
+        if (startPosition is not > 0)
+            return url;
+
+        var separator = url.Contains('?') ? "&" : "?";
+        return $"{url}{separator}startSeconds={startPosition.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 }

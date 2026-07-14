@@ -199,13 +199,11 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
         {
             MediaId = item.MediaId,
             Url = item.MediaLocalPath,
-            MimeType = "video/mp4"
+            MimeType = "video/mp4",
+            PendingSeekTime = item.LastPlaybackPosition > 0 ? item.LastPlaybackPosition : null
         };
 
-        if (item.LastPlaybackPosition > 0)
-        {
-            PlayerService.Seek(item.LastPlaybackPosition);
-        }
+        PlayerService.Play();
     }
 
     private void OnProgressChanged(DownloadProgressInfo info)

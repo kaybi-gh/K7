@@ -28,7 +28,8 @@ public record GetHlsAudioStreamIndexQuery(
     Guid Id,
     int AudioTrackIndex,
     Guid StreamSessionId,
-    string? TranscodingAudioCodec = null) : IRequest<HttpContentResult>;
+    string? TranscodingAudioCodec = null,
+    double? StartSeconds = null) : IRequest<HttpContentResult>;
 
 public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStreamIndexQuery, HttpContentResult>
 {
@@ -68,7 +69,8 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         var indexPlaylist = GenerateHlsAudioIndexContent(
             totalDurationMs,
             query.StreamSessionId,
-            query.TranscodingAudioCodec);
+            query.TranscodingAudioCodec,
+            query.StartSeconds);
 
         return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }
@@ -76,7 +78,8 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
     private static string GenerateHlsAudioIndexContent(
         long totalDurationMs,
         Guid streamSessionId,
-        string? transcodingAudioCodec)
+        string? transcodingAudioCodec,
+        double? startSeconds)
     {
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
@@ -98,6 +101,13 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         content.AppendLine("#EXT-X-VERSION:7");
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
         content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
+
+        if (startSeconds is > 0)
+        {
+            var offset = startSeconds.Value.ToString("F3", CultureInfo.InvariantCulture);
+            content.AppendLine($"#EXT-X-START:TIME-OFFSET={offset},PRECISE=YES");
+        }
+
         content.AppendLine($"#EXT-X-MAP:URI=\"segments/init.m4s{queryString}\"");
 
         for (int i = 0; i < segmentDurations.Length; i++)

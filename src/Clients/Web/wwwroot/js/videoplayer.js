@@ -167,13 +167,34 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
     const player = players[id];
     if (!player) return;
 
-    player.one('loadeddata', function () {
+    let seekApplied = false;
+    const applySeekAndPlay = function () {
+        if (seekApplied) return;
+        seekApplied = true;
         player.currentTime(seekTime);
-        player.play();
+        var promise = player.play();
+        if (promise !== undefined) {
+            promise.catch(function (error) {
+                console.warn('Auto-play was prevented after seek', error);
+            });
+        }
+    };
+
+    // Seek as soon as duration/playlist metadata is known - before VHS buffers segment 0.
+    // #EXT-X-START on the playlist also anchors the initial position when supported.
+    player.one('loadedmetadata', applySeekAndPlay);
+    player.one('loadeddata', function () {
+        if (Math.abs(player.currentTime() - seekTime) > 1) {
+            player.currentTime(seekTime);
+        }
+        if (!seekApplied) {
+            applySeekAndPlay();
+        }
     });
     player.one('error', function () {
         console.error('changeSourceAndSeek: failed to load source', src, player.error());
     });
+    player.pause();
     player.src({ src: src, type: type });
 }
 
@@ -247,7 +268,18 @@ window.getAudioTracks = function (id) {
 }
 
 window.seek = function (id, seconds) {
-    players[id]?.currentTime(seconds);
+    const player = players[id];
+    if (!player) return;
+
+    const doSeek = function () {
+        player.currentTime(seconds);
+    };
+
+    if (player.readyState() >= 1) {
+        doSeek();
+    } else {
+        player.one('loadedmetadata', doSeek);
+    }
 }
 
 window.mute = function (id) {

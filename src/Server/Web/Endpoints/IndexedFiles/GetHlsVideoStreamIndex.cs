@@ -17,14 +17,16 @@ public class GetHlsVideoStreamIndex : IEndpoint
             [FromRoute] string quality,
             [FromQuery] Guid streamSessionId,
             [FromQuery] string? TranscodingVideoCodec,
-            [FromQuery] int? SubtitleBurnInStreamIndex) =>
+            [FromQuery] int? SubtitleBurnInStreamIndex,
+            [FromQuery] double? startSeconds) =>
         {
             return (await sender.Send(new GetHlsVideoStreamIndexQuery(
                 id, 
                 quality,
                 streamSessionId,
                 TranscodingVideoCodec,
-                SubtitleBurnInStreamIndex))).ToIResult();
+                SubtitleBurnInStreamIndex,
+                startSeconds is > 0 ? startSeconds : null))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

@@ -162,13 +162,32 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
     const player = players[id];
     if (!player) return;
 
-    player.one('loadeddata', function () {
+    let seekApplied = false;
+    const applySeekAndPlay = function () {
+        if (seekApplied) return;
+        seekApplied = true;
         player.currentTime(seekTime);
-        player.play();
+        var promise = player.play();
+        if (promise !== undefined) {
+            promise.catch(function (error) {
+                console.warn('Auto-play was prevented after seek', error);
+            });
+        }
+    };
+
+    player.one('loadedmetadata', applySeekAndPlay);
+    player.one('loadeddata', function () {
+        if (Math.abs(player.currentTime() - seekTime) > 1) {
+            player.currentTime(seekTime);
+        }
+        if (!seekApplied) {
+            applySeekAndPlay();
+        }
     });
     player.one('error', function () {
         console.error('changeSourceAndSeek: failed to load source', src, player.error());
     });
+    player.pause();
     player.src({ src: src, type: type });
 }
 
