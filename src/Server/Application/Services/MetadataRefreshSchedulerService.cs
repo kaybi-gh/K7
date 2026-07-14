@@ -63,9 +63,11 @@ public class MetadataRefreshSchedulerService(
             .Where(m => context.Libraries.Any(l =>
                 l.MetadataRefreshIntervalDays != null
                 && l.MetadataRefreshIntervalDays > 0
-                && (m.IndexedFiles.Any(f => f.LibraryId == l.Id) || m.RemoteIndexedFiles.Any(r => r.LibraryId == l.Id))
-                && (m.LastMetadataRefreshedAt == null
-                    || m.LastMetadataRefreshedAt < now.AddDays(-l.MetadataRefreshIntervalDays.Value))))
+                && context.MediaLibraryAvailabilities.Any(a =>
+                    a.MediaId == m.Id
+                    && a.LibraryId == l.Id
+                    && (m.LastMetadataRefreshedAt == null
+                        || m.LastMetadataRefreshedAt < now.AddDays(-l.MetadataRefreshIntervalDays.Value)))))
             .Select(m => m.Id)
             .Distinct()
             .Take(refreshLibraries.Count * 50)

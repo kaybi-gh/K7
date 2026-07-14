@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -10,27 +9,11 @@ internal readonly record struct MediaLibraryPair(Guid LibraryId, Guid MediaId);
 
 internal static class MediaLibraryLinkageHelper
 {
-    internal static Expression<Func<BaseMedia, bool>> LinkedToLibrary(Guid libraryId) =>
-        m => m is MusicAlbum
-            ? m.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId)
-                || ((MusicAlbum)m).Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == libraryId)
-                    || t.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId))
-            : m is MusicArtist
-                ? ((MusicArtist)m).Albums.Any(a => a.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId)
-                    || a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == libraryId)
-                        || t.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId)))
-            : m is Serie
-                ? m.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId)
-                    || ((Serie)m).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => f.LibraryId == libraryId)
-                        || e.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId)))
-            : m is SerieSeason
-                ? ((SerieSeason)m).Episodes.Any(e => e.IndexedFiles.Any(f => f.LibraryId == libraryId)
-                    || e.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId))
-            : m.IndexedFiles.Any(f => f.LibraryId == libraryId)
-                || m.RemoteIndexedFiles.Any(r => r.LibraryId == libraryId);
-
-    internal static IQueryable<BaseMedia> WhereLinkedToLibrary(this IQueryable<BaseMedia> query, Guid libraryId) =>
-        query.Where(LinkedToLibrary(libraryId));
+    internal static IQueryable<BaseMedia> WhereLinkedToLibrary(
+        this IQueryable<BaseMedia> query,
+        IApplicationDbContext context,
+        Guid libraryId) =>
+        query.Where(m => context.MediaLibraryAvailabilities.Any(a => a.MediaId == m.Id && a.LibraryId == libraryId));
 
     internal static IQueryable<MediaLibraryPair> SelectMediaLibraryPairs(IApplicationDbContext context)
     {

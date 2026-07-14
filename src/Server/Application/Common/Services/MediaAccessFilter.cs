@@ -24,29 +24,7 @@ public sealed class MediaAccessFilter(IApplicationDbContext context)
             .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
             .Select(e => e.LibraryId);
 
-        query = query.Where(x =>
-            x is MusicAlbum
-                ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                : x is MusicArtist
-                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                : x is MusicTrack
-                    ? x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicTrack)x).Album.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicTrack)x).Album.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                : x is Serie
-                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                : x is SerieSeason
-                    ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                    : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
+        query = query.WhereAvailableOutsideExcludedLibraries(context, excludedLibraryIds);
 
         var excludedMediaIds = context.UserMediaExclusions
             .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))

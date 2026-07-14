@@ -155,7 +155,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         Guid? userId,
         CancellationToken cancellationToken)
     {
-        query = ApplyFilters(request, query, userId, BuildSearchPattern(request.SearchText));
+        query = ApplyFilters(context, request, query, userId, BuildSearchPattern(request.SearchText));
 
         if (request.ContinueWatching == true && userId.HasValue)
         {
@@ -172,6 +172,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             : MediaTextSearchHelper.BuildTitlePattern(searchText, databaseCapabilities.SupportsTrigramSearch);
 
     internal static IQueryable<BaseMedia> ApplyFilters(
+        IApplicationDbContext context,
         GetMediasWithPaginationQuery request,
         IQueryable<BaseMedia> query,
         Guid? userId,
@@ -181,39 +182,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         var includeEpisodes = request.MediaTypes?.Contains(MediaType.SerieEpisode) == true;
         query = query.Where(x => x is MusicAlbum || x is MusicArtist || x is MusicTrack || x is Serie || (includeSeasons && x is SerieSeason)
             || (includeEpisodes && x is SerieEpisode)
-            || x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
+            || context.MediaLibraryAvailabilities.Any(a => a.MediaId == x.Id));
 
         if (request.LibraryIds?.Length > 0)
-        {
-            query = query.Where(x =>
-                x is MusicAlbum
-                    ? x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                        || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)))
-                    : x is MusicArtist
-                        ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                            || a.Tracks.Any(t => t.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                || t.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))))
-                        : x is MusicTrack
-                            ? x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                                || ((MusicTrack)x).Album.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                                || ((MusicTrack)x).Album.Tracks.Any(t => t.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)))
-                            : x is Serie
-                                ? x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                                    || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                        || e.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))))
-                                : x is SerieSeason
-                                    ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                        || e.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)))
-                                    : x is SerieEpisode
-                                        ? x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                            || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
-                                            || ((SerieEpisode)x).Serie.Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                                || e.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))))
-                                        : x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                            || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)));
-        }
+            query = query.WhereAvailableInLibraries(context, request.LibraryIds);
 
         if (request.Ids?.Length > 0)
         {

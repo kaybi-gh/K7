@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -59,18 +60,12 @@ public class GetTopMusicTracksQueryHandler(IApplicationDbContext context, IUser 
         var query = context.Medias
             .AsNoTracking()
             .OfType<MusicTrack>()
-            .Where(t => t.IndexedFiles.Any() || t.RemoteIndexedFiles.Any());
+            .WhereHasLibraryAvailability(context);
 
         if (libraryIds is not { Length: > 0 })
             return query;
 
-        return query.Where(t =>
-            t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-            || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-            || t.Album.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
-            || t.Album.Tracks.Any(track =>
-                track.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
-                || track.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))));
+        return query.WhereAvailableInLibraries(context, libraryIds);
     }
 
     private async Task<List<MusicTrack>> LoadTracksAsync(
