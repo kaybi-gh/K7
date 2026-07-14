@@ -23,6 +23,8 @@ public partial class SerieEpisode : IAsyncDisposable
     private SerieEpisodeDto? _episode;
     private IndexedFileDto? _indexedFile;
     private string? _stillUrl;
+    private int? _stillSourceWidth;
+    private int? _stillSourceHeight;
     private bool _useHdStillBackdrop;
     private string? _dominantColor;
     private string _pageTitle = "";
@@ -155,10 +157,12 @@ public partial class SerieEpisode : IAsyncDisposable
 
         var still = _episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
                     ?? _episode.Pictures?.FirstOrDefault();
+        _useHdStillBackdrop = MetadataPictureDisplayHelper.IsHdStill(still);
         var stillUri = apiClient.GetAbsoluteUri(
             still?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
         _stillUrl = MediaPictureUrlHelper.WithCacheBuster(stillUri, cacheVersion);
-        _useHdStillBackdrop = MetadataPictureDisplayHelper.IsHdStill(still);
+        _stillSourceWidth = still?.OriginalWidth;
+        _stillSourceHeight = still?.OriginalHeight;
         _dominantColor = still?.DominantColor;
     }
 
