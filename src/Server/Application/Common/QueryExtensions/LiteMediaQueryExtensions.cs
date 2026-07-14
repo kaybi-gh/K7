@@ -14,7 +14,12 @@ public static class LiteMediaQueryExtensions
             .Include(m => m.IndexedFiles)
             .Include(m => m.RemoteIndexedFiles);
 
+        if (userId.HasValue)
+            query = query.Include(m => m.UserMediaStates.Where(s => s.UserId == userId.Value));
+
         query = query
+            .Include(m => ((MusicTrack)m).IndexedFiles)
+                .ThenInclude(f => f.FileMetadata)
             .Include(m => ((MusicTrack)m).Album!)
                 .ThenInclude(a => a.Pictures)
             .Include(m => ((MusicTrack)m).Album!)
@@ -30,9 +35,6 @@ public static class LiteMediaQueryExtensions
                 .ThenInclude(s => s.Pictures)
             .Include(m => ((SerieSeason)m).Serie!)
                 .ThenInclude(s => s.Pictures);
-
-        if (userId.HasValue)
-            query = query.Include(m => m.UserMediaStates.Where(s => s.UserId == userId.Value));
 
         return query;
     }

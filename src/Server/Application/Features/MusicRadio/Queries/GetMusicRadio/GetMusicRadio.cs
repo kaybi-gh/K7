@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
@@ -25,7 +26,8 @@ public record GetMusicRadioQuery : IRequest<List<BaseMedia>>
 public class GetMusicRadioQueryHandler(
     IApplicationDbContext context,
     IUser currentUser,
-    IMusicIntelligenceService musicIntelligenceService)
+    IMusicIntelligenceService musicIntelligenceService,
+    LiteMediaProjectionService liteMediaProjection)
     : IRequestHandler<GetMusicRadioQuery, List<BaseMedia>>
 {
     public async Task<List<BaseMedia>> Handle(GetMusicRadioQuery request, CancellationToken cancellationToken)
@@ -333,11 +335,8 @@ public class GetMusicRadioQueryHandler(
             return [];
 
         var idSet = trackIds.ToHashSet();
-        var tracks = await BuildTrackQuery(userId, libraryIds)
-            .Where(t => idSet.Contains(t.Id))
-            .ToListAsync(ct);
-
-        var trackMap = tracks.ToDictionary(t => t.Id);
+        var tracks = await liteMediaProjection.GetLiteMediasAsync(idSet.ToList(), userId, ct);
+        var trackMap = tracks.OfType<MusicTrack>().ToDictionary(t => t.Id);
         return trackIds
             .Where(trackMap.ContainsKey)
             .Select(id => (BaseMedia)trackMap[id])
@@ -352,36 +351,6 @@ public class GetMusicRadioQueryHandler(
             .AsNoTracking();
 
         query = ApplyLibraryFilter(query, libraryIds);
-        return query;
-    }
-
-    private IQueryable<MusicTrack> BuildTrackQuery(Guid? userId, Guid[]? libraryIds)
-    {
-        var query = context.Medias
-            .OfType<MusicTrack>()
-            .Include(t => t.Pictures).ThenInclude(p => p.Variants)
-            .Include(t => t.Ratings)
-            .Include(t => t.IndexedFiles).ThenInclude(f => f.FileMetadata)
-            .Include(t => t.RemoteIndexedFiles)
-            .Include(t => t.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(t => t.AudioAnalysis)
-            .Include(t => t.Artist)
-            .Include(t => t.PersonRoles).ThenInclude(r => r.Person)
-            .Include(t => t.Album).ThenInclude(a => a.PersonRoles).ThenInclude(r => r.Person)
-            .Include(t => t.Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
-            .Include(t => t.Album).ThenInclude(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(t => t.Album).ThenInclude(a => a.Artist)
-            .WhereHasLibraryAvailability(context)
-            .AsSplitQuery()
-            .AsNoTracking();
-
-        query = ApplyLibraryFilter(query, libraryIds);
-
-        if (userId.HasValue)
-        {
-            query = query.Include(t => t.UserMediaStates.Where(s => s.UserId == userId.Value));
-        }
-
         return query;
     }
 
