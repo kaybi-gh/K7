@@ -10,6 +10,7 @@ public partial class Carousel : IAsyncDisposable
 
     private ElementReference _root;
     private IJSObjectReference? _module;
+    private bool _moduleLoadFailed;
 
     [Parameter] public bool Skeleton { get; set; } = false;
     [Parameter] public string Title { get; set; } = "";
@@ -26,8 +27,22 @@ public partial class Carousel : IAsyncDisposable
 
     public async Task EnsureInitializedAsync()
     {
-        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/carousel.js");
+        if (_moduleLoadFailed)
+            return;
+
+        if (_module is null)
+        {
+            try
+            {
+                _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/K7.Clients.Shared.UI/js/carousel.js");
+            }
+            catch (JSException)
+            {
+                _moduleLoadFailed = true;
+                return;
+            }
+        }
 
         await _module.InvokeVoidAsync("init", _root);
     }

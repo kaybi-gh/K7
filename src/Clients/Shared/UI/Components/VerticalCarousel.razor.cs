@@ -9,14 +9,29 @@ public partial class VerticalCarousel : IAsyncDisposable
 
     private ElementReference _root;
     private IJSObjectReference? _module;
+    private bool _moduleLoadFailed;
     private int _lastSlideCount = -1;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/vertical-carousel.js");
+        if (_module is null && !_moduleLoadFailed)
+        {
+            try
+            {
+                _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/K7.Clients.Shared.UI/js/vertical-carousel.js");
+            }
+            catch (JSException)
+            {
+                _moduleLoadFailed = true;
+                return;
+            }
+        }
+
+        if (_module is null)
+            return;
 
         if (firstRender)
         {
