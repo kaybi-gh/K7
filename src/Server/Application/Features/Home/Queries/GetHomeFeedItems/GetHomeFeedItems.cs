@@ -14,7 +14,6 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
 
@@ -30,7 +29,7 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = 20;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
@@ -52,8 +51,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         var cacheKey = BuildCacheKey(request, userId, continueWatchingPolicy);
         var version = cacheInvalidator.Version;
 
-        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<HomeFeedItemDto> Result) cached) && cached.Version == version)
-            return cached.Result;
+        if (cache.TryGetValue(cacheKey, out var cachedValue)
+            && cachedValue is (long cachedVersion, PaginatedList<HomeFeedItemDto> cachedResult)
+            && cachedVersion == version)
+            return cachedResult;
 
         var result = strategy switch
         {

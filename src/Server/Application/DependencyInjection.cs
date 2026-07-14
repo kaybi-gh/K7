@@ -74,7 +74,8 @@ public static class DependencyInjection
         services.AddSingleton<SyncPlayCoordinator>();
         services.AddSingleton<ISyncPlayCoordinator>(sp => sp.GetRequiredService<SyncPlayCoordinator>());
         services.AddHostedService<SyncPlayStaleGroupCleanupService>();
-        services.AddSingleton<MediaQueryCacheInvalidator>();
+        services.AddSingleton<BoundedMemoryCache>();
+        services.AddSingleton<IBoundedMemoryCache>(sp => sp.GetRequiredService<BoundedMemoryCache>());
         services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
         services.AddSingleton(sp =>
         {
