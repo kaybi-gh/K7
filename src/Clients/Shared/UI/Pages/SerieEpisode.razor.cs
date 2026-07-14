@@ -158,8 +158,14 @@ public partial class SerieEpisode : IAsyncDisposable
         var still = _episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
                     ?? _episode.Pictures?.FirstOrDefault();
         _useHdStillBackdrop = MetadataPictureDisplayHelper.IsHdStill(still);
+        var stillSize = still is not null
+            ? MetadataPictureDisplayHelper.GetBestDisplaySize(
+                still,
+                MetadataPictureSize.Medium,
+                MetadataPictureSize.Small)
+            : null;
         var stillUri = apiClient.GetAbsoluteUri(
-            still?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            still?.GetUri(stillSize)?.OriginalString)?.AbsoluteUri;
         _stillUrl = MediaPictureUrlHelper.WithCacheBuster(stillUri, cacheVersion);
         _stillSourceWidth = still?.OriginalWidth;
         _stillSourceHeight = still?.OriginalHeight;

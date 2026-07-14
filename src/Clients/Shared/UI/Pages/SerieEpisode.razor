@@ -40,8 +40,9 @@ else if (_episode is not null)
                                DominantColor="@_dominantColor"
                                ScrollTarget="@_scrollRoot"
                                Class="@(_useHdStillBackdrop ? "" : "media-page-backdrop--soft-still")"
-                               SoftStillSourceWidth="@(_useHdStillBackdrop ? null : _stillSourceWidth)"
-                               SoftStillSourceHeight="@(_useHdStillBackdrop ? null : _stillSourceHeight)" />
+                               SoftStillBlurEnabled="@(!_useHdStillBackdrop)"
+                               SoftStillSourceWidth="_stillSourceWidth"
+                               SoftStillSourceHeight="_stillSourceHeight" />
         }
 
         <div class="episode-main media-hero-main">

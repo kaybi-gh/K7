@@ -29,8 +29,16 @@ public static class MetadataPictureDisplayHelper
         if (picture is null || picture.Type != MetadataPictureType.Still)
             return false;
 
+        if (picture.OriginalWidth is > 0
+            && picture.OriginalHeight is > 0
+            && MetadataPictureThresholds.MeetsHdStillThreshold(picture.OriginalWidth.Value, picture.OriginalHeight.Value))
+            return true;
+
+        if (picture.AvailableSizes.Contains(MetadataPictureSize.Medium))
+            return true;
+
         if (picture.OriginalWidth is > 0 && picture.OriginalHeight is > 0)
-            return MetadataPictureThresholds.MeetsHdStillThreshold(picture.OriginalWidth.Value, picture.OriginalHeight.Value);
+            return false;
 
         return true;
     }
