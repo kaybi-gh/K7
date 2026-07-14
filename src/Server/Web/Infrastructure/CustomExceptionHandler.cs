@@ -18,6 +18,9 @@ public class CustomExceptionHandler : IExceptionHandler
             { typeof(NotFoundException), HandleNotFoundException },
             { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
             { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
+            { typeof(ConcurrentStreamQuotaExceededException), HandleConcurrentStreamQuotaExceededException },
+            { typeof(PeerServerUnavailableException), HandlePeerServerUnavailableException },
+            { typeof(UnprocessableEntityException), HandleUnprocessableEntityException },
             { typeof(BadHttpRequestException), HandleBadRequestException },
             { typeof(HttpRequestException), HandleBadGatewayException },
             { typeof(DbUpdateConcurrencyException), HandleConcurrencyException },
@@ -108,6 +111,31 @@ public class CustomExceptionHandler : IExceptionHandler
             Title = "Forbidden",
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3"
         }, cancellationToken);
+    }
+
+    private static Task HandleConcurrentStreamQuotaExceededException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return Task.CompletedTask;
+    }
+
+    private static Task HandlePeerServerUnavailableException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Status = StatusCodes.Status503ServiceUnavailable,
+            Title = "Service Unavailable",
+            Detail = ex.Message,
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+        }, cancellationToken);
+    }
+
+    private static Task HandleUnprocessableEntityException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+        return Task.CompletedTask;
     }
 
     private static Task HandleBadRequestException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
