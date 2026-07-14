@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
+using Microsoft.AspNetCore.RateLimiting;
+using K7.Server.Web.Infrastructure;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace K7.Server.Web.Endpoints.Authentication;
@@ -56,7 +58,7 @@ public class GuestLogin : IEndpoint
                     identity: identity,
                     subject: await userManager.GetUserIdAsync(guestUser),
                     client: (await applicationManager.GetIdAsync(application))!,
-                    type: AuthorizationTypes.Permanent,
+                    type: AuthorizationTypes.AdHoc,
                     scopes: identity.GetScopes());
 
                 identity.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
@@ -75,6 +77,7 @@ public class GuestLogin : IEndpoint
             return Results.SignIn(new ClaimsPrincipal(identity), authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         })
         .AllowAnonymous()
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .WithName(type.Name)
         .WithTags(groupName);
     }

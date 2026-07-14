@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Microsoft.AspNetCore.RateLimiting;
+using K7.Server.Web.Infrastructure;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace K7.Server.Web.Endpoints.Connect;
@@ -23,17 +25,44 @@ public class Token : IEndpoint
         endpointRouteBuilder.MapPost("/connect/token", async (HttpContext context,
             [FromServices] UserManager<ApplicationUser> userManager,
             [FromServices] SignInManager<ApplicationUser> signInManager,
-            [FromServices] IApplicationDbContext dbContext) =>
+            [FromServices] IApplicationDbContext dbContext,
+            [FromServices] IOpenIddictApplicationManager applicationManager) =>
         {
             var request = context.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
             if (request.IsClientCredentialsGrantType())
             {
+                var application = await applicationManager.FindByClientIdAsync(request.ClientId!, context.RequestAborted);
+                if (application is null)
+                {
+                    return Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The client application was not found."
+                    }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+                }
+
+                var permissions = await applicationManager.GetPermissionsAsync(application, context.RequestAborted);
+                var allowedScopes = permissions
+                    .Where(p => p.StartsWith(Permissions.Prefixes.Scope, StringComparison.Ordinal))
+                    .Select(p => p[Permissions.Prefixes.Scope.Length..])
+                    .ToHashSet(StringComparer.Ordinal);
+
+                var grantedScopes = request.GetScopes().Where(allowedScopes.Contains).ToArray();
+                if (grantedScopes.Length == 0)
+                {
+                    return Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidScope,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The requested scope is not allowed for this client."
+                    }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+                }
+
                 var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType);
                 identity.SetClaim(Claims.Subject, request.ClientId);
 
-                identity.SetScopes(request.GetScopes());
+                identity.SetScopes(grantedScopes);
                 identity.SetDestinations(static claim => [Destinations.AccessToken]);
 
                 return Results.SignIn(new ClaimsPrincipal(identity),
@@ -107,6 +136,7 @@ public class Token : IEndpoint
         })
         .WithName(type.Name)
         .WithTags(groupName)
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .DisableAntiforgery();
     }
 
