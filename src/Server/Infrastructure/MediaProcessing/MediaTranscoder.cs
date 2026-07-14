@@ -4,6 +4,7 @@ using System.Text.Json;
 using FFMpegCore;
 using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Interfaces;
@@ -14,10 +15,17 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 public class MediaTranscoder : IMediaTranscoder
 {
     private readonly ILogger<MediaTranscoder> _logger;
+    private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService;
+    private readonly ITranscodeSettingsProvider _transcodeSettingsProvider;
 
-    public MediaTranscoder(ILogger<MediaTranscoder> logger)
+    public MediaTranscoder(
+        ILogger<MediaTranscoder> logger,
+        IFfmpegCapabilitiesService ffmpegCapabilitiesService,
+        ITranscodeSettingsProvider transcodeSettingsProvider)
     {
         _logger = logger;
+        _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
+        _transcodeSettingsProvider = transcodeSettingsProvider;
     }
     public async Task RemuxVideoAsync(
         string inputFilePath,
@@ -155,6 +163,20 @@ public class MediaTranscoder : IMediaTranscoder
                 burnInCanvasSizeArg ?? "default");
         }
 
+        VideoEncoderSelection? encoderSelection = null;
+        if (needsTranscode)
+        {
+            var effectiveCodec = videoCodec ?? (hasBurnIn ? "h264" : null);
+            if (effectiveCodec is not null)
+            {
+                var settings = await _transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
+                var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
+                encoderSelection = FfmpegVideoEncoderBuilder.Resolve(effectiveCodec, settings, capabilities, hasBurnIn);
+            }
+        }
+
+        var resolvedEncoder = encoderSelection;
+
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
             {
@@ -190,19 +212,28 @@ public class MediaTranscoder : IMediaTranscoder
 
                 if (needsTranscode)
                 {
-                    // Determine effective codec: use specified or default to h264 for burn-in
                     var effectiveCodec = videoCodec ?? (hasBurnIn ? "h264" : null);
-
-                    if (effectiveCodec == "h264")
+                    if (effectiveCodec is not null)
                     {
-                        options.WithCustomArgument("-c:v libx264")
-                            .WithCustomArgument("-profile:v main")
-                            .WithCustomArgument("-level:v 4.0")
-                            .WithCustomArgument("-pix_fmt yuv420p");
-                    }
-                    else if (effectiveCodec == "hevc")
-                    {
-                        options.WithCustomArgument("-c:v libx265");
+                        if (resolvedEncoder is null)
+                        {
+                            _logger.LogWarning(
+                                "No encoder resolved for codec {Codec}, falling back to libx264",
+                                effectiveCodec);
+                            options.WithCustomArgument("-c:v libx264")
+                                .WithCustomArgument("-profile:v main")
+                                .WithCustomArgument("-level:v 4.0")
+                                .WithCustomArgument("-pix_fmt yuv420p");
+                        }
+                        else
+                        {
+                            _logger.LogInformation(
+                                "Using video encoder {Encoder} (hardware={IsHardware}) for codec {Codec}",
+                                resolvedEncoder.EncoderName,
+                                resolvedEncoder.IsHardwareAccelerated,
+                                effectiveCodec);
+                            options.WithCustomArgument(resolvedEncoder.EncoderArguments);
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")

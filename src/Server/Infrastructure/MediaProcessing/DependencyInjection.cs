@@ -18,6 +18,7 @@ public static class DependencyInjection
     public static IServiceCollection AddMediaProcessingServices(this IServiceCollection services)
     {
         services.AddSingleton<IMediaAnalysisService, MediaAnalysisService>();
+        services.AddSingleton<IFfmpegCapabilitiesService, FfmpegCapabilitiesService>();
         services.AddSingleton<IMediaTranscoder, MediaTranscoder>();
         services.AddSingleton<IImageProcessor, ImageProcessor>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
