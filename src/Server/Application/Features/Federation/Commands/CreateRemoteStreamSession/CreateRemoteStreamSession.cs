@@ -37,6 +37,9 @@ public class CreateRemoteStreamSessionCommandHandler(
         if (peer.Status != PeerStatus.Active)
             throw new PeerServerUnavailableException("Peer server is not active");
 
+        if (peer.LastTestSucceeded == false)
+            throw new PeerServerUnavailableException("Peer server is unreachable");
+
         var device = await context.Devices
             .FindAsync([request.DeviceId], cancellationToken);
 

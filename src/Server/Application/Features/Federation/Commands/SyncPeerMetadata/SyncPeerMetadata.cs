@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -23,6 +24,7 @@ public class SyncPeerMetadataCommandHandler(
     ISender sender,
     IMediaMetadataTagSyncService tagSyncService,
     IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
+    IPeerConnectivityService peerConnectivityService,
     ILogger<SyncPeerMetadataCommandHandler> logger)
     : IRequestHandler<SyncPeerMetadataCommand>
 {
@@ -36,6 +38,7 @@ public class SyncPeerMetadataCommandHandler(
         if (peer.OutboundClientId is null || peer.OutboundClientSecret is null)
         {
             logger.LogWarning("Peer {PeerName} has no outbound credentials, skipping sync", peer.Name);
+            await peerConnectivityService.RecordConnectivityAsync(peer.Id, false, cancellationToken);
             return;
         }
 
@@ -43,9 +46,25 @@ public class SyncPeerMetadataCommandHandler(
         if (token is null)
         {
             logger.LogWarning("Failed to get access token for peer {PeerName}", peer.Name);
+            await peerConnectivityService.RecordConnectivityAsync(peer.Id, false, cancellationToken);
             return;
         }
 
+        try
+        {
+            await SyncPeerMetadataCoreAsync(peer, token, cancellationToken);
+            await peerConnectivityService.RecordConnectivityAsync(peer.Id, true, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Peer metadata sync failed for {PeerName}", peer.Name);
+            await peerConnectivityService.RecordConnectivityAsync(peer.Id, false, cancellationToken);
+            throw;
+        }
+    }
+
+    private async Task SyncPeerMetadataCoreAsync(PeerServer peer, string token, CancellationToken cancellationToken)
+    {
         var remoteLibraries = await peerClient.GetRemoteLibrariesAsync(peer.BaseUrl, token, cancellationToken);
         logger.LogInformation("Peer {PeerName} exposes {Count} libraries", peer.Name, remoteLibraries.Count);
 
