@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
@@ -35,10 +36,11 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         DateTimeOffset lastModified = entity.LastModified;
         Guid entityId = entity.Id;
         var isFallback = false;
+        MetadataPictureSize? requestedSize = query.Size;
 
-        if (query.Size is { } requestedSize)
+        if (requestedSize is { } size)
         {
-            var variant = entity.Variants.FirstOrDefault(v => v.Size == requestedSize);
+            var variant = entity.Variants.FirstOrDefault(v => v.Size == size);
             if (variant is not null)
             {
                 localPath = variant.LocalPath;
@@ -77,7 +79,14 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         responseHeaders.LastModified = lastModified;
         responseHeaders.ETag = eTag;
 
-        if (isFallback)
+        var allowLongTermCache = !isFallback
+            || (requestedSize is { } fallbackSize
+                && MetadataPictureVariantRules.IsPermanentVariantFallback(
+                    entity.Type,
+                    fallbackSize,
+                    entity.OriginalWidth));
+
+        if (!allowLongTermCache)
         {
             responseHeaders.CacheControl = new CacheControlHeaderValue
             {
