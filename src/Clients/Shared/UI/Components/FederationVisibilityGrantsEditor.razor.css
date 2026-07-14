@@ -1,11 +1,11 @@
 .federation-grants-editor {
-    padding-inline-start: var(--k7-space-4);
+    padding-inline-start: var(--space-4);
     border-inline-start: 2px solid var(--k7-color-border-subtle);
-    margin-block: var(--k7-space-2);
+    margin-block: var(--space-2);
 }
 
 .federation-grants-editor__list {
     display: flex;
     flex-direction: column;
-    gap: var(--k7-space-2);
+    gap: var(--space-2);
 }
