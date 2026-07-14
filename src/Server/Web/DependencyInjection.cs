@@ -3,6 +3,7 @@ using K7.Server.Domain.Constants;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Infrastructure.Configuration;
 using K7.Server.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,15 @@ using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Http.Resilience;
 using OpenIddict.Validation.AspNetCore;
+using System.Net;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Web;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var configPath = configuration.GetValue<string>("Paths:Config") ?? "config";
         var keysPath = Path.Combine(configPath, "dataprotection-keys");
@@ -43,9 +47,29 @@ public static class DependencyInjection
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+            var knownProxies = configuration.GetSection("Security:KnownProxies").Get<string[]>();
             options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
+
+            if (knownProxies is { Length: > 0 })
+            {
+                foreach (var proxy in knownProxies)
+                {
+                    if (IPAddress.TryParse(proxy, out var address))
+                        options.KnownProxies.Add(address);
+                }
+            }
+            else if (environment.IsDevelopment())
+            {
+                // Development behind local proxies: trust forwarded proto from any source.
+            }
+            else
+            {
+                options.ForwardedHeaders = ForwardedHeaders.None;
+            }
         });
+
+        services.AddK7RateLimiting();
 
         var authenticationBuilder = services.AddAuthentication(options =>
         {
@@ -163,7 +187,7 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection ConfigureCors(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureCors(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddCors(options =>
         {
@@ -175,9 +199,26 @@ public static class DependencyInjection
                 {
                     policy.WithOrigins(origins);
                 }
+                else if (environment.IsDevelopment())
+                {
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin))
+                            return false;
+
+                        try
+                        {
+                            return new Uri(origin).IsLoopback;
+                        }
+                        catch (UriFormatException)
+                        {
+                            return false;
+                        }
+                    });
+                }
                 else
                 {
-                    policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
+                    policy.SetIsOriginAllowed(_ => false);
                 }
 
                 policy.AllowAnyMethod()

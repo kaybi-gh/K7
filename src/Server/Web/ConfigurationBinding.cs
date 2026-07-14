@@ -11,6 +11,7 @@ public static class ConfigurationBinding
         services.Configure<PathsConfiguration>(configuration.GetSection("Paths"));
         services.Configure<DatabaseConfiguration>(configuration.GetSection("Database"));
         services.Configure<AuthenticationConfiguration>(configuration.GetSection("Authentication"));
+        services.Configure<SecurityConfiguration>(configuration.GetSection("Security"));
         services.AddSingleton<IAuthenticationSettings, AuthenticationSettings>();
         return services;
     }
