@@ -27,6 +27,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
+        services.AddMemoryCache();
+
         var configPath = configuration.GetValue<string>("Paths:Config") ?? "config";
         var keysPath = Path.Combine(configPath, "dataprotection-keys");
         services.AddDataProtection()
@@ -206,14 +208,7 @@ public static class DependencyInjection
                         if (string.IsNullOrWhiteSpace(origin))
                             return false;
 
-                        try
-                        {
-                            return new Uri(origin).IsLoopback;
-                        }
-                        catch (UriFormatException)
-                        {
-                            return false;
-                        }
+                        return Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback;
                     });
                 }
                 else
