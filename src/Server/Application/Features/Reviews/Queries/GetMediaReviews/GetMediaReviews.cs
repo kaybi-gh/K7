@@ -5,6 +5,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Reviews;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Reviews;
 using K7.Shared.Dtos.Federation.Social;
@@ -37,7 +38,15 @@ public class GetMediaReviewsQueryHandler(
             .ToListAsync(cancellationToken);
 
         var viewerPrivacy = await privacyService.GetPrivacyAsync(viewerUserId, cancellationToken);
-        var ownerPrivacyByUserId = new Dictionary<Guid, FederationPrivacySettingsDto>();
+        var ownerIds = reviews.Select(r => r.UserId).Distinct().Where(id => id != viewerUserId).ToList();
+
+        var ownerPrivacyEntries = await Task.WhenAll(
+            ownerIds.Select(async ownerId =>
+                (OwnerId: ownerId, Privacy: await privacyService.GetPrivacyAsync(ownerId, cancellationToken))));
+
+        var ownerPrivacyByUserId = ownerPrivacyEntries.ToDictionary(x => x.OwnerId, x => x.Privacy);
+
+        var canViewByOwnerId = new Dictionary<Guid, bool>();
         var visibleReviews = new List<MediaReview>();
 
         foreach (var review in reviews)
@@ -55,23 +64,24 @@ public class GetMediaReviewsQueryHandler(
                 continue;
 
             if (!ownerPrivacyByUserId.TryGetValue(review.UserId, out var ownerPrivacy))
-            {
-                ownerPrivacy = await privacyService.GetPrivacyAsync(review.UserId, cancellationToken);
-                ownerPrivacyByUserId[review.UserId] = ownerPrivacy;
-            }
+                continue;
 
             if (ownerPrivacy.Share.Reviews == VisibilityScope.Nobody)
                 continue;
 
-            if (!await visibilityEvaluator.CanViewAsync(
+            if (!canViewByOwnerId.TryGetValue(review.UserId, out var canView))
+            {
+                canView = await visibilityEvaluator.CanViewAsync(
                     viewerUserId,
                     review.UserId,
                     FederationContentType.Reviews,
                     ownerPrivacy.Share.Reviews,
-                    cancellationToken: cancellationToken))
-                continue;
+                    cancellationToken: cancellationToken);
+                canViewByOwnerId[review.UserId] = canView;
+            }
 
-            visibleReviews.Add(review);
+            if (canView)
+                visibleReviews.Add(review);
         }
 
         return await EnrichDisplayNamesAsync(visibleReviews, cancellationToken);
@@ -81,26 +91,26 @@ public class GetMediaReviewsQueryHandler(
         IReadOnlyList<MediaReview> reviews,
         CancellationToken cancellationToken)
     {
-        var results = new List<MediaReviewDto>(reviews.Count);
+        var usersNeedingResolution = reviews
+            .Where(r => r.User is not null && string.IsNullOrWhiteSpace(r.User.DisplayName))
+            .Select(r => r.User!)
+            .DistinctBy(u => u.Id)
+            .ToList();
 
-        foreach (var review in reviews)
-        {
-            var dto = review.ToMediaReviewDto();
-            if (!string.IsNullOrWhiteSpace(dto.UserDisplayName) || review.User is null)
+        var displayNames = await LocalUserDisplayNameHelper.ResolveManyAsync(
+            identityService,
+            usersNeedingResolution,
+            cancellationToken);
+
+        return reviews
+            .Select(review =>
             {
-                results.Add(dto);
-                continue;
-            }
+                var dto = review.ToMediaReviewDto();
+                if (!string.IsNullOrWhiteSpace(dto.UserDisplayName) || review.User is null)
+                    return dto;
 
-            results.Add(dto with
-            {
-                UserDisplayName = await LocalUserDisplayNameHelper.ResolveAsync(
-                    identityService,
-                    review.User,
-                    cancellationToken)
-            });
-        }
-
-        return results;
+                return dto with { UserDisplayName = displayNames.GetValueOrDefault(review.User.Id) ?? "?" };
+            })
+            .ToList();
     }
 }

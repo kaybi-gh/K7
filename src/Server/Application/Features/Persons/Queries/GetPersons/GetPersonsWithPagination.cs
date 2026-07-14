@@ -63,7 +63,11 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
                 )));
         }
 
-        return await query.AsSplitQuery().PaginatedListAsync(request.PageNumber, request.PageSize);
+        return await query
+            .OrderBy(p => p.Name)
+            .ThenBy(p => p.Id)
+            .AsSplitQuery()
+            .PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<Person> ApplyFilters(GetPersonsWithPaginationQuery request, IQueryable<Person> query)

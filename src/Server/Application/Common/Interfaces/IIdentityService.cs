@@ -6,6 +6,10 @@ public interface IIdentityService
 {
     Task<string?> GetUserNameAsync(string userId);
 
+    Task<IReadOnlyDictionary<string, string?>> GetUserNamesAsync(IEnumerable<string> userIds);
+
+    Task<IReadOnlyDictionary<string, string?>> GetEmailsAsync(IEnumerable<string> userIds);
+
     Task<bool> IsInRoleAsync(string userId, string role);
 
     Task<bool> AuthorizeAsync(string userId, string policyName);
