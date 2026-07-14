@@ -3,20 +3,30 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Settings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Infrastructure.Database.Context.Services;
 
-public class UserSettingsService(IApplicationDbContext context) : IUserSettingsService
+public class UserSettingsService(IApplicationDbContext context, IMemoryCache cache) : IUserSettingsService
 {
+    private static string CacheKey(Guid userId, string keyName) => $"user-setting:{userId}:{keyName}";
+
     public async Task<T?> GetAsync<T>(Guid userId, SettingKey<T> key, CancellationToken cancellationToken = default)
     {
+        var cacheKey = CacheKey(userId, key.Name);
+        if (cache.TryGetValue(cacheKey, out T? cached))
+            return cached;
+
         var setting = await context.UserSettings
+            .AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key.Name, cancellationToken);
 
-        if (setting is null)
-            return key.DefaultValue;
+        var value = setting is null
+            ? key.DefaultValue
+            : JsonSerializer.Deserialize<T>(setting.Value);
 
-        return JsonSerializer.Deserialize<T>(setting.Value);
+        cache.Set(cacheKey, value);
+        return value;
     }
 
     public async Task SetAsync<T>(Guid userId, SettingKey<T> key, T value, CancellationToken cancellationToken = default)
@@ -36,6 +46,7 @@ public class UserSettingsService(IApplicationDbContext context) : IUserSettingsS
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cache.Remove(CacheKey(userId, key.Name));
     }
 
     public async Task RemoveAsync<T>(Guid userId, SettingKey<T> key, CancellationToken cancellationToken = default)
@@ -47,6 +58,7 @@ public class UserSettingsService(IApplicationDbContext context) : IUserSettingsS
         {
             context.UserSettings.Remove(setting);
             await context.SaveChangesAsync(cancellationToken);
+            cache.Remove(CacheKey(userId, key.Name));
         }
     }
 
