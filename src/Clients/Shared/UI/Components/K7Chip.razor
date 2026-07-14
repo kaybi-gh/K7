@@ -8,7 +8,7 @@
       @onkeydown="OnKeyDown">
     @if (!string.IsNullOrEmpty(Icon))
     {
-        <i class="ph ph-@Icon" style="font-size:0.85em;"></i>
+        <K7Icon Icon="@ResolvedIcon" IconSize="@K7IconSize.Sm" Class="k7-chip__icon" />
     }
     @if (!string.IsNullOrEmpty(Text))
     {
@@ -21,7 +21,7 @@
     @if (OnClose.HasDelegate)
     {
         <button class="k7-chip-close" @onclick="OnClose" @onclick:stopPropagation="true" type="button" aria-label="Remove">
-            <i class="ph ph-x" style="font-size:0.75em;"></i>
+            <K7Icon Icon="@Phosphor.X" IconSize="@K7IconSize.Xs" Class="k7-chip-close__icon" />
         </button>
     }
 </span>

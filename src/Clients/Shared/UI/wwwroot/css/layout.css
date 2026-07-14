@@ -495,6 +495,25 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     color: var(--color-error);
 }
 
+.error-state-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.error-state-description {
+    color: var(--color-text-secondary);
+}
+
+.reconnection-overlay-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.reconnection-overlay-description {
+    color: var(--color-text-secondary);
+}
+
 /* ============================================================
    Empty layout (login pages)
    ============================================================ */

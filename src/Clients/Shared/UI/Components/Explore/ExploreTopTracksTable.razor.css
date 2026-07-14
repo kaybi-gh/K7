@@ -10,6 +10,14 @@
     text-decoration: none;
 }
 
-.explore-top-tracks__link:hover {
-    text-decoration: underline;
+.explore-top-tracks__col-rank {
+    width: 40px;
+}
+
+.explore-top-tracks__col-duration {
+    width: 80px;
+}
+
+.explore-top-tracks__col-plays {
+    width: 100px;
 }

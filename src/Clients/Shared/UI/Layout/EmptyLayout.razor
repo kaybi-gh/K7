@@ -1,5 +1,4 @@
 ﻿@inherits LayoutComponentBase
-@inject Microsoft.JSInterop.IJSRuntime JS
 @inject IStringLocalizer<EmptyLayout> L
 
 <div class="empty-layout">
@@ -9,22 +8,12 @@
         </ChildContent>
         <ErrorContent>
             <div class="error-state">
-                <p style="font-size:var(--text-lg);font-weight:600;color:var(--color-text-primary)">@L["UnexpectedError"]</p>
+                <p class="error-state-title">@L["UnexpectedError"]</p>
                 <button class="k7-btn k7-btn--filled k7-btn--primary mt-4" onclick="location.reload()">@L["Reload"]</button>
             </div>
         </ErrorContent>
     </K7ErrorBoundary>
 </div>
-
-@code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("K7.dismissPreload");
-        }
-    }
-}
 
 <K7SnackbarHost />
 

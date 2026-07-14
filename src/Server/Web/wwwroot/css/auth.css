@@ -1,4 +1,6 @@
-/* Auth & account pages - server-side SSR forms */
+/* Auth & account pages - server-side SSR forms.
+   Uses design tokens from tokens.css (--color-*, --radius-*, --space-*).
+   Raw HTML is required for SSR; prefer k7-btn / k7-field classes where applicable. */
 
 /* --- Layout --- */
 .auth-layout {

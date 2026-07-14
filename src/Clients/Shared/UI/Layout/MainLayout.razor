@@ -20,8 +20,8 @@
     {
         <div class="reconnection-overlay">
             <div class="reconnection-animation" @ref="_reconnectAnimationContainer"></div>
-            <p class="mt-4" style="font-size:var(--text-lg);font-weight:600">@L["Reconnecting"]</p>
-            <p class="mt-2" style="color:var(--color-text-secondary)">@L["ReconnectingDescription"]</p>
+            <p class="mt-4 reconnection-overlay-title">@L["Reconnecting"]</p>
+            <p class="mt-2 reconnection-overlay-description">@L["ReconnectingDescription"]</p>
         </div>
     }
 
@@ -44,8 +44,8 @@
                     <ErrorContent>
                         <div class="error-state">
                             <K7Icon Name="warning-circle"  IconSize="@K7IconSize.Xl" class="error-icon" />
-                            <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
-                            <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
+                            <p class="error-state-title">@L["UnexpectedError"]</p>
+                            <p class="error-state-description">@L["UnexpectedErrorDescription"]</p>
                             <button class="k7-btn k7-btn--filled k7-btn--primary mt-4 focusable" @onclick="Recover">@L["Retry"]</button>
                         </div>
                     </ErrorContent>
