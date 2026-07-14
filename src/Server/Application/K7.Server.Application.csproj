@@ -21,4 +21,8 @@
     <Folder Include="Common\Converters\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="K7.Server.Application.UnitTests" />
+  </ItemGroup>
+
 </Project>

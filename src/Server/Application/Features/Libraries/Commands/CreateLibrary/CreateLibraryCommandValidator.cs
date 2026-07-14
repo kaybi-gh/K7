@@ -2,11 +2,11 @@ using K7.Server.Application.Common.Interfaces;
 
 namespace K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
 
-public class CreateMediaCommandValidator : AbstractValidator<CreateLibraryCommand>
+public class CreateLibraryCommandValidator : AbstractValidator<CreateLibraryCommand>
 {
     private readonly IApplicationDbContext _context;
 
-    public CreateMediaCommandValidator(IApplicationDbContext context)
+    public CreateLibraryCommandValidator(IApplicationDbContext context)
     {
         _context = context;
 
