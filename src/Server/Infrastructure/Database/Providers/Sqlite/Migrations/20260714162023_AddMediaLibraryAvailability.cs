@@ -1,8 +1,9 @@
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
+namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     /// <inheritdoc />
     public partial class AddMediaLibraryAvailability : Migration
@@ -14,8 +15,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaLibraryAvailabilities",
                 columns: table => new
                 {
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false)
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

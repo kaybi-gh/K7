@@ -834,14 +834,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MediaId");
-
                     b.HasIndex("Hash");
 
-                    b.HasIndex("LibraryId", "Created");
+                    b.HasIndex("MediaId");
 
                     b.HasIndex("Path")
                         .IsUnique();
+
+                    b.HasIndex("LibraryId", "Created");
 
                     b.ToTable("IndexedFiles");
                 });
