@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -38,5 +39,25 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
         var counts = await GetSerieSeasonCountsAsync(list, cancellationToken);
         var pictureSizes = await GetPictureSizesAsync(list, cancellationToken);
         return list.Select(m => m.ToLiteMediaDto(counts, pictureSizes)).ToList();
+    }
+
+    public async Task<List<BaseMedia>> LoadMediasForLiteAsync(
+        IReadOnlyList<Guid> mediaIds,
+        Guid? userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (mediaIds.Count == 0)
+            return [];
+
+        var idSet = mediaIds.ToHashSet();
+        var items = await context.Medias
+            .Where(m => idSet.Contains(m.Id))
+            .ApplyLiteMappingIncludes(userId)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var itemsById = items.ToDictionary(m => m.Id);
+        return mediaIds.Where(itemsById.ContainsKey).Select(id => itemsById[id]).ToList();
     }
 }
