@@ -25,6 +25,8 @@
   <data name="BurnIn" xml:space="preserve"><value>Burn-in</value></data>
   <data name="Sidecar" xml:space="preserve"><value>Sidecar</value></data>
   <data name="DirectPlay" xml:space="preserve"><value>Direct</value></data>
+  <data name="Hardware" xml:space="preserve"><value>hardware</value></data>
+  <data name="Software" xml:space="preserve"><value>software</value></data>
   <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
   <data name="Arrow" xml:space="preserve"><value>-></value></data>
   <data name="Paused" xml:space="preserve"><value>Paused</value></data>

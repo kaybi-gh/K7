@@ -28,85 +28,71 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
     public int? SubtitleTrackIndex { get; set; }
 };
 
-public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
+public class GetStreamUriQueryHandler(
+    IApplicationDbContext context,
+    IMediaAccessGuard accessGuard,
+    ISender sender,
+    IActiveStreamTracker activeStreamTracker,
+    IFfmpegCapabilitiesService ffmpegCapabilitiesService,
+    ILogger<GetStreamUriQueryHandler> logger) : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IMediaAccessGuard _accessGuard;
-    private readonly ISender _sender;
-    private readonly IActiveStreamTracker _activeStreamTracker;
-    private readonly ILogger<GetStreamUriQueryHandler> _logger;
-
-    public GetStreamUriQueryHandler(
-        IApplicationDbContext context,
-        IMediaAccessGuard accessGuard,
-        ISender sender,
-        IActiveStreamTracker activeStreamTracker,
-        ILogger<GetStreamUriQueryHandler> logger)
-    {
-        _context = context;
-        _accessGuard = accessGuard;
-        _sender = sender;
-        _activeStreamTracker = activeStreamTracker;
-        _logger = logger;
-    }
-
     public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery request, CancellationToken cancellationToken)
     {
         Guard.Against.NullOrEmpty(request.DeviceId);
 
-        await _accessGuard.EnsureAccessByIndexedFileAsync(request.Id, cancellationToken);
+        await accessGuard.EnsureAccessByIndexedFileAsync(request.Id, cancellationToken);
 
-        var indexedFile = await _context.IndexedFiles
+        var indexedFile = await context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, indexedFile);
 
-        var device = await _context.Devices
+        var device = await context.Devices
             .FindAsync([request.DeviceId], cancellationToken);
 
         Guard.Against.NotFound((Guid)request.DeviceId, device);
 
         if (indexedFile.FileMetadata is AudioFileMetadata audioFileMetadata)
         {
-            await _context.Entry(audioFileMetadata)
+            await context.Entry(audioFileMetadata)
                 .Reference(a => a.AudioTrack)
                 .LoadAsync(cancellationToken);
 
             var (uri, decision) = GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, request);
-            _activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
+            activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
             return uri;
         }
 
         if (indexedFile.FileMetadata is VideoFileMetadata videoFileMetadata)
         {
-            await _context.Entry(videoFileMetadata)
+            await context.Entry(videoFileMetadata)
                 .Collection(v => v.AudioTracks)
                 .LoadAsync(cancellationToken);
 
-            await _context.Entry(videoFileMetadata)
+            await context.Entry(videoFileMetadata)
                 .Collection(v => v.VideoTracks)
                 .LoadAsync(cancellationToken);
 
-            await _context.Entry(videoFileMetadata)
+            await context.Entry(videoFileMetadata)
                 .Collection(v => v.SubtitleTracks)
                 .LoadAsync(cancellationToken);
 
-            var hlsSegmentsAvailable = await HlsSegmentHelper.HasSegmentsAsync(_context, request.Id, cancellationToken);
+            var hlsSegmentsAvailable = await HlsSegmentHelper.HasSegmentsAsync(context, request.Id, cancellationToken);
 
             if (!hlsSegmentsAvailable)
             {
                 await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
-                    _sender,
+                    sender,
                     request.Id,
-                    _logger,
+                    logger,
                     cancellationToken);
             }
 
             var subtitleTrackIndex = request.SubtitleTrackIndex;
             if (request.AudioTrackIndex is null)
             {
-                var preferences = await _sender.Send(
+                var preferences = await sender.Send(
                     new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = indexedFile.LibraryId },
                     cancellationToken);
 
@@ -127,12 +113,33 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             }
 
             var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable, subtitleTrackIndex);
-            _activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
+            decision = await EnrichStreamDecisionAsync(decision, cancellationToken);
+            activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
             return uri;
         }
 
         throw new InvalidOperationException(
             $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.");
+    }
+
+    private async Task<StreamDecisionDto> EnrichStreamDecisionAsync(StreamDecisionDto decision, CancellationToken cancellationToken)
+    {
+        if (decision.Mode != PlaybackMode.Transcode || string.IsNullOrEmpty(decision.StreamVideoCodec))
+            return decision;
+
+        var encoder = await ffmpegCapabilitiesService.ResolveVideoEncoderAsync(
+            decision.StreamVideoCodec,
+            decision.IsSubtitleBurnIn,
+            cancellationToken);
+
+        if (encoder is null)
+            return decision;
+
+        return decision with
+        {
+            VideoEncoder = encoder.EncoderName,
+            IsHardwareAccelerated = encoder.IsHardwareAccelerated
+        };
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
@@ -172,8 +179,12 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         var subtitleBurnInStreamIndex = selectedSubtitle is { IsTextBased: false } ? selectedSubtitle.Index : (int?)null;
         var defaultTextSubtitleTrackIndex = selectedSubtitle is { IsTextBased: true } ? selectedSubtitle.Index : (int?)null;
 
+        var resolutionExceedsDevice = device.DisplayHeight > 0
+            && selectedVideoTrack.Height > 0
+            && selectedVideoTrack.Height > device.DisplayHeight;
+
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
-        if (audioDirectSupported && videoDirectSupported)
+        if (audioDirectSupported && videoDirectSupported && !resolutionExceedsDevice)
         {
             var mimeType = Constants.ContainerMimeTypeMapping.TryGetValue(videoFileMetadata.Container, out var directMime)
                 ? directMime
@@ -208,7 +219,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         // Otherwise we go through HLS
         var videoCodecSupported = supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
 
-        var requiresVideoTranscoding = !videoCodecSupported;
+        var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
 
         // When HLS segments aren't available, force transcoding to avoid the "original"
         // quality path which requires keyframe-based segments from the database
@@ -259,7 +270,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             forcedByMissingSegments,
             videoCodecSupported,
             selectedAudioNeedsTranscode,
-            subtitleBurnInStreamIndex.HasValue);
+            subtitleBurnInStreamIndex.HasValue,
+            resolutionExceedsDevice);
         var mode = requiresVideoTranscoding ? PlaybackMode.Transcode : PlaybackMode.Transmux;
 
         var hlsDecision = new StreamDecisionDto
@@ -303,7 +315,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         bool forcedByMissingSegments,
         bool videoCodecSupported,
         bool audioNeedsTranscode,
-        bool subtitlesBurnIn)
+        bool subtitlesBurnIn,
+        bool resolutionExceedsDevice)
     {
         var reason = TranscodeReason.None;
 
@@ -313,6 +326,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 reason |= TranscodeReason.SubtitlesBurnIn;
             else if (forcedByMissingSegments)
                 reason |= TranscodeReason.HlsSegmentsUnavailable;
+            else if (resolutionExceedsDevice)
+                reason |= TranscodeReason.ResolutionNotSupported;
             else if (!videoCodecSupported)
                 reason |= TranscodeReason.VideoCodecNotSupported;
         }

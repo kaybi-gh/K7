@@ -59,6 +59,10 @@
                         <span class="stream-card__track-decision @(IsVideoTranscoded ? "stream-card__track-decision--transcode" : "stream-card__track-decision--direct")">
                             @(IsVideoTranscoded ? L["Transcode"] : L["DirectPlay"])
                         </span>
+                        @if (decision.VideoEncoder is { } encoder)
+                        {
+                            <span class="stream-card__encoder">@encoder (@(decision.IsHardwareAccelerated == true ? L["Hardware"] : L["Software"]))</span>
+                        }
                     </div>
                 }
                 @if (decision.SourceAudioCodec is not null)
