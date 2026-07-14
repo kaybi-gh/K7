@@ -118,47 +118,33 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var metadataPairs = await BuildMetadataGenrePairsQuery(mediasQuery).ToListAsync(cancellationToken);
-
-        var allPairs = metadataPairs
-            .Select(p => new GenrePair(p.Id, p.DisplayName))
-            .ToList();
+        var pairsQuery = BuildMetadataGenrePairsQuery(mediasQuery);
 
         if (!string.IsNullOrEmpty(search))
         {
-            var term = search.ToLowerInvariant();
-            allPairs = allPairs
-                .Where(p => p.DisplayName.ToLowerInvariant().Contains(term, StringComparison.Ordinal))
-                .ToList();
+            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
+            pairsQuery = pairsQuery.Where(p => p.DisplayName.ToLower().Contains(term));
         }
 
-        Dictionary<Guid, int>? playCountsByMedia = null;
-        if (userId.HasValue)
-        {
-            var scopedMediaIds = allPairs.Select(p => p.MediaId).Distinct().ToList();
-            playCountsByMedia = await context.UserMediaStates.AsNoTracking()
-                .Where(s => s.UserId == userId.Value && scopedMediaIds.Contains(s.MediaId))
-                .GroupBy(s => s.MediaId)
-                .Select(g => new { MediaId = g.Key, PlayCount = g.Sum(s => s.PlayCount) })
-                .ToDictionaryAsync(x => x.MediaId, x => x.PlayCount, cancellationToken);
-        }
-
-        var genreRows = allPairs
-            .GroupBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase)
+        var groupedQuery = pairsQuery
+            .GroupBy(p => p.DisplayName)
             .Select(g => new GenreAggregateRow
             {
-                DisplayName = g.First().DisplayName,
-                MediaCount = g.Select(x => x.MediaId).Distinct().Count(),
-                UserPlayCount = playCountsByMedia is null
-                    ? 0
-                    : g.Select(x => x.MediaId).Distinct().Sum(id => playCountsByMedia.GetValueOrDefault(id))
-            })
-            .ToList();
+                DisplayName = g.Key,
+                MediaCount = g.Select(x => x.Id).Distinct().Count(),
+                UserPlayCount = userId.HasValue
+                    ? g.Select(x => x.Id).Distinct().Sum(id =>
+                        context.UserMediaStates
+                            .Where(s => s.UserId == userId.Value && s.MediaId == id)
+                            .Select(s => (int?)s.PlayCount)
+                            .FirstOrDefault() ?? 0)
+                    : 0
+            });
 
-        var ordered = ApplyGenreOrdering(orderBy, genreRows.AsQueryable());
-        var totalCount = ordered.Count();
+        var ordered = ApplyGenreOrdering(orderBy, groupedQuery);
+        var totalCount = await ordered.CountAsync(cancellationToken);
 
-        var values = ordered
+        var values = await ordered
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(g => new MediaTagValueDto
@@ -166,7 +152,7 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
                 DisplayName = g.DisplayName,
                 MediaCount = g.MediaCount
             })
-            .ToList();
+            .ToListAsync(cancellationToken);
 
         return new MediaTagKindValuesDto
         {
@@ -240,6 +226,4 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
         public Guid Id { get; init; }
         public required string DisplayName { get; init; }
     }
-
-    private sealed record GenrePair(Guid MediaId, string DisplayName);
 }

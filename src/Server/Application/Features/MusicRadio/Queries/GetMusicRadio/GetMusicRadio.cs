@@ -314,11 +314,12 @@ public class GetMusicRadioQueryHandler(
                 return topPlayedId;
         }
 
-        var candidateIds = await query.Select(t => t.Id).ToListAsync(ct);
-        if (candidateIds.Count == 0)
-            return null;
+        var randomSeedId = await query
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync(ct);
 
-        return candidateIds[Random.Shared.Next(candidateIds.Count)];
+        return randomSeedId == Guid.Empty ? null : randomSeedId;
     }
 
     private async Task<List<BaseMedia>> LoadTracksByIdsAsync(

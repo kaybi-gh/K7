@@ -135,7 +135,7 @@ public class GetSimilarMusicArtistsQueryHandler(
             .Include(a => a.Pictures)
                 .ThenInclude(p => p.Variants)
             .Include(a => a.Ratings)
-            .Where(a => a.Id != excludeArtistId && a.Title != null)
+            .Where(a => a.Id != excludeArtistId && a.Title != null && lowered.Contains(a.Title.ToLower()))
             .AsSplitQuery();
 
         if (userId.HasValue)
@@ -144,7 +144,6 @@ public class GetSimilarMusicArtistsQueryHandler(
         var artists = await query.ToListAsync(cancellationToken);
 
         return artists
-            .Where(a => lowered.Contains(a.Title!.ToLowerInvariant()))
             .GroupBy(a => a.Title!, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
     }
