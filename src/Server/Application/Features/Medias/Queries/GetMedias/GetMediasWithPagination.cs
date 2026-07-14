@@ -118,8 +118,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         request = request with { LibraryIds = libraryIds, LibraryGroupIds = null };
 
         var filterQuery = context.Medias
-            .AsNoTracking()
-            .AsQueryable();
+            .AsNoTracking();
 
         filterQuery = await ApplyFiltersAsync(request, filterQuery, userId, cancellationToken);
 
@@ -151,8 +150,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
-            .AsNoTracking()
-            .AsQueryable();
+            .AsNoTracking();
 
         if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true
             || request.MediaTypes == null)
@@ -198,7 +196,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         }
 
         var items = await dataQuery.AsSplitQuery().ToListAsync(cancellationToken);
-        var ordered = pageIds.Select(id => items.First(m => m.Id == id)).ToList();
+        var itemsById = items.ToDictionary(m => m.Id);
+        var ordered = pageIds.Select(id => itemsById[id]).ToList();
 
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
@@ -349,7 +348,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         DateTime recentCutoff,
         IQueryable<MetadataProviderRating> providerRatings)
     {
-        ArgumentException.ThrowIfNullOrEmpty(nameof(orderBy));
         IOrderedQueryable<BaseMedia>? orderedQueryable = null;
 
         if (orderBy == null || orderBy.Count == 0)
