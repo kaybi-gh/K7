@@ -90,3 +90,16 @@
     /* --- Breakpoints (for JS usage / reference - use @media in CSS) --- */
     /* xs: 0, sm: 600px, md: 960px, lg: 1280px, xl: 1920px */
 }
+
+@media (max-width: 599.98px) {
+    :root {
+        /* Compact media card widths (carousels, grids) */
+        --media-card-compact-poster-width: 30vw;
+        --media-card-compact-backdrop-width: 60vw;
+        --media-card-compact-person-width: 120px;
+
+        /* Grid column floors - align fluid browse grids with carousel peek sizing */
+        --media-card-grid-column-min-poster: 108px;
+        --media-card-grid-column-min-backdrop: 140px;
+    }
+}

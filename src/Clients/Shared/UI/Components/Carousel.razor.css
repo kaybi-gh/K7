@@ -108,15 +108,15 @@
 @media (max-width: 599.98px) {
     .carousel-container {
         gap: var(--carousel-gap, 15px);
-        --carousel-slide-width: 30vw;
+        --carousel-slide-width: var(--media-card-compact-poster-width);
     }
 
     .carousel-container:has(.media-card--backdrop) {
-        --carousel-slide-width: 60vw;
+        --carousel-slide-width: var(--media-card-compact-backdrop-width);
     }
 
     .carousel-container:has(.personrole-item) {
-        --carousel-slide-width: 120px;
+        --carousel-slide-width: var(--media-card-compact-person-width);
     }
 
     .carousel-container:has(.media-review-card) {

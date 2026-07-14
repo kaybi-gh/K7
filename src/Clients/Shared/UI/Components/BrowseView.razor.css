@@ -558,7 +558,7 @@
     }
 
     .browse-view:has(.k7-jump-index) {
-        --browse-jump-index-inset: 32px;
+        --browse-jump-index-inset: 28px;
     }
 
     .browse-view:has(.k7-jump-index) ::deep .k7-virtual-grid,
@@ -592,6 +592,7 @@
     .browse-view-simple-grid {
         padding: 0 var(--space-3) var(--space-3);
         gap: var(--space-3) var(--space-3);
+        grid-template-columns: repeat(auto-fill, minmax(var(--media-card-grid-column-min-poster), 1fr));
     }
 
     .browse-view-simple-grid ::deep .media-card {

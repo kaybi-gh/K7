@@ -93,6 +93,6 @@
 
 @media (max-width: 599.98px) {
     .music-radio-presets__item {
-        width: 30vw;
+        width: var(--media-card-compact-poster-width);
     }
 }

@@ -280,7 +280,7 @@
     }
 
     .media-card--backdrop .media-card-container {
-        width: 60vw;
+        width: var(--media-card-compact-backdrop-width);
         aspect-ratio: 16 / 9;
     }
 
