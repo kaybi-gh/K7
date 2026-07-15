@@ -9,5 +9,6 @@ public enum TranscodeReason
     ContainerNotSupported = 1 << 2,
     HlsSegmentsUnavailable = 1 << 3,
     SubtitlesBurnIn = 1 << 4,
-    ResolutionNotSupported = 1 << 5
+    ResolutionNotSupported = 1 << 5,
+    QualityDownscale = 1 << 6
 }

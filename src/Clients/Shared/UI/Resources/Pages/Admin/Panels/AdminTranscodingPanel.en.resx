@@ -26,8 +26,11 @@
   <data name="EncoderHardwarePreferred" xml:space="preserve"><value>Hardware preferred</value></data>
   <data name="EnableHdrTonemap" xml:space="preserve"><value>HDR to SDR tonemapping</value></data>
   <data name="MaxConcurrentTranscodes" xml:space="preserve"><value>Max concurrent transcodes</value></data>
-  <data name="TranscodeTempQuotaMb" xml:space="preserve"><value>Temp storage quota (MB, 0 = unlimited)</value></data>
-  <data name="EncoderThrottleBufferSegments" xml:space="preserve"><value>Encoder buffer segments</value></data>
+  <data name="MaxConcurrentTranscodesHint" xml:space="preserve"><value>0 = unlimited. Caps how many ffmpeg transcode sessions run in parallel.</value></data>
+  <data name="TranscodeTempQuotaMb" xml:space="preserve"><value>Temp storage quota (MB)</value></data>
+  <data name="TranscodeTempQuotaMbHint" xml:space="preserve"><value>0 = unlimited. Max size of the temporary HLS segment folder.</value></data>
+  <data name="EncoderThrottleBufferSegments" xml:space="preserve"><value>Encoder lookahead segments</value></data>
+  <data name="EncoderThrottleBufferSegmentsHint" xml:space="preserve"><value>How many HLS segments ffmpeg generates ahead of playback. Higher = smoother playback, more CPU/GPU load.</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="TestEncoder" xml:space="preserve"><value>Test encoder</value></data>
   <data name="CapabilitiesTitle" xml:space="preserve"><value>FFmpeg capabilities</value></data>

@@ -28,10 +28,13 @@
                 <K7Switch Label="@L["EnableHdrTonemap"]" Value="_settings.EnableHdrTonemap" ValueChanged="v => _settings = _settings with { EnableHdrTonemap = v }" />
 
                 <K7TextField TValue="int" Label="@L["MaxConcurrentTranscodes"]" Value="_settings.MaxConcurrentTranscodes" ValueChanged="v => _settings = _settings with { MaxConcurrentTranscodes = v }" Type="number" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["MaxConcurrentTranscodesHint"]</span>
 
                 <K7TextField TValue="int" Label="@L["TranscodeTempQuotaMb"]" Value="_settings.TranscodeTempQuotaMb" ValueChanged="v => _settings = _settings with { TranscodeTempQuotaMb = v }" Type="number" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["TranscodeTempQuotaMbHint"]</span>
 
                 <K7TextField TValue="int" Label="@L["EncoderThrottleBufferSegments"]" Value="_settings.EncoderThrottleBufferSegments" ValueChanged="v => _settings = _settings with { EncoderThrottleBufferSegments = v }" Type="number" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["EncoderThrottleBufferSegmentsHint"]</span>
 
                 <div class="d-flex align-center gap-2">
                     <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>

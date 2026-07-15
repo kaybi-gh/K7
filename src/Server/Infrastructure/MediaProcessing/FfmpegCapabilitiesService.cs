@@ -74,6 +74,9 @@ public partial class FfmpegCapabilitiesService(
         return (exitCode, string.Join('\n', stdout), string.Join('\n', stderr));
     }
 
+    private const int TestFrameWidth = 320;
+    private const int TestFrameHeight = 240;
+
     public async Task<FfmpegTranscodeTestResultDto> TestEncoderAsync(CancellationToken cancellationToken = default)
     {
         var capabilities = await GetCapabilitiesAsync(cancellationToken);
@@ -91,7 +94,7 @@ public partial class FfmpegCapabilitiesService(
         }
 
         var ffmpegPath = GlobalFFOptions.GetFFMpegBinaryPath();
-        var args = $"-hide_banner -f lavfi -i color=c=black:s=64x64:d=0.1 {selection.EncoderArguments} -f null -";
+        var args = $"-hide_banner -f lavfi -i color=c=black:s={TestFrameWidth}x{TestFrameHeight}:d=0.1 {selection.EncoderArguments} -f null -";
 
         try
         {

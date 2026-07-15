@@ -430,6 +430,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         TranscodeReason.HlsSegmentsUnavailable => "HLS segments",
         TranscodeReason.SubtitlesBurnIn => "Subtitles burn-in",
         TranscodeReason.ResolutionNotSupported => "Resolution",
+        TranscodeReason.QualityDownscale => "Quality downscale",
         _ => reason.ToString()
     };
 

@@ -26,8 +26,11 @@
   <data name="EncoderHardwarePreferred" xml:space="preserve"><value>Mat&#233;riel pr&#233;f&#233;r&#233;</value></data>
   <data name="EnableHdrTonemap" xml:space="preserve"><value>Tonemapping HDR vers SDR</value></data>
   <data name="MaxConcurrentTranscodes" xml:space="preserve"><value>Transcodes simultan&#233;s max.</value></data>
-  <data name="TranscodeTempQuotaMb" xml:space="preserve"><value>Quota temporaire (Mo, 0 = illimit&#233;)</value></data>
-  <data name="EncoderThrottleBufferSegments" xml:space="preserve"><value>Segments tampon encodeur</value></data>
+  <data name="MaxConcurrentTranscodesHint" xml:space="preserve"><value>0 = illimit&#233;. Limite le nombre de sessions ffmpeg actives en parall&#232;le.</value></data>
+  <data name="TranscodeTempQuotaMb" xml:space="preserve"><value>Quota temporaire (Mo)</value></data>
+  <data name="TranscodeTempQuotaMbHint" xml:space="preserve"><value>0 = illimit&#233;. Taille max. du dossier de segments HLS temporaires.</value></data>
+  <data name="EncoderThrottleBufferSegments" xml:space="preserve"><value>Segments d'avance encodeur</value></data>
+  <data name="EncoderThrottleBufferSegmentsHint" xml:space="preserve"><value>Nombre de segments HLS que ffmpeg pr&#233;pare en avance par rapport &#224; la lecture. Plus &#233;lev&#233; = moins de risque de buffering, plus de charge CPU/GPU.</value></data>
   <data name="Save" xml:space="preserve"><value>Sauvegarder</value></data>
   <data name="TestEncoder" xml:space="preserve"><value>Tester l'encodeur</value></data>
   <data name="CapabilitiesTitle" xml:space="preserve"><value>Capacit&#233;s FFmpeg</value></data>
