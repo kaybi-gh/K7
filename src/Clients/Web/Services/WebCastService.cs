@@ -31,14 +31,20 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
 
     public async Task StartDiscoveryAsync()
     {
+        if (_dotNetRef is not null)
+            await ReleaseDotNetRefAsync();
+
         _dotNetRef = DotNetObjectReference.Create(this);
         _isAvailable = await _jsRuntime.InvokeAsync<bool>("K7Cast.init", _dotNetRef);
         StateChanged?.Invoke();
     }
 
-    public Task StopDiscoveryAsync()
+    public async Task StopDiscoveryAsync()
     {
-        return _jsRuntime.InvokeVoidAsync("K7Cast.dispose").AsTask();
+        await ReleaseDotNetRefAsync();
+        _isAvailable = false;
+        _isCasting = false;
+        StateChanged?.Invoke();
     }
 
     public async Task CastAsync(CastMediaRequest request)
@@ -122,11 +128,16 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_dotNetRef is not null)
-        {
-            await _jsRuntime.InvokeVoidAsync("K7Cast.dispose");
-            _dotNetRef.Dispose();
-            _dotNetRef = null;
-        }
+        await ReleaseDotNetRefAsync();
+    }
+
+    private async Task ReleaseDotNetRefAsync()
+    {
+        if (_dotNetRef is null)
+            return;
+
+        await _jsRuntime.InvokeVoidAsync("K7Cast.dispose");
+        _dotNetRef.Dispose();
+        _dotNetRef = null;
     }
 }
