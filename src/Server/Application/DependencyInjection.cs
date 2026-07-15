@@ -108,6 +108,8 @@ public static class DependencyInjection
         services.AddScoped<DiagnosticFixBatchBuilder>();
         services.AddScoped<IHomeLayoutMaintenanceService, HomeLayoutMaintenanceService>();
         services.AddScoped<INextEpisodeEnqueueService, NextEpisodeEnqueueService>();
+        services.AddSingleton<ITranscodeSettingsProvider, TranscodeSettingsProvider>();
+        services.AddScoped<IHomeRecommendationService, HomeRecommendationService>();
 
         // Outbound Notifications
         services.AddSingleton<NotificationConditionEvaluator>();
@@ -173,6 +175,7 @@ public static class DependencyInjection
         services.AddScoped<IFederationSocialPolicyService, FederationSocialPolicyService>();
         services.AddScoped<IUserFederationPrivacyService, UserFederationPrivacyService>();
         services.AddScoped<IVisibilityGrantService, VisibilityGrantService>();
+        services.AddScoped<IPeerConnectivityService, PeerConnectivityService>();
         services.AddScoped<IFederationSocialConsumerService, FederationSocialConsumerService>();
         services.AddScoped<ISocialUserProfileService, SocialUserProfileService>();
         services.AddSingleton<IFederationViewerAssertionService, FederationViewerAssertionService>();

@@ -43,6 +43,7 @@
   <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalités</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>
+  <data name="Transcoding" xml:space="preserve"><value>Transcodage</value></data>
   <data name="AudioPlayback" xml:space="preserve"><value>Lecture audio</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Federation" xml:space="preserve"><value>Fédération</value></data>
