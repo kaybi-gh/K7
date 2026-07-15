@@ -1,6 +1,5 @@
-using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Settings;
+using K7.Server.Application.Common.Settings;
 using K7.Shared.Dtos;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -27,7 +26,7 @@ public class FederationGuardMiddleware(RequestDelegate next)
         var flags = await memoryCache.GetOrCreateAsync(FeatureFlagsCacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = FeatureFlagsCacheDuration;
-            return await GetFeatureFlagsAsync(serverSettingsService, context.RequestAborted);
+            return await serverSettingsService.GetFeatureFlagsAsync(context.RequestAborted);
         }) ?? new ServerFeatureFlagsDto();
 
         if (!flags.FederationEnabled)
@@ -51,14 +50,5 @@ public class FederationGuardMiddleware(RequestDelegate next)
         }
 
         await next(context);
-    }
-
-    private static async Task<ServerFeatureFlagsDto> GetFeatureFlagsAsync(IServerSettingsService serverSettingsService, CancellationToken cancellationToken)
-    {
-        var json = await serverSettingsService.GetAsync(ServerSettingKeys.FeatureFlags, cancellationToken);
-        if (json is not null)
-            return JsonSerializer.Deserialize<ServerFeatureFlagsDto>(json) ?? new ServerFeatureFlagsDto();
-
-        return new ServerFeatureFlagsDto();
     }
 }
