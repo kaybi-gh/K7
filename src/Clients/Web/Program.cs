@@ -6,7 +6,6 @@ using K7.Clients.Shared.Services.K7Server;
 using K7.Clients.Web.Services;
 using K7.Shared.Interfaces;
 using K7.Shared.Services;
-using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
 
@@ -113,17 +112,20 @@ builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7Snackba
 builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
 builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();
 
-builder.Services.AddHttpClient("BackendAPI", client =>
-{
-    client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress + "/bff");
-})
-.AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
-
 var wasmHost = builder.Build();
 
 var js = wasmHost.Services.GetRequiredService<IJSRuntime>();
-var cultureName = await js.InvokeAsync<string?>("blazorCulture.get");
-var culture = new CultureInfo(cultureName ?? "en");
+CultureInfo culture;
+try
+{
+    var cultureName = await js.InvokeAsync<string?>("blazorCulture.get");
+    culture = CultureInfo.GetCultureInfo(cultureName ?? "en");
+}
+catch
+{
+    culture = CultureInfo.GetCultureInfo("en");
+}
+
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;
 
