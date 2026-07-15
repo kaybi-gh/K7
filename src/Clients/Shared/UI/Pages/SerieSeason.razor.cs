@@ -269,6 +269,13 @@ public partial class SerieSeason : IAsyncDisposable
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
+        double? startPosition = null;
+        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            startPosition = episode.UserState.LastPlaybackPosition;
+        }
+
         // Try local file first, then remote
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
         if (indexedFile is not null)
@@ -294,13 +301,8 @@ public partial class SerieSeason : IAsyncDisposable
                 videoMetadata.Thumbnails?.Uri?.ToString(),
                 episode.Id,
                 episodeTitle,
-                coverUrl);
-
-            if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-                && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-            {
-                PlayerService.Seek(episode.UserState.LastPlaybackPosition);
-            }
+                coverUrl,
+                startPosition);
             return;
         }
 
@@ -327,13 +329,8 @@ public partial class SerieSeason : IAsyncDisposable
             remoteVideoMetadata?.VideoResolution,
             episode.Id,
             epTitle,
-            cover);
-
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            PlayerService.Seek(episode.UserState.LastPlaybackPosition);
-        }
+            cover,
+            startPosition);
     }
 
     private void GoToPreviousSeason()

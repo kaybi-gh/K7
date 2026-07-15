@@ -232,13 +232,15 @@ public partial class Movie : IAsyncDisposable
         PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress), indexedFileId: indexedFileId);
 
         var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl);
 
+        double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
-            PlayerService.Seek(_movie.UserState.LastPlaybackPosition);
+            startPosition = _movie.UserState.LastPlaybackPosition;
         }
+
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl, startPosition);
     }
 
     private bool HasPlayableFiles()
@@ -258,6 +260,13 @@ public partial class Movie : IAsyncDisposable
         var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
         var videoMetadata = details?.FileMetadata as VideoFileMetadataDto;
 
+        double? startPosition = null;
+        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            startPosition = _movie.UserState.LastPlaybackPosition;
+        }
+
         await PlayerService.PlayRemoteIndexedFileAsync(
             remoteFile.Id,
             videoMetadata?.AudioTracks ?? [],
@@ -267,13 +276,8 @@ public partial class Movie : IAsyncDisposable
             videoMetadata?.VideoResolution,
             _movie.Id,
             _movie.Title,
-            coverUrl);
-
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            PlayerService.Seek(_movie.UserState.LastPlaybackPosition);
-        }
+            coverUrl,
+            startPosition);
     }
 
     private async Task OpenPlaybackOptionsAsync()

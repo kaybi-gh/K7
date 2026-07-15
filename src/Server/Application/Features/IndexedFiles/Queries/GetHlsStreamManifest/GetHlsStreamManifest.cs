@@ -32,7 +32,8 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.DefaultSubtitleTrackIndex), query.DefaultSubtitleTrackIndex?.ToString() },
             { nameof(query.SubtitleBurnInStreamIndex), query.SubtitleBurnInStreamIndex?.ToString() },
             { nameof(query.Quality), query.Quality },
-            { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) }
+            { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) },
+            { nameof(query.StartSeconds), query.StartSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture) }
         };
 
         var filteredParams = queryParams
@@ -84,6 +85,10 @@ public record GetHlsStreamManifestQuery : IRequest<HttpContentResult>
     public int? SubtitleBurnInStreamIndex { get; set; }
     public string? Quality { get; set; }
     public Dictionary<int, string>? AudioTrackTranscodings { get; set; }
+    /// <summary>
+    /// Optional resume offset (seconds). Propagated to media playlists as #EXT-X-START.
+    /// </summary>
+    public double? StartSeconds { get; set; }
 };
 
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, HttpContentResult>
@@ -91,6 +96,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
     private readonly IActiveStreamTracker _activeStreamTracker;
+    private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService;
     private readonly ISender _sender;
     private readonly ILogger<GetHlsStreamManifestQueryHandler> _logger;
 
@@ -98,12 +104,14 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         IApplicationDbContext context,
         IMediaAccessGuard accessGuard,
         IActiveStreamTracker activeStreamTracker,
+        IFfmpegCapabilitiesService ffmpegCapabilitiesService,
         ISender sender,
         ILogger<GetHlsStreamManifestQueryHandler> logger)
     {
         _context = context;
         _accessGuard = accessGuard;
         _activeStreamTracker = activeStreamTracker;
+        _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
         _sender = sender;
         _logger = logger;
     }
@@ -152,6 +160,18 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             }
         }
 
+        if (indexedFile.FileMetadata is VideoFileMetadata videoMetadataForQuality)
+            ApplyQualityDownscaleIfRequested(videoMetadataForQuality, query);
+
+        if (indexedFile.FileMetadata is VideoFileMetadata)
+        {
+            await StreamDecisionEnrichment.TryEnrichAndUpdateTrackerAsync(
+                query.StreamSessionId,
+                _activeStreamTracker,
+                _ffmpegCapabilitiesService,
+                cancellationToken);
+        }
+
         var masterPlaylist = indexedFile.FileMetadata switch
         {
             AudioFileMetadata x => GenerateAudioFileMasterPlaylist(x, query),
@@ -160,6 +180,39 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 $"Indexed file has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.")
         };
         return new TextHttpContentResult(masterPlaylist, "application/vnd.apple.mpegurl");
+    }
+
+    private void ApplyQualityDownscaleIfRequested(
+        VideoFileMetadata videoMetadata,
+        GetHlsStreamManifestQuery query)
+    {
+        if (string.IsNullOrEmpty(query.Quality) || query.Quality == "original")
+            return;
+
+        var fileResolution = Constants.VideoQualities.Single(x => x.Key == videoMetadata.VideoResolution).Value;
+        var requestedQuality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
+        if (requestedQuality.Value is null || requestedQuality.Value.Height >= fileResolution.Height)
+            return;
+
+        var effectiveVideoCodec = query.TranscodingVideoCodec ?? "h264";
+
+        var originalVideoTrack = videoMetadata.VideoTracks
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .FirstOrDefault();
+
+        var sourceResolution = originalVideoTrack is { Width: > 0, Height: > 0 }
+            ? $"{originalVideoTrack.Width}x{originalVideoTrack.Height}"
+            : $"{fileResolution.Width}x{fileResolution.Height}";
+
+        var existing = _activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision;
+        _activeStreamTracker.UpdateStreamDecision(
+            query.StreamSessionId,
+            StreamDecisionExtensions.ApplyQualityDownscale(
+                existing,
+                requestedQuality.Value,
+                effectiveVideoCodec,
+                sourceResolution));
     }
 
     private async Task LoadFileTracksAsync(BaseFileMetadata? fileMetadata, CancellationToken cancellationToken)
@@ -201,6 +254,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         if (needsTranscoding)
             trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+
+        AppendStartSeconds(trackAudioParams, query.StartSeconds);
 
         var audioQueryString = "?" + string.Join("&", trackAudioParams);
 
@@ -294,6 +349,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
             if (audioTrackTranscodings.TryGetValue(track.Index, out var transcodingCodec))
                 trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+
+            AppendStartSeconds(trackAudioParams, query.StartSeconds);
 
             var audioQueryString = "?" + string.Join("&", trackAudioParams);
 
@@ -408,6 +465,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         if (query.SubtitleBurnInStreamIndex.HasValue)
             videoQueryParams.Add($"SubtitleBurnInStreamIndex={query.SubtitleBurnInStreamIndex.Value}");
 
+        AppendStartSeconds(videoQueryParams, query.StartSeconds);
+
         var videoQueryString = "?" + string.Join("&", videoQueryParams);
         playlistUrl += videoQueryString;
 
@@ -421,4 +480,13 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
     private static string EscapeHlsAttribute(string value) =>
         value.Replace("\"", "'");
+
+    private static void AppendStartSeconds(List<string> queryParams, double? startSeconds)
+    {
+        if (startSeconds is > 0)
+        {
+            queryParams.Add(
+                $"startSeconds={startSeconds.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}");
+        }
+    }
 }

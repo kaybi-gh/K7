@@ -40,7 +40,9 @@ else if (PlayerService.IsVisible)
                 @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
                 {
                 <video id="video-player" class="video-js" @ref="_player">
-                    @if (!string.IsNullOrEmpty(SourceUri))
+                    @* Omit <source> when resuming mid-stream so Video.js does not start buffering
+                       segment 0 before changeSourceAndSeek / #EXT-X-START can apply. *@
+                    @if (!string.IsNullOrEmpty(SourceUri) && PlayerService.Source?.PendingSeekTime is null)
                     {
                         <source src="@SourceUri" type="@SourceMimeType" />
                     }

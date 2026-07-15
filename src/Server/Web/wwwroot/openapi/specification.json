@@ -5393,6 +5393,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
           }
         ],
         "responses": {
@@ -5443,6 +5455,18 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
             }
           }
         ],
@@ -5654,6 +5678,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
           }
         ],
         "responses": {
@@ -5741,6 +5777,18 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
             }
           }
         ],
@@ -6008,6 +6056,18 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
           }
         ],
         "responses": {
@@ -6065,6 +6125,18 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "startSeconds",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
             }
           }
         ],
@@ -18260,6 +18332,12 @@
               "string"
             ]
           },
+          "streamResolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "selectedAudioTrackIndex": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -18336,6 +18414,12 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "audioEncoder": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }

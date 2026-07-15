@@ -32,7 +32,8 @@ public record GetHlsVideoStreamIndexQuery(
     string VideoResolutionIdentifier,
     Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
-    int? SubtitleBurnInStreamIndex = null) : IRequest<HttpContentResult>;
+    int? SubtitleBurnInStreamIndex = null,
+    double? StartSeconds = null) : IRequest<HttpContentResult>;
 
 public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, HttpContentResult>
 {
@@ -112,7 +113,8 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             segmentDurations,
             query.StreamSessionId,
             effectiveTranscodingVideoCodec,
-            query.SubtitleBurnInStreamIndex);
+            query.SubtitleBurnInStreamIndex,
+            query.StartSeconds);
         return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
@@ -120,7 +122,8 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         double[] segmentDurations,
         Guid streamSessionId,
         string? transcodingVideoCodec,
-        int? subtitleBurnInStreamIndex)
+        int? subtitleBurnInStreamIndex,
+        double? startSeconds)
     {
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
@@ -144,6 +147,14 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         content.AppendLine("#EXT-X-VERSION:7"); // Version 7 required for fMP4
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
         content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
+
+        // Tell HLS clients to begin at the resume position instead of segment 0.
+        if (startSeconds is > 0)
+        {
+            var offset = startSeconds.Value.ToString("F3", CultureInfo.InvariantCulture);
+            content.AppendLine($"#EXT-X-START:TIME-OFFSET={offset},PRECISE=YES");
+        }
+
         content.AppendLine($"#EXT-X-MAP:URI=\"segments/init.m4s{queryString}\"");
 
         for (int i = 0; i < segmentDurations.Length; i++)

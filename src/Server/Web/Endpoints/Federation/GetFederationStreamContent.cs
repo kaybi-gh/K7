@@ -46,7 +46,10 @@ public class GetFederationStreamContent : IEndpoint
                     DefaultSubtitleTrackIndex = int.TryParse(query["DefaultSubtitleTrackIndex"], out var dsi) ? dsi : null,
                     SubtitleBurnInStreamIndex = int.TryParse(query["SubtitleBurnInStreamIndex"], out var sbi) ? sbi : null,
                     Quality = query["Quality"].FirstOrDefault(),
-                    AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(query["AudioTrackTranscodings"].FirstOrDefault())
+                    AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(query["AudioTrackTranscodings"].FirstOrDefault()),
+                    StartSeconds = double.TryParse(query["startSeconds"].FirstOrDefault(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var manifestStart) && manifestStart > 0
+                        ? manifestStart
+                        : null
                 };
                 return (await sender.Send(manifestQuery, cancellationToken)).ToIResult();
             }
@@ -58,9 +61,13 @@ public class GetFederationStreamContent : IEndpoint
                 var query = httpContext.Request.Query;
 
                 var streamSessId = Guid.TryParse(query["streamSessionId"], out var vssId) ? vssId : sessionId;
+                double? videoStart = double.TryParse(query["startSeconds"].FirstOrDefault(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vs) && vs > 0
+                    ? vs
+                    : null;
                 var videoIndexQuery = new GetHlsVideoStreamIndexQuery(
                     indexedFileId, quality, streamSessId, query["TranscodingVideoCodec"].FirstOrDefault(),
-                    int.TryParse(query["SubtitleBurnInStreamIndex"], out var vSubBurn) ? vSubBurn : null);
+                    int.TryParse(query["SubtitleBurnInStreamIndex"], out var vSubBurn) ? vSubBurn : null,
+                    videoStart);
                 return (await sender.Send(videoIndexQuery, cancellationToken)).ToIResult();
             }
 
@@ -86,8 +93,12 @@ public class GetFederationStreamContent : IEndpoint
                 var query = httpContext.Request.Query;
 
                 var audioStreamSessId = Guid.TryParse(query["streamSessionId"], out var assId) ? assId : sessionId;
+                double? audioStart = double.TryParse(query["startSeconds"].FirstOrDefault(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var asStart) && asStart > 0
+                    ? asStart
+                    : null;
                 var audioIndexQuery = new GetHlsAudioStreamIndexQuery(
-                    indexedFileId, trackIndex, audioStreamSessId, query["TranscodingAudioCodec"].FirstOrDefault());
+                    indexedFileId, trackIndex, audioStreamSessId, query["TranscodingAudioCodec"].FirstOrDefault(),
+                    audioStart);
                 return (await sender.Send(audioIndexQuery, cancellationToken)).ToIResult();
             }
 

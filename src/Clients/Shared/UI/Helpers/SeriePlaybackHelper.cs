@@ -48,6 +48,13 @@ internal static class SeriePlaybackHelper
         if (episodeMedia is not SerieEpisodeDto episodeDto)
             return;
 
+        double? startPosition = null;
+        if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            startPosition = episode.UserState.LastPlaybackPosition;
+        }
+
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
         if (indexedFile is not null)
         {
@@ -74,13 +81,8 @@ internal static class SeriePlaybackHelper
                 videoMetadata.Thumbnails?.Uri?.ToString(),
                 episode.Id,
                 episodeTitle,
-                coverUrl);
-
-            if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-                && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-            {
-                playerService.Seek(episode.UserState.LastPlaybackPosition);
-            }
+                coverUrl,
+                startPosition);
 
             return;
         }
@@ -109,13 +111,8 @@ internal static class SeriePlaybackHelper
             remoteVideoMetadata?.VideoResolution,
             episode.Id,
             epTitle,
-            cover);
-
-        if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            playerService.Seek(episode.UserState.LastPlaybackPosition);
-        }
+            cover,
+            startPosition);
     }
 
     private static async Task<List<LiteSerieEpisodeDto>> LoadPlayableEpisodesAsync(

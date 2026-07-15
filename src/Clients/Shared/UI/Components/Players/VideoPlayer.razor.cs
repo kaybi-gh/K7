@@ -26,11 +26,14 @@ public partial class VideoPlayer : IAsyncDisposable
         {
             if (PlayerService.IsVisible && !_isInitialized)
             {
+                var pendingSeek = PlayerService.Source?.PendingSeekTime;
+                // Never autoplay from the embedded <source> when resuming mid-stream -
+                // that would fetch segment 0 before changeSourceAndSeek can run.
                 var options = new
                 {
                     volume = PlayerService.Volume,
                     muted = PlayerService.IsMuted,
-                    autoplay = _playPending
+                    autoplay = _playPending && pendingSeek is null
                 };
 
                 _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -39,7 +42,12 @@ public partial class VideoPlayer : IAsyncDisposable
                 _isInitialized = true;
                 _lastPlayerId = _player.Id;
 
-                if (_playPending && !string.IsNullOrEmpty(_player.Id))
+                if (pendingSeek is double seekTime && !string.IsNullOrEmpty(SourceUri))
+                {
+                    _playPending = false;
+                    await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+                }
+                else if (_playPending && !string.IsNullOrEmpty(_player.Id))
                 {
                     _playPending = false;
                     await JSRuntime.InvokeVoidAsync("play", _player.Id);

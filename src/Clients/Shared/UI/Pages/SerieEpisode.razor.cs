@@ -186,6 +186,13 @@ public partial class SerieEpisode : IAsyncDisposable
 
         var episodeTitle = _episode.Title ?? $"S{SeasonNumber:D2}E{EpisodeNumber:D2}";
 
+        double? startPosition = null;
+        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && _episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            startPosition = _episode.UserState.LastPlaybackPosition;
+        }
+
         await PlayerService.PlayIndexedFileAsync(
             _indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
@@ -196,13 +203,8 @@ public partial class SerieEpisode : IAsyncDisposable
             videoMetadata.Thumbnails?.Uri?.ToString(),
             _episode.Id,
             episodeTitle,
-            _stillUrl);
-
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && _episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            PlayerService.Seek(_episode.UserState.LastPlaybackPosition);
-        }
+            _stillUrl,
+            startPosition);
     }
 
     private async Task OpenEditMetadataAsync()
