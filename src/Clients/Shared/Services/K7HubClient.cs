@@ -286,97 +286,97 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
     public async Task JoinAdminStreamsGroupAsync()
     {
         _joinedGroups.Add(HubGroups.AdminStreams);
-        await InvokeIfConnectedAsync("JoinAdminStreamsGroup");
+        await SendIfConnectedAsync("JoinAdminStreamsGroup");
     }
 
     public async Task LeaveAdminStreamsGroupAsync()
     {
         _joinedGroups.Remove(HubGroups.AdminStreams);
-        await InvokeIfConnectedAsync("LeaveAdminStreamsGroup");
+        await SendIfConnectedAsync("LeaveAdminStreamsGroup");
     }
 
     public async Task JoinAdminFederationGroupAsync()
     {
         _joinedGroups.Add(HubGroups.AdminFederation);
-        await InvokeIfConnectedAsync("JoinAdminFederationGroup");
+        await SendIfConnectedAsync("JoinAdminFederationGroup");
     }
 
     public async Task LeaveAdminFederationGroupAsync()
     {
         _joinedGroups.Remove(HubGroups.AdminFederation);
-        await InvokeIfConnectedAsync("LeaveAdminFederationGroup");
+        await SendIfConnectedAsync("LeaveAdminFederationGroup");
     }
 
     public Task RequestRemotePlaybackAsync(Guid targetDeviceId, RemotePlaybackRequestDto request) =>
-        InvokeIfConnectedAsync("RequestRemotePlayback", targetDeviceId, request);
+        SendIfConnectedAsync("RequestRemotePlayback", targetDeviceId, request);
 
     public Task SendRemoteTransportCommandAsync(Guid targetDeviceId, RemoteTransportCommandDto command) =>
-        InvokeIfConnectedAsync("SendRemoteTransportCommand", targetDeviceId, command);
+        SendIfConnectedAsync("SendRemoteTransportCommand", targetDeviceId, command);
 
     public Task RequestConnectedDevicesAsync() =>
-        InvokeIfConnectedAsync("GetConnectedDevices");
+        SendIfConnectedAsync("GetConnectedDevices");
 
     public Task ReportRemotePlaybackStateAsync(Guid controllerDeviceId, RemotePlaybackStateDto state) =>
-        InvokeIfConnectedAsync("ReportRemotePlaybackState", controllerDeviceId, state);
+        SendIfConnectedAsync("ReportRemotePlaybackState", controllerDeviceId, state);
 
     // --- SyncPlay ---
 
-    public Task CreateSyncPlayGroupAsync(SyncPlayCreateGroupDto request) =>
-        InvokeIfConnectedAsync("CreateSyncPlayGroup", request);
+    public Task<bool> CreateSyncPlayGroupAsync(SyncPlayCreateGroupDto request) =>
+        TrySendIfConnectedAsync("CreateSyncPlayGroup", request);
 
     public Task JoinSyncPlayGroupAsync(Guid groupId, string? guestToken = null, string? guestDisplayName = null) =>
-        InvokeIfConnectedAsync("JoinSyncPlayGroup", groupId, guestToken, guestDisplayName);
+        SendIfConnectedAsync("JoinSyncPlayGroup", groupId, guestToken, guestDisplayName);
 
     public Task LeaveSyncPlayGroupAsync(Guid groupId) =>
-        InvokeIfConnectedAsync("LeaveSyncPlayGroup", groupId);
+        SendIfConnectedAsync("LeaveSyncPlayGroup", groupId);
 
     public Task SyncPlayCommandAsync(Guid groupId, SyncPlayCommandType commandType, double? value = null) =>
-        InvokeIfConnectedAsync("SyncPlayCommand", groupId, commandType, value);
+        SendIfConnectedAsync("SyncPlayCommand", groupId, commandType, value);
 
     public Task SyncPlayReportReadyAsync(Guid groupId) =>
-        InvokeIfConnectedAsync("SyncPlayReportReady", groupId);
+        SendIfConnectedAsync("SyncPlayReportReady", groupId);
 
     public Task SyncPlayReportPositionAsync(Guid groupId, double position) =>
-        InvokeIfConnectedAsync("SyncPlayReportPosition", groupId, position);
+        SendIfConnectedAsync("SyncPlayReportPosition", groupId, position);
 
     public Task SyncPlayAddToQueueAsync(Guid groupId, SyncPlayQueueItemDto item) =>
-        InvokeIfConnectedAsync("SyncPlayAddToQueue", groupId, item);
+        SendIfConnectedAsync("SyncPlayAddToQueue", groupId, item);
 
     public Task SyncPlayBulkAddToQueueAsync(Guid groupId, IReadOnlyList<SyncPlayQueueItemDto> items) =>
-        InvokeIfConnectedAsync("SyncPlayBulkAddToQueue", groupId, items);
+        SendIfConnectedAsync("SyncPlayBulkAddToQueue", groupId, items);
 
     public Task SyncPlaySetCurrentMediaAsync(Guid groupId, SyncPlayQueueItemDto item) =>
-        InvokeIfConnectedAsync("SyncPlaySetCurrentMedia", groupId, item);
+        SendIfConnectedAsync("SyncPlaySetCurrentMedia", groupId, item);
 
     public Task SyncPlayRemoveFromQueueAsync(Guid groupId, Guid queueItemId) =>
-        InvokeIfConnectedAsync("SyncPlayRemoveFromQueue", groupId, queueItemId);
+        SendIfConnectedAsync("SyncPlayRemoveFromQueue", groupId, queueItemId);
 
     public Task SyncPlayKickAsync(Guid groupId, Guid targetDeviceId) =>
-        InvokeIfConnectedAsync("SyncPlayKick", groupId, targetDeviceId);
+        SendIfConnectedAsync("SyncPlayKick", groupId, targetDeviceId);
 
     public Task SyncPlaySendChatAsync(Guid groupId, string text) =>
-        InvokeIfConnectedAsync("SyncPlaySendChat", groupId, text);
+        SendIfConnectedAsync("SyncPlaySendChat", groupId, text);
 
     public Task SyncPlaySendReactionAsync(Guid groupId, string emoji) =>
-        InvokeIfConnectedAsync("SyncPlaySendReaction", groupId, emoji);
+        SendIfConnectedAsync("SyncPlaySendReaction", groupId, emoji);
 
     public Task SyncPlayGenerateGuestTokenAsync(Guid groupId) =>
-        InvokeIfConnectedAsync("SyncPlayGenerateGuestToken", groupId);
+        SendIfConnectedAsync("SyncPlayGenerateGuestToken", groupId);
 
     public Task SyncPlayInviteUserAsync(string targetUserId, Guid groupId) =>
-        InvokeIfConnectedAsync("SyncPlayInviteUser", targetUserId, groupId);
+        SendIfConnectedAsync("SyncPlayInviteUser", targetUserId, groupId);
 
     public Task SyncPlayGetOnlineUsersAsync() =>
-        InvokeIfConnectedAsync("SyncPlayGetOnlineUsers");
+        SendIfConnectedAsync("SyncPlayGetOnlineUsers");
 
     public Task SyncPlaySetEnabledAsync(bool enabled) =>
-        InvokeIfConnectedAsync("SyncPlaySetEnabled", enabled);
+        SendIfConnectedAsync("SyncPlaySetEnabled", enabled);
 
     public Task SyncPlayGetInviteLinkAsync(Guid groupId) =>
-        InvokeIfConnectedAsync("SyncPlayGetInviteLink", groupId);
+        SendIfConnectedAsync("SyncPlayGetInviteLink", groupId);
 
     public Task SyncPlayJoinViaInviteTokenAsync(string token, string? guestDisplayName = null) =>
-        InvokeIfConnectedAsync("SyncPlayJoinViaInviteToken", token, guestDisplayName);
+        SendIfConnectedAsync("SyncPlayJoinViaInviteToken", token, guestDisplayName);
 
     public async ValueTask DisposeAsync()
     {
@@ -389,15 +389,33 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
         _lock.Dispose();
     }
 
-    private async Task InvokeIfConnectedAsync(string methodName, params object?[] args)
+    // Blazor WASM runs SignalR on a single thread: InvokeAsync deadlocks when the hub
+    // awaits Clients.Caller before returning. Use SendAsync here; the server awaits
+    // outbound callbacks so messages are delivered before the hub method completes.
+    private Task SendIfConnectedAsync(string methodName, params object?[] args) =>
+        SendCoreIfConnectedAsync(methodName, args);
+
+    private async Task<bool> TrySendIfConnectedAsync(string methodName, params object?[] args)
     {
         if (_hubConnection?.State != HubConnectionState.Connected)
         {
-            logger.LogWarning("Hub invoke dropped: {Method} (state={State})", methodName, State);
+            logger.LogWarning("Hub send dropped: {Method} (state={State})", methodName, State);
+            return false;
+        }
+
+        await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+        return true;
+    }
+
+    private async Task SendCoreIfConnectedAsync(string methodName, object?[] args)
+    {
+        if (_hubConnection?.State != HubConnectionState.Connected)
+        {
+            logger.LogWarning("Hub send dropped: {Method} (state={State})", methodName, State);
             return;
         }
 
-        await _hubConnection.InvokeAsync(methodName, args);
+        await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
     }
 
     private async Task RejoinGroupsAsync()
@@ -406,10 +424,10 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
             return;
 
         if (_joinedGroups.Contains(HubGroups.AdminStreams))
-            await _hubConnection.InvokeAsync("JoinAdminStreamsGroup");
+            await _hubConnection.SendAsync("JoinAdminStreamsGroup");
 
         if (_joinedGroups.Contains(HubGroups.AdminFederation))
-            await _hubConnection.InvokeAsync("JoinAdminFederationGroup");
+            await _hubConnection.SendAsync("JoinAdminFederationGroup");
     }
 
     private sealed class InfiniteRetryPolicy : IRetryPolicy
