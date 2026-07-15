@@ -55,7 +55,7 @@ internal sealed class MediaNotificationBatcher : IAsyncDisposable
         try
         {
             var items = new List<MediaBatchItem>();
-            while (_queue.TryDequeue(out var item) && items.Count < MaxBatchSize)
+            while (items.Count < MaxBatchSize && _queue.TryDequeue(out var item))
             {
                 items.Add(item);
             }
