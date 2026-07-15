@@ -37,6 +37,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
     public async Task<PaginatedList<HomeFeedItemDto>> Handle(GetHomeFeedItemsQuery request, CancellationToken cancellationToken)
     {
+        request = request with
+        {
+            PageNumber = PagingDefaults.ClampPageNumber(request.PageNumber),
+            PageSize = PagingDefaults.ClampPageSize(request.PageSize)
+        };
+
         var userId = currentUser.Id;
 
         var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
@@ -130,6 +136,25 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 .Where(s => s.UserId == userId.Value)
                 .Select(s => s.LastInteractedAt)
                 .FirstOrDefault())
+            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+            .Include(x => ((SerieEpisode)x).Season)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        var deduplicated = ContinueWatchingEpisodeSelector.DeduplicateBySerie(items);
+        var totalCount = deduplicated.Count;
+        var pageIds = deduplicated
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(m => m.Id)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var pageItems = await context.Medias
+            .Where(m => pageIds.Contains(m.Id))
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
@@ -138,14 +163,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
+            .AsNoTracking()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var deduplicated = ContinueWatchingEpisodeSelector.DeduplicateBySerie(items);
-        var totalCount = deduplicated.Count;
-        var page = deduplicated
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+        var page = pageIds
+            .Select(id => pageItems.First(m => m.Id == id))
             .ToList();
 
         var pictureSizes = await GetPictureSizesAsync(page, cancellationToken);
@@ -363,6 +386,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
 
         var ordered = ApplyOrdering(request.OrderBy, query, userId);
+        var totalCount = await ordered.CountAsync(cancellationToken);
         var pageIds = await ordered
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -400,7 +424,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Select(m => MapTopLevelItem(m, request.Detailed == true, pictureSizes))
             .ToList();
 
-        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
+        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
     }
 
     private static List<HomeFeedItemDto> AggregateRecentItems(
@@ -772,7 +796,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         query = ApplyLibraryFilter(query, request.LibraryIds);
         query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
 
+        var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
+            .OrderBy(m => m.Id)
+            .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
@@ -783,7 +810,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
         var feedItems = items.Select(i => MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
-        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
+        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
     }
 
     private enum FeedStrategy
