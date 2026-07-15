@@ -17,10 +17,10 @@ builder.Services.AddScoped<AuthenticationStateProvider, MockAuthStateProvider>()
 
 builder.Services.AddLocalization(opt => opt.ResourcesPath = "Resources");
 
-// Concrete services with no external dependencies
-builder.Services.AddSingleton<ThemeService>();
-builder.Services.AddSingleton<SidebarService>();
-builder.Services.AddSingleton<BackButtonService>();
+// UI state: per Blazor Server circuit
+builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<SidebarService>();
+builder.Services.AddScoped<BackButtonService>();
 
 // Dialog and snackbar: must be Scoped (per-circuit) in Blazor Server
 builder.Services.AddScoped<K7DialogService>();
@@ -29,12 +29,12 @@ builder.Services.AddScoped<K7SnackbarService>();
 builder.Services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
 builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
 
-// Client-side mock services
-builder.Services.AddSingleton<MockAudioPlayerService>();
-builder.Services.AddSingleton<IAudioPlayerService>(sp => sp.GetRequiredService<MockAudioPlayerService>());
-builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
-builder.Services.AddSingleton<DemoPlayerService>();
-builder.Services.AddSingleton<IPlayerService>(sp => sp.GetRequiredService<DemoPlayerService>());
+// Client-side mock services with mutable playback/UI state
+builder.Services.AddScoped<MockAudioPlayerService>();
+builder.Services.AddScoped<IAudioPlayerService>(sp => sp.GetRequiredService<MockAudioPlayerService>());
+builder.Services.AddScoped<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
+builder.Services.AddScoped<DemoPlayerService>();
+builder.Services.AddScoped<IPlayerService>(sp => sp.GetRequiredService<DemoPlayerService>());
 builder.Services.AddSingleton<IMediaPlayerService, MockMediaPlayerService>();
 builder.Services.AddSingleton<IFeatureAccessService, MockFeatureAccessService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
@@ -88,10 +88,10 @@ builder.Services.AddSingleton<ITvHubHostService, TvHubHostService>();
 builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
 builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
 builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
-builder.Services.AddSingleton<PlaybackProgressTracker>();
-builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
-builder.Services.AddSingleton<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
-builder.Services.AddSingleton<SyncPlayPlaybackHandler>();
+builder.Services.AddScoped<PlaybackProgressTracker>();
+builder.Services.AddScoped<AudioPlaybackProgressTracker>();
+builder.Services.AddScoped<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
+builder.Services.AddScoped<SyncPlayPlaybackHandler>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
@@ -106,14 +106,17 @@ app.MapGet("/demo/video", async (HttpContext ctx, IHttpClientFactory factory) =>
     const string sourceUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
     using var client = factory.CreateClient();
 
-    var req = new HttpRequestMessage(HttpMethod.Get, sourceUrl);
+    using var req = new HttpRequestMessage(HttpMethod.Get, sourceUrl);
     if (ctx.Request.Headers.TryGetValue("Range", out var range))
         req.Headers.TryAddWithoutValidation("Range", range.ToString());
 
-    var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-
+    using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.RequestAborted);
     ctx.Response.StatusCode = (int)res.StatusCode;
-    ctx.Response.ContentType = "video/mp4";
+
+    if (!res.IsSuccessStatusCode)
+        return;
+
+    ctx.Response.ContentType = res.Content.Headers.ContentType?.MediaType ?? "video/mp4";
 
     if (res.Content.Headers.ContentLength is long len)
         ctx.Response.ContentLength = len;
@@ -122,7 +125,7 @@ app.MapGet("/demo/video", async (HttpContext ctx, IHttpClientFactory factory) =>
     if (res.Headers.TryGetValues("Content-Range", out var cr))
         ctx.Response.Headers["Content-Range"] = cr.First();
 
-    await res.Content.CopyToAsync(ctx.Response.Body);
+    await res.Content.CopyToAsync(ctx.Response.Body, ctx.RequestAborted);
 });
 
 app.MapRazorComponents<K7.Clients.DesignSystem.App>()

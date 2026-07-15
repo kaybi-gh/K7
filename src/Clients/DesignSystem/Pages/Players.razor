@@ -195,8 +195,19 @@
             await JS.InvokeVoidAsync("K7Demo.seek", time);
     }
 
-    private void OnAudioTimeChanged(double t) => DemoPlayer.FireAudioState(MockAudio.Duration, t, MockAudio.PlaybackState);
-    private void OnAudioDurationChanged(double d) => DemoPlayer.FireAudioState(d, MockAudio.CurrentTime, MockAudio.PlaybackState);
+    private void OnAudioTimeChanged(double t)
+        => InvokeAsync(() =>
+        {
+            DemoPlayer.FireAudioState(MockAudio.Duration, t, MockAudio.PlaybackState);
+            return Task.CompletedTask;
+        });
+
+    private void OnAudioDurationChanged(double d)
+        => InvokeAsync(() =>
+        {
+            DemoPlayer.FireAudioState(d, MockAudio.CurrentTime, MockAudio.PlaybackState);
+            return Task.CompletedTask;
+        });
     private void OnFullScreenChanged() => InvokeAsync(StateHasChanged);
 
     private void OnPlaybackStateChangedHandler(K7.Server.Domain.Enums.PlaybackState state)
