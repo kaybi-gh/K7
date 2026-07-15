@@ -5,7 +5,6 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Services;
-using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;

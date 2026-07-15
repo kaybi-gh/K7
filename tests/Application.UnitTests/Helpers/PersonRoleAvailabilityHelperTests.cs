@@ -1,6 +1,7 @@
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 
 namespace K7.Server.Application.UnitTests.Helpers;
@@ -20,7 +21,7 @@ public class CatalogMediaAvailabilityHelperTests
     {
         var movie = new Movie
         {
-            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+            IndexedFiles = [CreateIndexedFile()]
         };
 
         CatalogMediaAvailabilityHelper.HasPlayableFiles(movie).Should().BeTrue();
@@ -32,10 +33,10 @@ public class CatalogMediaAvailabilityHelperTests
         var libraryId = Guid.NewGuid();
         var movie = new Movie
         {
-            IndexedFiles = [new IndexedFile { LibraryId = libraryId }]
+            IndexedFiles = [CreateIndexedFile(libraryId)]
         };
 
-        CatalogMediaAvailabilityHelper.HasPlayableFiles(movie, [libraryId]).Should().BeFalse();
+        CatalogMediaAvailabilityHelper.HasPlayableFiles(movie, new HashSet<Guid> { libraryId }).Should().BeFalse();
     }
 
     [Test]
@@ -51,7 +52,7 @@ public class CatalogMediaAvailabilityHelperTests
                     [
                         new SerieEpisode
                         {
-                            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                            IndexedFiles = [CreateIndexedFile()]
                         }
                     ]
                 }
@@ -74,7 +75,7 @@ public class CatalogMediaAvailabilityHelperTests
                     [
                         new MusicTrack
                         {
-                            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                            IndexedFiles = [CreateIndexedFile()]
                         }
                     ]
                 }
@@ -94,6 +95,16 @@ public class CatalogMediaAvailabilityHelperTests
 
         CatalogMediaAvailabilityHelper.HasPlayableFiles(artist).Should().BeFalse();
     }
+
+    private static IndexedFile CreateIndexedFile(Guid? libraryId = null) => new()
+    {
+        LibraryId = libraryId ?? Guid.NewGuid(),
+        Name = "file",
+        Extension = ".mkv",
+        Path = @"C:\media\file.mkv",
+        Hash = 1,
+        Size = 10
+    };
 }
 
 public class PersonRoleAvailabilityHelperTests
@@ -107,15 +118,17 @@ public class PersonRoleAvailabilityHelperTests
             new Actor
             {
                 PersonId = personId,
+                CharacterName = "Hero",
                 Media = new Movie
                 {
                     Title = "Available",
-                    IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                    IndexedFiles = [CreateIndexedFile()]
                 }
             },
             new Actor
             {
                 PersonId = personId,
+                CharacterName = "Extra",
                 Media = new Movie
                 {
                     Title = "Unavailable",
@@ -140,20 +153,22 @@ public class PersonRoleAvailabilityHelperTests
             new Actor
             {
                 PersonId = personId,
+                CharacterName = "Hero",
                 Media = new Movie
                 {
                     Title = "Duplicate A",
-                    IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }],
+                    IndexedFiles = [CreateIndexedFile()],
                     ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = tmdbId }]
                 }
             },
             new Actor
             {
                 PersonId = personId,
+                CharacterName = "Hero",
                 Media = new Movie
                 {
                     Title = "Duplicate B",
-                    IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }],
+                    IndexedFiles = [CreateIndexedFile()],
                     ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = tmdbId }]
                 }
             }
@@ -185,7 +200,7 @@ public class PersonRoleAvailabilityHelperTests
                             [
                                 new MusicTrack
                                 {
-                                    IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                                    IndexedFiles = [CreateIndexedFile()]
                                 }
                             ]
                         },
@@ -222,7 +237,7 @@ public class PersonRoleAvailabilityHelperTests
                     [
                         new MusicTrack
                         {
-                            IndexedFiles = [new IndexedFile { LibraryId = Guid.NewGuid() }]
+                            IndexedFiles = [CreateIndexedFile()]
                         }
                     ]
                 }
@@ -238,4 +253,14 @@ public class PersonRoleAvailabilityHelperTests
 
         CatalogMediaAvailabilityHelper.IsArtistCreditPlayable(artist, artist.ArtistCredits[0]).Should().BeTrue();
     }
+
+    private static IndexedFile CreateIndexedFile() => new()
+    {
+        LibraryId = Guid.NewGuid(),
+        Name = "file",
+        Extension = ".mkv",
+        Path = @"C:\media\file.mkv",
+        Hash = 1,
+        Size = 10
+    };
 }

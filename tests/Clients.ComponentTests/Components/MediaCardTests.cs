@@ -1,8 +1,11 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 
@@ -65,7 +68,7 @@ public class MediaCardTests
             .Add(c => c.Href, "/movies/1"));
 
         // Act
-        var activator = cut.Find(".k7-menu-activator");
+        var activator = cut.Find(".k7-menu-activator-inner");
         await cut.InvokeAsync(() => activator.Click());
 
         // Assert
@@ -81,11 +84,26 @@ public class MediaCardTests
         featureAccess.HasCapabilityAsync(Capability.CanRate).Returns(false);
         featureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist).Returns(false);
         ctx.Services.AddSingleton(featureAccess);
+        ctx.Services.AddSingleton(Substitute.For<IMediaService>());
+        ctx.Services.AddSingleton(Substitute.For<IK7DialogService>());
+        ctx.Services.AddSingleton(Substitute.For<IK7Snackbar>());
+        ctx.Services.AddSingleton(new MediaCacheStore());
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
 
         var contextMenuLocalizer = Substitute.For<IStringLocalizer<MediaCardContextMenu>>();
         contextMenuLocalizer[Arg.Any<string>()].Returns(call =>
             new LocalizedString(call.Arg<string>(), call.Arg<string>()));
         ctx.Services.AddSingleton(contextMenuLocalizer);
+
+        var sharedLocalizer = Substitute.For<IStringLocalizer<SharedResource>>();
+        sharedLocalizer[Arg.Any<string>()].Returns(call =>
+            new LocalizedString(call.Arg<string>(), call.Arg<string>()));
+        ctx.Services.AddSingleton(sharedLocalizer);
+
+        var reviewLocalizer = Substitute.For<IStringLocalizer<MediaReviewDialog>>();
+        reviewLocalizer[Arg.Any<string>()].Returns(call =>
+            new LocalizedString(call.Arg<string>(), call.Arg<string>()));
+        ctx.Services.AddSingleton(reviewLocalizer);
 
         return ctx;
     }

@@ -168,6 +168,11 @@ public class GetMediaTagsTests
         });
         _context.Libraries.Add(library);
         _context.Medias.Add(movie);
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            MediaId = movie.Id,
+            LibraryId = libraryId
+        });
         _context.MetadataTags.Add(studioTag);
         _context.MetadataTags.Add(genreTag);
         _context.MediaMetadataTags.Add(new MediaMetadataTag
