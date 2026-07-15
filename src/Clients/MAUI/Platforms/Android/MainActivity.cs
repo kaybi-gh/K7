@@ -32,6 +32,12 @@ public class MainActivity : MauiAppCompatActivity
 #pragma warning restore CA1422
         }
 
+        if (OperatingSystem.IsAndroidVersionAtLeast(33)
+            && CheckSelfPermission(Android.Manifest.Permission.PostNotifications) != Permission.Granted)
+        {
+            RequestPermissions([Android.Manifest.Permission.PostNotifications], requestCode: 0);
+        }
+
         // Start the MediaLibraryService so audio playback and notification controls work
         // even without an Android Auto connection. Media3 auto-promotes to foreground on playback.
         var serviceIntent = new Intent(this, typeof(K7MediaLibraryService));
