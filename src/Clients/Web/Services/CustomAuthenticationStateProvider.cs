@@ -24,8 +24,9 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
 
     public Task LoginAsGuestAsync(CancellationToken cancellationToken = default)
     {
-        var redirectUri = Uri.EscapeDataString(_navigationManager.Uri);
-        _navigationManager.NavigateTo($"{_navigationManager.BaseUri}api/authentication/login?returnUrl={redirectUri}", forceLoad: true);
+        // Guest sign-in is handled by the SSR welcome page (cookie auth), not WASM.
+        var returnUrl = Uri.EscapeDataString(_navigationManager.Uri);
+        _navigationManager.NavigateTo($"{_navigationManager.BaseUri}welcome?returnUrl={returnUrl}", forceLoad: true);
         return Task.CompletedTask;
     }
 
