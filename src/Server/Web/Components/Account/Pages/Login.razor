@@ -58,7 +58,7 @@
         @if (_auth.Local.SignInEnabled && _auth.Oidc.Enabled)
         {
             <p class="auth-or">@L["OrContinueWith"]</p>
-            <a href="@_oidcLoginUrl" style="text-decoration:none;">
+            <a href="@_oidcLoginUrl" data-enhance-nav="false" style="text-decoration:none;">
                 <button type="button" class="k7-btn k7-btn--outlined focusable" style="width:100%;">
                     @(_auth.Oidc.DisplayName ?? L["SignInOidc"])
                 </button>
