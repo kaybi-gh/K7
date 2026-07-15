@@ -49,14 +49,11 @@ public class EphemeralStreamTokenAuthenticationHandler : AuthenticationHandler<A
             return AuthenticateResult.Fail("Invalid ephemeral stream token.");
         }
 
-        if (ephemeralToken.IsRevoked)
+        if (!ephemeralToken.IsUsable(DateTimeOffset.UtcNow))
         {
-            return AuthenticateResult.Fail("Ephemeral stream token has been revoked.");
-        }
-
-        if (ephemeralToken.ExpiresAt < DateTimeOffset.UtcNow)
-        {
-            return AuthenticateResult.Fail("Ephemeral stream token has expired.");
+            return AuthenticateResult.Fail(ephemeralToken.IsRevoked
+                ? "Ephemeral stream token has been revoked."
+                : "Ephemeral stream token has expired.");
         }
 
         var identityUserId = ephemeralToken.User.IdentityUserId;
