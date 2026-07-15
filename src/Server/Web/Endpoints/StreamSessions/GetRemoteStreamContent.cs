@@ -1,8 +1,6 @@
-using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Federation.Queries.GetRemoteStreamContent;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
 
@@ -16,65 +14,31 @@ public class GetRemoteStreamContent : IEndpoint
         endpointRouteBuilder.MapMethods("/api/remote-stream-sessions/{sessionId:guid}/{**path}", ["GET", "HEAD"], async (
             Guid sessionId,
             string path,
-            [FromServices] IApplicationDbContext context,
-            [FromServices] IPeerClient peerClient,
+            [FromServices] ISender sender,
             HttpContext httpContext,
             CancellationToken cancellationToken) =>
         {
-            var session = await context.StreamSessions
-                .Include(s => s.PeerServer)
-                .FirstOrDefaultAsync(s => s.Id == sessionId && s.RemoteSessionId != null, cancellationToken);
-
-            if (session?.PeerServer is null || session.RemoteSessionId is null)
-                return Results.NotFound();
-
-            var peer = session.PeerServer;
-            if (peer.Status != PeerStatus.Active)
-                return Results.Problem("Peer server is not active", statusCode: 503);
-
-            var token = await peerClient.GetAccessTokenAsync(
-                peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
-
-            if (token is null)
-                return Results.Problem("Failed to authenticate with peer", statusCode: 502);
-
-            // Build path with query string
             var queryString = httpContext.Request.QueryString.Value ?? "";
-            var fullPath = $"{path}{queryString}";
+            var result = await sender.Send(
+                new GetRemoteStreamContentQuery(sessionId, path, queryString),
+                cancellationToken);
 
-            var response = await peerClient.ProxyStreamContentAsync(
-                peer.BaseUrl, token, session.RemoteSessionId.Value, fullPath, cancellationToken);
+            if (result.StatusCode is < 200 or >= 300)
+                return Results.StatusCode(result.StatusCode);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return Results.StatusCode((int)response.StatusCode);
-            }
+            httpContext.Response.StatusCode = result.StatusCode;
 
-            // Forward response headers
-            httpContext.Response.StatusCode = (int)response.StatusCode;
+            if (result.ContentType is not null)
+                httpContext.Response.ContentType = result.ContentType;
 
-            if (response.Content.Headers.ContentType is not null)
-            {
-                httpContext.Response.ContentType = response.Content.Headers.ContentType.ToString();
-            }
+            if (result.ContentLength is not null)
+                httpContext.Response.ContentLength = result.ContentLength;
 
-            if (response.Content.Headers.ContentLength is not null)
-            {
-                httpContext.Response.ContentLength = response.Content.Headers.ContentLength;
-            }
+            foreach (var header in result.ForwardHeaders)
+                httpContext.Response.Headers[header.Key] = header.Value;
 
-            foreach (var header in response.Headers)
-            {
-                if (header.Key.Equals("Accept-Ranges", StringComparison.OrdinalIgnoreCase)
-                    || header.Key.Equals("Content-Range", StringComparison.OrdinalIgnoreCase))
-                {
-                    httpContext.Response.Headers[header.Key] = header.Value.ToArray();
-                }
-            }
-
-            // Stream the response body without buffering
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await stream.CopyToAsync(httpContext.Response.Body, cancellationToken);
+            if (result.Body is not null)
+                await result.Body.CopyToAsync(httpContext.Response.Body, cancellationToken);
 
             return Results.Empty;
         })

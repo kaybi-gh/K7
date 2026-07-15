@@ -1,7 +1,6 @@
-using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Enums;
+using K7.Server.Application.Features.Federation.Commands.ReceivePeerReject;
+using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Web.Endpoints.Federation;
 
@@ -14,25 +13,13 @@ public class ReceivePeerReject : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/federation/peer-reject", async (
             [FromBody] PeerRejectRequest body,
-            [FromServices] IApplicationDbContext context,
+            [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var normalizedUrl = body.ProviderUrl.TrimEnd('/');
-
-            var peer = await context.PeerServers
-                .FirstOrDefaultAsync(p => p.BaseUrl == normalizedUrl && p.Status == PeerStatus.Pending, cancellationToken);
-
-            if (peer is null)
-                return Results.NotFound();
-
-            peer.Status = PeerStatus.Rejected;
-            await context.SaveChangesAsync(cancellationToken);
-
+            await sender.Send(new ReceivePeerRejectCommand(body), cancellationToken);
             return Results.Ok();
         })
         .WithName(type.Name)
         .WithTags(groupName);
     }
 }
-
-public sealed record PeerRejectRequest(string ProviderUrl);
