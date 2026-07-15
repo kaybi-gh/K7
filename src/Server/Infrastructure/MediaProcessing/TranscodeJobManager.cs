@@ -205,7 +205,10 @@ public class TranscodeJobManager(
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
             }
-            else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
+            else if (requestedSegmentIndex >= job.TargetSegmentIndex
+                     || requestedSegmentIndex > job.GeneratingUntilSegmentIndex
+                     || job.FfmpegTask == null
+                     || job.FfmpegTask.IsCompleted)
             {
                 if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
                 {
@@ -324,11 +327,31 @@ public class TranscodeJobManager(
     {
         await StopFfmpegAsync(job);
 
-        // Update target
+        PurgeGeneratedSegments(job.OutputDirectory);
+
         job.TargetSegmentIndex = startSegmentIndex + job.BufferSize;
 
-        // Start from the requested position
         await StartFfmpegAsync(job, startSegmentIndex, allSegments, cancellationToken);
+    }
+
+    private void PurgeGeneratedSegments(string outputDirectory)
+    {
+        if (!Directory.Exists(outputDirectory))
+        {
+            return;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(outputDirectory, "*.m4s"))
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (IOException ex)
+            {
+                logger.LogWarning(ex, "Failed to delete stale segment {File}", file);
+            }
+        }
     }
 
     private async Task ContinueJobAsync(
@@ -378,6 +401,8 @@ public class TranscodeJobManager(
             return;
         }
 
+        // Slot wait may use the request token, but ffmpeg itself must NOT - otherwise a
+        // client abort/timeout on one segment request kills generation for everyone.
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
         await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
 
@@ -397,44 +422,38 @@ public class TranscodeJobManager(
         {
             job.FfmpegCancellation?.Dispose();
             job.FfmpegCancellation = new CancellationTokenSource();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, job.FfmpegCancellation.Token);
+            var ffmpegToken = job.FfmpegCancellation.Token;
+            job.GeneratingUntilSegmentIndex = endSegmentIndex - 1;
 
-            // Start ffmpeg in background
+            // Start ffmpeg in background, owned only by the job lifetime
             job.FfmpegTask = Task.Run(async () =>
             {
-                try
+                if (job.IsAudioOnly)
                 {
-                    if (job.IsAudioOnly)
-                    {
-                        await mediaTranscoder.StartAudioStreamingTranscodeAsync(
-                            job.InputFilePath,
-                            job.OutputDirectory,
-                            allSegments,
-                            startSegmentIndex,
-                            endSegmentIndex,
-                            linkedCts.Token,
-                            job.AudioTrackIndex,
-                            audioCodec);
-                    }
-                    else
-                    {
-                        await mediaTranscoder.StartVideoStreamingTranscodeAsync(
-                            job.InputFilePath,
-                            job.OutputDirectory,
-                            allSegments,
-                            startSegmentIndex,
-                            endSegmentIndex,
-                            linkedCts.Token,
-                            videoCodec,
-                            job.Quality,
-                            job.SubtitleBurnInStreamIndex);
-                    }
+                    await mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        job.OutputDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        ffmpegToken,
+                        job.AudioTrackIndex,
+                        audioCodec);
                 }
-                finally
+                else
                 {
-                    linkedCts.Dispose();
+                    await mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        job.OutputDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        ffmpegToken,
+                        videoCodec,
+                        job.Quality,
+                        job.SubtitleBurnInStreamIndex);
                 }
-            }, linkedCts.Token);
+            }, CancellationToken.None);
 
             logger.LogInformation(
                 "Job {JobId}: ffmpeg task started in background",
@@ -510,6 +529,7 @@ public class TranscodeJobManager(
             job.FfmpegCancellation.Dispose();
             job.FfmpegCancellation = null;
             job.FfmpegTask = null;
+            job.GeneratingUntilSegmentIndex = -1;
         }
     }
 

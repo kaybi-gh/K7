@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
@@ -97,23 +98,6 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
             streamSessionId,
             cancellationToken);
 
-        if (query.SegmentNumber == -1)
-        {
-            await _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                job.JobId,
-                0,
-                allSegments,
-                cancellationToken);
-        }
-        else
-        {
-            await _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                job.JobId,
-                query.SegmentNumber,
-                allSegments,
-                cancellationToken);
-        }
-
         _transcodeJobManager.PingJob(job.JobId, streamSessionId);
 
         var segmentFileName = query.SegmentNumber == -1
@@ -121,52 +105,32 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
             : $"{query.SegmentNumber}.m4s";
 
         var segmentPath = Path.Combine(job.OutputDirectory, segmentFileName);
+        var requestedIndex = query.SegmentNumber == -1 ? 0 : query.SegmentNumber;
 
         _logger.LogInformation(
             "Looking for audio segment file at: {SegmentPath}",
             segmentPath);
 
-        var timeoutSeconds = query.SegmentNumber == -1 ? 60 : 30;
-        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
-        var pollingInterval = 200;
-
-        while (!File.Exists(segmentPath) && DateTime.UtcNow < deadline)
-        {
-            if (DateTime.UtcNow.Second % 2 == 0 && DateTime.UtcNow.Millisecond < pollingInterval)
-            {
-                _logger.LogDebug(
-                    "Waiting for audio segment {SegmentNumber} to be generated for job {JobId}",
-                    query.SegmentNumber,
-                    job.JobId);
-            }
-
-            await Task.Delay(pollingInterval, cancellationToken);
-        }
-
-        if (!File.Exists(segmentPath))
+        if (!await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
+                segmentPath,
+                job,
+                ct => _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                    job.JobId,
+                    requestedIndex,
+                    allSegments,
+                    ct),
+                cancellationToken,
+                maxTotalSeconds: query.SegmentNumber == -1 ? 90 : 180))
         {
             _logger.LogError(
-                "Audio segment {SegmentNumber} was not generated within timeout for job {JobId}",
+                "Audio segment {SegmentNumber} was not generated within timeout for job {JobId} (ffmpeg running: {FfmpegRunning})",
                 query.SegmentNumber,
-                job.JobId);
+                job.JobId,
+                job.FfmpegTask is { IsCompleted: false });
             return new EmptyHttpContentResult(503);
         }
 
-        // Wait for the file to be accessible (not locked by FFmpeg)
-        var accessDeadline = DateTime.UtcNow.AddSeconds(5);
-
-        while (DateTime.UtcNow < accessDeadline)
-        {
-            try
-            {
-                using var probe = new FileStream(segmentPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                break;
-            }
-            catch (IOException)
-            {
-                await Task.Delay(100, cancellationToken);
-            }
-        }
+        await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
 
         return new FileHttpContentResult(segmentPath, "audio/mp4");
     }

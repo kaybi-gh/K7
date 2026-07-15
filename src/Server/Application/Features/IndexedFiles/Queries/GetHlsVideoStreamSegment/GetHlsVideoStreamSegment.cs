@@ -44,6 +44,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
     private readonly IApplicationDbContext _context;
     private readonly ITranscodeJobManager _transcodeJobManager;
     private readonly IActiveStreamTracker _activeStreamTracker;
+    private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService;
     private readonly ISender _sender;
     private readonly ILogger<GetHlsVideoStreamSegmentQueryHandler> _logger;
 
@@ -51,12 +52,14 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         IApplicationDbContext context,
         ITranscodeJobManager transcodeJobManager,
         IActiveStreamTracker activeStreamTracker,
+        IFfmpegCapabilitiesService ffmpegCapabilitiesService,
         ISender sender,
         ILogger<GetHlsVideoStreamSegmentQueryHandler> logger)
     {
         _context = context;
         _transcodeJobManager = transcodeJobManager;
         _activeStreamTracker = activeStreamTracker;
+        _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
         _sender = sender;
         _logger = logger;
     }
@@ -146,6 +149,38 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         var videoCodec = effectiveTranscodingVideoCodec
             ?? (query.SubtitleBurnInStreamIndex.HasValue ? "h264" : null);
 
+        if (query.Quality != "original" && entity.FileMetadata is VideoFileMetadata videoMetadataForQuality)
+        {
+            var requestedQuality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
+            if (requestedQuality.Value is not null)
+            {
+                var fileResolution = Constants.VideoQualities.Single(x => x.Key == videoMetadataForQuality.VideoResolution).Value;
+                if (requestedQuality.Value.Height < fileResolution.Height)
+                {
+                    await _context.Entry(videoMetadataForQuality).Collection(v => v.VideoTracks).LoadAsync(cancellationToken);
+                    var videoTrack = videoMetadataForQuality.VideoTracks
+                        .OrderByDescending(t => t.IsDefault)
+                        .ThenBy(t => t.Index)
+                        .FirstOrDefault();
+
+                    var sourceResolution = videoTrack is { Width: > 0, Height: > 0 }
+                        ? $"{videoTrack.Width}x{videoTrack.Height}"
+                        : $"{fileResolution.Width}x{fileResolution.Height}";
+
+                    videoCodec ??= "h264";
+
+                    var existing = _activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision;
+                    _activeStreamTracker.UpdateStreamDecision(
+                        query.StreamSessionId,
+                        StreamDecisionExtensions.ApplyQualityDownscale(
+                            existing,
+                            requestedQuality.Value,
+                            videoCodec,
+                            sourceResolution));
+                }
+            }
+        }
+
         if (query.SubtitleBurnInStreamIndex is int burnInIndex
             && entity.FileMetadata is VideoFileMetadata videoMetadata)
         {
@@ -168,6 +203,12 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             }
         }
 
+        await StreamDecisionEnrichment.TryEnrichAndUpdateTrackerAsync(
+            query.StreamSessionId,
+            _activeStreamTracker,
+            _ffmpegCapabilitiesService,
+            cancellationToken);
+
         var streamSessionId = query.StreamSessionId;
         var job = await _transcodeJobManager.GetOrStartJobAsync(
             query.Id,
@@ -181,23 +222,6 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             cancellationToken,
             query.SubtitleBurnInStreamIndex);
 
-        if (query.SegmentNumber == -1)
-        {
-            await _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                job.JobId,
-                0,
-                allSegments,
-                cancellationToken);
-        }
-        else
-        {
-            await _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                job.JobId,
-                query.SegmentNumber,
-                allSegments,
-                cancellationToken);
-        }
-
         _transcodeJobManager.PingJob(job.JobId, streamSessionId);
 
         var segmentFileName = query.SegmentNumber == -1
@@ -205,53 +229,32 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             : $"{query.SegmentNumber}.m4s";
 
         var segmentPath = Path.Combine(job.OutputDirectory, segmentFileName);
+        var requestedIndex = query.SegmentNumber == -1 ? 0 : query.SegmentNumber;
 
         _logger.LogInformation(
             "Looking for segment file at: {SegmentPath}",
             segmentPath);
 
-        var timeoutSeconds = query.SegmentNumber == -1 ? 60 : 30;
-        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
-        var pollingInterval = 200;
-
-        while (!File.Exists(segmentPath) && DateTime.UtcNow < deadline)
-        {
-            if (DateTime.UtcNow.Second % 2 == 0 && DateTime.UtcNow.Millisecond < pollingInterval)
-            {
-                _logger.LogDebug(
-                    "Waiting for segment {SegmentNumber} to be generated for job {JobId}",
-                    query.SegmentNumber,
-                    job.JobId);
-            }
-
-            await Task.Delay(pollingInterval, cancellationToken);
-        }
-
-        if (!File.Exists(segmentPath))
+        if (!await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
+                segmentPath,
+                job,
+                ct => _transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                    job.JobId,
+                    requestedIndex,
+                    allSegments,
+                    ct),
+                cancellationToken,
+                maxTotalSeconds: query.SegmentNumber == -1 ? 90 : 180))
         {
             _logger.LogError(
-                "Segment {SegmentNumber} was not generated within timeout for job {JobId}",
+                "Segment {SegmentNumber} was not generated within timeout for job {JobId} (ffmpeg running: {FfmpegRunning})",
                 query.SegmentNumber,
-                job.JobId);
+                job.JobId,
+                job.FfmpegTask is { IsCompleted: false });
             return new EmptyHttpContentResult(503);
         }
 
-        // Wait for the file to be accessible (not locked by FFmpeg)
-        var accessDeadline = DateTime.UtcNow.AddSeconds(5);
-
-        while (DateTime.UtcNow < accessDeadline)
-        {
-            try
-            {
-                using var probe = new FileStream(segmentPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                break;
-            }
-            catch (IOException)
-            {
-                // File is still locked by FFmpeg, wait and retry
-                await Task.Delay(100, cancellationToken);
-            }
-        }
+        await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
 
         return new FileHttpContentResult(segmentPath, "video/mp4");
     }
