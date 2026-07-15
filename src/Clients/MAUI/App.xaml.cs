@@ -33,23 +33,27 @@ public partial class App : Application
         var splash = new LottieSplashPage();
         var window = new Window(splash) { Title = "K7" };
 
-        _ = Task.Run(async () =>
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
         {
-            // Small delay to let the platform draw the lightweight splash frame
-            await Task.Delay(50);
-            MainThread.BeginInvokeOnMainThread(() =>
+            try
             {
-                try
+                Debug.WriteLine("K7 MAUI - Creating BlazorPage");
+                window.Page = GetStartPage();
+                Debug.WriteLine("K7 MAUI - BlazorPage set");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"K7 MAUI - BlazorPage creation failed: {ex}");
+                window.Page = new ContentPage
                 {
-                    Debug.WriteLine("K7 MAUI - Creating BlazorPage");
-                    window.Page = GetStartPage();
-                    Debug.WriteLine("K7 MAUI - BlazorPage set");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"K7 MAUI - BlazorPage creation failed: {ex}");
-                }
-            });
+                    Content = new Label
+                    {
+                        Text = "Unable to start K7. Please restart the app.",
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center
+                    }
+                };
+            }
         });
 
         Debug.WriteLine("K7 MAUI - App.CreateWindow - splash returned");
