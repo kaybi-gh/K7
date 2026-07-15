@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetArtistTopTracks;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
@@ -16,6 +17,7 @@ public class GetArtistTopTracksQueryHandlerTests
     private IApplicationDbContext _context = null!;
     private IUser _currentUser = null!;
     private IMediaAccessGuard _accessGuard = null!;
+    private LiteMediaProjectionService _liteMediaProjection = null!;
     private GetArtistTopTracksQueryHandler _handler = null!;
 
     [SetUp]
@@ -24,7 +26,8 @@ public class GetArtistTopTracksQueryHandlerTests
         _context = Substitute.For<IApplicationDbContext>();
         _currentUser = Substitute.For<IUser>();
         _accessGuard = Substitute.For<IMediaAccessGuard>();
-        _handler = new GetArtistTopTracksQueryHandler(_context, _currentUser, _accessGuard);
+        _liteMediaProjection = new LiteMediaProjectionService(_context);
+        _handler = new GetArtistTopTracksQueryHandler(_context, _currentUser, _accessGuard, _liteMediaProjection);
     }
 
     [Test]
@@ -139,6 +142,14 @@ public class GetArtistTopTracksQueryHandlerTests
 
         var medias = new List<BaseMedia> { artist, album, track1, track2 }.BuildMockDbSet();
         _context.Medias.Returns(medias);
+
+        var libraryId = Guid.NewGuid();
+        var availabilities = new List<MediaLibraryAvailability>
+        {
+            new() { MediaId = track1Id, LibraryId = libraryId },
+            new() { MediaId = track2Id, LibraryId = libraryId }
+        }.BuildMockDbSet();
+        _context.MediaLibraryAvailabilities.Returns(availabilities);
 
         var states = new List<UserMediaState>().BuildMockDbSet();
         _context.UserMediaStates.Returns(states);

@@ -168,6 +168,11 @@ public class GetMediaBrowseFilterSuggestionsTests
         _context.Libraries.Add(library);
         _context.Persons.Add(person);
         _context.Medias.Add(movie);
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            MediaId = movie.Id,
+            LibraryId = libraryId
+        });
 
         var artist = new MusicArtist
         {

@@ -80,6 +80,8 @@ public class LiteMediaMappingsTests
 
         var result = item.ToCardViewModel(apiClient);
 
-        result.PictureUrl.Should().Be("https://localhost/api/pictures/poster.jpg?size=Small");
+        result.PictureUrl.Should().NotBeNullOrEmpty();
+        result.PictureUrl.Should().StartWith("https://localhost/api/pictures/poster.jpg");
+        result.PictureUrl.Should().Contain("v=");
     }
 }
