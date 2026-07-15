@@ -43,6 +43,21 @@ public partial class AdminFederationPanel : IDisposable
     private List<PeerServerDto> _outboundPeers => _peers?.Where(p => !p.IsProvider).ToList() ?? [];
     private List<PeerServerDto> _inboundPeers => _peers?.Where(p => p.IsProvider).ToList() ?? [];
 
+    private void SubscribeHubEvents()
+    {
+        UnsubscribeHubEvents();
+        HubClient.PeerStateChanged += OnPeerStateChanged;
+        HubClient.PeerRequestReceived += OnPeerRequestReceived;
+        HubClient.PeerTestResultReceived += OnPeerTestResultReceived;
+    }
+
+    private void UnsubscribeHubEvents()
+    {
+        HubClient.PeerStateChanged -= OnPeerStateChanged;
+        HubClient.PeerRequestReceived -= OnPeerRequestReceived;
+        HubClient.PeerTestResultReceived -= OnPeerTestResultReceived;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
@@ -55,9 +70,7 @@ public partial class AdminFederationPanel : IDisposable
             EnsureSocialPolicyDefaults();
             await LoadData();
             await HubClient.JoinAdminFederationGroupAsync();
-            HubClient.PeerStateChanged += OnPeerStateChanged;
-            HubClient.PeerRequestReceived += OnPeerRequestReceived;
-            HubClient.PeerTestResultReceived += OnPeerTestResultReceived;
+            SubscribeHubEvents();
         }
         else
         {
@@ -161,9 +174,7 @@ public partial class AdminFederationPanel : IDisposable
             try
             {
                 await HubClient.JoinAdminFederationGroupAsync();
-                HubClient.PeerStateChanged += OnPeerStateChanged;
-                HubClient.PeerRequestReceived += OnPeerRequestReceived;
-                HubClient.PeerTestResultReceived += OnPeerTestResultReceived;
+                SubscribeHubEvents();
             }
             catch
             {
@@ -171,6 +182,8 @@ public partial class AdminFederationPanel : IDisposable
         }
         else
         {
+            UnsubscribeHubEvents();
+            _ = HubClient.LeaveAdminFederationGroupAsync();
             _peers = null;
             _requests = null;
             _isLoading = false;
@@ -416,9 +429,7 @@ public partial class AdminFederationPanel : IDisposable
 
     public void Dispose()
     {
-        HubClient.PeerStateChanged -= OnPeerStateChanged;
-        HubClient.PeerRequestReceived -= OnPeerRequestReceived;
-        HubClient.PeerTestResultReceived -= OnPeerTestResultReceived;
+        UnsubscribeHubEvents();
         _ = HubClient.LeaveAdminFederationGroupAsync();
     }
 }
