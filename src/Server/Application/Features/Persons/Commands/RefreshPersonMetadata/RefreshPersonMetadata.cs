@@ -6,6 +6,7 @@ using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 
@@ -19,7 +20,8 @@ public record RefreshPersonMetadataCommand : IRequest
 
 public class RefreshPersonMetadataCommandHandler(
     IApplicationDbContext context,
-    IEnumerable<IPersonMetadataProvider> providers)
+    IEnumerable<IPersonMetadataProvider> providers,
+    ILogger<RefreshPersonMetadataCommandHandler> logger)
     : IRequestHandler<RefreshPersonMetadataCommand>
 {
     private readonly IReadOnlyDictionary<string, IPersonMetadataProvider> _providers =
@@ -34,10 +36,25 @@ public class RefreshPersonMetadataCommandHandler(
 
         Guard.Against.NotFound(request.PersonId, person);
 
-        if (!_providers.TryGetValue(request.ProviderName, out var provider)) return;
+        if (!_providers.TryGetValue(request.ProviderName, out var provider))
+        {
+            logger.LogWarning(
+                "Skipping person metadata refresh for {PersonId}: provider {ProviderName} is not registered",
+                request.PersonId,
+                request.ProviderName);
+            return;
+        }
 
         var details = await provider.FetchPersonAsync(request.ProviderId, request.Language, cancellationToken);
-        if (details is null) return;
+        if (details is null)
+        {
+            logger.LogWarning(
+                "Skipping person metadata refresh for {PersonId}: provider {ProviderName} returned no details for {ProviderId}",
+                request.PersonId,
+                request.ProviderName,
+                request.ProviderId);
+            return;
+        }
 
         if (!string.IsNullOrEmpty(details.Biography))
             person.Biography = details.Biography;
