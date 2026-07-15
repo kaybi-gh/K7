@@ -8,5 +8,5 @@ public sealed record TranscodeSettingsDto
     public bool EnableHdrTonemap { get; set; } = true;
     public int MaxConcurrentTranscodes { get; set; }
     public int TranscodeTempQuotaMb { get; set; }
-    public int EncoderThrottleBufferSegments { get; set; } = 3;
+    public int EncoderThrottleBufferSegments { get; set; } = 10;
 }
