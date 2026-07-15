@@ -78,17 +78,21 @@ public class ImportUserPlaylistCommandHandler(IApplicationDbContext context)
         var maxOrder = playlist.Items.Count > 0 ? playlist.Items.Max(i => i.Order) : -1;
         var addedCount = 0;
 
-        foreach (var mediaId in request.MediaIds.Distinct())
-        {
-            if (existingMediaIds.Contains(mediaId))
-                continue;
+        var candidateMediaIds = request.MediaIds
+            .Distinct()
+            .Where(id => !existingMediaIds.Contains(id))
+            .ToList();
 
-            var media = await context.Medias
-                .Where(m => m.Id == mediaId)
+        var mediasById = candidateMediaIds.Count == 0
+            ? []
+            : await context.Medias
+                .Where(m => candidateMediaIds.Contains(m.Id))
                 .Select(m => new { m.Id, m.Type })
-                .FirstOrDefaultAsync(cancellationToken);
+                .ToDictionaryAsync(m => m.Id, cancellationToken);
 
-            if (media is null || media.Type != playlist.MediaType)
+        foreach (var mediaId in candidateMediaIds)
+        {
+            if (!mediasById.TryGetValue(mediaId, out var media) || media.Type != playlist.MediaType)
                 continue;
 
             maxOrder++;
