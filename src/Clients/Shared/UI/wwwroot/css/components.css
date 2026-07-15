@@ -172,7 +172,16 @@
 .k7-alert--warning { background: color-mix(in srgb, var(--color-warning) 15%, transparent); border-color: var(--color-warning); color: var(--color-text); }
 .k7-alert--error { background: color-mix(in srgb, var(--color-error) 15%, transparent); border-color: var(--color-error); color: var(--color-text); }
 .k7-alert--normal { background: var(--color-surface-2); border-color: var(--color-text-muted); color: var(--color-text); }
-.k7-alert--outlined { background: transparent; border: 1px solid var(--color-border); border-left-width: 4px; }
+.k7-alert--outlined {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+}
+.k7-alert--outlined.k7-alert--info { border-left-color: var(--color-info, #3b82f6); }
+.k7-alert--outlined.k7-alert--success { border-left-color: var(--color-success); }
+.k7-alert--outlined.k7-alert--warning { border-left-color: var(--color-warning); }
+.k7-alert--outlined.k7-alert--error { border-left-color: var(--color-error); }
+.k7-alert--outlined.k7-alert--normal { border-left-color: var(--color-text-muted); }
 
 /* ── Chip ────────────────────────────────────────────────────────────────────── */
 .k7-chip {
