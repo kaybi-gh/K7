@@ -2,7 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using OpenIddict.Abstractions;
 
-namespace K7.Server.Web.Services;
+namespace K7.Server.Infrastructure.ExternalServices.Federation;
 
 public class PeerApplicationManager(IOpenIddictApplicationManager applicationManager) : IPeerApplicationManager
 {
@@ -30,8 +30,6 @@ public class PeerApplicationManager(IOpenIddictApplicationManager applicationMan
     {
         var app = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);
         if (app is not null)
-        {
             await applicationManager.DeleteAsync(app, cancellationToken);
-        }
     }
 }
