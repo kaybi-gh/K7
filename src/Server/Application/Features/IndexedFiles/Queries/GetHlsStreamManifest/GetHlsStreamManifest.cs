@@ -1,6 +1,7 @@
 using System.Text;
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
@@ -10,7 +11,6 @@ using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
@@ -74,7 +74,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
     }
 }
 
-public record GetHlsStreamManifestQuery : IRequest<IResult>
+public record GetHlsStreamManifestQuery : IRequest<HttpContentResult>
 {
     public required Guid Id { get; set; }
     public required Guid StreamSessionId { get; set; }
@@ -86,7 +86,7 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
     public Dictionary<int, string>? AudioTrackTranscodings { get; set; }
 };
 
-public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, IResult>
+public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
@@ -108,7 +108,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         _logger = logger;
     }
 
-    public async Task<IResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
     {
         await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
 
@@ -122,7 +122,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var file = new FileInfo(indexedFile.Path);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         await LoadFileTracksAsync(indexedFile.FileMetadata, cancellationToken);
@@ -159,7 +159,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             _ => throw new InvalidOperationException(
                 $"Indexed file has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.")
         };
-        return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
+        return new TextHttpContentResult(masterPlaylist, "application/vnd.apple.mpegurl");
     }
 
     private async Task LoadFileTracksAsync(BaseFileMetadata? fileMetadata, CancellationToken cancellationToken)

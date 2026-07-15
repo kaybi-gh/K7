@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -28,9 +28,9 @@ public record GetHlsSubtitleStreamSegmentQuery(
     Guid Id,
     int SubtitleTrackIndex,
     int SegmentNumber,
-    Guid StreamSessionId) : IRequest<IResult>;
+    Guid StreamSessionId) : IRequest<HttpContentResult>;
 
-public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSubtitleStreamSegmentQuery, IResult>
+public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSubtitleStreamSegmentQuery, HttpContentResult>
 {
     private const int SubtitleSegmentDurationSeconds = 30;
 
@@ -55,7 +55,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
             ?? throw new InvalidOperationException("Transcoding path not configured");
     }
 
-    public async Task<IResult> Handle(GetHlsSubtitleStreamSegmentQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamSegmentQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -68,7 +68,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound("Source file not found");
+            return new EmptyHttpContentResult(404);
         }
 
         // Ensure the full VTT is extracted and cached
@@ -82,9 +82,9 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
 
         if (!File.Exists(vttCachePath))
         {
-            return Results.Problem(
-                detail: "Subtitle format could not be converted to WebVTT",
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return new JsonHttpContentResult(
+                new { detail = "Subtitle format could not be converted to WebVTT" },
+                422);
         }
 
         // Read the full VTT and extract the segment for the requested time range
@@ -94,7 +94,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
 
         var segmentVtt = WebVttSegmenter.ExtractSegment(fullVtt, startTimeSeconds, endTimeSeconds);
 
-        return Results.Content(segmentVtt, "text/vtt; charset=utf-8");
+        return new TextHttpContentResult(segmentVtt, "text/vtt; charset=utf-8");
     }
 
     private async Task EnsureVttExtractedAsync(string inputPath, int trackIndex, string vttCachePath, CancellationToken cancellationToken)

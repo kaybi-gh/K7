@@ -17,11 +17,11 @@ public class GetHlsSubtitleStreamSegment : IEndpoint
                     [FromServices] ISender sender,
                     CancellationToken cancellationToken) =>
                 {
-                    return await sender.Send(new GetHlsSubtitleStreamSegmentQuery(
+                    return (await sender.Send(new GetHlsSubtitleStreamSegmentQuery(
                         id,
                         subtitleTrackIndex,
                         segmentNumber,
-                        streamSessionId), cancellationToken);
+                        streamSessionId), cancellationToken)).ToIResult();
                 })
             .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsSubtitleStreamSegment))

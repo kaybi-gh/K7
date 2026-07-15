@@ -19,12 +19,12 @@ public class GetHlsVideoStreamIndex : IEndpoint
             [FromQuery] string? TranscodingVideoCodec,
             [FromQuery] int? SubtitleBurnInStreamIndex) =>
         {
-            return await sender.Send(new GetHlsVideoStreamIndexQuery(
+            return (await sender.Send(new GetHlsVideoStreamIndexQuery(
                 id, 
                 quality,
                 streamSessionId,
                 TranscodingVideoCodec,
-                SubtitleBurnInStreamIndex));
+                SubtitleBurnInStreamIndex))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

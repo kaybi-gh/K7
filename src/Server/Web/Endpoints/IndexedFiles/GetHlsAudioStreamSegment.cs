@@ -19,12 +19,12 @@ public class GetHlsAudioStreamSegment : IEndpoint
                     CancellationToken cancellationToken) =>
                 {
                     var segmentIndex = segmentNumber.ToLower() == "init" ? -1 : int.Parse(segmentNumber);
-                    return await sender.Send(new GetHlsAudioStreamSegmentQuery(
+                    return (await sender.Send(new GetHlsAudioStreamSegmentQuery(
                         id,
                         audioTrackIndex,
                         segmentIndex,
                         streamSessionId,
-                        TranscodingAudioCodec), cancellationToken);
+                        TranscodingAudioCodec), cancellationToken)).ToIResult();
                 })
             .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsAudioStreamSegment))

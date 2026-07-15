@@ -13,10 +13,10 @@ public class AttachDeviceToCurrentUser : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/devices/{id:guid}/attach-user", async ([FromServices] ISender sender, [FromRoute] Guid id, CancellationToken cancellationToken) =>
         {
-            return await sender.Send(new AttachDeviceToCurrentUserCommand
+            return (await sender.Send(new AttachDeviceToCurrentUserCommand
             {
                 DeviceId = id
-            }, cancellationToken);
+            }, cancellationToken)).ToIResult();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

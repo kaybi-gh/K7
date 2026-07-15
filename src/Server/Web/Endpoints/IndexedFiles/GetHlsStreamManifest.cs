@@ -23,7 +23,7 @@ public class GetHlsStreamManifest : IEndpoint
                 [FromQuery] string? quality,
                 [FromQuery] string? audioTrackTranscodings) =>
         {
-            return await sender.Send(new GetHlsStreamManifestQuery()
+            return (await sender.Send(new GetHlsStreamManifestQuery()
             {
                 Id = id,
                 StreamSessionId = streamSessionId,
@@ -33,7 +33,7 @@ public class GetHlsStreamManifest : IEndpoint
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 Quality = quality,
                 AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(audioTrackTranscodings)
-            });
+            })).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

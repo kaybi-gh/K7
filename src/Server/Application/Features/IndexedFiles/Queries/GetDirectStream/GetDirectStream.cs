@@ -1,13 +1,13 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
-using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetDirectStream;
 
-public record GetDirectStreamQuery(Guid Id) : IRequest<IResult>;
+public record GetDirectStreamQuery(Guid Id) : IRequest<HttpContentResult>;
 
-public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery, IResult>
+public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
@@ -18,7 +18,7 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
         _accessGuard = accessGuard;
     }
 
-    public async Task<IResult> Handle(GetDirectStreamQuery query, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(GetDirectStreamQuery query, CancellationToken cancellationToken)
     {
         await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
         var entity = await _context.IndexedFiles
@@ -31,7 +31,7 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            return Results.NotFound();
+            return new EmptyHttpContentResult(404);
         }
 
         var container = entity.FileMetadata?.Container;
@@ -39,6 +39,6 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
             ? mime
             : "application/octet-stream";
 
-        return Results.File(entity.Path, contentType: mimeType, enableRangeProcessing: true);
+        return new FileHttpContentResult(entity.Path, mimeType);
     }
 }

@@ -21,13 +21,13 @@ public class GetHlsVideoStreamSegment : IEndpoint
                 {
                     // Parse segmentNumber as int, or use -1 for init
                     var segmentIndex = segmentNumber.ToLower() == "init" ? -1 : int.Parse(segmentNumber);
-                    return await sender.Send(new GetHlsVideoStreamSegmentQuery(
+                    return (await sender.Send(new GetHlsVideoStreamSegmentQuery(
                         id, 
                         quality, 
                         segmentIndex,
                         streamSessionId,
                         TranscodingVideoCodec,
-                        SubtitleBurnInStreamIndex), cancellationToken);
+                        SubtitleBurnInStreamIndex), cancellationToken)).ToIResult();
                 })
             .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsVideoStreamSegment))

@@ -1,19 +1,19 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.QueryBuilders;
-using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.Devices.Commands.CreateDevice;
 
-public record CreateDeviceCommand : IRequest<IResult>
+public record CreateDeviceCommand : IRequest<HttpContentResult>
 {
     public required CreateDeviceRequest CreateDeviceRequest { get; set; }
 }
 
-public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, IResult>
+public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
@@ -24,7 +24,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
         _user = user;
     }
 
-    public async Task<IResult> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
+    public async Task<HttpContentResult> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(request.CreateDeviceRequest.DeviceUniqueId))
         {
@@ -36,7 +36,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
                 {
                     Id = existingDevice.Id
                 };
-                return Results.Created(GetDeviceQueryUriBuilder.Build(existingDeviceQuery), existingDeviceQuery);
+                return new CreatedHttpContentResult(GetDeviceQueryUriBuilder.Build(existingDeviceQuery), existingDeviceQuery);
             }
         }
         // Duplicate devices without DeviceUniqueId are accepted on web clients.
@@ -112,6 +112,6 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
             Id = entity.Id
         };
 
-        return Results.Created(GetDeviceQueryUriBuilder.Build(query), query);
+        return new CreatedHttpContentResult(GetDeviceQueryUriBuilder.Build(query), query);
     }
 }
