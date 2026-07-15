@@ -205,9 +205,17 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     /// Base manifest URL (without Quality param) used to rebuild the source when switching quality.
     /// </summary>
     private string? _baseManifestUrl;
+    private int _playGeneration;
+    private CancellationTokenSource? _playCts;
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
     {
+        var generation = Interlocked.Increment(ref _playGeneration);
+        _playCts?.Cancel();
+        _playCts?.Dispose();
+        _playCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var playToken = _playCts.Token;
+
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -216,7 +224,6 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
 
-        // Build quality options from the source resolution
         _availableQualities = videoResolution is not null
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
@@ -225,49 +232,68 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         Source = new PlayerSource();
 
-        await ShowAsync();
-        Play();
-
-        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
-
-        if (session.Source is null)
+        try
         {
-            throw new InvalidOperationException("Streaming session did not return a source URI.");
+            await ShowAsync();
+
+            var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: playToken);
+
+            if (generation != _playGeneration)
+                return;
+
+            if (session.Source is null)
+            {
+                await HideAsync();
+                throw new InvalidOperationException("Streaming session did not return a source URI.");
+            }
+
+            _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
+                ?? _selectedAudioTrack;
+
+            if (session.SubtitleTracks is { Count: > 0 })
+                SetSubtitleTracks(session.SubtitleTracks);
+
+            _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
+                ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
+                : null;
+
+            _baseManifestUrl = session.Source.Uri.OriginalString;
+
+            Source = new PlayerSource
+            {
+                MediaId = mediaId,
+                StreamSessionId = session.Id,
+                IndexedFileId = indexedFileId,
+                Url = _baseManifestUrl,
+                MimeType = session.Source.MimeType,
+                ThumbnailsUrl = thumbnailsUrl,
+                Title = title,
+                CoverUrl = coverUrl
+            };
+
+            Play();
+            AudioTrackChanged?.Invoke(_selectedAudioTrack);
+            SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
+            QualityChanged?.Invoke(_selectedQuality);
         }
-
-        // Update selected tracks based on server's auto-selection
-        _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
-            ?? _selectedAudioTrack;
-
-        if (session.SubtitleTracks is { Count: > 0 })
-            SetSubtitleTracks(session.SubtitleTracks);
-
-        _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
-            ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
-            : null;
-
-        _baseManifestUrl = session.Source.Uri.OriginalString;
-
-        var playerSource = new PlayerSource
+        catch (OperationCanceledException) when (generation != _playGeneration)
         {
-            MediaId = mediaId,
-            StreamSessionId = session.Id,
-            IndexedFileId = indexedFileId,
-            Url = _baseManifestUrl,
-            MimeType = session.Source.MimeType,
-            ThumbnailsUrl = thumbnailsUrl,
-            Title = title,
-            CoverUrl = coverUrl
-        };
-
-        Source = playerSource;
-        AudioTrackChanged?.Invoke(_selectedAudioTrack);
-        SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
-        QualityChanged?.Invoke(_selectedQuality);
+        }
+        catch (Exception) when (generation == _playGeneration)
+        {
+            await HideAsync();
+            throw;
+        }
     }
 
     public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
     {
+        var generation = Interlocked.Increment(ref _playGeneration);
+        _playCts?.Cancel();
+        _playCts?.Dispose();
+        _playCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var playToken = _playCts.Token;
+
         _currentIndexedFileId = null;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -286,34 +312,49 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         Source = new PlayerSource();
 
-        await ShowAsync();
-        Play();
-
-        var session = await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, audioTrackIndex, cancellationToken);
-
-        if (session?.Source is null)
+        try
         {
-            return;
+            await ShowAsync();
+
+            var session = await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, audioTrackIndex, playToken);
+
+            if (generation != _playGeneration)
+                return;
+
+            if (session?.Source is null)
+            {
+                await HideAsync();
+                return;
+            }
+
+            if (session.SubtitleTracks is { Count: > 0 })
+                SetSubtitleTracks(session.SubtitleTracks);
+
+            _baseManifestUrl = session.Source.Uri.OriginalString;
+
+            Source = new PlayerSource
+            {
+                MediaId = mediaId,
+                StreamSessionId = session.Id,
+                Url = _baseManifestUrl,
+                MimeType = session.Source.MimeType,
+                Title = title,
+                CoverUrl = coverUrl
+            };
+
+            Play();
+            AudioTrackChanged?.Invoke(_selectedAudioTrack);
+            SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
+            QualityChanged?.Invoke(_selectedQuality);
         }
-
-        if (session.SubtitleTracks is { Count: > 0 })
-            SetSubtitleTracks(session.SubtitleTracks);
-
-        _baseManifestUrl = session.Source.Uri.OriginalString;
-
-        Source = new PlayerSource
+        catch (OperationCanceledException) when (generation != _playGeneration)
         {
-            MediaId = mediaId,
-            StreamSessionId = session.Id,
-            Url = _baseManifestUrl,
-            MimeType = session.Source.MimeType,
-            Title = title,
-            CoverUrl = coverUrl
-        };
-
-        AudioTrackChanged?.Invoke(_selectedAudioTrack);
-        SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
-        QualityChanged?.Invoke(_selectedQuality);
+        }
+        catch (Exception) when (generation == _playGeneration)
+        {
+            await HideAsync();
+            throw;
+        }
     }
 
     public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto>? tracks)
