@@ -22,4 +22,6 @@ public sealed record StreamDecisionDto
     public string? SubtitleCodec { get; init; }
     public int? SelectedSubtitleTrackIndex { get; init; }
     public bool IsSubtitleBurnIn { get; init; }
+    public string? VideoEncoder { get; init; }
+    public bool? IsHardwareAccelerated { get; init; }
 }

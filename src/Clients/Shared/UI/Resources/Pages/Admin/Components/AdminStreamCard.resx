@@ -28,6 +28,8 @@
   <data name="Paused" xml:space="preserve"><value>En pause</value></data>
   <data name="Buffering" xml:space="preserve"><value>Chargement</value></data>
   <data name="DirectPlay" xml:space="preserve"><value>Direct</value></data>
+  <data name="Hardware" xml:space="preserve"><value>mat&#233;riel</value></data>
+  <data name="Software" xml:space="preserve"><value>logiciel</value></data>
   <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
   <data name="ReasonVideoCodec" xml:space="preserve"><value>Codec vidéo non supporte</value></data>
   <data name="ReasonAudioCodec" xml:space="preserve"><value>Codec audio non supporte</value></data>

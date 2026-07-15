@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -8,23 +9,15 @@ using K7.Server.Application.Common.Configuration;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
-public class TranscodeJobManager : ITranscodeJobManager
+public class TranscodeJobManager(
+    ILogger<TranscodeJobManager> logger,
+    IMediaTranscoder mediaTranscoder,
+    IOptions<PathsConfiguration> pathsOptions,
+    ITranscodeSettingsProvider transcodeSettingsProvider) : ITranscodeJobManager
 {
     private readonly ConcurrentDictionary<Guid, TranscodeJob> _activeJobs = new();
     private readonly SemaphoreSlim _jobLock = new(1, 1);
-    private readonly ILogger<TranscodeJobManager> _logger;
-    private readonly IMediaTranscoder _mediaTranscoder;
-    private readonly PathsConfiguration _pathsConfig;
-
-    public TranscodeJobManager(
-        ILogger<TranscodeJobManager> logger,
-        IMediaTranscoder mediaTranscoder,
-        IOptions<PathsConfiguration> pathsOptions)
-    {
-        _logger = logger;
-        _mediaTranscoder = mediaTranscoder;
-        _pathsConfig = pathsOptions.Value;
-    }
+    private readonly PathsConfiguration _pathsConfig = pathsOptions.Value;
 
     public async Task<TranscodeJob> GetOrStartJobAsync(
         Guid indexedFileId,
@@ -38,13 +31,16 @@ public class TranscodeJobManager : ITranscodeJobManager
         CancellationToken cancellationToken = default,
         int? subtitleBurnInStreamIndex = null)
     {
+        var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
+        EnsureTempQuotaAvailable(settings.TranscodeTempQuotaMb);
+
         var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy", audioTrackIndex, isAudioOnly, subtitleBurnInStreamIndex);
 
         if (_activeJobs.TryGetValue(jobKey, out var existingJob))
         {
             existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             existingJob.LastPingTime = DateTime.UtcNow;
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Reusing existing transcode job {JobId} for session {SessionId}",
                 existingJob.JobId,
                 streamSessionId);
@@ -83,11 +79,11 @@ public class TranscodeJobManager : ITranscodeJobManager
                     }
                     catch (IOException ex)
                     {
-                        _logger.LogWarning(ex, "Failed to delete stale segment {File}", oldFile);
+                        logger.LogWarning(ex, "Failed to delete stale segment {File}", oldFile);
                     }
                 }
 
-                _logger.LogInformation("Cleared stale segments from {OutputDir}", outputDir);
+                logger.LogInformation("Cleared stale segments from {OutputDir}", outputDir);
             }
 
             Directory.CreateDirectory(outputDir);
@@ -104,13 +100,14 @@ public class TranscodeJobManager : ITranscodeJobManager
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 OutputDirectory = outputDir,
                 InputFilePath = inputFilePath,
-                TargetSegmentIndex = 0
+                TargetSegmentIndex = 0,
+                BufferSize = Math.Max(settings.EncoderThrottleBufferSegments, 1)
             };
 
             job.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             _activeJobs[jobKey] = job;
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Created new transcode job {JobId} for IndexedFile {IndexedFileId}, Quality {Quality}, OutputDir: {OutputDir}",
                 job.JobId,
                 indexedFileId,
@@ -155,7 +152,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         // Calculate gap duration
         var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Job {JobId}: Requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s), exists: {Exists}",
             jobId,
             requestedSegmentIndex,
@@ -187,7 +184,7 @@ public class TranscodeJobManager : ITranscodeJobManager
             // Restart threshold: 30 segments or 60 seconds
             if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
-                _logger.LogInformation(
+                logger.LogInformation(
                     "Job {JobId}: Gap too large ({Gap} segments, {GapSeconds}s), restarting with seek",
                     jobId,
                     gap,
@@ -199,7 +196,7 @@ public class TranscodeJobManager : ITranscodeJobManager
             else if (gap < 0)
             {
                 // Backward seek: segment should exist but doesn't, restart with seek
-                _logger.LogInformation(
+                logger.LogInformation(
                     "Job {JobId}: Backward seek detected (gap {Gap}), but segment {RequestedIndex} doesn't exist, restarting with seek",
                     jobId,
                     gap,
@@ -213,7 +210,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
                 {
                     var fault = job.FfmpegTask.Exception?.GetBaseException();
-                    _logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", jobId);
+                    logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", jobId);
                     job.FfmpegTask = null;
                 }
 
@@ -222,7 +219,7 @@ public class TranscodeJobManager : ITranscodeJobManager
 
                 if (newTarget != job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
                 {
-                    _logger.LogInformation(
+                    logger.LogInformation(
                         "Job {JobId}: Extending target from {OldTarget} to {NewTarget} (ffmpeg running: {FfmpegRunning})",
                         jobId,
                         job.TargetSegmentIndex,
@@ -250,7 +247,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         if (_activeJobs.TryGetValue(jobId, out var job))
         {
             job.AttachedStreamSessions.TryRemove(streamSessionId, out _);
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Detached session {SessionId} from job {JobId}. Remaining sessions: {Count}",
                 streamSessionId,
                 jobId,
@@ -267,7 +264,7 @@ public class TranscodeJobManager : ITranscodeJobManager
 
         foreach (var job in staleJobs)
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Cleaning up stale job {JobId} (last ping: {LastPing})",
                 job.JobId,
                 job.LastPingTime);
@@ -280,7 +277,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to cancel ffmpeg task for job {JobId}", job.JobId);
+                    logger.LogWarning(ex, "Failed to cancel ffmpeg task for job {JobId}", job.JobId);
                 }
             }
 
@@ -291,18 +288,18 @@ public class TranscodeJobManager : ITranscodeJobManager
                 try
                 {
                     Directory.Delete(job.OutputDirectory, recursive: true);
-                    _logger.LogInformation("Deleted output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
+                    logger.LogInformation("Deleted output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
 
                     var parentDir = Path.GetDirectoryName(job.OutputDirectory);
                     if (parentDir is not null && Directory.Exists(parentDir) && !Directory.EnumerateFileSystemEntries(parentDir).Any())
                     {
                         Directory.Delete(parentDir);
-                        _logger.LogInformation("Deleted empty parent directory for stale job {JobId}: {Dir}", job.JobId, parentDir);
+                        logger.LogInformation("Deleted empty parent directory for stale job {JobId}: {Dir}", job.JobId, parentDir);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to delete output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
+                    logger.LogWarning(ex, "Failed to delete output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
                 }
             }
         }
@@ -342,7 +339,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         var currentIndex = job.GetCurrentSegmentIndex();
         var startIndex = currentIndex + 1;
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Job {JobId}: ContinueJobAsync - currentIndex={CurrentIndex}, startIndex={StartIndex}, targetIndex={TargetIndex}, totalSegments={TotalSegments}",
             job.JobId,
             currentIndex,
@@ -352,7 +349,7 @@ public class TranscodeJobManager : ITranscodeJobManager
 
         if (startIndex >= allSegments.Count)
         {
-            _logger.LogInformation("Job {JobId}: All segments already generated", job.JobId);
+            logger.LogInformation("Job {JobId}: All segments already generated", job.JobId);
             return;
         }
 
@@ -367,7 +364,7 @@ public class TranscodeJobManager : ITranscodeJobManager
     {
         if (startSegmentIndex < 0 || startSegmentIndex >= allSegments.Count)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Job {JobId}: Invalid start segment index {Index} (total segments: {Total})",
                 job.JobId,
                 startSegmentIndex,
@@ -381,7 +378,10 @@ public class TranscodeJobManager : ITranscodeJobManager
             return;
         }
 
-        _logger.LogInformation(
+        var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
+        await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
+
+        logger.LogInformation(
             "Job {JobId}: Starting ffmpeg from segment {Start} to {Target} ({Count} segments)",
             job.JobId,
             startSegmentIndex,
@@ -406,7 +406,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 {
                     if (job.IsAudioOnly)
                     {
-                        await _mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                        await mediaTranscoder.StartAudioStreamingTranscodeAsync(
                             job.InputFilePath,
                             job.OutputDirectory,
                             allSegments,
@@ -418,7 +418,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                     }
                     else
                     {
-                        await _mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                        await mediaTranscoder.StartVideoStreamingTranscodeAsync(
                             job.InputFilePath,
                             job.OutputDirectory,
                             allSegments,
@@ -436,13 +436,13 @@ public class TranscodeJobManager : ITranscodeJobManager
                 }
             }, linkedCts.Token);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Job {JobId}: ffmpeg task started in background",
                 job.JobId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Job {JobId}: Failed to start ffmpeg task", job.JobId);
+            logger.LogError(ex, "Job {JobId}: Failed to start ffmpeg task", job.JobId);
             throw;
         }
     }
@@ -501,7 +501,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "ffmpeg task ended with error for job {JobId}", job.JobId);
+                    logger.LogDebug(ex, "ffmpeg task ended with error for job {JobId}", job.JobId);
                 }
             }
         }
@@ -510,6 +510,47 @@ public class TranscodeJobManager : ITranscodeJobManager
             job.FfmpegCancellation.Dispose();
             job.FfmpegCancellation = null;
             job.FfmpegTask = null;
+        }
+    }
+
+    private void EnsureTempQuotaAvailable(int quotaMb)
+    {
+        if (quotaMb <= 0)
+            return;
+
+        var usedMb = GetTranscodingDirectorySizeMb();
+        if (usedMb >= quotaMb)
+            throw new InvalidOperationException("Transcode temporary storage quota exceeded.");
+    }
+
+    private long GetTranscodingDirectorySizeMb()
+    {
+        var transcodingPath = _pathsConfig.Transcoding;
+        if (string.IsNullOrEmpty(transcodingPath) || !Directory.Exists(transcodingPath))
+            return 0;
+
+        long totalBytes = 0;
+        foreach (var file in Directory.EnumerateFiles(transcodingPath, "*", SearchOption.AllDirectories))
+        {
+            totalBytes += new FileInfo(file).Length;
+        }
+
+        return totalBytes / (1024 * 1024);
+    }
+
+    private async Task WaitForTranscodeSlotAsync(int maxConcurrent, CancellationToken cancellationToken)
+    {
+        if (maxConcurrent <= 0)
+            return;
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var running = _activeJobs.Values.Count(j => j.FfmpegTask is { IsCompleted: false });
+            if (running < maxConcurrent)
+                return;
+
+            await Task.Delay(500, cancellationToken);
         }
     }
 }
