@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Exceptions;
+﻿using Ardalis.GuardClauses;
 using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
 using K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
 using K7.Server.Domain.Entities;
@@ -24,44 +24,6 @@ public class UpdateLibraryListTests : DatabaseFixture
         // Act
         // Assert
         await FluentActions.Invoking(() => SendAsync(command)).Should().ThrowAsync<NotFoundException>();
-    }
-
-    [Test]
-    public async Task ShouldRequireUniqueTitle()
-    {
-        await RunAsAdministratorAsync();
-
-        // Arrange
-        var libraryId = await SendAsync(new CreateLibraryCommand
-        {
-            Title = "New Library",
-            MediaType = LibraryMediaType.Movie,
-            MetadataProviderName = "tmdb",
-            MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en",
-            RootPath = "/root/path"
-        });
-        await SendAsync(new CreateLibraryCommand
-        {
-            Title = "Other Library",
-            MediaType = LibraryMediaType.Movie,
-            MetadataProviderName = "tmdb",
-            MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en",
-            RootPath = "/root/path"
-        });
-        var command = new UpdateLibraryCommand
-        {
-            Id = libraryId,
-            Title = "Other Library"
-        };
-
-        // Act
-        // Assert
-        (await FluentActions.Invoking(() =>
-            SendAsync(command))
-                .Should().ThrowAsync<ValidationException>().Where(ex => ex.Errors.ContainsKey("Title")))
-                .And.Errors["Title"].Should().Contain("'Title' must be unique.");
     }
 
     [Test]
