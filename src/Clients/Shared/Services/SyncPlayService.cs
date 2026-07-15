@@ -74,7 +74,8 @@ public sealed class SyncPlayService : ISyncPlayService, IDisposable
             IsPlaying = isPlaying
         };
 
-        await _hubClient.CreateSyncPlayGroupAsync(request);
+        if (!await _hubClient.CreateSyncPlayGroupAsync(request))
+            ErrorReceived?.Invoke("hub_not_connected");
     }
 
     public Task JoinGroupAsync(Guid groupId, string? guestToken = null, string? guestDisplayName = null)

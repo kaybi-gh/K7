@@ -60,4 +60,6 @@
   <data name="Kick" xml:space="preserve"><value>Expulser</value></data>
   <data name="PromoteLeader" xml:space="preserve"><value>Promouvoir leader</value></data>
   <data name="SyncPlayKicked" xml:space="preserve"><value>Vous avez été expulsé du groupe</value></data>
+  <data name="SyncPlayDeviceNotRegistered" xml:space="preserve"><value>Appareil non connecté au hub. Rechargez la page puis réessayez.</value></data>
+  <data name="SyncPlayHubNotConnected" xml:space="preserve"><value>Connexion temps réel indisponible. Attendez la reconnexion puis réessayez.</value></data>
 </root>
