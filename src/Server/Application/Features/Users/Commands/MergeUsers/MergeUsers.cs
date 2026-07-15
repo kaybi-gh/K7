@@ -47,13 +47,13 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
         await TransferPlaylistsAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
         await TransferPlaybackSessionsAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
 
-        if (source.IdentityUserId is not null)
-        {
-            await identityService.DeleteUserAsync(source.IdentityUserId);
-        }
+        var sourceIdentityUserId = source.IdentityUserId;
 
         context.Users.Remove(source);
         await context.SaveChangesAsync(cancellationToken);
+
+        if (sourceIdentityUserId is not null)
+            await identityService.DeleteUserAsync(sourceIdentityUserId);
     }
 
     private async Task MergeMediaStatesAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? mergeStrategy, CancellationToken cancellationToken)
