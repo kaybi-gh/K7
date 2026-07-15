@@ -36,17 +36,12 @@ public class AcceptPeerRequestCommandHandler(
 
         await peerAppManager.CreatePeerApplicationAsync(clientId, clientSecret, $"Peer: {peerRequest.RequesterName}", cancellationToken);
 
-        var peer = new PeerServer
-        {
-            Id = Guid.NewGuid(),
-            Name = peerRequest.RequesterName,
-            BaseUrl = peerRequest.RequesterUrl.TrimEnd('/'),
-            Status = PeerStatus.Active,
-            InboundApplicationId = clientId,
-            AutoAddNewLibraries = request.AutoShareNewLibraries
-        };
-
-        peer.FederationAssertionSecret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        var peer = PeerServer.CreateActiveInbound(
+            peerRequest.RequesterName,
+            peerRequest.RequesterUrl.TrimEnd('/'),
+            clientId,
+            request.AutoShareNewLibraries,
+            Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"));
 
         foreach (var libraryId in request.SharedLibraryIds)
         {

@@ -1,4 +1,4 @@
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using K7.Shared.Dtos.Rules;
 
 namespace K7.Server.Application.Common.Mappings;

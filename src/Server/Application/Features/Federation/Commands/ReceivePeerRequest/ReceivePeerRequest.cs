@@ -1,9 +1,7 @@
-using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Settings;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.Settings;
-using K7.Shared.Dtos;
 
 namespace K7.Server.Application.Features.Federation.Commands.ReceivePeerRequest;
 
@@ -23,7 +21,7 @@ public class ReceivePeerRequestCommandHandler(
 {
     public async Task Handle(ReceivePeerRequestCommand request, CancellationToken cancellationToken)
     {
-        var flags = await GetFeatureFlagsAsync(cancellationToken);
+        var flags = await serverSettingsService.GetFeatureFlagsAsync(cancellationToken);
         if (!flags.FederationInvitationsEnabled)
             throw new InvalidOperationException("Federation invitations are disabled on this server.");
 
@@ -66,14 +64,5 @@ public class ReceivePeerRequestCommandHandler(
         }
 
         await context.SaveChangesAsync(cancellationToken);
-    }
-
-    private async Task<ServerFeatureFlagsDto> GetFeatureFlagsAsync(CancellationToken cancellationToken)
-    {
-        var json = await serverSettingsService.GetAsync(ServerSettingKeys.FeatureFlags, cancellationToken);
-        if (json is not null)
-            return JsonSerializer.Deserialize<ServerFeatureFlagsDto>(json) ?? new ServerFeatureFlagsDto();
-
-        return new ServerFeatureFlagsDto();
     }
 }

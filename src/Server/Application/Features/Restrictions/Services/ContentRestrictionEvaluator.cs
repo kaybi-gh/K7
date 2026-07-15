@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Restrictions;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Application.Features.Restrictions.Services;
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Frozen;
+using System.Collections.Frozen;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
@@ -10,7 +10,7 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 using TMDbLib.Client;
 using TMDbLib.Objects.Find;
 using TMDbLib.Objects.Movies;

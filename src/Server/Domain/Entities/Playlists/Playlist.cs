@@ -1,6 +1,7 @@
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 
 namespace K7.Server.Domain.Entities.Playlists;
 
@@ -19,4 +20,21 @@ public class Playlist : BaseAuditableEntity
     public IList<PlaylistItem> Items { get; set; } = [];
 
     public IList<UserPlaylistState> UserStates { get; set; } = [];
+
+    public PlaylistItem AddItem(MediaType mediaType, Guid mediaId, int currentMaxOrder)
+    {
+        if (mediaType != MediaType)
+            throw new InvalidOperationException($"Cannot add a media of type {mediaType} to a playlist of type {MediaType}.");
+
+        var item = new PlaylistItem
+        {
+            PlaylistId = Id,
+            MediaId = mediaId,
+            Order = currentMaxOrder + 1
+        };
+
+        Items.Add(item);
+        AddDomainEvent(new PlaylistItemAddedEvent(this, item));
+        return item;
+    }
 }

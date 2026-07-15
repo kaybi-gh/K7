@@ -30,13 +30,7 @@ public class ConfirmPeeringCommandHandler(
         if (peer is null)
             throw new InvalidOperationException("No pending peer found for the supplied token.");
 
-        peer.PeeringToken = null;
-
-        peer.OutboundClientId = request.ClientId;
-        peer.OutboundClientSecret = request.ClientSecret;
-        peer.FederationAssertionSecret = request.FederationAssertionSecret;
-        peer.Status = PeerStatus.Active;
-        peer.LastSeen = DateTimeOffset.UtcNow;
+        peer.ActivateFromConfirmation(request.ClientId, request.ClientSecret, request.FederationAssertionSecret);
 
         await context.SaveChangesAsync(cancellationToken);
 

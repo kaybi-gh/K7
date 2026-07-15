@@ -4,7 +4,7 @@ using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.ValueObjects;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Application.Features.Diagnostics.Services;
 
