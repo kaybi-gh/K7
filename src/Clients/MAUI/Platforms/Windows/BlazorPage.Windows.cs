@@ -18,21 +18,37 @@ public partial class BlazorPage
     {
         _audioPlayerService.CurrentTrackChanged += OnAudioTrackChangedWindows;
         _audioPlayerService.PlaybackStateChanged += OnAudioPlaybackStateChangedWindows;
+        NativeAudioPlayer.HandlerChanged += OnNativeAudioPlayerHandlerChangedWindows;
+        NativeAudioPlayer.MediaOpened += OnNativeAudioPlayerMediaOpenedWindows;
+    }
 
-        NativeAudioPlayer.HandlerChanged += async (_, _) =>
-        {
-            if (!TrySetupSmtc())
-            {
-                await Task.Delay(500);
-                TrySetupSmtc();
-            }
-        };
+    partial void DetachPlayerPlatform()
+    {
+        _audioPlayerService.CurrentTrackChanged -= OnAudioTrackChangedWindows;
+        _audioPlayerService.PlaybackStateChanged -= OnAudioPlaybackStateChangedWindows;
+        NativeAudioPlayer.HandlerChanged -= OnNativeAudioPlayerHandlerChangedWindows;
+        NativeAudioPlayer.MediaOpened -= OnNativeAudioPlayerMediaOpenedWindows;
 
-        NativeAudioPlayer.MediaOpened += (_, _) =>
+        if (_smtc is not null)
         {
+            _smtc.ButtonPressed -= OnSmtcButtonPressed;
+            _smtc = null;
+        }
+    }
+
+    private async void OnNativeAudioPlayerHandlerChangedWindows(object? sender, EventArgs e)
+    {
+        if (!TrySetupSmtc())
+        {
+            await Task.Delay(500);
             TrySetupSmtc();
-            OnAudioTrackChangedWindows(_audioPlayerService.CurrentTrack);
-        };
+        }
+    }
+
+    private void OnNativeAudioPlayerMediaOpenedWindows(object? sender, EventArgs e)
+    {
+        TrySetupSmtc();
+        OnAudioTrackChangedWindows(_audioPlayerService.CurrentTrack);
     }
 
     private bool TrySetupSmtc()
