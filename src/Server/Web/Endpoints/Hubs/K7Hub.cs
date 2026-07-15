@@ -384,7 +384,7 @@ public class K7Hub(
         var displayName = ResolveGroupDisplayName(groupId, device.Value.DeviceId, device.Value.UserDisplayName);
         if (commandType is SyncPlayCommandType.NextInQueue or SyncPlayCommandType.PreviousInQueue)
         {
-            var nextItem = syncPlay.NavigateQueue(groupId, commandType == SyncPlayCommandType.NextInQueue);
+            var nextItem = syncPlay.NavigateQueue(groupId, device.Value.DeviceId, commandType == SyncPlayCommandType.NextInQueue);
             if (nextItem is null) return;
 
             var queueHubGroup = SyncPlayGroupName(groupId);
@@ -405,7 +405,7 @@ public class K7Hub(
             return;
         }
 
-        var result = syncPlay.IssueCommand(groupId, identityUserId, commandType, value, displayName);
+        var result = syncPlay.IssueCommand(groupId, device.Value.DeviceId, commandType, value);
 
         if (!result.Permitted)
         {
@@ -502,7 +502,7 @@ public class K7Hub(
         var device = ResolveCallerDevice();
         if (device is null) return;
 
-        if (!syncPlay.AddToQueue(groupId, item))
+        if (!syncPlay.AddToQueue(groupId, device.Value.DeviceId, item))
         {
             await Clients.Caller.ReceiveSyncPlayError("group_not_found");
             return;
@@ -534,7 +534,7 @@ public class K7Hub(
 
         foreach (var item in items)
         {
-            if (!syncPlay.AddToQueue(groupId, item))
+            if (!syncPlay.AddToQueue(groupId, device.Value.DeviceId, item))
             {
                 await Clients.Caller.ReceiveSyncPlayError("group_not_found");
                 return;
@@ -554,7 +554,7 @@ public class K7Hub(
         var device = ResolveCallerDevice();
         if (device is null) return;
 
-        if (!syncPlay.SetCurrentMedia(groupId, item))
+        if (!syncPlay.SetCurrentMedia(groupId, device.Value.DeviceId, item))
         {
             await Clients.Caller.ReceiveSyncPlayError("group_not_found");
             return;
@@ -581,7 +581,10 @@ public class K7Hub(
 
     public async Task SyncPlayRemoveFromQueue(Guid groupId, Guid queueItemId)
     {
-        if (!syncPlay.RemoveFromQueue(groupId, queueItemId))
+        var device = ResolveCallerDevice();
+        if (device is null) return;
+
+        if (!syncPlay.RemoveFromQueue(groupId, device.Value.DeviceId, queueItemId))
         {
             await Clients.Caller.ReceiveSyncPlayError("not_permitted");
             return;
@@ -629,7 +632,7 @@ public class K7Hub(
 
         var displayName = ResolveGroupDisplayName(groupId, device.Value.DeviceId, device.Value.UserDisplayName);
 
-        var message = syncPlay.SendChat(groupId, displayName, text);
+        var message = syncPlay.SendChat(groupId, device.Value.DeviceId, text);
         if (message is null) return;
 
         await Clients.OthersInGroup(SyncPlayGroupName(groupId)).ReceiveSyncPlayChatMessage(message);
@@ -645,7 +648,7 @@ public class K7Hub(
 
         var displayName = ResolveGroupDisplayName(groupId, device.Value.DeviceId, device.Value.UserDisplayName);
 
-        var reaction = syncPlay.SendReaction(groupId, displayName, emoji);
+        var reaction = syncPlay.SendReaction(groupId, device.Value.DeviceId, emoji);
         if (reaction is null) return;
 
         await Clients.Group(SyncPlayGroupName(groupId)).ReceiveSyncPlayReaction(reaction);
@@ -754,7 +757,12 @@ public class K7Hub(
         if (string.IsNullOrEmpty(identityUserId))
             return;
 
-        var token = syncPlay.GenerateInviteToken(groupId);
+        var token = syncPlay.GenerateInviteToken(groupId, identityUserId);
+        if (token is null)
+        {
+            await Clients.Caller.ReceiveSyncPlayError("not_permitted");
+            return;
+        }
         if (string.IsNullOrEmpty(token))
         {
             await Clients.Caller.ReceiveSyncPlayError("group_not_found");
