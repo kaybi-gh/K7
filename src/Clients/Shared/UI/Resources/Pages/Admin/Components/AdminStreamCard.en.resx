@@ -37,4 +37,5 @@
   <data name="ReasonHlsSegments" xml:space="preserve"><value>HLS segments unavailable</value></data>
   <data name="ReasonSubtitles" xml:space="preserve"><value>Subtitle burn-in</value></data>
   <data name="ReasonResolution" xml:space="preserve"><value>Resolution not supported</value></data>
+  <data name="ReasonQualityDownscale" xml:space="preserve"><value>Reduced quality</value></data>
 </root>

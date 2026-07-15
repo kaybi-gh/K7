@@ -5,6 +5,7 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Components;
 
@@ -17,7 +18,19 @@ public partial class AdminActiveStreamsSection : IDisposable
     protected override async Task OnInitializedAsync()
     {
         HubClient.ActiveStreamsUpdated += OnActiveStreamsUpdated;
+        HubClient.ConnectionStateChanged += OnHubConnectionStateChanged;
 
+        await RefreshStreamsAsync();
+    }
+
+    private void OnHubConnectionStateChanged(HubConnectionState state)
+    {
+        if (state == HubConnectionState.Connected)
+            _ = RefreshStreamsAsync();
+    }
+
+    private async Task RefreshStreamsAsync()
+    {
         await FetchStreamsAsync();
 
         try
@@ -27,6 +40,8 @@ public partial class AdminActiveStreamsSection : IDisposable
         catch
         {
         }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnActiveStreamsUpdated(IReadOnlyList<ActiveStreamDto> streams)
@@ -80,6 +95,10 @@ public partial class AdminActiveStreamsSection : IDisposable
             || sd?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true;
 
         var videoIsTranscoded = isSubtitleBurnIn
+            || sd?.Mode == PlaybackMode.Transcode
+            || sd?.Reason.HasFlag(TranscodeReason.ResolutionNotSupported) == true
+            || sd?.Reason.HasFlag(TranscodeReason.QualityDownscale) == true
+            || HasResolutionDownscale(sd)
             || (sd?.SourceVideoCodec is not null
                 && sd.StreamVideoCodec is not null
                 && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase));
@@ -96,7 +115,12 @@ public partial class AdminActiveStreamsSection : IDisposable
                 modeLabel = "Transcode";
                 modeBadgeVariant = "transcode";
             }
-            else if (sd!.Mode == PlaybackMode.Direct)
+            else if (sd!.Mode == PlaybackMode.Transcode)
+            {
+                modeLabel = "Transcode";
+                modeBadgeVariant = "transcode";
+            }
+            else if (sd.Mode == PlaybackMode.Direct)
             {
                 modeLabel = "Direct";
                 modeBadgeVariant = "direct";
@@ -144,9 +168,16 @@ public partial class AdminActiveStreamsSection : IDisposable
             SourceAudioCodec = sd?.SourceAudioCodec,
             StreamVideoCodec = sd?.StreamVideoCodec,
             StreamAudioCodec = sd?.StreamAudioCodec,
-            Resolution = sd?.SourceResolution,
+            Resolution = sd?.SourceResolution is not null
+                && sd.StreamResolution is not null
+                && !string.Equals(sd.SourceResolution, sd.StreamResolution, StringComparison.OrdinalIgnoreCase)
+                ? $"{sd.SourceResolution} -> {sd.StreamResolution}"
+                : sd?.StreamResolution ?? sd?.SourceResolution,
             TranscodeReason = sd?.Reason is not null and not TranscodeReason.None ? FormatReason(sd.Reason) : null,
             Bitrate = sd?.Bitrate is > 0 ? FormatBitrate(sd.Bitrate.Value) : null,
+            VideoEncoder = sd?.VideoEncoder,
+            IsHardwareAccelerated = sd?.IsHardwareAccelerated,
+            AudioEncoder = sd?.AudioEncoder,
             AudioTrackLanguage = sd?.AudioTrackLanguage,
             AudioTrackTitle = sd?.AudioTrackTitle,
             AudioChannelLayout = sd?.AudioChannelLayout,
@@ -171,6 +202,11 @@ public partial class AdminActiveStreamsSection : IDisposable
             : $"{bitrate} Kbps";
     }
 
+    private static bool HasResolutionDownscale(StreamDecisionDto? decision) =>
+        decision?.SourceResolution is not null
+        && decision.StreamResolution is not null
+        && !string.Equals(decision.SourceResolution, decision.StreamResolution, StringComparison.OrdinalIgnoreCase);
+
     private string FormatReason(TranscodeReason reason)
     {
         var parts = new List<string>();
@@ -187,6 +223,8 @@ public partial class AdminActiveStreamsSection : IDisposable
             parts.Add(L["ReasonSubtitles"]);
         if (reason.HasFlag(TranscodeReason.ResolutionNotSupported))
             parts.Add(L["ReasonResolution"]);
+        if (reason.HasFlag(TranscodeReason.QualityDownscale))
+            parts.Add(L["ReasonQualityDownscale"]);
 
         return string.Join(", ", parts);
     }
@@ -194,6 +232,7 @@ public partial class AdminActiveStreamsSection : IDisposable
     public void Dispose()
     {
         HubClient.ActiveStreamsUpdated -= OnActiveStreamsUpdated;
+        HubClient.ConnectionStateChanged -= OnHubConnectionStateChanged;
 
         _ = HubClient.LeaveAdminStreamsGroupAsync();
     }

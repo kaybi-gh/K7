@@ -69,6 +69,9 @@ public sealed record StreamDetailModel
     public string? Resolution { get; init; }
     public string? TranscodeReason { get; init; }
     public string? Bitrate { get; init; }
+    public string? VideoEncoder { get; init; }
+    public bool? IsHardwareAccelerated { get; init; }
+    public string? AudioEncoder { get; init; }
 
     public string? AudioTrackLanguage { get; init; }
     public string? AudioTrackTitle { get; init; }

@@ -116,6 +116,30 @@
     color: var(--color-error);
 }
 
+::deep .stream-card__encoder-badge {
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+::deep .stream-card__encoder-badge--hw {
+    background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+    color: var(--color-primary);
+}
+
+::deep .stream-card__encoder-badge--sw {
+    background: color-mix(in srgb, var(--color-text-secondary) 15%, transparent);
+    color: var(--color-text-secondary);
+}
+
+::deep .stream-card__encoder {
+    font-size: 0.5625rem;
+    color: var(--color-text-secondary);
+}
+
 ::deep .stream-card__title-row {
     display: flex;
     align-items: center;

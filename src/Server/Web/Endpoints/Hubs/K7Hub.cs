@@ -5,6 +5,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
@@ -27,7 +28,8 @@ public class K7Hub(
     ILogger<K7Hub> logger,
     ISyncPlayCoordinator syncPlay,
     IUserSettingsService userSettingsService,
-    IHubPresenceTracker presenceTracker) : Hub<IK7HubClient>
+    IHubPresenceTracker presenceTracker,
+    IServiceScopeFactory scopeFactory) : Hub<IK7HubClient>
 {
     public override async Task OnConnectedAsync()
     {
@@ -142,6 +144,13 @@ public class K7Hub(
 
         await Groups.AddToGroupAsync(Context.ConnectionId, AdminStreamsGroup);
         await Clients.Caller.ReceiveOnlineUsersPresenceUpdated(BuildOnlineUsersPresenceDto());
+
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var snapshotService = scope.ServiceProvider.GetRequiredService<IActiveStreamsSnapshotService>();
+            var streams = await snapshotService.BuildAsync(Context.ConnectionAborted);
+            await Clients.Caller.ReceiveActiveStreamsUpdated(streams);
+        }
     }
 
     public async Task LeaveAdminStreamsGroup()

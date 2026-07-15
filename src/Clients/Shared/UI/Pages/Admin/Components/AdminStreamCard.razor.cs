@@ -29,10 +29,30 @@ public partial class AdminStreamCard
             || d.SubtitleCodec is not null);
 
     private bool IsVideoTranscoded => Stream.StreamDecision is { } d
-        && (IsSubtitleBurnIn
+        && (d.Mode == PlaybackMode.Transcode
+            || IsSubtitleBurnIn
+            || d.Reason.HasFlag(TranscodeReason.ResolutionNotSupported)
+            || d.Reason.HasFlag(TranscodeReason.QualityDownscale)
+            || HasResolutionDownscale(d)
             || (d.SourceVideoCodec is not null
                 && d.StreamVideoCodec is not null
                 && !string.Equals(d.SourceVideoCodec, d.StreamVideoCodec, StringComparison.OrdinalIgnoreCase)));
+
+    private static bool HasResolutionDownscale(StreamDecisionDto decision) =>
+        decision.SourceResolution is not null
+        && decision.StreamResolution is not null
+        && !string.Equals(decision.SourceResolution, decision.StreamResolution, StringComparison.OrdinalIgnoreCase);
+
+    private bool ShowEncoderBadge => IsVideoTranscoded && HasVideoEncoderInfo;
+
+    private bool ShowAudioEncoderBadge => IsAudioTranscoded && !IsVideoTranscoded && HasAudioEncoderInfo;
+
+    private bool HasVideoEncoderInfo => Stream.StreamDecision?.VideoEncoder is not null
+        || Stream.StreamDecision?.IsHardwareAccelerated is not null;
+
+    private bool HasAudioEncoderInfo => Stream.StreamDecision?.AudioEncoder is not null;
+
+    private bool IsHardwareEncoder => Stream.StreamDecision?.IsHardwareAccelerated == true;
 
     private bool IsAudioTranscoded => Stream.StreamDecision is { } d
         && d.SourceAudioCodec is not null
@@ -138,6 +158,8 @@ public partial class AdminStreamCard
             parts.Add(L["ReasonSubtitles"]);
         if (reason.HasFlag(TranscodeReason.ResolutionNotSupported))
             parts.Add(L["ReasonResolution"]);
+        if (reason.HasFlag(TranscodeReason.QualityDownscale))
+            parts.Add(L["ReasonQualityDownscale"]);
 
         return string.Join(", ", parts);
     }
