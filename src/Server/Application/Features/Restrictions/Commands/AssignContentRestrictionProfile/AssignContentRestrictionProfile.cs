@@ -24,7 +24,7 @@ public class AssignContentRestrictionProfileCommandHandler(IApplicationDbContext
         if (request.ProfileId.HasValue)
         {
             var profile = await context.ContentRestrictionProfiles
-                .AnyAsync(p => p.Id == request.ProfileId.Value, cancellationToken);
+                .FirstOrDefaultAsync(p => p.Id == request.ProfileId.Value, cancellationToken);
             Guard.Against.NotFound(request.ProfileId.Value, profile);
         }
 
