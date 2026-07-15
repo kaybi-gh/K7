@@ -241,6 +241,43 @@ public static class MediaMappings
             List<MetadataPictureDto> MapPictures(IEnumerable<MetadataPicture> pictures) =>
                 pictures.Select(MapPicture).ToList();
 
+            LiteSerieEpisodeDto MapSerieEpisode(SerieEpisode episode)
+            {
+                var indexedFile = domain.IndexedFiles.FirstOrDefault();
+                var remoteIndexedFile = domain.RemoteIndexedFiles.FirstOrDefault();
+
+                return new LiteSerieEpisodeDto()
+                {
+                    Id = domain.Id,
+                    Title = domain.Title,
+                    SortTitle = domain.SortTitle,
+                    ReleaseDate = domain.ReleaseDate,
+                    Created = domain.Created,
+                    Pictures = MapPictures(domain.Pictures),
+                    EpisodeNumber = episode.EpisodeNumber,
+                    SeasonNumber = episode.Season?.SeasonNumber ?? 0,
+                    SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
+                    Duration = (indexedFile?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
+                        ?? remoteIndexedFile?.Duration?.TotalSeconds,
+                    Overview = episode.Overview,
+                    SerieId = episode.SerieId,
+                    SerieTitle = episode.Serie?.Title,
+                    SerieReleaseDate = episode.Serie?.ReleaseDate,
+                    StillImageId = domain.Pictures
+                        .Where(p => p.Type == MetadataPictureType.Still)
+                        .Select(p => (Guid?)p.Id)
+                        .FirstOrDefault(),
+                    IndexedFileId = indexedFile?.Id,
+                    RemoteIndexedFileId = remoteIndexedFile?.Id,
+                    SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
+                    SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
+                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null,
+                    UserRating = GetUserRating(domain)
+                };
+            }
+
             return domain switch
             {
                 Movie movie => new LiteMovieDto()
@@ -366,36 +403,7 @@ public static class MediaMappings
                             : null),
                     UserRating = GetUserRating(domain)
                 },
-                SerieEpisode episode => new LiteSerieEpisodeDto()
-                {
-                    Id = domain.Id,
-                    Title = domain.Title,
-                    SortTitle = domain.SortTitle,
-                    ReleaseDate = domain.ReleaseDate,
-                    Created = domain.Created,
-                    Pictures = MapPictures(domain.Pictures),
-                    EpisodeNumber = episode.EpisodeNumber,
-                    SeasonNumber = episode.Season?.SeasonNumber ?? 0,
-                    SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
-                    Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
-                        ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
-                    Overview = episode.Overview,
-                    SerieId = episode.SerieId,
-                    SerieTitle = episode.Serie?.Title,
-                    SerieReleaseDate = episode.Serie?.ReleaseDate,
-                    StillImageId = domain.Pictures
-                        .Where(p => p.Type == MetadataPictureType.Still)
-                        .Select(p => (Guid?)p.Id)
-                        .FirstOrDefault(),
-                    IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
-                    RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
-                    SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
-                    SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
-                    UserRating = GetUserRating(domain)
-                },
+                SerieEpisode episode => MapSerieEpisode(episode),
                 _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
             };
         }
