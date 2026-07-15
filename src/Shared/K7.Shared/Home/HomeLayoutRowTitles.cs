@@ -3,6 +3,7 @@ namespace K7.Shared.Home;
 public static class HomeLayoutRowTitles
 {
     public const string ContinueWatching = "ContinueWatching";
+    public const string RecommendedForYou = "RecommendedForYou";
     public const string NewlyAddedInPrefix = "NewlyAddedIn|";
 
     public static string NewlyAddedIn(string scope) => $"{NewlyAddedInPrefix}{scope}";

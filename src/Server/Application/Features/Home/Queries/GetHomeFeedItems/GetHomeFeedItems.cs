@@ -29,10 +29,11 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = 20;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, IHomeRecommendationService homeRecommendationService)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
+    private static readonly TimeSpan RecommendedCacheDuration = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan ContinueWatchingCacheDuration = TimeSpan.FromMinutes(5);
 
     public async Task<PaginatedList<HomeFeedItemDto>> Handle(GetHomeFeedItemsQuery request, CancellationToken cancellationToken)
@@ -70,7 +71,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             _ => await HandleTopLevelAsync(request, userId, cancellationToken)
         };
 
-        var ttl = strategy == FeedStrategy.ContinueWatching ? ContinueWatchingCacheDuration : DefaultCacheDuration;
+        var ttl = strategy switch
+        {
+            FeedStrategy.ContinueWatching => ContinueWatchingCacheDuration,
+            FeedStrategy.RecommendedForYou => RecommendedCacheDuration,
+            _ => DefaultCacheDuration
+        };
         cache.SetWithSize(cacheKey, (version, result), ttl);
         return result;
     }
@@ -759,48 +765,19 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         if (!userId.HasValue)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
-        // Get user's recently watched media
-        var recentMediaIds = await context.UserMediaStates
-            .AsNoTracking()
-            .Where(s => s.UserId == userId.Value && s.LastInteractedAt != null)
-            .OrderByDescending(s => s.LastInteractedAt)
-            .Take(10)
-            .Select(s => s.MediaId)
-            .ToListAsync(cancellationToken);
+        var recommendedIds = await homeRecommendationService.GetRecommendedMediaIdsAsync(
+            userId.Value,
+            request.LibraryIds,
+            request.PageNumber,
+            request.PageSize,
+            cancellationToken);
 
-        if (recentMediaIds.Count == 0)
+        if (recommendedIds.Count == 0)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
-        // Collect recommendation external IDs from those media
-        var recommendations = await context.MediaRecommendations
+        var items = await context.Medias
             .AsNoTracking()
-            .Where(r => recentMediaIds.Contains(r.MediaId))
-            .ToListAsync(cancellationToken);
-
-        if (recommendations.Count == 0)
-            return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
-
-        var allRecommendedIds = recommendations
-            .SelectMany(r => r.RecommendedIds.Select(id => new { r.ProviderName, ExternalId = id }))
-            .Distinct()
-            .ToList();
-
-        var externalIdValues = allRecommendedIds.Select(x => x.ExternalId).Distinct().ToList();
-
-        // Find local media matching those external IDs
-        var query = context.Medias
-            .AsNoTracking()
-            .Where(m => !recentMediaIds.Contains(m.Id))
-            .Where(m => m.ExternalIds.Any(e => externalIdValues.Contains(e.Value)));
-
-        query = ApplyLibraryFilter(query, request.LibraryIds);
-        query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query
-            .OrderBy(m => m.Id)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Where(m => recommendedIds.Contains(m.Id))
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
@@ -808,9 +785,15 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
-        var feedItems = items.Select(i => MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
-        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+        var orderedItems = recommendedIds
+            .Select(id => items.FirstOrDefault(i => i.Id == id))
+            .Where(i => i is not null)
+            .Cast<BaseMedia>()
+            .ToList();
+
+        var pictureSizes = await GetPictureSizesAsync(orderedItems, cancellationToken);
+        var feedItems = orderedItems.Select(i => MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
+        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
     private enum FeedStrategy

@@ -68,10 +68,21 @@ public class GetEffectiveHomeLayoutQueryHandler(
                 PageSize = 20,
                 IsVisible = true,
                 Order = 0
+            },
+            new()
+            {
+                Id = new Guid("00000000-0000-0000-0000-000000000002"),
+                Title = HomeLayoutRowTitles.RecommendedForYou,
+                DisplayType = HomeRowDisplayType.Carousel,
+                ContinueWatching = false,
+                OrderBy = [MediaOrderingOption.RecommendedForYou],
+                PageSize = 20,
+                IsVisible = true,
+                Order = 1
             }
         };
 
-        var order = 1;
+        var order = 2;
         foreach (var group in groups)
         {
             rows.Add(new HomeRowConfigDto
