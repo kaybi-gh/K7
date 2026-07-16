@@ -1,9 +1,12 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Collections.Commands.UpdateCollection;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record UpdateCollectionCommand : IRequest
 {
     public required Guid Id { get; init; }

@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylistItems;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -13,7 +14,7 @@ public class GetPlaylistItems : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/playlists/{playlistId}/items", async ([FromServices] ISender sender, Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) =>
+        endpointRouteBuilder.MapGet("/api/playlists/{playlistId}/items", async ([FromServices] ISender sender, Guid playlistId, int pageNumber = 1, int pageSize = PagingDefaults.DefaultPageSize, CancellationToken cancellationToken = default) =>
         {
             var result = await sender.Send(new GetPlaylistItemsWithPaginationQuery
             {

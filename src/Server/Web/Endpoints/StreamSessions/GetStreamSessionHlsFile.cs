@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.StreamSessions.Queries.GetStreamSession;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
@@ -53,7 +54,7 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
                 return Results.NotFound();
             }
 
-            var contentType = GetContentType(fullPath);
+            var contentType = MimeTypeHelper.GetStreamContentType(Path.GetExtension(fullPath));
             var stream = File.OpenRead(fullPath);
 
             return Results.File(stream, contentType: contentType);
@@ -61,18 +62,5 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
-    }
-
-    private static string GetContentType(string path)
-    {
-        var extension = Path.GetExtension(path).ToLowerInvariant();
-
-        return extension switch
-        {
-            ".m3u8" => "application/vnd.apple.mpegurl",
-            ".m4s" => "video/iso.segment",
-            ".mp4" => "video/mp4",
-            _ => "application/octet-stream"
-        };
     }
 }

@@ -1,12 +1,14 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Users;
 
 namespace K7.Server.Application.Features.Users.Queries.GetUsers;
 
-public record GetUsersResult(List<User> Users, Dictionary<Guid, Guid> AvatarPictureIds);
+public record GetUsersResult(List<UserDto> Users, Dictionary<Guid, Guid> AvatarPictureIds);
 
 [Authorize(Roles = Roles.Administrator)]
 public record GetUsersQuery : IRequest<GetUsersResult>
@@ -43,25 +45,40 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResul
             .OrderBy(u => u.Created)
             .ToListAsync(cancellationToken);
 
-        var result = new List<User>();
+        var identityUserIds = domainUsers
+            .Where(user => user.IdentityUserId is not null)
+            .Select(user => user.IdentityUserId!)
+            .ToList();
+        var userNamesTask = _identityService.GetUserNamesAsync(identityUserIds);
+        var emailsTask = _identityService.GetEmailsAsync(identityUserIds);
+        var rolesTask = _identityService.GetRolesAsync(identityUserIds);
+        await Task.WhenAll(userNamesTask, emailsTask, rolesTask);
 
-        foreach (var user in domainUsers)
-        {
-            user.Role = Roles.Guest;
-
-            if (user.IdentityUserId is not null)
+        var userNames = await userNamesTask;
+        var emails = await emailsTask;
+        var rolesByIdentityUserId = await rolesTask;
+        var result = domainUsers
+            .Select(user =>
             {
-                user.Email = await _identityService.GetEmailAsync(user.IdentityUserId);
-                user.UserName = await _identityService.GetUserNameAsync(user.IdentityUserId);
-                var roles = await _identityService.GetRolesAsync(user.IdentityUserId);
-                user.Role = roles.FirstOrDefault() ?? Roles.Guest;
-            }
+                var role = user.IdentityUserId is { } identityUserId
+                    && rolesByIdentityUserId.TryGetValue(identityUserId, out var roles)
+                    ? roles.FirstOrDefault() ?? Roles.Guest
+                    : Roles.Guest;
 
-            if (request.Role is not null && user.Role != request.Role)
-                continue;
-
-            result.Add(user);
-        }
+                return user.ToUserDto() with
+                {
+                    Email = user.IdentityUserId is { } emailIdentityUserId
+                        ? emails.GetValueOrDefault(emailIdentityUserId)
+                        : user.Email,
+                    UserName = user.IdentityUserId is { } userNameIdentityUserId
+                        ? userNames.GetValueOrDefault(userNameIdentityUserId)
+                        : user.UserName,
+                    Role = role,
+                    IsGuest = role == Roles.Guest
+                };
+            })
+            .Where(user => request.Role is null || user.Role == request.Role)
+            .ToList();
 
         var userIds = result.Select(u => u.Id).ToList();
         var avatarMap = await _context.MetadataPictures

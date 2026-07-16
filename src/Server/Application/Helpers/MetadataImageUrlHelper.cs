@@ -92,21 +92,7 @@ public static class MetadataImageUrlHelper
             .ToList();
 
     public static string? GetExtensionFromContentType(string? contentType)
-    {
-        if (string.IsNullOrWhiteSpace(contentType))
-            return null;
-
-        var mime = contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
-        return mime switch
-        {
-            "image/jpeg" => ".jpg",
-            "image/png" => ".png",
-            "image/webp" => ".webp",
-            "image/gif" => ".gif",
-            "image/svg+xml" => ".svg",
-            _ => null
-        };
-    }
+        => MimeTypeHelper.GetImageExtension(contentType);
 
     public static bool IsVectorContentType(string? contentType) =>
         string.Equals(

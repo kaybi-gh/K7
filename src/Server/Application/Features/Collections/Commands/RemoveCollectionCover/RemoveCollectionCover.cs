@@ -1,7 +1,10 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionCover;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record RemoveCollectionCoverCommand(Guid CollectionId) : IRequest;
 
 public class RemoveCollectionCoverCommandHandler(IApplicationDbContext context, IUser currentUser)

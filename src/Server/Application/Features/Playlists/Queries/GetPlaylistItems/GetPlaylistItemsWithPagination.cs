@@ -1,17 +1,21 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Features.Restrictions.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
 
 namespace K7.Server.Application.Features.Playlists.Queries.GetPlaylistItems;
 
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetPlaylistItemsWithPaginationQuery : IRequest<PaginatedList<PlaylistItem>>
 {
     public required Guid PlaylistId { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 50;
+    public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)
@@ -19,9 +23,13 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
 {
     public async Task<PaginatedList<PlaylistItem>> Handle(GetPlaylistItemsWithPaginationQuery request, CancellationToken cancellationToken)
     {
+        var userId = currentUser.Id;
+        if (userId is null)
+            throw new ForbiddenAccessException();
+
         var playlist = await context.Playlists
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == currentUser.Id!.Value, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == userId.Value, cancellationToken);
 
         Guard.Against.NotFound(request.PlaylistId, playlist);
 
@@ -47,14 +55,14 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
             .OrderBy(i => i.Order)
             .AsNoTracking();
 
-        if (currentUser.Id is { } userId)
+        if (userId is { } currentUserId)
         {
             var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Where(e => e.UserId == currentUserId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
             var excludedMediaIds = context.UserMediaExclusions
-                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Where(e => e.UserId == currentUserId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.MediaId);
 
             query = query
@@ -63,7 +71,7 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
 
             var restrictionProfile = await context.ContentRestrictionProfiles
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == currentUserId), cancellationToken);
 
             if (restrictionProfile is not null)
             {

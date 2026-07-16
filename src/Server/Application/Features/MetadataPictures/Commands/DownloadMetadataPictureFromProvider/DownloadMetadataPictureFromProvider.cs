@@ -172,19 +172,19 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception($"Failed to download remote metadata picture. Network error: {ex.Message}", ex);
+            throw new HttpRequestException($"Failed to download remote metadata picture: {ex.Message}", ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            throw new Exception($"Timed out downloading remote metadata picture from {entity.OriginalRemoteUri?.Host}.", ex);
+            throw new TimeoutException($"Timed out downloading remote metadata picture from {entity.OriginalRemoteUri?.Host}.", ex);
         }
         catch (IOException ex)
         {
-            throw new Exception($"Failed to save remote metadata picture to file. IO error: {ex.Message}", ex);
+            throw new IOException($"Failed to save remote metadata picture to file: {ex.Message}", ex);
         }
         catch (Exception ex)
         {
-            throw new Exception($"Unexpected error while trying to download remote metadata picture. Error: {ex.Message}.", ex);
+            throw new InvalidOperationException($"Unexpected error while downloading remote metadata picture: {ex.Message}", ex);
         }
     }
 }

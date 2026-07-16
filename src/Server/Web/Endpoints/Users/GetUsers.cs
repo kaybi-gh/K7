@@ -1,4 +1,3 @@
-using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Users.Queries.GetUsers;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Users;
@@ -24,12 +23,12 @@ public class GetUsers : IEndpoint
                 Role = role,
                 IsActive = isActive
             }, cancellationToken);
-            return Results.Ok(result.Users.Select(u =>
+            return Results.Ok(result.Users.Select(user =>
             {
-                var avatarUrl = result.AvatarPictureIds.TryGetValue(u.Id, out var picId)
+                var avatarUrl = result.AvatarPictureIds.TryGetValue(user.Id, out var picId)
                     ? $"/api/metadata-pictures/{picId}"
                     : null;
-                return u.ToUserDto(avatarUrl: avatarUrl);
+                return user with { AvatarUrl = avatarUrl };
             }));
         })
         .RequireAuthorization(Policies.AdminOnly)

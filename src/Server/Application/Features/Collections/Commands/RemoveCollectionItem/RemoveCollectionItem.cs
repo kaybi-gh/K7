@@ -1,7 +1,10 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionItem;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record RemoveCollectionItemCommand : IRequest
 {
     public required Guid CollectionId { get; init; }

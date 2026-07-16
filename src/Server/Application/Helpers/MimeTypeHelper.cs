@@ -4,6 +4,43 @@ namespace K7.Server.Application.Helpers;
 
 public static class MimeTypeHelper
 {
+    public const string HlsPlaylist = "application/vnd.apple.mpegurl";
+    public const string Binary = "application/octet-stream";
+
+    public static string GetImageContentType(string extension) => extension.ToLowerInvariant() switch
+    {
+        ".webp" => "image/webp",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".png" => "image/png",
+        ".svg" => "image/svg+xml",
+        ".gif" => "image/gif",
+        _ => Binary
+    };
+
+    public static string GetStreamContentType(string extension) => extension.ToLowerInvariant() switch
+    {
+        ".m3u8" => HlsPlaylist,
+        ".m4s" => "video/iso.segment",
+        ".mp4" => "video/mp4",
+        _ => Binary
+    };
+
+    public static string? GetImageExtension(string? contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+            return null;
+
+        return contentType.Split(';', 2)[0].Trim().ToLowerInvariant() switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            "image/svg+xml" => ".svg",
+            _ => null
+        };
+    }
+
     public static string GetMimeType(MediaFormatType type, string container)
     {
         return type switch
