@@ -2,93 +2,12 @@
 applyTo: "src/Clients/**"
 ---
 
-# Blazor UI Instructions
+# Blazor UI / clients
 
-## Shared Component Architecture
+Follow:
 
-All reusable UI code lives in `Clients/Shared/`, split into four projects:
+- [docs/dev/developing.md](../../docs/dev/developing.md) (clients, DesignSystem, localization)
+- [docs/dev/design.md](../../docs/dev/design.md) (visual constraints)
+- [docs/dev/architecture.md](../../docs/dev/architecture.md#ui-layout) (paths)
 
-| Project | Role |
-|---|---|
-| `Clients/Shared/Components` | Reusable Blazor components |
-| `Clients/Shared/Pages` | Routable pages shared between Web and MAUI |
-| `Clients/Shared/Services` | Client-side services (API access, state, theming) |
-| `Clients/Shared/Models` | Client-side domain models and DTOs |
-
-Both `Clients/Web` (Blazor WASM) and `Clients/MAUI` (Blazor Hybrid) reference these shared projects.
-
-## Component Authoring
-
-Use the **triad pattern** (up to three files per component):
-
-```
-MyComponent.razor       ← Markup
-MyComponent.razor.cs    ← Code-behind (logic, parameters, inject)
-MyComponent.razor.css   ← Scoped CSS (optional)
-```
-
-```csharp
-// Good: Code-behind with partial class
-public partial class MyComponent : ComponentBase
-{
-    [Inject] private IMyService MyService { get; set; } = default!;
-    [Parameter] public string Title { get; set; } = string.Empty;
-}
-
-// Avoid: All logic inline in .razor file
-```
-
-## Placement Rules
-
-- New **pages** (routable) → `Clients/Shared/Pages/`
-- New **reusable components** → `Clients/Shared/Components/`
-- New **client services** → `Clients/Shared/Services/`
-- **MAUI-specific** code (platform APIs, native services) → `Clients/MAUI/` only
-
-## K7 Component System
-
-K7 has its own component library under `Clients/Shared/UI/Components/`. Use K7 components directly in pages; do not use third-party UI frameworks in pages.
-
-When building new reusable components, wrap K7 primitives:
-
-```razor
-@* Good: K7-specific wrapper component *@
-<K7MediaCard Title="@Media.Title" ImageUrl="@Media.PosterUrl" />
-
-@* Avoid: third-party components directly in pages *@
-```
-
-## Theming
-
-- Use `ThemeService` and `Themes.cs` for theme definitions.
-- Never hardcode colors; use CSS variables.
-- Theme providers are centralized in `App.razor`.
-
-## CSS Conventions
-
-- Prefer **scoped CSS** (`.razor.css`) over global styles.
-- Use **CSS variables** for theming values.
-- No inline styles (`style="..."`) ; use CSS classes.
-- If custom CSS is needed outside scoped files, place it in the relevant project's `wwwroot/` folder.
-
-## Localization and Translations
-
-- **Mandatory Translations**: Every new label, text, or user-facing string in a component or page MUST be localized.
-- Do not hardcode any text strings in the .razor or .cs files.
-- Use the IStringLocalizer service (or equivalent localization mechanism used in K7) to retrieve translated strings from .resx resources.
-- When creating a new component or page, ensure its associated resource files are updated: `MyComponent.resx` (French default) and `MyComponent.en.resx` (English).
-
-### French default locale (`.resx`)
-
-- Files without the `.en` suffix are the **French** UI strings (project default culture).
-- Use **proper French spelling and diacritics** in `<value>` text: accents, cedilla, apostrophes (`Préférences`, `Bibliothèque`, `Échec`, `À propos`, etc.).
-- The ASCII-only punctuation rule in C# does **not** apply to localized French strings in `.resx`.
-- Keep **resource keys** ASCII and stable (`name="Federation"`, not `name="Fédération"`).
-- Do not strip accents to "simplify" French copy; English lives in `.en.resx`.
-- Preserve placeholders (`{0}`, `{{variable}}`) and technical tokens (`PIN`, `Wi-Fi`, URL paths like `/media/movies`) unchanged.
-- Distinguish verb *avoir* (`a`) from preposition *à*, and noun forms (`partages`) from adjectives (`partagés`).
-
-### Bulk accent maintenance
-
-- Prefer `scripts/fix-french-resx-accents.py` (UTF-8 safe) or edit `.resx` directly.
-- On Windows PowerShell, if strings show mojibake (`TÃ©lÃ©chargement`), run `scripts/fix-resx-mojibake.ps1` after bulk replacements.
+Summary: triad `.razor` / `.razor.cs` / `.razor.css`; components under `Clients/Shared/UI/`; DesignSystem demo for shared components; mandatory `IStringLocalizer` + `.resx` (French default, `*.en.resx` English).

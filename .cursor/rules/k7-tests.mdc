@@ -11,4 +11,4 @@ Stack: NUnit, FluentAssertions, NSubstitute. AAA structure.
 Naming: `{ClassUnderTest}Tests`, `{Method}_Should{Expected}_When{Condition}`.
 
 Functional: `CustomWebApplicationFactory`. Integration: Testcontainers + Respawn.
-Critical Blazor components: bUnit tests in `Clients/Shared/Components`.
+Critical Blazor components: bUnit in `tests/Clients.ComponentTests` (components live under `Clients/Shared/UI/Components/`).
