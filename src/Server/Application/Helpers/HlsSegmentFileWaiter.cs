@@ -9,7 +9,7 @@ namespace K7.Server.Application.Helpers;
 /// </summary>
 internal static class HlsSegmentFileWaiter
 {
-    public static async Task<bool> WaitUntilAvailableAsync(
+    public static async Task<Exception?> WaitUntilAvailableAsync(
         string segmentPath,
         TranscodeJob job,
         Func<CancellationToken, Task> ensureGenerationAsync,
@@ -29,6 +29,10 @@ internal static class HlsSegmentFileWaiter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (job.FfmpegTask is { IsFaulted: true } failedTask)
+                return failedTask.Exception?.GetBaseException()
+                    ?? new InvalidOperationException("FFmpeg exited without generating the requested segment.");
+
             var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
             if (!ffmpegRunning && (DateTime.UtcNow - lastKick).TotalSeconds >= 1.5)
             {
@@ -39,7 +43,9 @@ internal static class HlsSegmentFileWaiter
             await Task.Delay(pollingIntervalMs, cancellationToken);
         }
 
-        return File.Exists(segmentPath);
+        return File.Exists(segmentPath)
+            ? null
+            : new TimeoutException("FFmpeg did not generate the requested segment before the timeout.");
     }
 
     public static async Task WaitUntilReadableAsync(

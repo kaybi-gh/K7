@@ -260,17 +260,24 @@ public sealed class StreamPlaybackService(
         CancellationToken cancellationToken)
     {
         logger.LogInformation("Looking for segment file at: {SegmentPath}", segmentPath);
-        if (!await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
-                segmentPath,
-                job,
-                ct => transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(job.JobId, requestedIndex, allSegments, ct),
-                cancellationToken,
-                maxTotalSeconds: segmentNumber == -1 ? 90 : 180))
+        var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
+            segmentPath,
+            job,
+            ct => transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(job.JobId, requestedIndex, allSegments, ct),
+            cancellationToken,
+            maxTotalSeconds: segmentNumber == -1 ? 90 : 180);
+        if (generationFailure is not null)
         {
             logger.LogError(
-                "Segment {SegmentNumber} was not generated within timeout for job {JobId} (ffmpeg running: {FfmpegRunning})",
-                segmentNumber, job.JobId, job.FfmpegTask is { IsCompleted: false });
-            return new EmptyHttpContentResult(503);
+                generationFailure,
+                "Segment {SegmentNumber} was not generated for job {JobId} (ffmpeg running: {FfmpegRunning})",
+                segmentNumber,
+                job.JobId,
+                job.FfmpegTask is { IsCompleted: false });
+            return new TextHttpContentResult(
+                $"Transcoding failed: {generationFailure.Message}",
+                "text/plain",
+                503);
         }
 
         await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
