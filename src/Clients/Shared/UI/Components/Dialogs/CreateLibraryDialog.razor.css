@@ -4,6 +4,16 @@
     background-color: var(--color-accent-subtle);
 }
 
+.create-library-dialog__media-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+}
+
+.create-library-dialog__media-type-description {
+    color: var(--color-text-muted);
+}
+
 .media-type-card {
     display: flex;
     flex-direction: column;
