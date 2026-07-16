@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <RootNamespace>K7.Clients.MAUI.SmokeTests</RootNamespace>
+        <AssemblyName>K7.Clients.MAUI.SmokeTests</AssemblyName>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <ResizetizerErrorOnDuplicateOutputFilename>false</ResizetizerErrorOnDuplicateOutputFilename>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="nunit" />
+        <PackageReference Include="NUnit.Analyzers">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="NUnit3TestAdapter" />
+        <PackageReference Include="coverlet.collector" />
+        <PackageReference Include="FluentAssertions" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Clients\MAUI\K7.Clients.MAUI.csproj" />
+    </ItemGroup>
+
+    <Target Name="_RemoveImportedAppIcon" AfterTargets="ResizetizeCollectItems">
+        <ItemGroup>
+            <MauiImage Remove="@(MauiImage)"
+                Condition="'%(MauiImage.Filename)' == 'appicon' and '%(MauiImage.IsAppIcon)' == 'True'" />
+        </ItemGroup>
+    </Target>
+
+</Project>
