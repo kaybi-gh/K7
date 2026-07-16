@@ -17,11 +17,17 @@ using static DatabaseFixture;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
-    private readonly DbConnection _connection;
+    private readonly string _connectionString;
 
-    public CustomWebApplicationFactory(DbConnection connection)
+    public CustomWebApplicationFactory(string connectionString)
     {
-        _connection = connection;
+        _connectionString = connectionString;
+    }
+
+    // Backward-compatible overload for callers that still pass a live connection.
+    public CustomWebApplicationFactory(DbConnection connection)
+        : this(connection.ConnectionString)
+    {
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -48,7 +54,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 .AddDbContext<IApplicationDbContext, ApplicationDbContext>((sp, options) =>
                 {
                     options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-                    options.UseNpgsql(_connection);
+                    // Connection string (pooled) avoids Npgsql "command already in progress"
+                    // when domain events / hosted services query concurrently.
+                    options.UseNpgsql(_connectionString);
                 });
         });
     }

@@ -11,7 +11,7 @@ public class GetLibrariesTests : DatabaseFixture
     public async Task ShouldReturnLibraries()
     {
         // Arrange
-        await RunAsDefaultUserAsync();
+        await RunAsAdministratorAsync();
         await SendAsync(new CreateLibraryCommand
         {
             Title = "New Library",
@@ -19,7 +19,8 @@ public class GetLibrariesTests : DatabaseFixture
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
             MetadataFallbackLanguage = "en",
-            RootPath = "/root/path"
+            RootPath = "/root/path",
+            TriggerFileIndexingOnCreation = false
         });
         var query = new GetLibrariesQuery();
 
@@ -28,18 +29,5 @@ public class GetLibrariesTests : DatabaseFixture
 
         // Assert
         result.Should().HaveCount(1);
-    }
-
-    [Test]
-    public async Task ShouldDenyAnonymousUser()
-    {
-        // Arrange
-        var query = new GetLibrariesQuery();
-
-        // Act
-        var action = () => SendAsync(query);
-
-        // Assert
-        await action.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 }

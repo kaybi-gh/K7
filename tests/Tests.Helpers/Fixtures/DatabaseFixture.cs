@@ -8,37 +8,61 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Tests.Helpers.Fixtures;
 
+/// <summary>
+/// Per-test scope helpers for functional tests. Host lifetime is owned by a
+/// [SetUpFixture] in the consuming test assembly (see Application.FunctionalTests/Testing.cs).
+/// </summary>
 [TestFixture]
 public class DatabaseFixture
 {
-    private static ITestDatabase _database;
-    private static CustomWebApplicationFactory _factory = null!;
-    private static IServiceScopeFactory _scopeFactory = null!;
+    private static ITestDatabase? _database;
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "NUnit",
+        "NUnit1032",
+        Justification = "Host lifetime is owned by the consuming assembly SetUpFixture via InitializeAsync/DisposeAsync.")]
+    private static CustomWebApplicationFactory? _factory;
+    private static IServiceScopeFactory? _scopeFactory;
     public static IServiceScope Scope = null!;
     private static string? _userId;
 
-    [OneTimeSetUp]
-    public async Task DatabaseFixture_OneTimeSetUp()
+    public static async Task InitializeAsync()
     {
+        if (_factory is not null)
+            return;
+
         _database = await TestDatabaseFactory.CreateAsync();
-        _factory = new CustomWebApplicationFactory(_database.GetConnection());
+        _factory = new CustomWebApplicationFactory(_database.GetConnectionString());
         _scopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
     }
 
-    [OneTimeTearDown]
-    public async Task DatabaseFixture_OneTimeTearDown()
+    public static async Task DisposeAsync()
     {
-        await _database.DisposeAsync();
-        await _factory.DisposeAsync();
+        if (_factory is not null)
+        {
+            await _factory.DisposeAsync();
+            _factory = null;
+        }
+
+        if (_database is not null)
+        {
+            await _database.DisposeAsync();
+            _database = null;
+        }
+
+        _scopeFactory = null;
     }
 
     [SetUp]
     public async Task DatabaseFixture_SetUp()
     {
+        if (_scopeFactory is null)
+            throw new InvalidOperationException(
+                "Functional test host was not initialized. Ensure the assembly [SetUpFixture] ran and Docker is available for Testcontainers Postgres.");
+
         Scope = _scopeFactory.CreateScope();
         try
         {
-            await _database.ResetAsync();
+            await _database!.ResetAsync();
         }
         catch (Exception)
         {
@@ -50,7 +74,8 @@ public class DatabaseFixture
     [TearDown]
     public void DatabaseFixture_TearDown()
     {
-        Scope.Dispose();
+        Scope?.Dispose();
+        Scope = null!;
     }
 
     public static async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
