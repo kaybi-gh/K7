@@ -1,9 +1,10 @@
-using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
+using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Tests.Helpers.Fixtures;
 using K7.Tests.Helpers.Helpers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Server.Application.FunctionalTests.Services;
@@ -13,117 +14,111 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
     [Test]
     public async Task ShouldAddOneIndexedFile()
     {
-        // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
-        var libraryId = await SendAsync(new CreateLibraryCommand
-        {
-            Title = "New Library",
-            MediaType = LibraryMediaType.Music,
-            MetadataProviderName = "musicbrainz",
-            MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en",
-            RootPath = FileHelper.TestDirectoryPath,
-            TriggerFileIndexingOnCreation = false
-        });
-        var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles!.Count().Should().Be(0);
+        var fileIndexer = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
+        var library = await CreateMusicLibraryAsync();
 
-        // Act
+        (await CountAsync<IndexedFile>()).Should().Be(0);
+
         FileHelper.CreateTestFile("test.mp3", "content");
         FileHelper.CreateTestFile("ignored.extension", "content");
-        CancellationTokenSource cts = new();
-        await fileIndexerService.IndexAsync(library!, cts.Token);
 
-        // Assert
-        library!.IndexedFiles!.Count().Should().Be(1);
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+
+        (await CountAsync<IndexedFile>()).Should().Be(1);
+        var indexed = await GetIndexedFilesAsync();
+        indexed.Should().ContainSingle().Which.Name.Should().Be("test");
     }
 
     [Test]
     public async Task ShouldRemoveOneIndexedFile()
     {
-        // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
+        var fileIndexer = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
         FileHelper.CreateTestFile("noise.mp3", "content");
-        var libraryId = await SendAsync(new CreateLibraryCommand
-        {
-            Title = "New Library",
-            MediaType = LibraryMediaType.Music,
-            MetadataProviderName = "musicbrainz",
-            MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en",
-            RootPath = FileHelper.TestDirectoryPath,
-            TriggerFileIndexingOnCreation = true
-        });
-        var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles!.Count().Should().Be(2);
+        var library = await CreateMusicLibraryAsync();
 
-        // Act
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+        (await CountAsync<IndexedFile>()).Should().Be(2);
+
         FileHelper.DeleteTestFile("test.mp3");
-        CancellationTokenSource cts = new();
-        await fileIndexerService.IndexAsync(library!, cts.Token);
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
 
-        // Assert
-        library!.IndexedFiles!.Count().Should().Be(1);
+        (await CountAsync<IndexedFile>()).Should().Be(1);
+        var remaining = await GetIndexedFilesAsync();
+        remaining.Should().ContainSingle().Which.Name.Should().Be("noise");
     }
 
     [Test]
     public async Task ShouldUpdateIndexedFile()
     {
-        // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
+        var fileIndexer = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
-        var libraryId = await SendAsync(new CreateLibraryCommand
-        {
-            Title = "New Library",
-            MediaType = LibraryMediaType.Music,
-            MetadataProviderName = "musicbrainz",
-            MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en",
-            RootPath = FileHelper.TestDirectoryPath,
-            TriggerFileIndexingOnCreation = true
-        });
-        var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles!.Count().Should().Be(1);
-        CancellationTokenSource cts = new();
-        var lastModifiedIndexedFile = library.IndexedFiles!.First().LastModified;
+        var library = await CreateMusicLibraryAsync();
 
-        // Act
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+        var before = (await GetIndexedFilesAsync()).Should().ContainSingle().Subject;
+
+        // Ensure LastWriteTimeUtc advances on Windows (same-second writes can be treated as unchanged).
+        await Task.Delay(1100);
         FileHelper.DeleteTestFile("test.mp3");
         FileHelper.CreateTestFile("test.mp3", "content2");
-        await fileIndexerService.IndexAsync(library!, cts.Token);
 
-        // Assert
-        library!.IndexedFiles!.Count().Should().Be(1);
-        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles!.First().LastModified);
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+
+        var after = (await GetIndexedFilesAsync()).Should().ContainSingle().Subject;
+        after.Id.Should().Be(before.Id);
+        after.Size.Should().NotBe(before.Size);
+        after.LastWriteTimeUtc.Should().BeAfter(before.LastWriteTimeUtc);
     }
 
     [Test]
     public async Task ShouldNotUpdateIndexedFile()
     {
-        // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
+        var fileIndexer = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
-        var libraryId = await SendAsync(new CreateLibraryCommand
+        var library = await CreateMusicLibraryAsync();
+
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+        var before = (await GetIndexedFilesAsync()).Should().ContainSingle().Subject;
+
+        await fileIndexer.IndexAsync(library, CancellationToken.None);
+
+        var after = (await GetIndexedFilesAsync()).Should().ContainSingle().Subject;
+        after.Id.Should().Be(before.Id);
+        after.Hash.Should().Be(before.Hash);
+        after.Size.Should().Be(before.Size);
+        after.LastWriteTimeUtc.Should().Be(before.LastWriteTimeUtc);
+    }
+
+    private static async Task<Library> CreateMusicLibraryAsync()
+    {
+        var group = new LibraryGroup
         {
-            Title = "New Library",
+            Id = Guid.NewGuid(),
+            Title = "Music Group",
+            MediaType = LibraryMediaType.Music
+        };
+        await AddAsync(group);
+
+        var library = new Library
+        {
+            Id = Guid.NewGuid(),
+            Title = "Music Library",
             MediaType = LibraryMediaType.Music,
+            RootPath = FileHelper.TestDirectoryPath,
             MetadataProviderName = "musicbrainz",
             MetadataLanguage = "fr",
             MetadataFallbackLanguage = "en",
-            RootPath = FileHelper.TestDirectoryPath,
-            TriggerFileIndexingOnCreation = true
-        });
-        var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles!.Count().Should().Be(1);
-        CancellationTokenSource cts = new();
-        var lastModifiedIndexedFile = library.IndexedFiles!.First().LastModified;
+            LibraryGroupId = group.Id,
+            RealtimeMonitorEnabled = false
+        };
+        await AddAsync(library);
+        return library;
+    }
 
-        // Act
-        await fileIndexerService.IndexAsync(library!, cts.Token);
-
-        // Assert
-        library!.IndexedFiles!.Count().Should().Be(1);
-        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles!.First().LastModified);
+    private static async Task<List<IndexedFile>> GetIndexedFilesAsync()
+    {
+        var context = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await context.IndexedFiles.AsNoTracking().ToListAsync();
     }
 }

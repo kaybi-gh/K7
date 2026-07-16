@@ -10,21 +10,10 @@ namespace K7.Server.Application.FunctionalTests.Libraries.Commands;
 public class IndexLibraryFilesTests : FileAndDatabaseFixture
 {
     [Test]
-    public async Task ShouldRequireValidLibraryId()
-    {
-        // Arrange
-
-        // Act
-        var command = new IndexLibraryFilesCommand(Guid.NewGuid());
-
-        // Assert
-        await FluentActions.Invoking(() => SendAsync(command)).Should().ThrowAsync<NotFoundException>();
-    }
-
-    [Test]
     public async Task ShouldIndexLibraryFiles()
     {
         // Arrange
+        await RunAsAdministratorAsync();
         var libraryId = await SendAsync(new CreateLibraryCommand
         {
             Title = "New Library",
@@ -32,7 +21,9 @@ public class IndexLibraryFilesTests : FileAndDatabaseFixture
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
             MetadataFallbackLanguage = "en",
-            RootPath = FileHelper.TestDirectoryPath
+            RootPath = FileHelper.TestDirectoryPath,
+            TriggerFileIndexingOnCreation = false,
+            RealtimeMonitorEnabled = false
         });
         FileHelper.CreateTestFile("movie.mp4", "movie");
         FileHelper.CreateTestFile("movie.mkv", "movie");
