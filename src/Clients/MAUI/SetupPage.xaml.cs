@@ -20,16 +20,16 @@ public partial class SetupPage : ContentPage
 
     private async void OnValidateClicked(object sender, EventArgs e)
     {
-        var k7ServerUrl = BackendUrlEntry.Text?.Trim().TrimEnd('/');
+        var k7ServerUrl = NormalizeServerUrl(BackendUrlEntry.Text);
 
-        if (string.IsNullOrEmpty(k7ServerUrl) || !Uri.IsWellFormedUriString(k7ServerUrl, UriKind.Absolute))
+        if (k7ServerUrl is null)
         {
-            InfoLabel.Text = "Please enter a valid address.";
+            InfoLabel.Text = "Please enter a valid address (for example k7.example.com).";
             InfoLabel.IsVisible = true;
             return;
         }
 
-        InfoLabel.Text = "Checking server...";
+        InfoLabel.Text = $"Checking {k7ServerUrl}...";
         InfoLabel.IsVisible = true;
 
         try
@@ -61,5 +61,28 @@ public partial class SetupPage : ContentPage
         catch { }
 
         ((App)Application.Current!).Restart();
+    }
+
+    /// <summary>
+    /// Accepts a host (with optional port/path) or a full URL. Missing scheme defaults to https.
+    /// </summary>
+    internal static string? NormalizeServerUrl(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return null;
+
+        var url = input.Trim().TrimEnd('/');
+
+        if (!url.Contains("://", StringComparison.Ordinal))
+            url = "https://" + url;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || string.IsNullOrWhiteSpace(uri.Host))
+        {
+            return null;
+        }
+
+        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 }
