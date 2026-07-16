@@ -55,6 +55,8 @@ public class PostgreSqlTestContainerDatabase : ITestDatabase
         return _connection;
     }
 
+    public string GetConnectionString() => _connectionString;
+
     public async Task ResetAsync()
     {
 
