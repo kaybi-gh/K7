@@ -173,19 +173,46 @@
     private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
     private DateTime _suppressOverlayShowUntil;
     private bool _wasSidebarOpen;
+    private bool _needsRender = true;
+    private DateTime _lastProgressRenderUtc;
 
     private enum SwipeSide { Left, Right }
 
-    private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
-    private void OnIsMutedChanged(bool isMuted) => InvokeAsync(StateHasChanged);
-    private void OnVolumeChanged(double volume) => InvokeAsync(StateHasChanged);
-    private void OnCurrentTimeChanged(double time) => InvokeAsync(StateHasChanged);
-    private void OnPlaybackRateChanged(double rate) => InvokeAsync(StateHasChanged);
-    private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
-    private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
-    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => InvokeAsync(StateHasChanged);
-    private void OnQualityChanged(VideoQualityOption? quality) => InvokeAsync(StateHasChanged);
-    private void OnAspectRatioModeChanged(AspectRatioMode mode) => InvokeAsync(StateHasChanged);
+    private void OnPlaybackStateChanged(PlaybackState state) => RequestRender();
+    private void OnIsMutedChanged(bool isMuted) => RequestRender();
+    private void OnVolumeChanged(double volume) => RequestRender();
+    private void OnCurrentTimeChanged(double time) => RequestProgressRender();
+    private void OnBufferedTimeChanged(double time) => RequestProgressRender();
+    private void OnPlaybackRateChanged(double rate) => RequestRender();
+    private void OnIsFullScreenChanged(bool isFullScreen) => RequestRender();
+    private void OnAudioTrackChanged(AudioFileTrackDto? track) => RequestRender();
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => RequestRender();
+    private void OnQualityChanged(VideoQualityOption? quality) => RequestRender();
+    private void OnAspectRatioModeChanged(AspectRatioMode mode) => RequestRender();
+
+    protected override bool ShouldRender()
+    {
+        if (!_needsRender)
+            return false;
+
+        _needsRender = false;
+        return true;
+    }
+
+    private void RequestProgressRender()
+    {
+        if (DateTime.UtcNow - _lastProgressRenderUtc < TimeSpan.FromMilliseconds(250))
+            return;
+
+        _lastProgressRenderUtc = DateTime.UtcNow;
+        RequestRender();
+    }
+
+    private void RequestRender()
+    {
+        _needsRender = true;
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,6 +236,7 @@
         PlayerService.IsMutedChanged += OnIsMutedChanged;
         PlayerService.VolumeChanged += OnVolumeChanged;
         PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+        PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
         PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged += OnAudioTrackChanged;
@@ -475,7 +503,10 @@
         });
     }
 
-    private async void OnOverlayTimerElapsed(object? sender, ElapsedEventArgs args)
+    private void OnOverlayTimerElapsed(object? sender, ElapsedEventArgs args)
+        => OnOverlayTimerElapsedAsync().FireAndForget();
+
+    private async Task OnOverlayTimerElapsedAsync()
     {
         await InvokeAsync(async () =>
         {
@@ -819,7 +850,9 @@
         HidePopover();
     }
 
-    private async void HidePopover()
+    private void HidePopover() => HidePopoverAsync().FireAndForget();
+
+    private async Task HidePopoverAsync()
     {
         _volumePopoverHideDelayCts?.Cancel();
         _volumePopoverHideDelayCts = new CancellationTokenSource();
@@ -978,6 +1011,7 @@
         PlayerService.IsMutedChanged -= OnIsMutedChanged;
         PlayerService.VolumeChanged -= OnVolumeChanged;
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+        PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
         PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
