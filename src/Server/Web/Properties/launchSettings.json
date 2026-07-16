@@ -2,7 +2,6 @@
   "profiles": {
     "K7.Server.Web": {
       "commandName": "Project",
-      "commandLineArgs": "--init-db",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -11,7 +10,6 @@
     },
     "K7.Server.Web.Wasm": {
       "commandName": "Project",
-      "commandLineArgs": "--init-db",
       "launchBrowser": true,
       "launchUrl": "https://localhost:5001",
       "environmentVariables": {
@@ -24,7 +22,6 @@
     },
     "IIS Express": {
       "commandName": "IISExpress",
-      "commandLineArgs": "--init",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -32,7 +29,6 @@
     },
     "Docker": {
       "commandName": "Docker",
-      "commandLineArgs": "--init-db",
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
