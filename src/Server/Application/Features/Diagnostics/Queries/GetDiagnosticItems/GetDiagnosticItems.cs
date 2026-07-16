@@ -42,40 +42,17 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (request.EntityType == DiagnosticEntityType.Media)
             return await GetMediaIssuesPaginatedAsync(request, cancellationToken);
 
-        var items = new List<DiagnosticItemDto>();
-
-        if (request.EntityType is null or DiagnosticEntityType.IndexedFile)
-        {
-            items.AddRange(await GetIndexedFileIssuesAsync(request, cancellationToken));
-        }
-
-        if (request.EntityType is null or DiagnosticEntityType.Media)
-        {
-            items.AddRange(await GetMediaIssuesAsync(request, cancellationToken));
-            items.AddRange(await GetMusicArtistIssuesAsync(request, cancellationToken));
-        }
-
-        if (request.EntityType is null or DiagnosticEntityType.Library)
-        {
-            items.AddRange(await GetScanIssuesAsync(request, cancellationToken));
-        }
-
-        items = ExpandToOneRowPerIssue(items);
-
-        if (request.Issue.HasValue)
-        {
-            items = items.Where(i => i.Issues.Contains(request.Issue.Value)).ToList();
-        }
-
-        if (request.Issues is { Count: > 0 })
-        {
-            items = items.Where(i => i.Issues.Any(iss => request.Issues.Contains(iss))).ToList();
-        }
-
-        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
-
-        var totalCount = items.Count;
-        var paged = items
+        var sourceRequest = request with { PageNumber = 1, PageSize = request.PageNumber * request.PageSize };
+        var indexedFiles = await GetIndexedFileIssuesPaginatedAsync(sourceRequest, cancellationToken);
+        var scanIssues = await GetScanIssuesPaginatedAsync(sourceRequest, cancellationToken);
+        var mediaIssues = await GetMediaIssuesPaginatedAsync(sourceRequest, cancellationToken);
+        var totalCount = indexedFiles.TotalCount + scanIssues.TotalCount + mediaIssues.TotalCount;
+        var paged = indexedFiles.Items
+            .Concat(scanIssues.Items)
+            .Concat(mediaIssues.Items)
+            .OrderByDescending(item => item.Severity)
+            .ThenBy(item => item.EntityName)
+            .ThenBy(item => item.Issues[0])
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToList();
@@ -87,30 +64,144 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         GetDiagnosticItemsQuery request,
         CancellationToken cancellationToken)
     {
-        var items = ExpandToOneRowPerIssue(await GetIndexedFileIssuesAsync(request, cancellationToken));
-        items = ApplyIssueFilters(items, request);
-        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
-        return Paginate(items, request);
+        var query = BuildIndexedFileIssueRowsQuery(request);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var rows = await query
+            .OrderByDescending(row => row.Severity)
+            .ThenBy(row => row.EntityName)
+            .ThenBy(row => row.Issue)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PaginatedList<DiagnosticItemDto>(
+            rows.Select(MapIndexedFileIssue).ToList(),
+            totalCount,
+            request.PageNumber,
+            request.PageSize);
     }
 
     private async Task<PaginatedList<DiagnosticItemDto>> GetScanIssuesPaginatedAsync(
         GetDiagnosticItemsQuery request,
         CancellationToken cancellationToken)
     {
-        var items = ExpandToOneRowPerIssue(await GetScanIssuesAsync(request, cancellationToken));
-        items = ApplyIssueFilters(items, request);
-        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
-        return Paginate(items, request);
+        var query = _context.ScanIssues
+            .AsNoTracking()
+            .Where(s => !_context.Libraries.Any(l => l.Id == s.LibraryId && l.PeerServerId != null));
+
+        if (request.LibraryId.HasValue)
+            query = query.Where(s => s.LibraryId == request.LibraryId.Value);
+
+        if (request.Issue.HasValue && request.Issue.Value != DiagnosticIssue.InaccessiblePath
+            || request.Issues is { Count: > 0 } && !request.Issues.Contains(DiagnosticIssue.InaccessiblePath))
+        {
+            return new PaginatedList<DiagnosticItemDto>([], 0, request.PageNumber, request.PageSize);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderBy(s => s.Path)
+            .Select(s => new DiagnosticItemDto
+            {
+                EntityId = s.Id,
+                EntityName = s.Path,
+                EntityType = DiagnosticEntityType.Library,
+                LibraryId = s.LibraryId,
+                LibraryTitle = _context.Libraries.Where(l => l.Id == s.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
+                Issues = new List<DiagnosticIssue> { DiagnosticIssue.InaccessiblePath },
+                Severity = DiagnosticSeverity.Warning,
+                DetailText = s.ErrorMessage
+            })
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
     }
+
+    private IQueryable<IndexedFileIssueRow> BuildIndexedFileIssueRowsQuery(GetDiagnosticItemsQuery request)
+    {
+        var files = _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => !_context.Libraries.Any(l => l.Id == f.LibraryId && l.PeerServerId != null));
+
+        if (request.LibraryId.HasValue)
+            files = files.Where(f => f.LibraryId == request.LibraryId.Value);
+
+        var flags = files.Select(f => new
+        {
+            f.Id,
+            f.Name,
+            f.LibraryId,
+            LibraryTitle = _context.Libraries.Where(l => l.Id == f.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
+            IsOrphan = f.MediaId == null,
+            IsUnidentified = f.Identification == null,
+            HasNoFileMetadata = f.FileMetadata == null,
+            HasNoHlsSegments = f.FileMetadata != null
+                && f.FileMetadata.Type == FileType.Video
+                && _context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
+                && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
+        });
+
+        var query = flags.Where(f => f.IsOrphan).Select(f => new IndexedFileIssueRow
+        {
+            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.OrphanFile, Severity = DiagnosticSeverity.Error
+        })
+        .Concat(flags.Where(f => f.IsUnidentified).Select(f => new IndexedFileIssueRow
+        {
+            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.UnidentifiedFile, Severity = DiagnosticSeverity.Warning
+        }))
+        .Concat(flags.Where(f => f.HasNoFileMetadata).Select(f => new IndexedFileIssueRow
+        {
+            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingFileMetadata, Severity = DiagnosticSeverity.Error
+        }))
+        .Concat(flags.Where(f => f.HasNoHlsSegments).Select(f => new IndexedFileIssueRow
+        {
+            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingHlsSegments, Severity = DiagnosticSeverity.Warning
+        }));
+
+        if (request.Issue.HasValue)
+            query = query.Where(row => row.Issue == request.Issue.Value);
+
+        if (request.Issues is { Count: > 0 })
+            query = query.Where(row => request.Issues.Contains(row.Issue));
+
+        return query;
+    }
+
+    private static DiagnosticItemDto MapIndexedFileIssue(IndexedFileIssueRow row) => new()
+    {
+        EntityId = row.EntityId,
+        EntityName = row.EntityName,
+        EntityType = DiagnosticEntityType.IndexedFile,
+        LibraryId = row.LibraryId,
+        LibraryTitle = row.LibraryTitle,
+        Issues = [row.Issue],
+        Severity = row.Severity
+    };
 
     private async Task<PaginatedList<DiagnosticItemDto>> GetMediaIssuesPaginatedAsync(
         GetDiagnosticItemsQuery request,
         CancellationToken cancellationToken)
     {
-        var items = ExpandToOneRowPerIssue(await GetMediaIssuesAsync(request, cancellationToken));
-        items = ApplyIssueFilters(items, request);
-        items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName).ThenBy(i => i.Issues[0])];
-        return Paginate(items, request);
+        var sourceRequest = request with { PageNumber = 1, PageSize = request.PageNumber * request.PageSize };
+        var mediaPage = await GetMediaIssuePageAsync(sourceRequest, cancellationToken);
+        var artistPage = await GetMusicArtistIssuePageAsync(sourceRequest, cancellationToken);
+        var totalCount = mediaPage.TotalCount + artistPage.TotalCount;
+        var items = mediaPage.Items
+            .Concat(artistPage.Items)
+            .OrderByDescending(item => item.Severity)
+            .ThenBy(item => item.EntityName)
+            .ThenBy(item => item.Issues[0])
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
     }
 
     private static List<DiagnosticItemDto> ApplyIssueFilters(
@@ -211,7 +302,10 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         }).ToList();
     }
 
-    private async Task<List<DiagnosticItemDto>> GetMediaIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
+    private async Task<List<DiagnosticItemDto>> GetMediaIssuesAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken,
+        IReadOnlyCollection<Guid>? selectedMediaIds = null)
     {
         var libraryMediaQuery = _context.MediaLibraryAvailabilities
             .Where(a => !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null))
@@ -221,6 +315,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             libraryMediaQuery = libraryMediaQuery.Where(a => a.LibraryId == request.LibraryId.Value);
         }
+
+        if (selectedMediaIds is not null)
+            libraryMediaQuery = libraryMediaQuery.Where(a => selectedMediaIds.Contains(a.MediaId));
 
         var libraryMediaPairs = await libraryMediaQuery
             .Select(a => new { MediaId = a.MediaId, a.LibraryId })
@@ -368,6 +465,54 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         .ToList();
     }
 
+    private async Task<PaginatedList<DiagnosticItemDto>> GetMediaIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var availability = _context.MediaLibraryAvailabilities
+            .Where(a => !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null));
+
+        if (request.LibraryId.HasValue)
+            availability = availability.Where(a => a.LibraryId == request.LibraryId.Value);
+
+        var candidateIds = _context.Medias
+            .AsNoTracking()
+            .Where(m => availability.Any(a => a.MediaId == m.Id))
+            .Where(m => !m.ExternalIds.Any()
+                        || m.MetadataTags.Count(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre) == 0
+                        || _context.Medias.OfType<MusicTrack>().Any(t => t.Id == m.Id && t.AudioAnalysis == null)
+                        || (m.Type == MediaType.Movie || m.Type == MediaType.Serie)
+                            && (!_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Poster)
+                                || !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Backdrop))
+                        || m.Type == MediaType.SerieSeason
+                            && !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Poster)
+                        || m.Type == MediaType.SerieEpisode
+                            && !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Still)
+                        || m.Type == MediaType.MusicAlbum
+                            && !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Cover)
+                        || availability.Join(
+                                _context.Libraries,
+                                a => a.LibraryId,
+                                l => l.Id,
+                                (_, l) => l.MetadataRefreshIntervalDays)
+                            .Any(days => days > 0))
+            .Select(m => new { m.Id, Name = m.Title ?? "(untitled)" });
+
+        var totalCount = await candidateIds.CountAsync(cancellationToken);
+        var ids = await candidateIds
+            .OrderBy(m => m.Name)
+            .ThenBy(m => m.Id)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        var items = await GetMediaIssuesAsync(request, cancellationToken, ids);
+        items = ExpandToOneRowPerIssue(items);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
+    }
+
     private static IReadOnlyList<MetadataPictureType> GetExpectedPictureTypes(MediaType type) => type switch
     {
         MediaType.Movie => [MetadataPictureType.Poster, MetadataPictureType.Backdrop],
@@ -385,11 +530,27 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         public required int GenreCount { get; init; }
     }
 
-    private async Task<List<DiagnosticItemDto>> GetMusicArtistIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
+    private sealed class IndexedFileIssueRow
+    {
+        public required Guid EntityId { get; init; }
+        public required string EntityName { get; init; }
+        public required Guid LibraryId { get; init; }
+        public required string LibraryTitle { get; init; }
+        public required DiagnosticIssue Issue { get; init; }
+        public required DiagnosticSeverity Severity { get; init; }
+    }
+
+    private async Task<List<DiagnosticItemDto>> GetMusicArtistIssuesAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken,
+        IReadOnlyCollection<Guid>? selectedArtistIds = null)
     {
         var query = _context.Medias.OfType<MusicArtist>()
             .AsNoTracking()
             .AsQueryable();
+
+        if (selectedArtistIds is not null)
+            query = query.Where(a => selectedArtistIds.Contains(a.Id));
 
         var artists = await query
             .Select(a => new
@@ -452,6 +613,37 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         .Where(dto => dto is not null)
         .Cast<DiagnosticItemDto>()
         .ToList();
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetMusicArtistIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var artists = _context.Medias.OfType<MusicArtist>()
+            .AsNoTracking()
+            .Where(a => !a.PersonRoles.Any() || !a.ExternalIds.Any());
+
+        if (request.LibraryId.HasValue)
+        {
+            artists = artists.Where(a => _context.Medias.OfType<MusicAlbum>()
+                .Where(album => album.ArtistId == a.Id)
+                .Join(_context.IndexedFiles, album => album.Id, file => file.MediaId, (_, file) => file.LibraryId)
+                .Any(libraryId => libraryId == request.LibraryId.Value));
+        }
+
+        var totalCount = await artists.CountAsync(cancellationToken);
+        var ids = await artists
+            .OrderBy(a => a.Title ?? "(untitled)")
+            .ThenBy(a => a.Id)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken);
+
+        var items = await GetMusicArtistIssuesAsync(request, cancellationToken, ids);
+        items = ExpandToOneRowPerIssue(items);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
     }
 
     private async Task<List<DiagnosticItemDto>> GetScanIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
