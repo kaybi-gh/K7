@@ -30,97 +30,11 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
 };
 
 public class GetStreamUriQueryHandler(
-    IApplicationDbContext context,
-    IMediaAccessGuard accessGuard,
-    ISender sender,
-    IActiveStreamTracker activeStreamTracker,
-    IFfmpegCapabilitiesService ffmpegCapabilitiesService,
-    ILogger<GetStreamUriQueryHandler> logger) : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
+    IStreamPlaybackService streamPlaybackService) : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
 {
     public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery request, CancellationToken cancellationToken)
     {
-        Guard.Against.NullOrEmpty(request.DeviceId);
-
-        await accessGuard.EnsureAccessByIndexedFileAsync(request.Id, cancellationToken);
-
-        var indexedFile = await context.IndexedFiles
-            .Include(x => x.FileMetadata)
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
-
-        Guard.Against.NotFound(request.Id, indexedFile);
-
-        var device = await context.Devices
-            .FindAsync([request.DeviceId], cancellationToken);
-
-        Guard.Against.NotFound((Guid)request.DeviceId, device);
-
-        if (indexedFile.FileMetadata is AudioFileMetadata audioFileMetadata)
-        {
-            await context.Entry(audioFileMetadata)
-                .Reference(a => a.AudioTrack)
-                .LoadAsync(cancellationToken);
-
-            var (uri, decision) = GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, request);
-            activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
-            return uri;
-        }
-
-        if (indexedFile.FileMetadata is VideoFileMetadata videoFileMetadata)
-        {
-            await context.Entry(videoFileMetadata)
-                .Collection(v => v.AudioTracks)
-                .LoadAsync(cancellationToken);
-
-            await context.Entry(videoFileMetadata)
-                .Collection(v => v.VideoTracks)
-                .LoadAsync(cancellationToken);
-
-            await context.Entry(videoFileMetadata)
-                .Collection(v => v.SubtitleTracks)
-                .LoadAsync(cancellationToken);
-
-            var hlsSegmentsAvailable = await HlsSegmentHelper.HasSegmentsAsync(context, request.Id, cancellationToken);
-
-            if (!hlsSegmentsAvailable)
-            {
-                await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(
-                    sender,
-                    request.Id,
-                    logger,
-                    cancellationToken);
-            }
-
-            var subtitleTrackIndex = request.SubtitleTrackIndex;
-            if (request.AudioTrackIndex is null)
-            {
-                var preferences = await sender.Send(
-                    new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = indexedFile.LibraryId },
-                    cancellationToken);
-
-                var audioDtos = videoFileMetadata.AudioTracks
-                    .OrderBy(t => t.Index)
-                    .Select(t => t.ToAudioFileTrackDto())
-                    .ToList();
-
-                var subtitleDtos = videoFileMetadata.SubtitleTracks
-                    .OrderBy(t => t.Index)
-                    .Select(t => t.ToSubtitleFileTrackDto())
-                    .ToList();
-
-                var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
-                request.AudioTrackIndex = selection.AudioTrackIndex;
-                subtitleTrackIndex ??= selection.SubtitleTrackIndex;
-                request.SubtitleTrackIndex = subtitleTrackIndex;
-            }
-
-            var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable, subtitleTrackIndex);
-            decision = await StreamDecisionEnrichment.EnrichEncodersAsync(decision, ffmpegCapabilitiesService, cancellationToken);
-            activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
-            return uri;
-        }
-
-        throw new InvalidOperationException(
-            $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.");
+        return await streamPlaybackService.GetStreamUriAsync(request, cancellationToken);
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
