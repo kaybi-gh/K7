@@ -208,7 +208,9 @@ public partial class AudioPlayer : IAsyncDisposable
         await JSRuntime.InvokeVoidAsync("audioSetVolume", volume);
     }
 
-    private async void OnSourceChanged(PlayerSource source)
+    private void OnSourceChanged(PlayerSource source) => OnSourceChangedAsync(source).FireAndForget();
+
+    private async Task OnSourceChangedAsync(PlayerSource source)
     {
         if (string.IsNullOrEmpty(source.Url)) return;
 
@@ -234,22 +236,30 @@ public partial class AudioPlayer : IAsyncDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void OnVisibilityChanged()
+    private void OnVisibilityChanged() => OnVisibilityChangedAsync().FireAndForget();
+
+    private async Task OnVisibilityChangedAsync()
     {
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void OnLoudnessSettingsChanged()
+    private void OnLoudnessSettingsChanged() => OnLoudnessSettingsChangedAsync().FireAndForget();
+
+    private async Task OnLoudnessSettingsChangedAsync()
     {
         await PushLoudnessSettingsAsync();
     }
 
-    private async void OnEqSettingsChanged()
+    private void OnEqSettingsChanged() => OnEqSettingsChangedAsync().FireAndForget();
+
+    private async Task OnEqSettingsChangedAsync()
     {
         await PushEqSettingsAsync();
     }
 
-    private async void OnCrossfadeDurationChanged()
+    private void OnCrossfadeDurationChanged() => OnCrossfadeDurationChangedAsync().FireAndForget();
+
+    private async Task OnCrossfadeDurationChangedAsync()
     {
         if (!_isInitialized) return;
         try
@@ -259,7 +269,9 @@ public partial class AudioPlayer : IAsyncDisposable
         catch (JSDisconnectedException) { }
     }
 
-    private async void OnPlayerUxSettingsChanged()
+    private void OnPlayerUxSettingsChanged() => OnPlayerUxSettingsChangedAsync().FireAndForget();
+
+    private async Task OnPlayerUxSettingsChangedAsync()
     {
         if (!_isInitialized) return;
         try
@@ -271,7 +283,9 @@ public partial class AudioPlayer : IAsyncDisposable
 
     // --- MediaSession API ---
 
-    private async void UpdateMediaSessionIfNeeded()
+    private void UpdateMediaSessionIfNeeded() => UpdateMediaSessionIfNeededAsync().FireAndForget();
+
+    private async Task UpdateMediaSessionIfNeededAsync()
     {
         if (!_isInitialized) return;
 

@@ -39,7 +39,9 @@ public partial class MySpaceDownloadQueuePage : ComponentBase, IDisposable
         _progressThrottle?.Start();
     }
 
-    private async void OnDownloadCompleted(DownloadCompletedInfo info)
+    private void OnDownloadCompleted(DownloadCompletedInfo info) => OnDownloadCompletedAsync(info).FireAndForget();
+
+    private async Task OnDownloadCompletedAsync(DownloadCompletedInfo info)
     {
         await InvokeAsync(() =>
         {

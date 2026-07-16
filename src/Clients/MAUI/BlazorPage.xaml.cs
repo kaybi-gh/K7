@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -412,7 +413,9 @@ public partial class BlazorPage : ContentPage
         DetachEventHandlers();
     }
 
-    private async void OnNativePlayerCloseClicked(object? sender, EventArgs e)
+    private void OnNativePlayerCloseClicked(object? sender, EventArgs e) => OnNativePlayerCloseClickedAsync().FireAndForget();
+
+    private async Task OnNativePlayerCloseClickedAsync()
     {
         _playerService.Stop();
         await _playerService.HideAsync();
@@ -608,10 +611,7 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.CurrentTime = e.Position.TotalSeconds;
     }
 
-    private async void AudioPlayer_MediaEnded(object? sender, EventArgs e)
-    {
-        await _audioPlayerService.OnTrackEndedAsync();
-    }
+    private void AudioPlayer_MediaEnded(object? sender, EventArgs e) => _audioPlayerService.OnTrackEndedAsync().FireAndForget();
 
     private void AudioPlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
     {

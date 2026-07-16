@@ -23,7 +23,9 @@ public partial class K7Menu : IAsyncDisposable
     private ElementReference _backdrop;
     private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
 
-    internal async void Close()
+    internal void Close() => CloseAsync().FireAndForget();
+
+    private async Task CloseAsync()
     {
         if (!_open) return;
         await CloseMenuInternalAsync();

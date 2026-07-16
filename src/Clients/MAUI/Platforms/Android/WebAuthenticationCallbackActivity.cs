@@ -31,6 +31,10 @@ public class CallbackActivity : Activity
         {
             await service.HandleCustomTabsIntentAsync(intent);
         }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error(nameof(CallbackActivity), ex.ToString());
+        }
         finally
         {
             var mainIntent = new Intent(this, typeof(MainActivity));

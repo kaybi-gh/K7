@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Shared;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,15 +86,9 @@ public class MusicCacheService : IMusicCacheService
         await _offlineStore.RemoveAllCacheItemsAsync(cancellationToken);
     }
 
-    private async void OnQueueChanged()
-    {
-        await CacheLookaheadAsync();
-    }
+    private void OnQueueChanged() => CacheLookaheadAsync().FireAndForget(_logger);
 
-    private async void OnCurrentTrackChanged(AudioQueueItem? _)
-    {
-        await CacheLookaheadAsync();
-    }
+    private void OnCurrentTrackChanged(AudioQueueItem? _) => CacheLookaheadAsync().FireAndForget(_logger);
 
     private async Task CacheLookaheadAsync()
     {

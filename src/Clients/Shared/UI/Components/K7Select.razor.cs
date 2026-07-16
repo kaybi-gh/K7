@@ -121,7 +121,9 @@ public partial class K7Select<TValue> : IAsyncDisposable
         StateHasChanged();
     }
 
-    private async void OnLayerClosed()
+    private void OnLayerClosed() => OnLayerClosedAsync().FireAndForget();
+
+    private async Task OnLayerClosedAsync()
     {
         if (!_open) return;
         _open = false;

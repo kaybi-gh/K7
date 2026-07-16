@@ -161,7 +161,7 @@ public partial class K7DateRangePicker : IAsyncDisposable
         StateHasChanged();
     }
 
-    private async void OnLayerClosed()
+    private void OnLayerClosed()
     {
         if (!_open) return;
         _open = false;

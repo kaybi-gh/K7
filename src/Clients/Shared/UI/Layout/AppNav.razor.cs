@@ -243,7 +243,9 @@ public partial class AppNav : IDisposable
         NavigationManager.NavigateTo("/");
     }
 
-    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    private void OnAuthStateChanged(Task<AuthenticationState> task) => OnAuthStateChangedAsync(task).FireAndForget();
+
+    private async Task OnAuthStateChangedAsync(Task<AuthenticationState> task)
     {
         try
         {

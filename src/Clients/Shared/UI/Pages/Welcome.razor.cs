@@ -125,7 +125,9 @@ public partial class Welcome : IDisposable
         }
     }
 
-    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    private void OnAuthStateChanged(Task<AuthenticationState> task) => OnAuthStateChangedAsync(task).FireAndForget();
+
+    private async Task OnAuthStateChangedAsync(Task<AuthenticationState> task)
     {
         var authState = await task;
         if (authState.User.Identity?.IsAuthenticated == true)
