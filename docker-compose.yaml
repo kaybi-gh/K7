@@ -11,7 +11,7 @@ volumes:
 services:
   postgres:
     <<: *default-restart-security
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193
     container_name: k7-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -19,8 +19,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-K7}
     volumes:
       - k7-postgres-data:/var/lib/postgresql/data
+    # Bind to loopback only - peers on the Docker network still reach postgres:5432.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -61,3 +62,9 @@ services:
       # BaseUrl: https://k7.example.com
       # Optional display name used when inviting federation peers.
       # Server__Name: Home
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

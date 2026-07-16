@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:ed034a8bf0b24ded0cbbac07e17825d8e9ebfe21e308191d0f7421eaf5ad4664 AS build
 WORKDIR /src
 
 RUN dotnet tool install --global Microsoft.Web.LibraryManager.Cli
@@ -40,9 +40,9 @@ RUN apt-get update \
 EXPOSE 8080 8081
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gosu ffmpeg \
+    && apt-get install -y --no-install-recommends gosu ffmpeg curl \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -53,4 +53,6 @@ COPY --from=build /publish .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8080/health || exit 1
 ENTRYPOINT ["/entrypoint.sh"]
