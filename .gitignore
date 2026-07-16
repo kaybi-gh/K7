@@ -490,13 +490,16 @@ $RECYCLE.BIN/
 # Development appsettings
 /src/Server/Web/appsettings.Development.json
 
+# Local Docker secrets (keep .env.example tracked)
+.env
+.env.local
+
 # Client libraries
 **/wwwroot/dist/
 
 # Coding agents
 .github/agents
 /.vscode/tasks.json
-/docs
 experiments/
 tools/K7.Demo/demo-media/movies/
 tools/K7.Demo/demo-media/series/

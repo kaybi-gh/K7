@@ -5,8 +5,8 @@ x-default-restart-security: &default-restart-security
 
 volumes:
   k7-postgres-data:
+  k7-data:
   movies:
-    external: true
 
 services:
   postgres:
@@ -30,14 +30,20 @@ services:
   k7-server:
     <<: *default-restart-security
     container_name: k7-server
-    image: k7-server:latest
+    # Published releases: ghcr.io/kaybi-gh/k7:latest (or a semver tag).
+    # To build locally instead: docker build -t k7-server:latest . then set image: k7-server:latest
+    image: ghcr.io/kaybi-gh/k7:latest
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "8080:8080/tcp"
     volumes:
-      - movies:/k7/media/movies:ro
+      # Persist config keys, metadata artwork, logs, and transcoding cache across recreates.
+      - k7-data:/data
+      # Example library mount (Compose creates the named volume). For real media, prefer a bind mount:
+      # - /path/to/movies:/media/movies:ro
+      - movies:/media/movies:ro
     environment:
       Database__Provider: Postgres
       Database__UserID: ${POSTGRES_USER:-postgres}
@@ -45,7 +51,13 @@ services:
       Database__Server: postgres
       Database__Port: "5432"
       Database__Name: ${POSTGRES_DB:-K7}
-      Paths__Metadatas: metadatas
-      Paths__Logs: logs
-      Paths__Transcoding: transcoding
-    command: ["--init-db"]
+      Paths__Config: /data/config
+      Paths__Metadatas: /data/metadatas
+      Paths__Logs: /data/logs
+      Paths__Transcoding: /data/transcoding
+      PUID: ${PUID:-911}
+      PGID: ${PGID:-911}
+      # Public URL of this instance (required for OIDC redirects and federation).
+      # BaseUrl: https://k7.example.com
+      # Optional display name used when inviting federation peers.
+      # Server__Name: Home

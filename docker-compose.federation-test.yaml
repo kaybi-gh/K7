@@ -5,7 +5,7 @@ services:
       - "5080:8080"
     environment:
       - Database__Provider=Sqlite
-      - Database__Name=/data/k7-a.db
+      - Database__Name=/data/k7-a
       - BaseUrl=http://k7-peer-a:8080
       - Security__ForceHttps=false
       - Paths__Config=/data/config-a
@@ -24,7 +24,7 @@ services:
       - "5081:8080"
     environment:
       - Database__Provider=Sqlite
-      - Database__Name=/data/k7-b.db
+      - Database__Name=/data/k7-b
       - BaseUrl=http://k7-peer-b:8080
       - Security__ForceHttps=false
       - Paths__Config=/data/config-b
