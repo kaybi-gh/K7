@@ -207,7 +207,7 @@
                 </div>
                 @foreach (var entry in _externalIds)
                 {
-                    <div class="field-row external-id-row">
+                    <div @key="entry" class="field-row external-id-row">
                         <K7TextField @bind-Value="entry.ProviderName" Label="@L["Provider"]" Variant="outlined"
                                      Class="@GetFieldClass("ExternalIds", "external-id-provider")" ReadOnly="@IsExternalIdsLocked()" />
                         <K7TextField @bind-Value="entry.Value" Label="@L["Value"]" Variant="outlined"
@@ -247,7 +247,7 @@
                     var slotType = type;
                     var slotLocked = IsPictureTypeLocked(type);
                     var slotBusy = _uploadingPictureType == slotType;
-                    <article class="picture-slot">
+                    <article @key="type" class="picture-slot">
                         <div class="picture-slot-header">
                             <span class="picture-slot-type">@type</span>
                         </div>
@@ -329,23 +329,23 @@
                 @if (_providerImages is { Count: > 0 })
                 {
                     <div class="provider-images-tabs">
-                        @foreach (var type in _providerImages.Select(i => i.Type).Distinct())
+                        @foreach (var type in _providerImageTypes)
                         {
                             <K7Button Variant="@(_providerImageFilter == type ? "filled" : "text")" Size="sm"
-                                      OnClick="@(() => _providerImageFilter = type)">
-                                @type (@_providerImages.Count(i => i.Type == type))
+                                      OnClick="@(() => SetProviderImageFilter(type))">
+                                @type (@_providerImageTypeCounts[type])
                             </K7Button>
                         }
                     </div>
                     <div class="provider-images-grid @GetProviderGridClass()">
-                        @foreach (var img in _providerImages.Where(i => i.Type == _providerImageFilter))
+                        @foreach (var img in _filteredProviderImages)
                         {
                             var providerImage = img;
                             var isImporting = _importingProviderImageUrl == providerImage.Url;
-                            <div class="provider-image-item focusable @(isImporting ? "provider-image-item--importing" : "")"
+                            <div @key="providerImage.Url" class="provider-image-item focusable @(isImporting ? "provider-image-item--importing" : "")"
                                  tabindex="0" role="button"
                                  @onclick="@(() => ImportProviderImageAsync(providerImage))"
-                                 @onkeydown="@(e => { if (e.Key is "Enter" or " ") _ = ImportProviderImageAsync(providerImage); })">
+                                 @onkeydown="@(e => { if (e.Key is "Enter" or " ") ImportProviderImageAsync(providerImage).FireAndForget(Logger); })">
                                 <img src="@providerImage.ThumbnailUrl" alt="@providerImage.Type" loading="lazy" />
                                 @if (isImporting)
                                 {

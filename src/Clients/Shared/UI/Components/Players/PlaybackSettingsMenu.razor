@@ -31,7 +31,7 @@
                 <nav class="playback-settings-nav" aria-label="@L["PlaybackSettings"]">
                     @foreach (var section in VisibleSections)
                     {
-                        <button type="button"
+                        <button @key="section" type="button"
                                 class="playback-settings-nav-item focusable @(section == _activeSection ? "playback-settings-nav-item--active" : "")"
                                 @onclick="() => SelectSection(section)">
                             <K7Icon Icon="@GetSectionIcon(section)"  IconSize="@K7IconSize.Sm" />
@@ -59,7 +59,7 @@
                             case SettingsSection.Audio:
                                 @foreach (var track in PlayerService.AudioTracks)
                                 {
-                                    <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
+                                    <K7MenuItem @key="track.Index" OnClick="@(() => OnAudioTrackSelected(track))"
                                                 Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
                                         @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
                                         @if (audioLang is not null)
@@ -77,7 +77,7 @@
                                 </K7MenuItem>
                                 @foreach (var track in PlayerService.SubtitleTracks)
                                 {
-                                    <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                    <K7MenuItem @key="track.Index" OnClick="@(() => OnSubtitleTrackSelected(track))"
                                                 Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
                                         @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
                                         @if (subLang is not null)
@@ -91,7 +91,7 @@
                             case SettingsSection.Quality:
                                 @foreach (var quality in PlayerService.AvailableQualities)
                                 {
-                                    <K7MenuItem OnClick="@(() => OnQualitySelected(quality))"
+                                    <K7MenuItem @key="quality.Label" OnClick="@(() => OnQualitySelected(quality))"
                                                 Icon="@(PlayerService.SelectedQuality == quality ? "check-circle" : null)">
                                         @quality.Label
                                     </K7MenuItem>
@@ -100,7 +100,7 @@
                             case SettingsSection.Speed:
                                 @foreach (var speed in _playbackSpeedOptions)
                                 {
-                                    <K7MenuItem OnClick="@(() => OnSpeedSelected(speed))"
+                                    <K7MenuItem @key="speed" OnClick="@(() => OnSpeedSelected(speed))"
                                                 Icon="@(IsCurrentSpeed(speed) ? "check-circle" : null)">
                                         @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
                                     </K7MenuItem>
@@ -109,7 +109,7 @@
                             case SettingsSection.AspectRatio:
                                 @foreach (var mode in _aspectRatioOptions)
                                 {
-                                    <K7MenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
+                                    <K7MenuItem @key="mode" OnClick="@(() => OnAspectRatioSelected(mode))"
                                                 Icon="@(PlayerService.AspectRatio == mode ? "check-circle" : null)">
                                         @GetAspectRatioLabel(mode)
                                     </K7MenuItem>

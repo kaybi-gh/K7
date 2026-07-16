@@ -1,13 +1,16 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
 public partial class BrowseView<TItem> : IAsyncDisposable
 {
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ILogger<BrowseView<TItem>> Logger { get; set; } = default!;
 
     [Parameter] public IList<TItem>? Items { get; set; }
     [Parameter] public ItemsProviderDelegate<TItem>? ItemsProvider { get; set; }
@@ -243,7 +246,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _currentMode = _availableModes.Contains(BrowseViewMode.Grid)
                 ? BrowseViewMode.Grid
                 : _availableModes.Count > 0 ? _availableModes[0] : DefaultMode;
-            _ = SaveSettingsAsync();
+            SaveSettingsAsync().FireAndForget(Logger);
         }
         else if (!_availableModes.Contains(_currentMode) && _availableModes.Count > 0)
         {

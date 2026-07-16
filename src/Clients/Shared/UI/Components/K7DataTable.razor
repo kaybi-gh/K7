@@ -18,7 +18,7 @@
                 </ActivatorContent>
                 <ChildContent>
                     <div class="k7-data-table-column-picker">
-                        @foreach (var col in _columns.Where(c => c.Hideable))
+                        @foreach (var col in _hideableColumns)
                         {
                             var c = col;
                             <K7Switch Value="c.IsVisible"
@@ -53,7 +53,7 @@
                 </button>
             </div>
             <div class="k7-data-table-column-picker">
-                @foreach (var col in _columns.Where(c => c.Hideable))
+                @foreach (var col in _hideableColumns)
                 {
                     var c = col;
                     <K7Switch Value="c.IsVisible"
@@ -68,10 +68,10 @@
         <table class="k7-data-table-el" role="grid">
             <thead>
                 <tr>
-                    @foreach (var col in VisibleColumns)
+                    @foreach (var col in _visibleColumns)
                     {
                         var c = col;
-                        <th style="@(c.Width is not null ? $"width: {c.Width}" : "")"
+                        <th @key="c" style="@(c.Width is not null ? $"width: {c.Width}" : "")"
                             data-mobile-hide="@(!c.VisibleOnMobile)">
                             @if (c.SortKey is not null)
                             {
@@ -99,12 +99,12 @@
                 {
                     <Virtualize TItem="IndexedRow" Items="_indexedItems" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
-                        <tr id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                        <tr @key="row.Item" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                             @onclick="() => OnRowClicked(row.Item)"
                             @onkeydown="e => OnRowKeyDown(e, row.Item)">
-                            @foreach (var col in VisibleColumns)
+                            @foreach (var col in _visibleColumns)
                             {
-                                <td data-mobile-hide="@(!col.VisibleOnMobile)">
+                                <td @key="col" data-mobile-hide="@(!col.VisibleOnMobile)">
                                     @{ var cell = col.RenderCell(row.Item); }
                                     @if (cell is not null) { @cell }
                                 </td>
@@ -117,12 +117,12 @@
                     <Virtualize TItem="IndexedRow" ItemsProvider="ProvideItemsAsync" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                            <tr @key="row.Item" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                                 @onclick="() => OnRowClicked(row.Item)"
                                 @onkeydown="e => OnRowKeyDown(e, row.Item)">
-                                @foreach (var col in VisibleColumns)
+                                @foreach (var col in _visibleColumns)
                                 {
-                                    <td data-mobile-hide="@(!col.VisibleOnMobile)">
+                                    <td @key="col" data-mobile-hide="@(!col.VisibleOnMobile)">
                                         @{ var cell = col.RenderCell(row.Item); }
                                         @if (cell is not null) { @cell }
                                     </td>
@@ -131,9 +131,9 @@
                         </ItemContent>
                         <Placeholder>
                             <tr class="k7-data-table-placeholder" style="@RowStyle" aria-hidden="true">
-                                @foreach (var col in VisibleColumns)
+                                @foreach (var col in _visibleColumns)
                                 {
-                                    <td data-mobile-hide="@(!col.VisibleOnMobile)"></td>
+                                    <td @key="col" data-mobile-hide="@(!col.VisibleOnMobile)"></td>
                                 }
                             </tr>
                         </Placeholder>

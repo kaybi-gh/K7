@@ -1,4 +1,5 @@
 using System.Globalization;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared;
@@ -6,6 +7,7 @@ using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
@@ -14,6 +16,7 @@ public partial class PlaybackSettingsMenu : IDisposable
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    [Inject] private ILogger<PlaybackSettingsMenu> Logger { get; set; } = default!;
 
     private bool _open;
     private SettingsSection _activeSection = SettingsSection.None;
@@ -58,11 +61,11 @@ public partial class PlaybackSettingsMenu : IDisposable
         if (_activeSection != SettingsSection.None)
         {
             _activeSection = SettingsSection.None;
-            _ = InvokeAsync(StateHasChanged);
+            InvokeAsync(StateHasChanged).FireAndForget(Logger);
             return true;
         }
 
-        _ = CloseAsync();
+        CloseAsync().FireAndForget(Logger);
         return true;
     }
 
@@ -88,13 +91,13 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
     }
 
-    private void OnPlaybackRateChanged(double _) => InvokeAsync(StateHasChanged);
-    private void OnAudioTrackChanged(AudioFileTrackDto? _) => InvokeAsync(StateHasChanged);
-    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) => InvokeAsync(StateHasChanged);
-    private void OnSubtitleTracksChanged() => InvokeAsync(StateHasChanged);
-    private void OnPlayerVisibilityChanged() => InvokeAsync(StateHasChanged);
-    private void OnQualityChanged(VideoQualityOption? _) => InvokeAsync(StateHasChanged);
-    private void OnAspectRatioModeChanged(AspectRatioMode _) => InvokeAsync(StateHasChanged);
+    private void OnPlaybackRateChanged(double _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnAudioTrackChanged(AudioFileTrackDto? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnSubtitleTracksChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnPlayerVisibilityChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnQualityChanged(VideoQualityOption? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnAspectRatioModeChanged(AspectRatioMode _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

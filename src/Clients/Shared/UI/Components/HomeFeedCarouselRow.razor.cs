@@ -7,6 +7,7 @@ using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -20,6 +21,7 @@ public partial class HomeFeedCarouselRow : IDisposable
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private ILogger<HomeFeedCarouselRow> Logger { get; set; } = default!;
 
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public Guid[]? LibraryIds { get; set; }
@@ -44,7 +46,7 @@ public partial class HomeFeedCarouselRow : IDisposable
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
-        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => _ = ReloadAsync());
+        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => ReloadAsync().FireAndForget(Logger));
     }
 
     public void Dispose() => _hubSubscription?.Dispose();

@@ -110,7 +110,7 @@
                 <span class="federation-panel__section-title">@L["IncomingRequests"]</span>
                 @foreach (var req in _requests)
                 {
-                    <K7Paper Outlined="true" class="peer-card">
+                    <K7Paper @key="req.Id" Outlined="true" class="peer-card">
                         <div class="peer-card__header">
                             <K7Icon Icon="@Phosphor.EnvelopeSimple"  IconSize="@K7IconSize.Lg" Color="warning" />
                             <div class="peer-card__info">
@@ -142,7 +142,7 @@
                 <span class="federation-panel__section-title">@L["OutboundPeers"]</span>
                 @foreach (var peer in _outboundPeers)
                 {
-                    <K7Paper Outlined="true" class="peer-card">
+                    <K7Paper @key="peer.Id" Outlined="true" class="peer-card">
                         <div class="peer-card__header">
                             <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Lg" Color="@GetStatusColor(peer.Status)" />
                             <div class="peer-card__info">
@@ -198,7 +198,7 @@
                 <span class="federation-panel__section-title">@L["InboundPeers"]</span>
                 @foreach (var peer in _inboundPeers)
                 {
-                    <K7Paper Outlined="true" class="peer-card">
+                    <K7Paper @key="peer.Id" Outlined="true" class="peer-card">
                         <div class="peer-card__header">
                             <K7Icon Icon="@Phosphor.ArrowSquareIn"  IconSize="@K7IconSize.Lg" Color="@GetStatusColor(peer.Status)" />
                             <div class="peer-card__info">

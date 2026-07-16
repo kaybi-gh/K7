@@ -8,6 +8,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -21,6 +22,7 @@ public partial class MediasCarouselRow : IDisposable
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private ILogger<MediasCarouselRow> Logger { get; set; } = default!;
 
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public Guid[]? LibraryIds { get; set; }
@@ -35,6 +37,7 @@ public partial class MediasCarouselRow : IDisposable
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
 
     private List<LiteMediaDto> _items = [];
+    private List<CarouselCardItem> _cardItems = [];
     private bool _loading = true;
     private string? _loadKey;
     private bool _canExclude;
@@ -47,7 +50,7 @@ public partial class MediasCarouselRow : IDisposable
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
-        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => _ = ReloadAsync());
+        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => ReloadAsync().FireAndForget(Logger));
     }
 
     public void Dispose() => _hubSubscription?.Dispose();
@@ -64,6 +67,7 @@ public partial class MediasCarouselRow : IDisposable
         {
             _loading = true;
             _items = [];
+            _cardItems = [];
         }
 
         var query = new GetMediasWithPaginationQuery
@@ -84,16 +88,19 @@ public partial class MediasCarouselRow : IDisposable
             if (page?.Items is not null)
             {
                 _items = page.Items.ToList();
-                var firstVm = _items
-                    .Select(item => item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n)))
-                    .FirstOrDefault(vm => vm is not null);
-                if (firstVm is not null)
-                    TvFocus?.TrySetInitialItem(firstVm);
+                _cardItems = _items
+                    .Select(item => (Item: item, Model: item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n))))
+                    .Where(item => item.Model is not null)
+                    .Select(item => new CarouselCardItem(item.Item.Id, item.Model!, GetVariant(item.Item), GetHref(item.Item)))
+                    .ToList();
+                if (_cardItems.Count > 0)
+                    TvFocus?.TrySetInitialItem(_cardItems[0].Model);
             }
         }
         catch
         {
             _items = [];
+            _cardItems = [];
         }
 
         _loading = false;
@@ -137,9 +144,18 @@ public partial class MediasCarouselRow : IDisposable
     private async Task ExcludeForSelf(MediaCardViewModel item)
     {
         if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+        {
             _items.RemoveAll(x => x.Id.ToString() == item.Id || x.Id.ToString() == item.ParentId);
+            _cardItems.RemoveAll(x => x.Model.Id == item.Id || x.Model.ParentId == item.Id);
+        }
     }
 
     private Task ExcludeForOthers(MediaCardViewModel item) =>
         MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+
+    private sealed record CarouselCardItem(
+        Guid Id,
+        MediaCardViewModel Model,
+        MediaCardVariant Variant,
+        string Href);
 }

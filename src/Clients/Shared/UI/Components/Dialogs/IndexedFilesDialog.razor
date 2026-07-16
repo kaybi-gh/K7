@@ -11,7 +11,7 @@
             @foreach (var file in Media.IndexedFiles ?? [])
             {
                 var vMeta = file.FileMetadata as VideoFileMetadataDto;
-                <div class="surface pa-4">
+                <div @key="file.Id" class="surface pa-4">
                     <div class="d-flex flex-col">
                         <div class="d-flex align-center justify-between">
                             <p class="text-subtitle1" Style="font-weight: 600;">@file.Name</p>
@@ -51,7 +51,7 @@
                                     <tbody>
                                         @foreach (var vTrack in vMeta.VideoTracks)
                                         {
-                                            <tr>
+                                            <tr @key="vTrack.Index">
                                                 <td>@vTrack.Index</td>
                                                 <td>@vTrack.Codec</td>
                                                 <td>@($"{vTrack.Width}x{vTrack.Height}")</td>
@@ -81,7 +81,7 @@
                                     <tbody>
                                         @foreach (var aTrack in vMeta.AudioTracks)
                                         {
-                                            <tr>
+                                            <tr @key="aTrack.Index">
                                                 <td>@aTrack.Index</td>
                                                 <td>@(aTrack.Language ?? "-") @(!string.IsNullOrEmpty(aTrack.Name) ? $"({aTrack.Name})" : "")</td>
                                                 <td>@aTrack.Codec @(!string.IsNullOrEmpty(aTrack.Profile) ? $"({aTrack.Profile})" : "")</td>
@@ -110,7 +110,7 @@
                                     <tbody>
                                         @foreach (var sTrack in vMeta.SubtitleTracks)
                                         {
-                                            <tr>
+                                            <tr @key="sTrack.Index">
                                                 <td>@sTrack.Index</td>
                                                 <td>@(sTrack.Language ?? "-") @(!string.IsNullOrEmpty(sTrack.Name) ? $"({sTrack.Name})" : "")</td>
                                                 <td>@sTrack.Codec</td>
@@ -132,7 +132,7 @@
                 var isLoading = _loadingFiles.Contains(file.Id);
                 var vMeta = details?.FileMetadata as VideoFileMetadataDto;
 
-                <div class="surface pa-4">
+                <div @key="file.Id" class="surface pa-4">
                     <div class="d-flex flex-col">
                         <div class="d-flex align-center justify-between">
                             <p class="text-subtitle1" Style="font-weight: 600;">@file.Name</p>
@@ -183,7 +183,7 @@
                                     <tbody>
                                         @foreach (var vTrack in vMeta.VideoTracks)
                                         {
-                                            <tr>
+                                            <tr @key="vTrack.Index">
                                                 <td>@vTrack.Index</td>
                                                 <td>@vTrack.Codec</td>
                                                 <td>@($"{vTrack.Width}x{vTrack.Height}")</td>
@@ -213,7 +213,7 @@
                                     <tbody>
                                         @foreach (var aTrack in vMeta.AudioTracks)
                                         {
-                                            <tr>
+                                            <tr @key="aTrack.Index">
                                                 <td>@aTrack.Index</td>
                                                 <td>@(aTrack.Language ?? "-") @(!string.IsNullOrEmpty(aTrack.Name) ? $"({aTrack.Name})" : "")</td>
                                                 <td>@aTrack.Codec @(!string.IsNullOrEmpty(aTrack.Profile) ? $"({aTrack.Profile})" : "")</td>
@@ -242,7 +242,7 @@
                                     <tbody>
                                         @foreach (var sTrack in vMeta.SubtitleTracks)
                                         {
-                                            <tr>
+                                            <tr @key="sTrack.Index">
                                                 <td>@sTrack.Index</td>
                                                 <td>@(sTrack.Language ?? "-") @(!string.IsNullOrEmpty(sTrack.Name) ? $"({sTrack.Name})" : "")</td>
                                                 <td>@sTrack.Codec</td>

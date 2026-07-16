@@ -93,7 +93,9 @@
                 <div class="browse-view-simple-grid" style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
                     @foreach (var item in Items!)
                     {
-                        @GridTemplate(item)
+                        <div @key="item">
+                            @GridTemplate(item)
+                        </div>
                     }
                 </div>
                 break;

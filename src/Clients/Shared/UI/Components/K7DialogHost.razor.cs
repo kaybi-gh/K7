@@ -1,8 +1,10 @@
 ﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -11,8 +13,10 @@ public partial class K7DialogHost : IDisposable
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ILogger<K7DialogHost> Logger { get; set; } = default!;
 
     private readonly List<K7DialogEntry> _dialogs = [];
+    private IReadOnlyList<K7DialogEntry> _openDialogs = [];
 
     protected override void OnInitialized()
     {
@@ -24,6 +28,7 @@ public partial class K7DialogHost : IDisposable
     {
         var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged), OnDialogClosed);
         _dialogs.Add(entry);
+        UpdateOpenDialogs();
         await InvokeAsync(StateHasChanged);
         await UpdatePageInteractionLockAsync();
 
@@ -43,7 +48,11 @@ public partial class K7DialogHost : IDisposable
         return entry;
     }
 
-    private void OnDialogClosed(K7DialogEntry entry) => OnDialogClosedAsync(entry).FireAndForget();
+    private void OnDialogClosed(K7DialogEntry entry)
+    {
+        UpdateOpenDialogs();
+        OnDialogClosedAsync(entry).FireAndForget(Logger);
+    }
 
     private async Task OnDialogClosedAsync(K7DialogEntry entry)
     {
@@ -106,13 +115,16 @@ public partial class K7DialogHost : IDisposable
 
         try
         {
-            _ = JS.InvokeVoidAsync("K7.setDialogOpen", false);
+            JS.InvokeVoidAsync("K7.setDialogOpen", false).AsTask().FireAndForget(Logger);
         }
         catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
         {
             // Host disconnected during teardown
         }
     }
+
+    private void UpdateOpenDialogs() =>
+        _openDialogs = _dialogs.Where(dialog => !dialog.Result.IsCompleted).ToList();
 }
 
 internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDisposable

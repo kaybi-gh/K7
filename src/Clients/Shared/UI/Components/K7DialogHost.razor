@@ -1,7 +1,7 @@
 @namespace K7.Clients.Shared.UI.Components
 @implements IDisposable
 
-@foreach (var entry in _dialogs.Where(d => !d.Result.IsCompleted))
+@foreach (var entry in _openDialogs)
 {
     <div class="k7-dialog-backdrop @(entry.Options?.FullScreen == true ? "k7-dialog-backdrop--fullscreen" : "")"
          @key="entry.Id"

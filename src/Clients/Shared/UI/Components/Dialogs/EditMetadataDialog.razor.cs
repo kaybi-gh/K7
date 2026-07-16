@@ -12,6 +12,7 @@ using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -23,6 +24,7 @@ public partial class EditMetadataDialog : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ILogger<EditMetadataDialog> Logger { get; set; } = default!;
 
     [Parameter] public MediaDto? Media { get; set; }
     [Parameter] public PersonDto? Person { get; set; }
@@ -110,6 +112,9 @@ public partial class EditMetadataDialog : IDisposable
     private bool _isGeneratingStillFromSource;
     private CancellationTokenSource? _picturesDebounceCts;
     private IReadOnlyList<ProviderImageDto>? _providerImages;
+    private IReadOnlyList<MetadataPictureType> _providerImageTypes = [];
+    private IReadOnlyList<ProviderImageDto> _filteredProviderImages = [];
+    private Dictionary<MetadataPictureType, int> _providerImageTypeCounts = [];
     private MetadataPictureType _providerImageFilter = MetadataPictureType.Poster;
     private string? _importingProviderImageUrl;
     private bool _isLoadingProviderImages;
@@ -333,7 +338,7 @@ public partial class EditMetadataDialog : IDisposable
         _picturesDebounceCts?.Dispose();
         _picturesDebounceCts = new CancellationTokenSource();
         var token = _picturesDebounceCts.Token;
-        _ = DebouncedReloadPicturesAsync(token);
+        DebouncedReloadPicturesAsync(token).FireAndForget(Logger);
     }
 
     private async Task DebouncedReloadPicturesAsync(CancellationToken cancellationToken)
@@ -381,6 +386,7 @@ public partial class EditMetadataDialog : IDisposable
         Media = fresh;
         InitFromMedia(fresh);
         _providerImages = null;
+        ClearProviderImageDisplayData();
         _importingProviderImageUrl = null;
         StateHasChanged();
     }
@@ -397,6 +403,7 @@ public partial class EditMetadataDialog : IDisposable
         Person = fresh;
         InitFromPerson(fresh);
         _providerImages = null;
+        ClearProviderImageDisplayData();
         _importingProviderImageUrl = null;
         StateHasChanged();
     }
@@ -596,6 +603,7 @@ public partial class EditMetadataDialog : IDisposable
 
         _isLoadingProviderImages = true;
         _providerImages = null;
+        ClearProviderImageDisplayData();
         _importingProviderImageUrl = null;
         StateHasChanged();
 
@@ -612,6 +620,7 @@ public partial class EditMetadataDialog : IDisposable
                 _providerImageFilter = _providerImages.Any(image => image.Type == matchedType)
                     ? matchedType
                     : _providerImages[0].Type;
+                UpdateProviderImageDisplayData();
             }
         }
         catch (Exception ex)
@@ -662,6 +671,37 @@ public partial class EditMetadataDialog : IDisposable
             _importingProviderImageUrl = null;
             StateHasChanged();
         }
+    }
+
+    private void UpdateProviderImageDisplayData()
+    {
+        var providerImages = _providerImages ?? [];
+        _providerImageTypes = providerImages
+            .Select(image => image.Type)
+            .Distinct()
+            .ToList();
+        _providerImageTypeCounts = _providerImageTypes.ToDictionary(
+            type => type,
+            type => providerImages.Count(image => image.Type == type));
+        _filteredProviderImages = providerImages
+            .Where(image => image.Type == _providerImageFilter)
+            .ToList();
+    }
+
+    private void SetProviderImageFilter(MetadataPictureType type)
+    {
+        _providerImageFilter = type;
+        _filteredProviderImages = _providerImages?
+            .Where(image => image.Type == type)
+            .ToList()
+            ?? [];
+    }
+
+    private void ClearProviderImageDisplayData()
+    {
+        _providerImageTypes = [];
+        _providerImageTypeCounts = [];
+        _filteredProviderImages = [];
     }
 
     private async Task OnSlotFileSelectedAsync(MetadataPictureType type, InputFileChangeEventArgs e)
