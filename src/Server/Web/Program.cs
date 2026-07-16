@@ -1,6 +1,7 @@
 using K7.Clients.Shared.UI.Pages.Utils;
 using K7.Server.Application;
 using K7.Server.Domain.Constants;
+using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Oidc;
@@ -26,6 +27,8 @@ try
         builder.RunOpenApiGeneration();
         return;
     }
+
+    builder.Configuration.AddFileSecretOverrides();
 
     builder.AddServiceDefaults();
 
