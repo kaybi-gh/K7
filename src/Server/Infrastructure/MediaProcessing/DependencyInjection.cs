@@ -3,6 +3,7 @@ using FFMpegCore;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Application.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -82,6 +83,9 @@ public static class DependencyInjection
 
     public static void InitializeMediaProcessing(this WebApplication app)
     {
+        if (app.Configuration.GetValue<bool>("SmokeTest:SkipFfmpegVerification"))
+            return;
+
         using var scope = app.Services.CreateScope();
         var pathConfiguration = scope.ServiceProvider.GetRequiredService<IOptions<PathsConfiguration>>().Value;
 
