@@ -14,6 +14,14 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="coverlet.collector" />
+        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Server\Infrastructure\Database\Context\K7.Server.Infrastructure.Database.Context.csproj" />
+        <ProjectReference Include="..\..\src\Server\Infrastructure\Database\Providers\Postgres\K7.Server.Infrastructure.Database.Providers.Postgres.csproj" />
+        <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 
 </Project>
