@@ -47,8 +47,7 @@ public class GetTopMusicTracksQueryHandler(
 
         var playCountById = topTracks.ToDictionary(x => x.MediaId, x => x.PlayCount);
         var trackIds = topTracks.Select(x => x.MediaId).ToList();
-        var loadedTracks = await liteMediaProjection.GetLiteMediasAsync(trackIds, currentUser.Id, cancellationToken);
-        var liteTracks = await liteMediaProjection.ToLiteListAsync(loadedTracks, cancellationToken);
+        var liteTracks = await liteMediaProjection.GetLiteMediaDtosAsync(trackIds, currentUser.Id, cancellationToken);
 
         return liteTracks
             .OfType<LiteMusicTrackDto>()
