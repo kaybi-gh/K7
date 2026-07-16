@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+      # Do not checkout PR head under pull_request_target (privileged token).
+      # release-drafter and actions/labeler read config from the default branch.
       - name: Label from Conventional Commits (release-drafter)
         uses: release-drafter/release-drafter@v6
         with:
