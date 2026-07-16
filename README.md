@@ -11,19 +11,22 @@ K7 is a self-hosted media server for a small circle of family and friends.
 
 The name comes from the French pronunciation `/ka.sɛt/` *(cassette)*. The idea is to bring back that feeling of a shelf at home: audio tapes, VHS, everything yours and local.
 
-## See it in action
-
 ![K7 on TV, desktop, and mobile](screenshots/movie-showcase-devices.png)
 More screenshots: [`screenshots/README.md`](screenshots/README.md).
 
-### Demo
+## Demo
 
 Access the live demo right [here](https://k7.kaybi.dev): connect either as a guest.
 Only guest access is available for the demo meaning that a ton of features are hidden.
 
 ## Quick start (Docker)
 
-K7 is meant to be easy to run at home. See [docker-compose.yaml](docker-compose.yaml) for the production stack (Postgres + K7 server).
+```bash
+cp .env.example .env   # set POSTGRES_PASSWORD
+docker compose up -d   # pulls ghcr.io/kaybi-gh/k7:latest
+```
+
+Open `http://localhost:8080` and complete first-run setup. Install details: [docs/admin/install.md](docs/admin/install.md).
 
 ## Features
 
@@ -69,6 +72,10 @@ K7 is meant to be easy to run at home. See [docker-compose.yaml](docker-compose.
 - **Dashboard, diagnostics, background tasks** - see what the server is doing without SSH
 - **Outgoing notifications** - customizable webhook rules (event filters, payload templates) to plug K7 into your own tools
 - **Import tool** - migrate from Plex, Jellyfin, Spotify, and more ([tools/K7.Import](tools/K7.Import/README.md))
+
+## Documentation
+
+All guides (users, admins, developers): **[docs/README.md](docs/README.md)**.
 
 ## Community
 

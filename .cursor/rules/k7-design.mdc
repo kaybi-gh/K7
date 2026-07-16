@@ -1,24 +1,15 @@
 ---
-description: K7 design system, brand, and UI anti-patterns
+description: K7 design system and UI anti-patterns
 globs: src/Clients/**,**/*.css,**/*.razor
 alwaysApply: false
 ---
 
 # K7 Design
 
-**Brand**: Cinematic. Yours. Understated. Dark-first cinema UI; content (posters, covers) is the hero.
+Dark-first media UI. Artwork is the visual focus; chrome stays quiet. Copper accent and fonts via CSS tokens only (Epilogue / Manrope).
 
-- Tokens only: copper accent via CSS variables, never hard-coded hex
-- Typography: Epilogue (headings), Manrope (body)
-- WCAG AA minimum; 44px touch targets on mobile
+- WCAG AA; 44px touch targets on mobile
 - Adapt per context (desktop, mobile, couch) - do not just shrink desktop layouts
+- No neon/cyan-purple, glassmorphism, gradient text, nested cards, generic fonts (Inter/Roboto), bounce easing, pure black/white
 
-## Avoid (AI slop)
-
-Neon/cyan-purple gradients, glassmorphism, gradient text, hero metrics, identical card grids, nested cards, generic fonts (Inter/Roboto), bounce easing, gray-on-color text, pure black/white.
-
-## Principles
-
-Content first. Cinematic restraint. Tokens over hard-codes. Every context first-class. Accessible by default.
-
-Full context: `.impeccable.md` and `AGENTS.md`.
+Full notes: `docs/dev/design.md`.

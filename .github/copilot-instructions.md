@@ -13,9 +13,11 @@ Clean Architecture with strict dependency direction: **Domain â†’ Application â†
 | `Server/Infrastructure/*` | `K7.Server.Infrastructure.*` | EF Core (Postgres + Sqlite), file system, media processing | Domain, Application |
 | `Server/Web` | `K7.Server.Web` | ASP.NET Core host, Minimal API endpoints, SignalR hub | All server layers |
 | `Shared/K7.Shared` | `K7.Shared` | DTOs, constants shared across client and server | Domain (enums + `nameof` only) |
-| `Clients/Shared/*` | `K7.Clients.Shared.*` | Blazor components, pages, services, models (shared between Web & MAUI) | K7.Shared |
+| `Clients/Shared` | `K7.Clients.Shared` | Client services, models, interfaces | K7.Shared |
+| `Clients/Shared/UI` | `K7.Clients.Shared.UI` | Pages, layouts, K7 components | Clients.Shared |
 | `Clients/Web` | `K7.Clients.Web` | Blazor WebAssembly host | Clients.Shared.* |
 | `Clients/MAUI` | `K7.Clients.MAUI` | .NET MAUI Blazor Hybrid host | Clients.Shared.* |
+| `Clients/DesignSystem` | `K7.Clients.DesignSystem` | UI component catalog | Clients.Shared.UI |
 
 ## CQRS / MediatR Conventions
 
@@ -42,6 +44,7 @@ No `Result<T>` wrapper pattern.
 - **Logging**: Always structured (`_logger.LogX("message {Param}", param)`). Never use string interpolation (`$""`).
 - **Database**: EF Core multi-provider (Postgres + Sqlite). Never call `BuildServiceProvider()` during DI registration.
 - **Domain entities**: Inherit `BaseEntity`, raise events via `AddDomainEvent()`.
+- **Docs and tests**: update docs and tests with behavior changes; new shared UI components need a DesignSystem demo (`docs/dev/developing.md`).
 
 ## Code Style
 
@@ -66,6 +69,9 @@ No `Result<T>` wrapper pattern.
 ## References
 
 - Architecture and conventions: [AGENTS.md](../AGENTS.md)
+- Docs index: [docs/README.md](../docs/README.md)
 - Setup and contributing: [CONTRIBUTING.md](../CONTRIBUTING.md)
-- Design context: [.impeccable.md](../.impeccable.md)
+- Design: [docs/dev/design.md](../docs/dev/design.md)
 - Code formatting: [.editorconfig](../.editorconfig)
+
+Path-scoped Copilot files under `.github/instructions/` only point at these docs (keep `applyTo` for auto-attach).
