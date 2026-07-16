@@ -44,7 +44,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             PageSize = PagingDefaults.ClampPageSize(request.PageSize)
         };
 
-        var userId = currentUser.Id;
+        var userId = await currentUser.GetIdAsync(cancellationToken);
 
         var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
             context, request.LibraryIds, request.LibraryGroupIds, cancellationToken);
@@ -137,24 +137,50 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         query = ApplyLibraryFilter(query, request.LibraryIds);
         query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
 
-        var items = await query
-            .OrderByDescending(x => x.UserMediaStates
+        var candidates = query.Select(x => new
+        {
+            x.Id,
+            GroupId = x is SerieEpisode ? ((SerieEpisode)x).SerieId : x.Id,
+            SeasonNumber = x is SerieEpisode ? ((SerieEpisode)x).Season.SeasonNumber : 0,
+            EpisodeNumber = x is SerieEpisode ? ((SerieEpisode)x).EpisodeNumber : 0,
+            State = x.UserMediaStates
                 .Where(s => s.UserId == userId.Value)
-                .Select(s => s.LastInteractedAt)
-                .FirstOrDefault())
-            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
-            .Include(x => ((SerieEpisode)x).Season)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
+                .Select(s => new
+                {
+                    s.IsCompleted,
+                    s.LastPlaybackPosition,
+                    s.ProgressPercentage,
+                    s.LastInteractedAt
+                })
+                .FirstOrDefault()
+        });
 
-        var deduplicated = ContinueWatchingEpisodeSelector.DeduplicateBySerie(items);
-        var totalCount = deduplicated.Count;
-        var pageIds = deduplicated
+        var groupedCandidates = candidates
+            .GroupBy(x => x.GroupId)
+            .Select(group => new
+            {
+                GroupId = group.Key,
+                LastInteractedAt = group.Max(x => x.State!.LastInteractedAt),
+                MediaId = group
+                    .OrderByDescending(x => x.State != null
+                        && !x.State.IsCompleted
+                        && (x.State.LastPlaybackPosition > 0
+                            || (x.State.ProgressPercentage > 0 && x.State.ProgressPercentage < 100)))
+                    .ThenByDescending(x => x.State!.LastInteractedAt)
+                    .ThenBy(x => x.SeasonNumber == 0 ? int.MaxValue : x.SeasonNumber)
+                    .ThenBy(x => x.EpisodeNumber)
+                    .Select(x => x.Id)
+                    .First()
+            });
+
+        var totalCount = await groupedCandidates.CountAsync(cancellationToken);
+        var pageIds = await groupedCandidates
+            .OrderByDescending(x => x.LastInteractedAt)
+            .ThenByDescending(x => x.GroupId)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(m => m.Id)
-            .ToList();
+            .Select(x => x.MediaId)
+            .ToListAsync(cancellationToken);
 
         if (pageIds.Count == 0)
             return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
