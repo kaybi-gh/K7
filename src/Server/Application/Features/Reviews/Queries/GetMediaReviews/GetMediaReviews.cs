@@ -26,7 +26,7 @@ public class GetMediaReviewsQueryHandler(
 {
     public async Task<IReadOnlyList<MediaReviewDto>> Handle(GetMediaReviewsQuery request, CancellationToken cancellationToken)
     {
-        if (currentUser.Id is not { } viewerUserId)
+        if (await currentUser.GetIdAsync(cancellationToken) is not { } viewerUserId)
             return [];
 
         var reviews = await context.MediaReviews
@@ -46,7 +46,23 @@ public class GetMediaReviewsQueryHandler(
 
         var ownerPrivacyByUserId = ownerPrivacyEntries.ToDictionary(x => x.OwnerId, x => x.Privacy);
 
-        var canViewByOwnerId = new Dictionary<Guid, bool>();
+        var visibleOwnerIds = ownerPrivacyByUserId
+            .Where(x => SocialViewVisibilityHelper.CanViewerSeeLocalContent(
+                            viewerPrivacy,
+                            FederationContentType.Reviews,
+                            x.Key)
+                        && x.Value.Share.Reviews != VisibilityScope.Nobody)
+            .Select(x => x.Key)
+            .ToList();
+        var canViewEntries = await Task.WhenAll(
+            visibleOwnerIds.Select(async ownerId =>
+                (OwnerId: ownerId, CanView: await visibilityEvaluator.CanViewAsync(
+                    viewerUserId,
+                    ownerId,
+                    FederationContentType.Reviews,
+                    ownerPrivacyByUserId[ownerId].Share.Reviews,
+                    cancellationToken: cancellationToken))));
+        var canViewByOwnerId = canViewEntries.ToDictionary(x => x.OwnerId, x => x.CanView);
         var visibleReviews = new List<MediaReview>();
 
         foreach (var review in reviews)
@@ -57,30 +73,7 @@ public class GetMediaReviewsQueryHandler(
                 continue;
             }
 
-            if (!SocialViewVisibilityHelper.CanViewerSeeLocalContent(
-                    viewerPrivacy,
-                    FederationContentType.Reviews,
-                    review.UserId))
-                continue;
-
-            if (!ownerPrivacyByUserId.TryGetValue(review.UserId, out var ownerPrivacy))
-                continue;
-
-            if (ownerPrivacy.Share.Reviews == VisibilityScope.Nobody)
-                continue;
-
-            if (!canViewByOwnerId.TryGetValue(review.UserId, out var canView))
-            {
-                canView = await visibilityEvaluator.CanViewAsync(
-                    viewerUserId,
-                    review.UserId,
-                    FederationContentType.Reviews,
-                    ownerPrivacy.Share.Reviews,
-                    cancellationToken: cancellationToken);
-                canViewByOwnerId[review.UserId] = canView;
-            }
-
-            if (canView)
+            if (canViewByOwnerId.GetValueOrDefault(review.UserId))
                 visibleReviews.Add(review);
         }
 
