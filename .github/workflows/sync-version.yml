@@ -20,8 +20,33 @@ jobs:
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          VERSION="${TAG#v}"
-          sed -i "s|<Version>.*</Version>|<Version>${VERSION}</Version>|" Directory.Build.props
+          python3 - <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          version = os.environ["TAG"].removeprefix("v")
+          path = "Directory.Build.props"
+          tree = ET.parse(path)
+          version_node = tree.find(".//Version")
+
+          if version_node is None:
+              sys.exit("Directory.Build.props does not contain a Version node.")
+
+          version_node.text = version
+          ET.indent(tree, space="  ")
+          tree.write(path, encoding="utf-8", xml_declaration=False)
+          PY
+
+          if ! grep -Fqx "    <Version>${TAG#v}</Version>" Directory.Build.props; then
+            echo "::error::Directory.Build.props Version node was not updated."
+            exit 1
+          fi
+
+          if git diff --quiet -- Directory.Build.props; then
+            echo "::error::Directory.Build.props did not change."
+            exit 1
+          fi
 
       - name: Commit version bump
         uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9
