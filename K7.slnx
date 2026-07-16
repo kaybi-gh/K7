@@ -58,8 +58,11 @@
     <Project Path="tests/Application.FunctionalTests/Application.FunctionalTests.csproj" />
     <Project Path="tests/Application.UnitTests/Application.UnitTests.csproj" />
     <Project Path="tests/Clients.ComponentTests/Clients.ComponentTests.csproj" />
+    <Project Path="tests/Clients.DesignSystem.SmokeTests/Clients.DesignSystem.SmokeTests.csproj" />
+    <Project Path="tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj" />
     <Project Path="tests/Domain.UnitTests/Domain.UnitTests.csproj" />
     <Project Path="tests/Infrastructure.IntegrationTests/Infrastructure.IntegrationTests.csproj" />
     <Project Path="tests/Tests.Helpers/Tests.Helpers.csproj" />
+    <Project Path="tests/Web.SmokeTests/Web.SmokeTests.csproj" />
   </Folder>
 </Solution>

@@ -5,10 +5,13 @@
       "src\\Server\\Web\\K7.Server.Web.csproj",
       "src\\Clients\\Web\\K7.Clients.Web.csproj",
       "src\\Clients\\Shared\\UI\\K7.Clients.Shared.UI.csproj",
+      "src\\Clients\\DesignSystem\\K7.Clients.DesignSystem.csproj",
       "tests\\Application.UnitTests\\Application.UnitTests.csproj",
       "tests\\Application.FunctionalTests\\Application.FunctionalTests.csproj",
       "tests\\Clients.ComponentTests\\Clients.ComponentTests.csproj",
-      "tests\\Domain.UnitTests\\Domain.UnitTests.csproj"
+      "tests\\Clients.DesignSystem.SmokeTests\\Clients.DesignSystem.SmokeTests.csproj",
+      "tests\\Domain.UnitTests\\Domain.UnitTests.csproj",
+      "tests\\Web.SmokeTests\\Web.SmokeTests.csproj"
     ]
   }
 }

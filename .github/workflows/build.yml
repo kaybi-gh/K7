@@ -58,6 +58,37 @@ jobs:
           dotnet test tests/Domain.UnitTests/Domain.UnitTests.csproj --configuration Release --no-build --verbosity normal
           dotnet test tests/Application.UnitTests/Application.UnitTests.csproj --configuration Release --no-build --verbosity normal
           dotnet test tests/Clients.ComponentTests/Clients.ComponentTests.csproj --configuration Release --no-build --verbosity normal
+          dotnet test tests/Web.SmokeTests/Web.SmokeTests.csproj --configuration Release --no-build --verbosity normal
+          dotnet test tests/Clients.DesignSystem.SmokeTests/Clients.DesignSystem.SmokeTests.csproj --configuration Release --no-build --verbosity normal
+
+  maui-smoke:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', 'global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
+
+      - name: Build
+        run: dotnet build tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release --no-restore
+
+      - name: Test (maui smoke)
+        run: dotnet test tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release --no-build --verbosity normal
 
   publish-image:
     needs: build-and-test

@@ -136,4 +136,8 @@
     </MauiXaml>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="K7.Clients.MAUI.SmokeTests" />
+  </ItemGroup>
+
 </Project>
