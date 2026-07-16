@@ -22,6 +22,8 @@ public record CreateBackgroundTasksBatchCommand(List<CreateBackgroundTasksBatchI
 
 public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBackgroundTasksBatchCommand>
 {
+    private const int ExistingTaskQueryBatchSize = 400;
+
     private readonly IApplicationDbContext _context;
     private readonly IBackgroundTaskQueue _taskQueue;
     private readonly IBackgroundTaskNotifier _notifier;
@@ -52,15 +54,24 @@ public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBa
             .Select(x => x.TaskName)
             .ToHashSet();
 
-        var existingTasks = await _context.BackgroundTasks
-            .Where(t => taskNames.Contains(t.Name)
-                && t.TargetEntityId.HasValue
-                && targetEntityIds.Contains(t.TargetEntityId.Value)
-                && (t.Status == BackgroundTaskStatus.Pending
-                    || t.Status == BackgroundTaskStatus.InProgress
-                    || t.Status == BackgroundTaskStatus.WaitingForRetry))
-            .Select(t => new { t.Name, t.TargetEntityId })
-            .ToListAsync(cancellationToken);
+        List<(string Name, Guid? TargetEntityId)> existingTasks = [];
+        foreach (var targetEntityIdBatch in targetEntityIds.Chunk(ExistingTaskQueryBatchSize))
+        {
+            foreach (var taskNameBatch in taskNames.Chunk(ExistingTaskQueryBatchSize))
+            {
+                var batchTasks = await _context.BackgroundTasks
+                    .Where(t => taskNameBatch.Contains(t.Name)
+                        && t.TargetEntityId.HasValue
+                        && targetEntityIdBatch.Contains(t.TargetEntityId.Value)
+                        && (t.Status == BackgroundTaskStatus.Pending
+                            || t.Status == BackgroundTaskStatus.InProgress
+                            || t.Status == BackgroundTaskStatus.WaitingForRetry))
+                    .Select(t => new { t.Name, t.TargetEntityId })
+                    .ToListAsync(cancellationToken);
+
+                existingTasks.AddRange(batchTasks.Select(t => (t.Name, t.TargetEntityId)));
+            }
+        }
 
         var existingSet = existingTasks
             .Select(t => (t.Name, t.TargetEntityId))

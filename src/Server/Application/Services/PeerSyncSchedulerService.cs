@@ -14,6 +14,7 @@ public class PeerSyncSchedulerService(
     ILogger<PeerSyncSchedulerService> logger) : BackgroundService
 {
     private static readonly TimeSpan SyncInterval = TimeSpan.FromHours(24);
+    private static readonly TimeSpan InterPeerSyncDelay = TimeSpan.FromMinutes(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -57,8 +58,9 @@ public class PeerSyncSchedulerService(
 
         logger.LogInformation("Syncing metadata from {Count} active peers", activePeerIds.Count);
 
-        foreach (var peerId in activePeerIds)
+        for (var index = 0; index < activePeerIds.Count; index++)
         {
+            var peerId = activePeerIds[index];
             try
             {
                 await sender.Send(new SyncPeerMetadataCommand(peerId), cancellationToken);
@@ -67,6 +69,9 @@ public class PeerSyncSchedulerService(
             {
                 logger.LogWarning(ex, "Failed to sync peer {PeerId}", peerId);
             }
+
+            if (index < activePeerIds.Count - 1)
+                await Task.Delay(InterPeerSyncDelay, cancellationToken);
         }
     }
 }
