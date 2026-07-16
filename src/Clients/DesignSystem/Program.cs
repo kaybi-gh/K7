@@ -132,3 +132,5 @@ app.MapRazorComponents<K7.Clients.DesignSystem.App>()
    .AddInteractiveServerRenderMode();
 
 app.Run();
+
+public partial class Program { }
