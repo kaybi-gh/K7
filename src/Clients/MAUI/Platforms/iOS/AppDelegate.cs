@@ -19,4 +19,13 @@ public class AppDelegate : MauiUIApplicationDelegate
 
         return result;
     }
+
+    public override void WillTerminate(UIKit.UIApplication application)
+    {
+        var services = IPlatformApplication.Current?.Services;
+        services?.GetService<NativeAudioService>()?.Cleanup();
+        services?.GetService<NowPlayingService>()?.Cleanup();
+
+        base.WillTerminate(application);
+    }
 }
