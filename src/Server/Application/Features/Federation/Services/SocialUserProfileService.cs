@@ -24,97 +24,28 @@ public interface ISocialUserProfileService
     Task<bool> IsDirectoryVisibleAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
 }
 
-public class SocialUserProfileService(
+public interface ISocialUserProfileReader
+{
+    Task<SocialUserProfileDto?> GetLocalProfileAsync(Guid ownerUserId, Guid viewerUserId, CancellationToken cancellationToken = default);
+    Task<SocialUserProfileDto?> GetFederatedProfileAsync(Guid peerServerId, Guid originUserId, Guid viewerUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SharedCollectionBrowseDto>> GetSharedCollectionsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SharedPlaylistBrowseDto>> GetSharedPlaylistsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
+}
+
+public class SocialUserProfileReader(
     IApplicationDbContext context,
     IPeerClient peerClient,
     IFederationViewerAssertionService assertionService,
     IUserFederationPrivacyService privacyService,
     IContentVisibilityEvaluator visibilityEvaluator,
+    ISocialUserProfileVisibilityService profileVisibilityService,
     IFederatedMediaResolver mediaResolver,
     IFederationSocialConsumerService consumerService,
     IIdentityService identityService)
-    : ISocialUserProfileService
+    : ISocialUserProfileReader
 {
     private const int RecentLimit = 20;
     private const int PreviewItemLimit = 8;
-
-    public async Task<IReadOnlyList<SocialUserDirectoryEntryDto>> GetDirectoryAsync(
-        Guid viewerUserId,
-        CancellationToken cancellationToken = default)
-    {
-        var results = new List<SocialUserDirectoryEntryDto>();
-
-        var localUsers = await context.Users
-            .AsNoTracking()
-            .Where(u => u.PeerServerId == null && u.IsActive && u.DeletedAt == null && u.Id != viewerUserId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var owner in localUsers)
-        {
-            if (!await IsLocalUserDiscoverableAsync(viewerUserId, owner.Id, cancellationToken))
-                continue;
-
-            var avatarId = await GetAvatarPictureIdAsync(owner.Id, cancellationToken);
-            results.Add(new SocialUserDirectoryEntryDto
-            {
-                Identity = await ToLocalIdentityAsync(owner, avatarId, cancellationToken)
-            });
-        }
-
-        var viewerPrivacy = await privacyService.GetPrivacyAsync(viewerUserId, cancellationToken);
-        var peers = await FederationSocialConsumerHelper.GetActiveOutboundPeersAsync(context, cancellationToken);
-        var viewer = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == viewerUserId, cancellationToken);
-
-        foreach (var peer in peers)
-        {
-            if (!await HasAnyInboundSocialEnabledAsync(peer.Id, cancellationToken))
-                continue;
-
-            var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
-            if (token is null)
-                continue;
-
-            var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
-            var assertion = assertionService.CreateAssertion(new FederatedUserRef
-            {
-                OriginUserId = viewerUserId,
-                DisplayName = viewer?.DisplayName
-            }, assertionSecret);
-
-            var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
-            foreach (var remoteUser in remoteUsers)
-            {
-                if (!IsFederatedUserDiscoverableForViewer(viewerPrivacy, remoteUser, peer.Id))
-                    continue;
-
-                results.Add(new SocialUserDirectoryEntryDto
-                {
-                    Identity = new SocialUserIdentityDto
-                    {
-                        IsFederated = true,
-                        PeerServerId = peer.Id,
-                        OriginUserId = remoteUser.OriginUserId,
-                        DisplayName = remoteUser.DisplayName ?? "?",
-                        PeerName = peer.Name
-                    }
-                });
-            }
-        }
-
-        return results
-            .OrderBy(e => e.Identity.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    public async Task<bool> IsDirectoryVisibleAsync(Guid viewerUserId, CancellationToken cancellationToken = default)
-    {
-        var viewerPrivacy = await privacyService.GetPrivacyAsync(viewerUserId, cancellationToken);
-        if (!HasSocialViewEnabled(viewerPrivacy.View))
-            return false;
-
-        var directory = await GetDirectoryAsync(viewerUserId, cancellationToken);
-        return directory.Count > 0;
-    }
 
     public async Task<SocialUserProfileDto?> GetLocalProfileAsync(
         Guid ownerUserId,
@@ -134,7 +65,7 @@ public class SocialUserProfileService(
         var avatarId = await GetAvatarPictureIdAsync(owner.Id, cancellationToken);
         var identity = await ToLocalIdentityAsync(owner, avatarId, cancellationToken);
 
-        if (!isSelf && !await IsLocalUserDiscoverableAsync(viewerUserId, owner.Id, cancellationToken))
+        if (!isSelf && !await profileVisibilityService.IsLocalUserDiscoverableAsync(viewerUserId, owner.Id, cancellationToken))
             return null;
 
         var recentReviews = await LoadLocalReviewsAsync(owner.Id, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
@@ -142,7 +73,7 @@ public class SocialUserProfileService(
         var collections = await LoadLocalCollectionsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
         var playlists = await LoadLocalPlaylistsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
         var smartPlaylists = await LoadLocalSmartPlaylistsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
-        var visibleSections = await BuildLocalVisibleSectionsAsync(
+        var visibleSections = await profileVisibilityService.BuildLocalVisibleSectionsAsync(
             isSelf,
             viewerUserId,
             owner.Id,
@@ -194,7 +125,7 @@ public class SocialUserProfileService(
         if (remoteUser is null)
             return null;
 
-        if (!await CanViewFederatedUserAsync(viewerUserId, viewerPrivacy, remoteUser, peer.Id, cancellationToken))
+        if (!await profileVisibilityService.CanViewFederatedUserAsync(viewerUserId, viewerPrivacy, remoteUser, peer.Id, cancellationToken))
             return null;
 
         var identity = new SocialUserIdentityDto
@@ -211,7 +142,7 @@ public class SocialUserProfileService(
         var collections = await LoadFederatedCollectionsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
         var playlists = await LoadFederatedPlaylistsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
         var smartPlaylists = await LoadFederatedSmartPlaylistsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
-        var visibleSections = await BuildFederatedVisibleSectionsAsync(viewerPrivacy, remoteUser, peer.Id, cancellationToken);
+        var visibleSections = await profileVisibilityService.BuildFederatedVisibleSectionsAsync(viewerPrivacy, remoteUser, peer.Id, cancellationToken);
 
         return new SocialUserProfileDto
         {
