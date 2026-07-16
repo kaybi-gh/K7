@@ -71,7 +71,8 @@ public class FileIndexerRemovalTests : FileAndDatabaseFixture
             MetadataProviderName = "musicbrainz",
             MetadataLanguage = "fr",
             MetadataFallbackLanguage = "en",
-            LibraryGroupId = group.Id
+            LibraryGroupId = group.Id,
+            RealtimeMonitorEnabled = false
         };
         await AddAsync(library);
         return library;

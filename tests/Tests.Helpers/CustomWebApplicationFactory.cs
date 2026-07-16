@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Tests.Helpers.Fixtures;
 using Microsoft.AspNetCore.Hosting;
@@ -48,6 +49,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services
                 .RemoveAll<IUser>()
                 .AddTransient(provider => userSubstitute);
+
+            // Prevent BackgroundTasksProcessingService from racing FileIndexer assertions.
+            services.RemoveAll<IBackgroundTaskQueue>();
+            services.RemoveAll<BackgroundTaskQueue>();
+            services.AddSingleton<IBackgroundTaskQueue, NoOpBackgroundTaskQueue>();
 
             services
                 .RemoveAll<DbContextOptions<ApplicationDbContext>>()
