@@ -50,6 +50,7 @@ public static class DependencyInjection
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehaviour<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MediaAccessBehaviour<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehaviour<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
         });
 
@@ -179,6 +180,9 @@ public static class DependencyInjection
         services.AddScoped<IVisibilityGrantService, VisibilityGrantService>();
         services.AddScoped<IPeerConnectivityService, PeerConnectivityService>();
         services.AddScoped<IFederationSocialConsumerService, FederationSocialConsumerService>();
+        services.AddScoped<ISocialUserProfileVisibilityService, SocialUserProfileVisibilityService>();
+        services.AddScoped<ISocialUserDirectoryService, SocialUserDirectoryService>();
+        services.AddScoped<ISocialUserProfileReader, SocialUserProfileReader>();
         services.AddScoped<ISocialUserProfileService, SocialUserProfileService>();
         services.AddSingleton<IFederationViewerAssertionService, FederationViewerAssertionService>();
         services.AddScoped<IPeerAuthorizationService, PeerAuthorizationService>();

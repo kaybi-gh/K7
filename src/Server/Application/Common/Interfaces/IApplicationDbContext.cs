@@ -15,6 +15,7 @@ using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace K7.Server.Application.Common.Interfaces;
 
@@ -75,5 +76,6 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
 }
