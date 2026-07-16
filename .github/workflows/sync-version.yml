@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.release.prerelease == false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: main
 
@@ -24,7 +24,7 @@ jobs:
           sed -i "s|<Version>.*</Version>|<Version>${VERSION}</Version>|" Directory.Build.props
 
       - name: Commit version bump
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9
         with:
           add: Directory.Build.props
           message: 'chore: sync version to ${{ github.event.release.tag_name }}'
