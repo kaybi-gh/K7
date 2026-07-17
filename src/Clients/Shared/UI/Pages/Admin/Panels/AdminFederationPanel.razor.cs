@@ -11,7 +11,6 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
@@ -103,14 +102,6 @@ public partial class AdminFederationPanel : IDisposable
         var policy = GetContentPolicy(contentType);
         policy.Inbound = !policy.Inbound;
         StateHasChanged();
-    }
-
-    private static void OnPolicyCheckboxKeyDown(KeyboardEventArgs e, Action toggle)
-    {
-        if (e.Key is "Enter" or " ")
-        {
-            toggle();
-        }
     }
 
     private string GetSocialContentLabel(FederationContentType contentType) => contentType switch

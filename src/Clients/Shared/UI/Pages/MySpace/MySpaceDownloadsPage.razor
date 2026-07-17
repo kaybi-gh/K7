@@ -73,11 +73,14 @@
                                    ValueChanged="SetTab" />
                 }
 
-                <input type="text"
-                       class="downloads-search-input mb-3"
-                       placeholder="@L["SearchPlaceholder"]"
-                       @bind="_searchQuery"
-                       @bind:event="oninput" />
+                <K7TextField TValue="string"
+                             Class="mb-3"
+                             Variant="outlined"
+                             Placeholder="@L["SearchPlaceholder"]"
+                             Value="_searchQuery"
+                             ValueChanged="v => _searchQuery = v ?? string.Empty"
+                             Immediate="true"
+                             AdornmentIcon="@Phosphor.MagnifyingGlass" />
             }
 
             @if (_activeTab is DownloadTab.All or DownloadTab.Music && FilteredMusicGroups.Count > 0)
