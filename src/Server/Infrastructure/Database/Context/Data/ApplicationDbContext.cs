@@ -21,6 +21,7 @@ using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Options;
 
@@ -90,6 +91,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities => Set<MediaLibraryAvailability>();
+
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        Database.BeginTransactionAsync(cancellationToken);
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
