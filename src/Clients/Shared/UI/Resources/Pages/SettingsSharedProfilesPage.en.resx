@@ -49,4 +49,7 @@
   <data name="LeaveDeletesGroup" xml:space="preserve"><value>Leaving will delete this shared profile because only one member would remain.</value></data>
   <data name="TransferHostTitle" xml:space="preserve"><value>Transfer host</value></data>
   <data name="LeftGroup" xml:space="preserve"><value>Left shared profile.</value></data>
+  <data name="ConfigureProfile" xml:space="preserve"><value>Configure</value></data>
+  <data name="ProfileSettings" xml:space="preserve"><value>Configure</value></data>
+  <data name="ProfileConfigured" xml:space="preserve"><value>Profile preferences saved.</value></data>
 </root>

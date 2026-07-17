@@ -1,0 +1,60 @@
+@namespace K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Shared.Dtos
+@using K7.Shared.Dtos.Entities
+@using K7.Shared.Dtos.Entities.Playlists
+@using K7.Shared.Dtos.Restrictions
+@using K7.Shared.Dtos.SharedProfiles
+@inject IStringLocalizer<SharedProfileHostSettingsDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (_loading)
+{
+    <K7Spinner />
+}
+else
+{
+    <div class="d-flex flex-col gap-4">
+        <p class="text-secondary">@string.Format(L["Description"], Group.Name)</p>
+
+        <h6>@L["VideoPolicyTitle"]</h6>
+        <K7TextField TValue="int" Type="number" Label="@L["MinResumePercent"]" @bind-Value="_videoPolicy.MinResumePercent" />
+        <K7TextField TValue="int" Type="number" Label="@L["MinResumeDurationSeconds"]" @bind-Value="_videoPolicy.MinResumeDurationSeconds" />
+        <K7TextField TValue="int" Type="number" Label="@L["CompletedThresholdPercent"]" @bind-Value="_videoPolicy.CompletedThresholdPercent" />
+        <K7TextField TValue="int" Type="number" Label="@L["ContinueWatchingMaxAgeDays"]" @bind-Value="_videoPolicy.ContinueWatchingMaxAgeDays" />
+
+        <h6>@L["AudioPolicyTitle"]</h6>
+        <K7TextField TValue="int" Type="number" Label="@L["AudioCompletedThresholdPercent"]" @bind-Value="_audioPolicy.CompletedThresholdPercent" />
+        <K7TextField TValue="int" Type="number" Label="@L["AudioCompletedMinDurationSeconds"]" @bind-Value="_audioPolicy.CompletedMinDurationSeconds" />
+
+        <h6>@L["RestrictionTitle"]</h6>
+        <K7Select TValue="Guid?" Label="@L["RestrictionProfile"]" @bind-Value="_restrictionProfileId" Clearable="true">
+            @foreach (var profile in _restrictionProfiles)
+            {
+                <K7SelectItem Value="@((Guid?)profile.Id)" Text="@profile.Name" />
+            }
+        </K7Select>
+
+        <h6>@L["PlaylistsTitle"]</h6>
+        <p class="text-secondary">@L["PlaylistsDescription"]</p>
+        @if (_playlists.Count == 0)
+        {
+            <p class="text-secondary">@L["NoPlaylists"]</p>
+        }
+        else
+        {
+            @foreach (var playlist in _playlists)
+            {
+                var shared = _sharedPlaylistIds.Contains(playlist.Id);
+                <K7Switch Label="@playlist.Title"
+                          Value="shared"
+                          ValueChanged="(v) => OnPlaylistShareChanged(playlist.Id, v)"
+                          Disabled="_saving" />
+            }
+        }
+    </div>
+
+    <div class="k7-dialog-actions">
+        <K7Button Variant="text" OnClick="Cancel" Disabled="_saving">@S["Cancel"]</K7Button>
+        <K7Button OnClick="SaveAsync" Disabled="_saving">@S["Save"]</K7Button>
+    </div>
+}

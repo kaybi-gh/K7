@@ -64,6 +64,13 @@
                                           OnClick="() => EditGroupAsync(group)" Disabled="_processing.Contains(group.Id) || _dialogOpen">
                                     @L["EditGroup"]
                                 </K7Button>
+                                @if (isHost)
+                                {
+                                    <K7Button Variant="text" StartIcon="@Phosphor.Sliders"
+                                              OnClick="() => EditProfileSettingsAsync(group)" Disabled="_processing.Contains(group.Id) || _dialogOpen">
+                                        @L["ProfileSettings"]
+                                    </K7Button>
+                                }
                                 <K7Button Variant="text" Color="error" StartIcon="@Phosphor.SignOut"
                                           OnClick="() => LeaveAsync(group)" Disabled="_processing.Contains(group.Id)">
                                     @L["Leave"]

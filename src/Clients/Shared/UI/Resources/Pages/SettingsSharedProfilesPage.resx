@@ -49,4 +49,7 @@
   <data name="LeaveDeletesGroup" xml:space="preserve"><value>Quitter ce profil partagé le supprimera, car il ne resterait qu'un seul membre.</value></data>
   <data name="TransferHostTitle" xml:space="preserve"><value>Transférer l'hôte</value></data>
   <data name="LeftGroup" xml:space="preserve"><value>Profil partagé quitté.</value></data>
+  <data name="ConfigureProfile" xml:space="preserve"><value>Configurer</value></data>
+  <data name="ProfileSettings" xml:space="preserve"><value>Configurer</value></data>
+  <data name="ProfileConfigured" xml:space="preserve"><value>Préférences du profil enregistrées.</value></data>
 </root>

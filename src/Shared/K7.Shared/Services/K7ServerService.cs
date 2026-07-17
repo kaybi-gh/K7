@@ -559,6 +559,85 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<VideoPlaybackPolicySettingsDto> GetSharedProfileVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<VideoPlaybackPolicySettingsDto>(
+            $"api/shared-profiles/{id}/video-playback-policy", _serializerOptions, cancellationToken);
+        return result ?? new VideoPlaybackPolicySettingsDto();
+    }
+
+    public async Task UpdateSharedProfileVideoPlaybackPolicyAsync(Guid id, VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/shared-profiles/{id}/video-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<AudioPlaybackPolicySettingsDto> GetSharedProfileAudioPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<AudioPlaybackPolicySettingsDto>(
+            $"api/shared-profiles/{id}/audio-playback-policy", _serializerOptions, cancellationToken);
+        return result ?? new AudioPlaybackPolicySettingsDto();
+    }
+
+    public async Task UpdateSharedProfileAudioPlaybackPolicyAsync(Guid id, AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/shared-profiles/{id}/audio-playback-policy", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task AssignSharedProfileContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/shared-profiles/{id}/content-restriction",
+            new { ContentRestrictionProfileId = contentRestrictionProfileId },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetSharedProfilePlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<Guid>>(
+            $"api/shared-profiles/{id}/playlists", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task SharePlaylistToSharedProfileAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/shared-profiles/{id}/playlists/{playlistId}", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UnsharePlaylistFromSharedProfileAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/shared-profiles/{id}/playlists/{playlistId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<HomeLayoutDto?> GetSharedProfileHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/shared-profiles/{id}/home-layout", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<HomeLayoutDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateSharedProfileHomeLayoutAsync(Guid id, HomeLayoutDto layout, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/shared-profiles/{id}/home-layout", layout, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteSharedProfileHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/shared-profiles/{id}/home-layout", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<LibraryPictureDto>>($"api/libraries/{libraryId}/pictures", _serializerOptions, cancellationToken);

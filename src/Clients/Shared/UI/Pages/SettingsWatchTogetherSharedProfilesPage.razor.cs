@@ -130,6 +130,34 @@ public partial class SettingsWatchTogetherSharedProfilesPage
         }
     }
 
+    private async Task EditProfileSettingsAsync(SharedProfileDto group)
+    {
+        _dialogOpen = true;
+        try
+        {
+            var parameters = new K7DialogParameters<SharedProfileHostSettingsDialog>
+            {
+                { x => x.Group, group }
+            };
+            var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+            var dialog = await DialogService.ShowAsync<SharedProfileHostSettingsDialog>(L["ProfileSettings"], parameters, options);
+            var result = await dialog.Result;
+            if (result is not null && !result.Canceled)
+            {
+                await ReloadGroupsAsync();
+                Snackbar.Add(S["Saved"], K7Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
     private async Task LeaveAsync(SharedProfileDto group)
     {
         if (_currentUserId is null)

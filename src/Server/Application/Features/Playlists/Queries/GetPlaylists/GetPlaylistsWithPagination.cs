@@ -37,8 +37,20 @@ public class GetPlaylistsWithPaginationQueryHandler(IApplicationDbContext contex
                 .ThenInclude(i => (i.Media as MusicTrack)!.Album)
                     .ThenInclude(a => a!.Pictures)
                         .ThenInclude(p => p.Variants)
-            .Where(p => p.UserId == userId)
             .AsQueryable();
+
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        if (sharedProfileId is { } profileId)
+        {
+            query = query.Where(p =>
+                p.UserId == userId
+                || context.SharedProfilePlaylists.Any(sp =>
+                    sp.SharedProfileId == profileId && sp.PlaylistId == p.Id));
+        }
+        else
+        {
+            query = query.Where(p => p.UserId == userId);
+        }
 
         if (request.MediaType.HasValue)
             query = query.Where(p => p.MediaType == request.MediaType.Value);

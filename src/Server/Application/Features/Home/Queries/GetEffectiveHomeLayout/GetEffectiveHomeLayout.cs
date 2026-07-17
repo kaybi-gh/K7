@@ -15,6 +15,7 @@ public record GetEffectiveHomeLayoutQuery : IRequest<HomeLayoutDto>;
 
 public class GetEffectiveHomeLayoutQueryHandler(
     IUserSettingsService userSettingsService,
+    ISharedProfileSettingsService sharedProfileSettingsService,
     IServerSettingsService serverSettingsService,
     IApplicationDbContext context,
     IHomeLayoutMaintenanceService homeLayoutMaintenanceService,
@@ -24,7 +25,20 @@ public class GetEffectiveHomeLayoutQueryHandler(
 {
     public async Task<HomeLayoutDto> Handle(GetEffectiveHomeLayoutQuery request, CancellationToken cancellationToken)
     {
-        if (currentUser.Id is { } userId)
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+
+        if (sharedProfileId is { } profileId)
+        {
+            var profileJson = await sharedProfileSettingsService.GetAsync(
+                profileId, UserSettingKeys.HomeLayout, cancellationToken);
+            if (profileJson is not null)
+            {
+                var layout = JsonSerializer.Deserialize<HomeLayoutDto>(profileJson);
+                if (layout is not null)
+                    return await homeLayoutMaintenanceService.SanitizeAsync(layout, cancellationToken);
+            }
+        }
+        else if (currentUser.Id is { } userId)
         {
             var userJson = await userSettingsService.GetAsync(userId, UserSettingKeys.HomeLayout, cancellationToken);
             if (userJson is not null)
@@ -43,7 +57,9 @@ public class GetEffectiveHomeLayoutQueryHandler(
                 return await homeLayoutMaintenanceService.SanitizeAsync(layout, cancellationToken);
         }
 
-        return await BuildDynamicDefaultAsync(currentUser.Id, cancellationToken);
+        return await BuildDynamicDefaultAsync(
+            sharedProfileId.HasValue ? null : currentUser.Id,
+            cancellationToken);
     }
 
     private async Task<HomeLayoutDto> BuildDynamicDefaultAsync(Guid? userId, CancellationToken cancellationToken)
