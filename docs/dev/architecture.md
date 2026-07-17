@@ -105,4 +105,4 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 | Tokens / themes | `src/Clients/Shared/UI/wwwroot/` |
 | DesignSystem catalog | `src/Clients/DesignSystem/` |
 
-**Triad:** `.razor` + `.razor.cs` + optional `.razor.css`. No third-party UI frameworks in pages. Theming and visual rules: [design.md](design.md). Localization and DesignSystem workflow: [developing.md](developing.md).
+**Triad:** `.razor` + `.razor.cs` + optional `.razor.css`. Put logic in `.razor.cs`; keep `@code` only for tiny leaves (about 15 lines or fewer of parameters/no methods). Never leave both a non-trivial `@code` block and a `.razor.cs` on the same component. No third-party UI frameworks in pages. Theming and visual rules: [design.md](design.md). Localization and DesignSystem workflow: [developing.md](developing.md).

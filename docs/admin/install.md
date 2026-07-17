@@ -13,11 +13,11 @@ Production deployment with Docker Compose. Configuration details: [configuration
 Use the sample stack at the repo root:
 
 - [`docker-compose.yaml`](../../docker-compose.yaml) - Postgres + K7 (`ghcr.io/kaybi-gh/k7:latest`)
-- [`.env.example`](../../.env.example) - copy to `.env` and set `POSTGRES_PASSWORD`
+- [`.env.example`](../../.env.example) - copy to `.env` and set `POSTGRES_PASSWORD` and `SECURITY__APIKEYS__HASHSECRET`
 
 ```bash
 cp .env.example .env
-# Edit .env and set POSTGRES_PASSWORD
+# Edit .env and set POSTGRES_PASSWORD and SECURITY__APIKEYS__HASHSECRET
 
 docker compose up -d
 ```

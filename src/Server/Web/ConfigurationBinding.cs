@@ -11,7 +11,12 @@ public static class ConfigurationBinding
         services.Configure<PathsConfiguration>(configuration.GetSection("Paths"));
         services.Configure<DatabaseConfiguration>(configuration.GetSection("Database"));
         services.Configure<AuthenticationConfiguration>(configuration.GetSection("Authentication"));
-        services.Configure<SecurityConfiguration>(configuration.GetSection("Security"));
+        services.AddOptions<SecurityConfiguration>()
+            .Bind(configuration.GetSection("Security"))
+            .Validate(
+                security => !string.IsNullOrWhiteSpace(security.ApiKeys.HashSecret),
+                "Security:ApiKeys:HashSecret is required. Set Security__ApiKeys__HashSecret (or Security__ApiKeys__HashSecret__File).")
+            .ValidateOnStart();
         services.AddSingleton<IAuthenticationSettings, AuthenticationSettings>();
         return services;
     }

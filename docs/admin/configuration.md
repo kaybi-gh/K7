@@ -122,6 +122,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 |---|---|---|---|
 | `Security:ForceHttps` | `Security__ForceHttps` | `true` | Prefer secure cookies and OpenIddict transport security. Behind TLS-terminating proxy, keep `true` and configure forwarded headers. |
 | `Security:KnownProxies` | `Security__KnownProxies` | `[]` | Proxy IPs trusted for `X-Forwarded-*`. Empty outside Development disables forwarded-header processing. |
+| `Security:ApiKeys:HashSecret` | `Security__ApiKeys__HashSecret` | *(required)* | HMAC secret mixed into API key hashes. Required at startup (server refuses to boot if empty). Prefer `Security__ApiKeys__HashSecret__File` in production. Changing it invalidates all existing API keys. |
 | `Security:Federation:AllowInsecurePeerHttp` | `Security__Federation__AllowInsecurePeerHttp` | `false` | Allow HTTP peer URLs (also allowed in Development). |
 | `Security:Federation:BlockPrivatePeerUrls` | `Security__Federation__BlockPrivatePeerUrls` | `false` | Reject private/link-local peer URLs. |
 
@@ -132,7 +133,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - Do not publish Postgres to the internet. The sample compose maps host `5432` for local convenience - remove it (or bind `127.0.0.1` only) on public hosts.
 - Leave registration disabled unless you want open sign-up; enable Guest only when needed.
 - Encourage 2FA for password accounts; prefer OIDC with MFA when available.
-- API keys: header `X-Api-Key`; Admin CRUD at `/api/admin/api-keys`; least privilege; rotate unused keys.
+- API keys: header `X-Api-Key`; Admin CRUD at `/api/admin/api-keys`; least privilege; rotate unused keys. `Security:ApiKeys:HashSecret` is required at startup (env/file).
 - Enable federation only when needed; treat peering as trust.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
 

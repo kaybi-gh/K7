@@ -37,7 +37,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["SmokeTest:SkipFfmpegVerification"] = "true"
+                ["SmokeTest:SkipFfmpegVerification"] = "true",
+                ["Security:ApiKeys:HashSecret"] = "integration-test-api-key-hash-secret"
             });
         });
 
