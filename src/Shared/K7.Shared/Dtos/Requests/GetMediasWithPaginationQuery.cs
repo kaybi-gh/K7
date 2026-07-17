@@ -46,7 +46,8 @@ public enum MediaOrderingOption
     TitleDesc,
     TrackNumberAsc,
     TrackNumberDesc,
-    RecommendedForYou
+    RecommendedForYou,
+    BecauseYouWatched
 }
 
 public enum MediaProvenance

@@ -18,6 +18,7 @@ public class GetEffectiveHomeLayoutQueryHandler(
     IServerSettingsService serverSettingsService,
     IApplicationDbContext context,
     IHomeLayoutMaintenanceService homeLayoutMaintenanceService,
+    IHomeRecommendationService homeRecommendationService,
     IUser currentUser)
     : IRequestHandler<GetEffectiveHomeLayoutQuery, HomeLayoutDto>
 {
@@ -84,6 +85,26 @@ public class GetEffectiveHomeLayoutQueryHandler(
         };
 
         var order = 2;
+
+        if (userId.HasValue)
+        {
+            var becauseYouWatchedTitle = await homeRecommendationService.GetBecauseYouWatchedTitleAsync(userId.Value, cancellationToken);
+            if (becauseYouWatchedTitle is not null)
+            {
+                rows.Add(new HomeRowConfigDto
+                {
+                    Id = new Guid("00000000-0000-0000-0000-000000000003"),
+                    Title = HomeLayoutRowTitles.BecauseYouWatched(becauseYouWatchedTitle),
+                    DisplayType = HomeRowDisplayType.Carousel,
+                    ContinueWatching = false,
+                    OrderBy = [MediaOrderingOption.BecauseYouWatched],
+                    PageSize = PagingDefaults.DefaultPageSize,
+                    IsVisible = true,
+                    Order = order++
+                });
+            }
+        }
+
         foreach (var group in groups)
         {
             rows.Add(new HomeRowConfigDto
