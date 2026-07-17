@@ -1951,6 +1951,32 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("ServerSettings");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Settings.SharedProfileSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SharedProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SharedProfileId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("SharedProfileSettings", (string)null);
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Settings.UserSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1971,6 +1997,42 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("UserSettings");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.SharedProfiles.SharedProfilePlaylist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PlaylistId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SharedProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaylistId");
+
+                    b.HasIndex("SharedProfileId", "PlaylistId")
+                        .IsUnique();
+
+                    b.ToTable("SharedProfilePlaylists", (string)null);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
@@ -2274,6 +2336,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ContentRestrictionProfileId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Created")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -2304,11 +2369,79 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ContentRestrictionProfileId");
+
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("HostUserId");
 
                     b.ToTable("SharedProfiles", (string)null);
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMediaState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ExcludedFromContinueWatching")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastInteractedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("LastKnownDurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("LastPlaybackPosition")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PlayCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ProgressPercentage")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("SharedProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("SharedProfileId", "LastInteractedAt")
+                        .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_LastInteractedAt");
+
+                    b.HasIndex("SharedProfileId", "MediaId")
+                        .IsUnique();
+
+                    b.HasIndex("SharedProfileId", "PlayCount")
+                        .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_PlayCount");
+
+                    b.HasIndex("SharedProfileId", "IsCompleted", "LastInteractedAt")
+                        .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_IsCompleted_LastInteractedAt");
+
+                    b.ToTable("SharedProfileMediaStates", (string)null);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMember", b =>
@@ -4134,6 +4267,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("UserRating");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.SharedProfiles.SharedProfilePlaylist", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Playlists.Playlist", "Playlist")
+                        .WithMany()
+                        .HasForeignKey("PlaylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
+                        .WithMany()
+                        .HasForeignKey("SharedProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Playlist");
+
+                    b.Navigation("SharedProfile");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
@@ -4229,6 +4381,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfile", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", "ContentRestrictionProfile")
+                        .WithMany()
+                        .HasForeignKey("ContentRestrictionProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -4241,9 +4398,30 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("ContentRestrictionProfile");
+
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("HostUser");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMediaState", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany()
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
+                        .WithMany()
+                        .HasForeignKey("SharedProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+
+                    b.Navigation("SharedProfile");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMember", b =>

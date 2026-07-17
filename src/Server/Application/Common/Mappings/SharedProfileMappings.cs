@@ -19,6 +19,7 @@ public static class SharedProfileMappings
                 HostIdentityUserId = identityUserIds.GetValueOrDefault(group.HostUserId),
                 HasPin = group.PinHash is not null,
                 PinHash = includePinHash ? group.PinHash : null,
+                ContentRestrictionProfileId = group.ContentRestrictionProfileId,
                 Members = group.Members
                 .OrderBy(m => m.UserId == group.HostUserId ? 0 : 1)
                 .Select(m => new SharedProfileMemberDto

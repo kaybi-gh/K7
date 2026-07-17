@@ -16,6 +16,7 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
+using K7.Server.Domain.Entities.SharedProfiles;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
@@ -61,6 +62,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PlaybackSessionDetails> PlaybackSessionDetails => Set<PlaybackSessionDetails>();
     public DbSet<SharedProfile> SharedProfiles => Set<SharedProfile>();
     public DbSet<SharedProfileMember> SharedProfileMembers => Set<SharedProfileMember>();
+    public DbSet<SharedProfileMediaState> SharedProfileMediaStates => Set<SharedProfileMediaState>();
+    public DbSet<SharedProfileSetting> SharedProfileSettings => Set<SharedProfileSetting>();
+    public DbSet<SharedProfilePlaylist> SharedProfilePlaylists => Set<SharedProfilePlaylist>();
     public DbSet<MediaPlaybackSessionCoViewer> MediaPlaybackSessionCoViewers => Set<MediaPlaybackSessionCoViewer>();
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<CollectionItem> CollectionItems => Set<CollectionItem>();
