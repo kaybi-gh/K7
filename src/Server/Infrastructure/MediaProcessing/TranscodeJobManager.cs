@@ -294,10 +294,17 @@ public class TranscodeJobManager(
                     logger.LogInformation("Deleted output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
 
                     var parentDir = Path.GetDirectoryName(job.OutputDirectory);
-                    if (parentDir is not null && Directory.Exists(parentDir) && !Directory.EnumerateFileSystemEntries(parentDir).Any())
+                    if (parentDir is not null)
                     {
-                        Directory.Delete(parentDir);
-                        logger.LogInformation("Deleted empty parent directory for stale job {JobId}: {Dir}", job.JobId, parentDir);
+                        try
+                        {
+                            Directory.Delete(parentDir);
+                            logger.LogInformation("Deleted empty parent directory for stale job {JobId}: {Dir}", job.JobId, parentDir);
+                        }
+                        catch (IOException)
+                        {
+                            // Parent still has other entries or raced with another job.
+                        }
                     }
                 }
                 catch (Exception ex)
