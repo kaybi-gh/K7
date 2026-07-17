@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -24,7 +23,7 @@ public record BulkCreateMediasCommand : IRequest<BulkCreateMediasResponse>
     public bool CreateMissing { get; init; } = true;
 }
 
-public partial class BulkCreateMediasCommandHandler(IApplicationDbContext context, ISender sender, IEnumerable<IMetadataProviderInfo> metadataProviders)
+public class BulkCreateMediasCommandHandler(IApplicationDbContext context, ISender sender, IEnumerable<IMetadataProviderInfo> metadataProviders)
     : IRequestHandler<BulkCreateMediasCommand, BulkCreateMediasResponse>
 {
     private const int SaveBatchSize = 500;
@@ -62,7 +61,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var titleLookup = await LookupMusicByTitleAsync(unmatchedMusic, cancellationToken);
             foreach (var item in unmatchedMusic)
             {
-                var titleKey = NormalizeMusicTitle(item.ArtistName, item.Title);
+                var titleKey = MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title);
                 if (titleLookup.TryGetValue(titleKey, out var mediaId))
                 {
                     resultMap.TryAdd(item.Key, (mediaId, false));
@@ -79,7 +78,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var movieLookup = await LookupMoviesByTitleYearAsync(unmatchedMovies, cancellationToken);
             foreach (var item in unmatchedMovies)
             {
-                var titleKey = NormalizeMovieTitle(item.Title, item.Year);
+                var titleKey = MediaIdentityKeys.NormalizeMovieTitle(item.Title, item.Year);
                 if (movieLookup.TryGetValue(titleKey, out var mediaId))
                 {
                     resultMap.TryAdd(item.Key, (mediaId, false));
@@ -96,7 +95,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             var episodeLookup = await LookupEpisodesByIdentityAsync(unmatchedEpisodes, cancellationToken);
             foreach (var item in unmatchedEpisodes)
             {
-                var titleKey = NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
+                var titleKey = MediaIdentityKeys.NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
                 if (episodeLookup.TryGetValue(titleKey, out var mediaId))
                 {
                     resultMap.TryAdd(item.Key, (mediaId, false));
@@ -267,7 +266,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         foreach (var album in existingAlbumsList)
         {
             var artistName = albumArtistLookup.GetValueOrDefault(album.Id, "");
-            var key = NormalizeKey(artistName, album.Title!);
+            var key = MediaIdentityKeys.NormalizeKey(artistName, album.Title!);
             existingAlbums.TryAdd(key, album);
         }
 
@@ -277,7 +276,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         foreach (var group in musicGroups)
         {
             var albumName = group.Items[0].AlbumName ?? "Unknown Album";
-            var albumKey = NormalizeKey(group.Items[0].ArtistName ?? "", albumName);
+            var albumKey = MediaIdentityKeys.NormalizeKey(group.Items[0].ArtistName ?? "", albumName);
 
             if (albumCache.ContainsKey(albumKey)) continue;
 
@@ -308,7 +307,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         foreach (var group in musicGroups)
         {
             var artistName = group.Items[0].ArtistName;
-            var albumKey = NormalizeKey(artistName ?? "", group.Items[0].AlbumName ?? "Unknown Album");
+            var albumKey = MediaIdentityKeys.NormalizeKey(artistName ?? "", group.Items[0].AlbumName ?? "Unknown Album");
 
             if (artistName is null || !artistCache.TryGetValue(artistName, out var artist)) continue;
             if (!albumCache.TryGetValue(albumKey, out var album)) continue;
@@ -325,7 +324,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         foreach (var group in musicGroups)
         {
             var representative = group.Items[0];
-            var albumKey = NormalizeKey(representative.ArtistName ?? "", representative.AlbumName ?? "Unknown Album");
+            var albumKey = MediaIdentityKeys.NormalizeKey(representative.ArtistName ?? "", representative.AlbumName ?? "Unknown Album");
             var album = albumCache[albumKey];
 
             var track = new MusicTrack
@@ -613,7 +612,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             .ToList();
 
         var strippedTitles = trackTitles
-            .Select(StripFeatureCredits)
+            .Select(MediaIdentityKeys.StripFeatureCredits)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -640,14 +639,14 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         foreach (var item in items)
         {
-            var key = NormalizeMusicTitle(item.ArtistName, item.Title);
+            var key = MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title);
             if (result.ContainsKey(key)) continue;
 
-            var itemTitleStripped = StripFeatureCredits(item.Title);
+            var itemTitleStripped = MediaIdentityKeys.StripFeatureCredits(item.Title);
 
             var match = tracks.FirstOrDefault(t =>
             {
-                var dbTitleStripped = StripFeatureCredits(t.Title!);
+                var dbTitleStripped = MediaIdentityKeys.StripFeatureCredits(t.Title!);
                 var titleMatch = string.Equals(t.Title, item.Title, StringComparison.OrdinalIgnoreCase)
                               || string.Equals(dbTitleStripped, itemTitleStripped, StringComparison.OrdinalIgnoreCase);
                 if (!titleMatch) return false;
@@ -690,7 +689,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         foreach (var item in items)
         {
-            var key = NormalizeMovieTitle(item.Title, item.Year);
+            var key = MediaIdentityKeys.NormalizeMovieTitle(item.Title, item.Year);
             if (result.ContainsKey(key)) continue;
 
             var match = movies.FirstOrDefault(m =>
@@ -740,7 +739,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         foreach (var item in items)
         {
-            var key = NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
+            var key = MediaIdentityKeys.NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
             if (result.ContainsKey(key)) continue;
 
             var seriesTitle = item.SeriesTitle ?? "Unknown Series";
@@ -771,43 +770,12 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         return result;
     }
 
-    private static string NormalizeMovieTitle(string title, int? year)
-    {
-        return year is null ? title : $"{title}|{year.Value}";
-    }
-
-    private static string NormalizeEpisodeKey(string? seriesTitle, int? seasonNumber, int? episodeNumber, string title)
-    {
-        return $"{seriesTitle ?? "Unknown Series"}|S{seasonNumber ?? 0}|E{episodeNumber ?? 0}|{title}";
-    }
-
     private static void AddExternalIds(BaseMedia media, Dictionary<string, string> externalIds)
     {
         foreach (var (provider, value) in externalIds)
         {
             media.ExternalIds.Add(new ExternalId { ProviderName = provider, Value = value });
         }
-    }
-
-    private static string NormalizeMusicTitle(string? artistName, string title)
-    {
-        return artistName is not null ? $"{artistName} - {title}" : title;
-    }
-
-    private static partial class TrackTitleRegex
-    {
-        [GeneratedRegex(@"\s*[\(\[](feat\.?|ft\.?|with)\s.+?[\)\]]", RegexOptions.IgnoreCase)]
-        public static partial Regex FeatureCredits();
-    }
-
-    private static string StripFeatureCredits(string title)
-    {
-        return TrackTitleRegex.FeatureCredits().Replace(title, "").Trim();
-    }
-
-    private static string NormalizeKey(string part1, string part2)
-    {
-        return $"{part1.ToUpperInvariant()}|{part2.ToUpperInvariant()}";
     }
 
     private static List<BatchGroup> GroupForIntraBatchDedup(List<BulkCreateMediasRequest.BulkCreateMediaItem> items)
@@ -841,8 +809,8 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
                     }
                 }
                 else if (item.MediaType == "music" &&
-                         string.Equals(NormalizeMusicTitle(item.ArtistName, item.Title),
-                                       NormalizeMusicTitle(other.ArtistName, other.Title),
+                         string.Equals(MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title),
+                                       MediaIdentityKeys.NormalizeMusicTitle(other.ArtistName, other.Title),
                                        StringComparison.OrdinalIgnoreCase))
                 {
                     group.Items.Add(other);
