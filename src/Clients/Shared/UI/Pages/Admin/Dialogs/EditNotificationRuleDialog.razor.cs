@@ -206,6 +206,8 @@ public partial class EditNotificationRuleDialog
         "Device" => Phosphor.Desktop,
         "Download" => Phosphor.Download,
         "System" => Phosphor.Gear,
+        "Federation" => Phosphor.Globe,
+        "Health" => Phosphor.Heartbeat,
         _ => Phosphor.Bell
     };
 
@@ -218,6 +220,8 @@ public partial class EditNotificationRuleDialog
         "Device" => L["CategoryDevice"],
         "Download" => L["CategoryDownload"],
         "System" => L["CategorySystem"],
+        "Federation" => L["CategoryFederation"],
+        "Health" => L["CategoryHealth"],
         _ => category
     };
 

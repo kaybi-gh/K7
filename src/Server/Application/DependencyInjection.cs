@@ -124,9 +124,11 @@ public static class DependencyInjection
         services.AddScoped<OutboundNotificationDispatcher>();
 
         services.AddSingleton<INotificationEventDescriptor, MediaAddedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaCreatedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, LibraryCreatedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, LibraryDeletedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, LibraryFilesIndexTriggeredEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, LibraryScanCompletedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, MediaPlaybackCompletedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, PlaybackStateChangedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, PlaylistCreatedEventDescriptor>();
@@ -145,12 +147,19 @@ public static class DependencyInjection
         services.AddSingleton<INotificationEventDescriptor, DownloadReadyEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, IndexedFileCreatedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, IndexedFileDeletedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, PeerConnectivityChangedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, TranscodeFailedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MusicIntelligenceUnavailableEventDescriptor>();
+
+        services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
 
         // Register outbound notification handler for each event type
         services.AddTransient<INotificationHandler<MediaAddedEvent>, OutboundNotificationEventHandler<MediaAddedEvent>>();
+        services.AddTransient<INotificationHandler<MediaCreatedEvent>, OutboundNotificationEventHandler<MediaCreatedEvent>>();
         services.AddTransient<INotificationHandler<LibraryCreatedEvent>, OutboundNotificationEventHandler<LibraryCreatedEvent>>();
         services.AddTransient<INotificationHandler<LibraryDeletedEvent>, OutboundNotificationEventHandler<LibraryDeletedEvent>>();
         services.AddTransient<INotificationHandler<LibraryFilesIndexTriggeredEvent>, OutboundNotificationEventHandler<LibraryFilesIndexTriggeredEvent>>();
+        services.AddTransient<INotificationHandler<LibraryScanCompletedEvent>, OutboundNotificationEventHandler<LibraryScanCompletedEvent>>();
         services.AddTransient<INotificationHandler<PlaybackStateChangedEvent>, OutboundNotificationEventHandler<PlaybackStateChangedEvent>>();
         services.AddTransient<INotificationHandler<PlaylistCreatedEvent>, OutboundNotificationEventHandler<PlaylistCreatedEvent>>();
         services.AddTransient<INotificationHandler<PlaylistUpdatedEvent>, OutboundNotificationEventHandler<PlaylistUpdatedEvent>>();
@@ -168,6 +177,9 @@ public static class DependencyInjection
         services.AddTransient<INotificationHandler<DownloadReadyEvent>, OutboundNotificationEventHandler<DownloadReadyEvent>>();
         services.AddTransient<INotificationHandler<IndexedFileCreatedEvent>, OutboundNotificationEventHandler<IndexedFileCreatedEvent>>();
         services.AddTransient<INotificationHandler<IndexedFileDeletedEvent>, OutboundNotificationEventHandler<IndexedFileDeletedEvent>>();
+        services.AddTransient<INotificationHandler<PeerConnectivityChangedEvent>, OutboundNotificationEventHandler<PeerConnectivityChangedEvent>>();
+        services.AddTransient<INotificationHandler<TranscodeFailedEvent>, OutboundNotificationEventHandler<TranscodeFailedEvent>>();
+        services.AddTransient<INotificationHandler<MusicIntelligenceUnavailableEvent>, OutboundNotificationEventHandler<MusicIntelligenceUnavailableEvent>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<BaseMedia>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<BaseMedia>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicTrack>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<MusicTrack>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Movie>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<Movie>>>();

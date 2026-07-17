@@ -33,6 +33,8 @@
   <data name="CategoryDevice" xml:space="preserve"><value>Device</value></data>
   <data name="CategoryDownload" xml:space="preserve"><value>Download</value></data>
   <data name="CategorySystem" xml:space="preserve"><value>System</value></data>
+  <data name="CategoryFederation" xml:space="preserve"><value>Federation</value></data>
+  <data name="CategoryHealth" xml:space="preserve"><value>Health</value></data>
   <data name="EventCount" xml:space="preserve"><value>{0} event(s)</value></data>
   <data name="Name" xml:space="preserve"><value>Name</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>

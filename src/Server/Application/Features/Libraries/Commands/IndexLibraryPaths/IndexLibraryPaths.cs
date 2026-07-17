@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,15 @@ public class IndexLibraryPathsCommandHandler : IRequestHandler<IndexLibraryPaths
         var result = await _fileIndexerService.IndexPathsAsync(entity, request.Paths, cancellationToken);
 
         await UpdateScanIssuesAsync(entity, result, cancellationToken);
+
+        entity.AddDomainEvent(new LibraryScanCompletedEvent(
+            entity,
+            result.AddedCount,
+            result.SkippedCount,
+            result.InaccessiblePaths.Count));
+
+        await _context.SaveChangesAsync(cancellationToken);
+
         _cacheInvalidator.InvalidateAll();
         await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, result.SkippedCount, result.InaccessiblePaths.Count, cancellationToken);
     }
@@ -60,6 +70,5 @@ public class IndexLibraryPathsCommandHandler : IRequestHandler<IndexLibraryPaths
             DetectedAt = now
         });
         _context.ScanIssues.AddRange(newIssues);
-        await _context.SaveChangesAsync(cancellationToken);
     }
 }
