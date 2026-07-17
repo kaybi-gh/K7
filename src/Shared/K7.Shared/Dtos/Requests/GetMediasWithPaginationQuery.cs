@@ -15,6 +15,10 @@ public sealed record GetMediasWithPaginationQuery
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }
     public bool? UnwatchedOnly { get; init; }
     public MediaProvenance? Provenance { get; init; }
+    /// <summary>When set, only media whose origin peer matches.</summary>
+    public Guid? OriginPeerServerId { get; init; }
+    /// <summary>When true, only local-origin media.</summary>
+    public bool? LocalOriginOnly { get; init; }
     public string? SearchText { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;

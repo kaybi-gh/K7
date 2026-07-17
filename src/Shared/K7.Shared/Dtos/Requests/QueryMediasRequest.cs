@@ -11,6 +11,10 @@ public sealed record QueryMediasRequest
     public HashSet<MediaType>? MediaTypes { get; init; }
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }
     public MediaProvenance? Provenance { get; init; }
+    /// <summary>When set, only media whose origin peer matches.</summary>
+    public Guid? OriginPeerServerId { get; init; }
+    /// <summary>When true, only local-origin media.</summary>
+    public bool? LocalOriginOnly { get; init; }
     public string? SearchText { get; init; }
     public RuleGroupDto Filter { get; init; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     public required int PageNumber { get; init; } = 1;

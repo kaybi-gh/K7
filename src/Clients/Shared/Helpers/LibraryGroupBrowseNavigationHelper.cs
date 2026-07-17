@@ -18,7 +18,8 @@ public static class LibraryGroupBrowseNavigationHelper
         "isearch",
         "genre",
         "studio",
-        "network"
+        "network",
+        "source"
     ];
 
     public static Guid? ResolveGroupId(
@@ -78,6 +79,9 @@ public static class LibraryGroupBrowseNavigationHelper
         if (state?.IntelligentSearch is { } intelligentSearch)
             query["isearch"] = FilterUrlCodec.Encode(intelligentSearch);
 
+        if (!string.IsNullOrWhiteSpace(state?.ContentSource))
+            query["source"] = state.ContentSource;
+
         if (!query.ContainsKey("filter"))
         {
             ApplyLegacySeedQuery(query, state?.Filter);
@@ -125,7 +129,11 @@ public static class LibraryGroupBrowseNavigationHelper
             ? FilterUrlCodec.Decode<IntelligentSearchRequest>(isearchValue)
             : null;
 
-        return new LibraryGroupBrowseUrlState(mediaType, sort, view, filter, intelligentSearch);
+        string? contentSource = null;
+        if (query.TryGetValue("source", out var sourceValue) && !string.IsNullOrWhiteSpace(sourceValue))
+            contentSource = sourceValue;
+
+        return new LibraryGroupBrowseUrlState(mediaType, sort, view, filter, intelligentSearch, contentSource);
     }
 
     private static RuleGroupDto BuildLegacySeedFilter(string? genre, string? studio, string? network)

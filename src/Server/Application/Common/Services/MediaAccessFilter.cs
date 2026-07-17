@@ -3,6 +3,7 @@ using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Restrictions;
+using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Common.Services;
@@ -15,11 +16,31 @@ namespace K7.Server.Application.Common.Services;
 public sealed class MediaAccessFilter(IApplicationDbContext context)
 {
     /// <summary>
+    /// Hides media mirrored from a peer that is not Active or whose last connectivity test failed.
+    /// Local-origin media (<c>PeerServerId == null</c>) is always kept.
+    /// </summary>
+    public static IQueryable<BaseMedia> ExcludeUnavailablePeers(
+        IApplicationDbContext context,
+        IQueryable<BaseMedia> query)
+    {
+        var unavailablePeerIds = context.PeerServers
+            .Where(p => p.Status != PeerStatus.Active || p.LastTestSucceeded == false)
+            .Select(p => p.Id);
+
+        return query.Where(m => m.PeerServerId == null || !unavailablePeerIds.Contains(m.PeerServerId.Value));
+    }
+
+    public IQueryable<BaseMedia> ApplyUnavailablePeerExclusion(IQueryable<BaseMedia> query) =>
+        ExcludeUnavailablePeers(context, query);
+
+    /// <summary>
     /// Applies the library-level and media-level exclusions for the given user. Does not apply the
     /// content restriction profile (see <see cref="ApplyAllAsync"/> or <see cref="GetRestrictionProfileAsync"/>).
     /// </summary>
     public IQueryable<BaseMedia> ApplyExclusions(IQueryable<BaseMedia> query, Guid userId)
     {
+        query = ApplyUnavailablePeerExclusion(query);
+
         var excludedLibraryIds = context.UserLibraryExclusions
             .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
             .Select(e => e.LibraryId);

@@ -44,6 +44,19 @@
                         <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
                     }
                 </K7Select>
+                @if (_showContentSourceFilter)
+                {
+                    <K7Select TValue="string"
+                              Class="library-toolbar-source"
+                              Label="@L["ContentSourceFilter"]"
+                              Value="_selectedContentSource"
+                              ValueChanged="OnContentSourceChanged">
+                        @foreach (var opt in _contentSourceOptions)
+                        {
+                            <K7SelectItem Value="@opt.Value" Text="@opt.Label">@opt.Label</K7SelectItem>
+                        }
+                    </K7Select>
+                }
                 <LibraryBrowseFilters Tags="_tags"
                                        LibraryIds="_libraryIds?.ToArray()"
                                        LibraryGroupIds="_libraryGroupIds"

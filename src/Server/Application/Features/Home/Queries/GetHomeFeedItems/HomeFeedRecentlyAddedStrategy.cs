@@ -142,6 +142,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
 
         query = HomeFeedQueryFilters.ApplyFamilyFilter(query, request.MediaTypes);
+        query = mediaAccessFilter.ApplyUnavailablePeerExclusion(query);
 
         if (userId.HasValue)
             query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);
@@ -167,6 +168,8 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         var mediaQuery = context.Medias
             .AsNoTracking()
             .Where(m => candidateIds.Contains(m.Id) && leafTypes.Contains(m.Type));
+
+        mediaQuery = mediaAccessFilter.ApplyUnavailablePeerExclusion(mediaQuery);
 
         if (userId.HasValue)
         {

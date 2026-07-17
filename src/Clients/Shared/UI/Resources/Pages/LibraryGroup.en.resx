@@ -49,5 +49,8 @@
   <data name="IntelligentSearchError" xml:space="preserve"><value>Intelligent search failed.</value></data>
   <data name="CreateSmartPlaylist" xml:space="preserve"><value>Create smart playlist</value></data>
   <data name="CreateSmartPlaylistDialogTitle" xml:space="preserve"><value>Create smart playlist</value></data>
+  <data name="ContentSourceFilter" xml:space="preserve"><value>Source</value></data>
+  <data name="ContentSourceAll" xml:space="preserve"><value>All sources</value></data>
+  <data name="ContentSourceLocal" xml:space="preserve"><value>Local</value></data>
 </root>
 

@@ -10,4 +10,5 @@ public sealed record LibraryGroupBrowseUrlState(
     MediaOrderingOption? Sort = null,
     BrowseViewMode? View = null,
     RuleGroupDto? Filter = null,
-    IntelligentSearchRequest? IntelligentSearch = null);
+    IntelligentSearchRequest? IntelligentSearch = null,
+    string? ContentSource = null);

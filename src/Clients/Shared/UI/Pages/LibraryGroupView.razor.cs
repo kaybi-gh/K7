@@ -31,9 +31,13 @@ public partial class LibraryGroupView : IDisposable
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
+
+    private const string ContentSourceAll = "";
+    private const string ContentSourceLocal = "local";
 
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
@@ -57,6 +61,9 @@ public partial class LibraryGroupView : IDisposable
     private MediaTagsDto? _tags;
     private BrowseViewMode _browseViewMode = BrowseViewMode.Grid;
     private bool _pendingQuerySync;
+    private string _selectedContentSource = ContentSourceAll;
+    private List<(string Value, string Label)> _contentSourceOptions = [];
+    private bool _showContentSourceFilter => _contentSourceOptions.Count > 2;
     private bool _showCreateSmartPlaylist => _intelligentSearch is null;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
@@ -148,6 +155,9 @@ public partial class LibraryGroupView : IDisposable
         _intelligentSearch = null;
         _intelligentSearchResults = [];
         _browseViewMode = BrowseViewMode.Grid;
+        _selectedContentSource = ContentSourceAll;
+
+        await LoadContentSourceOptionsAsync();
 
         if (LibraryGroupBrowseUrlSync.HasBrowseQuery(Navigation))
         {
@@ -158,6 +168,8 @@ public partial class LibraryGroupView : IDisposable
         {
             _pendingQuerySync = true;
         }
+
+        EnsureValidContentSourceSelection();
 
         _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterContextChangedAsync, InvokeAsync);
 
@@ -206,6 +218,9 @@ public partial class LibraryGroupView : IDisposable
             _filter = state.Filter;
 
         _intelligentSearch = state.IntelligentSearch;
+
+        if (!string.IsNullOrWhiteSpace(state.ContentSource))
+            _selectedContentSource = state.ContentSource;
     }
 
     private LibraryGroupBrowseUrlState BuildCurrentBrowseUrlState() =>
@@ -214,7 +229,8 @@ public partial class LibraryGroupView : IDisposable
             Sort: _selectedSort,
             View: _browseViewMode,
             Filter: MediaBrowseFilterPresets.IsEmpty(_filter) ? null : _filter,
-            IntelligentSearch: _intelligentSearch);
+            IntelligentSearch: _intelligentSearch,
+            ContentSource: string.IsNullOrEmpty(_selectedContentSource) ? null : _selectedContentSource);
 
     private async Task PersistFiltersAsync()
     {
@@ -231,7 +247,8 @@ public partial class LibraryGroupView : IDisposable
                 (int)_selectedSort,
                 MediaBrowseFilterPresets.IsEmpty(_filter) ? null : JsonSerializer.Serialize(_filter),
                 _intelligentSearch is null ? null : JsonSerializer.Serialize(_intelligentSearch),
-                (int)_browseViewMode);
+                (int)_browseViewMode,
+                string.IsNullOrEmpty(_selectedContentSource) ? null : _selectedContentSource);
             await PageFilterStorage.SaveAsync(FilterStorageKey, state);
         }
         catch
@@ -384,6 +401,8 @@ public partial class LibraryGroupView : IDisposable
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
         Filter = _filter,
         OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
+        LocalOriginOnly = _selectedContentSource == ContentSourceLocal ? true : null,
+        OriginPeerServerId = Guid.TryParse(_selectedContentSource, out var peerId) ? peerId : null,
         PageNumber = pageNumber,
         PageSize = pageSize
     };
@@ -424,12 +443,76 @@ public partial class LibraryGroupView : IDisposable
                 _intelligentSearch = JsonSerializer.Deserialize<IntelligentSearchRequest>(state.IntelligentSearchJson);
             }
 
+            if (!string.IsNullOrWhiteSpace(state.ContentSource))
+                _selectedContentSource = state.ContentSource;
+
             return true;
         }
         catch
         {
             return false;
         }
+    }
+
+    private async Task LoadContentSourceOptionsAsync()
+    {
+        _contentSourceOptions =
+        [
+            (ContentSourceAll, L["ContentSourceAll"].Value),
+            (ContentSourceLocal, L["ContentSourceLocal"].Value)
+        ];
+
+        try
+        {
+            if (_libraryIds is not { Count: > 0 })
+                return;
+
+            var libraries = await LibraryService.GetLibrariesAsync();
+            if (libraries is null)
+                return;
+
+            var libraryIdSet = _libraryIds.ToHashSet();
+            var peers = libraries
+                .Where(l => libraryIdSet.Contains(l.Id)
+                    && l.PeerServerId is Guid peerId
+                    && l.PeerReachable != false)
+                .GroupBy(l => l.PeerServerId!.Value)
+                .Select(g => (
+                    Value: g.Key.ToString(),
+                    Label: g.Select(l => l.PeerServerName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
+                        ?? g.Select(l => l.PeerServerBaseUrl).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
+                        ?? g.Key.ToString("N")[..8]))
+                .OrderBy(p => p.Label, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            if (peers.Count == 0)
+                return;
+
+            _contentSourceOptions.AddRange(peers);
+        }
+        catch
+        {
+            // Non-critical: keep All/Local only (filter stays hidden when Count <= 2)
+        }
+    }
+
+    private void EnsureValidContentSourceSelection()
+    {
+        if (_contentSourceOptions.Any(o => o.Value == _selectedContentSource))
+            return;
+
+        _selectedContentSource = ContentSourceAll;
+    }
+
+    private async Task OnContentSourceChanged(string? value)
+    {
+        value ??= ContentSourceAll;
+        if (value == _selectedContentSource)
+            return;
+
+        _selectedContentSource = value;
+        await PersistFiltersAsync();
+        await RefreshAllAsync();
     }
 
     private async Task LoadTagsAsync()
