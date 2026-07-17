@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [8080, 5050, 5432],
-  "postCreateCommand": "dotnet restore && dotnet tool restore || true",
+  "postCreateCommand": "dotnet restore && dotnet tool restore",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -8,6 +8,8 @@
 tests/
 docs/
 experiments/
+audit/
+**/*.md
 
 # IDE & tooling
 .git/
@@ -28,4 +30,5 @@ src/Clients/MAUI/
 # Docker files (avoid recursive copies)
 Dockerfile
 docker-compose.yaml
+docker-compose.federation-test.yaml
 .env

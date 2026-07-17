@@ -22,8 +22,14 @@ COPY src/Clients/Shared/UI/K7.Clients.Shared.UI.csproj                       src
 COPY src/Clients/Web/*.csproj                                                src/Clients/Web/
 RUN dotnet restore "src/Server/Web/K7.Server.Web.csproj"
 
+COPY src/Clients/Shared/UI/libman.json src/Clients/Shared/UI/
+COPY src/Clients/Web/libman.json       src/Clients/Web/
+RUN set -e; \
+    for manifest in $(find . -name "libman.json"); do \
+      (cd "$(dirname "$manifest")" && libman restore); \
+    done
+
 COPY . .
-RUN find . -name "libman.json" -execdir libman restore \;
 
 ARG BUILD_CONFIGURATION=Release
 ARG APP_VERSION=0.0.0
@@ -46,6 +52,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 
+
 FROM runtime AS final
 RUN groupadd -g 911 appgroup && useradd -u 911 -g appgroup -m appuser
 WORKDIR /k7
@@ -55,4 +62,5 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+LABEL org.opencontainers.image.source="https://github.com/kaybi-gh/K7"
 ENTRYPOINT ["/entrypoint.sh"]
