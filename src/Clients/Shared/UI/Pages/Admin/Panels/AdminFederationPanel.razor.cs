@@ -34,6 +34,7 @@ public partial class AdminFederationPanel : IDisposable
     private List<PeerServerDto> _outboundPeers = [];
     private List<PeerServerDto> _inboundPeers = [];
     private FederationSocialPolicyDto _socialPolicy = new();
+    private volatile bool _disposed;
 
     private static readonly FederationContentType[] _socialContentTypes =
     [
@@ -397,6 +398,8 @@ public partial class AdminFederationPanel : IDisposable
 
     private void OnPeerStateChanged(Guid peerId, int newStatus)
     {
+        if (_disposed) return;
+
         InvokeAsync(async () =>
         {
             await LoadData();
@@ -406,6 +409,8 @@ public partial class AdminFederationPanel : IDisposable
 
     private void OnPeerRequestReceived(PeerRequestDto request)
     {
+        if (_disposed) return;
+
         InvokeAsync(async () =>
         {
             await LoadData();
@@ -415,6 +420,8 @@ public partial class AdminFederationPanel : IDisposable
 
     private void OnPeerTestResultReceived(Guid peerId, bool reachable)
     {
+        if (_disposed) return;
+
         InvokeAsync(async () =>
         {
             await LoadData();
@@ -424,6 +431,7 @@ public partial class AdminFederationPanel : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         UnsubscribeHubEvents();
         HubClient.LeaveAdminFederationGroupAsync().FireAndForget(Logger);
     }

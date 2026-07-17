@@ -22,6 +22,7 @@ public partial class PlaybackSettingsMenu : IDisposable
     private SettingsSection _activeSection = SettingsSection.None;
     private ElementReference _stackRef;
     private ElementReference _detailRef;
+    private volatile bool _disposed;
 
     private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
@@ -61,7 +62,7 @@ public partial class PlaybackSettingsMenu : IDisposable
         if (_activeSection != SettingsSection.None)
         {
             _activeSection = SettingsSection.None;
-            InvokeAsync(StateHasChanged).FireAndForget(Logger);
+            RequestStateHasChanged();
             return true;
         }
 
@@ -91,13 +92,21 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
     }
 
-    private void OnPlaybackRateChanged(double _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnAudioTrackChanged(AudioFileTrackDto? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnSubtitleTracksChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnPlayerVisibilityChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnQualityChanged(VideoQualityOption? _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
-    private void OnAspectRatioModeChanged(AspectRatioMode _) => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnPlaybackRateChanged(double _) => RequestStateHasChanged();
+    private void OnAudioTrackChanged(AudioFileTrackDto? _) => RequestStateHasChanged();
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) => RequestStateHasChanged();
+    private void OnSubtitleTracksChanged() => RequestStateHasChanged();
+    private void OnPlayerVisibilityChanged() => RequestStateHasChanged();
+    private void OnQualityChanged(VideoQualityOption? _) => RequestStateHasChanged();
+    private void OnAspectRatioModeChanged(AspectRatioMode _) => RequestStateHasChanged();
+
+    private void RequestStateHasChanged()
+    {
+        if (_disposed)
+            return;
+
+        InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -269,6 +278,7 @@ public partial class PlaybackSettingsMenu : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;

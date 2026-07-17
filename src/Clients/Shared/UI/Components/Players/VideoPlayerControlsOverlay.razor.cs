@@ -67,6 +67,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private bool _wasSidebarOpen;
     private bool _needsRender = true;
     private DateTime _lastProgressRenderUtc;
+    private volatile bool _disposed;
 
     private enum SwipeSide { Left, Right }
 
@@ -102,6 +103,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void RequestRender()
     {
+        if (_disposed)
+            return;
+
         _needsRender = true;
         _ = InvokeAsync(StateHasChanged);
     }
@@ -314,6 +318,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     [JSInvokable]
     public void OnRemoteSelect()
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             if (_isMenuOpen) return;
@@ -335,6 +341,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     [JSInvokable]
     public void OnRemoteSeekAccumulate(double offset)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             if (_showOverlay || _isMenuOpen) return;
@@ -346,6 +354,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     [JSInvokable]
     public void OnRemoteSeekCommit()
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             if (_showOverlay || _isMenuOpen) return;
@@ -363,6 +373,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     [JSInvokable]
     public void OnRemoteVolumeStep(double delta)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             if (_showOverlay || _isMenuOpen) return;
@@ -388,6 +400,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnHudTimerElapsed(object? sender, ElapsedEventArgs args)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             _hudText = null;
@@ -400,6 +414,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private async Task OnOverlayTimerElapsedAsync()
     {
+        if (_disposed) return;
+
         await InvokeAsync(async () =>
         {
             try
@@ -425,6 +441,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnSeekDebounceElapsed(object? sender, ElapsedEventArgs args)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             CommitSeek();
@@ -485,6 +503,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void HandleBack()
     {
+        if (_disposed) return;
+
         InvokeAsync(async () =>
         {
             PerformBackStep();
@@ -669,6 +689,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnDoubleTapTimerElapsed(object? sender, ElapsedEventArgs args)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             _doubleTapSide = null;
@@ -679,6 +701,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnTapDelayElapsed(object? sender, ElapsedEventArgs args)
     {
+        if (_disposed) return;
+
         InvokeAsync(() =>
         {
             if (_tapPending)
@@ -751,6 +775,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         try
         {
             await Task.Delay(500, _volumePopoverHideDelayCts.Token);
+            if (_disposed) return;
             if (!_isMouseOverVolumeButton && !_isMouseOverVolumeSlider)
             {
                 _isVolumeSliderVisible = false;
@@ -872,6 +897,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+        _volumePopoverHideDelayCts?.Cancel();
+        _volumePopoverHideDelayCts?.Dispose();
         _overlayVisibleTimer?.Dispose();
         _seekDebounceTimer?.Dispose();
         _hudTimer?.Dispose();

@@ -280,13 +280,16 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         // Resolve the SAME singleton instances that OpenIddict registered as IHostedService,
         // so that handlers (e.g. AttachDynamicPortToRedirectUri) see the started instances.
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationActivationHandler>().Single()));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationActivationHandler>().Single(),
+            provider.GetRequiredService<IHostApplicationLifetime>()));
 
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationHttpListener>().Single()));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationHttpListener>().Single(),
+            provider.GetRequiredService<IHostApplicationLifetime>()));
 
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationPipeListener>().Single()));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationPipeListener>().Single(),
+            provider.GetRequiredService<IHostApplicationLifetime>()));
 #endif
 
         services.AddScoped<IMauiInitializeScopedService, MauiDatabaseInitializer>();
