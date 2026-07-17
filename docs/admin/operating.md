@@ -20,6 +20,8 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 **TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Specials`. Prefer standard episode naming when possible.
 
+When a directory already has episodes attached to a single series, new files in that folder are attached to the same series (folder consensus). Close title variants parsed from filenames in the same folder are also unified before matching. A mis-matched episode file can be re-identified from the episode page (Indexed versions).
+
 ```text
 /media/series/Show Name/
   Season 01/
