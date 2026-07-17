@@ -156,13 +156,20 @@ Synchronized session with chat, reactions, and shared play/pause/seek: create fr
 
 ## Shared profiles
 
-Shared profiles let a couple or group share **continue-watching / playback progress** across member accounts (**Settings -> Shared profiles**).
+Shared profiles let a couple or group watch together with a **shared continue-watching / history / stats bucket** (**Settings -> Shared profiles**). Personal progress stays separate: group watches do not appear in a member's personal history, and activating a shared profile does not show another member's private watch data.
 
 1. Create a profile (name, at least two members, a host, optional PIN).
 2. Others cannot add you until you allow shared-profile invitations.
 3. Pin with **Show on this device**, then pick it on profile selection.
+4. The host can **Configure** playback policies, content restrictions, home layout, and playlists shared with members for navigation.
 
-Playlists and reviews stay personal. Leaving may transfer the host; if only one member would remain, the profile is removed.
+While a shared profile is active:
+
+- Home continue-watching, playback history, and watch stats are scoped to the profile only. Personal history never mixes with group history in either direction.
+- The effective home layout is the profile's own layout if the host set one, otherwise the server default (never a member's personal layout).
+- Content restrictions come from the profile's assigned restriction profile, not the acting member's personal restrictions.
+- Playlists shared to the profile appear in members' navigation for the duration of the session.
+- Reviews stay personal. Leaving may transfer the host; if only one member would remain, the profile is removed.
 
 ## Music discovery (AudioMuse)
 
