@@ -95,7 +95,9 @@ public class GetMusicRadioQueryHandler(
         var artistTrackIds = await ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
             .Where(t => t.PersonRoles.Any(r => r.PersonId == artistId)
                      || t.Album.PersonRoles.Any(r => r.PersonId == artistId))
+            .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
+            .Take((int)(request.Limit * 0.6))
             .ToListAsync(ct);
 
         var relatedTrackIds = await ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
@@ -103,18 +105,17 @@ public class GetMusicRadioQueryHandler(
                      && !t.Album.PersonRoles.Any(r => r.PersonId == artistId))
             .Where(t => t.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && artistGenres.Contains(mt.MetadataTag.DisplayName))
                      || t.Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && artistGenres.Contains(mt.MetadataTag.DisplayName)))
+            .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
+            .Take(request.Limit - (int)(request.Limit * 0.6))
             .ToListAsync(ct);
 
-        var artistCount = (int)(request.Limit * 0.6);
-        var relatedCount = request.Limit - artistCount;
-
-        var selectedIds = Shuffle(artistTrackIds).Take(artistCount)
-            .Concat(Shuffle(relatedTrackIds).Take(relatedCount))
+        var selectedIds = artistTrackIds
+            .Concat(relatedTrackIds)
             .Take(request.Limit)
             .ToList();
 
-        return await LoadTracksByIdsAsync(Shuffle(selectedIds), userId, libraryIds, ct);
+        return await LoadTracksByIdsAsync(selectedIds, userId, libraryIds, ct);
     }
 
     private async Task<List<BaseMedia>> GetMoodMix(
