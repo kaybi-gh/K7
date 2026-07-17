@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetArtistTopTracks;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
@@ -26,6 +27,7 @@ public class GetArtistTopTracksQueryHandlerTests
         _context = Substitute.For<IApplicationDbContext>();
         _currentUser = Substitute.For<IUser>();
         _accessGuard = Substitute.For<IMediaAccessGuard>();
+        StubEmptyProjectionDbSets();
         _liteMediaProjection = new LiteMediaProjectionService(_context);
         _handler = new GetArtistTopTracksQueryHandler(_context, _currentUser, _accessGuard, _liteMediaProjection);
     }
@@ -58,26 +60,22 @@ public class GetArtistTopTracksQueryHandlerTests
     {
         // Arrange
         var artistId = Guid.NewGuid();
+        var albumId = Guid.NewGuid();
         var track1Id = Guid.NewGuid();
         var track2Id = Guid.NewGuid();
 
         var artist = new MusicArtist { Id = artistId, Title = "Artist" };
-        var track1 = new MusicTrack
+        var album = new MusicAlbum
         {
-            Id = track1Id,
-            Title = "Track One",
+            Id = albumId,
+            Title = "Album",
             ArtistId = artistId,
-            IndexedFiles = [CreateIndexedFile()]
+            Artist = artist
         };
-        var track2 = new MusicTrack
-        {
-            Id = track2Id,
-            Title = "Track Two",
-            ArtistId = artistId,
-            IndexedFiles = [CreateIndexedFile()]
-        };
+        var track1 = CreateTrack(track1Id, "Track One", artistId, album);
+        var track2 = CreateTrack(track2Id, "Track Two", artistId, album);
 
-        var medias = new List<BaseMedia> { artist, track1, track2 }.BuildMockDbSet();
+        var medias = new List<BaseMedia> { artist, album, track1, track2 }.BuildMockDbSet();
         _context.Medias.Returns(medias);
 
         var states = new List<UserMediaState>
@@ -119,26 +117,11 @@ public class GetArtistTopTracksQueryHandlerTests
             Id = albumId,
             Title = "Album",
             ArtistId = artistId,
+            Artist = artist,
             ReleaseDate = new DateOnly(2024, 1, 1)
         };
-        var track1 = new MusicTrack
-        {
-            Id = track1Id,
-            Title = "Track One",
-            ArtistId = artistId,
-            AlbumId = albumId,
-            TrackNumber = 1,
-            IndexedFiles = [CreateIndexedFile()]
-        };
-        var track2 = new MusicTrack
-        {
-            Id = track2Id,
-            Title = "Track Two",
-            ArtistId = artistId,
-            AlbumId = albumId,
-            TrackNumber = 2,
-            IndexedFiles = [CreateIndexedFile()]
-        };
+        var track1 = CreateTrack(track1Id, "Track One", artistId, album, trackNumber: 1);
+        var track2 = CreateTrack(track2Id, "Track Two", artistId, album, trackNumber: 2);
 
         var medias = new List<BaseMedia> { artist, album, track1, track2 }.BuildMockDbSet();
         _context.Medias.Returns(medias);
@@ -169,6 +152,41 @@ public class GetArtistTopTracksQueryHandlerTests
         result[0].Title.Should().Be("Track One");
         result[1].Title.Should().Be("Track Two");
     }
+
+    private void StubEmptyProjectionDbSets()
+    {
+        var pictures = new List<MetadataPicture>().BuildMockDbSet();
+        var pictureVariants = new List<MetadataPictureVariant>().BuildMockDbSet();
+        var indexedFiles = new List<IndexedFile>().BuildMockDbSet();
+        var remoteIndexedFiles = new List<RemoteIndexedFile>().BuildMockDbSet();
+        var artistCredits = new List<MusicArtistCredit>().BuildMockDbSet();
+        var availabilities = new List<MediaLibraryAvailability>().BuildMockDbSet();
+
+        _context.MetadataPictures.Returns(pictures);
+        _context.MetadataPictureVariants.Returns(pictureVariants);
+        _context.IndexedFiles.Returns(indexedFiles);
+        _context.RemoteIndexedFiles.Returns(remoteIndexedFiles);
+        _context.MusicArtistCredits.Returns(artistCredits);
+        _context.MediaLibraryAvailabilities.Returns(availabilities);
+    }
+
+    private static MusicTrack CreateTrack(
+        Guid trackId,
+        string title,
+        Guid artistId,
+        MusicAlbum album,
+        int? trackNumber = null) =>
+        new()
+        {
+            Id = trackId,
+            Title = title,
+            ArtistId = artistId,
+            Artist = album.Artist,
+            AlbumId = album.Id,
+            Album = album,
+            TrackNumber = trackNumber,
+            IndexedFiles = [CreateIndexedFile()]
+        };
 
     private static IndexedFile CreateIndexedFile() => new()
     {

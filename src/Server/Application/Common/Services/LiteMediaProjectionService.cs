@@ -82,12 +82,12 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 t.ArtistId,
                 t.Album.Title,
                 t.Album.ArtistId,
-                t.Album.Artist!.Title,
-                t.Artist!.Title,
-                t.AudioAnalysis!.LoudnessLufs,
-                t.AudioAnalysis!.FadeInDuration,
-                t.AudioAnalysis!.FadeOutDuration,
-                t.AudioAnalysis!.ReplayGainTrackGain,
+                t.Album.Artist != null ? t.Album.Artist.Title : null,
+                t.Artist != null ? t.Artist.Title : null,
+                t.AudioAnalysis != null ? t.AudioAnalysis.LoudnessLufs : null,
+                t.AudioAnalysis != null ? t.AudioAnalysis.FadeInDuration : null,
+                t.AudioAnalysis != null ? t.AudioAnalysis.FadeOutDuration : null,
+                t.AudioAnalysis != null ? t.AudioAnalysis.ReplayGainTrackGain : null,
                 t.MetadataTags
                     .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
                     .Select(mt => mt.MetadataTag.DisplayName)

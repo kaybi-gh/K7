@@ -2,6 +2,7 @@
 using Android.Content;
 using Android.Content.PM;
 using OpenIddict.Client.SystemIntegration;
+using Log = Android.Util.Log;
 
 namespace K7.Clients.MAUI.Platforms.Android;
 
@@ -33,7 +34,7 @@ public class CallbackActivity : Activity
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error(nameof(CallbackActivity), ex.ToString());
+            Log.Error(nameof(CallbackActivity), ex.ToString());
         }
         finally
         {
