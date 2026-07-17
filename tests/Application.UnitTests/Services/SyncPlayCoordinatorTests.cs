@@ -1,5 +1,10 @@
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
+using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.UnitTests.Services;
@@ -7,6 +12,8 @@ namespace K7.Server.Application.UnitTests.Services;
 [TestFixture]
 public class SyncPlayCoordinatorTests
 {
+    private SqliteConnection _connection = null!;
+    private ServiceProvider _serviceProvider = null!;
     private SyncPlayCoordinator _coordinator = null!;
     private string _creatorId = null!;
     private Guid _creatorDeviceId;
@@ -14,9 +21,32 @@ public class SyncPlayCoordinatorTests
     [SetUp]
     public void SetUp()
     {
-        _coordinator = new SyncPlayCoordinator(Substitute.For<ILogger<SyncPlayCoordinator>>());
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        var services = new ServiceCollection();
+        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(_connection));
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ISyncPlayInviteStore, SyncPlayInviteStore>();
+        _serviceProvider = services.BuildServiceProvider();
+
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.EnsureCreated();
+        }
+
+        _coordinator = new SyncPlayCoordinator(
+            Substitute.For<ILogger<SyncPlayCoordinator>>(),
+            _serviceProvider.GetRequiredService<IServiceScopeFactory>());
         _creatorId = "user-1";
         _creatorDeviceId = Guid.NewGuid();
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        _serviceProvider.Dispose();
+        _connection.Dispose();
     }
 
     [Test]
@@ -129,7 +159,7 @@ public class SyncPlayCoordinatorTests
     }
 
     [Test]
-    public void GuestAndInviteTokens_ShouldValidate()
+    public void GuestToken_ShouldValidateAndReject_WhenWrongOrExpired()
     {
         var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
 
@@ -138,9 +168,87 @@ public class SyncPlayCoordinatorTests
         _coordinator.ValidateGuestToken(group.GroupId, guestToken!).Should().BeTrue();
         _coordinator.ValidateGuestToken(group.GroupId, "bad").Should().BeFalse();
 
-        var invite = _coordinator.GenerateInviteToken(group.GroupId, _creatorId);
+        group.GuestTokenExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
+        _coordinator.ValidateGuestToken(group.GroupId, guestToken!).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task InviteToken_ShouldResolveToGroup_WhileGroupIsActive()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+
+        var invite = await _coordinator.GenerateInviteTokenAsync(group.GroupId, _creatorId);
         invite.Should().NotBeNullOrEmpty();
-        _coordinator.ResolveInviteToken(invite!).Should().Be(group.GroupId);
+
+        (await _coordinator.ResolveInviteTokenAsync(invite!)).Should().Be(group.GroupId);
+    }
+
+    [Test]
+    public async Task InviteToken_ShouldSurviveRestart_ButNotResolveWithoutActiveGroup()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+        var invite = await _coordinator.GenerateInviteTokenAsync(group.GroupId, _creatorId);
+        invite.Should().NotBeNullOrEmpty();
+
+        // Simulate a restart: fresh coordinator, same durable store, in-memory groups gone.
+        var restarted = new SyncPlayCoordinator(
+            Substitute.For<ILogger<SyncPlayCoordinator>>(),
+            _serviceProvider.GetRequiredService<IServiceScopeFactory>());
+
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<ISyncPlayInviteStore>();
+            (await store.ResolveGroupIdAsync(invite!)).Should().Be(group.GroupId);
+        }
+
+        (await restarted.ResolveInviteTokenAsync(invite!)).Should().BeNull();
+    }
+
+    [Test]
+    public void ChatRateLimit_ShouldThrottleRapidMessages()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+
+        _coordinator.TryConsumeChatRateLimit(group.GroupId, _creatorDeviceId).Should().BeTrue();
+        _coordinator.TryConsumeChatRateLimit(group.GroupId, _creatorDeviceId).Should().BeFalse();
+    }
+
+    [Test]
+    public void ReactionRateLimit_ShouldThrottleRapidReactions()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+
+        _coordinator.TryConsumeReactionRateLimit(group.GroupId, _creatorDeviceId).Should().BeTrue();
+        _coordinator.TryConsumeReactionRateLimit(group.GroupId, _creatorDeviceId).Should().BeFalse();
+    }
+
+    [Test]
+    public void ReportPosition_ShouldReturnCorrection_WhenDriftExceedsThreshold()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+        _coordinator.IssueCommand(group.GroupId, _creatorDeviceId, SyncPlayCommandType.Play, null);
+
+        // Simulate the group having been playing for a while so the expected position has advanced.
+        group.PlayStartedAtUtc = DateTime.UtcNow.AddSeconds(-10);
+        group.PlayStartedAtPosition = 0;
+
+        var noDrift = _coordinator.ReportPosition(group.GroupId, _creatorDeviceId, 10.2);
+        noDrift.Should().BeNull();
+
+        var drifted = _coordinator.ReportPosition(group.GroupId, _creatorDeviceId, 2);
+        drifted.Should().NotBeNull();
+        drifted!.Value.DeviceId.Should().Be(_creatorDeviceId);
+        drifted.Value.Position.Should().BeApproximately(10, 1);
+    }
+
+    [Test]
+    public void ReportPosition_ShouldReturnNull_WhenNotPlaying()
+    {
+        var group = _coordinator.CreateGroup(_creatorId, _creatorDeviceId, "Kay", "TV");
+
+        var result = _coordinator.ReportPosition(group.GroupId, _creatorDeviceId, 999);
+
+        result.Should().BeNull();
     }
 
     [Test]
