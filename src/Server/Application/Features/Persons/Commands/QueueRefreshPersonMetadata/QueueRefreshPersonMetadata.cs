@@ -1,4 +1,5 @@
 using Ardalis.GuardClauses;
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -29,8 +30,8 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
         Guard.Against.NotFound(request.PersonId, person);
 
         // Pick the best available provider: prefer tmdb, fallback to musicbrainz
-        var externalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")
-            ?? person.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
+        var externalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == MetadataProviderNames.Tmdb)
+            ?? person.ExternalIds.FirstOrDefault(e => e.ProviderName == MetadataProviderNames.MusicBrainz);
         Guard.Against.NotFound(request.PersonId, externalId, $"Person {request.PersonId} has no supported external ID.");
 
         // Find language from a library associated with this person's media roles
@@ -47,7 +48,7 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
                 PersonId = person.Id,
                 ProviderName = externalId.ProviderName,
                 ProviderId = externalId.Value,
-                Language = library?.MetadataLanguage ?? "en"
+                Language = library?.MetadataLanguage ?? MetadataProviderNames.DefaultLanguage
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = person.Id,

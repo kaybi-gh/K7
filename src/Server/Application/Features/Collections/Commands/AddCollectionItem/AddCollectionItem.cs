@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Collections.Commands.CreateCollection;
@@ -8,7 +9,7 @@ using K7.Server.Domain.Enums;
 namespace K7.Server.Application.Features.Collections.Commands.AddCollectionItem;
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
-public record AddCollectionItemCommand : IRequest<Guid>
+public record AddCollectionItemCommand : IRequest<Guid>, IMediaScopedRequest
 {
     public required Guid CollectionId { get; init; }
     public required Guid MediaId { get; init; }

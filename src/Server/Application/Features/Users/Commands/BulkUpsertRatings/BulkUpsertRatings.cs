@@ -37,10 +37,10 @@ public class BulkUpsertRatingsCommandHandler(IApplicationDbContext context)
         {
             if (existingRatings.TryGetValue(item.MediaId, out var existing))
             {
-                if (strategy.Rating is RatingConflictMode.Overwrite)
-                {
-                    existing.Value = item.Value;
-                }
+                if (strategy.Rating is not RatingConflictMode.Overwrite)
+                    continue;
+
+                existing.Value = item.Value;
             }
             else
             {

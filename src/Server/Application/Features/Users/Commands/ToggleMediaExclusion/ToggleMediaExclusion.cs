@@ -1,9 +1,10 @@
+using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Users;
 
 namespace K7.Server.Application.Features.Users.Commands.ToggleMediaExclusion;
 
-public record ToggleMediaExclusionCommand : IRequest<bool>
+public record ToggleMediaExclusionCommand : IRequest<bool>, IMediaScopedRequest
 {
     public required Guid MediaId { get; init; }
 }

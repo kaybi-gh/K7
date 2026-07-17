@@ -42,7 +42,7 @@ public class EphemeralStreamTokenAuthenticationHandler : AuthenticationHandler<A
         var ephemeralToken = await context.EphemeralStreamTokens
             .AsNoTracking()
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Token == token);
+            .FirstOrDefaultAsync(t => t.Token == token, Context.RequestAborted);
 
         if (ephemeralToken is null)
         {
