@@ -6,6 +6,7 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
+using PreferenceKeys = K7.Shared.PreferenceKeys;
 
 namespace K7.Clients.MAUI.Services;
 
