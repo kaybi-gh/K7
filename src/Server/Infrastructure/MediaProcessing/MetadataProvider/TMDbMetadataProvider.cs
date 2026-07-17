@@ -39,6 +39,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<string?> SearchAsync(MediaIdentification movieIdentification, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         try
         {
             var searchResult = await _tdmbClient.SearchMovieAsync(movieIdentification.Title,
@@ -55,6 +56,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, string? fallbackLanguage, CancellationToken cancellationToken)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Movie)
             return [];
 
@@ -112,6 +114,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<ExternalMovieMetadata> FetchMetadata(string metadataProviderExternalId, string language, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         try
         {
             var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates | MovieMethods.Videos | MovieMethods.Recommendations, cancellationToken: cancellationToken);
@@ -312,6 +315,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<ExternalPersonDetails?> FetchPersonAsync(string providerId, string language, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         if (!int.TryParse(providerId, out var tmdbId)) return null;
 
         try
@@ -431,6 +435,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<IReadOnlyList<ProviderImageDto>> GetImagesAsync(ImageProviderContext context, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         var results = new List<ProviderImageDto>();
 
         try
@@ -507,6 +512,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
     public async Task<IReadOnlyList<ProviderImageDto>> GetPersonImagesAsync(string providerId, string language, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         var results = new List<ProviderImageDto>();
 
         if (!int.TryParse(providerId, out var tmdbId))

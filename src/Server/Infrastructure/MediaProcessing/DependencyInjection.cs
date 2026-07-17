@@ -31,12 +31,8 @@ public static class DependencyInjection
         services.AddSingleton<ISegmentDetectionService, SegmentDetectionService>();
         services.AddSingleton<IEpisodeStillGenerator, EpisodeStillGenerator>();
         services.AddHostedService<TranscodeJobCleanupService>();
-        services.AddSingleton<TMDbClient>(sp =>
-        {
-            var client = new TMDbClient("8e7586ad850237f5d506d8789f4c3936");
-            client.SetConfig(client.GetConfigAsync().GetAwaiter().GetResult());
-            return client;
-        });
+        services.AddSingleton(_ => new TMDbClient("8e7586ad850237f5d506d8789f4c3936"));
+        services.AddHostedService<TmdbClientConfigurationHostedService>();
         services.AddHttpClient<TvdbAuthenticationService>();
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
