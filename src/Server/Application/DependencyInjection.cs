@@ -106,6 +106,7 @@ public static class DependencyInjection
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();
         services.AddScoped<MetadataPictureDeletionService>();
+        services.AddScoped<ICoverPictureUploadService, CoverPictureUploadService>();
         services.AddScoped<DiagnosticIssueEntityResolver>();
         services.AddScoped<OrphanIndexedFileFixBuilder>();
         services.AddScoped<DiagnosticFixBatchBuilder>();
