@@ -100,6 +100,7 @@ public static class DependencyInjection
         services.AddScoped<IContinueWatchingExclusionService, ContinueWatchingExclusionService>();
         services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();
         services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
+        services.AddScoped<IStreamPlaybackService, StreamPlaybackService>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();
