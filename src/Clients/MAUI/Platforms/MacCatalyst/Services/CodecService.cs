@@ -27,22 +27,17 @@ public class CodecService : ICodecService
         return Task.FromResult(screen.TraitCollection.DisplayGamut == UIDisplayGamut.P3);
     }
 
-    public Task<string[]> GetSupportedVideoCodecsAsync()
-    {
-        // macOS Catalyst (requires macOS 14+) supports all modern video codecs via VideoToolbox
-        return Task.FromResult(new[] { "h264", "hevc", "vp9", "mpeg4" });
-    }
+    public Task<string[]> GetSupportedVideoCodecsAsync() =>
+        Task.FromResult(GetSupportedVideoCodecs());
 
-    public Task<string[]> GetSupportedAudioCodecsAsync()
-    {
-        return Task.FromResult(new[] { "aac", "mp3", "flac", "alac", "ac3", "eac3", "opus", "pcm" });
-    }
+    public Task<string[]> GetSupportedAudioCodecsAsync() =>
+        Task.FromResult(GetSupportedAudioCodecs());
 
     public Task<string[]> GetSupportedContainersAsync()
     {
         var allCodecs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        allCodecs.UnionWith(GetSupportedVideoCodecsAsync().Result);
-        allCodecs.UnionWith(GetSupportedAudioCodecsAsync().Result);
+        allCodecs.UnionWith(GetSupportedVideoCodecs());
+        allCodecs.UnionWith(GetSupportedAudioCodecs());
 
         var containers = ContainerToRequiredCodecs
             .Where(kv => kv.Value.Any(c => allCodecs.Contains(c)))
@@ -51,4 +46,10 @@ public class CodecService : ICodecService
 
         return Task.FromResult(containers);
     }
+
+    private static string[] GetSupportedVideoCodecs() =>
+        ["h264", "hevc", "vp9", "mpeg4"];
+
+    private static string[] GetSupportedAudioCodecs() =>
+        ["aac", "mp3", "flac", "alac", "ac3", "eac3", "opus", "pcm"];
 }

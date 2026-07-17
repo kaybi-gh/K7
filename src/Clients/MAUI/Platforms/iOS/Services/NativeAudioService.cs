@@ -22,7 +22,7 @@ public class NativeAudioService : NSObject, IDisposable
     private NSObject? _timeObserver;
     private NSObject? _endObserver;
     private AVPlayerItem? _observedItem;
-    private bool _updatingFromPlayer;
+    private volatile bool _updatingFromPlayer;
 
     public NativeAudioService(IAudioPlayerService audioPlayerService, IK7ServerService k7ServerService)
     {

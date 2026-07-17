@@ -27,22 +27,40 @@ public class CodecService : ICodecService
         return Task.FromResult(screen.TraitCollection.DisplayGamut == UIDisplayGamut.P3);
     }
 
-    public Task<string[]> GetSupportedVideoCodecsAsync()
+    public Task<string[]> GetSupportedVideoCodecsAsync() =>
+        Task.FromResult(GetSupportedVideoCodecs());
+
+    public Task<string[]> GetSupportedAudioCodecsAsync() =>
+        Task.FromResult(GetSupportedAudioCodecs());
+
+    public Task<string[]> GetSupportedContainersAsync()
+    {
+        var allCodecs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        allCodecs.UnionWith(GetSupportedVideoCodecs());
+        allCodecs.UnionWith(GetSupportedAudioCodecs());
+
+        var containers = ContainerToRequiredCodecs
+            .Where(kv => kv.Value.Any(c => allCodecs.Contains(c)))
+            .Select(kv => kv.Key)
+            .ToArray();
+
+        return Task.FromResult(containers);
+    }
+
+    private static string[] GetSupportedVideoCodecs()
     {
         var supported = new List<string> { "h264", "mpeg4" };
 
-        // HEVC hardware decoding available since iOS 11 (A9+ chips)
         if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
             supported.Add("hevc");
 
-        // VP9 software decoding available since iOS 14
         if (UIDevice.CurrentDevice.CheckSystemVersion(14, 0))
             supported.Add("vp9");
 
-        return Task.FromResult(supported.ToArray());
+        return supported.ToArray();
     }
 
-    public Task<string[]> GetSupportedAudioCodecsAsync()
+    private static string[] GetSupportedAudioCodecs()
     {
         var supported = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -52,20 +70,6 @@ public class CodecService : ICodecService
         if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
             supported.Add("opus");
 
-        return Task.FromResult(supported.ToArray());
-    }
-
-    public Task<string[]> GetSupportedContainersAsync()
-    {
-        var allCodecs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        allCodecs.UnionWith(GetSupportedVideoCodecsAsync().Result);
-        allCodecs.UnionWith(GetSupportedAudioCodecsAsync().Result);
-
-        var containers = ContainerToRequiredCodecs
-            .Where(kv => kv.Value.Any(c => allCodecs.Contains(c)))
-            .Select(kv => kv.Key)
-            .ToArray();
-
-        return Task.FromResult(containers);
+        return supported.ToArray();
     }
 }

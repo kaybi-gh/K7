@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using K7.Clients.MAUI.Constants;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -156,7 +157,7 @@ public class DownloadManager : IDownloadManager
             while (downloadDto.Status is DownloadStatus.Pending or DownloadStatus.Transcoding)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+                await Task.Delay(MauiTimeouts.DownloadRetryDelay, cancellationToken);
                 downloadDto = await _downloadService.GetDownloadAsync(downloadDto.Id, cancellationToken);
                 _logger.LogDebug("Download {DownloadId} poll: status={Status}", item.DownloadId, downloadDto.Status);
             }
