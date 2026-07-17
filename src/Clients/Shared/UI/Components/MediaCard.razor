@@ -161,31 +161,6 @@ else
 }
 
 @code {
-    private RenderFragment CoverVisual => __builder =>
-    {
-        if (CoverContent is not null)
-        {
-            __builder.AddContent(0, CoverContent);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(Model.PictureUrl))
-        {
-            __builder.OpenComponent<K7Image>(1);
-            __builder.AddAttribute(2, "Src", Model.PictureUrl);
-            __builder.AddAttribute(3, "Alt", Model.Title);
-            __builder.AddAttribute(4, "Class", "rounded-lg");
-            __builder.AddAttribute(5, "Fluid", true);
-            __builder.AddAttribute(6, "ObjectFit", "cover");
-            __builder.AddAttribute(7, "loading", "lazy");
-            __builder.AddAttribute(8, "FallbackContent", CardPlaceholder);
-            __builder.CloseComponent();
-            return;
-        }
-
-        __builder.AddContent(9, CardPlaceholder);
-    };
-
     private RenderFragment CardPlaceholder => @<div class="media-card-placeholder rounded-lg">
         <K7Icon Icon="@ResolvedPlaceholderIcon" Class="media-card-placeholder-icon" />
     </div>;

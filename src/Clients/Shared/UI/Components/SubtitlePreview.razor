@@ -8,34 +8,3 @@
         </span>
     </div>
 </div>
-
-@code {
-    [Parameter] public K7.Shared.Enums.SubtitleFontFamily Family { get; set; }
-    [Parameter] public K7.Shared.Enums.SubtitleFontSize Size { get; set; }
-    [Parameter] public string FontColor { get; set; } = "#FFFFFF";
-    [Parameter] public double BackgroundOpacity { get; set; } = 0.5;
-    [Parameter] public bool ShadowEnabled { get; set; } = true;
-    [Parameter] public string ShadowColor { get; set; } = "#000000";
-    [Parameter] public double ShadowBlur { get; set; } = 3;
-
-    private string FontFamilyCss => Family switch
-    {
-        K7.Shared.Enums.SubtitleFontFamily.Manrope => "'Manrope', sans-serif",
-        K7.Shared.Enums.SubtitleFontFamily.Epilogue => "'Epilogue', sans-serif",
-        K7.Shared.Enums.SubtitleFontFamily.SansSerif => "sans-serif",
-        K7.Shared.Enums.SubtitleFontFamily.Serif => "serif",
-        K7.Shared.Enums.SubtitleFontFamily.Monospace => "monospace",
-        _ => "inherit"
-    };
-
-    private string FontSizePx => Size switch
-    {
-        K7.Shared.Enums.SubtitleFontSize.Small => "14px",
-        K7.Shared.Enums.SubtitleFontSize.Large => "22px",
-        _ => "18px"
-    };
-
-    private string TextShadowStyle => ShadowEnabled
-        ? $"text-shadow: 0 0 {ShadowBlur.ToString(System.Globalization.CultureInfo.InvariantCulture)}px {ShadowColor}, 1px 1px {ShadowBlur.ToString(System.Globalization.CultureInfo.InvariantCulture)}px {ShadowColor};"
-        : "";
-}

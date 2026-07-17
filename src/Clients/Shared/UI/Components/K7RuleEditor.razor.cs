@@ -174,4 +174,14 @@ public partial class K7RuleEditor : ComponentBase
         RuleFieldValueType.Date => "date",
         _ => "text"
     };
+
+    private sealed class RenderCounters
+    {
+        private int _condition;
+        private int _group;
+
+        public int NextCondition() => ++_condition;
+
+        public int NextGroup() => ++_group;
+    }
 }

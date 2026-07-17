@@ -358,4 +358,29 @@ public partial class MediaCard : IDisposable
         MediaCardVariant.Cover => Phosphor.VinylRecord,
         _ => Phosphor.FilmSlate
     };
+
+    private RenderFragment CoverVisual => builder =>
+    {
+        if (CoverContent is not null)
+        {
+            builder.AddContent(0, CoverContent);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Model.PictureUrl))
+        {
+            builder.OpenComponent<K7Image>(1);
+            builder.AddAttribute(2, "Src", Model.PictureUrl);
+            builder.AddAttribute(3, "Alt", Model.Title);
+            builder.AddAttribute(4, "Class", "rounded-lg");
+            builder.AddAttribute(5, "Fluid", true);
+            builder.AddAttribute(6, "ObjectFit", "cover");
+            builder.AddAttribute(7, "loading", "lazy");
+            builder.AddAttribute(8, "FallbackContent", CardPlaceholder);
+            builder.CloseComponent();
+            return;
+        }
+
+        builder.AddContent(9, CardPlaceholder);
+    };
 }

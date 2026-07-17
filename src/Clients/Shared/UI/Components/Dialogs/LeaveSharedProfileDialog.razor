@@ -17,22 +17,3 @@
     <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>
     <K7Button Color="error" OnClick="Confirm" Disabled="_newHostUserId == Guid.Empty">@L["Leave"]</K7Button>
 </div>
-
-@code {
-    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
-    [Parameter] public required IReadOnlyList<SharedProfileMemberDto> OtherMembers { get; set; }
-
-    private Guid _newHostUserId;
-
-    protected override void OnParametersSet()
-    {
-        _newHostUserId = OtherMembers.FirstOrDefault()?.UserId ?? Guid.Empty;
-    }
-
-    private string FormatMember(Guid userId) =>
-        OtherMembers.FirstOrDefault(m => m.UserId == userId)?.DisplayName ?? userId.ToString();
-
-    private void Cancel() => Dialog.Close(K7DialogResult.Cancel());
-
-    private void Confirm() => Dialog.Close(K7DialogResult.Ok(_newHostUserId));
-}
