@@ -1,5 +1,6 @@
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.BulkCreateMedias;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -34,7 +35,7 @@ public class BulkCreateMediasCommandHandlerTests
         _context.Database.EnsureCreated();
 
         _sender = Substitute.For<ISender>();
-        _handler = new BulkCreateMediasCommandHandler(_context, _sender, Array.Empty<IMetadataProviderInfo>());
+        _handler = new BulkCreateMediasCommandHandler(_context, _sender, Array.Empty<IMetadataProviderInfo>(), new MediaIdentityLookupService(_context));
     }
 
     [TearDown]
@@ -209,7 +210,7 @@ public class BulkCreateMediasCommandHandlerTests
     {
         var provider = Substitute.For<IMetadataProviderInfo>();
         provider.ProviderName.Returns("tmdb");
-        _handler = new BulkCreateMediasCommandHandler(_context, _sender, [provider]);
+        _handler = new BulkCreateMediasCommandHandler(_context, _sender, [provider], new MediaIdentityLookupService(_context));
 
         await _handler.Handle(new BulkCreateMediasCommand
         {

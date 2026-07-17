@@ -74,6 +74,7 @@ public static class DependencyInjection
         services.AddSingleton<IServerDiskMetricsProvider>(sp => sp.GetRequiredService<ServerDiskMetricsProvider>());
         services.AddSingleton<ServerMetricsCollector>();
         services.AddSingleton<IServerMetricsCollector>(sp => sp.GetRequiredService<ServerMetricsCollector>());
+        services.AddScoped<ISyncPlayInviteStore, SyncPlayInviteStore>();
         services.AddSingleton<SyncPlayCoordinator>();
         services.AddSingleton<ISyncPlayCoordinator>(sp => sp.GetRequiredService<SyncPlayCoordinator>());
         services.AddHostedService<SyncPlayStaleGroupCleanupService>();
@@ -103,6 +104,7 @@ public static class DependencyInjection
         services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
         services.AddScoped<IStreamPlaybackService, StreamPlaybackService>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
+        services.AddScoped<MediaIdentityLookupService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();
         services.AddScoped<MetadataPictureDeletionService>();

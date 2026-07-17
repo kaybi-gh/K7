@@ -87,7 +87,8 @@ public class CreateMediaCommandHandlerTests
             _serviceProvider,
             tagReader,
             paths,
-            tagSync);
+            tagSync,
+            new MediaIdentityLookupService(_context));
     }
 
     [TearDown]
