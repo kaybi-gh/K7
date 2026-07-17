@@ -29,6 +29,7 @@ public class CurrentUser : IUser
             if (_domainUserResolved)
                 return _domainUserId;
 
+            // Compatibility path for synchronous callers. New asynchronous code should use GetIdAsync.
             _domainUserResolved = true;
             var identityId = IdentityId;
             if (string.IsNullOrEmpty(identityId))
@@ -43,5 +44,29 @@ public class CurrentUser : IUser
 
             return _domainUserId;
         }
+    }
+
+    public async Task<Guid?> GetIdAsync(CancellationToken cancellationToken = default)
+    {
+        if (_domainUserResolved)
+            return _domainUserId;
+
+        var identityId = IdentityId;
+        if (string.IsNullOrEmpty(identityId))
+        {
+            _domainUserResolved = true;
+            return null;
+        }
+
+        var context = _serviceProvider.GetRequiredService<IApplicationDbContext>();
+        var domainUserId = await context.Users
+            .AsNoTracking()
+            .Where(u => u.IdentityUserId == identityId)
+            .Select(u => (Guid?)u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        _domainUserId = domainUserId;
+        _domainUserResolved = true;
+        return _domainUserId;
     }
 }

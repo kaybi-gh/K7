@@ -238,5 +238,6 @@ public class GetMediaBrowseFilterSuggestionsTests
     {
         public string? IdentityId => null;
         public Guid? Id => null;
+        public Task<Guid?> GetIdAsync(CancellationToken cancellationToken = default) => Task.FromResult(Id);
     }
 }

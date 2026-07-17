@@ -11,4 +11,10 @@ public interface IUser // How to put this into domain?
     /// The domain User entity id.
     /// </summary>
     Guid? Id { get; }
+
+    /// <summary>
+    /// Resolves and caches the domain User entity id without blocking a request thread.
+    /// Prefer this method from asynchronous handlers.
+    /// </summary>
+    Task<Guid?> GetIdAsync(CancellationToken cancellationToken = default);
 }
