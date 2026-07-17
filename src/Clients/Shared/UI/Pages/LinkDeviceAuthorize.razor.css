@@ -53,6 +53,10 @@
     align-items: stretch;
 }
 
+.link-device__authorize {
+    width: 100%;
+}
+
 .link-device__code-row {
     display: flex;
     align-items: center;

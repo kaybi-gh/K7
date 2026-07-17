@@ -9,7 +9,7 @@
         @if (_activeStep == 0)
         {
             <h6>@L["SelectContentType"]</h6>
-            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3);">
+            <div class="create-library-dialog__media-types">
                 <K7Paper Outlined="true"
                          Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)"
                          Style="cursor: pointer;"
@@ -20,7 +20,7 @@
                     <div class="media-type-card">
                         <K7Icon Icon="@Phosphor.FilmStrip"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
                         <div class="text-sm text-bold">@S["MediaTypeMovies"]</div>
-                        <div class="text-xs" style="color: var(--color-text-muted);">@L["MovieDescription"]</div>
+                        <div class="text-xs create-library-dialog__media-type-description">@L["MovieDescription"]</div>
                     </div>
                 </K7Paper>
                 <K7Paper Outlined="true"
@@ -33,7 +33,7 @@
                     <div class="media-type-card">
                         <K7Icon Icon="@Phosphor.Television"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
                         <div class="text-sm text-bold">@S["MediaTypeSeries"]</div>
-                        <div class="text-xs" style="color: var(--color-text-muted);">@L["SeriesDescription"]</div>
+                        <div class="text-xs create-library-dialog__media-type-description">@L["SeriesDescription"]</div>
                     </div>
                 </K7Paper>
                 <K7Paper Outlined="true"
@@ -46,7 +46,7 @@
                     <div class="media-type-card">
                         <K7Icon Icon="@Phosphor.MusicNote"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
                         <div class="text-sm text-bold">@S["MediaTypeMusic"]</div>
-                        <div class="text-xs" style="color: var(--color-text-muted);">@L["MusicDescription"]</div>
+                        <div class="text-xs create-library-dialog__media-type-description">@L["MusicDescription"]</div>
                     </div>
                 </K7Paper>
             </div>
