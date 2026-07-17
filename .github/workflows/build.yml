@@ -50,6 +50,15 @@ jobs:
       - name: Restore
         run: dotnet restore K7.CI.slnf
 
+      - name: Check vulnerable NuGet packages
+        run: |
+          set -euo pipefail
+          dotnet list K7.CI.slnf package --vulnerable --include-transitive 2>&1 | tee vulnerable-packages.txt
+          if grep -q "has the following vulnerable packages" vulnerable-packages.txt; then
+            echo "::error::Vulnerable NuGet packages detected"
+            exit 1
+          fi
+
       - name: Build
         run: dotnet build K7.CI.slnf --configuration Release --no-restore
 
@@ -126,6 +135,7 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -138,3 +148,12 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILD_CONFIGURATION=Release
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.32.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
