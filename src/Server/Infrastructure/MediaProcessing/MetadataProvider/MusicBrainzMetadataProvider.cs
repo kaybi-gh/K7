@@ -242,7 +242,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return parsed?.Year;
     }
 
-    private static string BuildSearchQuery(MediaIdentification identification)
+    internal static string BuildSearchQuery(MediaIdentification identification)
     {
         var parts = new List<string>();
 
@@ -442,7 +442,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             .ToList();
     }
 
-    private static DateOnly? ParseDate(string? date)
+    internal static DateOnly? ParseDate(string? date)
     {
         if (string.IsNullOrEmpty(date)) return null;
 
@@ -567,7 +567,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
     }
 
-    private static string? ExtractQid(string wikidataUrl)
+    internal static string? ExtractQid(string wikidataUrl)
     {
         var idx = wikidataUrl.LastIndexOf('/');
         if (idx < 0 || idx == wikidataUrl.Length - 1) return null;
@@ -575,14 +575,14 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return qid.StartsWith('Q') ? qid : null;
     }
 
-    private static string? ExtractSpotifyId(string spotifyUrl)
+    internal static string? ExtractSpotifyId(string spotifyUrl)
     {
         // e.g. https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb
         var segments = new Uri(spotifyUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
         return segments.Length >= 2 ? segments[^1] : null;
     }
 
-    private static string? ExtractImdbId(string imdbUrl)
+    internal static string? ExtractImdbId(string imdbUrl)
     {
         // e.g. https://www.imdb.com/name/nm0000093/
         var segments = new Uri(imdbUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
