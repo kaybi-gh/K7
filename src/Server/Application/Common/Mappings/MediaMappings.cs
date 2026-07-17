@@ -126,53 +126,7 @@ public static class MediaMappings
                     : null,
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
-            Serie serie => new SerieDto()
-            {
-                Id = domain.Id,
-                Title = domain.Title,
-                SortTitle = domain.SortTitle,
-                OriginalTitle = domain.OriginalTitle,
-                ReleaseDate = domain.ReleaseDate,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
-                PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
-                Ratings = domain.Ratings.Select(r => r.ToRatingDto()).ToList(),
-                IndexedFiles = domain.IndexedFiles.Select(f => f.ToIndexedFileDto()).ToList(),
-                RemoteIndexedFiles = domain.RemoteIndexedFiles.Select(f => f.ToRemoteIndexedFileDto()).ToList(),
-                Genres = domain.GetGenreDisplayNames(),
-                LockedFields = domain.LockedFields.ToList(),
-                ExternalIds = domain.ExternalIds.Select(e => e.ToExternalIdDto()).ToList(),
-                Overview = serie.Overview,
-                Status = serie.Status,
-                OriginalLanguage = serie.OriginalLanguage,
-                ContentRating = serie.GetContentRatingDisplayName(),
-                Network = serie.GetNetworkDisplayName(),
-                Studios = serie.GetStudioDisplayNames(),
-                Trailers = domain.Trailers?.Select(t => t.ToTrailerDto()).ToList() ?? [],
-                Seasons = serie.Seasons
-                    .OrderBy(s => s.SeasonNumber)
-                    .Select(s => new LiteSerieSeasonDto
-                    {
-                        Id = s.Id,
-                        Title = s.Title,
-                        ReleaseDate = s.ReleaseDate,
-                        Pictures = s.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
-                        SerieId = s.SerieId,
-                        SerieTitle = serie.Title,
-                        SeasonNumber = s.SeasonNumber,
-                        EpisodeCount = s.Episodes.Count,
-                        Poster = s.Pictures
-                            .Where(p => p.Type == MetadataPictureType.Poster)
-                            .Select(p => p.ToMetadataPictureDto())
-                            .FirstOrDefault(),
-                        SeriePictures = serie.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
-                        UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
-                    })
-                    .ToList(),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
-                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
-            },
+            Serie serie => MapSerieDto(domain, serie),
             SerieSeason season => new SerieSeasonDto()
             {
                 Id = domain.Id,
@@ -445,6 +399,59 @@ public static class MediaMappings
             Site = domain.Site,
             Type = domain.Type,
             Language = domain.Language
+        };
+    }
+
+    private static SerieDto MapSerieDto(BaseMedia domain, Serie serie)
+    {
+        var seriePictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList();
+
+        return new SerieDto()
+        {
+            Id = domain.Id,
+            Title = domain.Title,
+            SortTitle = domain.SortTitle,
+            OriginalTitle = domain.OriginalTitle,
+            ReleaseDate = domain.ReleaseDate,
+            Pictures = seriePictures,
+            PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
+            Ratings = domain.Ratings.Select(r => r.ToRatingDto()).ToList(),
+            IndexedFiles = domain.IndexedFiles.Select(f => f.ToIndexedFileDto()).ToList(),
+            RemoteIndexedFiles = domain.RemoteIndexedFiles.Select(f => f.ToRemoteIndexedFileDto()).ToList(),
+            Genres = domain.GetGenreDisplayNames(),
+            LockedFields = domain.LockedFields.ToList(),
+            ExternalIds = domain.ExternalIds.Select(e => e.ToExternalIdDto()).ToList(),
+            Overview = serie.Overview,
+            Status = serie.Status,
+            OriginalLanguage = serie.OriginalLanguage,
+            ContentRating = serie.GetContentRatingDisplayName(),
+            Network = serie.GetNetworkDisplayName(),
+            Studios = serie.GetStudioDisplayNames(),
+            Trailers = domain.Trailers?.Select(t => t.ToTrailerDto()).ToList() ?? [],
+            Seasons = serie.Seasons
+                .OrderBy(s => s.SeasonNumber)
+                .Select(s => new LiteSerieSeasonDto
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    ReleaseDate = s.ReleaseDate,
+                    Pictures = s.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                    SerieId = s.SerieId,
+                    SerieTitle = serie.Title,
+                    SeasonNumber = s.SeasonNumber,
+                    EpisodeCount = s.Episodes.Count,
+                    Poster = s.Pictures
+                        .Where(p => p.Type == MetadataPictureType.Poster)
+                        .Select(p => p.ToMetadataPictureDto())
+                        .FirstOrDefault(),
+                    SeriePictures = seriePictures,
+                    UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
+                })
+                .ToList(),
+            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                ? state.ToUserMediaStateDto()
+                : null,
+            LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
         };
     }
 
