@@ -17,8 +17,11 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 {
     public async Task<WatchStatsDto> Handle(GetWatchStatsQuery request, CancellationToken cancellationToken)
     {
+        var sharedProfileId = request.GlobalStats
+            ? null
+            : await currentUser.GetSharedProfileIdAsync(cancellationToken);
         var targetUserId = request.UserId ?? (request.GlobalStats ? null : currentUser.Id);
-        if (targetUserId is null && !request.GlobalStats)
+        if (targetUserId is null && sharedProfileId is null && !request.GlobalStats)
             return new WatchStatsDto();
 
         var since = request.Period == "custom" ? request.From?.ToUniversalTime() : GetPeriodStart(request.Period);
@@ -27,8 +30,19 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         var sessionsQuery = context.MediaPlaybackSessions.AsQueryable();
 
-        if (targetUserId is not null)
-            sessionsQuery = sessionsQuery.Where(s => s.UserId == targetUserId.Value);
+        if (request.GlobalStats)
+        {
+            if (targetUserId is not null)
+                sessionsQuery = sessionsQuery.Where(s => s.UserId == targetUserId.Value);
+        }
+        else if (sharedProfileId is { } profileId)
+        {
+            sessionsQuery = sessionsQuery.Where(s => s.SharedProfileId == profileId);
+        }
+        else if (targetUserId is not null)
+        {
+            sessionsQuery = sessionsQuery.Where(s => s.SharedProfileId == null && s.UserId == targetUserId.Value);
+        }
 
         var sessionsWithMedia = sessionsQuery
             .Join(

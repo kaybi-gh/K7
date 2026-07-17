@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Restrictions;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Services;
@@ -44,10 +45,7 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
         if (check.IsMediaExcluded || !check.HasNonExcludedFile)
             return false;
 
-        var profile = await context.ContentRestrictionProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
-
+        var profile = await ResolveRestrictionProfileAsync(userId, cancellationToken);
         if (profile is null)
             return true;
 
@@ -88,5 +86,24 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
 
         if (!await CanAccessAsync(mediaId, userId, cancellationToken))
             throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+    }
+
+    private async Task<ContentRestrictionProfile?> ResolveRestrictionProfileAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        if (sharedProfileId is { } profileId)
+        {
+            return await context.SharedProfiles
+                .AsNoTracking()
+                .Where(p => p.Id == profileId)
+                .Select(p => p.ContentRestrictionProfile)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        return await context.ContentRestrictionProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
     }
 }

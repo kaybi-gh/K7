@@ -196,6 +196,8 @@ public class GetMediaTagsTests
     {
         public string? IdentityId => null;
         public Guid? Id => null;
+        public Guid? SharedProfileId => null;
         public Task<Guid?> GetIdAsync(CancellationToken cancellationToken = default) => Task.FromResult(Id);
+        public Task<Guid?> GetSharedProfileIdAsync(CancellationToken cancellationToken = default) => Task.FromResult(SharedProfileId);
     }
 }

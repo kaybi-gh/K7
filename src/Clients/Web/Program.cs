@@ -19,10 +19,12 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 
 builder.Services.AddSingleton<UnauthorizedRedirectGate>();
 builder.Services.AddTransient<UnauthorizedRedirectHandler>();
+builder.Services.AddTransient<SharedProfileHeaderHandler>();
 builder.Services.AddHttpClient(nameof(K7ServerService), httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
 })
+.AddHttpMessageHandler<SharedProfileHeaderHandler>()
 .AddHttpMessageHandler<UnauthorizedRedirectHandler>();
 
 builder.Services.AddSingleton<K7ServerService>(sp =>

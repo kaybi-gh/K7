@@ -44,6 +44,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
 
         var userId = await currentUser.GetIdAsync(cancellationToken);
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
 
         var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
             context, request.LibraryIds, request.LibraryGroupIds, cancellationToken);
@@ -52,9 +53,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         var strategy = InferStrategy(request);
         VideoPlaybackPolicySettingsDto? continueWatchingPolicy = null;
         if (strategy == FeedStrategy.ContinueWatching && userId.HasValue)
-            continueWatchingPolicy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
+            continueWatchingPolicy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(
+                userId.Value, sharedProfileId, cancellationToken);
 
-        var cacheKey = BuildCacheKey(request, userId, continueWatchingPolicy);
+        var cacheKey = BuildCacheKey(request, userId, sharedProfileId, continueWatchingPolicy);
         var version = cacheInvalidator.Version;
 
         if (cache.TryGetValue(cacheKey, out var cachedValue)
@@ -64,7 +66,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var result = strategy switch
         {
-            FeedStrategy.ContinueWatching => await _continueWatchingStrategy.HandleAsync(request, userId, cancellationToken),
+            FeedStrategy.ContinueWatching => await _continueWatchingStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken),
             FeedStrategy.RecentlyAdded => await _recentlyAddedStrategy.HandleAsync(request, userId, cancellationToken),
             FeedStrategy.RecommendedForYou => await _recommendedStrategy.HandleAsync(request, userId, cancellationToken),
             FeedStrategy.BecauseYouWatched => await _becauseYouWatchedStrategy.HandleAsync(request, userId, cancellationToken),
@@ -99,10 +101,16 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         return FeedStrategy.TopLevel;
     }
 
-    private static string BuildCacheKey(GetHomeFeedItemsQuery request, Guid? userId, VideoPlaybackPolicySettingsDto? continueWatchingPolicy = null)
+    private static string BuildCacheKey(
+        GetHomeFeedItemsQuery request,
+        Guid? userId,
+        Guid? sharedProfileId,
+        VideoPlaybackPolicySettingsDto? continueWatchingPolicy = null)
     {
         var parts = new List<string> { "home-feed", $"u:{userId}" };
 
+        if (sharedProfileId.HasValue)
+            parts.Add($"sp:{sharedProfileId.Value}");
         if (request.LibraryIds is { Length: > 0 })
             parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");
         if (request.LibraryGroupIds is { Length: > 0 })

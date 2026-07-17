@@ -1,6 +1,7 @@
 using FluentValidation.Results;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
@@ -45,6 +46,34 @@ internal static class SharedProfileMemberValidator
                 new ValidationFailure(nameof(memberIds), "One or more users do not allow being added to shared profiles.")
             ]);
         }
+    }
+
+    /// <summary>
+    /// Loads the shared profile and ensures the acting user is either the host or an administrator.
+    /// Intended for host-only management operations (playback policy, home layout, restriction profile, playlists).
+    /// </summary>
+    internal static async Task<SharedProfile> GetGroupForHostAsync(
+        IApplicationDbContext context,
+        IIdentityService identityService,
+        Guid groupId,
+        Guid userId,
+        string? identityId,
+        CancellationToken cancellationToken)
+    {
+        var group = await context.SharedProfiles
+            .Include(g => g.Members)
+            .FirstOrDefaultAsync(g => g.Id == groupId, cancellationToken);
+
+        Guard.Against.NotFound(groupId, group);
+
+        var isHost = group.HostUserId == userId;
+        var isAdmin = !string.IsNullOrEmpty(identityId)
+            && await identityService.IsInRoleAsync(identityId, Roles.Administrator);
+
+        if (!isHost && !isAdmin)
+            throw new ForbiddenAccessException();
+
+        return group;
     }
 
     internal static async Task<SharedProfile> GetGroupForMemberAsync(

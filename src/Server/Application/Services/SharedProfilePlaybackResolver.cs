@@ -12,7 +12,7 @@ public interface ISharedProfilePlaybackResolver
 {
     Task<SharedProfilePlaybackContext?> ResolveAsync(
         Guid sharedProfileId,
-        Guid hostUserId,
+        Guid actingUserId,
         CancellationToken cancellationToken = default);
 }
 
@@ -20,7 +20,7 @@ public class SharedProfilePlaybackResolver(IApplicationDbContext context) : ISha
 {
     public async Task<SharedProfilePlaybackContext?> ResolveAsync(
         Guid sharedProfileId,
-        Guid hostUserId,
+        Guid actingUserId,
         CancellationToken cancellationToken = default)
     {
         var group = await context.SharedProfiles
@@ -28,16 +28,21 @@ public class SharedProfilePlaybackResolver(IApplicationDbContext context) : ISha
             .Include(g => g.Members)
             .FirstOrDefaultAsync(g => g.Id == sharedProfileId, cancellationToken);
 
-        if (group is null || group.HostUserId != hostUserId)
+        if (group is null)
             return null;
 
-        if (!group.Members.Any(m => m.UserId == hostUserId))
+        var isMember = group.HostUserId == actingUserId
+            || group.Members.Any(m => m.UserId == actingUserId);
+        if (!isMember)
             return null;
 
         var coViewers = group.Members
-            .Where(m => m.UserId != hostUserId)
+            .Where(m => m.UserId != actingUserId)
             .Select(m => m.UserId)
             .ToList();
+
+        if (group.HostUserId != actingUserId && !coViewers.Contains(group.HostUserId))
+            coViewers.Add(group.HostUserId);
 
         return new SharedProfilePlaybackContext(group.Id, group.Name, coViewers);
     }

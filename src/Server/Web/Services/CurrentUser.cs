@@ -7,10 +7,14 @@ namespace K7.Server.Web.Services;
 
 public class CurrentUser : IUser
 {
+    public const string SharedProfileHeaderName = K7.Shared.HttpHeaderNames.SharedProfileId;
+
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceProvider _serviceProvider;
     private Guid? _domainUserId;
     private bool _domainUserResolved;
+    private Guid? _sharedProfileId;
+    private bool _sharedProfileResolved;
 
     public CurrentUser(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
     {
@@ -46,6 +50,19 @@ public class CurrentUser : IUser
         }
     }
 
+    public Guid? SharedProfileId
+    {
+        get
+        {
+            if (_sharedProfileResolved)
+                return _sharedProfileId;
+
+            _sharedProfileResolved = true;
+            _sharedProfileId = ResolveSharedProfileIdSync();
+            return _sharedProfileId;
+        }
+    }
+
     public async Task<Guid?> GetIdAsync(CancellationToken cancellationToken = default)
     {
         if (_domainUserResolved)
@@ -68,5 +85,58 @@ public class CurrentUser : IUser
         _domainUserId = domainUserId;
         _domainUserResolved = true;
         return _domainUserId;
+    }
+
+    public async Task<Guid?> GetSharedProfileIdAsync(CancellationToken cancellationToken = default)
+    {
+        if (_sharedProfileResolved)
+            return _sharedProfileId;
+
+        var headerValue = _httpContextAccessor.HttpContext?.Request.Headers[SharedProfileHeaderName].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(headerValue) || !Guid.TryParse(headerValue, out var requestedId))
+        {
+            _sharedProfileResolved = true;
+            return null;
+        }
+
+        var userId = await GetIdAsync(cancellationToken);
+        if (userId is null)
+        {
+            _sharedProfileResolved = true;
+            return null;
+        }
+
+        var context = _serviceProvider.GetRequiredService<IApplicationDbContext>();
+        var isAllowed = await context.SharedProfiles
+            .AsNoTracking()
+            .AnyAsync(
+                p => p.Id == requestedId
+                     && (p.HostUserId == userId.Value
+                         || p.Members.Any(m => m.UserId == userId.Value)),
+                cancellationToken);
+
+        _sharedProfileId = isAllowed ? requestedId : null;
+        _sharedProfileResolved = true;
+        return _sharedProfileId;
+    }
+
+    private Guid? ResolveSharedProfileIdSync()
+    {
+        var headerValue = _httpContextAccessor.HttpContext?.Request.Headers[SharedProfileHeaderName].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(headerValue) || !Guid.TryParse(headerValue, out var requestedId))
+            return null;
+
+        var userId = Id;
+        if (userId is null)
+            return null;
+
+        var context = _serviceProvider.GetRequiredService<IApplicationDbContext>();
+        var isAllowed = context.SharedProfiles
+            .AsNoTracking()
+            .Any(p => p.Id == requestedId
+                      && (p.HostUserId == userId.Value
+                          || p.Members.Any(m => m.UserId == userId.Value)));
+
+        return isAllowed ? requestedId : null;
     }
 }
