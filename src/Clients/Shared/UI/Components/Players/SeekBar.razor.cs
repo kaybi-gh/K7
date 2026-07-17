@@ -25,6 +25,8 @@ public partial class SeekBar : IAsyncDisposable
     private double SeekBarWidth = 0;
     private double SeekBarLeft;
     private DotNetObjectReference<SeekBar>? _dotNetRef;
+    private bool _needsRender = true;
+    private DateTime _lastProgressRenderUtc;
 
     [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
     [Parameter] public Uri? ThumbnailsUri { get; set; }
@@ -46,6 +48,15 @@ public partial class SeekBar : IAsyncDisposable
         PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
         _scrubDecayTimer = new System.Timers.Timer(400) { AutoReset = false };
         _scrubDecayTimer.Elapsed += (_, _) => _scrubRepeatCount = 0;
+    }
+
+    protected override bool ShouldRender()
+    {
+        if (!_needsRender)
+            return false;
+
+        _needsRender = false;
+        return true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -82,6 +93,7 @@ public partial class SeekBar : IAsyncDisposable
             IsHovering = true;
             _isDragging = true;
             await OnDragChanged.InvokeAsync(true);
+            RequestRender();
         }
     }
 
@@ -94,6 +106,7 @@ public partial class SeekBar : IAsyncDisposable
         SeekBarLeft = bounds.Left;
 
         UpdateHover(e.ClientX);
+        RequestRender();
 
         if (_isDragging)
         {
@@ -128,6 +141,7 @@ public partial class SeekBar : IAsyncDisposable
             _isDragging = false;
             IsHovering = false;
             await OnDragChanged.InvokeAsync(false);
+            RequestRender();
         }
     }
 
@@ -137,6 +151,8 @@ public partial class SeekBar : IAsyncDisposable
         {
             IsHovering = false;
         }
+
+        RequestRender();
     }
 
     private void OnKeyDown(KeyboardEventArgs e)
@@ -168,6 +184,8 @@ public partial class SeekBar : IAsyncDisposable
                 HoverTime = _scrubTime;
                 break;
         }
+
+        RequestRender();
     }
 
     [JSInvokable("OnEditStart")]
@@ -180,7 +198,7 @@ public partial class SeekBar : IAsyncDisposable
         HoverTime = _scrubTime;
         IsHovering = true;
         _ = OnDragChanged.InvokeAsync(true);
-        InvokeAsync(StateHasChanged);
+        RequestRender();
     }
 
     [JSInvokable("OnEditCommit")]
@@ -194,7 +212,7 @@ public partial class SeekBar : IAsyncDisposable
         _scrubRepeatCount = 0;
         IsHovering = false;
         await OnDragChanged.InvokeAsync(false);
-        await InvokeAsync(StateHasChanged);
+        RequestRender();
     }
 
     [JSInvokable("OnEditCancel")]
@@ -204,12 +222,13 @@ public partial class SeekBar : IAsyncDisposable
         _scrubRepeatCount = 0;
         IsHovering = false;
         await OnDragChanged.InvokeAsync(false);
-        await InvokeAsync(StateHasChanged);
+        RequestRender();
     }
 
     private void OnFocus(FocusEventArgs e)
     {
         _isFocused = true;
+        RequestRender();
     }
 
     private void OnBlur(FocusEventArgs e)
@@ -218,6 +237,7 @@ public partial class SeekBar : IAsyncDisposable
         _isScrubbing = false;
         _scrubRepeatCount = 0;
         IsHovering = false;
+        RequestRender();
     }
 
     private double GetScrubStep()
@@ -275,17 +295,32 @@ public partial class SeekBar : IAsyncDisposable
 
     private void OnDurationChanged(double duration)
     {
-        InvokeAsync(StateHasChanged);
+        RequestRender();
     }
 
     private void OnCurrentTimeChanged(double time)
     {
-        InvokeAsync(StateHasChanged);
+        RequestProgressRender();
     }
 
     private void OnBufferedTimeChanged(double time)
     {
-        InvokeAsync(StateHasChanged);
+        RequestProgressRender();
+    }
+
+    private void RequestProgressRender()
+    {
+        if (DateTime.UtcNow - _lastProgressRenderUtc < TimeSpan.FromMilliseconds(250))
+            return;
+
+        _lastProgressRenderUtc = DateTime.UtcNow;
+        RequestRender();
+    }
+
+    private void RequestRender()
+    {
+        _needsRender = true;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()
