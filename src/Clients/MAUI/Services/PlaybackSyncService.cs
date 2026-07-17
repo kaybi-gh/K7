@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -28,7 +29,9 @@ public class PlaybackSyncService
         _connectivity.ConnectivityChanged += OnConnectivityChanged;
     }
 
-    private async void OnConnectivityChanged(bool isOnline)
+    private void OnConnectivityChanged(bool isOnline) => OnConnectivityChangedAsync(isOnline).FireAndForget(_logger);
+
+    private async Task OnConnectivityChangedAsync(bool isOnline)
     {
         if (isOnline)
         {

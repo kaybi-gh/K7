@@ -227,7 +227,9 @@ public partial class VideoPlayer : IAsyncDisposable
         _dotNetRef = null;
     }
 
-    private async void OnSourceChange(PlayerSource playerSource)
+    private void OnSourceChange(PlayerSource playerSource) => OnSourceChangeAsync(playerSource).FireAndForget();
+
+    private async Task OnSourceChangeAsync(PlayerSource playerSource)
     {
         SourceUri = playerSource.Url!;
         SourceMimeType = playerSource.MimeType!;
@@ -263,7 +265,9 @@ public partial class VideoPlayer : IAsyncDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void OnSwitchAudioTrack(string trackName)
+    private void OnSwitchAudioTrack(string trackName) => OnSwitchAudioTrackAsync(trackName).FireAndForget();
+
+    private async Task OnSwitchAudioTrackAsync(string trackName)
     {
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
@@ -271,7 +275,9 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
-    private async void OnSwitchSubtitleTrack(string? slug)
+    private void OnSwitchSubtitleTrack(string? slug) => OnSwitchSubtitleTrackAsync(slug).FireAndForget();
+
+    private async Task OnSwitchSubtitleTrackAsync(string? slug)
     {
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
@@ -279,7 +285,9 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
-    private async void OnAspectRatioModeChange(AspectRatioMode mode)
+    private void OnAspectRatioModeChange(AspectRatioMode mode) => OnAspectRatioModeChangeAsync(mode).FireAndForget();
+
+    private async Task OnAspectRatioModeChangeAsync(AspectRatioMode mode)
     {
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {

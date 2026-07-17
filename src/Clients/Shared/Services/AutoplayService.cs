@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -37,7 +38,9 @@ public class AutoplayService : IDisposable
         _deviceStorageService.Set(PreferenceKeys.AUTOPLAY_ENABLED, enabled);
     }
 
-    private async void OnPlaybackStateChanged(PlaybackState state)
+    private void OnPlaybackStateChanged(PlaybackState state) => OnPlaybackStateChangedAsync(state).FireAndForget();
+
+    private async Task OnPlaybackStateChangedAsync(PlaybackState state)
     {
         if (state != PlaybackState.Ended || !Enabled || _isLoading)
             return;

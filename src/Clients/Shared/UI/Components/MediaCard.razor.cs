@@ -166,7 +166,9 @@ public partial class MediaCard : IDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void OnMenuOpenChanged(bool open)
+    private void OnMenuOpenChanged(bool open) => OnMenuOpenChangedAsync(open).FireAndForget();
+
+    private async Task OnMenuOpenChangedAsync(bool open)
     {
         _menuOpen = open;
         if (!open)

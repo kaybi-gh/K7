@@ -144,7 +144,9 @@ public partial class MainLayout : IDisposable
         }
     }
 
-    private async void OnThemeChanged()
+    private void OnThemeChanged() => OnThemeChangedAsync().FireAndForget(Logger);
+
+    private async Task OnThemeChangedAsync()
     {
         await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
         await InvokeAsync(StateHasChanged);

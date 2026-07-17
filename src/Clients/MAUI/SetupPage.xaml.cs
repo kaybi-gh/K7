@@ -1,5 +1,6 @@
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 
 namespace K7.Clients.MAUI;
@@ -18,7 +19,9 @@ public partial class SetupPage : ContentPage
         InitializeComponent();
     }
 
-    private async void OnValidateClicked(object sender, EventArgs e)
+    private void OnValidateClicked(object sender, EventArgs e) => OnValidateClickedAsync().FireAndForget();
+
+    private async Task OnValidateClickedAsync()
     {
         var k7ServerUrl = NormalizeServerUrl(BackendUrlEntry.Text);
 

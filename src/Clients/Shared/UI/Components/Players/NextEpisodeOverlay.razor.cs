@@ -89,7 +89,9 @@ public partial class NextEpisodeOverlay : IDisposable
         }
     }
 
-    private async void OnPlaybackStateChanged(PlaybackState state)
+    private void OnPlaybackStateChanged(PlaybackState state) => OnPlaybackStateChangedAsync(state).FireAndForget();
+
+    private async Task OnPlaybackStateChangedAsync(PlaybackState state)
     {
         if (_disposed) return;
 
@@ -183,7 +185,9 @@ public partial class NextEpisodeOverlay : IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private async void OnCountdownTick(object? state)
+    private void OnCountdownTick(object? state) => OnCountdownTickAsync().FireAndForget();
+
+    private async Task OnCountdownTickAsync()
     {
         if (_disposed || _countdownPaused)
             return;

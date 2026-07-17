@@ -1,5 +1,6 @@
 #if WINDOWS
 using System.Runtime.InteropServices.WindowsRuntime;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using SkiaSharp;
 using Windows.Media;
@@ -36,7 +37,10 @@ public partial class BlazorPage
         }
     }
 
-    private async void OnNativeAudioPlayerHandlerChangedWindows(object? sender, EventArgs e)
+    private void OnNativeAudioPlayerHandlerChangedWindows(object? sender, EventArgs e)
+        => OnNativeAudioPlayerHandlerChangedWindowsAsync().FireAndForget();
+
+    private async Task OnNativeAudioPlayerHandlerChangedWindowsAsync()
     {
         if (!TrySetupSmtc())
         {

@@ -55,7 +55,9 @@ public partial class SyncedLyricsDisplay : ComponentBase
         return index;
     }
 
-    private async void ScrollToActive()
+    private void ScrollToActive() => ScrollToActiveAsync().FireAndForget();
+
+    private async Task ScrollToActiveAsync()
     {
         if (_activeIndex >= 0 && _lineRefs.TryGetValue(_activeIndex, out var el))
         {

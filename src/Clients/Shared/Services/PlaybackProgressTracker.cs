@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -86,7 +87,9 @@ public class PlaybackProgressTracker : IDisposable
     /// <summary>
     /// Stops tracking and sends a final progress report.
     /// </summary>
-    public async void StopTracking()
+    public void StopTracking() => StopTrackingAsync().FireAndForget();
+
+    private async Task StopTrackingAsync()
     {
         StopTimer();
         var mediaId = _currentMediaId;

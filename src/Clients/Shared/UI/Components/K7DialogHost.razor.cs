@@ -43,7 +43,9 @@ public partial class K7DialogHost : IDisposable
         return entry;
     }
 
-    private async void OnDialogClosed(K7DialogEntry entry)
+    private void OnDialogClosed(K7DialogEntry entry) => OnDialogClosedAsync(entry).FireAndForget();
+
+    private async Task OnDialogClosedAsync(K7DialogEntry entry)
     {
         try
         {
