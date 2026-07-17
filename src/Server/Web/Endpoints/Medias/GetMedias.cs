@@ -1,8 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
-using K7.Server.Web.Converters;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.QueryBuilders;
@@ -22,7 +20,6 @@ public class GetMedias : IEndpoint
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
-            [FromServices] LiteMediaProjectionService liteMediaProjection,
             [AsParameters] GetMediasWithPaginationQuery query,
             CancellationToken cancellationToken) =>
         {
@@ -32,10 +29,9 @@ public class GetMedias : IEndpoint
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
             var mediasPage = await sender.Send(query, cancellationToken);
-            var liteItems = await liteMediaProjection.ToLiteListAsync(mediasPage.Items, cancellationToken);
             var result = new PaginatedListDto<LiteMediaDto>
             {
-                Items = liteItems,
+                Items = mediasPage.Items,
                 PageNumber = mediasPage.PageNumber,
                 TotalPages = mediasPage.TotalPages,
                 TotalCount = mediasPage.TotalCount

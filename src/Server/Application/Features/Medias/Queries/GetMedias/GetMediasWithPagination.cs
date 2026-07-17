@@ -12,13 +12,14 @@ using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 
-public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
+public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto>>
 {
     public Guid[]? LibraryIds { get; init; }
     public Guid[]? LibraryGroupIds { get; init; }
@@ -36,21 +37,21 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     public required int PageSize { get; init; } = 10;
 }
 
-public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
+public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<LiteMediaDto>>;
 
 public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, IDatabaseCapabilities databaseCapabilities)
-    : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
-      IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
+    : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<LiteMediaDto>>,
+      IRequestHandler<QueryMediasQuery, PaginatedList<LiteMediaDto>>
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
 
-    public Task<PaginatedList<BaseMedia>> Handle(QueryMediasQuery request, CancellationToken cancellationToken) =>
+    public Task<PaginatedList<LiteMediaDto>> Handle(QueryMediasQuery request, CancellationToken cancellationToken) =>
         HandleInternal(MapQueryRequest(request.Request), request.Request.Filter, cancellationToken);
 
-    public Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken) =>
+    public Task<PaginatedList<LiteMediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken) =>
         HandleInternal(request, filter: null, cancellationToken);
 
-    private async Task<PaginatedList<BaseMedia>> HandleInternal(
+    private async Task<PaginatedList<LiteMediaDto>> HandleInternal(
         GetMediasWithPaginationQuery request,
         RuleGroupDto? filter,
         CancellationToken cancellationToken)
@@ -58,7 +59,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         var cacheKey = await BuildCacheKeyAsync(request, currentUser.Id, filter, includePagination: true, cancellationToken);
         var version = cacheInvalidator.Version;
 
-        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<BaseMedia> Result) cached) && cached.Version == version)
+        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<LiteMediaDto> Result) cached) && cached.Version == version)
             return cached.Result;
 
         var result = await ExecuteQueryAsync(request, filter, cancellationToken);
@@ -125,7 +126,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return Convert.ToHexString(hash)[..16];
     }
 
-    private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(
+    private async Task<PaginatedList<LiteMediaDto>> ExecuteQueryAsync(
         GetMediasWithPaginationQuery request,
         RuleGroupDto? filter,
         CancellationToken cancellationToken)
@@ -177,11 +178,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .ToListAsync(cancellationToken);
 
         if (pageIds.Count == 0)
-            return new PaginatedList<BaseMedia>([], totalCount, request.PageNumber, request.PageSize);
+            return new PaginatedList<LiteMediaDto>([], totalCount, request.PageNumber, request.PageSize);
 
-        var ordered = await liteMediaProjection.GetLiteMediasAsync(pageIds, userId, cancellationToken);
+        var ordered = await liteMediaProjection.GetLiteMediaDtosAsync(pageIds, userId, cancellationToken);
 
-        return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
+        return new PaginatedList<LiteMediaDto>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
 
     private async Task<IQueryable<BaseMedia>> ApplyFiltersAsync(

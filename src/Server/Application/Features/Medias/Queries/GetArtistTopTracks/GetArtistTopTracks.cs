@@ -140,8 +140,7 @@ public class GetArtistTopTracksQueryHandler(
         Guid? userId,
         CancellationToken cancellationToken)
     {
-        var loaded = await liteMediaProjection.GetLiteMediasAsync(topTrackIds, userId, cancellationToken);
-        var liteTracks = await liteMediaProjection.ToLiteListAsync(loaded, cancellationToken);
+        var liteTracks = await liteMediaProjection.GetLiteMediaDtosAsync(topTrackIds, userId, cancellationToken);
         var liteById = liteTracks.OfType<LiteMusicTrackDto>().ToDictionary(t => t.Id);
 
         return topTrackIds

@@ -97,7 +97,7 @@ public class GlobalSearchQueryHandler(
             .Concat(musicIds)
             .ToList();
 
-        var medias = await liteMediaProjection.GetLiteMediasAsync(selectedIds, userId, cancellationToken);
+        var medias = await liteMediaProjection.GetLiteMediaDtosAsync(selectedIds, userId, cancellationToken);
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
@@ -162,7 +162,7 @@ public class GlobalSearchQueryHandler(
 
         return new GlobalSearchResultDto
         {
-            MediaResults = await liteMediaProjection.ToLiteListAsync(medias, cancellationToken),
+            MediaResults = medias,
             PersonResults = persons.Select(p => p.ToLitePersonDto()).ToList(),
             CharacterResults = characterResults
         };
