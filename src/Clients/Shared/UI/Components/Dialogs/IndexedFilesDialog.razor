@@ -15,7 +15,10 @@
                     <div class="d-flex flex-col">
                         <div class="d-flex align-center justify-between">
                             <p class="text-subtitle1" Style="font-weight: 600;">@file.Name</p>
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => ReIdentifyFile(file.Id))" aria-label="re-identify"><i class="ph ph-magnifying-glass"></i></button>
+                            @if (OnReIdentifyFile.HasDelegate)
+                            {
+                                <button type="button" class="k7-icon-btn" @onclick="@(() => ReIdentifyFile(file.Id))" aria-label="re-identify"><i class="ph ph-magnifying-glass"></i></button>
+                            }
                         </div>
 
                         <span class="text-caption" Color="secondary" Style="word-break: break-all;">@file.Path</span>
