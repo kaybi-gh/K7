@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -60,9 +61,19 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                     break;
 
                 case LibraryMediaType.Serie:
+                    foreach (var directoryGroup in libraryGroup.GroupBy(f => f.ParentDirectory))
+                    {
+                        var identifications = directoryGroup
+                            .Select(f => f.Identification)
+                            .Where(i => i is not null)
+                            .Cast<MediaIdentification>()
+                            .ToList();
+                        SerieIdentificationConsensus.ApplyTitleConsensus(identifications);
+                    }
+
                     foreach (var serieGroup in libraryGroup
                                  .Where(f => f.Identification?.SeriesTitle is not null)
-                                 .GroupBy(f => f.Identification!.SeriesTitle))
+                                 .GroupBy(f => f.Identification!.SeriesTitle, StringComparer.OrdinalIgnoreCase))
                     {
                         var serieFiles = serieGroup.ToList();
                         tasks.Add(CreateMediaTask(
@@ -120,7 +131,11 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                 }
                 else if (seed.Identification?.SeriesTitle is { } seriesTitle)
                 {
-                    foreach (var sibling in libraryOrphans.Where(f => f.Identification?.SeriesTitle == seriesTitle))
+                    foreach (var sibling in libraryOrphans.Where(f =>
+                                 string.Equals(f.ParentDirectory, seed.ParentDirectory, StringComparison.OrdinalIgnoreCase)
+                                 && f.Identification?.SeriesTitle is { } siblingTitle
+                                 && (string.Equals(siblingTitle, seriesTitle, StringComparison.OrdinalIgnoreCase)
+                                     || SerieIdentificationConsensus.AreSeriesTitlesClose(siblingTitle, seriesTitle))))
                     {
                         expandedIds.Add(sibling.Id);
                     }
