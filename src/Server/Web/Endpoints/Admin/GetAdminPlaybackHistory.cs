@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
@@ -15,7 +16,7 @@ public class GetAdminPlaybackHistory : IEndpoint
         endpointRouteBuilder.MapGet("/api/admin/stats/history", async (
             [FromServices] ISender sender,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 25,
+            [FromQuery] int pageSize = PagingDefaults.HistoryPageSize,
             [FromQuery] MediaType? mediaType = null,
             [FromQuery] Guid? userId = null,
             CancellationToken cancellationToken = default) =>

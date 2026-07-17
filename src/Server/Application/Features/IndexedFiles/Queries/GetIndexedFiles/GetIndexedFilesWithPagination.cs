@@ -9,7 +9,7 @@ public record GetIndexedFilesWithPaginationQuery : IRequest<PaginatedList<Indexe
 {
     public Guid? LibraryId { get; init; }
     public int PageNumber { get; init; } = 1;
-    public int PageSize { get; init; } = 10;
+    public int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 }
 
 public class GetIndexedFilesQueryHandler : IRequestHandler<GetIndexedFilesWithPaginationQuery, PaginatedList<IndexedFile>>

@@ -7,13 +7,15 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.EntityFrameworkCore;
 
+using K7.Server.Application.Common.Models;
+
 namespace K7.Server.Application.Features.Medias.Queries.GetSimilarMedia;
 
 [Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetSimilarMediaQuery : IRequest<List<LiteMediaDto>>
 {
     public required Guid MediaId { get; init; }
-    public int PageSize { get; init; } = 20;
+    public int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetSimilarMediaQueryHandler(IApplicationDbContext context)

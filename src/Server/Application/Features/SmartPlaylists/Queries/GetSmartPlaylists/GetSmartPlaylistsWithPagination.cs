@@ -8,7 +8,7 @@ namespace K7.Server.Application.Features.SmartPlaylists.Queries.GetSmartPlaylist
 public record GetSmartPlaylistsWithPaginationQuery : IRequest<PaginatedList<SmartPlaylist>>
 {
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 20;
+    public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetSmartPlaylistsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)

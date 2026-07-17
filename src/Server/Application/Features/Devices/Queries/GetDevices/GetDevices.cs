@@ -17,7 +17,7 @@ public sealed record GetDevicesQuery : IRequest<PaginatedList<Device>>
     public EnumHashSetQueryParam<OperatingSystem>? OperatingSystems { get; init; }
     public EnumHashSetQueryParam<DevicesOrderingOption>? OrderBy { get; init; } = [DevicesOrderingOption.CreatedDesc];
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 10;
+    public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 };
 
 public class GetDevicesQueryHandler : IRequestHandler<GetDevicesQuery, PaginatedList<Device>>

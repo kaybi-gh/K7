@@ -16,7 +16,7 @@ public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<Bac
     public string? SortBy { get; init; }
     public bool? SortDescending { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 10;
+    public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 }
 
 public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetBackgroundTasksWithPaginationQuery, PaginatedList<BackgroundTask>>

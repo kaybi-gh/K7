@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
@@ -51,7 +52,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = true,
                 OrderBy = [MediaOrderingOption.LastInteractedDesc],
-                PageSize = 20,
+                PageSize = PagingDefaults.DefaultPageSize,
                 IsVisible = true,
                 Order = 0
             }
@@ -68,7 +69,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
                 ContinueWatching = false,
                 LibraryIds = group.LibraryIds,
                 OrderBy = [MediaOrderingOption.CreatedDesc],
-                PageSize = 50,
+                PageSize = PagingDefaults.ItemsPageSize,
                 IsVisible = true,
                 Order = order++
             });

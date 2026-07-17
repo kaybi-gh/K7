@@ -8,13 +8,15 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Navigation;
 
+using K7.Server.Application.Common.Models;
+
 namespace K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
 
 [Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetPlaybackHistoryQuery : IRequest<PlaybackHistoryPageDto>
 {
     public int Page { get; init; } = 1;
-    public int PageSize { get; init; } = 25;
+    public int PageSize { get; init; } = PagingDefaults.HistoryPageSize;
     public MediaType? MediaType { get; init; }
     public Guid? UserId { get; init; }
     public bool IncludeStreamQuality { get; init; }
