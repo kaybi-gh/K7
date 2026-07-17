@@ -31,6 +31,8 @@ public partial class VideoPlayer : IAsyncDisposable
                 // that would fetch segment 0 before changeSourceAndSeek can run.
                 var options = new
                 {
+                    // K7's own VideoPlayerControlsOverlay is the only UI; never let video.js render its default control bar.
+                    controls = false,
                     volume = PlayerService.Volume,
                     muted = PlayerService.IsMuted,
                     autoplay = _playPending && pendingSeek is null

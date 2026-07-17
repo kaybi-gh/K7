@@ -266,30 +266,36 @@
     min-width: 0;
 }
 
-/* video.js volume slider: !important overrides third-party control bar specificity */
+/* K7Slider range input (.k7-range, from K7Slider.razor): rotated and repositioned to act as
+   a vertical volume slider. Only -webkit-appearance needs !important here, to reliably defeat
+   Safari/WebKit's native input[type=range] chrome; the rest just need to beat the plain
+   .k7-range rule in components.css, which this two-class selector already outranks. */
 ::deep .volume-slider .k7-range {
     -webkit-appearance: none !important;
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: min(15rem, 30vh) !important;
-    height: 3rem !important;
-    transform: translate(-50%, -50%) rotate(-90deg) !important;
-    border-radius: 1rem !important;
-    cursor: row-resize !important;
+    background-color: rgba(255, 255, 255, 0.2);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    padding: 0;
+    width: min(15rem, 30vh);
+    height: 3rem;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    border-radius: 1rem;
+    cursor: row-resize;
 }
 
 ::deep .k7-slider-wrap.volume-slider {
-    position: absolute !important;
-    inset: 0 !important;
-    contain: paint !important;
-    overflow: hidden !important;
-    border-radius: 1rem !important;
+    position: absolute;
+    inset: 0;
+    contain: paint;
+    overflow: hidden;
+    border-radius: 1rem;
 }
 
+/* Track/thumb pseudo-elements: !important is intentional here to fully suppress the
+   browser's native input[type=range] track and thumb rendering (WebKit/Firefox will
+   otherwise keep drawing their own groove and handle on top of these styles). */
 ::deep .volume-slider .k7-range::-webkit-slider-runnable-track {
     background: transparent !important;
     height: 0 !important;
