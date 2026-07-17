@@ -85,7 +85,12 @@ These flags are **config-only** (shown read-only under Admin -> Authentication).
 
 #### Enable OIDC
 
+Set `BaseUrl` to the public URL of K7 first (browsers and the IdP must agree on it), then enable the provider and restart.
+
 ```yaml
+# docker-compose environment (or matching appsettings / env vars)
+BaseUrl: https://k7.example.com
+
 Authentication__Oidc__Enabled: "true"
 Authentication__Oidc__Authority: https://idp.example.com/application/o/k7/
 Authentication__Oidc__ClientId: k7
@@ -95,7 +100,7 @@ Authentication__Oidc__DisplayName: Authentik
 Authentication__Oidc__AutomaticAccountCreation: "true"
 ```
 
-Set `BaseUrl` to the public URL of K7, then restart.
+Prefer a file secret in production: `Authentication__Oidc__ClientSecret__File=/run/secrets/oidc_client_secret`.
 
 #### Redirect URIs at the IdP
 
@@ -105,6 +110,47 @@ Set `BaseUrl` to the public URL of K7, then restart.
 | Post-logout | `{BaseUrl}/api/authentication/callback/logout/oidc` |
 
 Challenge entry: `GET /api/authentication/login?returnUrl=...`.
+
+#### Worked example (Authentik)
+
+Assume K7 is at `https://k7.example.com` and Authentik at `https://auth.example.com`.
+
+1. In Authentik: **Applications -> Providers -> Create** -> **OAuth2/OpenID Provider**.
+2. Typical provider fields:
+
+| Authentik field | Example value |
+|---|---|
+| Name | `K7` |
+| Client type | Confidential |
+| Client ID | `k7` (or leave Authentik-generated) |
+| Client Secret | generate and copy once |
+| Redirect URIs / Redirect URIs valid | `https://k7.example.com/api/authentication/callback/login/oidc` |
+| Logout / Post-logout redirect URIs (if asked) | `https://k7.example.com/api/authentication/callback/logout/oidc` |
+| Signing Key | any available certificate |
+| Subject mode | Based on User's UUID (or equivalent stable subject) |
+
+3. Create an **Application** that uses that provider (slug e.g. `k7`). Open the provider and note the **OpenID Configuration Issuer** URL - it usually looks like:
+
+`https://auth.example.com/application/o/k7/`
+
+That issuer URL is K7's `Authentication__Oidc__Authority` (trailing slash as shown by Authentik).
+
+4. On the K7 host (compose env or `.env`):
+
+```yaml
+BaseUrl: https://k7.example.com
+Authentication__Oidc__Enabled: "true"
+Authentication__Oidc__Authority: https://auth.example.com/application/o/k7/
+Authentication__Oidc__ClientId: k7
+Authentication__Oidc__ClientSecret: <paste secret from Authentik>
+Authentication__Oidc__Scopes: openid,profile
+Authentication__Oidc__DisplayName: Authentik
+Authentication__Oidc__AutomaticAccountCreation: "true"
+```
+
+5. Restart K7. On `/sign-in` you should see an **Authentik** button (the `DisplayName`). First successful login creates a local **User** role account when auto-provisioning is on.
+
+**Other IdPs (Keycloak, Pocket ID, Authelia, ...):** same idea - confidential OIDC client, set the two redirect URIs above, put the issuer / discovery base URL in `Authority`, and copy Client ID + secret. Scopes `openid,profile` are enough; add `email` only if your IdP requires it for claims you care about (K7 links accounts by provider subject, not by email).
 
 #### Local + OIDC modes
 
