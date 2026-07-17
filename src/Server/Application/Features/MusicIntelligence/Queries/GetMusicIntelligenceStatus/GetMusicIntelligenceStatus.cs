@@ -12,10 +12,11 @@ public class GetMusicIntelligenceStatusQueryHandler(IMusicIntelligenceService mu
 {
     public async Task<MusicIntelligenceStatusDto> Handle(GetMusicIntelligenceStatusQuery request, CancellationToken cancellationToken)
     {
+        var isEnabled = await musicIntelligenceService.IsEnabledAsync(cancellationToken);
         var isAvailable = await musicIntelligenceService.IsAvailableAsync(cancellationToken);
         return new MusicIntelligenceStatusDto
         {
-            IsEnabled = isAvailable,
+            IsEnabled = isEnabled,
             IsAvailable = isAvailable
         };
     }

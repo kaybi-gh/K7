@@ -36,4 +36,5 @@
   <data name="PresetIntelligentSearch" xml:space="preserve"><value>Recherche intelligente</value></data>
   <data name="PresetIntelligentSearchDesc" xml:space="preserve"><value>D&#233;crivez un son ou des paroles pour lancer une radio</value></data>
   <data name="EmptyRadio" xml:space="preserve"><value>Aucun morceau disponible pour cette radio.</value></data>
+  <data name="MusicIntelligenceUnavailable" xml:space="preserve"><value>Intelligence musicale temporairement indisponible. Les radios classiques restent disponibles.</value></data>
 </root>
