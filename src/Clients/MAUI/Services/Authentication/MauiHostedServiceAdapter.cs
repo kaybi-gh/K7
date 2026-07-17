@@ -10,5 +10,17 @@ public class MauiHostedServiceAdapter : IMauiInitializeService
         => _service = service ?? throw new ArgumentNullException(nameof(service));
 
     public void Initialize(IServiceProvider services)
-        => Task.Run(() => _service.StartAsync(CancellationToken.None)).GetAwaiter().GetResult();
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _service.StartAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"K7 MAUI - Hosted service initialization failed: {ex}");
+            }
+        });
+    }
 }

@@ -14,13 +14,14 @@ namespace K7.Clients.MAUI.Platforms.iOS.Services;
 /// Bridges IAudioPlayerService transport events to the native AVPlayer
 /// and reports playback state back.
 /// </summary>
-public class NativeAudioService : NSObject
+public class NativeAudioService : NSObject, IDisposable
 {
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly IK7ServerService _k7ServerService;
     private AVPlayer? _player;
     private NSObject? _timeObserver;
     private NSObject? _endObserver;
+    private AVPlayerItem? _observedItem;
     private bool _updatingFromPlayer;
 
     public NativeAudioService(IAudioPlayerService audioPlayerService, IK7ServerService k7ServerService)
@@ -62,6 +63,7 @@ public class NativeAudioService : NSObject
         MainThread.BeginInvokeOnMainThread(() =>
         {
             RemoveEndObserver();
+            RemoveItemStatusObserver();
 
             var url = CreateAuthenticatedUrl(source.Url);
             var playerItem = new AVPlayerItem(AVAsset.FromUrl(url));
@@ -79,14 +81,24 @@ public class NativeAudioService : NSObject
 
     private void ObserveItemStatus(AVPlayerItem item)
     {
+        _observedItem = item;
         item.AddObserver(this, "status", NSKeyValueObservingOptions.New, nint.Zero);
+    }
+
+    private void RemoveItemStatusObserver()
+    {
+        if (_observedItem is null)
+            return;
+
+        _observedItem.RemoveObserver(this, "status");
+        _observedItem = null;
     }
 
     public override void ObserveValue(NSString keyPath, NSObject ofObject, NSDictionary? change, nint context)
     {
         if (keyPath == "status" && ofObject is AVPlayerItem item)
         {
-            item.RemoveObserver(this, "status");
+            RemoveItemStatusObserver();
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
@@ -232,6 +244,7 @@ public class NativeAudioService : NSObject
         _audioPlayerService.UnmuteRequested -= OnUnmuteRequested;
 
         RemoveEndObserver();
+        RemoveItemStatusObserver();
 
         if (_timeObserver is not null && _player is not null)
         {
@@ -241,5 +254,13 @@ public class NativeAudioService : NSObject
 
         _player?.Dispose();
         _player = null;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            Cleanup();
+
+        base.Dispose(disposing);
     }
 }

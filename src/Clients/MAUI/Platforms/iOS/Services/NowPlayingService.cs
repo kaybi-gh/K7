@@ -11,7 +11,7 @@ namespace K7.Clients.MAUI.Platforms.iOS.Services;
 /// Integrates with MPNowPlayingInfoCenter and MPRemoteCommandCenter
 /// to provide lock screen, Control Center, and CarPlay now-playing controls.
 /// </summary>
-public class NowPlayingService
+public class NowPlayingService : IDisposable
 {
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly IK7ServerService _k7ServerService;
@@ -163,4 +163,17 @@ public class NowPlayingService
             _audioPlayerService.Play();
         return MPRemoteCommandHandlerStatus.Success;
     }
+
+    public void Cleanup()
+    {
+        _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
+        _audioPlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
+        _audioPlayerService.DurationChanged -= OnDurationChanged;
+
+        MPNowPlayingInfoCenter.DefaultCenter.NowPlaying = null;
+        _currentArtwork?.Dispose();
+        _currentArtwork = null;
+    }
+
+    public void Dispose() => Cleanup();
 }
