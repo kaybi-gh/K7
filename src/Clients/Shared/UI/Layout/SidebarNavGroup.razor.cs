@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.UI.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
@@ -113,7 +114,7 @@ public partial class SidebarNavGroup : IDisposable, IAsyncDisposable
 
     private void CloseFlyoutFromLayer()
     {
-        _ = InvokeAsync(CloseFlyoutAsync);
+        InvokeAsync(CloseFlyoutAsync).FireAndForget();
     }
 
     private async Task CloseFlyoutAsync()
@@ -155,7 +156,7 @@ public partial class SidebarNavGroup : IDisposable, IAsyncDisposable
     {
         if (_flyoutOpen)
         {
-            _ = InvokeAsync(CloseFlyoutAsync);
+            InvokeAsync(CloseFlyoutAsync).FireAndForget();
         }
     }
 

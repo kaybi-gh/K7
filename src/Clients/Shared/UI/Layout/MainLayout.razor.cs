@@ -95,7 +95,7 @@ public partial class MainLayout : IDisposable
         TvHubHost.Changed += OnTvHubHostChanged;
     }
 
-    private void OnTvHubHostChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnTvHubHostChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
