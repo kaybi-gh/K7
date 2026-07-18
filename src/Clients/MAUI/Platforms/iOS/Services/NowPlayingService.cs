@@ -170,7 +170,7 @@ public class NowPlayingService : IDisposable
         _audioPlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         _audioPlayerService.DurationChanged -= OnDurationChanged;
 
-        MPNowPlayingInfoCenter.DefaultCenter.NowPlaying = null;
+        MPNowPlayingInfoCenter.DefaultCenter.NowPlaying = new MPNowPlayingInfo();
         _currentArtwork?.Dispose();
         _currentArtwork = null;
     }
