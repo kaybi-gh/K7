@@ -2399,19 +2399,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
           }
         ],
         "responses": {
@@ -2801,7 +2788,7 @@
                 "string"
               ],
               "format": "int32",
-              "default": 50
+              "default": 20
             }
           }
         ],
