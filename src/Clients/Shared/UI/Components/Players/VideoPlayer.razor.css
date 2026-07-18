@@ -64,6 +64,8 @@
     background-color: transparent;
 }
 
+/* video.js's own video-js.min.css sets .video-js.vjs-fill to the same 100% width/height with
+   equal specificity; !important guarantees we win regardless of stylesheet load order. */
 .video-container ::deep .video-js {
     width: 100% !important;
     height: 100% !important;
