@@ -42,6 +42,8 @@ public interface IMediaService
     Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default);
+    /// <summary>Absolute or relative URI for the media theme song stream, or null if none.</summary>
+    string? GetMediaThemeSongUrl(Guid mediaId);
     Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default);

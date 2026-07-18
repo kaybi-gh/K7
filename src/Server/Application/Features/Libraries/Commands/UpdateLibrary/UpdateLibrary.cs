@@ -17,6 +17,7 @@ public record UpdateLibraryCommand : IRequest
     public int? MetadataRefreshIntervalDays { get; init; }
     public Guid? LibraryGroupId { get; init; }
     public bool? IntroDetectionEnabled { get; init; }
+    public bool? ThemeSongGenerationEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
     public bool? ChapterExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }
@@ -46,6 +47,10 @@ public class UpdateLibraryCommandHandler(IApplicationDbContext context, ILibrary
             entity.LibraryGroupId = request.LibraryGroupId.Value;
         if (request.IntroDetectionEnabled.HasValue)
             entity.IntroDetectionEnabled = request.IntroDetectionEnabled.Value;
+        if (request.ThemeSongGenerationEnabled.HasValue)
+            entity.ThemeSongGenerationEnabled = request.ThemeSongGenerationEnabled.Value;
+        if (!entity.IntroDetectionEnabled)
+            entity.ThemeSongGenerationEnabled = false;
         if (request.SeekbarThumbnailGenerationEnabled.HasValue)
             entity.SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled.Value;
         if (request.ChapterExtractionEnabled.HasValue)

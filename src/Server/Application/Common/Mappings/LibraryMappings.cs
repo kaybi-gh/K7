@@ -26,6 +26,7 @@ public static class LibraryMappings
                 ? null
                 : domain.PeerServer.Status == PeerStatus.Active && domain.PeerServer.LastTestSucceeded != false,
             IntroDetectionEnabled = domain.IntroDetectionEnabled,
+            ThemeSongGenerationEnabled = domain.ThemeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = domain.SeekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = domain.ChapterExtractionEnabled,
             MusicAudioAnalysisEnabled = domain.MusicAudioAnalysisEnabled,

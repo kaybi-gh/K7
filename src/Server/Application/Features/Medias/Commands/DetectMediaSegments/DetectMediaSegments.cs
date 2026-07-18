@@ -1,5 +1,7 @@
 using System.Numerics;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.ExtractSerieThemeSong;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -18,6 +20,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
     private readonly IApplicationDbContext _context;
     private readonly IChromaprintService _chromaprintService;
     private readonly ISegmentDetectionService _segmentDetectionService;
+    private readonly ISender _sender;
     private readonly ILogger<DetectMediaSegmentsCommandHandler> _logger;
 
     // Fingerprint comparison (from intro-skipper)
@@ -46,11 +49,13 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         IApplicationDbContext context,
         IChromaprintService chromaprintService,
         ISegmentDetectionService segmentDetectionService,
+        ISender sender,
         ILogger<DetectMediaSegmentsCommandHandler> logger)
     {
         _context = context;
         _chromaprintService = chromaprintService;
         _segmentDetectionService = segmentDetectionService;
+        _sender = sender;
         _logger = logger;
     }
 
@@ -91,19 +96,57 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         else
             newSegments = await RunFullDetectionAsync(episodes, cancellationToken);
 
-        if (newSegments.Count == 0)
+        if (newSegments.Count > 0)
+        {
+            // Remove existing detected segments for episodes that will get new ones
+            var episodeIds = newSegments.Select(s => s.MediaId).Distinct().ToList();
+            var segmentTypes = newSegments.Select(s => s.Type).Distinct().ToList();
+
+            await _context.MediaSegments
+                .Where(s => episodeIds.Contains(s.MediaId) && segmentTypes.Contains(s.Type))
+                .ExecuteDeleteAsync(cancellationToken);
+
+            _context.MediaSegments.AddRange(newSegments);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        await TryQueueThemeExtractAsync(season.SerieId, cancellationToken);
+    }
+
+    private async Task TryQueueThemeExtractAsync(Guid serieId, CancellationToken cancellationToken)
+    {
+        var themeGenerationEnabled = await (
+            from episode in _context.Medias.OfType<SerieEpisode>().AsNoTracking()
+            where episode.SerieId == serieId
+            join file in _context.IndexedFiles.AsNoTracking() on episode.Id equals file.MediaId
+            join library in _context.Libraries.AsNoTracking() on file.LibraryId equals library.Id
+            where library.ThemeSongGenerationEnabled && library.IntroDetectionEnabled
+            select library.Id
+        ).AnyAsync(cancellationToken);
+
+        if (!themeGenerationEnabled)
             return;
 
-        // Remove existing detected segments for episodes that will get new ones
-        var episodeIds = newSegments.Select(s => s.MediaId).Distinct().ToList();
-        var segmentTypes = newSegments.Select(s => s.Type).Distinct().ToList();
+        var hasIntro = await (
+            from episode in _context.Medias.OfType<SerieEpisode>().AsNoTracking()
+            where episode.SerieId == serieId
+            join segment in _context.MediaSegments.AsNoTracking() on episode.Id equals segment.MediaId
+            where segment.Type == MediaSegmentType.Intro
+            select segment.Id
+        ).AnyAsync(cancellationToken);
 
-        await _context.MediaSegments
-            .Where(s => episodeIds.Contains(s.MediaId) && segmentTypes.Contains(s.Type))
-            .ExecuteDeleteAsync(cancellationToken);
+        if (!hasIntro)
+            return;
 
-        _context.MediaSegments.AddRange(newSegments);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _sender.Send(new CreateBackgroundTaskCommand
+        {
+            Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
+            Priority = BackgroundTaskPriority.Lowest,
+            TargetEntityId = serieId,
+            TargetEntityTypeName = nameof(Serie),
+            MaxAttempts = 2,
+            ConcurrencyGroup = "ffmpeg"
+        }, cancellationToken);
     }
 
     private async Task<List<MediaSegment>> RunFullDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)

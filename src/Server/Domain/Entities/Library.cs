@@ -14,6 +14,7 @@ public class Library : BaseAuditableEntity
     public bool? RootPathAccessible { get; set; }
 
     public bool IntroDetectionEnabled { get; set; } = true;
+    public bool ThemeSongGenerationEnabled { get; set; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
     public bool ChapterExtractionEnabled { get; set; } = true;
     public bool MusicAudioAnalysisEnabled { get; set; } = true;

@@ -4924,6 +4924,30 @@
         }
       }
     },
+    "/api/medias/{id}/theme": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaThemeSong",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{serieId}/next-episode": {
       "get": {
         "tags": [
@@ -11401,6 +11425,9 @@
           "introDetectionEnabled": {
             "type": "boolean"
           },
+          "themeSongGenerationEnabled": {
+            "type": "boolean"
+          },
           "seekbarThumbnailGenerationEnabled": {
             "type": "boolean"
           },
@@ -12752,6 +12779,9 @@
           "introDetectionEnabled": {
             "type": "boolean"
           },
+          "themeSongGenerationEnabled": {
+            "type": "boolean"
+          },
           "seekbarThumbnailGenerationEnabled": {
             "type": "boolean"
           },
@@ -12855,6 +12885,7 @@
           "missingFileMetadataCount",
           "missingHlsSegmentsCount",
           "missingChaptersCount",
+          "missingThemeSongCount",
           "missingAudioAnalysisCount",
           "inaccessiblePathCount",
           "pendingBackgroundTaskCount",
@@ -12961,6 +12992,14 @@
             "format": "int32"
           },
           "missingChaptersCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingThemeSongCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -14938,6 +14977,9 @@
               "$ref": "#/components/schemas/TrailerDto"
             }
           },
+          "hasThemeSong": {
+            "type": "boolean"
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -15721,6 +15763,9 @@
             "items": {
               "$ref": "#/components/schemas/LiteSerieSeasonDto"
             }
+          },
+          "hasThemeSong": {
+            "type": "boolean"
           },
           "id": {
             "type": "string",
@@ -19439,6 +19484,12 @@
               "boolean"
             ]
           },
+          "themeSongGenerationEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
           "seekbarThumbnailGenerationEnabled": {
             "type": [
               "null",
@@ -20384,6 +20435,9 @@
             "type": "boolean"
           },
           "showChapterTicks": {
+            "type": "boolean"
+          },
+          "playThemeSongs": {
             "type": "boolean"
           },
           "introSkipBehavior": {

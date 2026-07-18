@@ -10,4 +10,5 @@ public sealed record MovieDto : MediaDto
     public long? Revenue { get; init; }
     public IReadOnlyList<string>? Studios { get; init; }
     public IReadOnlyList<TrailerDto>? Trailers { get; init; }
+    public bool HasThemeSong { get; set; }
 }

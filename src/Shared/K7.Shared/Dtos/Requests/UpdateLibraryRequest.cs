@@ -9,6 +9,7 @@ public sealed record UpdateLibraryRequest
     public int? MetadataRefreshIntervalDays { get; init; }
     public Guid? LibraryGroupId { get; init; }
     public bool? IntroDetectionEnabled { get; init; }
+    public bool? ThemeSongGenerationEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
     public bool? ChapterExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }

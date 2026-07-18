@@ -24,6 +24,7 @@ public partial class EditLibraryDialog
     [Parameter] public List<LibraryGroupDto> AvailableGroups { get; set; } = [];
     [Parameter] public Guid SelectedGroupId { get; set; }
     [Parameter] public bool IntroDetectionEnabled { get; set; } = true;
+    [Parameter] public bool ThemeSongGenerationEnabled { get; set; } = true;
     [Parameter] public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
     [Parameter] public bool ChapterExtractionEnabled { get; set; } = true;
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
@@ -39,6 +40,7 @@ public partial class EditLibraryDialog
     private string _metadataFallbackLanguage = "en";
     private int? _metadataRefreshIntervalDays;
     private bool _introDetectionEnabled = true;
+    private bool _themeSongGenerationEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
     private bool _chapterExtractionEnabled = true;
     private bool _musicAudioAnalysisEnabled = true;
@@ -57,6 +59,7 @@ public partial class EditLibraryDialog
         _metadataFallbackLanguage = MetadataFallbackLanguage;
         _metadataRefreshIntervalDays = MetadataRefreshIntervalDays;
         _introDetectionEnabled = IntroDetectionEnabled;
+        _themeSongGenerationEnabled = ThemeSongGenerationEnabled;
         _seekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled;
         _chapterExtractionEnabled = ChapterExtractionEnabled;
         _musicAudioAnalysisEnabled = MusicAudioAnalysisEnabled;
@@ -79,6 +82,7 @@ public partial class EditLibraryDialog
             MetadataRefreshIntervalDays = _metadataRefreshIntervalDays,
             LibraryGroupId = _selectedGroupId,
             IntroDetectionEnabled = _introDetectionEnabled,
+            ThemeSongGenerationEnabled = _themeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = _chapterExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,

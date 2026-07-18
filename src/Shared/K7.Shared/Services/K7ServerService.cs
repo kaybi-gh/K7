@@ -1406,6 +1406,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public string? GetMediaThemeSongUrl(Guid mediaId) =>
+        GetAbsoluteUri($"api/medias/{mediaId}/theme")?.AbsoluteUri;
+
     public async Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<LiteMediaDto>>($"api/medias/{mediaId}/similar", _serializerOptions, cancellationToken);

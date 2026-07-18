@@ -10,4 +10,5 @@ public sealed record SerieDto : MediaDto
     public IReadOnlyList<string>? Studios { get; init; }
     public IReadOnlyList<TrailerDto>? Trailers { get; init; }
     public IReadOnlyList<LiteSerieSeasonDto>? Seasons { get; init; }
+    public bool HasThemeSong { get; set; }
 }

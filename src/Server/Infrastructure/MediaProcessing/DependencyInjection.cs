@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<ILoudnessAnalyzer, FfmpegLoudnessAnalyzer>();
         services.AddSingleton<IChromaprintService, ChromaprintService>();
         services.AddSingleton<ISegmentDetectionService, SegmentDetectionService>();
+        services.AddScoped<IThemeSongService, ThemeSongService>();
         services.AddSingleton<IEpisodeStillGenerator, EpisodeStillGenerator>();
         services.AddHostedService<TranscodeJobCleanupService>();
         services.AddSingleton(_ => new TMDbClient("8e7586ad850237f5d506d8789f4c3936"));

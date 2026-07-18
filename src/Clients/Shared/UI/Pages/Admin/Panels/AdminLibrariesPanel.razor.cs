@@ -234,6 +234,7 @@ public partial class AdminLibrariesPanel : IDisposable
             { x => x.AvailableGroups, compatibleGroups },
             { x => x.SelectedGroupId, library.LibraryGroupId },
             { x => x.IntroDetectionEnabled, library.IntroDetectionEnabled },
+            { x => x.ThemeSongGenerationEnabled, library.ThemeSongGenerationEnabled },
             { x => x.SeekbarThumbnailGenerationEnabled, library.SeekbarThumbnailGenerationEnabled },
             { x => x.ChapterExtractionEnabled, library.ChapterExtractionEnabled },
             { x => x.MusicAudioAnalysisEnabled, library.MusicAudioAnalysisEnabled },

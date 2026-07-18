@@ -5,6 +5,7 @@ namespace K7.Shared.Dtos;
 public sealed record LibraryProcessingSettingsDto
 {
     public bool IntroDetectionEnabled { get; init; } = true;
+    public bool ThemeSongGenerationEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
     public bool ChapterExtractionEnabled { get; init; } = true;
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
@@ -14,6 +15,9 @@ public sealed record LibraryProcessingSettingsDto
     public static LibraryProcessingSettingsDto Defaults => new();
 
     public static bool ShowIntroDetection(LibraryMediaType mediaType) =>
+        mediaType is LibraryMediaType.Serie;
+
+    public static bool ShowThemeSongGeneration(LibraryMediaType mediaType) =>
         mediaType is LibraryMediaType.Serie;
 
     public static bool ShowSeekbarThumbnails(LibraryMediaType mediaType) =>

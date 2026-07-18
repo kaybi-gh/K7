@@ -34,6 +34,7 @@ public partial class CreateLibraryDialog
     private int? _metadataRefreshIntervalDays;
     private bool _isSubmitting;
     private bool _introDetectionEnabled = true;
+    private bool _themeSongGenerationEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
     private bool _chapterExtractionEnabled = true;
     private bool _musicAudioAnalysisEnabled = true;
@@ -173,6 +174,7 @@ public partial class CreateLibraryDialog
             GroupDescription = _createNewGroup && !string.IsNullOrWhiteSpace(_groupDescription) ? _groupDescription.Trim() : null,
             GroupIcon = _createNewGroup ? _groupIcon : null,
             IntroDetectionEnabled = _introDetectionEnabled,
+            ThemeSongGenerationEnabled = _themeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = _chapterExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,

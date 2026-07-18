@@ -31,6 +31,7 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
             .HasDefaultValue("en");
 
         builder.Property(t => t.IntroDetectionEnabled).HasDefaultValue(true);
+        builder.Property(t => t.ThemeSongGenerationEnabled).HasDefaultValue(true);
         builder.Property(t => t.SeekbarThumbnailGenerationEnabled).HasDefaultValue(true);
         builder.Property(t => t.ChapterExtractionEnabled).HasDefaultValue(true);
         builder.Property(t => t.MusicAudioAnalysisEnabled).HasDefaultValue(true);

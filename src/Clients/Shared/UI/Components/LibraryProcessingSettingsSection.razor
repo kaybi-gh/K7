@@ -11,8 +11,17 @@
 
         @if (LibraryProcessingSettingsDto.ShowIntroDetection(MediaType))
         {
-            <K7Switch Label="@L["IntroDetection"]" @bind-Value="IntroDetectionEnabled" Disabled="Disabled" />
+            <K7Switch Label="@L["IntroDetection"]" Value="IntroDetectionEnabled" ValueChanged="OnIntroDetectionChangedAsync" Disabled="Disabled" />
             <span class="text-caption" style="color: var(--color-text-muted);">@L["IntroDetectionDescription"]</span>
+        }
+
+        @if (LibraryProcessingSettingsDto.ShowThemeSongGeneration(MediaType))
+        {
+            <K7Switch Label="@L["ThemeSongGeneration"]"
+                      Value="ThemeSongGenerationEnabled && IntroDetectionEnabled"
+                      ValueChanged="OnThemeSongGenerationChangedAsync"
+                      Disabled="Disabled || !IntroDetectionEnabled" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["ThemeSongGenerationDescription"]</span>
         }
 
         @if (LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType))

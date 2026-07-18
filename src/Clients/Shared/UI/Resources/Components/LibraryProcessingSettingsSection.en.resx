@@ -21,7 +21,9 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SectionTitle" xml:space="preserve"><value>Capabilities</value></data>
   <data name="IntroDetection" xml:space="preserve"><value>Intro detection</value></data>
-  <data name="IntroDetectionDescription" xml:space="preserve"><value>Automatically detects intros and outros in series episodes using audio fingerprinting (Chromaprint).</value></data>
+  <data name="IntroDetectionDescription" xml:space="preserve"><value>Automatically detects intros and outros in series episodes using audio fingerprinting (Chromaprint). Required before the server can auto-generate a series theme from an intro.</value></data>
+  <data name="ThemeSongGeneration" xml:space="preserve"><value>Theme song generation</value></data>
+  <data name="ThemeSongGenerationDescription" xml:space="preserve"><value>When intro detection finds an intro, extract a short theme MP3 under Metadatas (never into the media folder). A local theme.mp3/flac in the series folder is always preferred and skips generation. Requires intro detection; disabled when intro detection is off.</value></data>
   <data name="Transcoding" xml:space="preserve"><value>Transcoding</value></data>
   <data name="Transmuxing" xml:space="preserve"><value>Transmuxing</value></data>
   <data name="SeekbarThumbnails" xml:space="preserve"><value>Seekbar thumbnail generation</value></data>
