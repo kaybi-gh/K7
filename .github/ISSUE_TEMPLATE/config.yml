@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Feature request or idea
-    url: https://github.com/kaybi-gh/K7/discussions/new?category=ideas
+    url: https://github.com/kaybi-gh/K7/discussions/new?category=ideas-feature-requests
     about: Suggest a new feature or improvement. Not every idea will be implemented.
   - name: Question or help
     url: https://github.com/kaybi-gh/K7/discussions/new?category=q-a
     about: Ask the community for help with installation, configuration, or usage.
   - name: Security vulnerability
-    url: https://github.com/kaybi-gh/K7/security/advisories/new
-    about: Report a security issue privately. Do not open a public issue.
+    url: https://github.com/kaybi-gh/K7/security/policy
+    about: Read how to report a security issue privately. Do not open a public issue.

@@ -82,8 +82,8 @@ All guides (users, admins, developers): **[docs/README.md](docs/README.md)**.
 This project was built for my own specific needs. While I think it could benefit some people, making it free and open source does not mean I will work on every feature request.
 
 Contributions are welcome:
-- **Issues** - bugs (including security problems)
-- **Discussions** - ideas and feature requests
+- **Issues** - bugs (not security reports; see [SECURITY.md](SECURITY.md))
+- **Discussions** - ideas, feature requests, and questions
 - **Pull requests** - opening a PR does not guarantee a merge
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and to start contributing.
