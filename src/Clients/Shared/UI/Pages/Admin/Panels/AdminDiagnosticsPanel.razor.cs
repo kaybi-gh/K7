@@ -372,7 +372,7 @@ public partial class AdminDiagnosticsPanel
     private static IReadOnlyCollection<DiagnosticIssue>? GetSeverityIssues(string? severity) => severity switch
     {
         "error" => [DiagnosticIssue.OrphanFile, DiagnosticIssue.MissingFiles, DiagnosticIssue.MissingFileMetadata],
-        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingChapters, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.MissingExternalId, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
+        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingChapters, DiagnosticIssue.MissingThemeSong, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.MissingExternalId, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
         "info" => [DiagnosticIssue.MissingAudioAnalysis],
         _ => null
     };
@@ -531,6 +531,7 @@ public partial class AdminDiagnosticsPanel
                 DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
                 DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
                 DiagnosticIssue.MissingChapters => DiagnosticFixAction.ExtractChapters,
+                DiagnosticIssue.MissingThemeSong => DiagnosticFixAction.ExtractSerieThemeSong,
                 DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
                 _ => null
             };
@@ -554,6 +555,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
         DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
         DiagnosticIssue.MissingChapters => DiagnosticFixAction.ExtractChapters,
+        DiagnosticIssue.MissingThemeSong => DiagnosticFixAction.ExtractSerieThemeSong,
         DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
         _ => null
     };
@@ -566,6 +568,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticFixAction.ExtractFileMetadata => L["ActionExtract"],
         DiagnosticFixAction.ComputeHlsSegments => L["ActionHls"],
         DiagnosticFixAction.ExtractChapters => L["ActionExtractChapters"],
+        DiagnosticFixAction.ExtractSerieThemeSong => L["ActionExtractThemeSong"],
         DiagnosticFixAction.RetryCreateMedia => L["ActionRetryCreateMedia"],
         _ => action.ToString()
     };
@@ -578,6 +581,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticFixAction.ExtractFileMetadata => Phosphor.Code,
         DiagnosticFixAction.ComputeHlsSegments => Phosphor.Rows,
         DiagnosticFixAction.ExtractChapters => Phosphor.BookOpen,
+        DiagnosticFixAction.ExtractSerieThemeSong => Phosphor.MusicNotes,
         DiagnosticFixAction.RetryCreateMedia => Phosphor.ArrowClockwise,
         _ => Phosphor.Wrench
     };
@@ -644,6 +648,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingFileMetadata => L["MissingFileMetadata"],
         DiagnosticIssue.MissingHlsSegments => L["MissingHlsSegments"],
         DiagnosticIssue.MissingChapters => L["MissingChapters"],
+        DiagnosticIssue.MissingThemeSong => L["MissingThemeSong"],
         DiagnosticIssue.MissingPictures => L["MissingPictures"],
         DiagnosticIssue.MissingMetadata => L["MissingMetadata"],
         DiagnosticIssue.MissingExternalId => L["MissingExternalId"],

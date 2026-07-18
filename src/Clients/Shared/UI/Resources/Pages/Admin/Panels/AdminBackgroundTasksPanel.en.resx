@@ -68,6 +68,7 @@
   <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Library indexing</value></data>
   <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Metadata refresh</value></data>
   <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Intro/outro detection</value></data>
+  <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Theme song extraction</value></data>
   <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Person metadata refresh</value></data>
   <data name="FilterByType" xml:space="preserve"><value>Filter by type</value></data>
   <data name="AllTypes" xml:space="preserve"><value>All types</value></data>

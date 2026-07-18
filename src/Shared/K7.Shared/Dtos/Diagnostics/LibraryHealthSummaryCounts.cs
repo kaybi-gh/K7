@@ -32,6 +32,7 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.UnidentifiedFile,
         DiagnosticIssue.MissingHlsSegments,
         DiagnosticIssue.MissingChapters,
+        DiagnosticIssue.MissingThemeSong,
         DiagnosticIssue.MissingPictures,
         DiagnosticIssue.MissingMetadata,
         DiagnosticIssue.MissingExternalId,
@@ -49,6 +50,7 @@ public static class LibraryHealthSummaryCounts
 
     public static int SumWarnings(IEnumerable<LibraryHealthSummaryDto> summaries) =>
         summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount + l.MissingChaptersCount
+            + l.MissingThemeSongCount
             + l.MediaMissingPicturesCount + l.MediaMissingExternalIdCount + l.MediaMissingMetadataCount
             + l.StaleMetadataCount + l.InaccessiblePathCount);
 
@@ -60,7 +62,8 @@ public static class LibraryHealthSummaryCounts
 
     public static int SumLibraryIssues(LibraryHealthSummaryDto summary) =>
         summary.OrphanIndexedFileCount + summary.UnidentifiedIndexedFileCount + summary.MissingFileMetadataCount
-        + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
+        + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount + summary.MissingThemeSongCount
+        + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
         + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
         + summary.MissingAudioAnalysisCount + summary.InaccessiblePathCount;
 
@@ -152,7 +155,7 @@ public static class LibraryHealthSummaryCounts
             or DiagnosticIssue.MissingFileMetadata or DiagnosticIssue.MissingHlsSegments or DiagnosticIssue.MissingChapters,
         DiagnosticEntityType.Media => issue is DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingExternalId
             or DiagnosticIssue.MissingMetadata or DiagnosticIssue.MissingFiles or DiagnosticIssue.StaleMetadata
-            or DiagnosticIssue.MissingAudioAnalysis,
+            or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingThemeSong,
         DiagnosticEntityType.Library => issue is DiagnosticIssue.InaccessiblePath,
         _ => false
     };
@@ -164,6 +167,7 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.MissingFileMetadata => summary.MissingFileMetadataCount,
         DiagnosticIssue.MissingHlsSegments => summary.MissingHlsSegmentsCount,
         DiagnosticIssue.MissingChapters => summary.MissingChaptersCount,
+        DiagnosticIssue.MissingThemeSong => summary.MissingThemeSongCount,
         DiagnosticIssue.MissingPictures => summary.MediaMissingPicturesCount,
         DiagnosticIssue.MissingMetadata => summary.MediaMissingMetadataCount,
         DiagnosticIssue.MissingExternalId => summary.MediaMissingExternalIdCount,
@@ -180,7 +184,7 @@ public static class LibraryHealthSummaryCounts
             + summary.MissingFileMetadataCount + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount,
         DiagnosticEntityType.Media => summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
             + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
-            + summary.MissingAudioAnalysisCount,
+            + summary.MissingAudioAnalysisCount + summary.MissingThemeSongCount,
         DiagnosticEntityType.Library => summary.InaccessiblePathCount,
         _ => 0
     };

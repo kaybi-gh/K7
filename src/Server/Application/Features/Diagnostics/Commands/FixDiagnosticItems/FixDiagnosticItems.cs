@@ -7,6 +7,7 @@ using K7.Server.Application.Features.IndexedFiles.Commands.ExtractChapters;
 using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
+using K7.Server.Application.Features.Medias.Commands.ExtractSerieThemeSong;
 using K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -83,6 +84,18 @@ public class FixDiagnosticItemsCommandHandler(
                             TargetEntityTypeName = nameof(IndexedFile),
                             MaxAttempts = 3,
                             ConcurrencyGroup = "ffprobe"
+                        }, cancellationToken);
+                        break;
+
+                    case DiagnosticFixAction.ExtractSerieThemeSong:
+                        await sender.Send(new CreateBackgroundTaskCommand
+                        {
+                            Request = new ExtractSerieThemeSongCommand { SerieId = entityId },
+                            Priority = BackgroundTaskPriority.Lowest,
+                            TargetEntityId = entityId,
+                            TargetEntityTypeName = nameof(Serie),
+                            MaxAttempts = 2,
+                            ConcurrencyGroup = "ffmpeg"
                         }, cancellationToken);
                         break;
 

@@ -4,6 +4,7 @@ using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.IndexedFiles.Commands.ExtractChapters;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
+using K7.Server.Application.Features.Medias.Commands.ExtractSerieThemeSong;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -47,6 +48,15 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
                 MaxAttempts = 3,
                 ConcurrencyGroup = "ffprobe"
             }).ToList(),
+            DiagnosticFixAction.ExtractSerieThemeSong => entityIds.Select(serieId => new CreateBackgroundTasksBatchItem
+            {
+                Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
+                Priority = BackgroundTaskPriority.Lowest,
+                TargetEntityId = serieId,
+                TargetEntityTypeName = nameof(Serie),
+                MaxAttempts = 2,
+                ConcurrencyGroup = "ffmpeg"
+            }).ToList(),
             DiagnosticFixAction.ExtractFileMetadata => await BuildExtractFileMetadataItemsAsync(entityIds, cancellationToken),
             _ => []
         };
@@ -56,6 +66,7 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
         action is DiagnosticFixAction.AnalyzeMusicTrackAudio
             or DiagnosticFixAction.ComputeHlsSegments
             or DiagnosticFixAction.ExtractChapters
+            or DiagnosticFixAction.ExtractSerieThemeSong
             or DiagnosticFixAction.ExtractFileMetadata
             or DiagnosticFixAction.RetryCreateMedia;
 

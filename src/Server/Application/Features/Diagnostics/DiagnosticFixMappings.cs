@@ -13,6 +13,7 @@ public static class DiagnosticFixMappings
         DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
         DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
         DiagnosticIssue.MissingChapters => DiagnosticFixAction.ExtractChapters,
+        DiagnosticIssue.MissingThemeSong => DiagnosticFixAction.ExtractSerieThemeSong,
         DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
         _ => null
     };

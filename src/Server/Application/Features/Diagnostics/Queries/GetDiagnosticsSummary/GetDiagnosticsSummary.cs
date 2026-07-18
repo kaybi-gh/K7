@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Helpers;
@@ -6,6 +7,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Diagnostics.Queries.GetDiagnosticsSummary;
 
@@ -22,10 +24,14 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
     ];
 
     private readonly IApplicationDbContext _context;
+    private readonly PathsConfiguration _paths;
 
-    public GetDiagnosticsSummaryQueryHandler(IApplicationDbContext context)
+    public GetDiagnosticsSummaryQueryHandler(
+        IApplicationDbContext context,
+        IOptions<PathsConfiguration> pathsOptions)
     {
         _context = context;
+        _paths = pathsOptions.Value;
     }
 
     public async Task<List<LibraryHealthSummaryDto>> Handle(GetDiagnosticsSummaryQuery request, CancellationToken cancellationToken)
@@ -45,6 +51,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         var indexedFileStats = await GetIndexedFileStatsAsync(cancellationToken);
         var missingHlsSegmentCounts = await GetMissingHlsSegmentCountsAsync(cancellationToken);
         var missingChaptersCounts = await GetMissingChaptersCountsAsync(cancellationToken);
+        var missingThemeSongCounts = await ThemeSongDiagnosticHelper.GetMissingThemeCountsByLibraryAsync(
+            _context, _paths, cancellationToken);
         var inaccessiblePathCounts = await GetInaccessiblePathCountsAsync(cancellationToken);
         var mediaWithoutFilesCounts = await GetMediaWithoutFilesCountsAsync(cancellationToken);
 
@@ -70,6 +78,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             indexedFileStats.TryGetValue(library.Id, out var fileStats);
             missingHlsSegmentCounts.TryGetValue(library.Id, out var missingHlsSegmentsCount);
             missingChaptersCounts.TryGetValue(library.Id, out var missingChaptersCount);
+            missingThemeSongCounts.TryGetValue(library.Id, out var missingThemeSongCount);
             inaccessiblePathCounts.TryGetValue(library.Id, out var inaccessiblePathCount);
             mediaWithoutFilesCounts.TryGetValue(library.Id, out var mediaWithoutFilesCount);
             missingAudioAnalysisCounts.TryGetValue(library.Id, out var missingAudioAnalysisCount);
@@ -91,6 +100,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MissingFileMetadataCount = fileStats?.MissingFileMetadataCount ?? 0,
                 MissingHlsSegmentsCount = missingHlsSegmentsCount,
                 MissingChaptersCount = missingChaptersCount,
+                MissingThemeSongCount = missingThemeSongCount,
                 MissingAudioAnalysisCount = missingAudioAnalysisCount,
                 InaccessiblePathCount = inaccessiblePathCount,
                 PendingBackgroundTaskCount = backgroundTaskStats.PendingCount,

@@ -1,13 +1,19 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Diagnostics.Services;
 
-public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
+public class DiagnosticIssueEntityResolver(
+    IApplicationDbContext context,
+    IOptions<PathsConfiguration> pathsOptions)
 {
+    private readonly PathsConfiguration _paths = pathsOptions.Value;
+
     public async Task<List<Guid>> ResolveEntityIdsAsync(
         DiagnosticIssue issue,
         Guid? libraryId,
@@ -25,8 +31,16 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
             DiagnosticIssue.StaleMetadata => await GetMediaIdsWithStaleMetadataAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingMembers => await GetMusicArtistIdsMissingMembersAsync(libraryId, cancellationToken),
             DiagnosticIssue.OrphanFile => await GetOrphanIndexedFileIdsAsync(libraryId, cancellationToken),
+            DiagnosticIssue.MissingThemeSong => await GetSerieIdsMissingThemeSongAsync(libraryId, cancellationToken),
             _ => []
         };
+    }
+
+    private async Task<List<Guid>> GetSerieIdsMissingThemeSongAsync(Guid? libraryId, CancellationToken cancellationToken)
+    {
+        var ids = await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
+            context, _paths, libraryId, limitToSerieIds: null, cancellationToken);
+        return ids.ToList();
     }
 
     private IQueryable<Guid> NonFederatedLibraryIds() =>

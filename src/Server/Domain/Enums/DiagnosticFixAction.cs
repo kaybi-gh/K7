@@ -8,5 +8,6 @@ public enum DiagnosticFixAction
     AutoReidentifyMetadata = 4,
     AnalyzeMusicTrackAudio = 5,
     RetryCreateMedia = 6,
-    ExtractChapters = 7
+    ExtractChapters = 7,
+    ExtractSerieThemeSong = 8
 }

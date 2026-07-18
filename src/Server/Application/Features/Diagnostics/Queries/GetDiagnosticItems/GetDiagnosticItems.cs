@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
@@ -9,6 +10,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Navigation;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Diagnostics.Queries.GetDiagnosticItems;
 
@@ -26,10 +28,14 @@ public record GetDiagnosticItemsQuery : IRequest<PaginatedList<DiagnosticItemDto
 public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItemsQuery, PaginatedList<DiagnosticItemDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly PathsConfiguration _paths;
 
-    public GetDiagnosticItemsQueryHandler(IApplicationDbContext context)
+    public GetDiagnosticItemsQueryHandler(
+        IApplicationDbContext context,
+        IOptions<PathsConfiguration> pathsOptions)
     {
         _context = context;
+        _paths = pathsOptions.Value;
     }
 
     public async Task<PaginatedList<DiagnosticItemDto>> Handle(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
@@ -406,6 +412,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             .GroupBy(p => p.Id)
             .ToDictionary(g => g.Key, g => g.Select(p => p.Type).Distinct().ToList());
 
+        var serieIds = medias.Where(m => m.Type == MediaType.Serie).Select(m => m.Id).ToList();
+        var missingThemeSerieIds = serieIds.Count == 0
+            ? new HashSet<Guid>()
+            : await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
+                _context, _paths, request.LibraryId, serieIds, cancellationToken);
+
         return medias.Select(m =>
         {
             var libraryId = mediaToLibrary.GetValueOrDefault(m.Id);
@@ -440,6 +452,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
             if (m.IsMusicTrack && !m.HasAudioAnalysis) issues.Add(DiagnosticIssue.MissingAudioAnalysis);
 
+            if (m.Type == MediaType.Serie && missingThemeSerieIds.Contains(m.Id))
+                issues.Add(DiagnosticIssue.MissingThemeSong);
+
             if (issues.Count == 0) return null;
 
             episodeNavById.TryGetValue(m.Id, out var episodeNav);
@@ -450,6 +465,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 ? DiagnosticSeverity.Error
                 : issues.Contains(DiagnosticIssue.MissingPictures) || issues.Contains(DiagnosticIssue.MissingMetadata)
                     || issues.Contains(DiagnosticIssue.MissingExternalId)
+                    || issues.Contains(DiagnosticIssue.MissingThemeSong)
                     ? DiagnosticSeverity.Warning
                     : DiagnosticSeverity.Info;
 
@@ -507,6 +523,17 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                             && !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Still)
                         || m.Type == MediaType.MusicAlbum
                             && !_context.MetadataPictures.Any(p => p.MediaId == m.Id && p.Type == MetadataPictureType.Cover)
+                        || m.Type == MediaType.Serie
+                            && _context.Medias.OfType<SerieEpisode>().Any(e =>
+                                e.SerieId == m.Id
+                                && _context.MediaSegments.Any(s =>
+                                    s.MediaId == e.Id && s.Type == MediaSegmentType.Intro)
+                                && _context.IndexedFiles.Any(f =>
+                                    f.MediaId == e.Id
+                                    && _context.Libraries.Any(l =>
+                                        l.Id == f.LibraryId
+                                        && l.IntroDetectionEnabled
+                                        && l.ThemeSongGenerationEnabled)))
                         || availability.Join(
                                 _context.Libraries,
                                 a => a.LibraryId,

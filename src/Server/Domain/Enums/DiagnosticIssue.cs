@@ -14,5 +14,6 @@ public enum DiagnosticIssue
     MissingFiles,
     InaccessiblePath,
     MissingMembers,
-    MissingChapters
+    MissingChapters,
+    MissingThemeSong
 }
