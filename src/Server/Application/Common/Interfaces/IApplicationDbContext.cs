@@ -13,6 +13,7 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
+using K7.Server.Domain.Entities.SharedProfiles;
 using K7.Server.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -44,6 +45,9 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<PlaybackSessionDetails> PlaybackSessionDetails { get; }
     DbSet<SharedProfile> SharedProfiles { get; }
     DbSet<SharedProfileMember> SharedProfileMembers { get; }
+    DbSet<SharedProfileMediaState> SharedProfileMediaStates { get; }
+    DbSet<SharedProfileSetting> SharedProfileSettings { get; }
+    DbSet<SharedProfilePlaylist> SharedProfilePlaylists { get; }
     DbSet<MediaPlaybackSessionCoViewer> MediaPlaybackSessionCoViewers { get; }
     DbSet<Collection> Collections { get; }
     DbSet<CollectionItem> CollectionItems { get; }

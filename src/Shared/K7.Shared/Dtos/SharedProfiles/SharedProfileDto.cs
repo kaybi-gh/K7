@@ -16,6 +16,7 @@ public sealed record SharedProfileDto
     public string? HostIdentityUserId { get; init; }
     public required bool HasPin { get; init; }
     public string? PinHash { get; init; }
+    public Guid? ContentRestrictionProfileId { get; init; }
     public required IReadOnlyList<SharedProfileMemberDto> Members { get; init; }
 }
 

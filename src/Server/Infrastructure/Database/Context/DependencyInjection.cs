@@ -194,6 +194,7 @@ public static class DependencyInjection
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();
+        services.AddScoped<ISharedProfileSettingsService, SharedProfileSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
         services.AddSingleton<ISetupTokenProvider, SetupTokenProvider>();
         services.AddSingleton<IPeerUrlGuard, PeerUrlGuard>();

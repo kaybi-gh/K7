@@ -24,5 +24,10 @@ public class SharedProfileConfiguration : IEntityTypeConfiguration<SharedProfile
             .WithMany()
             .HasForeignKey(e => e.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.ContentRestrictionProfile)
+            .WithMany()
+            .HasForeignKey(e => e.ContentRestrictionProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

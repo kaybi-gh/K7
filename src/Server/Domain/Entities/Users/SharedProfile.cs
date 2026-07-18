@@ -1,3 +1,5 @@
+using K7.Server.Domain.Entities.Restrictions;
+
 namespace K7.Server.Domain.Entities.Users;
 
 public class SharedProfile : BaseAuditableEntity
@@ -8,6 +10,9 @@ public class SharedProfile : BaseAuditableEntity
     public Guid CreatedByUserId { get; set; }
     public User CreatedByUser { get; set; } = null!;
     public string? PinHash { get; set; }
+
+    public Guid? ContentRestrictionProfileId { get; set; }
+    public ContentRestrictionProfile? ContentRestrictionProfile { get; set; }
 
     public IList<SharedProfileMember> Members { get; set; } = [];
 }
