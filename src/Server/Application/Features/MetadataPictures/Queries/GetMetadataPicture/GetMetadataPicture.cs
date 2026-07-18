@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
@@ -65,7 +66,7 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
             return new EmptyHttpContentResult(404);
         }
 
-        var contentType = GetContentType(file.Extension);
+        var contentType = MimeTypeHelper.GetImageContentType(file.Extension);
 
         var httpContext = _httpContextAccessor.HttpContext;
 
@@ -122,14 +123,4 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
 
         return new StreamHttpContentResult(file.OpenRead, contentType);
     }
-
-    private static string GetContentType(string extension) => extension.ToLowerInvariant() switch
-    {
-        ".webp" => "image/webp",
-        ".jpg" or ".jpeg" => "image/jpeg",
-        ".png" => "image/png",
-        ".svg" => "image/svg+xml",
-        ".gif" => "image/gif",
-        _ => "application/octet-stream"
-    };
 }

@@ -77,7 +77,6 @@ public static class DependencyInjection
         services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("federation", (sp, _) => sp.GetRequiredService<FederationMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<FederationMetadataProvider>());
 
-        services.AddSignalR();
         return services;
     }
 

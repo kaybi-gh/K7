@@ -1,15 +1,18 @@
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Constants;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Collections.Commands.UploadCollectionCover;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record UploadCollectionCoverCommand : IRequest<Guid>
 {
     public required Guid CollectionId { get; init; }

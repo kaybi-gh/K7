@@ -17,7 +17,6 @@ public record GlobalSearchQuery : IRequest<GlobalSearchResultDto>
 {
     public required string Q { get; init; }
     public string? Studio { get; init; }
-    public int PageSize { get; init; } = 10;
 }
 
 public class GlobalSearchQueryHandler(

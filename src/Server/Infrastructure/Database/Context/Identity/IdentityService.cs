@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,15 +15,18 @@ public class IdentityService : IIdentityService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
+    private readonly ApplicationDbContext _context;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
-        IAuthorizationService authorizationService)
+        IAuthorizationService authorizationService,
+        ApplicationDbContext context)
     {
         _userManager = userManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _authorizationService = authorizationService;
+        _context = context;
     }
 
     public async Task<string?> GetUserNameAsync(string userId)
@@ -60,6 +64,33 @@ public class IdentityService : IIdentityService
 
         var lookup = users.ToDictionary(u => u.Id, u => u.Email);
         return idList.ToDictionary(id => id, id => lookup.GetValueOrDefault(id));
+    }
+
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetRolesAsync(IEnumerable<string> userIds)
+    {
+        var idList = userIds.Distinct().ToList();
+        if (idList.Count == 0)
+            return new Dictionary<string, IReadOnlyList<string>>();
+
+        var roles = await _context.UserRoles
+            .Where(userRole => idList.Contains(userRole.UserId))
+            .Join(
+                _context.Roles,
+                userRole => userRole.RoleId,
+                role => role.Id,
+                (userRole, role) => new { userRole.UserId, role.Name })
+            .ToListAsync();
+
+        var rolesByUser = roles
+            .Where(role => role.Name is not null)
+            .GroupBy(role => role.UserId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<string>)group.Select(role => role.Name!).ToList());
+
+        return idList.ToDictionary(
+            id => id,
+            id => rolesByUser.GetValueOrDefault(id, []));
     }
 
     public async Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password)

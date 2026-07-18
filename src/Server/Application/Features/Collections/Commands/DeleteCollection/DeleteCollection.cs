@@ -1,8 +1,11 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Collections.Commands.DeleteCollection;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record DeleteCollectionCommand(Guid Id) : IRequest;
 
 public class DeleteCollectionCommandHandler(IApplicationDbContext context, IUser currentUser)

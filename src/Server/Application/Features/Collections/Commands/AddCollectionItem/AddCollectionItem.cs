@@ -1,10 +1,13 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Collections.Commands.CreateCollection;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Collections.Commands.AddCollectionItem;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record AddCollectionItemCommand : IRequest<Guid>
 {
     public required Guid CollectionId { get; init; }
