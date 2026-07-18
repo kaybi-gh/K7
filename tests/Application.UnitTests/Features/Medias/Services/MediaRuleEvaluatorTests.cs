@@ -331,6 +331,146 @@ public class MediaRuleEvaluatorTests
     }
 
     [Test]
+    public async Task ApplyFilter_EmptyGroup_ShouldReturnAllMedia()
+    {
+        var filter = new RuleGroup { MatchCondition = RuleMatchCondition.All, Items = [] };
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain([_inception.Id, _forrestGump.Id, _titanic.Id, _breakingBadPilot.Id]);
+    }
+
+    [Test]
+    public async Task ApplyFilter_EmptyNestedGroup_ShouldActAsAlwaysTrueBranch()
+    {
+        var filter = new RuleGroup
+        {
+            MatchCondition = RuleMatchCondition.All,
+            Items =
+            [
+                new NestedGroupItem { MatchCondition = RuleMatchCondition.Any, Items = [] }
+            ]
+        };
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain([_inception.Id, _forrestGump.Id, _titanic.Id]);
+    }
+
+    [Test]
+    public async Task ApplyFilter_DateAddedInLast_ShouldOnlyMatchRecentlyAddedMedia()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var recentMovie = CreateMovie("Recently Added Movie", "en");
+        recentMovie.Created = now;
+        var oldMovie = CreateMovie("Long Ago Movie", "en");
+        oldMovie.Created = now.AddDays(-90);
+        _context.Medias.AddRange(recentMovie, oldMovie);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(SmartPlaylistField.DateAdded), RuleOperator.InLast, "30");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain(recentMovie.Id);
+        ids.Should().NotContain(oldMovie.Id);
+    }
+
+    [Test]
+    public async Task ApplyFilter_DateAddedInLast_WithNonNumericValue_ShouldFallBackToMatchingEverything()
+    {
+        var filter = Rule(nameof(SmartPlaylistField.DateAdded), RuleOperator.InLast, "not-a-number");
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain([_inception.Id, _forrestGump.Id, _titanic.Id]);
+    }
+
+    [Test]
+    public async Task ApplyFilter_LastPlayedInLast_ShouldScopeToUserAndRecentInteraction()
+    {
+        var now = DateTime.UtcNow;
+        var recentlyPlayed = CreateMovie("Recently Played Movie", "en");
+        var notPlayedRecently = CreateMovie("Movie Played Long Ago", "en");
+        _context.Medias.AddRange(recentlyPlayed, notPlayedRecently);
+        _context.UserMediaStates.AddRange(
+            new UserMediaState
+            {
+                Id = Guid.NewGuid(),
+                UserId = _userA,
+                MediaId = recentlyPlayed.Id,
+                Media = recentlyPlayed,
+                LastInteractedAt = now.AddDays(-1),
+                Created = DateTimeOffset.UtcNow,
+                LastModified = DateTimeOffset.UtcNow
+            },
+            new UserMediaState
+            {
+                Id = Guid.NewGuid(),
+                UserId = _userA,
+                MediaId = notPlayedRecently.Id,
+                Media = notPlayedRecently,
+                LastInteractedAt = now.AddDays(-60),
+                Created = DateTimeOffset.UtcNow,
+                LastModified = DateTimeOffset.UtcNow
+            });
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(SmartPlaylistField.LastPlayed), RuleOperator.InLast, "7");
+        var idsForUserA = await ApplyAndGetIdsAsync(filter, userId: _userA);
+        var idsForUserB = await ApplyAndGetIdsAsync(filter, userId: _userB);
+
+        idsForUserA.Should().Contain(recentlyPlayed.Id);
+        idsForUserA.Should().NotContain(notPlayedRecently.Id);
+        idsForUserB.Should().NotContain(recentlyPlayed.Id);
+    }
+
+    [Test]
+    public async Task ApplyFilter_LastPlayedIsEmpty_ShouldExcludeMediaWithRecordedInteraction()
+    {
+        var now = DateTime.UtcNow;
+        var interacted = CreateMovie("Interacted Movie", "en");
+        var neverInteracted = CreateMovie("Never Interacted Movie", "en");
+        _context.Medias.AddRange(interacted, neverInteracted);
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userA,
+            MediaId = interacted.Id,
+            Media = interacted,
+            LastInteractedAt = now,
+            Created = DateTimeOffset.UtcNow,
+            LastModified = DateTimeOffset.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(SmartPlaylistField.LastPlayed), RuleOperator.IsEmpty, null);
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain(neverInteracted.Id);
+        ids.Should().NotContain(interacted.Id);
+    }
+
+    [Test]
+    public async Task ApplyFilter_YearIsEmpty_ShouldMatchMediaWithoutReleaseDate()
+    {
+        var filter = Rule(nameof(SmartPlaylistField.Year), RuleOperator.IsEmpty, null);
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain([_inception.Id, _forrestGump.Id, _titanic.Id]);
+    }
+
+    [Test]
+    public async Task ApplyFilter_UnknownField_ShouldMatchEverything()
+    {
+        var filter = Rule("SomeUnsupportedField", RuleOperator.Equals, "value");
+
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain([_inception.Id, _forrestGump.Id, _titanic.Id]);
+    }
+
+    [Test]
     public async Task ApplyFilter_CrewMember_ShouldNotMatchActorNameFilter()
     {
         var movie = new Movie
