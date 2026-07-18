@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq.Expressions;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
@@ -187,7 +188,7 @@ public static class MediaRuleEvaluator
         if (rule.Operator == RuleOperator.IsNotEmpty)
             return m => m.ReleaseDate != null;
 
-        if (!int.TryParse(rule.Value, out var year))
+        if (!int.TryParse(rule.Value, CultureInfo.InvariantCulture, out var year))
             return _ => true;
 
         return rule.Operator switch
@@ -287,7 +288,7 @@ public static class MediaRuleEvaluator
 
     private static Expression<Func<BaseMedia, bool>> BuildPlayCountPredicate(ConditionRuleItem rule, Guid? userId)
     {
-        if (userId is null || !int.TryParse(rule.Value, out var count))
+        if (userId is null || !int.TryParse(rule.Value, CultureInfo.InvariantCulture, out var count))
             return _ => true;
 
         var uid = userId.Value;
@@ -306,7 +307,7 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildDatePredicate(
         Expression<Func<BaseMedia, DateTimeOffset>> selector, ConditionRuleItem rule)
     {
-        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, out var days))
+        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, CultureInfo.InvariantCulture, out var days))
         {
             var threshold = DateTimeOffset.UtcNow.AddDays(-days);
             return Compose(selector, d => d >= threshold);
@@ -321,7 +322,7 @@ public static class MediaRuleEvaluator
             return _ => true;
 
         var uid = userId.Value;
-        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, out var days))
+        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, CultureInfo.InvariantCulture, out var days))
         {
             var threshold = DateTime.UtcNow.AddDays(-days);
             return m => m.UserMediaStates.Any(s => s.UserId == uid && s.LastInteractedAt >= threshold);
@@ -423,7 +424,7 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildNullableIntPredicate(
         Expression<Func<BaseMedia, int?>> selector, ConditionRuleItem rule)
     {
-        if (!int.TryParse(rule.Value, out var val))
+        if (!int.TryParse(rule.Value, CultureInfo.InvariantCulture, out var val))
             return _ => true;
 
         return rule.Operator switch

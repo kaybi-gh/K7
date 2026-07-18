@@ -141,6 +141,7 @@ public static class DependencyInjection
         services.AddHostedService<ServerMetricsWarmupService>();
         services.AddHostedService<AdminMetricsNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
+        services.AddHostedService<StreamSessionCleanupService>();
 
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
