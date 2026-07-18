@@ -10,6 +10,9 @@ public static class HomeLayoutRowTitleHelper
         if (HomeLayoutRowTitles.TryParseNewlyAddedIn(rowTitle, out var scope))
             return localizer["NewlyAddedIn", scope];
 
+        if (HomeLayoutRowTitles.TryParseBecauseYouWatched(rowTitle, out var seedTitle))
+            return localizer["BecauseYouWatched", seedTitle];
+
         return localizer[rowTitle];
     }
 }
