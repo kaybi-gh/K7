@@ -69,7 +69,9 @@ jobs:
         run: dotnet build K7.CI.slnf --configuration Release --no-restore
 
       - name: Verify formatting
-        run: dotnet format K7.CI.slnf --verify-no-changes --no-restore
+        run: >
+          dotnet format K7.CI.slnf --verify-no-changes --no-restore
+          --exclude **/Migrations/**
 
       - name: Test (fast)
         run: |

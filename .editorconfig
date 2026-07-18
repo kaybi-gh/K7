@@ -413,3 +413,8 @@ trim_trailing_whitespace = false
 
 [*.sh]
 end_of_line = lf
+
+# EF Core migrations are generated and keep block-scoped namespaces.
+[**/Migrations/*.cs]
+generated_code = true
+csharp_style_namespace_declarations = block_scoped:silent
