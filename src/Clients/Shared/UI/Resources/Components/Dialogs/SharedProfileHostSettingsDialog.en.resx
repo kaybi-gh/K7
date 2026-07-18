@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Description" xml:space="preserve"><value>Preferences for the shared profile "{0}". They apply when this profile is active, not personal settings.</value></data>
+  <data name="VideoPolicyTitle" xml:space="preserve"><value>Video continue watching</value></data>
+  <data name="MinResumePercent" xml:space="preserve"><value>Minimum resume percent</value></data>
+  <data name="MinResumeDurationSeconds" xml:space="preserve"><value>Minimum resume duration (seconds)</value></data>
+  <data name="CompletedThresholdPercent" xml:space="preserve"><value>Completed threshold percent</value></data>
+  <data name="ContinueWatchingMaxAgeDays" xml:space="preserve"><value>Continue watching max age (days)</value></data>
+  <data name="AudioPolicyTitle" xml:space="preserve"><value>Audio completion</value></data>
+  <data name="AudioCompletedThresholdPercent" xml:space="preserve"><value>Completed threshold percent</value></data>
+  <data name="AudioCompletedMinDurationSeconds" xml:space="preserve"><value>Completed minimum duration (seconds)</value></data>
+  <data name="RestrictionTitle" xml:space="preserve"><value>Content restrictions</value></data>
+  <data name="RestrictionProfile" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="PlaylistsTitle" xml:space="preserve"><value>Shared playlists</value></data>
+  <data name="PlaylistsDescription" xml:space="preserve"><value>Playlists shared here appear in navigation for members while this profile is active.</value></data>
+  <data name="NoPlaylists" xml:space="preserve"><value>You have no playlists to share yet.</value></data>
+</root>

@@ -2316,6 +2316,343 @@
         }
       }
     },
+    "/api/shared-profiles/{id}/video-playback-policy": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfileVideoPlaybackPolicyEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoPlaybackPolicySettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UpdateSharedProfileVideoPlaybackPolicyEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoPlaybackPolicySettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/audio-playback-policy": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfileAudioPlaybackPolicyEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioPlaybackPolicySettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UpdateSharedProfileAudioPlaybackPolicyEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioPlaybackPolicySettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/content-restriction": {
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "AssignSharedProfileContentRestrictionEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignSharedProfileContentRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/playlists": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfilePlaylistIdsEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/playlists/{playlistId}": {
+      "post": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "SharePlaylistToSharedProfileEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "playlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UnsharePlaylistFromSharedProfileEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "playlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/shared-profiles/{id}/home-layout": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetSharedProfileHomeLayoutEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UpdateSharedProfileHomeLayoutEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeLayoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "DeleteSharedProfileHomeLayoutEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/setup/complete": {
       "post": {
         "tags": [
@@ -4375,6 +4712,21 @@
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/MediaProvenance"
+            }
+          },
+          {
+            "name": "OriginPeerServerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "LocalOriginOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -9957,6 +10309,21 @@
           }
         }
       },
+      "AssignSharedProfileContentRestrictionRequest": {
+        "required": [
+          "contentRestrictionProfileId"
+        ],
+        "type": "object",
+        "properties": {
+          "contentRestrictionProfileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "AudioFileTrackDto": {
         "required": [
           "codec",
@@ -12324,10 +12691,22 @@
             ],
             "format": "uuid"
           },
+          "peerServerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "peerServerBaseUrl": {
             "type": [
               "null",
               "string"
+            ]
+          },
+          "peerReachable": {
+            "type": [
+              "null",
+              "boolean"
             ]
           },
           "introDetectionEnabled": {
@@ -18085,6 +18464,13 @@
               "null",
               "string"
             ]
+          },
+          "contentRestrictionProfileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "members": {
             "type": "array",

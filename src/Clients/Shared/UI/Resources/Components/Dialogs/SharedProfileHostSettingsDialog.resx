@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Description" xml:space="preserve"><value>Preferences du profil partage "{0}". Elles s'appliquent quand ce profil est actif, pas les reglages personnels.</value></data>
+  <data name="VideoPolicyTitle" xml:space="preserve"><value>Reprendre la lecture video</value></data>
+  <data name="MinResumePercent" xml:space="preserve"><value>Pourcentage minimum pour reprendre</value></data>
+  <data name="MinResumeDurationSeconds" xml:space="preserve"><value>Duree minimale pour reprendre (secondes)</value></data>
+  <data name="CompletedThresholdPercent" xml:space="preserve"><value>Seuil de completion (%)</value></data>
+  <data name="ContinueWatchingMaxAgeDays" xml:space="preserve"><value>Age max continuer a regarder (jours)</value></data>
+  <data name="AudioPolicyTitle" xml:space="preserve"><value>Completion audio</value></data>
+  <data name="AudioCompletedThresholdPercent" xml:space="preserve"><value>Seuil de completion (%)</value></data>
+  <data name="AudioCompletedMinDurationSeconds" xml:space="preserve"><value>Duree minimale de completion (secondes)</value></data>
+  <data name="RestrictionTitle" xml:space="preserve"><value>Restrictions de contenu</value></data>
+  <data name="RestrictionProfile" xml:space="preserve"><value>Profil de restriction</value></data>
+  <data name="PlaylistsTitle" xml:space="preserve"><value>Playlists partagees</value></data>
+  <data name="PlaylistsDescription" xml:space="preserve"><value>Les playlists partagees ici apparaissent dans la navigation des membres tant que ce profil est actif.</value></data>
+  <data name="NoPlaylists" xml:space="preserve"><value>Vous n'avez encore aucune playlist a partager.</value></data>
+</root>

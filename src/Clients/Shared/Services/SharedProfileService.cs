@@ -1,4 +1,6 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Shared.Dtos;
+using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
@@ -56,4 +58,40 @@ public class SharedProfileService(
 
     public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
         api.VerifySharedProfilePinAsync(group.Id, pin, cancellationToken);
+
+    public Task<VideoPlaybackPolicySettingsDto> GetVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.GetSharedProfileVideoPlaybackPolicyAsync(id, cancellationToken);
+
+    public Task UpdateVideoPlaybackPolicyAsync(Guid id, VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) =>
+        api.UpdateSharedProfileVideoPlaybackPolicyAsync(id, settings, cancellationToken);
+
+    public Task<AudioPlaybackPolicySettingsDto> GetAudioPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.GetSharedProfileAudioPlaybackPolicyAsync(id, cancellationToken);
+
+    public Task UpdateAudioPlaybackPolicyAsync(Guid id, AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) =>
+        api.UpdateSharedProfileAudioPlaybackPolicyAsync(id, settings, cancellationToken);
+
+    public async Task AssignContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default)
+    {
+        await api.AssignSharedProfileContentRestrictionAsync(id, contentRestrictionProfileId, cancellationToken);
+        await cache.RefreshAsync(cancellationToken);
+    }
+
+    public Task<IReadOnlyList<Guid>> GetPlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.GetSharedProfilePlaylistIdsAsync(id, cancellationToken);
+
+    public Task SharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default) =>
+        api.SharePlaylistToSharedProfileAsync(id, playlistId, cancellationToken);
+
+    public Task UnsharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default) =>
+        api.UnsharePlaylistFromSharedProfileAsync(id, playlistId, cancellationToken);
+
+    public Task<HomeLayoutDto?> GetHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.GetSharedProfileHomeLayoutAsync(id, cancellationToken);
+
+    public Task UpdateHomeLayoutAsync(Guid id, HomeLayoutDto layout, CancellationToken cancellationToken = default) =>
+        api.UpdateSharedProfileHomeLayoutAsync(id, layout, cancellationToken);
+
+    public Task DeleteHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.DeleteSharedProfileHomeLayoutAsync(id, cancellationToken);
 }

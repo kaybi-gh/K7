@@ -853,6 +853,39 @@ public sealed class MockSharedProfileService : ISharedProfileService
 
     public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
         Task.FromResult(true);
+
+    public Task<VideoPlaybackPolicySettingsDto> GetVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new VideoPlaybackPolicySettingsDto());
+
+    public Task UpdateVideoPlaybackPolicyAsync(Guid id, VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<AudioPlaybackPolicySettingsDto> GetAudioPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new AudioPlaybackPolicySettingsDto());
+
+    public Task UpdateAudioPlaybackPolicyAsync(Guid id, AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task AssignContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<IReadOnlyList<Guid>> GetPlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
+
+    public Task SharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task UnsharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<HomeLayoutDto?> GetHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult<HomeLayoutDto?>(null);
+
+    public Task UpdateHomeLayoutAsync(Guid id, HomeLayoutDto layout, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task DeleteHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }
 
 public sealed class MockSharedProfileSessionService : ISharedProfileSessionService

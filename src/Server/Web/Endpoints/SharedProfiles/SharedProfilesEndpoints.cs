@@ -1,13 +1,26 @@
+using K7.Server.Application.Features.SharedProfiles.Commands.AssignSharedProfileContentRestriction;
 using K7.Server.Application.Features.SharedProfiles.Commands.CreateSharedProfile;
 using K7.Server.Application.Features.SharedProfiles.Commands.DeleteSharedProfile;
+using K7.Server.Application.Features.SharedProfiles.Commands.DeleteSharedProfileHomeLayout;
 using K7.Server.Application.Features.SharedProfiles.Commands.LeaveSharedProfile;
 using K7.Server.Application.Features.SharedProfiles.Commands.SetSharedProfilePin;
+using K7.Server.Application.Features.SharedProfiles.Commands.SharePlaylistToSharedProfile;
+using K7.Server.Application.Features.SharedProfiles.Commands.UnsharePlaylistFromSharedProfile;
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfile;
+using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileAudioPlaybackPolicy;
+using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileHomeLayout;
+using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileVideoPlaybackPolicy;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileHomeLayout;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
 using K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileAudioPlaybackPolicy;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfilePlaylistIds;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileVideoPlaybackPolicy;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Infrastructure;
+using K7.Shared.Dtos;
+using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -188,3 +201,258 @@ public class VerifySharedProfilePinEndpoint : IEndpoint
 }
 
 public sealed record VerifySharedProfilePinRequest(string Pin);
+
+public sealed record AssignSharedProfileContentRestrictionRequest(Guid? ContentRestrictionProfileId);
+
+public class GetSharedProfileVideoPlaybackPolicyEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/{id:guid}/video-playback-policy", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+            await sender.Send(new GetSharedProfileVideoPlaybackPolicyQuery(id), cancellationToken))
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class UpdateSharedProfileVideoPlaybackPolicyEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPut("/api/shared-profiles/{id:guid}/video-playback-policy", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] VideoPlaybackPolicySettingsDto settings,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new UpdateSharedProfileVideoPlaybackPolicyCommand
+            {
+                SharedProfileId = id,
+                Settings = settings
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class GetSharedProfileAudioPlaybackPolicyEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/{id:guid}/audio-playback-policy", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+            await sender.Send(new GetSharedProfileAudioPlaybackPolicyQuery(id), cancellationToken))
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class UpdateSharedProfileAudioPlaybackPolicyEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPut("/api/shared-profiles/{id:guid}/audio-playback-policy", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] AudioPlaybackPolicySettingsDto settings,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new UpdateSharedProfileAudioPlaybackPolicyCommand
+            {
+                SharedProfileId = id,
+                Settings = settings
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class AssignSharedProfileContentRestrictionEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPut("/api/shared-profiles/{id:guid}/content-restriction", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] AssignSharedProfileContentRestrictionRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AssignSharedProfileContentRestrictionCommand
+            {
+                SharedProfileId = id,
+                ContentRestrictionProfileId = request.ContentRestrictionProfileId
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class GetSharedProfilePlaylistIdsEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/{id:guid}/playlists", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+            await sender.Send(new GetSharedProfilePlaylistIdsQuery(id), cancellationToken))
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class SharePlaylistToSharedProfileEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPost("/api/shared-profiles/{id:guid}/playlists/{playlistId:guid}", async (
+            [FromServices] ISender sender,
+            Guid id,
+            Guid playlistId,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new SharePlaylistToSharedProfileCommand
+            {
+                SharedProfileId = id,
+                PlaylistId = playlistId
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class UnsharePlaylistFromSharedProfileEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapDelete("/api/shared-profiles/{id:guid}/playlists/{playlistId:guid}", async (
+            [FromServices] ISender sender,
+            Guid id,
+            Guid playlistId,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new UnsharePlaylistFromSharedProfileCommand
+            {
+                SharedProfileId = id,
+                PlaylistId = playlistId
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class GetSharedProfileHomeLayoutEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/{id:guid}/home-layout", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new GetSharedProfileHomeLayoutQuery(id), cancellationToken);
+            return result is not null ? Results.Ok(result) : Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class UpdateSharedProfileHomeLayoutEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPut("/api/shared-profiles/{id:guid}/home-layout", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] HomeLayoutDto layout,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new UpdateSharedProfileHomeLayoutCommand
+            {
+                SharedProfileId = id,
+                Layout = layout
+            }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class DeleteSharedProfileHomeLayoutEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapDelete("/api/shared-profiles/{id:guid}/home-layout", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new DeleteSharedProfileHomeLayoutCommand(id), cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
