@@ -16,6 +16,7 @@ public class TMDbPersonCreditsProvider(
     public async Task<IReadOnlyList<ExternalPersonCredit>> GetPersonCreditsAsync(
         string providerId, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(tmdbClient, cancellationToken);
         var cacheKey = $"person-credits:tmdb:{providerId}";
         if (cache.TryGetValue(cacheKey, out IReadOnlyList<ExternalPersonCredit>? cached) && cached is not null)
             return cached;

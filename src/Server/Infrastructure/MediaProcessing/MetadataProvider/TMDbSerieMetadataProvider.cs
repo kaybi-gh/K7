@@ -44,6 +44,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
     public async Task<string?> SearchSerieAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         try
         {
             var year = identification.ReleaseYear.HasValue ? identification.ReleaseYear.Value.Year : 0;
@@ -64,6 +65,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(
         string query, int? year, string? providerId, K7.Server.Domain.Enums.MediaType? mediaType, string language, string? fallbackLanguage, CancellationToken cancellationToken)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Serie)
             return [];
 
@@ -107,6 +109,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(
         string providerId, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var show = await _tmdbClient.GetTvShowAsync(
             tmdbId,
@@ -156,6 +159,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     public async Task<ExternalSeasonMetadata> FetchSeasonMetadataAsync(
         string providerId, int seasonNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var season = await _tmdbClient.GetTvSeasonAsync(
             tmdbId,
@@ -202,6 +206,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     public async Task<ExternalEpisodeMetadata> FetchEpisodeMetadataAsync(
         string providerId, int seasonNumber, int episodeNumber, string language, CancellationToken cancellationToken = default, string? fallbackLanguage = null)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
         var episode = await _tmdbClient.GetTvEpisodeAsync(
             tmdbId,
@@ -243,6 +248,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     public async Task<(int Season, int Episode)?> ResolveAbsoluteEpisodeAsync(
         string providerId, int absoluteNumber, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         try
         {
             var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
@@ -508,6 +514,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
     public async Task<IReadOnlyList<ProviderImageDto>> GetImagesAsync(ImageProviderContext context, CancellationToken cancellationToken = default)
     {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         var results = new List<ProviderImageDto>();
         var tmdbId = await ResolveTmdbIdAsync(context.ProviderId, cancellationToken);
 
