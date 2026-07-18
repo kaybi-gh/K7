@@ -87,6 +87,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("KeyHash")
                         .IsUnique();
 
+                    b.HasIndex("KeyPrefix");
+
                     b.ToTable("ApiKeys");
                 });
 
@@ -3648,7 +3650,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .WithMany("IndexedFiles")
                         .HasForeignKey("MediaId");
 
-                    b.OwnsOne("K7.Server.Domain.ValueObjects.MediaIdentification", "Identification", b1 =>
+                    b.OwnsOne("K7.Server.Domain.Models.MediaIdentification", "Identification", b1 =>
                         {
                             b1.Property<Guid>("IndexedFileId")
                                 .HasColumnType("uuid");
