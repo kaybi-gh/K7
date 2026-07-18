@@ -91,6 +91,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities => Set<MediaLibraryAvailability>();
+    public DbSet<SyncPlayInvite> SyncPlayInvites => Set<SyncPlayInvite>();
 
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
         Database.BeginTransactionAsync(cancellationToken);

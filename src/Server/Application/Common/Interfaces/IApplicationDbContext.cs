@@ -74,6 +74,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<MediaMetadataTag> MediaMetadataTags { get; }
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities { get; }
+    DbSet<SyncPlayInvite> SyncPlayInvites { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using K7.Shared.Dtos;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Services;
@@ -16,7 +17,7 @@ public interface ISyncPlayCoordinator
     ReadyResult ReportReady(Guid groupId, Guid deviceId);
     SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position);
     SyncPlayGroupInfo? GetGroup(Guid groupId);
-    void CleanupStaleGroups();
+    Task CleanupStaleGroupsAsync(CancellationToken cancellationToken = default);
     bool AddToQueue(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item);
     bool SetCurrentMedia(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item);
     SyncPlayQueueItemDto? NavigateQueue(Guid groupId, Guid deviceId, bool forward);
@@ -26,10 +27,12 @@ public interface ISyncPlayCoordinator
     SyncPlayReactionDto? SendReaction(Guid groupId, Guid deviceId, string emoji);
     string? GenerateGuestToken(Guid groupId, string identityUserId);
     bool ValidateGuestToken(Guid groupId, string token);
-    string? GenerateInviteToken(Guid groupId, string identityUserId);
-    Guid? ResolveInviteToken(string token);
+    Task<string?> GenerateInviteTokenAsync(Guid groupId, string identityUserId, CancellationToken cancellationToken = default);
+    Task<Guid?> ResolveInviteTokenAsync(string token, CancellationToken cancellationToken = default);
     DisconnectResult DisconnectDevice(Guid deviceId);
     bool IsUserInAnyGroup(string identityUserId);
+    bool TryConsumeChatRateLimit(Guid groupId, Guid deviceId);
+    bool TryConsumeReactionRateLimit(Guid groupId, Guid deviceId);
 }
 
 public sealed record SyncPlayGroupInfo
@@ -43,6 +46,7 @@ public sealed record SyncPlayGroupInfo
     public double Duration { get; set; }
     public DateTime LastActivity { get; set; }
     public string? GuestToken { get; set; }
+    public DateTime? GuestTokenExpiresAtUtc { get; set; }
     public string? InviteToken { get; set; }
     public ConcurrentDictionary<Guid, SyncPlayMember> Members { get; } = new();
     public List<SyncPlayQueueItemDto> Queue { get; } = [];
@@ -102,14 +106,24 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 {
     private static readonly TimeSpan StaleThreshold = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan PlayAtBuffer = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan GuestTokenTtl = TimeSpan.FromHours(24);
+    private static readonly TimeSpan InviteRetention = TimeSpan.FromDays(7);
+    private static readonly TimeSpan ChatCooldown = TimeSpan.FromMilliseconds(750);
+    private static readonly TimeSpan ReactionCooldown = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>Configurable drift tolerance (seconds) before a correction is sent back to a reporting client.</summary>
+    private static readonly double DriftCorrectionThresholdSeconds = 2.0;
 
     private readonly ConcurrentDictionary<Guid, SyncPlayGroupInfo> _groups = new();
-    private readonly ConcurrentDictionary<string, Guid> _inviteTokens = new();
+    private readonly ConcurrentDictionary<(Guid GroupId, Guid DeviceId), DateTime> _lastChatSentUtc = new();
+    private readonly ConcurrentDictionary<(Guid GroupId, Guid DeviceId), DateTime> _lastReactionSentUtc = new();
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SyncPlayCoordinator> _logger;
 
-    public SyncPlayCoordinator(ILogger<SyncPlayCoordinator> logger)
+    public SyncPlayCoordinator(ILogger<SyncPlayCoordinator> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public SyncPlayGroupInfo CreateGroup(string identityUserId, Guid deviceId, string displayName, string deviceName, SyncPlayQueueItemDto? initialMedia = null, double initialPosition = 0, bool isPlaying = false)
@@ -183,13 +197,12 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         group.Members.TryRemove(deviceId, out var removedMember);
         group.LastActivity = DateTime.UtcNow;
 
+        _lastChatSentUtc.TryRemove((groupId, deviceId), out _);
+        _lastReactionSentUtc.TryRemove((groupId, deviceId), out _);
+
         if (group.Members.IsEmpty)
         {
             _groups.TryRemove(groupId, out _);
-            if (group.InviteToken is not null)
-            {
-                _inviteTokens.TryRemove(group.InviteToken, out _);
-            }
             return new DisconnectResult { GroupId = groupId, GroupDestroyed = true, DisconnectedDeviceId = deviceId };
         }
 
@@ -286,20 +299,26 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
 
     public SeekCorrection? ReportPosition(Guid groupId, Guid deviceId, double position)
     {
-        if (!TryGetMember(groupId, deviceId, out var group, out _))
+        if (!TryGetMember(groupId, deviceId, out var group, out var member))
             return null;
 
-        if (group.Members.TryGetValue(deviceId, out var member))
-        {
-            member.LastPosition = position;
-            member.LastActivityUtc = DateTime.UtcNow;
-        }
-
+        member.LastPosition = position;
+        member.LastActivityUtc = DateTime.UtcNow;
         group.LastActivity = DateTime.UtcNow;
 
-        // No server-side drift detection - sync happens only at state transitions (Play/Pause/Seek/PlayAt).
-        // Clients are trusted to maintain sync between transitions.
-        return null;
+        // Drift correction only applies while actively playing - Pause/SeekTo/PlayAt already
+        // resync everyone explicitly, so there is nothing to compare against otherwise.
+        if (group.State != SyncPlayGroupState.Playing || group.PlayStartedAtUtc is null)
+            return null;
+
+        var elapsed = (DateTime.UtcNow - group.PlayStartedAtUtc.Value).TotalSeconds;
+        var expectedPosition = group.PlayStartedAtPosition + elapsed;
+        var drift = Math.Abs(position - expectedPosition);
+
+        if (drift <= DriftCorrectionThresholdSeconds)
+            return null;
+
+        return new SeekCorrection(deviceId, expectedPosition);
     }
 
     public SyncPlayGroupInfo? GetGroup(Guid groupId)
@@ -308,18 +327,19 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return group;
     }
 
-    public void CleanupStaleGroups()
+    public async Task CleanupStaleGroupsAsync(CancellationToken cancellationToken = default)
     {
         var cutoff = DateTime.UtcNow - StaleThreshold;
         var staleGroups = _groups.Where(kv => kv.Value.LastActivity < cutoff).Select(kv => kv.Key).ToList();
 
         foreach (var key in staleGroups)
         {
-            if (_groups.TryRemove(key, out var removed) && removed.InviteToken is not null)
-            {
-                _inviteTokens.TryRemove(removed.InviteToken, out _);
-            }
+            _groups.TryRemove(key, out _);
         }
+
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var inviteStore = scope.ServiceProvider.GetRequiredService<ISyncPlayInviteStore>();
+        await inviteStore.PurgeOlderThanAsync(DateTimeOffset.UtcNow - InviteRetention, cancellationToken);
     }
 
     public bool AddToQueue(Guid groupId, Guid deviceId, SyncPlayQueueItemDto item)
@@ -468,10 +488,11 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (group.CreatorUserId != identityUserId)
             return null;
 
-        if (group.GuestToken is not null)
+        if (group.GuestToken is not null && group.GuestTokenExpiresAtUtc > DateTime.UtcNow)
             return group.GuestToken;
 
         group.GuestToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
+        group.GuestTokenExpiresAtUtc = DateTime.UtcNow.Add(GuestTokenTtl);
         return group.GuestToken;
     }
 
@@ -480,7 +501,10 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         if (!_groups.TryGetValue(groupId, out var group))
             return false;
 
-        return group.GuestToken is not null && group.GuestToken == token;
+        if (group.GuestToken is null || group.GuestToken != token)
+            return false;
+
+        return group.GuestTokenExpiresAtUtc is not null && group.GuestTokenExpiresAtUtc > DateTime.UtcNow;
     }
 
     public DisconnectResult DisconnectDevice(Guid deviceId)
@@ -496,7 +520,7 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
         return new DisconnectResult { GroupId = Guid.Empty, GroupDestroyed = false, DisconnectedDeviceId = deviceId };
     }
 
-    public string? GenerateInviteToken(Guid groupId, string identityUserId)
+    public async Task<string?> GenerateInviteTokenAsync(Guid groupId, string identityUserId, CancellationToken cancellationToken = default)
     {
         if (!_groups.TryGetValue(groupId, out var group))
             return null;
@@ -512,22 +536,57 @@ public class SyncPlayCoordinator : ISyncPlayCoordinator
             .Replace('/', '_')
             .TrimEnd('=');
 
+        await using (var scope = _scopeFactory.CreateAsyncScope())
+        {
+            var inviteStore = scope.ServiceProvider.GetRequiredService<ISyncPlayInviteStore>();
+            await inviteStore.AddAsync(token, groupId, identityUserId, cancellationToken);
+        }
+
         group.InviteToken = token;
-        _inviteTokens[token] = groupId;
         return token;
     }
 
-    public Guid? ResolveInviteToken(string token)
+    public async Task<Guid?> ResolveInviteTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        if (_inviteTokens.TryGetValue(token, out var groupId) && _groups.ContainsKey(groupId))
-            return groupId;
+        // Fast path: token already resolved and cached on an active in-memory group.
+        var cached = _groups.Values.FirstOrDefault(g => g.InviteToken == token);
+        if (cached is not null)
+            return cached.GroupId;
 
-        return null;
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var inviteStore = scope.ServiceProvider.GetRequiredService<ISyncPlayInviteStore>();
+        var groupId = await inviteStore.ResolveGroupIdAsync(token, cancellationToken);
+
+        // The invite record survives a restart, but the in-memory group does not -
+        // treat a resolved token pointing at a group that no longer exists as invalid.
+        return groupId is not null && _groups.ContainsKey(groupId.Value) ? groupId : null;
     }
 
     public bool IsUserInAnyGroup(string identityUserId)
     {
         return _groups.Values.Any(g => g.Members.Values.Any(m => m.IdentityUserId == identityUserId));
+    }
+
+    public bool TryConsumeChatRateLimit(Guid groupId, Guid deviceId) =>
+        TryConsumeRateLimit(_lastChatSentUtc, groupId, deviceId, ChatCooldown);
+
+    public bool TryConsumeReactionRateLimit(Guid groupId, Guid deviceId) =>
+        TryConsumeRateLimit(_lastReactionSentUtc, groupId, deviceId, ReactionCooldown);
+
+    private static bool TryConsumeRateLimit(
+        ConcurrentDictionary<(Guid GroupId, Guid DeviceId), DateTime> lastSentUtc,
+        Guid groupId,
+        Guid deviceId,
+        TimeSpan cooldown)
+    {
+        var key = (groupId, deviceId);
+        var now = DateTime.UtcNow;
+
+        if (lastSentUtc.TryGetValue(key, out var last) && now - last < cooldown)
+            return false;
+
+        lastSentUtc[key] = now;
+        return true;
     }
 
     private bool TryGetMember(

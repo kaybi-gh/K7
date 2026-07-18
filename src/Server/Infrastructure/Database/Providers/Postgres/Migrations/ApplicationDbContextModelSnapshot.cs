@@ -1984,6 +1984,40 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("StreamSessions");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.SyncPlayInvite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("SyncPlayInvites");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSession", b =>
                 {
                     b.Property<Guid>("Id")

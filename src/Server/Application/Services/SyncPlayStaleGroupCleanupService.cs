@@ -27,7 +27,7 @@ public class SyncPlayStaleGroupCleanupService : BackgroundService
             {
                 await Task.Delay(_cleanupInterval, stoppingToken);
                 _logger.LogDebug("Running SyncPlay stale group cleanup");
-                _syncPlayCoordinator.CleanupStaleGroups();
+                await _syncPlayCoordinator.CleanupStaleGroupsAsync(stoppingToken);
             }
             catch (OperationCanceledException)
             {
