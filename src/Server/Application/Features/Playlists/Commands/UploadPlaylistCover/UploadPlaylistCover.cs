@@ -1,12 +1,8 @@
-using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Playlists.Commands.UploadPlaylistCover;
 
@@ -20,14 +16,9 @@ public record UploadPlaylistCoverCommand : IRequest<Guid>
 
 public class UploadPlaylistCoverCommandHandler(
     IApplicationDbContext context,
-    ISender sender,
-    IOptions<PathsConfiguration> pathsConfiguration,
-    IUser currentUser,
-    ILogger<UploadPlaylistCoverCommandHandler> logger)
-    : IRequestHandler<UploadPlaylistCoverCommand, Guid>
+    ICoverPictureUploadService coverUpload,
+    IUser currentUser) : IRequestHandler<UploadPlaylistCoverCommand, Guid>
 {
-    private readonly PathsConfiguration _pathsConfiguration = pathsConfiguration.Value;
-
     public async Task<Guid> Handle(UploadPlaylistCoverCommand request, CancellationToken cancellationToken)
     {
         var playlist = await context.Playlists
@@ -37,7 +28,9 @@ public class UploadPlaylistCoverCommandHandler(
         Guard.Against.NotFound(request.PlaylistId, playlist);
 
         if (playlist.CoverPicture is not null)
+        {
             context.MetadataPictures.Remove(playlist.CoverPicture);
+        }
 
         var localPath = await ResolveLocalPathAsync(request, playlist.Id, cancellationToken);
 
@@ -54,13 +47,7 @@ public class UploadPlaylistCoverCommandHandler(
 
         if (request.FileStream is not null)
         {
-            await sender.Send(new CreateBackgroundTaskCommand
-            {
-                Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = picture.Id },
-                Priority = BackgroundTaskPriority.Normal,
-                TargetEntityId = picture.Id,
-                TargetEntityTypeName = nameof(MetadataPicture)
-            }, cancellationToken);
+            await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
         }
 
         return picture.Id;
@@ -73,33 +60,29 @@ public class UploadPlaylistCoverCommandHandler(
     {
         if (request.FileStream is not null && request.FileName is not null)
         {
-            var ext = Path.GetExtension(request.FileName);
-            var directory = Path.Combine(_pathsConfiguration.Metadatas, "playlists", $"{playlistId}");
-            Directory.CreateDirectory(directory);
-            var filePath = Path.Combine(directory, $"cover{ext}");
-
-            await using (var fs = File.Create(filePath))
-                await request.FileStream.CopyToAsync(fs, cancellationToken);
-
-            logger.LogInformation("Saved uploaded playlist cover for {PlaylistId} to {Path}", playlistId, filePath);
-            return _pathsConfiguration.ToRelativeMetadataPath(filePath);
+            return await coverUpload.SaveUploadedCoverAsync(
+                request.FileStream,
+                request.FileName,
+                "playlists",
+                playlistId,
+                cancellationToken);
         }
 
         if (request.SourcePictureId is not null)
         {
-            var source = await context.MetadataPictures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == request.SourcePictureId, cancellationToken);
+            return await coverUpload.ResolveSourcePicturePathAsync(
+                request.SourcePictureId.Value,
+                async (source, ct) =>
+                {
+                    var mediaInPlaylist = await context.PlaylistItems
+                        .AnyAsync(i => i.PlaylistId == playlistId && i.MediaId == source.MediaId, ct);
 
-            Guard.Against.NotFound(request.SourcePictureId.Value, source);
-
-            var mediaInPlaylist = await context.PlaylistItems
-                .AnyAsync(i => i.PlaylistId == playlistId && i.MediaId == source.MediaId, cancellationToken);
-
-            if (!mediaInPlaylist)
-                throw new ForbiddenAccessException();
-
-            return source.LocalPath ?? string.Empty;
+                    if (!mediaInPlaylist)
+                    {
+                        throw new ForbiddenAccessException();
+                    }
+                },
+                cancellationToken);
         }
 
         throw new ArgumentException("Either FileStream or SourcePictureId must be provided.");

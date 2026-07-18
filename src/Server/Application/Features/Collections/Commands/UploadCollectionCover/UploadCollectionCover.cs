@@ -1,14 +1,10 @@
-using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
-using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Features.MetadataPictures.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.Constants;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Collections.Commands.UploadCollectionCover;
 
@@ -23,14 +19,9 @@ public record UploadCollectionCoverCommand : IRequest<Guid>
 
 public class UploadCollectionCoverCommandHandler(
     IApplicationDbContext context,
-    ISender sender,
-    IOptions<PathsConfiguration> pathsConfiguration,
-    IUser currentUser,
-    ILogger<UploadCollectionCoverCommandHandler> logger)
-    : IRequestHandler<UploadCollectionCoverCommand, Guid>
+    ICoverPictureUploadService coverUpload,
+    IUser currentUser) : IRequestHandler<UploadCollectionCoverCommand, Guid>
 {
-    private readonly PathsConfiguration _pathsConfiguration = pathsConfiguration.Value;
-
     public async Task<Guid> Handle(UploadCollectionCoverCommand request, CancellationToken cancellationToken)
     {
         var collection = await context.Collections
@@ -40,7 +31,9 @@ public class UploadCollectionCoverCommandHandler(
         Guard.Against.NotFound(request.CollectionId, collection);
 
         if (collection.CoverPicture is not null)
+        {
             context.MetadataPictures.Remove(collection.CoverPicture);
+        }
 
         var localPath = await ResolveLocalPathAsync(request, collection.Id, cancellationToken);
 
@@ -57,13 +50,7 @@ public class UploadCollectionCoverCommandHandler(
 
         if (request.FileStream is not null)
         {
-            await sender.Send(new CreateBackgroundTaskCommand
-            {
-                Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = picture.Id },
-                Priority = BackgroundTaskPriority.Normal,
-                TargetEntityId = picture.Id,
-                TargetEntityTypeName = nameof(MetadataPicture)
-            }, cancellationToken);
+            await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
         }
 
         return picture.Id;
@@ -76,33 +63,29 @@ public class UploadCollectionCoverCommandHandler(
     {
         if (request.FileStream is not null && request.FileName is not null)
         {
-            var ext = Path.GetExtension(request.FileName);
-            var directory = Path.Combine(_pathsConfiguration.Metadatas, "collections", $"{collectionId}");
-            Directory.CreateDirectory(directory);
-            var filePath = Path.Combine(directory, $"cover{ext}");
-
-            await using (var fs = File.Create(filePath))
-                await request.FileStream.CopyToAsync(fs, cancellationToken);
-
-            logger.LogInformation("Saved uploaded collection cover for {CollectionId} to {Path}", collectionId, filePath);
-            return _pathsConfiguration.ToRelativeMetadataPath(filePath);
+            return await coverUpload.SaveUploadedCoverAsync(
+                request.FileStream,
+                request.FileName,
+                "collections",
+                collectionId,
+                cancellationToken);
         }
 
         if (request.SourcePictureId is not null)
         {
-            var source = await context.MetadataPictures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == request.SourcePictureId, cancellationToken);
+            return await coverUpload.ResolveSourcePicturePathAsync(
+                request.SourcePictureId.Value,
+                async (source, ct) =>
+                {
+                    var mediaInCollection = await context.CollectionItems
+                        .AnyAsync(i => i.CollectionId == collectionId && i.MediaId == source.MediaId, ct);
 
-            Guard.Against.NotFound(request.SourcePictureId.Value, source);
-
-            var mediaInCollection = await context.CollectionItems
-                .AnyAsync(i => i.CollectionId == collectionId && i.MediaId == source.MediaId, cancellationToken);
-
-            if (!mediaInCollection)
-                throw new ForbiddenAccessException();
-
-            return source.LocalPath ?? string.Empty;
+                    if (!mediaInCollection)
+                    {
+                        throw new ForbiddenAccessException();
+                    }
+                },
+                cancellationToken);
         }
 
         throw new ArgumentException("Either FileStream or SourcePictureId must be provided.");
