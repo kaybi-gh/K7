@@ -159,7 +159,7 @@ public partial class Movie : IAsyncDisposable
             isLoading = false;
 
         if (!isPicturesRefresh)
-            _ = LoadSimilarMediaAsync();
+            LoadSimilarMediaAsync().FireAndForget();
 
         if (isBackgroundRefresh && movie is not null)
             Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);

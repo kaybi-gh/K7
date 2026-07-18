@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
@@ -272,7 +273,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private void RequestRender()
     {
         _needsRender = true;
-        _ = InvokeAsync(StateHasChanged);
+        InvokeAsync(StateHasChanged).FireAndForget();
     }
 
     private void OnProgressKeyDown(KeyboardEventArgs e)

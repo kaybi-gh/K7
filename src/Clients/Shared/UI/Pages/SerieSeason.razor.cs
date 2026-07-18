@@ -201,7 +201,7 @@ public partial class SerieSeason : IAsyncDisposable
         if (_episodeCastCache.TryGetValue(episode.Id, out var cached))
             ApplyFocusedEpisodeCast(cached);
         else
-            _ = LoadFocusedEpisodeCastAsync(episode);
+            LoadFocusedEpisodeCastAsync(episode).FireAndForget();
 
         StateHasChanged();
     }

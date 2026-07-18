@@ -143,7 +143,7 @@ public partial class Person : IDisposable
 
         _loading = false;
 
-        _ = LoadKnownForAsync();
+        LoadKnownForAsync().FireAndForget();
     }
 
     private async Task LoadKnownForAsync()
@@ -278,7 +278,7 @@ public partial class Person : IDisposable
         if (_person is null || _person.Id != personId)
             return;
 
-        _ = InvokeAsync(ReloadPortraitAsync);
+        InvokeAsync(ReloadPortraitAsync).FireAndForget();
     }
 
     private async Task ReloadPortraitAsync()

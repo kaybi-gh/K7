@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -152,7 +153,7 @@ public partial class HomeView : IAsyncDisposable
         }
     }
 
-    private void OnFeedStoreChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnFeedStoreChanged() => InvokeAsync(StateHasChanged).FireAndForget();
 
     private IEnumerable<HomeFeedRow> GetVisibleRows() =>
         _rows.Where(r => r.Items.Count > 0 && (!r.Config.ContinueWatching || _canTrackProgress));

@@ -141,7 +141,7 @@ public partial class Serie : IAsyncDisposable
             _loading = false;
 
         if (!isPicturesRefresh)
-            _ = LoadSimilarMediaAsync();
+            LoadSimilarMediaAsync().FireAndForget();
 
         if (isBackgroundRefresh && media is SerieDto)
             Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
