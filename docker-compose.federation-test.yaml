@@ -15,8 +15,8 @@ services:
       - Authentication__Local__SignInEnabled=true
       - Authentication__Local__RegistrationEnabled=true
     volumes:
-      - "C:/k7/federation/data:/data:rw"
-      - "C:/k7/federation/media-a:/media:ro"
+      - "${K7_FED_DATA:-./.federation}/peer-a/data:/data:rw"
+      - "${K7_FED_DATA:-./.federation}/media-a:/media:ro"
 
   k7-peer-b:
     build: .
@@ -34,5 +34,5 @@ services:
       - Authentication__Local__SignInEnabled=true
       - Authentication__Local__RegistrationEnabled=true
     volumes:
-      - "C:/k7/federation/data:/data:rw"
-      - "C:/k7/federation/media-b:/media:ro"
+      - "${K7_FED_DATA:-./.federation}/peer-b/data:/data:rw"
+      - "${K7_FED_DATA:-./.federation}/media-b:/media:ro"
