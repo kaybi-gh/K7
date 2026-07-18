@@ -10889,6 +10889,34 @@
           }
         }
       },
+      "ChapterMarkerDto": {
+        "type": "object",
+        "properties": {
+          "startSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "endSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CharacterSearchResultDto": {
         "required": [
           "characterName"
@@ -11374,6 +11402,9 @@
             "type": "boolean"
           },
           "seekbarThumbnailGenerationEnabled": {
+            "type": "boolean"
+          },
+          "chapterExtractionEnabled": {
             "type": "boolean"
           },
           "musicAudioAnalysisEnabled": {
@@ -12256,6 +12287,15 @@
               }
             ]
           },
+          "chapters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ChapterMarkerDto"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -12715,6 +12755,9 @@
           "seekbarThumbnailGenerationEnabled": {
             "type": "boolean"
           },
+          "chapterExtractionEnabled": {
+            "type": "boolean"
+          },
           "musicAudioAnalysisEnabled": {
             "type": "boolean"
           },
@@ -12811,6 +12854,7 @@
           "unidentifiedIndexedFileCount",
           "missingFileMetadataCount",
           "missingHlsSegmentsCount",
+          "missingChaptersCount",
           "missingAudioAnalysisCount",
           "inaccessiblePathCount",
           "pendingBackgroundTaskCount",
@@ -12909,6 +12953,14 @@
             "format": "int32"
           },
           "missingHlsSegmentsCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingChaptersCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -19393,6 +19445,12 @@
               "boolean"
             ]
           },
+          "chapterExtractionEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
           "musicAudioAnalysisEnabled": {
             "type": [
               "null",
@@ -20323,6 +20381,9 @@
             "format": "double"
           },
           "showSeekbarThumbnails": {
+            "type": "boolean"
+          },
+          "showChapterTicks": {
             "type": "boolean"
           },
           "introSkipBehavior": {

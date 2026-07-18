@@ -20,6 +20,7 @@ public sealed record LibraryDto
     public bool? PeerReachable { get; init; }
     public bool IntroDetectionEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
+    public bool ChapterExtractionEnabled { get; init; } = true;
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;

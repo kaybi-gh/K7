@@ -5,6 +5,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Navigation;
@@ -140,7 +141,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             HasNoHlsSegments = f.FileMetadata != null
                 && f.FileMetadata.Type == FileType.Video
                 && _context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
-                && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
+                && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id),
+            HasNoChapters = f.FileMetadata != null
+                && f.FileMetadata.Type == FileType.Video
+                && _context.Libraries.Any(l => l.Id == f.LibraryId && l.ChapterExtractionEnabled)
+                && _context.FileMetadatas.OfType<VideoFileMetadata>()
+                    .Any(m => m.Id == f.FileMetadata.Id && m.Chapters == null)
         });
 
         var query = flags.Where(f => f.IsOrphan).Select(f => new IndexedFileIssueRow
@@ -162,6 +168,11 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.MissingHlsSegments, Severity = DiagnosticSeverity.Warning
+        }))
+        .Concat(flags.Where(f => f.HasNoChapters).Select(f => new IndexedFileIssueRow
+        {
+            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingChapters, Severity = DiagnosticSeverity.Warning
         }));
 
         if (request.Issue.HasValue)
@@ -272,9 +283,14 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 HasNoHlsSegments = f.FileMetadata != null
                     && f.FileMetadata.Type == FileType.Video
                     && _context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
-                    && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
+                    && !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id),
+                HasNoChapters = f.FileMetadata != null
+                    && f.FileMetadata.Type == FileType.Video
+                    && _context.Libraries.Any(l => l.Id == f.LibraryId && l.ChapterExtractionEnabled)
+                    && _context.FileMetadatas.OfType<VideoFileMetadata>()
+                        .Any(m => m.Id == f.FileMetadata.Id && m.Chapters == null)
             })
-            .Where(f => f.IsOrphan || f.IsUnidentified || f.HasNoFileMetadata || f.HasNoHlsSegments)
+            .Where(f => f.IsOrphan || f.IsUnidentified || f.HasNoFileMetadata || f.HasNoHlsSegments || f.HasNoChapters)
             .ToListAsync(cancellationToken);
 
         return files.Select(f =>
@@ -284,6 +300,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             if (f.IsUnidentified) issues.Add(DiagnosticIssue.UnidentifiedFile);
             if (f.HasNoFileMetadata) issues.Add(DiagnosticIssue.MissingFileMetadata);
             if (f.HasNoHlsSegments) issues.Add(DiagnosticIssue.MissingHlsSegments);
+            if (f.HasNoChapters) issues.Add(DiagnosticIssue.MissingChapters);
 
             var severity = issues.Contains(DiagnosticIssue.OrphanFile) || issues.Contains(DiagnosticIssue.MissingFileMetadata)
                 ? DiagnosticSeverity.Error

@@ -26,6 +26,7 @@ public record CreateLibraryCommand : IRequest<Guid>
     public string? GroupIcon { get; init; }
     public bool IntroDetectionEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
+    public bool ChapterExtractionEnabled { get; init; } = true;
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;
@@ -87,6 +88,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             LibraryGroupId = libraryGroupId,
             IntroDetectionEnabled = request.IntroDetectionEnabled,
             SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled,
+            ChapterExtractionEnabled = request.ChapterExtractionEnabled,
             MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled,
             TranscodingEnabled = request.TranscodingEnabled,
             TransmuxingEnabled = request.TransmuxingEnabled,

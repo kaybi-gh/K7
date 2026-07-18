@@ -863,6 +863,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(6);
 
+                    b.Property<bool>("ChapterExtractionEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -3239,6 +3244,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", b =>
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata");
+
+                    b.Property<string>("Chapters")
+                        .HasColumnType("text");
 
                     b.Property<TimeSpan>("Duration")
                         .HasColumnType("interval");

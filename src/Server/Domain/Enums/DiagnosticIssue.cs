@@ -13,5 +13,6 @@ public enum DiagnosticIssue
     MissingAudioAnalysis,
     MissingFiles,
     InaccessiblePath,
-    MissingMembers
+    MissingMembers,
+    MissingChapters
 }

@@ -251,7 +251,8 @@ public partial class NextEpisodeOverlay : IDisposable
             videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString(),
-            nextEpisodeId);
+            nextEpisodeId,
+            chapters: videoMetadata.Chapters);
 
         StateHasChanged();
     }

@@ -10,6 +10,7 @@ public sealed record UpdateLibraryRequest
     public Guid? LibraryGroupId { get; init; }
     public bool? IntroDetectionEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
+    public bool? ChapterExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }

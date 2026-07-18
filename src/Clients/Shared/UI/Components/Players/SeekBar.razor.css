@@ -33,7 +33,9 @@
 }
 
 .seekbar-container:hover .seekbar-track,
-.seekbar-container:focus-within .seekbar-track {
+.seekbar-container:focus-within .seekbar-track,
+.seekbar-container:hover .chapter-segment,
+.seekbar-container:focus-within .chapter-segment {
     height: 8px;
 }
 
@@ -75,7 +77,9 @@
 
 .seekbar-container.scrubbing .seekbar-track .progress,
 .seekbar-container.scrubbing .seekbar-track .buffered,
-.seekbar-container.scrubbing .thumb {
+.seekbar-container.scrubbing .thumb,
+.seekbar-container.scrubbing .chapter-progress,
+.seekbar-container.scrubbing .chapter-buffered {
     transition: none;
 }
 
@@ -127,18 +131,19 @@
     white-space: nowrap;
 }
 
-.chapter-segment-container {
+.seekbar-chapters {
     position: absolute;
-    height: 24px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    overflow: visible;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
 }
 
-    .chapter-segment-container:hover .chapter-segment,
-    .chapter-segment-container:focus-within .chapter-segment {
-        height: 8px;
-    }
+.chapter-segment-container {
+    position: absolute;
+    top: 0;
+    height: 24px;
+    overflow: visible;
+}
 
 .chapter-segment {
     position: absolute;

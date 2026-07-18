@@ -1,7 +1,12 @@
 using System.Globalization;
 using System.Timers;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared;
+using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -19,6 +24,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     [Parameter] public bool SyncPlaySidebarOpen { get; set; }
     [Parameter] public ElementReference ContainerRef { get; set; }
 
+    private bool _showChapterTicks = true;
+    private IReadOnlyList<MediaSegmentDto>? _mediaSegments;
+    private Guid? _segmentsMediaId;
     private DeviceType _deviceType;
     private bool _showOverlay = true;
     private bool _isMenuOpen = false;
@@ -113,6 +121,16 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     protected override async Task OnInitializedAsync()
     {
         _deviceType = await DeviceService.GetDeviceTypeAsync();
+        try
+        {
+            var settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            _showChapterTicks = settings.ShowChapterTicks;
+        }
+        catch
+        {
+            _showChapterTicks = true;
+        }
+
         var initialTimeout = _deviceType == DeviceType.TV ? _overlayTimeoutTv : _overlayTimeoutDesktop;
         _overlayVisibleTimer = new System.Timers.Timer(initialTimeout) { AutoReset = false };
         _overlayVisibleTimer.Elapsed += OnOverlayTimerElapsed;
@@ -140,6 +158,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.QualityChanged += OnQualityChanged;
         PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
         PlayerService.BackPressed += OnBackPressed;
+        PlayerService.SourceChanged += OnSourceChanged;
+        await EnsureMediaSegmentsLoadedAsync(PlayerService.Source?.MediaId);
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
@@ -722,6 +742,49 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         }
     }
 
+    private void OnSourceChanged(PlayerSource source) =>
+        _ = EnsureMediaSegmentsLoadedAsync(source.MediaId);
+
+    private async Task EnsureMediaSegmentsLoadedAsync(Guid? mediaId)
+    {
+        if (mediaId == _segmentsMediaId)
+            return;
+
+        _segmentsMediaId = mediaId;
+        _mediaSegments = null;
+
+        if (mediaId is null)
+        {
+            RequestRender();
+            return;
+        }
+
+        try
+        {
+            _mediaSegments = await MediaService.GetMediaSegmentsAsync(mediaId.Value);
+        }
+        catch
+        {
+            _mediaSegments = null;
+        }
+
+        RequestRender();
+    }
+
+    private List<SeekBar.Chapter> GetSeekBarChapters()
+    {
+        var markers = SeekBarChapterBuilder.Build(
+            _showChapterTicks,
+            PlayerService.Source?.Chapters,
+            _mediaSegments,
+            S["Intro"],
+            S["Outro"]);
+
+        return markers
+            .Select(m => new SeekBar.Chapter { Title = m.Title, Start = m.StartSeconds })
+            .ToList();
+    }
+
     private void OnControlsBarMouseEnter(MouseEventArgs args)
     {
         if (ShouldIgnoreMouseOverlayShow())
@@ -939,6 +1002,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.QualityChanged -= OnQualityChanged;
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
         PlayerService.BackPressed -= OnBackPressed;
+        PlayerService.SourceChanged -= OnSourceChanged;
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);

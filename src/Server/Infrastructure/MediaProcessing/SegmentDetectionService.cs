@@ -1,6 +1,5 @@
-using System.Globalization;
-using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Globalization;
 using FFMpegCore;
 using K7.Server.Application.Common.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -145,36 +144,8 @@ public partial class SegmentDetectionService(ILogger<SegmentDetectionService> lo
     {
         try
         {
-            var stdoutLines = new List<string>();
-            var ffprobePath = GlobalFFOptions.GetFFProbeBinaryPath();
-
-            var exitCode = await SafeProcessRunner.RunAsync(
-                ffprobePath,
-                $"-v quiet -print_format json -show_chapters \"{filePath}\"",
-                onStdout: line => stdoutLines.Add(line),
-                timeout: TimeSpan.FromSeconds(30),
-                cancellationToken: cancellationToken);
-
-            if (exitCode != 0)
-                return [];
-
-            var json = string.Join("", stdoutLines);
-            using var doc = JsonDocument.Parse(json);
-
-            var results = new List<double>();
-            if (doc.RootElement.TryGetProperty("chapters", out var chapters))
-            {
-                foreach (var chapter in chapters.EnumerateArray())
-                {
-                    if (chapter.TryGetProperty("start_time", out var startTime) &&
-                        double.TryParse(startTime.GetString(), CultureInfo.InvariantCulture, out var time))
-                    {
-                        results.Add(time);
-                    }
-                }
-            }
-
-            return results.OrderBy(t => t).ToList();
+            var chapters = await ChapterProbe.ReadAsync(filePath, cancellationToken);
+            return chapters.Select(c => c.StartSeconds).ToList();
         }
         catch (Exception ex)
         {

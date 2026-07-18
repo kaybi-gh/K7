@@ -886,6 +886,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(6);
 
+                    b.Property<bool>("ChapterExtractionEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Created")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -3309,6 +3314,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", b =>
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata");
+
+                    b.Property<string>("Chapters")
+                        .HasColumnType("text");
 
                     b.Property<TimeSpan>("Duration")
                         .HasColumnType("TEXT");

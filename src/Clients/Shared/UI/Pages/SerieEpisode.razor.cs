@@ -204,7 +204,8 @@ public partial class SerieEpisode : IAsyncDisposable
             _episode.Id,
             episodeTitle,
             _stillUrl,
-            startPosition);
+            startPosition,
+            videoMetadata.Chapters);
     }
 
     private async Task OpenEditMetadataAsync()

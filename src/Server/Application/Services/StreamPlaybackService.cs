@@ -66,6 +66,12 @@ public sealed class StreamPlaybackService(
             await HlsSegmentHelper.QueueSegmentComputationIfMissingAsync(sender, query.Id, logger, cancellationToken);
         }
 
+        if (ChapterExtractionHelper.NeedsExtraction(videoFileMetadata))
+        {
+            await ChapterExtractionHelper.EnsureChaptersAsync(context, sender, query.Id, logger, cancellationToken);
+            await context.Entry(videoFileMetadata).ReloadAsync(cancellationToken);
+        }
+
         var subtitleTrackIndex = query.SubtitleTrackIndex;
         if (query.AudioTrackIndex is null)
         {

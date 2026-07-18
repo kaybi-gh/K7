@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Diagnostics.Services;
@@ -16,6 +17,7 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
         {
             DiagnosticIssue.MissingFileMetadata => await GetIndexedFileIdsMissingFileMetadataAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingHlsSegments => await GetIndexedFileIdsMissingHlsSegmentsAsync(libraryId, cancellationToken),
+            DiagnosticIssue.MissingChapters => await GetIndexedFileIdsMissingChaptersAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingAudioAnalysis => await GetMusicTrackIdsMissingAudioAnalysisAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingPictures => await GetMediaIdsMissingPicturesAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingMetadata => await GetMediaIdsMissingMetadataAsync(libraryId, cancellationToken),
@@ -56,6 +58,25 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
                 && f.FileMetadata.Type == FileType.Video
                 && context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled)
                 && !context.HlsSegments.Any(s => s.IndexedFileId == f.Id)
+                && NonFederatedLibraryIds().Contains(f.LibraryId));
+
+        if (libraryId.HasValue)
+            query = query.Where(f => f.LibraryId == libraryId.Value);
+
+        return await query.Select(f => f.Id).ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<Guid>> GetIndexedFileIdsMissingChaptersAsync(
+        Guid? libraryId,
+        CancellationToken cancellationToken)
+    {
+        var query = context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.FileMetadata != null
+                && f.FileMetadata.Type == FileType.Video
+                && context.Libraries.Any(l => l.Id == f.LibraryId && l.ChapterExtractionEnabled)
+                && context.FileMetadatas.OfType<VideoFileMetadata>()
+                    .Any(m => m.Id == f.FileMetadata!.Id && m.Chapters == null)
                 && NonFederatedLibraryIds().Contains(f.LibraryId));
 
         if (libraryId.HasValue)

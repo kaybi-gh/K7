@@ -39,6 +39,8 @@
   <data name="UnidentifiedFiles" xml:space="preserve"><value>Unidentified files</value></data>
   <data name="MissingFileMetadata" xml:space="preserve"><value>Missing file metadata</value></data>
   <data name="MissingHlsSegments" xml:space="preserve"><value>Missing HLS segments</value></data>
+  <data name="MissingChapters" xml:space="preserve"><value>Chapters not extracted</value></data>
+  <data name="ActionExtractChapters" xml:space="preserve"><value>Extract chapters</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Missing audio analysis</value></data>
   <data name="MissingMembers" xml:space="preserve"><value>Missing members</value></data>
   <data name="BackgroundTasksSection" xml:space="preserve"><value>Background tasks</value></data>

@@ -10,6 +10,8 @@ public partial class LibraryProcessingSettingsSection
     [Parameter] public EventCallback<bool> IntroDetectionEnabledChanged { get; set; }
     [Parameter] public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
     [Parameter] public EventCallback<bool> SeekbarThumbnailGenerationEnabledChanged { get; set; }
+    [Parameter] public bool ChapterExtractionEnabled { get; set; } = true;
+    [Parameter] public EventCallback<bool> ChapterExtractionEnabledChanged { get; set; }
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
     [Parameter] public EventCallback<bool> MusicAudioAnalysisEnabledChanged { get; set; }
     [Parameter] public bool TranscodingEnabled { get; set; } = true;
@@ -23,6 +25,7 @@ public partial class LibraryProcessingSettingsSection
     private bool ShowAny =>
         LibraryProcessingSettingsDto.ShowIntroDetection(MediaType)
         || LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType)
+        || LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType)
         || LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType)
         || LibraryProcessingSettingsDto.ShowTranscodeOptions(MediaType);
 }

@@ -1,8 +1,13 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
+using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.StreamSessions.Commands.CreateStreamSession;
 
@@ -13,30 +18,32 @@ public record CreateStreamSessionCommand : IRequest<StreamingSessionDto>
     public int? AudioTrackIndex { get; init; }
 };
 
-public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSessionCommand, StreamingSessionDto>
+public class CreateStreamSessionCommandHandler(
+    IApplicationDbContext context,
+    IUser user,
+    IMediaAccessGuard accessGuard,
+    ISender sender,
+    ILogger<CreateStreamSessionCommandHandler> logger) : IRequestHandler<CreateStreamSessionCommand, StreamingSessionDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IUser _user;
-    private readonly IMediaAccessGuard _accessGuard;
-
-    public CreateStreamSessionCommandHandler(IApplicationDbContext context, IUser user, IMediaAccessGuard accessGuard)
-    {
-        _context = context;
-        _user = user;
-        _accessGuard = accessGuard;
-    }
-
     public async Task<StreamingSessionDto> Handle(CreateStreamSessionCommand command, CancellationToken cancellationToken)
     {
-        await _accessGuard.EnsureAccessByIndexedFileAsync(command.IndexedFileId, cancellationToken);
-        var indexedFile = await _context.IndexedFiles
+        await accessGuard.EnsureAccessByIndexedFileAsync(command.IndexedFileId, cancellationToken);
+        var indexedFile = await context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == command.IndexedFileId, cancellationToken);
 
         Guard.Against.NotFound(command.IndexedFileId, indexedFile);
 
-        var device = await _context.Devices.FindAsync([command.DeviceId], cancellationToken);
+        var device = await context.Devices.FindAsync([command.DeviceId], cancellationToken);
         Guard.Against.NotFound(command.DeviceId, device);
+
+        if (indexedFile.FileMetadata is VideoFileMetadata videoMetadata
+            && ChapterExtractionHelper.NeedsExtraction(videoMetadata))
+        {
+            await ChapterExtractionHelper.EnsureChaptersAsync(
+                context, sender, command.IndexedFileId, logger, cancellationToken);
+            await context.Entry(indexedFile).Reference(f => f.FileMetadata).LoadAsync(cancellationToken);
+        }
 
         var playbackSettings = new PlaybackSettingsDto();
 
@@ -45,14 +52,25 @@ public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSes
             Id = Guid.NewGuid(),
             IndexedFileId = command.IndexedFileId,
             DeviceId = command.DeviceId,
-            UserId = _user.Id,
+            UserId = user.Id,
             State = Domain.Enums.PlaybackState.Idle,
             Position = 0,
             PlaybackSettingsJson = JsonSerializer.Serialize(playbackSettings)
         };
 
-        _context.StreamSessions.Add(session);
-        await _context.SaveChangesAsync(cancellationToken);
+        context.StreamSessions.Add(session);
+        await context.SaveChangesAsync(cancellationToken);
+
+        IReadOnlyList<ChapterMarkerDto>? chapters = null;
+        if (indexedFile.FileMetadata is VideoFileMetadata vfm && vfm.Chapters is not null)
+        {
+            chapters = vfm.Chapters.Select(c => new ChapterMarkerDto
+            {
+                StartSeconds = c.StartSeconds,
+                EndSeconds = c.EndSeconds,
+                Title = c.Title
+            }).ToList();
+        }
 
         return new StreamingSessionDto
         {
@@ -60,7 +78,8 @@ public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSes
             IndexedFileId = session.IndexedFileId!.Value,
             State = session.State,
             Position = session.Position,
-            PlaybackSettings = playbackSettings
+            PlaybackSettings = playbackSettings,
+            Chapters = chapters
         };
     }
 }

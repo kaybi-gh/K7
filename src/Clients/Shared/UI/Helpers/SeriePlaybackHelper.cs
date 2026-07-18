@@ -82,7 +82,8 @@ internal static class SeriePlaybackHelper
                 episode.Id,
                 episodeTitle,
                 coverUrl,
-                startPosition);
+                startPosition,
+                videoMetadata.Chapters);
 
             return;
         }

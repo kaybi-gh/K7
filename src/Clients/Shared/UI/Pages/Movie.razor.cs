@@ -240,7 +240,7 @@ public partial class Movie : IAsyncDisposable
             startPosition = _movie.UserState.LastPlaybackPosition;
         }
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl, startPosition);
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl, startPosition, videoMetadata.Chapters);
     }
 
     private bool HasPlayableFiles()

@@ -46,6 +46,26 @@ public class CreateFileMetadatasCommandHandler(
             _ => throw new NotImplementedException(),
         };
 
+        if (fileMetadata is VideoFileMetadata videoMetadata)
+        {
+            var library = await context.Libraries
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == indexedFile.LibraryId, cancellationToken);
+
+            if (library?.ChapterExtractionEnabled == true)
+            {
+                try
+                {
+                    videoMetadata.Chapters = await mediaAnalysisService.GetChaptersAsync(indexedFile.Path, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Chapter extraction failed for IndexedFile {IndexedFileId}", indexedFile.Id);
+                    videoMetadata.Chapters = [];
+                }
+            }
+        }
+
         // Clear existing file metadatas
         if (indexedFile.FileMetadata is AudioFileMetadata afm)
         {

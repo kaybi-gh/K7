@@ -80,6 +80,9 @@ public class MediaAnalysisService : IMediaAnalysisService
         return fileMetadata;
     }
 
+    public async Task<List<ChapterMarker>> GetChaptersAsync(string filePath, CancellationToken cancellationToken = default)
+        => await ChapterProbe.ReadAsync(filePath, cancellationToken);
+
     private static string GetMediaContainer(string filePath, string formatName)
     {
         var formats = formatName.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);

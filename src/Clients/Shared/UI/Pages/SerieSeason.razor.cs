@@ -302,7 +302,8 @@ public partial class SerieSeason : IAsyncDisposable
                 episode.Id,
                 episodeTitle,
                 coverUrl,
-                startPosition);
+                startPosition,
+                videoMetadata.Chapters);
             return;
         }
 

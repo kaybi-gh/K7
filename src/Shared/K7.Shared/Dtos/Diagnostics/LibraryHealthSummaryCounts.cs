@@ -31,6 +31,7 @@ public static class LibraryHealthSummaryCounts
     [
         DiagnosticIssue.UnidentifiedFile,
         DiagnosticIssue.MissingHlsSegments,
+        DiagnosticIssue.MissingChapters,
         DiagnosticIssue.MissingPictures,
         DiagnosticIssue.MissingMetadata,
         DiagnosticIssue.MissingExternalId,
@@ -47,7 +48,7 @@ public static class LibraryHealthSummaryCounts
         summaries.Sum(l => l.OrphanIndexedFileCount + l.MediaWithoutFilesCount + l.MissingFileMetadataCount);
 
     public static int SumWarnings(IEnumerable<LibraryHealthSummaryDto> summaries) =>
-        summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount
+        summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount + l.MissingChaptersCount
             + l.MediaMissingPicturesCount + l.MediaMissingExternalIdCount + l.MediaMissingMetadataCount
             + l.StaleMetadataCount + l.InaccessiblePathCount);
 
@@ -59,7 +60,7 @@ public static class LibraryHealthSummaryCounts
 
     public static int SumLibraryIssues(LibraryHealthSummaryDto summary) =>
         summary.OrphanIndexedFileCount + summary.UnidentifiedIndexedFileCount + summary.MissingFileMetadataCount
-        + summary.MissingHlsSegmentsCount + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
+        + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
         + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
         + summary.MissingAudioAnalysisCount + summary.InaccessiblePathCount;
 
@@ -148,7 +149,7 @@ public static class LibraryHealthSummaryCounts
     private static bool IssueBelongsToEntityType(DiagnosticIssue issue, DiagnosticEntityType entityType) => entityType switch
     {
         DiagnosticEntityType.IndexedFile => issue is DiagnosticIssue.OrphanFile or DiagnosticIssue.UnidentifiedFile
-            or DiagnosticIssue.MissingFileMetadata or DiagnosticIssue.MissingHlsSegments,
+            or DiagnosticIssue.MissingFileMetadata or DiagnosticIssue.MissingHlsSegments or DiagnosticIssue.MissingChapters,
         DiagnosticEntityType.Media => issue is DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingExternalId
             or DiagnosticIssue.MissingMetadata or DiagnosticIssue.MissingFiles or DiagnosticIssue.StaleMetadata
             or DiagnosticIssue.MissingAudioAnalysis,
@@ -162,6 +163,7 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.UnidentifiedFile => summary.UnidentifiedIndexedFileCount,
         DiagnosticIssue.MissingFileMetadata => summary.MissingFileMetadataCount,
         DiagnosticIssue.MissingHlsSegments => summary.MissingHlsSegmentsCount,
+        DiagnosticIssue.MissingChapters => summary.MissingChaptersCount,
         DiagnosticIssue.MissingPictures => summary.MediaMissingPicturesCount,
         DiagnosticIssue.MissingMetadata => summary.MediaMissingMetadataCount,
         DiagnosticIssue.MissingExternalId => summary.MediaMissingExternalIdCount,
@@ -175,7 +177,7 @@ public static class LibraryHealthSummaryCounts
     private static int CountEntityType(LibraryHealthSummaryDto summary, DiagnosticEntityType entityType) => entityType switch
     {
         DiagnosticEntityType.IndexedFile => summary.OrphanIndexedFileCount + summary.UnidentifiedIndexedFileCount
-            + summary.MissingFileMetadataCount + summary.MissingHlsSegmentsCount,
+            + summary.MissingFileMetadataCount + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount,
         DiagnosticEntityType.Media => summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
             + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
             + summary.MissingAudioAnalysisCount,

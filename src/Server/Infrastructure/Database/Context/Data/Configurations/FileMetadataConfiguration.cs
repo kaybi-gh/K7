@@ -1,8 +1,10 @@
-﻿using K7.Server.Domain.Entities.Metadatas.Files;
+﻿using System.Text.Json;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace K7.Server.Infrastructure.Database.Context.Data.Configurations;
 
@@ -58,5 +60,13 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .WithOne()
             .HasForeignKey(x => x.FileMetadataId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        var chaptersConverter = new ValueConverter<List<ChapterMarker>?, string?>(
+            v => v == null ? null : JsonSerializer.Serialize(v),
+            v => v == null ? null : JsonSerializer.Deserialize<List<ChapterMarker>>(v) ?? new List<ChapterMarker>());
+
+        builder.Property(x => x.Chapters)
+            .HasConversion(chaptersConverter)
+            .HasColumnType("text");
     }
 }

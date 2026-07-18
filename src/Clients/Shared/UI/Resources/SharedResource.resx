@@ -164,4 +164,6 @@
   <data name="NoSimilarTracks" xml:space="preserve"><value>Aucun morceau similaire trouve</value></data>
   <data name="PlayingSimilar" xml:space="preserve"><value>Lecture de morceaux similaires a {0}</value></data>
   <data name="SimilarTracksError" xml:space="preserve"><value>Erreur lors de la recherche de morceaux similaires</value></data>
+  <data name="Intro" xml:space="preserve"><value>Intro</value></data>
+  <data name="Outro" xml:space="preserve"><value>Outro</value></data>
 </root>

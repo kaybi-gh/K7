@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
+using K7.Server.Application.Features.IndexedFiles.Commands.ExtractChapters;
 using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
@@ -70,6 +71,18 @@ public class FixDiagnosticItemsCommandHandler(
                             TargetEntityTypeName = nameof(IndexedFile),
                             MaxAttempts = 1,
                             ConcurrencyGroup = "hls-segments"
+                        }, cancellationToken);
+                        break;
+
+                    case DiagnosticFixAction.ExtractChapters:
+                        await sender.Send(new CreateBackgroundTaskCommand
+                        {
+                            Request = new ExtractChaptersCommand { Id = entityId },
+                            Priority = BackgroundTaskPriority.Normal,
+                            TargetEntityId = entityId,
+                            TargetEntityTypeName = nameof(IndexedFile),
+                            MaxAttempts = 3,
+                            ConcurrencyGroup = "ffprobe"
                         }, cancellationToken);
                         break;
 

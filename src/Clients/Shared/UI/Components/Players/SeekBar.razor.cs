@@ -293,6 +293,28 @@ public partial class SeekBar : IAsyncDisposable
         return null;
     }
 
+    private const double ChapterGapPx = 3;
+
+    private List<ChapterSegment> GetChapterSegments()
+    {
+        var duration = PlayerService.Duration;
+        if (duration <= 0 || Chapters.Count == 0)
+            return [];
+
+        var segments = new List<ChapterSegment>();
+        for (var i = 0; i < Chapters.Count; i++)
+        {
+            var start = Chapters[i].Start;
+            var end = (i + 1 < Chapters.Count) ? Chapters[i + 1].Start : duration;
+            if (end <= start)
+                continue;
+
+            segments.Add(new ChapterSegment(start, end, Chapters[i].Title));
+        }
+
+        return segments;
+    }
+
     private void OnDurationChanged(double duration)
     {
         RequestRender();
@@ -346,6 +368,11 @@ public partial class SeekBar : IAsyncDisposable
     {
         public string? Title { get; set; }
         public double Start { get; set; }
+    }
+
+    private readonly record struct ChapterSegment(double Start, double End, string? Title)
+    {
+        public double Duration => End - Start;
     }
 }
 

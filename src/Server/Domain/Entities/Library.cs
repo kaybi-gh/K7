@@ -15,6 +15,7 @@ public class Library : BaseAuditableEntity
 
     public bool IntroDetectionEnabled { get; set; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
+    public bool ChapterExtractionEnabled { get; set; } = true;
     public bool MusicAudioAnalysisEnabled { get; set; } = true;
     public bool TranscodingEnabled { get; set; } = true;
     public bool TransmuxingEnabled { get; set; } = true;

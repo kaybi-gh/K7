@@ -25,5 +25,7 @@
   <data name="Transcoding" xml:space="preserve"><value>Transcoding</value></data>
   <data name="Transmuxing" xml:space="preserve"><value>Transmuxing</value></data>
   <data name="SeekbarThumbnails" xml:space="preserve"><value>Seekbar thumbnail generation</value></data>
+  <data name="ChapterExtraction" xml:space="preserve"><value>Chapter extraction</value></data>
+  <data name="ChapterExtractionDescription" xml:space="preserve"><value>Extract embedded chapters (MKV, etc.) to show markers on the seekbar.</value></data>
   <data name="MusicAudioAnalysis" xml:space="preserve"><value>Music audio analysis</value></data>
 </root>

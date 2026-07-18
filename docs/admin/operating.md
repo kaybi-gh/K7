@@ -8,9 +8,16 @@ Administrators create libraries in the admin UI and point each at a root folder 
 
 1. Mount media read-only (recommended), e.g. `/media/movies`, `/media/series`, `/media/music`.
 2. Create a library with a unique `RootPath` and the correct media type.
-3. Run a scan / wait for background library-scan tasks.
+3. Optionally tune library processing (intro detection, seekbar thumbnails, chapter extraction, transmuxing/transcoding).
+4. Run a scan / wait for background library-scan tasks.
 
 Access can be restricted per library and per profile beyond social visibility rules.
+
+### Chapter extraction
+
+For Movie and Serie libraries, **Chapter extraction** (enabled by default) stores embedded file chapters (MKV, etc.) on video file metadata at probe time. Users can show or hide seekbar chapter ticks under Settings -> Video playback (server default under Admin -> Video playback). When ticks are on, the seekbar also shows intro/outro markers from detected media segments if present; overlapping file chapters win over duplicate intro/outro ticks.
+
+Files already indexed without chapters show as **Chapters not extracted** in Admin diagnostics when the library setting is on. Fix with **Extract chapters**, or play the file once (lazy sync extract on stream session).
 
 ### Folder and naming conventions
 

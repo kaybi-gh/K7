@@ -35,6 +35,7 @@ public partial class CreateLibraryDialog
     private bool _isSubmitting;
     private bool _introDetectionEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
+    private bool _chapterExtractionEnabled = true;
     private bool _musicAudioAnalysisEnabled = true;
     private bool _transcodingEnabled = true;
     private bool _transmuxingEnabled = true;
@@ -173,6 +174,7 @@ public partial class CreateLibraryDialog
             GroupIcon = _createNewGroup ? _groupIcon : null,
             IntroDetectionEnabled = _introDetectionEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
+            ChapterExtractionEnabled = _chapterExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
             TranscodingEnabled = _transcodingEnabled,
             TransmuxingEnabled = _transmuxingEnabled,

@@ -3,6 +3,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Clients.MAUI.Services;
@@ -203,7 +204,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     /// </summary>
     private string? _baseManifestUrl;
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
@@ -251,6 +252,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,
+            Chapters = chapters ?? session.Chapters,
             Title = title,
             CoverUrl = coverUrl,
             PendingSeekTime = startPosition is > 0 ? startPosition : null

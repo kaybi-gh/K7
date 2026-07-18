@@ -60,11 +60,11 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, subtitle appearance, resume / continue-watching, seekbar thumbnails |
+| Settings -> Video playback | Intro/outro skip, subtitle appearance, resume / continue-watching, seekbar thumbnails, chapter markers |
 | Track selection | Preferred audio languages; when to show subtitles (Off, Forced only, Full, Hearing impaired) |
 | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
 
-Seekbar thumbnails only appear if the server generated them.
+Seekbar thumbnails only appear if the server generated them. Chapter markers appear when **Settings -> Video playback -> chapter markers** is on (server default under Admin -> Video playback) and either the file has embedded chapters (for example MKV, when library chapter extraction is enabled) or the episode has intro/outro segments in the library. When both exist in the same time range, the seekbar shows the file chapter and skips a duplicate intro/outro tick. The first play can extract missing chapters automatically.
 
 ### Touch (phone / tablet)
 

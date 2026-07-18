@@ -13,4 +13,9 @@ public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
     public ICollection<SubtitleFileTrack> SubtitleTracks { get; set; } = [];
     public MetadataPicture? Thumbnails { get; set; }
     public IList<HlsSegment> HlsSegments { get; set; } = [];
+
+    /// <summary>
+    /// Null = never extracted; empty = extracted with no chapters; otherwise chapter markers.
+    /// </summary>
+    public List<ChapterMarker>? Chapters { get; set; }
 }

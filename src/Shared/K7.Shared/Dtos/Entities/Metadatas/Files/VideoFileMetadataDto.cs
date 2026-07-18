@@ -12,4 +12,6 @@ public sealed record VideoFileMetadataDto : FileMetadataDto
     public IReadOnlyList<VideoFileTrackDto> VideoTracks { get; init; } = [];
     public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks { get; init; } = [];
     public MetadataPictureDto? Thumbnails { get; init; }
+    /// <summary>Null = never extracted; empty = none; otherwise chapter markers.</summary>
+    public IReadOnlyList<ChapterMarkerDto>? Chapters { get; init; }
 }

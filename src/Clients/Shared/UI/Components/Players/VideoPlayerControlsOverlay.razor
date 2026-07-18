@@ -19,6 +19,9 @@
 @inject IRemoteControlService RemoteControl
 @inject IDeviceStorageService DeviceStorage
 @inject ISyncPlayService SyncPlay
+@inject IUserPreferencesService UserPreferencesService
+@inject IMediaService MediaService
+@inject IStringLocalizer<SharedResource> S
 
 <div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"
      data-sn-layer="@(SyncPlaySidebarOpen ? null : "overlay")"
@@ -64,7 +67,10 @@
             </div>
 
             <div class="controls-bar-seek">
-                <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
+                <SeekBar IsVisible=@(_showOverlay || _isMenuOpen)
+                         OnDragChanged="OnSeekBarDragChanged"
+                         ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))"
+                         Chapters="@GetSeekBarChapters()" />
             </div>
 
             <div class="controls-bar-right">

@@ -12,6 +12,7 @@ public sealed record VideoPlayerSettingsDto
     public string SubtitleShadowColor { get; set; } = "#000000";
     public double SubtitleShadowBlur { get; set; } = 3;
     public bool ShowSeekbarThumbnails { get; set; } = true;
+    public bool ShowChapterTicks { get; set; } = true;
     public IntroSkipBehavior IntroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
     public IntroSkipBehavior OutroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
 }

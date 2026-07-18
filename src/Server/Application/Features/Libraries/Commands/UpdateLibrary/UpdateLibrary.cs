@@ -18,6 +18,7 @@ public record UpdateLibraryCommand : IRequest
     public Guid? LibraryGroupId { get; init; }
     public bool? IntroDetectionEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
+    public bool? ChapterExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }
@@ -47,6 +48,8 @@ public class UpdateLibraryCommandHandler(IApplicationDbContext context, ILibrary
             entity.IntroDetectionEnabled = request.IntroDetectionEnabled.Value;
         if (request.SeekbarThumbnailGenerationEnabled.HasValue)
             entity.SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled.Value;
+        if (request.ChapterExtractionEnabled.HasValue)
+            entity.ChapterExtractionEnabled = request.ChapterExtractionEnabled.Value;
         if (request.MusicAudioAnalysisEnabled.HasValue)
             entity.MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled.Value;
         if (request.TranscodingEnabled.HasValue)

@@ -36,6 +36,8 @@
   <data name="SubtitleShadowBlurHint" xml:space="preserve"><value>Intensité du flou autour des lettres pour améliorer la lisibilité.</value></data>
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Afficher les miniatures au survol de la barre de lecture</value></data>
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée sur le serveur.</value></data>
+  <data name="ShowChapterTicks" xml:space="preserve"><value>Afficher les chapitres sur la barre de lecture</value></data>
+  <data name="ShowChapterTicksHint" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est désactivée pour la bibliothèque.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>

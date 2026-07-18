@@ -38,6 +38,8 @@
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Show thumbnails on seekbar hover</value></data>
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>This option has no effect if thumbnail generation is disabled on the server.</value></data>
   <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>This option has no effect if thumbnail generation is disabled for the relevant library.</value></data>
+  <data name="ShowChapterTicks" xml:space="preserve"><value>Show chapter markers on the seekbar</value></data>
+  <data name="ShowChapterTicksHintLibrary" xml:space="preserve"><value>This option has no effect if chapter extraction is disabled for the relevant library.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Intro skip behavior</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Outro skip behavior</value></data>
   <data name="Small" xml:space="preserve"><value>Small</value></data>

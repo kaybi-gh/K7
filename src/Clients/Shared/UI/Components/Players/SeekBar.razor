@@ -28,37 +28,33 @@
     }
     else
     {
-        @for (int i = 0; i < Chapters.Count; i++)
-        {
-            var chapterStart = Chapters[i].Start;
-            var chapterEnd = (i + 1 < Chapters.Count) ? Chapters[i + 1].Start : PlayerService.Duration;
-            var chapterDuration = chapterEnd - chapterStart;
+        var segments = GetChapterSegments();
+        var gapsTotalPx = Math.Max(0, segments.Count - 1) * ChapterGapPx;
+        <div class="seekbar-chapters">
+            @for (var i = 0; i < segments.Count; i++)
+            {
+                var segment = segments[i];
+                var startFrac = segment.Start / PlayerService.Duration;
+                var durFrac = segment.Duration / PlayerService.Duration;
+                var gapOffsetPx = i * ChapterGapPx;
 
-            var left = chapterStart / PlayerService.Duration * 100;
-            var width = chapterDuration / PlayerService.Duration * 100;
+                var progressPercent = Math.Clamp((PlayerService.CurrentTime - segment.Start) / segment.Duration * 100, 0, 100);
+                var bufferPercent = Math.Clamp((PlayerService.BufferedTime - segment.Start) / segment.Duration * 100, 0, 100);
+                var hoverPercent = Math.Clamp((HoverTime - segment.Start) / segment.Duration * 100, 0, 100);
 
-            var gap = 0.2;
-
-            var adjustedLeft = left + (i > 0 ? gap / 2 : 0);
-            var adjustedWidth = width - (i > 0 ? gap / 2 : 0) - (i + 1 < Chapters.Count ? gap / 2 : 0);
-
-            var progressPercent = Math.Clamp((PlayerService.CurrentTime - chapterStart) / chapterDuration * 100, 0, 100);
-            var bufferPercent = Math.Clamp((PlayerService.BufferedTime - chapterStart) / chapterDuration * 100, 0, 100);
-            var hoverPercent = Math.Clamp((HoverTime - chapterStart) / chapterDuration * 100, 0, 100);
-
-            <div class="chapter-segment-container"
-            style="left: @adjustedLeft.ToString(CultureInfo.InvariantCulture)%; width: @adjustedWidth.ToString(CultureInfo.InvariantCulture)%">
-
-                <div class="chapter-segment">
-                    <div class="chapter-progress" style="width: @progressPercent.ToString(CultureInfo.InvariantCulture)%"></div>
-                    @if (IsHovering)
-                    {
-                        <div class="chapter-hover" style="width: @hoverPercent.ToString(CultureInfo.InvariantCulture)%"></div>
-                    }
-                    <div class="chapter-buffered" style="width: @bufferPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                <div class="chapter-segment-container"
+                     style="left: calc(@startFrac.ToString(CultureInfo.InvariantCulture) * (100% - @(gapsTotalPx.ToString(CultureInfo.InvariantCulture))px) + @(gapOffsetPx.ToString(CultureInfo.InvariantCulture))px); width: calc(@durFrac.ToString(CultureInfo.InvariantCulture) * (100% - @(gapsTotalPx.ToString(CultureInfo.InvariantCulture))px))">
+                    <div class="chapter-segment">
+                        <div class="chapter-progress" style="width: @progressPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                        @if (IsHovering)
+                        {
+                            <div class="chapter-hover" style="width: @hoverPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                        }
+                        <div class="chapter-buffered" style="width: @bufferPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                    </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     }
 
     @{

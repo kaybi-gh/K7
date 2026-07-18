@@ -20,6 +20,12 @@
             <K7Switch Label="@L["SeekbarThumbnails"]" @bind-Value="SeekbarThumbnailGenerationEnabled" Disabled="Disabled" />
         }
 
+        @if (LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType))
+        {
+            <K7Switch Label="@L["ChapterExtraction"]" @bind-Value="ChapterExtractionEnabled" Disabled="Disabled" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["ChapterExtractionDescription"]</span>
+        }
+
         @if (LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType))
         {
             <K7Switch Label="@L["MusicAudioAnalysis"]" @bind-Value="MusicAudioAnalysisEnabled" Disabled="Disabled" />

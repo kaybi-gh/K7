@@ -31,7 +31,13 @@ public static class FileMetadataMappings
                 SubtitleTracks = videoFileMetadata.SubtitleTracks.Select(t => t.ToSubtitleFileTrackDto()).ToList(),
                 VideoBitrate = videoFileMetadata.VideoBitrate,
                 VideoResolution = videoFileMetadata.VideoResolution,
-                Thumbnails = videoFileMetadata.Thumbnails?.ToMetadataPictureDto()
+                Thumbnails = videoFileMetadata.Thumbnails?.ToMetadataPictureDto(),
+                Chapters = videoFileMetadata.Chapters?.Select(c => new ChapterMarkerDto
+                {
+                    StartSeconds = c.StartSeconds,
+                    EndSeconds = c.EndSeconds,
+                    Title = c.Title
+                }).ToList()
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };

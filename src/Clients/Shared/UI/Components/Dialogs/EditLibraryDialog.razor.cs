@@ -25,6 +25,7 @@ public partial class EditLibraryDialog
     [Parameter] public Guid SelectedGroupId { get; set; }
     [Parameter] public bool IntroDetectionEnabled { get; set; } = true;
     [Parameter] public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
+    [Parameter] public bool ChapterExtractionEnabled { get; set; } = true;
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
     [Parameter] public bool TranscodingEnabled { get; set; } = true;
     [Parameter] public bool TransmuxingEnabled { get; set; } = true;
@@ -39,6 +40,7 @@ public partial class EditLibraryDialog
     private int? _metadataRefreshIntervalDays;
     private bool _introDetectionEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
+    private bool _chapterExtractionEnabled = true;
     private bool _musicAudioAnalysisEnabled = true;
     private bool _transcodingEnabled = true;
     private bool _transmuxingEnabled = true;
@@ -56,6 +58,7 @@ public partial class EditLibraryDialog
         _metadataRefreshIntervalDays = MetadataRefreshIntervalDays;
         _introDetectionEnabled = IntroDetectionEnabled;
         _seekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled;
+        _chapterExtractionEnabled = ChapterExtractionEnabled;
         _musicAudioAnalysisEnabled = MusicAudioAnalysisEnabled;
         _transcodingEnabled = TranscodingEnabled;
         _transmuxingEnabled = TransmuxingEnabled;
@@ -77,6 +80,7 @@ public partial class EditLibraryDialog
             LibraryGroupId = _selectedGroupId,
             IntroDetectionEnabled = _introDetectionEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
+            ChapterExtractionEnabled = _chapterExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
             TranscodingEnabled = _transcodingEnabled,
             TransmuxingEnabled = _transmuxingEnabled,

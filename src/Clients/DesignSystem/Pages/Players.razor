@@ -39,7 +39,12 @@
         <h2>SeekBar</h2>
         <p class="ds-description">Barre de progression/seek utilisee dans le VideoPlayer. Se synchronise avec la playlist audio de demo ci-dessus.</p>
         <div class="ds-preview ds-preview--block">
-            <SeekBar IsVisible="true" />
+            <SeekBar IsVisible="true" Chapters="@(
+            [
+                new SeekBar.Chapter { Title = "Opening", Start = 0 },
+                new SeekBar.Chapter { Title = "Act One", Start = 30 },
+                new SeekBar.Chapter { Title = "Finale", Start = 75 }
+            ])" />
         </div>
     </section>
 

@@ -20,6 +20,7 @@ public sealed record LibraryHealthSummaryDto
     public required int UnidentifiedIndexedFileCount { get; init; }
     public required int MissingFileMetadataCount { get; init; }
     public required int MissingHlsSegmentsCount { get; init; }
+    public required int MissingChaptersCount { get; init; }
 
     public required int MissingAudioAnalysisCount { get; init; }
 
