@@ -49,16 +49,26 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
         }
         else
         {
-            var targetUserId = request.UserId ?? currentUser.Id;
-            if (targetUserId is null)
-                return new PlaybackHistoryPageDto();
+            var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+            if (sharedProfileId is { } profileId)
+            {
+                sessionsQuery = context.MediaPlaybackSessions
+                    .Where(s => s.SharedProfileId == profileId);
+            }
+            else
+            {
+                var targetUserId = request.UserId ?? currentUser.Id;
+                if (targetUserId is null)
+                    return new PlaybackHistoryPageDto();
 
-            var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
-                .Where(c => c.UserId == targetUserId.Value)
-                .Select(c => c.ReferenceId);
+                var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
+                    .Where(c => c.UserId == targetUserId.Value)
+                    .Select(c => c.ReferenceId);
 
-            sessionsQuery = context.MediaPlaybackSessions
-                .Where(s => s.UserId == targetUserId.Value || coViewerReferenceIds.Contains(s.ReferenceId));
+                sessionsQuery = context.MediaPlaybackSessions
+                    .Where(s => s.SharedProfileId == null
+                        && (s.UserId == targetUserId.Value || coViewerReferenceIds.Contains(s.ReferenceId)));
+            }
         }
 
         if (request.MediaType.HasValue)

@@ -98,6 +98,7 @@ public static class DependencyInjection
         services.AddScoped<ILibraryScanProgressReporter, LibraryScanProgressReporter>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
         services.AddScoped<IUserMediaStateUpdater, UserMediaStateUpdater>();
+        services.AddScoped<ISharedProfileMediaStateUpdater, SharedProfileMediaStateUpdater>();
         services.AddScoped<IPlaybackPolicySettingsProvider, PlaybackPolicySettingsProvider>();
         services.AddScoped<IContinueWatchingExclusionService, ContinueWatchingExclusionService>();
         services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();

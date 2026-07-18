@@ -40,6 +40,7 @@ public class UpdatePlaybackProgressCommandHandler(
     IMediaQueryCacheInvalidator cacheInvalidator,
     INextEpisodeEnqueueService nextEpisodeEnqueueService,
     IUserMediaStateUpdater userMediaStateUpdater,
+    ISharedProfileMediaStateUpdater sharedProfileMediaStateUpdater,
     IPlaybackPolicySettingsProvider playbackPolicySettingsProvider,
     ISharedProfilePlaybackResolver viewingGroupPlaybackResolver,
     ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
@@ -55,6 +56,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
     private readonly INextEpisodeEnqueueService _nextEpisodeEnqueueService = nextEpisodeEnqueueService;
     private readonly IUserMediaStateUpdater _userMediaStateUpdater = userMediaStateUpdater;
+    private readonly ISharedProfileMediaStateUpdater _sharedProfileMediaStateUpdater = sharedProfileMediaStateUpdater;
     private readonly IPlaybackPolicySettingsProvider _playbackPolicySettingsProvider = playbackPolicySettingsProvider;
     private readonly ISharedProfilePlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
     private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
@@ -117,7 +119,8 @@ public class UpdatePlaybackProgressCommandHandler(
         session.DurationSeconds = request.Duration;
 
         SharedProfilePlaybackContext? viewingGroup = null;
-        if (request.SharedProfileId is { } sharedProfileId)
+        var requestedSharedProfileId = request.SharedProfileId ?? await _currentUser.GetSharedProfileIdAsync(cancellationToken);
+        if (requestedSharedProfileId is { } sharedProfileId)
         {
             viewingGroup = await _viewingGroupPlaybackResolver.ResolveAsync(sharedProfileId, userId, cancellationToken);
             if (viewingGroup is not null)
@@ -144,11 +147,27 @@ public class UpdatePlaybackProgressCommandHandler(
             }
         }
 
-        var hostResult = await _userMediaStateUpdater.ApplyAsync(
-            userId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken);
+        var hostResult = viewingGroup is null
+            ? await _userMediaStateUpdater.ApplyAsync(
+                userId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken)
+            : null;
 
-        var videoPolicy = await _playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId, cancellationToken);
-        var audioPolicy = await _playbackPolicySettingsProvider.GetEffectiveAudioPolicyAsync(userId, cancellationToken);
+        var sharedResult = viewingGroup is not null
+            ? await _sharedProfileMediaStateUpdater.ApplyAsync(
+                viewingGroup.SharedProfileId,
+                media,
+                request.MediaId,
+                request.Position,
+                request.Duration,
+                timeNow,
+                cancellationToken)
+            : null;
+
+        var activeSharedProfileId = viewingGroup?.SharedProfileId;
+        var videoPolicy = await _playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(
+            userId, activeSharedProfileId, cancellationToken);
+        var audioPolicy = await _playbackPolicySettingsProvider.GetEffectiveAudioPolicyAsync(
+            userId, activeSharedProfileId, cancellationToken);
         var progress = request.Duration > 0 ? request.Position / request.Duration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
         var completed = isMusic
@@ -162,24 +181,22 @@ public class UpdatePlaybackProgressCommandHandler(
             session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
         }
 
-        if (hostResult.EpisodeIdForEnqueue is { } hostEpisodeId)
+        if (hostResult?.EpisodeIdForEnqueue is { } hostEpisodeId)
             await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
 
-        var notifiedUsers = new List<(Guid UserId, UserMediaStateUpdateResult Result)> { (userId, hostResult) };
-
-        if (viewingGroup is not null)
+        var notifiedUsers = new List<(Guid UserId, UserMediaStateUpdateResult Result)>();
+        if (hostResult is not null)
+            notifiedUsers.Add((userId, hostResult));
+        else if (sharedResult is not null)
         {
-            foreach (var coViewerUserId in viewingGroup.CoViewerUserIds)
-            {
-                if (!await _accessGuard.CanAccessAsync(request.MediaId, coViewerUserId, cancellationToken))
-                    continue;
-
-                var coResult = await _userMediaStateUpdater.ApplyAsync(
-                    coViewerUserId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken);
-
-                notifiedUsers.Add((coViewerUserId, coResult));
-            }
+            notifiedUsers.Add((userId, new UserMediaStateUpdateResult(
+                sharedResult.ProgressPercentage,
+                sharedResult.IsCompleted,
+                sharedResult.WasNewlyCompleted,
+                sharedResult.EpisodeIdForEnqueue)));
         }
+
+        // SyncPlay still fans out personal progress; shared-profile sessions never write coviewer UserMediaState.
 
         if (request.State != previousState)
         {

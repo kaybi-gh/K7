@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Shared.Dtos;
@@ -11,22 +12,43 @@ public static class ContinueWatchingEligibility
             ? utcNow.AddDays(-policy.ContinueWatchingMaxAgeDays)
             : null;
 
-    public static bool MeetsResumeThreshold(UserMediaState state, VideoPlaybackPolicySettingsDto policy)
+    public static bool MeetsResumeThreshold(UserMediaState state, VideoPlaybackPolicySettingsDto policy) =>
+        MeetsResumeThreshold(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.LastKnownDurationSeconds,
+            state.ProgressPercentage,
+            policy);
+
+    public static bool MeetsResumeThreshold(SharedProfileMediaState state, VideoPlaybackPolicySettingsDto policy) =>
+        MeetsResumeThreshold(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.LastKnownDurationSeconds,
+            state.ProgressPercentage,
+            policy);
+
+    private static bool MeetsResumeThreshold(
+        bool isCompleted,
+        DateTime? lastInteractedAt,
+        double lastKnownDurationSeconds,
+        double progressPercentage,
+        VideoPlaybackPolicySettingsDto policy)
     {
-        if (state.IsCompleted)
+        if (isCompleted)
             return false;
 
-        if (state.LastInteractedAt is null)
+        if (lastInteractedAt is null)
             return false;
 
         if (policy.MinResumeDurationSeconds > 0
-            && state.LastKnownDurationSeconds > 0
-            && state.LastKnownDurationSeconds < policy.MinResumeDurationSeconds)
+            && lastKnownDurationSeconds > 0
+            && lastKnownDurationSeconds < policy.MinResumeDurationSeconds)
         {
             return false;
         }
 
-        return state.ProgressPercentage >= policy.MinResumePercent;
+        return progressPercentage >= policy.MinResumePercent;
     }
 
     public static bool IsWithinWindow(
@@ -81,6 +103,41 @@ public static class ContinueWatchingEligibility
         {
             query = query.Where(x => x.UserMediaStates.Any(s =>
                 s.UserId == userId && s.LastInteractedAt >= cutoff));
+        }
+
+        return query;
+    }
+
+    public static IQueryable<BaseMedia> WhereEligibleForSharedProfileContinueWatching(
+        this IQueryable<BaseMedia> query,
+        IApplicationDbContext context,
+        Guid sharedProfileId,
+        VideoPlaybackPolicySettingsDto policy,
+        DateTime utcNow)
+    {
+        var minResumePercent = policy.MinResumePercent;
+        var minResumeDurationSeconds = policy.MinResumeDurationSeconds;
+        var cutoff = GetWindowCutoff(policy, utcNow);
+
+        query = query
+            .Where(x => !(x is MusicAlbum) && !(x is MusicTrack))
+            .Where(x => context.SharedProfileMediaStates.Any(s =>
+                s.SharedProfileId == sharedProfileId
+                && s.MediaId == x.Id
+                && !s.IsCompleted
+                && !s.ExcludedFromContinueWatching
+                && s.LastInteractedAt != null
+                && s.ProgressPercentage >= minResumePercent
+                && (minResumeDurationSeconds <= 0
+                    || s.LastKnownDurationSeconds <= 0
+                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)));
+
+        if (cutoff is not null)
+        {
+            query = query.Where(x => context.SharedProfileMediaStates.Any(s =>
+                s.SharedProfileId == sharedProfileId
+                && s.MediaId == x.Id
+                && s.LastInteractedAt >= cutoff));
         }
 
         return query;

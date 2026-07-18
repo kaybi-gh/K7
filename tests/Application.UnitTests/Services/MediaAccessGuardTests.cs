@@ -3,8 +3,10 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Models;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -117,4 +119,83 @@ public class MediaAccessGuardTests
 
         await _guard.EnsureAccessAsync(_excludedMediaId);
     }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldApplyPersonalRestrictionProfile_WhenNoSharedProfileActive()
+    {
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
+        var restrictedProfile = CreateTitleRestrictionProfile("Personal restriction", "Ok");
+        _context.ContentRestrictionProfiles.Add(restrictedProfile);
+        restrictedProfile.Users.Add(await _context.Users.SingleAsync(u => u.Id == _userId));
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldApplySharedProfileRestrictionProfile_InsteadOfPersonalProfile_WhenSharedProfileActive()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var restrictedProfile = CreateTitleRestrictionProfile("Shared restriction", "Ok");
+        _context.ContentRestrictionProfiles.Add(restrictedProfile);
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Family",
+            HostUserId = _userId,
+            CreatedByUserId = _userId,
+            ContentRestrictionProfile = restrictedProfile
+        });
+        await _context.SaveChangesAsync();
+
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns(sharedProfileId);
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldIgnorePersonalRestrictionProfile_WhenSharedProfileHasNoRestrictionAssigned()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var personalRestrictedProfile = CreateTitleRestrictionProfile("Personal restriction", "Ok");
+        _context.ContentRestrictionProfiles.Add(personalRestrictedProfile);
+        personalRestrictedProfile.Users.Add(await _context.Users.SingleAsync(u => u.Id == _userId));
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Family",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        await _context.SaveChangesAsync();
+
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns(sharedProfileId);
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeTrue();
+    }
+
+    private static ContentRestrictionProfile CreateTitleRestrictionProfile(string name, string blockedTitle) =>
+        new()
+        {
+            Name = name,
+            RuleFilter = new RuleGroup
+            {
+                MatchCondition = RuleMatchCondition.Any,
+                Items =
+                [
+                    new ConditionRuleItem
+                    {
+                        Field = nameof(SmartPlaylistField.Title),
+                        Operator = RuleOperator.Equals,
+                        Value = blockedTitle
+                    }
+                ]
+            }
+        };
 }

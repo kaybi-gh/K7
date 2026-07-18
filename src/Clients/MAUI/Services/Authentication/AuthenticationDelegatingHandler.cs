@@ -35,6 +35,8 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
+        AttachSharedProfileHeader(request);
+
         var response = await base.SendAsync(request, cancellationToken);
 
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
@@ -86,6 +88,16 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         return response;
     }
 
+    private void AttachSharedProfileHeader(HttpRequestMessage request)
+    {
+        if (request.Headers.Contains(HttpHeaderNames.SharedProfileId))
+            return;
+
+        var session = _serviceProvider.GetService<ISharedProfileSessionService>();
+        if (session?.ActiveGroupId is { } profileId)
+            request.Headers.TryAddWithoutValidation(HttpHeaderNames.SharedProfileId, profileId.ToString());
+    }
+
     private async Task<HttpResponseMessage> CloneAndRetryAsync(HttpRequestMessage original, string accessToken, CancellationToken cancellationToken)
     {
         var clone = new HttpRequestMessage(original.Method, original.RequestUri);
@@ -106,6 +118,7 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
             clone.Content = newContent;
         }
 
+        AttachSharedProfileHeader(clone);
         return await base.SendAsync(clone, cancellationToken);
     }
 }
