@@ -34,6 +34,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly IAudioTagReader _audioTagReader;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
+    private readonly MediaIdentityLookupService _identityLookup;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
@@ -41,7 +42,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         IServiceProvider serviceProvider,
         IAudioTagReader audioTagReader,
         IOptions<PathsConfiguration> pathsConfiguration,
-        IMediaMetadataTagSyncService metadataTagSyncService)
+        IMediaMetadataTagSyncService metadataTagSyncService,
+        MediaIdentityLookupService identityLookup)
     {
         _context = context;
         _sender = sender;
@@ -49,6 +51,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _audioTagReader = audioTagReader;
         _pathsConfiguration = pathsConfiguration.Value;
         _metadataTagSyncService = metadataTagSyncService;
+        _identityLookup = identityLookup;
     }
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
@@ -522,8 +525,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
     private async Task<Domain.Entities.Medias.MusicArtist> FindOrCreateMusicArtistAsync(string name, CancellationToken cancellationToken)
     {
-        var existing = await _context.Medias.OfType<Domain.Entities.Medias.MusicArtist>()
-            .FirstOrDefaultAsync(a => a.Title == name, cancellationToken);
+        var existing = await _identityLookup.FindMusicArtistByNameAsync(name, cancellationToken);
 
         if (existing is not null) return existing;
 
@@ -593,10 +595,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     {
         var seriesTitle = identification.SeriesTitle ?? identification.Title;
 
-        var existingSerie = await _context.Medias
-            .OfType<Serie>()
-            .Include(s => s.ExternalIds)
-            .FirstOrDefaultAsync(s => s.Title == seriesTitle, cancellationToken);
+        var existingSerie = await _identityLookup.FindSerieByTitleAsync(seriesTitle, cancellationToken);
 
         if (existingSerie is not null)
         {
@@ -609,13 +608,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (!string.IsNullOrEmpty(providerExternalId))
         {
-            var existingByExternalId = await _context.ExternalIds
-                .Include(x => x.Media)
-                .FirstOrDefaultAsync(x => x.Value == providerExternalId
-                    && x.ProviderName == metadataProvider.ProviderName
-                    && x.Media is Serie, cancellationToken);
+            var existingSerieById = await _identityLookup.FindMediaByExternalIdAsync<Serie>(
+                metadataProvider.ProviderName, providerExternalId, cancellationToken);
 
-            if (existingByExternalId?.Media is Serie existingSerieById)
+            if (existingSerieById is not null)
                 return (existingSerieById, false, providerExternalId);
         }
 
