@@ -130,27 +130,6 @@
     border-color: var(--k7-primary);
 }
 
-.downloads-search-input {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--k7-outline-variant);
-    background: var(--k7-surface);
-    color: var(--color-text-primary);
-    font-size: var(--font-size-sm);
-    outline: none;
-    transition: border-color 0.15s;
-}
-
-.downloads-search-input:focus {
-    border-color: var(--k7-primary);
-}
-
-.downloads-search-input::placeholder {
-    color: var(--color-text-secondary);
-    opacity: 0.7;
-}
-
 .downloads-storage {
     padding: 16px;
     border-radius: 12px;

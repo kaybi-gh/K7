@@ -54,31 +54,11 @@
                             var policy = GetContentPolicy(contentType);
                             <div class="federation-social-policy__row">
                                 <span class="federation-social-policy__label-col">@GetSocialContentLabel(contentType)</span>
-                                <div class="federation-social-policy__check focusable"
-                                     tabindex="-1"
-                                     role="checkbox"
-                                     aria-checked="@policy.Outbound"
-                                     aria-label="@($"{GetSocialContentLabel(contentType)} - {L["SocialOutbound"]}")"
-                                     @onclick="() => ToggleOutbound(contentType)"
-                                     @onkeydown="e => OnPolicyCheckboxKeyDown(e, () => ToggleOutbound(contentType))"
-                                     @onkeydown:preventDefault="true">
-                                    <input type="checkbox"
-                                           tabindex="-1"
-                                           checked="@policy.Outbound"
-                                           aria-hidden="true" />
+                                <div class="federation-social-policy__check">
+                                    <K7Switch Value="policy.Outbound" ValueChanged="_ => ToggleOutbound(contentType)" />
                                 </div>
-                                <div class="federation-social-policy__check focusable"
-                                     tabindex="-1"
-                                     role="checkbox"
-                                     aria-checked="@policy.Inbound"
-                                     aria-label="@($"{GetSocialContentLabel(contentType)} - {L["SocialInbound"]}")"
-                                     @onclick="() => ToggleInbound(contentType)"
-                                     @onkeydown="e => OnPolicyCheckboxKeyDown(e, () => ToggleInbound(contentType))"
-                                     @onkeydown:preventDefault="true">
-                                    <input type="checkbox"
-                                           tabindex="-1"
-                                           checked="@policy.Inbound"
-                                           aria-hidden="true" />
+                                <div class="federation-social-policy__check">
+                                    <K7Switch Value="policy.Inbound" ValueChanged="_ => ToggleInbound(contentType)" />
                                 </div>
                             </div>
                         }

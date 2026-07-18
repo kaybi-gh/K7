@@ -123,28 +123,6 @@
     min-height: 2.25rem;
     min-width: 2.25rem;
     margin-inline: auto;
-    padding: var(--space-1);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.federation-social-policy__check:hover {
-    background: var(--color-surface-hover);
-}
-
-.federation-social-policy__check:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-    background: var(--color-surface-hover);
-}
-
-.federation-social-policy__check input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--color-accent);
-    flex-shrink: 0;
-    pointer-events: none;
 }
 
 @media (max-width: 599.98px) {
