@@ -96,6 +96,7 @@
     <PackageReference Include="OpenIddict.Client.SystemIntegration" />
     <PackageReference Include="OpenIddict.Client.SystemNetHttp" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">

@@ -56,6 +56,7 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.4.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.41" />
     <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.41" />
     <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.41" />
