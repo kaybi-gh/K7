@@ -70,7 +70,7 @@ jobs:
 
       - name: Verify formatting
         run: >
-          dotnet format K7.CI.slnf --verify-no-changes --no-restore
+          dotnet format whitespace K7.CI.slnf --verify-no-changes --no-restore
           --exclude **/Migrations/**
 
       - name: Test (fast)
