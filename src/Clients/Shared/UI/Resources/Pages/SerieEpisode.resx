@@ -28,4 +28,6 @@
   <data name="BackToSeason" xml:space="preserve"><value>Retour &#224; la saison</value></data>
   <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
   <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
+  <data name="ReIdentifyFileDialogTitle" xml:space="preserve"><value>Ré-identifier le fichier</value></data>
+  <data name="ReIdentifyFileSent" xml:space="preserve"><value>Ré-identification du fichier envoyée et en cours de traitement par le serveur en tâche de fond.</value></data>
 </root>

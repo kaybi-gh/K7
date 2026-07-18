@@ -232,10 +232,49 @@ public partial class SerieEpisode : IAsyncDisposable
         if (_episode is null) return;
         var parameters = new K7DialogParameters<IndexedFilesDialog>
         {
-            { x => x.Media, _episode }
+            { x => x.Media, _episode },
+            { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
         };
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(S["IndexedVersions"], parameters, options);
+    }
+
+    private async Task OpenFileReIdentifyDialogAsync(Guid indexedFileId)
+    {
+        if (_episode is null) return;
+
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.IndexedFileId, indexedFileId },
+            { x => x.InitialSearchQuery, _episode.SerieTitle },
+            { x => x.InitialSearchYear, null },
+            { x => x.MediaType, MediaType.Serie },
+            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyFileDialogTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(L["ReIdentifyFileSent"], K7Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private Guid? GetLibraryIdForReIdentify(Guid? indexedFileId = null)
+    {
+        if (_episode?.LibraryId is { } libraryId)
+            return libraryId;
+
+        if (_episode?.IndexedFiles is not { Count: > 0 })
+            return null;
+
+        if (indexedFileId.HasValue)
+            return _episode.IndexedFiles.FirstOrDefault(f => f.Id == indexedFileId)?.LibraryId;
+
+        return _episode.IndexedFiles.First().LibraryId;
     }
 
     private void NavigateToSerie() => NavigationManager.NavigateTo($"/series/{SerieId}");
