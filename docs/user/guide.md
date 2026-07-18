@@ -66,6 +66,8 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 Seekbar thumbnails only appear if the server generated them. Chapter markers appear when **Settings -> Video playback -> chapter markers** is on (server default under Admin -> Video playback) and either the file has embedded chapters (for example MKV, when library chapter extraction is enabled) or the episode has intro/outro segments in the library. When both exist in the same time range, the seekbar shows the file chapter and skips a duplicate intro/outro tick. The first play can extract missing chapters automatically.
 
+Theme songs play quietly in the background when you open a series or movie page (**Settings -> Experience -> General**: enable theme songs; optionally disable on this device). Playback stops when you leave the page, start watching, or open a trailer. Theme songs do not play while music is already playing, and they play once (no loop).
+
 ### Touch (phone / tablet)
 
 | Gesture | Action |
@@ -94,7 +96,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Area | Where | What you can change |
 |---|---|---|
 | Profile | Settings -> Account | Avatar, display name (also password, email, PIN, 2FA for password accounts) |
-| Look and language | Settings -> General | Theme (light / dark), interface language |
+| Look and language | Settings -> General | Theme (light / dark), interface language, theme songs |
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |

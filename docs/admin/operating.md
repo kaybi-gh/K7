@@ -19,6 +19,15 @@ For Movie and Serie libraries, **Chapter extraction** (enabled by default) store
 
 Files already indexed without chapters show as **Chapters not extracted** in Admin diagnostics when the library setting is on. Fix with **Extract chapters**, or play the file once (lazy sync extract on stream session).
 
+### Theme songs
+
+Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs; optional per-device disable on the same page. Server default: Admin -> Experience -> General).
+
+- **Library sidecar (read-only):** `theme.mp3` / `.flac` / `.m4a` / `.ogg` at the series root (next to season folders) or in the movie folder. For movies, same-basename audio is also accepted (for example `Movie Name (2020).mkv` + `Movie Name (2020).mp3`). Sidecars are never written by K7.
+- **Series auto-extract:** when **theme song generation** and **intro/outro detection** are enabled on the library, and no sidecar exists, K7 may extract a faded MP3 from an Intro segment into `Metadatas/medias/{serieId}/theme.mp3`. Movies are not extracted from video; sidecar only.
+- Existing metadata themes still play if generation or intro detection is later turned off; new extracts do not run.
+- Series that have a detected Intro but no theme file show as **Theme song not generated** (warning) in Admin diagnostics when generation is on. Fix with **Generate theme song**, or re-run intro/outro detection on a season (also queues extract when intros already exist).
+
 ### Folder and naming conventions
 
 The scanner derives titles from filenames and folders. Prefer consistent layouts:
