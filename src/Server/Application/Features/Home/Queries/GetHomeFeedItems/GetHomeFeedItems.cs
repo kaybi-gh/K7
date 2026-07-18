@@ -199,8 +199,9 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
+        var pageItemsById = pageItems.ToDictionary(m => m.Id);
         var page = pageIds
-            .Select(id => pageItems.First(m => m.Id == id))
+            .Select(id => pageItemsById[id])
             .ToList();
 
         var pictureSizes = await GetPictureSizesAsync(page, cancellationToken);
@@ -399,7 +400,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        return pageIds.Select(id => items.First(m => m.Id == id)).ToList();
+        var itemsById = items.ToDictionary(m => m.Id);
+        return pageIds.Select(id => itemsById[id]).ToList();
     }
 
     private async Task<PaginatedList<HomeFeedItemDto>> HandleTopLevelAsync(
@@ -451,8 +453,9 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         }
 
         var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
+        var itemsById = items.ToDictionary(m => m.Id);
         var feedItems = pageIds
-            .Select(id => items.First(m => m.Id == id))
+            .Select(id => itemsById[id])
             .Select(m => MapTopLevelItem(m, request.Detailed == true, pictureSizes))
             .ToList();
 
@@ -811,8 +814,9 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
+        var itemsById = items.ToDictionary(i => i.Id);
         var orderedItems = recommendedIds
-            .Select(id => items.FirstOrDefault(i => i.Id == id))
+            .Select(id => itemsById.GetValueOrDefault(id))
             .Where(i => i is not null)
             .Cast<BaseMedia>()
             .ToList();

@@ -42,15 +42,19 @@ public class GetPersonKnownForQueryHandler(
 
         // Filter out media already in K7 library
         var externalIds = allCredits.Select(c => c.ExternalId).ToList();
-        var localExternalIds = await context.Medias
-            .AsNoTracking()
-            .Where(m => m.ExternalIds.Any(e => e.ProviderName == "tmdb" && externalIds.Contains(e.Value)))
-            .SelectMany(m => m.ExternalIds)
-            .Where(e => e.ProviderName == "tmdb")
-            .Select(e => e.Value)
-            .ToListAsync(cancellationToken);
+        var localIdSet = new HashSet<string>();
+        foreach (var externalIdBatch in externalIds.Distinct().Chunk(500))
+        {
+            var localExternalIds = await context.Medias
+                .AsNoTracking()
+                .Where(m => m.ExternalIds.Any(e => e.ProviderName == "tmdb" && externalIdBatch.Contains(e.Value)))
+                .SelectMany(m => m.ExternalIds)
+                .Where(e => e.ProviderName == "tmdb")
+                .Select(e => e.Value)
+                .ToListAsync(cancellationToken);
 
-        var localIdSet = localExternalIds.ToHashSet();
+            localIdSet.UnionWith(localExternalIds);
+        }
 
         return allCredits
             .Where(c => !localIdSet.Contains(c.ExternalId))

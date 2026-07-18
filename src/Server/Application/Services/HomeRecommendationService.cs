@@ -55,41 +55,45 @@ public class HomeRecommendationService(
             return [];
 
         var externalIdValues = scoreByExternalKey.Keys.Select(k => k.ExternalId).Distinct().ToList();
-
-        var query = context.Medias
-            .AsNoTracking()
-            .Where(m => !seedMediaIds.Contains(m.Id))
-            .Where(m => m.ExternalIds.Any(e => externalIdValues.Contains(e.Value)));
-
-        if (libraryIds is { Length: > 0 })
-            query = query.WhereAvailableInLibraries(context, libraryIds);
-
-        query = mediaAccessFilter.ApplyExclusions(query, userId);
         var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(userId, cancellationToken);
-        if (restrictionProfile is not null)
-            query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
+        var scoredCandidates = new Dictionary<Guid, (int Score, DateTimeOffset Created)>();
+        foreach (var externalIdBatch in externalIdValues.Chunk(500))
+        {
+            var query = context.Medias
+                .AsNoTracking()
+                .Where(m => !seedMediaIds.Contains(m.Id))
+                .Where(m => m.ExternalIds.Any(e => externalIdBatch.Contains(e.Value)));
 
-        var candidates = await query
-            .Select(m => new
-            {
-                m.Id,
-                ExternalIds = m.ExternalIds.Select(e => new { e.ProviderName, e.Value }).ToList(),
-                m.Created
-            })
-            .ToListAsync(cancellationToken);
+            if (libraryIds is { Length: > 0 })
+                query = query.WhereAvailableInLibraries(context, libraryIds);
 
-        var ranked = candidates
-            .Select(c =>
+            query = mediaAccessFilter.ApplyExclusions(query, userId);
+            if (restrictionProfile is not null)
+                query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
+
+            var candidates = await query
+                .Select(m => new
+                {
+                    m.Id,
+                    ExternalIds = m.ExternalIds.Select(e => new { e.ProviderName, e.Value }).ToList(),
+                    m.Created
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var candidate in candidates)
             {
-                var score = c.ExternalIds
+                var score = candidate.ExternalIds
                     .Sum(e => scoreByExternalKey.GetValueOrDefault((e.ProviderName, e.Value)));
-                return new { c.Id, Score = score, c.Created };
-            })
-            .Where(x => x.Score > 0)
+                if (score > 0)
+                    scoredCandidates.TryAdd(candidate.Id, (score, candidate.Created));
+            }
+        }
+
+        var ranked = scoredCandidates
+            .Select(candidate => new { candidate.Key, candidate.Value.Score, candidate.Value.Created })
             .OrderByDescending(x => x.Score)
             .ThenByDescending(x => x.Created)
-            .Select(x => x.Id)
-            .Distinct()
+            .Select(x => x.Key)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
