@@ -34,6 +34,15 @@ else
                 </K7Select>
                 <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>
             </div>
+
+            <div>
+                <h6>@L["ThemeSongsSection"]</h6>
+                <K7Switch Label="@L["PlayThemeSongs"]"
+                          Value="_playThemeSongs"
+                          ValueChanged="OnPlayThemeSongsChanged"
+                          Class="mt-2" />
+                <span class="text-caption mt-1" Color="secondary">@L["PlayThemeSongsHint"]</span>
+            </div>
         </div>
 
         <K7SettingsActionBar IsDirty="IsDirty"

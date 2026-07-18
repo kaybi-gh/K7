@@ -20,7 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Paramètres</value></data>
-  <data name="GeneralPageTitle" xml:space="preserve"><value>Interface</value></data>
+  <data name="GeneralPageTitle" xml:space="preserve"><value>Général</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
   <data name="Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
@@ -75,5 +75,10 @@
   <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Démasquer</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Activer les invitations SyncPlay</value></data>
+  <data name="ThemeSongsSection" xml:space="preserve"><value>Thème musical</value></data>
+  <data name="PlayThemeSongs" xml:space="preserve"><value>Activer le thème musical</value></data>
+  <data name="PlayThemeSongsHint" xml:space="preserve"><value>Joue le thème en fond sur la page série ou film lorsqu'un fichier thème est disponible.</value></data>
+  <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Désactiver sur ce périphérique</value></data>
+  <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Coupe le thème uniquement sur cet appareil, même si le thème musical est activé pour votre compte.</value></data>
 </root>
 

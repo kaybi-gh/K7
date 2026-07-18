@@ -39,7 +39,7 @@
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée sur le serveur.</value></data>
   <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée pour la bibliothèque concernée.</value></data>
   <data name="ShowChapterTicks" xml:space="preserve"><value>Afficher les chapitres sur la barre de lecture</value></data>
-  <data name="ShowChapterTicksHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est désactivée pour la bibliothèque concernée.</value></data>
+  <data name="ShowChapterTicksHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est desactivee pour la bibliotheque concernee.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>

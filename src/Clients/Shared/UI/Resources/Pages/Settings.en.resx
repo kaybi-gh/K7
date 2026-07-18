@@ -20,7 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Settings</value></data>
-  <data name="GeneralPageTitle" xml:space="preserve"><value>Interface</value></data>
+  <data name="GeneralPageTitle" xml:space="preserve"><value>General</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Dark mode</value></data>
   <data name="Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Language" xml:space="preserve"><value>Language</value></data>
@@ -75,5 +75,10 @@
   <data name="HiddenPageEmpty" xml:space="preserve"><value>You haven't hidden any media.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Unhide</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Enable SyncPlay invitations</value></data>
+  <data name="ThemeSongsSection" xml:space="preserve"><value>Theme song</value></data>
+  <data name="PlayThemeSongs" xml:space="preserve"><value>Enable theme songs</value></data>
+  <data name="PlayThemeSongsHint" xml:space="preserve"><value>Plays the theme in the background on series or movie pages when a theme file is available.</value></data>
+  <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Disable on this device</value></data>
+  <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Turns off theme songs on this device only, even when theme songs are enabled for your account.</value></data>
 </root>
 

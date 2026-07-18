@@ -1,7 +1,8 @@
 using System.Globalization;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services.Resources;
-using K7.Server.Domain.Enums;
+using K7.Shared;
+using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -15,6 +16,10 @@ public partial class SettingsGeneralPage : IDisposable
     private string _serverDefaultThemeCss = "default-dark";
     private bool _hasLanguageOverride;
     private bool _resetting;
+    private VideoPlayerSettingsDto _videoPlayerSettings = new();
+    private bool _playThemeSongs = true;
+    private bool _disableThemeSongsOnDevice;
+    private bool _themeSongsSaving;
 
     private bool IsOnDefaults =>
         !_hasLanguageOverride
@@ -23,6 +28,7 @@ public partial class SettingsGeneralPage : IDisposable
     protected override void OnInitialized()
     {
         ThemeService.ThemeOnChange += OnThemeChanged;
+        _disableThemeSongsOnDevice = DeviceStorageService.Get(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE) == true;
     }
 
     protected override async Task OnInitializedAsync()
@@ -44,6 +50,17 @@ public partial class SettingsGeneralPage : IDisposable
         catch
         {
             // Best effort
+        }
+
+        try
+        {
+            _videoPlayerSettings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
+        }
+        catch
+        {
+            _videoPlayerSettings = new VideoPlayerSettingsDto();
+            _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
         }
     }
 
@@ -71,6 +88,37 @@ public partial class SettingsGeneralPage : IDisposable
 
         await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    private async Task OnPlayThemeSongsChangedAsync(bool enabled)
+    {
+        if (_themeSongsSaving || enabled == _playThemeSongs)
+            return;
+
+        _themeSongsSaving = true;
+        var previous = _playThemeSongs;
+        _playThemeSongs = enabled;
+        try
+        {
+            _videoPlayerSettings.PlayThemeSongs = enabled;
+            await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_videoPlayerSettings);
+        }
+        catch (Exception ex)
+        {
+            _playThemeSongs = previous;
+            _videoPlayerSettings.PlayThemeSongs = previous;
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _themeSongsSaving = false;
+        }
+    }
+
+    private void OnDisableThemeSongsOnDeviceChanged(bool disabled)
+    {
+        _disableThemeSongsOnDevice = disabled;
+        DeviceStorageService.Set(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE, disabled);
     }
 
     private async Task ResetToDefaultsAsync()

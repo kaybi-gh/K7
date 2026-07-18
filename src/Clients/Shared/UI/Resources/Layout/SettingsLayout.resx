@@ -21,12 +21,12 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Paramètres</value></data>
   <data name="GroupMyContent" xml:space="preserve"><value>Mon contenu</value></data>
-  <data name="GroupPlayback" xml:space="preserve"><value>Lecture</value></data>
+  <data name="GroupExperience" xml:space="preserve"><value>Expérience</value></data>
   <data name="Account" xml:space="preserve"><value>Mon compte</value></data>
   <data name="SharedProfiles" xml:space="preserve"><value>Regarder ensemble</value></data>
   <data name="WatchTogetherSyncPlay" xml:space="preserve"><value>SyncPlay</value></data>
   <data name="WatchTogetherSharedProfiles" xml:space="preserve"><value>Profils partagés</value></data>
-  <data name="Interface" xml:space="preserve"><value>Interface</value></data>
+  <data name="General" xml:space="preserve"><value>Général</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="History" xml:space="preserve"><value>Historique</value></data>
   <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>

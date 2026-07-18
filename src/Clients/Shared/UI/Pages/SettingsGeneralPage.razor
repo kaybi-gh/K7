@@ -4,6 +4,8 @@
 @using K7.Clients.Shared.Services.Resources
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
+@inject IDeviceStorageService DeviceStorageService
+@inject IUserPreferencesService UserPreferencesService
 @inject IK7ServerService ApiClient
 @inject IServerInfoService ServerInfoService
 @inject IStringLocalizer<Settings> L
@@ -56,6 +58,21 @@
                      AdornmentIcon="@Phosphor.Trash"
                      OnAdornmentClick="ChangeBackendUrl" />
     }
+
+    <hr class="k7-divider my-6" />
+    <h6>@L["ThemeSongsSection"]</h6>
+    <div class="d-flex flex-col gap-2 mt-3">
+        <K7Switch Label="@L["PlayThemeSongs"]"
+                  Value="_playThemeSongs"
+                  ValueChanged="OnPlayThemeSongsChangedAsync"
+                  Disabled="_themeSongsSaving" />
+        <span class="text-caption" Color="secondary">@L["PlayThemeSongsHint"]</span>
+        <K7Switch Label="@L["DisableThemeSongsOnDevice"]"
+                  Value="_disableThemeSongsOnDevice"
+                  ValueChanged="OnDisableThemeSongsOnDeviceChanged"
+                  Disabled="!_playThemeSongs || _themeSongsSaving" />
+        <span class="text-caption" Color="secondary">@L["DisableThemeSongsOnDeviceHint"]</span>
+    </div>
 
     <div class="mt-6">
         <K7Button Variant="outlined"

@@ -20,7 +20,24 @@
                     </NavLink>
                 </SidebarNavGroup>
             }
-            <SidebarNavLink Href="/settings/general" Title="@L["Interface"]" Icon="@Phosphor.SlidersHorizontal" />
+
+            <SidebarNavGroup Title="@L["GroupExperience"]" Icon="@Phosphor.SlidersHorizontal" Routes="@ExperienceRoutes">
+                <NavLink class="nav-link focusable" href="/settings/general">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
+                    <span class="nav-label">@L["General"]</span>
+                </NavLink>
+                @if (!_isGuest)
+                {
+                    <NavLink class="nav-link focusable" href="/settings/video-playback">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
+                        <span class="nav-label">@L["VideoPlayback"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/audio-player">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
+                        <span class="nav-label">@L["AudioPlayer"]</span>
+                    </NavLink>
+                }
+            </SidebarNavGroup>
 
             @if (!_isGuest)
             {
@@ -43,17 +60,6 @@
                     </NavLink>
                 </SidebarNavGroup>
 
-                <SidebarNavGroup Title="@L["GroupPlayback"]" Icon="@Phosphor.Play" Routes="@PlaybackRoutes">
-                    <NavLink class="nav-link focusable" href="/settings/video-playback">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
-                        <span class="nav-label">@L["VideoPlayback"]</span>
-                    </NavLink>
-                    <NavLink class="nav-link focusable" href="/settings/audio-player">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
-                        <span class="nav-label">@L["AudioPlayer"]</span>
-                    </NavLink>
-                </SidebarNavGroup>
-
                 @if (DeviceService.GetClientType() == ClientType.Native)
                 {
                     <SidebarNavLink Href="/settings/offline" Title="@L["Offline"]" Icon="@Phosphor.CloudArrowDown" />
@@ -69,4 +75,3 @@
         </div>
     </ChildContent>
 </SidebarLayout>
-

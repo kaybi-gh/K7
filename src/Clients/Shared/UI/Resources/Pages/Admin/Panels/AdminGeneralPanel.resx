@@ -23,5 +23,8 @@
   <data name="DefaultLanguageHelp" xml:space="preserve"><value>Langue utilisée par défaut pour tous les utilisateurs qui n'ont pas défini de préférence.</value></data>
   <data name="DefaultTheme" xml:space="preserve"><value>Thème par défaut</value></data>
   <data name="DefaultThemeHelp" xml:space="preserve"><value>Thème utilisé par défaut pour tous les utilisateurs qui n'ont pas défini de préférence.</value></data>
+  <data name="ThemeSongsSection" xml:space="preserve"><value>Thème musical</value></data>
+  <data name="PlayThemeSongs" xml:space="preserve"><value>Activer le thème musical</value></data>
+  <data name="PlayThemeSongsHint" xml:space="preserve"><value>Joue le thème en fond sur la page série ou film lorsqu'un fichier thème est disponible. Valeur par défaut pour les utilisateurs sans préférence personnelle.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Paramètres enregistrés</value></data>
 </root>
