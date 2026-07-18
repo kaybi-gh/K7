@@ -49,5 +49,8 @@
   <data name="IntelligentSearchError" xml:space="preserve"><value>La recherche intelligente a &#233;chou&#233;.</value></data>
   <data name="CreateSmartPlaylist" xml:space="preserve"><value>Cr&#233;er en smart playlist</value></data>
   <data name="CreateSmartPlaylistDialogTitle" xml:space="preserve"><value>Cr&#233;er une smart playlist</value></data>
+  <data name="ContentSourceFilter" xml:space="preserve"><value>Source</value></data>
+  <data name="ContentSourceAll" xml:space="preserve"><value>Toutes les sources</value></data>
+  <data name="ContentSourceLocal" xml:space="preserve"><value>Local</value></data>
 </root>
 

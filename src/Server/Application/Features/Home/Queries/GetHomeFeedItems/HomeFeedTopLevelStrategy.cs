@@ -24,6 +24,7 @@ internal sealed class HomeFeedTopLevelStrategy(
         query = CatalogMediaAvailabilityHelper.WhereHasPlayableFiles(query);
         query = HomeFeedQueryFilters.ApplyFamilyFilter(query, request.MediaTypes);
         query = HomeFeedQueryFilters.ApplyLibraryFilter(context, query, request.LibraryIds);
+        query = mediaAccessFilter.ApplyUnavailablePeerExclusion(query);
 
         if (userId.HasValue)
             query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);

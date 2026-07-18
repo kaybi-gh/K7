@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -125,5 +126,48 @@ public class MediaAccessFilterTests
         var ids = await _filter.GetAccessibleMediaIds(_userId).ToListAsync();
 
         ids.Should().ContainSingle().Which.Should().Be(_visibleMediaId);
+    }
+
+    [Test]
+    public async Task ApplyUnavailablePeerExclusion_ShouldHideMediaFromDownPeers()
+    {
+        var activePeerId = Guid.NewGuid();
+        var downPeerId = Guid.NewGuid();
+        var activeRemoteMediaId = Guid.NewGuid();
+        var downRemoteMediaId = Guid.NewGuid();
+
+        var activePeer = PeerServer.CreateActiveInbound(
+            "active-peer",
+            "https://active.example",
+            Guid.NewGuid().ToString("N"),
+            autoAddNewLibraries: true,
+            federationAssertionSecret: Guid.NewGuid().ToString("N"));
+        activePeer.Id = activePeerId;
+        activePeer.LastTestSucceeded = true;
+
+        var downPeer = PeerServer.CreateActiveInbound(
+            "down-peer",
+            "https://down.example",
+            Guid.NewGuid().ToString("N"),
+            autoAddNewLibraries: true,
+            federationAssertionSecret: Guid.NewGuid().ToString("N"));
+        downPeer.Id = downPeerId;
+        downPeer.LastTestSucceeded = false;
+
+        _context.PeerServers.AddRange(activePeer, downPeer);
+        _context.Medias.AddRange(
+            new Movie { Id = activeRemoteMediaId, Title = "Active remote", PeerServerId = activePeerId },
+            new Movie { Id = downRemoteMediaId, Title = "Down remote", PeerServerId = downPeerId });
+        await _context.SaveChangesAsync();
+
+        var results = await _filter
+            .ApplyUnavailablePeerExclusion(_context.Medias)
+            .Select(m => m.Id)
+            .ToListAsync();
+
+        results.Should().Contain(_visibleMediaId);
+        results.Should().Contain(activeRemoteMediaId);
+        results.Should().NotContain(downRemoteMediaId);
+        results.Should().Contain(_excludedMediaId);
     }
 }

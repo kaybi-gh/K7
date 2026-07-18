@@ -32,6 +32,10 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
     public MediaProvenance? Provenance { get; init; }
+    /// <summary>When set, only media whose <c>PeerServerId</c> matches (federated origin).</summary>
+    public Guid? OriginPeerServerId { get; init; }
+    /// <summary>When true, only local-origin media (<c>PeerServerId == null</c>).</summary>
+    public bool? LocalOriginOnly { get; init; }
     public string? SearchText { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
@@ -106,6 +110,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"ob:{string.Join(',', request.OrderBy.Order())}");
         if (request.Provenance.HasValue)
             parts.Add($"prov:{request.Provenance.Value}");
+        if (request.LocalOriginOnly == true)
+            parts.Add("origin:local");
+        if (request.OriginPeerServerId.HasValue)
+            parts.Add($"originPeer:{request.OriginPeerServerId.Value}");
         if (!string.IsNullOrWhiteSpace(request.SearchText))
             parts.Add($"st:{request.SearchText.Trim()}");
         if (filter is { Items.Count: > 0 })
@@ -147,6 +155,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (userId.HasValue)
             filterQuery = await mediaAccessFilter.ApplyAllAsync(filterQuery, userId.Value, cancellationToken);
+        else
+            filterQuery = mediaAccessFilter.ApplyUnavailablePeerExclusion(filterQuery);
 
         var version = cacheInvalidator.Version;
         var countCacheKey = await BuildCacheKeyAsync(request, userId, filter, includePagination: false, cancellationToken);
@@ -265,6 +275,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             };
         }
 
+        if (request.LocalOriginOnly == true)
+            query = query.Where(x => x.PeerServerId == null);
+        else if (request.OriginPeerServerId.HasValue)
+            query = query.Where(x => x.PeerServerId == request.OriginPeerServerId.Value);
+
         if (searchPattern is not null)
         {
             query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), searchPattern));
@@ -286,6 +301,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         MediaTypes = ToEnumHashSet<MediaType>(request.MediaTypes),
         OrderBy = ToEnumHashSet<MediaOrderingOption>(request.OrderBy),
         Provenance = request.Provenance,
+        OriginPeerServerId = request.OriginPeerServerId,
+        LocalOriginOnly = request.LocalOriginOnly,
         SearchText = request.SearchText,
         PageNumber = request.PageNumber,
         PageSize = request.PageSize

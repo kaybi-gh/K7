@@ -1,4 +1,5 @@
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Common.Mappings;
@@ -19,7 +20,11 @@ public static class LibraryMappings
             MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays,
             LibraryGroupId = domain.LibraryGroupId,
             PeerServerId = domain.PeerServerId,
+            PeerServerName = domain.PeerServer?.Name,
             PeerServerBaseUrl = domain.PeerServer?.BaseUrl,
+            PeerReachable = domain.PeerServer is null
+                ? null
+                : domain.PeerServer.Status == PeerStatus.Active && domain.PeerServer.LastTestSucceeded != false,
             IntroDetectionEnabled = domain.IntroDetectionEnabled,
             SeekbarThumbnailGenerationEnabled = domain.SeekbarThumbnailGenerationEnabled,
             MusicAudioAnalysisEnabled = domain.MusicAudioAnalysisEnabled,

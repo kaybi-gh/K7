@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Shared.Dtos.Home;
 
@@ -25,9 +26,11 @@ internal sealed class HomeFeedRecommendedStrategy(
         if (recommendedIds.Count == 0)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
-        var items = await context.Medias
-            .AsNoTracking()
-            .Where(m => recommendedIds.Contains(m.Id))
+        var itemsQuery = MediaAccessFilter.ExcludeUnavailablePeers(
+            context,
+            context.Medias.AsNoTracking().Where(m => recommendedIds.Contains(m.Id)));
+
+        var items = await itemsQuery
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)

@@ -37,4 +37,5 @@ public sealed record LibraryGroupFilterState(
     int Sort,
     string? FilterJson,
     string? IntelligentSearchJson,
-    int? View = null);
+    int? View = null,
+    string? ContentSource = null);
