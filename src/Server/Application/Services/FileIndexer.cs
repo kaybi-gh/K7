@@ -359,11 +359,13 @@ public class FileIndexer : IFileIndexer
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
                         file.TryIdentifySerieEpisode(library, filesInSameDirectory);
+
+                    SerieIdentificationConsensus.ApplyDirectoryTitleConsensus(filesInSameDirectory);
                 }
 
                 foreach (var serieGroup in toBeIdentifiedFiles
                     .Where(f => f.Identification?.SeriesTitle is not null)
-                    .GroupBy(f => f.Identification!.SeriesTitle))
+                    .GroupBy(f => f.Identification!.SeriesTitle, StringComparer.OrdinalIgnoreCase))
                 {
                     var serieFiles = serieGroup.ToList();
                     backgroundTasks.Add(new CreateBackgroundTasksBatchItem()

@@ -5,6 +5,7 @@ using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -367,12 +368,17 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
     private async Task<Guid> HandleSerieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
     {
+        foreach (var directoryGroup in indexedFiles.GroupBy(f => f.ParentDirectory))
+            SerieIdentificationConsensus.ApplyDirectoryTitleConsensus(directoryGroup.ToList());
+
         var firstIdentification = indexedFiles.First().Identification;
         Guard.Against.Null(firstIdentification);
         Guard.Against.NullOrEmpty(firstIdentification.SeriesTitle);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(library.MetadataProviderName);
-        var (serie, _, providerExternalId) = await FindOrCreateSerieAsync(firstIdentification, metadataProvider, cancellationToken);
+        var folderSerie = await TryResolveSerieFromFolderSiblingsAsync(indexedFiles, library, metadataProvider, cancellationToken);
+        var (serie, _, providerExternalId) = folderSerie
+            ?? await FindOrCreateSerieAsync(firstIdentification, metadataProvider, cancellationToken);
 
         // Load the full season+episode tree once - no more per-episode lazy loads
         await _context.Entry(serie).Collection(s => s.Seasons)
@@ -588,6 +594,68 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             MaxAttempts = 3,
             ConcurrencyGroup = "image-processing"
         }, cancellationToken);
+    }
+
+    private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)?> TryResolveSerieFromFolderSiblingsAsync(
+        List<IndexedFile> indexedFiles,
+        Library library,
+        ISerieMetadataProvider metadataProvider,
+        CancellationToken cancellationToken)
+    {
+        var directories = indexedFiles
+            .Where(f => !string.IsNullOrEmpty(f.ParentDirectory))
+            .Select(f => f.ParentDirectory!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (directories.Count != 1)
+            return null;
+
+        var directory = directories[0];
+        var excludeIds = indexedFiles.Select(f => f.Id).ToList();
+
+        var siblingSerieCounts = await (
+            from file in _context.IndexedFiles.AsNoTracking()
+            where file.LibraryId == library.Id
+                && file.ParentDirectory == directory
+                && file.MediaId != null
+                && !excludeIds.Contains(file.Id)
+            join episode in _context.Medias.OfType<SerieEpisode>().AsNoTracking()
+                on file.MediaId equals episode.Id
+            group episode by episode.SerieId into g
+            select new { SerieId = g.Key, Count = g.Count() }
+        ).ToListAsync(cancellationToken);
+
+        if (siblingSerieCounts.Count == 0)
+            return null;
+
+        Guid? chosenSerieId = null;
+        if (siblingSerieCounts.Count == 1)
+        {
+            chosenSerieId = siblingSerieCounts[0].SerieId;
+        }
+        else
+        {
+            var total = siblingSerieCounts.Sum(x => x.Count);
+            var top = siblingSerieCounts.OrderByDescending(x => x.Count).First();
+            if (top.Count >= 2 && top.Count * 100 >= total * 80)
+                chosenSerieId = top.SerieId;
+        }
+
+        if (chosenSerieId is null)
+            return null;
+
+        var serie = await _context.Medias
+            .OfType<Serie>()
+            .Include(s => s.ExternalIds)
+            .FirstOrDefaultAsync(s => s.Id == chosenSerieId.Value, cancellationToken);
+
+        if (serie is null)
+            return null;
+
+        var externalId = serie.ExternalIds
+            .FirstOrDefault(e => e.ProviderName == metadataProvider.ProviderName)?.Value;
+        return (serie, false, externalId);
     }
 
     private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)> FindOrCreateSerieAsync(
