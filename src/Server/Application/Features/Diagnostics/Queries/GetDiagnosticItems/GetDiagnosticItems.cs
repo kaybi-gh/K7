@@ -19,7 +19,7 @@ public record GetDiagnosticItemsQuery : IRequest<PaginatedList<DiagnosticItemDto
     public DiagnosticIssue? Issue { get; init; }
     public IReadOnlyCollection<DiagnosticIssue>? Issues { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 20;
+    public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItemsQuery, PaginatedList<DiagnosticItemDto>>

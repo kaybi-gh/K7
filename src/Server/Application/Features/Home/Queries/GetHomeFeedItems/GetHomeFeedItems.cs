@@ -26,7 +26,7 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
     public bool? Detailed { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 20;
+    public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, IHomeRecommendationService homeRecommendationService)

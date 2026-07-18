@@ -34,7 +34,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto
     public MediaProvenance? Provenance { get; init; }
     public string? SearchText { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 10;
+    public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 }
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<LiteMediaDto>>;

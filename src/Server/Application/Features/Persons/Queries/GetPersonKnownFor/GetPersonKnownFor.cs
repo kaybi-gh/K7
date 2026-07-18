@@ -5,13 +5,15 @@ using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.EntityFrameworkCore;
 
+using K7.Server.Application.Common.Models;
+
 namespace K7.Server.Application.Features.Persons.Queries.GetPersonKnownFor;
 
 [Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetPersonKnownForQuery : IRequest<List<PersonKnownForItemDto>>
 {
     public required Guid PersonId { get; init; }
-    public int PageSize { get; init; } = 20;
+    public int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
 public class GetPersonKnownForQueryHandler(

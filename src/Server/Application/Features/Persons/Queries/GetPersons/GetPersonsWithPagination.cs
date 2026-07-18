@@ -14,7 +14,7 @@ public record GetPersonsWithPaginationQuery : IRequest<PaginatedList<Person>>
     public Guid[]? MediaIds { get; init; }
     public EnumHashSetQueryParam<PersonRoleType>? RoleTypes { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 10;
+    public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 }
 
 public class GetPersonsQueryHandler(IApplicationDbContext context, IUser currentUser)

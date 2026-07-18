@@ -12,7 +12,7 @@ namespace K7.Server.Application.Features.Playlists.Queries.GetPlaylists;
 public record GetPlaylistsWithPaginationQuery : IRequest<PaginatedList<Playlist>>
 {
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 20;
+    public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
     public MediaType? MediaType { get; init; }
     public LibraryItemOrderingOption? OrderBy { get; init; }
 }

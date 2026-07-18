@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Diagnostics.Queries.GetDiagnosticItems;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
@@ -18,7 +19,7 @@ public class GetDiagnosticItems : IEndpoint
             [FromQuery] DiagnosticEntityType? entityType,
             [FromQuery(Name = "issue")] DiagnosticIssue[]? issues,
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
+            [FromQuery] int pageSize = PagingDefaults.DefaultPageSize,
             CancellationToken cancellationToken = default) =>
         {
             var query = new GetDiagnosticItemsQuery

@@ -10,7 +10,7 @@ public record GetCollectionItemsWithPaginationQuery : IRequest<PaginatedList<Col
 {
     public required Guid CollectionId { get; init; }
     public required int PageNumber { get; init; } = 1;
-    public required int PageSize { get; init; } = 50;
+    public required int PageSize { get; init; } = PagingDefaults.ItemsPageSize;
 }
 
 public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)

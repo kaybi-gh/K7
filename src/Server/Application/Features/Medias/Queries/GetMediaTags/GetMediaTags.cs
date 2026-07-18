@@ -20,15 +20,15 @@ public record GetMediaTagsQuery : IRequest<MediaTagsDto>
     public bool? UnwatchedOnly { get; init; }
     public EnumHashSetQueryParam<MediaTagOrderingOption>? OrderBy { get; init; }
     public int PageNumber { get; init; } = 1;
-    public int PageSize { get; init; } = 100;
-    public int Limit { get; init; } = 100;
+    public int PageSize { get; init; } = PagingDefaults.MaxPageSize;
+    public int Limit { get; init; } = PagingDefaults.MaxPageSize;
 }
 
 public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetMediaTagsQuery, MediaTagsDto>
 {
     private const int MaxLimit = 100;
-    private const int MaxPageSize = 100;
+    private const int MaxPageSize = PagingDefaults.MaxPageSize;
 
     private static readonly MetadataTagKind[] DefaultKinds =
     [
