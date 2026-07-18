@@ -13,5 +13,6 @@ public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
         builder.Property(k => k.KeyPrefix).HasMaxLength(12).IsRequired();
 
         builder.HasIndex(k => k.KeyHash).IsUnique();
+        builder.HasIndex(k => k.KeyPrefix);
     }
 }

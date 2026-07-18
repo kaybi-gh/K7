@@ -52,6 +52,7 @@ services:
       Database__Server: postgres
       Database__Port: "5432"
       Database__Name: ${POSTGRES_DB:-K7}
+      Security__ApiKeys__HashSecret: ${SECURITY__APIKEYS__HASHSECRET:?Set SECURITY__APIKEYS__HASHSECRET in .env}
       Paths__Config: /data/config
       Paths__Metadatas: /data/metadatas
       Paths__Logs: /data/logs

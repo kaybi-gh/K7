@@ -31,6 +31,7 @@ public sealed class SmokeWebApplicationFactory : WebApplicationFactory<Program>
                 ["Paths:Transcoding"] = _paths.Transcoding,
                 ["Paths:FFMpegBinaryFolder"] = "",
                 ["Security:ForceHttps"] = "false",
+                ["Security:ApiKeys:HashSecret"] = "smoke-test-api-key-hash-secret",
                 ["Authentication:Local:SignInEnabled"] = "true",
                 ["Authentication:Oidc:Enabled"] = "false",
                 ["SmokeTest:SkipFfmpegVerification"] = "true"

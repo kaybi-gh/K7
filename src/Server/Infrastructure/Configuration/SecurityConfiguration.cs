@@ -4,7 +4,17 @@ public sealed class SecurityConfiguration
 {
     public bool ForceHttps { get; set; } = true;
     public string[] KnownProxies { get; set; } = [];
+    public ApiKeysSecurityConfiguration ApiKeys { get; set; } = new();
     public FederationSecurityConfiguration Federation { get; set; } = new();
+}
+
+public sealed class ApiKeysSecurityConfiguration
+{
+    /// <summary>
+    /// HMAC secret mixed into API key hashes. Required at startup.
+    /// Prefer env/file secret in production. Changing it invalidates all existing API keys.
+    /// </summary>
+    public string HashSecret { get; set; } = string.Empty;
 }
 
 public sealed class FederationSecurityConfiguration
