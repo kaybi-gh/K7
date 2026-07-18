@@ -20,10 +20,12 @@ public sealed class LibraryFolderWatcherService(
     private readonly Lock _sync = new();
     private readonly Dictionary<Guid, WatchedLibrary> _watchedLibraries = [];
     private readonly Dictionary<Guid, PendingScan> _pendingScans = [];
+    private CancellationToken _stoppingToken;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("LibraryFolderWatcherService started");
+        _stoppingToken = stoppingToken;
 
         await ReloadWatchersAsync(stoppingToken);
 
@@ -151,6 +153,9 @@ public sealed class LibraryFolderWatcherService(
         if (paths.Count == 0)
             return;
 
+        if (_stoppingToken.IsCancellationRequested)
+            return;
+
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
@@ -165,7 +170,11 @@ public sealed class LibraryFolderWatcherService(
                 MaxAttempts = 1,
                 TimeoutSeconds = 3600,
                 ConcurrencyGroup = "library-scan"
-            });
+            }, _stoppingToken);
+        }
+        catch (OperationCanceledException) when (_stoppingToken.IsCancellationRequested)
+        {
+            logger.LogInformation("Path scan queue canceled for library {LibraryId}: service is stopping", libraryId);
         }
         catch (Exception ex)
         {

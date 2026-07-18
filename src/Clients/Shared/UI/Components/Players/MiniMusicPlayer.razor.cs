@@ -27,6 +27,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private DotNetObjectReference<MiniMusicPlayer>? _dotNetRef;
     private bool _needsRender = true;
     private DateTime _lastProgressRenderUtc;
+    private volatile bool _disposed;
 
     private double DisplayPercent => _isScrubbing && Audio.Duration > 0
         ? (_scrubTime / Audio.Duration) * 100
@@ -100,6 +101,9 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+        _longPressCts?.Cancel();
+        _longPressCts?.Dispose();
         Audio.PlaybackStateChanged -= OnStateChanged;
         Audio.CurrentTimeChanged -= OnTimeChanged;
         Audio.DurationChanged -= OnStateChanged;
@@ -141,6 +145,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         var cts = _longPressCts;
         _ = Task.Delay(600, cts.Token).ContinueWith(async _ =>
         {
+            if (_disposed) return;
             _longPressTriggered = true;
             await InvokeAsync(async () => await StopAndHide());
         }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
@@ -164,6 +169,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         var cts = _longPressCts;
         _ = Task.Delay(600, cts.Token).ContinueWith(async _ =>
         {
+            if (_disposed) return;
             _longPressTriggered = true;
             await InvokeAsync(async () => await StopAndHide());
         }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
@@ -272,6 +278,9 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private void RequestRender()
     {
+        if (_disposed)
+            return;
+
         _needsRender = true;
         InvokeAsync(StateHasChanged).FireAndForget();
     }

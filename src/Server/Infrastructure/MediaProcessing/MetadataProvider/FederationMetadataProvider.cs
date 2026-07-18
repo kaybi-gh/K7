@@ -240,7 +240,10 @@ public class FederationMetadataProvider(
             return null;
 
         if (!Guid.TryParse(compositeProviderId[(compositeProviderId.IndexOf(':') + 1)..], out var remoteMediaId))
+        {
+            logger.LogWarning("Federation provider id {ProviderId} does not contain a valid remote media id", compositeProviderId);
             return null;
+        }
 
         var token = await peerClient.GetAccessTokenAsync(baseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
         if (token is null)
@@ -256,16 +259,31 @@ public class FederationMetadataProvider(
     {
         var separatorIndex = compositeProviderId.IndexOf(':');
         if (separatorIndex < 0)
+        {
+            logger.LogWarning("Federation provider id {ProviderId} is missing the peer separator", compositeProviderId);
             return (null, string.Empty);
+        }
 
         if (!Guid.TryParse(compositeProviderId[..separatorIndex], out var peerId))
+        {
+            logger.LogWarning("Federation provider id {ProviderId} does not contain a valid peer id", compositeProviderId);
             return (null, string.Empty);
+        }
 
         var peer = await context.PeerServers
             .FirstOrDefaultAsync(p => p.Id == peerId && p.Status == PeerStatus.Active, cancellationToken);
 
-        if (peer is null || peer.OutboundClientId is null || peer.OutboundClientSecret is null)
+        if (peer is null)
+        {
+            logger.LogWarning("Federation peer {PeerId} not found or not active, resolve returned empty", peerId);
             return (null, string.Empty);
+        }
+
+        if (peer.OutboundClientId is null || peer.OutboundClientSecret is null)
+        {
+            logger.LogWarning("Federation peer {PeerName} ({PeerId}) has no outbound client credentials, resolve returned empty", peer.Name, peerId);
+            return (null, string.Empty);
+        }
 
         return (peer, peer.BaseUrl);
     }
