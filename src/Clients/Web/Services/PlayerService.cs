@@ -44,163 +44,112 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
     public event Action? BackPressed;
 
-    private PlayerSource _source = new();
-    public PlayerSource Source
-    {
-        get => _source;
-        set
+    public PlayerSource Source { get; set
         {
-            if (_source != value)
+            if (field != value)
             {
-                _source = value;
+                field = value;
                 CurrentTime = 0;
                 Duration = 0;
                 BufferedTime = 0;
                 PlaybackState = PlaybackState.Idle;
                 SourceChanged?.Invoke(value);
             }
-        }
-    }
+        } } = new();
 
     public bool IsVisible { get; private set; } = false;
 
-
-    private PlaybackState _playbackState = PlaybackState.Unknown;
-    public PlaybackState PlaybackState
-    {
-        get => _playbackState;
-        set
+    public PlaybackState PlaybackState { get; set
         {
-            if (_playbackState != value)
+            if (field != value)
             {
-                _playbackState = value;
+                field = value;
                 PlaybackStateChanged?.Invoke(value);
             }
-        }
-    }
+        } } = PlaybackState.Unknown;
 
-    private bool _isFullScreen = false;
-    public bool IsFullScreen
-    {
-        get => _isFullScreen;
-        set
+    public bool IsFullScreen { get; set
         {
-            if (_isFullScreen != value)
+            if (field != value)
             {
-                _isFullScreen = value;
+                field = value;
                 IsFullScreenChanged?.Invoke(value);
             }
-        }
-    }
+        } } = false;
 
-    private double _duration = 0;
-    public double Duration
-    {
-        get => _duration;
-        set
+    public double Duration { get; set
         {
-            if (_duration != value)
+            if (field != value)
             {
-                _duration = value;
+                field = value;
                 DurationChanged?.Invoke(value);
             }
-        }
-    }
+        } } = 0;
 
-    private double _currentTime = 0;
-    public double CurrentTime
-    {
-        get => _currentTime;
-        set
+    public double CurrentTime { get; set
         {
-            if (_currentTime != value)
+            if (field != value)
             {
-                _currentTime = value;
+                field = value;
                 CurrentTimeChanged?.Invoke(value);
             }
-        }
-    }
+        } } = 0;
 
-    private double _bufferedTime = 0;
-    public double BufferedTime
-    {
-        get => _bufferedTime;
-        set
+    public double BufferedTime { get; set
         {
-            if (_bufferedTime != value)
+            if (field != value)
             {
-                _bufferedTime = value;
+                field = value;
                 BufferedTimeChanged?.Invoke(value);
             }
-        }
-    }
+        } } = 0;
 
-    private double _volume = deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
-    public double Volume
-    {
-        get => _volume;
-        set
+    public double Volume { get; set
         {
-            if (_volume != value)
+            if (field != value)
             {
-                _volume = value;
+                field = value;
                 deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
                 VolumeChanged?.Invoke(value);
             }
-        }
-    }
+        } } = deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
 
-    private double _playbackRate = deviceStorageService.Get(PreferenceKeys.PLAYER_PLAYBACK_RATE, 1);
-    public double PlaybackRate
-    {
-        get => _playbackRate;
-        set
+    public double PlaybackRate { get; set
         {
-            if (_playbackRate != value)
+            if (field != value)
             {
-                _playbackRate = value;
+                field = value;
                 deviceStorageService.Set(PreferenceKeys.PLAYER_PLAYBACK_RATE, value);
                 PlaybackRateChanged?.Invoke(value);
             }
-        }
-    }
+        } } = deviceStorageService.Get(PreferenceKeys.PLAYER_PLAYBACK_RATE, 1);
 
-    private bool _isMuted = deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
-    public bool IsMuted
-    {
-        get => _isMuted;
-        set
+    public bool IsMuted { get; set
         {
-            if (_isMuted != value)
+            if (field != value)
             {
-                _isMuted = value;
+                field = value;
                 deviceStorageService.Set(PreferenceKeys.PLAYER_IS_MUTED, value);
                 IsMutedChanged?.Invoke(value);
             }
-        }
-    }
+        } } = deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
 
     private Guid? _currentIndexedFileId;
     private List<AudioFileTrackDto> _audioTracks = [];
     public IReadOnlyList<AudioFileTrackDto> AudioTracks => _audioTracks;
 
-    private AudioFileTrackDto? _selectedAudioTrack;
-    public AudioFileTrackDto? SelectedAudioTrack => _selectedAudioTrack;
+    public AudioFileTrackDto? SelectedAudioTrack { get; private set; }
 
     private List<SubtitleFileTrackDto> _subtitleTracks = [];
     public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks => _subtitleTracks;
 
-    private SubtitleFileTrackDto? _selectedSubtitleTrack;
-    public SubtitleFileTrackDto? SelectedSubtitleTrack => _selectedSubtitleTrack;
+    public SubtitleFileTrackDto? SelectedSubtitleTrack { get; private set; }
 
     private List<VideoQualityOption> _availableQualities = [];
     public IReadOnlyList<VideoQualityOption> AvailableQualities => _availableQualities;
 
-    private VideoQualityOption? _selectedQuality;
-    public VideoQualityOption? SelectedQuality => _selectedQuality;
-
-    private AspectRatioMode _aspectRatioMode = AspectRatioMode.Fit;
-    public AspectRatioMode AspectRatio => _aspectRatioMode;
+    public VideoQualityOption? SelectedQuality { get; private set; }
+    public AspectRatioMode AspectRatio { get; private set; } = AspectRatioMode.Fit;
 
     /// <summary>
     /// Base manifest URL (without Quality param) used to rebuild the source when switching quality.
@@ -220,15 +169,15 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
-        _selectedSubtitleTrack = null;
-        _selectedAudioTrack = audioTrackIndex is int idx
+        SelectedSubtitleTrack = null;
+        SelectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
 
         _availableQualities = videoResolution is not null
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
-        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
+        SelectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
             ?? _availableQualities.FirstOrDefault();
 
         Source = new PlayerSource();
@@ -248,13 +197,13 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 throw new InvalidOperationException("Streaming session did not return a source URI.");
             }
 
-            _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
-                ?? _selectedAudioTrack;
+            SelectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
+                ?? SelectedAudioTrack;
 
             if (session.SubtitleTracks is { Count: > 0 })
                 SetSubtitleTracks(session.SubtitleTracks);
 
-            _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
+            SelectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
                 ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
                 : null;
 
@@ -275,9 +224,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             };
 
             Play();
-            AudioTrackChanged?.Invoke(_selectedAudioTrack);
-            SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
-            QualityChanged?.Invoke(_selectedQuality);
+            AudioTrackChanged?.Invoke(SelectedAudioTrack);
+            SubtitleTrackChanged?.Invoke(SelectedSubtitleTrack);
+            QualityChanged?.Invoke(SelectedQuality);
         }
         catch (OperationCanceledException) when (generation != _playGeneration)
         {
@@ -300,17 +249,17 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _currentIndexedFileId = null;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
-        _selectedSubtitleTrack = subtitleTrackIndex is int subIdx
+        SelectedSubtitleTrack = subtitleTrackIndex is int subIdx
             ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
             : null;
-        _selectedAudioTrack = audioTrackIndex is int idx
+        SelectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
 
         _availableQualities = videoResolution is not null
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
-        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
+        SelectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
             ?? _availableQualities.FirstOrDefault();
 
         Source = new PlayerSource();
@@ -347,9 +296,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             };
 
             Play();
-            AudioTrackChanged?.Invoke(_selectedAudioTrack);
-            SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
-            QualityChanged?.Invoke(_selectedQuality);
+            AudioTrackChanged?.Invoke(SelectedAudioTrack);
+            SubtitleTrackChanged?.Invoke(SelectedSubtitleTrack);
+            QualityChanged?.Invoke(SelectedQuality);
         }
         catch (OperationCanceledException) when (generation != _playGeneration)
         {
@@ -367,7 +316,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             .OrderByDescending(t => t.IsDefault)
             .ThenBy(t => t.Index)
             .ToList() ?? [];
-        _selectedSubtitleTrack = null;
+        SelectedSubtitleTrack = null;
         SubtitleTracksChanged?.Invoke();
     }
 
@@ -383,7 +332,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             return Task.CompletedTask;
         }
 
-        _selectedAudioTrack = track;
+        SelectedAudioTrack = track;
         AudioTrackChanged?.Invoke(track);
 
         var trackName = track.Name ?? $"Track {track.Index}";
@@ -399,7 +348,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             return Task.CompletedTask;
         }
 
-        _selectedSubtitleTrack = track;
+        SelectedSubtitleTrack = track;
         SubtitleTrackChanged?.Invoke(track);
 
         if (!RequiresManifestReloadForSubtitleChange(track))
@@ -416,7 +365,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         var seekTime = CurrentTime;
         var newUrl = BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, track);
-        newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
+        newUrl = BuildManifestUrlWithQuality(newUrl, SelectedQuality);
         _baseManifestUrl = newUrl;
 
         Source = new PlayerSource
@@ -440,7 +389,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             return Task.CompletedTask;
         }
 
-        _selectedQuality = quality;
+        SelectedQuality = quality;
         QualityChanged?.Invoke(quality);
 
         // Save current playback position before changing source
@@ -448,7 +397,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         // Rebuild the manifest URL with the Quality parameter
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
-        newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
+        newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, SelectedSubtitleTrack);
 
         Source = new PlayerSource
         {
@@ -494,7 +443,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
     public void SetAspectRatioMode(AspectRatioMode mode)
     {
-        _aspectRatioMode = mode;
+        AspectRatio = mode;
         AspectRatioModeChanged?.Invoke(mode);
         AspectRatioModeChangeRequested?.Invoke(mode);
     }

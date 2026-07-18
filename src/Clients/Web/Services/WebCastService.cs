@@ -10,12 +10,10 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
     private DotNetObjectReference<WebCastService>? _dotNetRef;
-    private bool _isAvailable;
-    private bool _isCasting;
     private readonly List<CastDeviceInfo> _devices = [];
 
-    public bool IsAvailable => _isAvailable;
-    public bool IsCasting => _isCasting;
+    public bool IsAvailable { get; private set; }
+    public bool IsCasting { get; private set; }
     public IReadOnlyList<CastDeviceInfo> DiscoveredDevices => _devices;
 
     public event Action? StateChanged;
@@ -35,15 +33,15 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
             await ReleaseDotNetRefAsync();
 
         _dotNetRef = DotNetObjectReference.Create(this);
-        _isAvailable = await _jsRuntime.InvokeAsync<bool>("K7Cast.init", _dotNetRef);
+        IsAvailable = await _jsRuntime.InvokeAsync<bool>("K7Cast.init", _dotNetRef);
         StateChanged?.Invoke();
     }
 
     public async Task StopDiscoveryAsync()
     {
         await ReleaseDotNetRefAsync();
-        _isAvailable = false;
-        _isCasting = false;
+        IsAvailable = false;
+        IsCasting = false;
         StateChanged?.Invoke();
     }
 
@@ -65,7 +63,7 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
     public async Task StopCastingAsync()
     {
         await _jsRuntime.InvokeVoidAsync("K7Cast.stopCasting");
-        _isCasting = false;
+        IsCasting = false;
         StateChanged?.Invoke();
     }
 
@@ -88,35 +86,35 @@ internal sealed class WebCastService : ICastService, IAsyncDisposable
     [JSInvokable]
     public void OnCastInitialized()
     {
-        _isAvailable = true;
+        IsAvailable = true;
         StateChanged?.Invoke();
     }
 
     [JSInvokable]
     public void OnReceiverAvailabilityChanged(bool available)
     {
-        _isAvailable = available;
+        IsAvailable = available;
         StateChanged?.Invoke();
     }
 
     [JSInvokable]
     public void OnCastStateChanged(bool isCasting)
     {
-        _isCasting = isCasting;
+        IsCasting = isCasting;
         StateChanged?.Invoke();
     }
 
     [JSInvokable]
     public void OnMediaLoaded()
     {
-        _isCasting = true;
+        IsCasting = true;
         StateChanged?.Invoke();
     }
 
     [JSInvokable]
     public void OnMediaError(string error)
     {
-        _isCasting = false;
+        IsCasting = false;
         StateChanged?.Invoke();
     }
 

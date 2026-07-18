@@ -21,8 +21,8 @@ using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Search;
-using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.SharedProfiles;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -178,17 +178,15 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Action? IsFullScreenVisibleChanged;
 
     public bool IsMuted { get; set; }
-    private bool _audioVisible;
-    private AudioQueueItem? _currentTrack;
+
     private List<AudioQueueItem> _queue = [];
-    private int _currentIndex;
     private readonly object _timerLock = new();
     private Timer? _progressTimer;
 
-    public bool IsVisible => _audioVisible;
+    public bool IsVisible { get; private set; }
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
-    public AudioQueueItem? CurrentTrack => _currentTrack;
-    public int CurrentIndex => _currentIndex;
+    public AudioQueueItem? CurrentTrack { get; private set; }
+    public int CurrentIndex { get; private set; }
     public RepeatMode Repeat => RepeatMode.Off;
     public bool Shuffle => false;
     public string? ActiveRadioTitle { get; private set; }
@@ -196,8 +194,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public bool AdaptiveCrossfade => false;
     public double CrossfadeDuration => 0;
     public double CrossfadeTriggerWindow => 0;
-    private bool _isFullScreenVisible;
-    public bool IsFullScreenVisible => _isFullScreenVisible;
+
+    public bool IsFullScreenVisible { get; private set; }
     public PlaybackState PlaybackState { get; set; } = PlaybackState.Idle;
     public double Duration { get; set; }
     public double CurrentTime { get; set; }
@@ -206,7 +204,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
 
     public void Play()
     {
-        if (_currentTrack is null) return;
+        if (CurrentTrack is null) return;
         PlaybackState = PlaybackState.Playing;
         PlaybackStateChanged?.Invoke(PlaybackState);
         StartProgressTimer();
@@ -278,7 +276,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default)
     {
         _queue = [track];
-        _currentIndex = 0;
+        CurrentIndex = 0;
         SetCurrentTrack(track);
         Play();
         return Task.CompletedTask;
@@ -289,8 +287,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         ActiveRadioTitle = null;
         ActiveRadioChanged?.Invoke();
         _queue = [.. tracks];
-        _currentIndex = startIndex;
-        if (_queue.Count > 0) { SetCurrentTrack(_queue[_currentIndex]); Play(); }
+        CurrentIndex = startIndex;
+        if (_queue.Count > 0) { SetCurrentTrack(_queue[CurrentIndex]); Play(); }
         return Task.CompletedTask;
     }
 
@@ -299,21 +297,21 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         ActiveRadioTitle = radioTitle;
         ActiveRadioChanged?.Invoke();
         _queue = [.. tracks];
-        _currentIndex = startIndex;
-        if (_queue.Count > 0) { SetCurrentTrack(_queue[_currentIndex]); Play(); }
+        CurrentIndex = startIndex;
+        if (_queue.Count > 0) { SetCurrentTrack(_queue[CurrentIndex]); Play(); }
         return Task.CompletedTask;
     }
 
     public void AddToQueue(AudioQueueItem track) { _queue.Add(track); QueueChanged?.Invoke(); }
-    public void AddToQueueNext(AudioQueueItem track) { _queue.Insert(_currentIndex + 1, track); QueueChanged?.Invoke(); }
+    public void AddToQueueNext(AudioQueueItem track) { _queue.Insert(CurrentIndex + 1, track); QueueChanged?.Invoke(); }
     public void RemoveFromQueue(int index) { if (index >= 0 && index < _queue.Count) { _queue.RemoveAt(index); QueueChanged?.Invoke(); } }
     public void ClearQueue() { _queue.Clear(); QueueChanged?.Invoke(); }
 
     public Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default)
     {
-        if (index < 0 || index >= _queue.Count || index == _currentIndex) return Task.CompletedTask;
-        _currentIndex = index;
-        SetCurrentTrack(_queue[_currentIndex]);
+        if (index < 0 || index >= _queue.Count || index == CurrentIndex) return Task.CompletedTask;
+        CurrentIndex = index;
+        SetCurrentTrack(_queue[CurrentIndex]);
         Play();
         return Task.CompletedTask;
     }
@@ -321,8 +319,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public Task NextAsync(CancellationToken cancellationToken = default)
     {
         if (_queue.Count == 0) return Task.CompletedTask;
-        _currentIndex = (_currentIndex + 1) % _queue.Count;
-        SetCurrentTrack(_queue[_currentIndex]);
+        CurrentIndex = (CurrentIndex + 1) % _queue.Count;
+        SetCurrentTrack(_queue[CurrentIndex]);
         Play();
         return Task.CompletedTask;
     }
@@ -330,8 +328,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public Task PreviousAsync(CancellationToken cancellationToken = default)
     {
         if (_queue.Count == 0) return Task.CompletedTask;
-        _currentIndex = (_currentIndex - 1 + _queue.Count) % _queue.Count;
-        SetCurrentTrack(_queue[_currentIndex]);
+        CurrentIndex = (CurrentIndex - 1 + _queue.Count) % _queue.Count;
+        SetCurrentTrack(_queue[CurrentIndex]);
         Play();
         return Task.CompletedTask;
     }
@@ -377,13 +375,13 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Func<PlayerSource, Task>? GaplessPrebufferRequested;
     public Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public void ToggleFullScreen() { _isFullScreenVisible = !_isFullScreenVisible; IsFullScreenVisibleChanged?.Invoke(); }
-    public Task ShowAsync() { _audioVisible = true; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
-    public Task HideAsync() { _audioVisible = false; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
+    public void ToggleFullScreen() { IsFullScreenVisible = !IsFullScreenVisible; IsFullScreenVisibleChanged?.Invoke(); }
+    public Task ShowAsync() { IsVisible = true; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
+    public Task HideAsync() { IsVisible = false; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
 
     public Task OnTrackEndedAsync(CancellationToken cancellationToken = default)
     {
-        if (_currentIndex + 1 < _queue.Count) return NextAsync(cancellationToken);
+        if (CurrentIndex + 1 < _queue.Count) return NextAsync(cancellationToken);
         Stop();
         return Task.CompletedTask;
     }
@@ -391,14 +389,14 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     private void SetCurrentTrack(AudioQueueItem track)
     {
         StopProgressTimer();
-        _currentTrack = track;
+        CurrentTrack = track;
         Duration = track.Duration ?? 180;
         CurrentTime = 0;
         DurationChanged?.Invoke(Duration);
         CurrentTimeChanged?.Invoke(0);
-        CurrentTrackChanged?.Invoke(_currentTrack);
+        CurrentTrackChanged?.Invoke(CurrentTrack);
         QueueChanged?.Invoke();
-        _audioVisible = true;
+        IsVisible = true;
         IsVisibleChanged?.Invoke();
     }
 
