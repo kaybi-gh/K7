@@ -92,7 +92,11 @@ Operator guide: [Operating - Federation](../admin/operating.md#federation).
 
 ## Domain events
 
-Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF Core interceptors dispatch events after save.
+Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF Core interceptors dispatch events after save. Non-EF paths (e.g. transcode failures, AudioMuse health) use `IDomainEventPublisher`.
+
+## Shared profiles
+
+`SharedProfile` is a membership hat over real `User` accounts (not a fake user). When active (client sends `X-Shared-Profile-Id`, validated server-side against membership), continue watching / history / stats use profile-scoped tables (`SharedProfileMediaStates`, sessions tagged with `SharedProfileId`). Personal `UserMediaState` is not written for shared sessions - any member (host or co-viewer) can resolve and drive a shared session. Playback policy settings (`SharedProfileSettings`), the optional content restriction profile (`SharedProfile.ContentRestrictionProfileId`), and shared playlists (`SharedProfilePlaylists`) are owned by the profile itself, not the host personally: `MediaAccessGuard` and the playback policy provider prefer the active shared profile's own settings over the acting member's personal ones, and a shared profile with no restriction profile assigned means unrestricted for that session (no fallback to a member's personal profile).
 
 ## UI layout
 

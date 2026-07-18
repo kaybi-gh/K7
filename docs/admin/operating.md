@@ -126,6 +126,17 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 
 Outbound HTTP webhooks only (event filters + payload templates). CRUD + test: `/api/notifications/rules`.
 
+Event catalog covers Playback, Library, Media, Playlist, Device, Download, Federation, and Health
+categories. Notable Federation / Health events for ops monitoring:
+
+| Event | Category | Fires when |
+|---|---|---|
+| `PeerConnectivityChangedEvent` | Federation | A peer test (scheduled or manual) transitions success/failure state, e.g. a peer goes offline or comes back |
+| `TranscodeFailedEvent` | Health | An on-the-fly transcode/remux session fails for a media file |
+| `MusicIntelligenceUnavailableEvent` | Health | AudioMuse AI is enabled but unreachable during a health probe |
+| `LibraryScanCompletedEvent` | Library | A full or partial (path-scoped) library scan finishes, with added/skipped/inaccessible counts |
+| `MediaCreatedEvent` | Media | A new media item is created from indexing |
+
 ### Music intelligence (AudioMuse AI)
 
 Optional self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI):
