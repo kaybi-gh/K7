@@ -8,16 +8,34 @@ namespace K7.Server.Infrastructure.ExternalServices;
 
 public class MusicIntelligenceService(
     AudioMuseMusicIntelligenceAdapter adapter,
+    MusicIntelligenceHealthMonitor healthMonitor,
     IMemoryCache cache,
     ILogger<MusicIntelligenceService> logger) : IMusicIntelligenceService
 {
     private static readonly TimeSpan SimilarTracksCacheDuration = TimeSpan.FromMinutes(30);
 
-    public Task<MusicIntelligenceConnectionResult> TestConnectionAsync(CancellationToken cancellationToken = default)
-        => adapter.TestConnectionAsync(cancellationToken);
+    public async Task<MusicIntelligenceConnectionResult> TestConnectionAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await adapter.TestConnectionAsync(cancellationToken);
+        if (result.Success)
+            healthMonitor.MarkReachable();
+        else
+            healthMonitor.MarkUnreachable();
+        return result;
+    }
 
-    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    public Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default)
         => adapter.IsConfiguredAndEnabledAsync(cancellationToken);
+
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await IsEnabledAsync(cancellationToken))
+            return false;
+
+        return await healthMonitor.GetReachableAsync(
+            async ct => (await adapter.TestConnectionAsync(ct)).Success,
+            cancellationToken);
+    }
 
     public async Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
     {
@@ -36,6 +54,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get similar tracks for {TrackId}", trackId);
             return [];
         }
@@ -52,6 +71,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get mood presets");
             return [];
         }
@@ -68,6 +88,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get mood tracks for {MoodKey} centroid {CentroidIndex}", moodKey, centroidIndex);
             return [];
         }
@@ -84,6 +105,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get discovery tracks");
             return [];
         }
@@ -100,6 +122,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get sonic path from {FromId} to {ToId}", fromId, toId);
             return [];
         }
@@ -116,6 +139,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to create playlist from prompt");
             return [];
         }
@@ -142,6 +166,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get similar artists for {ArtistId}", artistId);
             return [];
         }
@@ -164,6 +189,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to search tracks by sonic text");
             return [];
         }
@@ -186,6 +212,7 @@ public class MusicIntelligenceService(
         }
         catch (Exception ex)
         {
+            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to search tracks by lyrics");
             return [];
         }

@@ -7,6 +7,9 @@ public record MusicIntelligenceConnectionResult(bool Success, string? Version = 
 public interface IMusicIntelligenceService
 {
     Task<MusicIntelligenceConnectionResult> TestConnectionAsync(CancellationToken cancellationToken = default);
+    /// <summary>True when music intelligence is configured and enabled in settings.</summary>
+    Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default);
+    /// <summary>True when enabled and AudioMuse is currently reachable.</summary>
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
     Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MusicMoodPresetDto>> GetMoodPresetsAsync(CancellationToken cancellationToken = default);

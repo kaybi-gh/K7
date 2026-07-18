@@ -20,6 +20,7 @@ public partial class MusicRadioPresets : IAsyncDisposable
 
     private IReadOnlyList<RadioPresetInfo> Presets { get; set; } = [];
     private string? _loadingPresetTitle;
+    private bool _musicIntelligenceDegraded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -30,10 +31,12 @@ public partial class MusicRadioPresets : IAsyncDisposable
         {
             var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
             musicIntelligenceAvailable = status.IsAvailable;
+            _musicIntelligenceDegraded = status.IsEnabled && !status.IsAvailable;
         }
         catch
         {
             musicIntelligenceAvailable = false;
+            _musicIntelligenceDegraded = false;
         }
 
         var presets = new List<RadioPresetInfo>

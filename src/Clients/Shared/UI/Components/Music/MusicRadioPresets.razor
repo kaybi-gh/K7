@@ -3,6 +3,10 @@
 @inject IStringLocalizer<MusicRadioPresets> L
 
 <div class="music-radio-presets @Class">
+    @if (_musicIntelligenceDegraded)
+    {
+        <p class="music-radio-presets__degraded" role="status">@L["MusicIntelligenceUnavailable"]</p>
+    }
     <Carousel Title="@Title">
         @foreach (var radio in Presets)
         {
