@@ -1,11 +1,11 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.EntityFrameworkCore;
-
-using K7.Server.Application.Common.Models;
 
 namespace K7.Server.Application.Features.Persons.Queries.GetPersonKnownFor;
 
@@ -33,7 +33,7 @@ public class GetPersonKnownForQueryHandler(
             return [];
 
         var tmdbId = person.ExternalIds
-            .FirstOrDefault(e => e.ProviderName == "tmdb")?.Value;
+            .FirstOrDefault(e => e.ProviderName == MetadataProviderNames.Tmdb)?.Value;
 
         if (tmdbId is null)
             return [];
@@ -49,9 +49,9 @@ public class GetPersonKnownForQueryHandler(
         {
             var localExternalIds = await context.Medias
                 .AsNoTracking()
-                .Where(m => m.ExternalIds.Any(e => e.ProviderName == "tmdb" && externalIdBatch.Contains(e.Value)))
+                .Where(m => m.ExternalIds.Any(e => e.ProviderName == MetadataProviderNames.Tmdb && externalIdBatch.Contains(e.Value)))
                 .SelectMany(m => m.ExternalIds)
-                .Where(e => e.ProviderName == "tmdb")
+                .Where(e => e.ProviderName == MetadataProviderNames.Tmdb)
                 .Select(e => e.Value)
                 .ToListAsync(cancellationToken);
 

@@ -162,25 +162,15 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
 
     private async Task TransferPlaylistsAsync(Guid sourceUserId, Guid targetUserId, CancellationToken cancellationToken)
     {
-        var playlists = await context.Playlists
+        await context.Playlists
             .Where(p => p.UserId == sourceUserId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var playlist in playlists)
-        {
-            playlist.UserId = targetUserId;
-        }
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UserId, targetUserId), cancellationToken);
     }
 
     private async Task TransferPlaybackSessionsAsync(Guid sourceUserId, Guid targetUserId, CancellationToken cancellationToken)
     {
-        var sessions = await context.MediaPlaybackSessions
+        await context.MediaPlaybackSessions
             .Where(s => s.UserId == sourceUserId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var session in sessions)
-        {
-            session.UserId = targetUserId;
-        }
+            .ExecuteUpdateAsync(s => s.SetProperty(s => s.UserId, targetUserId), cancellationToken);
     }
 }

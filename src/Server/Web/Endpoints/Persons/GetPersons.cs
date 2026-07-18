@@ -1,5 +1,5 @@
 ﻿using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Features.Medias.Queries.GetPersons;
+using K7.Server.Application.Features.Persons.Queries.GetPersons;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities.Persons;

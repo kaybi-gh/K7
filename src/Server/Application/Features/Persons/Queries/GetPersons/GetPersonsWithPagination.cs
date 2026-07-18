@@ -6,7 +6,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 
-namespace K7.Server.Application.Features.Medias.Queries.GetPersons;
+namespace K7.Server.Application.Features.Persons.Queries.GetPersons;
 
 public record GetPersonsWithPaginationQuery : IRequest<PaginatedList<Person>>
 {
@@ -23,6 +23,7 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
     public async Task<PaginatedList<Person>> Handle(GetPersonsWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = context.Persons
+            .AsNoTracking()
             .Include(x => x.PortraitPicture)
             .Include(x => x.ExternalIds)
             .Include(x => x.Roles)
