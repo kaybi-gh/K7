@@ -43,11 +43,12 @@ public static class FileHelper
     public static FileInfo CreateTestFile(string relativePath, string content)
     {
         var path = Path.Combine(TestDirectoryPath, relativePath);
-        if (path.Contains("\\"))
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
         {
-            var directories = path.Split("\\");
-            Directory.CreateDirectory(Path.Combine(directories.Take(directories.Count() - 1).ToArray()));
+            Directory.CreateDirectory(directory);
         }
+
         return CreateFile(path, content);
     }
 
