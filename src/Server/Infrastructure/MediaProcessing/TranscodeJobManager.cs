@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using K7.Server.Application.Common.Configuration;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -13,7 +15,8 @@ public class TranscodeJobManager(
     ILogger<TranscodeJobManager> logger,
     IMediaTranscoder mediaTranscoder,
     IOptions<PathsConfiguration> pathsOptions,
-    ITranscodeSettingsProvider transcodeSettingsProvider) : ITranscodeJobManager
+    ITranscodeSettingsProvider transcodeSettingsProvider,
+    IServiceScopeFactory scopeFactory) : ITranscodeJobManager
 {
     private readonly ConcurrentDictionary<Guid, TranscodeJob> _activeJobs = new();
     private readonly SemaphoreSlim _jobLock = new(1, 1);
@@ -433,7 +436,7 @@ public class TranscodeJobManager(
             job.GeneratingUntilSegmentIndex = endSegmentIndex - 1;
 
             // Start ffmpeg in background, owned only by the job lifetime
-            job.FfmpegTask = Task.Run(async () =>
+            var ffmpegTask = Task.Run(async () =>
             {
                 if (job.IsAudioOnly)
                 {
@@ -462,6 +465,20 @@ public class TranscodeJobManager(
                 }
             }, CancellationToken.None);
 
+            _ = ffmpegTask.ContinueWith(t =>
+            {
+                var fault = t.Exception?.GetBaseException();
+                if (fault is null or OperationCanceledException)
+                    return;
+
+                _ = PublishTranscodeFailedAsync(
+                    job.IndexedFileId,
+                    Path.GetFileName(job.InputFilePath),
+                    fault.Message);
+            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+
+            job.FfmpegTask = ffmpegTask;
+
             logger.LogInformation(
                 "Job {JobId}: ffmpeg task started in background",
                 job.JobId);
@@ -469,7 +486,25 @@ public class TranscodeJobManager(
         catch (Exception ex)
         {
             logger.LogError(ex, "Job {JobId}: Failed to start ffmpeg task", job.JobId);
+            await PublishTranscodeFailedAsync(
+                job.IndexedFileId,
+                Path.GetFileName(job.InputFilePath),
+                ex.Message);
             throw;
+        }
+    }
+
+    private async Task PublishTranscodeFailedAsync(Guid indexedFileId, string? mediaTitle, string errorMessage)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var publisher = scope.ServiceProvider.GetRequiredService<IDomainEventPublisher>();
+            await publisher.PublishAsync(new TranscodeFailedEvent(indexedFileId, mediaTitle, errorMessage));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to publish TranscodeFailedEvent for IndexedFile {IndexedFileId}", indexedFileId);
         }
     }
 

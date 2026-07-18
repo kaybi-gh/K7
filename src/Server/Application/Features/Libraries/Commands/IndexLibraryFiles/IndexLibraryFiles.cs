@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
@@ -51,6 +52,12 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
             });
             _context.ScanIssues.AddRange(newIssues);
         }
+
+        entity.AddDomainEvent(new LibraryScanCompletedEvent(
+            entity,
+            result.AddedCount,
+            result.SkippedCount,
+            result.InaccessiblePaths.Count));
 
         await _context.SaveChangesAsync(cancellationToken);
 

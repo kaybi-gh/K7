@@ -8,5 +8,7 @@ public enum NotificationEventCategory
     Playlist,
     Device,
     Download,
-    System
+    System,
+    Federation,
+    Health
 }
