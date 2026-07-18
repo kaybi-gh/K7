@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services.Resources;
 using K7.Shared;
 using K7.Shared.Dtos;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -14,6 +15,7 @@ public partial class SettingsGeneralPage : IDisposable
     private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     private string _serverDefaultLanguage = "en";
     private string _serverDefaultThemeCss = "default-dark";
+    private bool _serverDefaultPlayThemeSongs = true;
     private bool _hasLanguageOverride;
     private bool _resetting;
     private VideoPlayerSettingsDto _videoPlayerSettings = new();
@@ -23,7 +25,9 @@ public partial class SettingsGeneralPage : IDisposable
 
     private bool IsOnDefaults =>
         !_hasLanguageOverride
-        && ThemeService.Theme.CssDataAttribute == _serverDefaultThemeCss;
+        && ThemeService.Theme.CssDataAttribute == _serverDefaultThemeCss
+        && _playThemeSongs == _serverDefaultPlayThemeSongs
+        && !_disableThemeSongsOnDevice;
 
     protected override void OnInitialized()
     {
@@ -54,6 +58,9 @@ public partial class SettingsGeneralPage : IDisposable
 
         try
         {
+            var serverVideoSettings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync();
+            _serverDefaultPlayThemeSongs = serverVideoSettings?.PlayThemeSongs ?? true;
+
             _videoPlayerSettings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
         }
@@ -61,6 +68,7 @@ public partial class SettingsGeneralPage : IDisposable
         {
             _videoPlayerSettings = new VideoPlayerSettingsDto();
             _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
+            _serverDefaultPlayThemeSongs = true;
         }
     }
 
@@ -139,6 +147,11 @@ public partial class SettingsGeneralPage : IDisposable
         try
         {
             var defaultTheme = Themes.FromCssDataAttribute(_serverDefaultThemeCss) ?? Themes.DefaultDark;
+            var needsCultureReload = _hasLanguageOverride
+                || !string.Equals(
+                    CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
+                    _serverDefaultLanguage,
+                    StringComparison.OrdinalIgnoreCase);
 
             try
             {
@@ -154,10 +167,31 @@ public partial class SettingsGeneralPage : IDisposable
             await JSRuntime.InvokeVoidAsync("K7.applyTheme", defaultTheme.CssDataAttribute);
 
             _hasLanguageOverride = false;
+
+            if (_disableThemeSongsOnDevice)
+            {
+                _disableThemeSongsOnDevice = false;
+                DeviceStorageService.Remove(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE);
+            }
+
+            if (_playThemeSongs != _serverDefaultPlayThemeSongs)
+            {
+                _playThemeSongs = _serverDefaultPlayThemeSongs;
+                _videoPlayerSettings.PlayThemeSongs = _serverDefaultPlayThemeSongs;
+                await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_videoPlayerSettings);
+            }
+
             Snackbar.Add(L["GeneralResetSuccess"], K7Severity.Success);
 
-            await JSRuntime.InvokeVoidAsync("blazorCulture.set", _serverDefaultLanguage);
-            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            if (needsCultureReload)
+            {
+                await JSRuntime.InvokeVoidAsync("blazorCulture.set", _serverDefaultLanguage);
+                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
