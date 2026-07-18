@@ -54,6 +54,7 @@ public sealed class SecurityHeadersMiddleware(
             "font-src 'self' data:",
             $"connect-src {string.Join(' ', connectSources)}",
             "media-src 'self' blob:",
+            "frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             $"form-action {string.Join(' ', formActions)}");
