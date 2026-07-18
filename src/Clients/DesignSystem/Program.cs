@@ -32,6 +32,7 @@ builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
 // Client-side mock services with mutable playback/UI state
 builder.Services.AddScoped<MockAudioPlayerService>();
 builder.Services.AddScoped<IAudioPlayerService>(sp => sp.GetRequiredService<MockAudioPlayerService>());
+builder.Services.AddScoped<IAmbientThemeService, AmbientThemeService>();
 builder.Services.AddScoped<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
 builder.Services.AddScoped<DemoPlayerService>();
 builder.Services.AddScoped<IPlayerService>(sp => sp.GetRequiredService<DemoPlayerService>());

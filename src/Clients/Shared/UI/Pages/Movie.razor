@@ -16,6 +16,9 @@
 @inject IStringLocalizer<MediaReviewDialog> ReviewDialogL
 @inject IDeviceService DeviceService
 @inject IJSRuntime JSRuntime
+@inject IUserPreferencesService UserPreferencesService
+@inject IAmbientThemeService AmbientThemeService
+@inject IAudioPlayerService AudioPlayerService
 <PageTitle>@_movie?.Title</PageTitle>
 @if (isLoading)
 {

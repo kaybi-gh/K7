@@ -469,6 +469,7 @@ public sealed class MockMediaService : IMediaService
     public Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default) => Task.FromResult<LiteSerieEpisodeDto?>(null);
     public Task<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>>([]);
     public Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public string? GetMediaThemeSongUrl(Guid mediaId) => null;
     public Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(new List<LiteMediaDto>());
     public Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicTrackDto>>([]);
     public Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicArtistDto>>([]);

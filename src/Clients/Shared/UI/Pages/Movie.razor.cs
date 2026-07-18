@@ -149,10 +149,23 @@ public partial class Movie : IAsyncDisposable
             }
 
             await ResolveLibraryGroupIdAsync();
+
+            if (!isBackgroundRefresh && !isPicturesRefresh)
+            {
+                await ThemeSongPlaybackHelper.TryStartAsync(
+                    movie.Id,
+                    movie.HasThemeSong,
+                    k7ServerService,
+                    UserPreferencesService,
+                    AmbientThemeService,
+                    AudioPlayerService,
+                    DeviceStorageService);
+            }
         }
         else
         {
             _libraryGroupId = null;
+            await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         }
 
         if (!isBackgroundRefresh && !isPicturesRefresh)
@@ -203,6 +216,8 @@ public partial class Movie : IAsyncDisposable
         {
             return;
         }
+
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
 
         // Remote file playback (federation)
         if (_selectedRemoteFile is not null)
@@ -409,9 +424,11 @@ public partial class Movie : IAsyncDisposable
         }
     }
 
-    private Task OpenTrailerAsync()
+    private async Task OpenTrailerAsync()
     {
-        if (_movie?.Trailers is not { Count: > 0 }) return Task.CompletedTask;
+        if (_movie?.Trailers is not { Count: > 0 }) return;
+
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
 
         var trailer = _movie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _movie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>
@@ -420,7 +437,7 @@ public partial class Movie : IAsyncDisposable
             { x => x.TrailerSite, trailer.Site ?? "YouTube" }
         };
         var options = new K7DialogOptions { FullScreen = true, CloseOnEscapeKey = true, CloseButton = true };
-        return DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
+        await DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
     }
 
     private async Task LoadSimilarMediaAsync()
@@ -570,6 +587,7 @@ public partial class Movie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

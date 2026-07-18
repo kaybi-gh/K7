@@ -130,11 +130,24 @@ public partial class Serie : IAsyncDisposable
 
             BuildStudioNetworkChips();
             await ResolveLibraryGroupIdAsync();
+
+            if (!isBackgroundRefresh && !isPicturesRefresh)
+            {
+                await ThemeSongPlaybackHelper.TryStartAsync(
+                    serie.Id,
+                    serie.HasThemeSong,
+                    k7ServerService,
+                    UserPreferencesService,
+                    AmbientThemeService,
+                    AudioPlayerService,
+                    DeviceStorageService);
+            }
         }
         else
         {
             _libraryGroupId = null;
             _studioNetworkChips = [];
+            await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         }
 
         if (!isBackgroundRefresh && !isPicturesRefresh)
@@ -185,6 +198,8 @@ public partial class Serie : IAsyncDisposable
         var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
         if (episode is null)
             return;
+
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
 
         await SeriePlaybackHelper.PlayEpisodeAsync(
             episode,
@@ -273,9 +288,11 @@ public partial class Serie : IAsyncDisposable
         return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
     }
 
-    private Task OpenTrailerAsync()
+    private async Task OpenTrailerAsync()
     {
-        if (_serie?.Trailers is not { Count: > 0 }) return Task.CompletedTask;
+        if (_serie?.Trailers is not { Count: > 0 }) return;
+
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
 
         var trailer = _serie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _serie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>
@@ -284,7 +301,7 @@ public partial class Serie : IAsyncDisposable
             { x => x.TrailerSite, trailer.Site ?? "YouTube" }
         };
         var options = new K7DialogOptions { FullScreen = true, CloseOnEscapeKey = true, CloseButton = true };
-        return DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
+        await DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
     }
 
     private void NavigateToStudio(string studio)
@@ -468,6 +485,7 @@ public partial class Serie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

@@ -68,6 +68,9 @@ public static class PreferenceKeys
     // SyncPlay
     public static readonly PreferenceKey<bool> SYNCPLAY_ENABLED = new("SyncPlayEnabled");
 
+    // Ambient media theme on serie/movie detail pages
+    public static readonly PreferenceKey<bool> THEME_SONGS_DISABLED_ON_DEVICE = new("ThemeSongsDisabledOnDevice");
+
     // Page sidebar (admin / settings)
     public static readonly PreferenceKey<bool> PAGE_SIDEBAR_COLLAPSED = new("PageSidebarCollapsed");
 }
