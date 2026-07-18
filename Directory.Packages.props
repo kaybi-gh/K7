@@ -112,8 +112,8 @@
     <PackageVersion Include="System.Drawing.Common" Version="10.0.10" />
     <PackageVersion Include="System.Text.Json" Version="10.0.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
-    <PackageVersion Include="Testcontainers.MsSql" Version="4.13.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="3.6.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="3.7.0" />
     <PackageVersion Include="TMDbLib" Version="2.3.0" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.6" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1" />
