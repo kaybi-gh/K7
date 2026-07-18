@@ -83,4 +83,60 @@ public partial class LibraryListItem
             ? $"{(int)ts.TotalHours}h{ts.Minutes:D2}"
             : $"{ts.Minutes}:{ts.Seconds:D2}";
     }
+
+    private RenderFragment ThumbnailContent => builder =>
+    {
+        var seq = 0;
+        if (ThumbnailUrl is not null)
+        {
+            builder.OpenComponent<K7Image>(seq++);
+            builder.AddAttribute(seq++, "Src", ThumbnailUrl);
+            builder.AddAttribute(seq++, "Alt", "");
+            builder.AddAttribute(seq++, "Width", ThumbWidth);
+            builder.AddAttribute(seq++, "Height", ThumbHeight);
+            builder.AddAttribute(seq++, "ObjectFit", "cover");
+            builder.AddAttribute(seq++, "Class", "library-list-item-thumb rounded");
+            builder.AddAttribute(seq++, "loading", "lazy");
+            builder.CloseComponent();
+        }
+        else
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "library-list-item-thumb-placeholder rounded");
+            builder.AddAttribute(seq++, "aria-hidden", "true");
+            builder.OpenComponent<K7Icon>(seq++);
+            builder.AddAttribute(seq++, "Icon", PlaceholderIcon);
+            builder.AddAttribute(seq++, "IconSize", K7IconSize.Sm);
+            builder.CloseComponent();
+            builder.CloseElement();
+        }
+    };
+
+    private RenderFragment EndContent => builder =>
+    {
+        var seq = 0;
+        if (Item.UserRating is > 0)
+        {
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "class", "library-list-item-rating");
+            builder.AddContent(seq++, Item.UserRating);
+            builder.CloseElement();
+        }
+
+        if (Progress is > 0 and < 100)
+        {
+            builder.OpenComponent<K7ProgressBar>(seq++);
+            builder.AddAttribute(seq++, "Value", Progress);
+            builder.AddAttribute(seq++, "Class", "library-list-item-progress");
+            builder.CloseComponent();
+        }
+        else if (IsWatched)
+        {
+            builder.OpenComponent<K7Icon>(seq++);
+            builder.AddAttribute(seq++, "Icon", Phosphor.CheckCircle);
+            builder.AddAttribute(seq++, "Color", "success");
+            builder.AddAttribute(seq++, "IconSize", K7IconSize.Sm);
+            builder.CloseComponent();
+        }
+    };
 }

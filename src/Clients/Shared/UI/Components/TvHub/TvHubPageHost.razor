@@ -30,23 +30,3 @@
         }
     </div>
 }
-
-@code {
-    protected override void OnInitialized()
-    {
-        TvHubHost.Changed += OnHostChanged;
-        Navigation.LocationChanged += OnLocationChanged;
-        TvHubHost.UpdateLocation(Navigation.Uri);
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
-        TvHubHost.UpdateLocation(e.Location);
-
-    private void OnHostChanged() => InvokeAsync(StateHasChanged);
-
-    public void Dispose()
-    {
-        TvHubHost.Changed -= OnHostChanged;
-        Navigation.LocationChanged -= OnLocationChanged;
-    }
-}

@@ -19,39 +19,3 @@
         }
     </a>
 </LibraryBrowseListRow>
-
-@code {
-    private RenderFragment ThumbnailContent => @<text>
-        @if (ThumbnailUrl is not null)
-        {
-            <K7Image Src="@ThumbnailUrl"
-                     Alt=""
-                     Width="@ThumbWidth"
-                     Height="@ThumbHeight"
-                     ObjectFit="cover"
-                     Class="library-list-item-thumb rounded"
-                     loading="lazy" />
-        }
-        else
-        {
-            <div class="library-list-item-thumb-placeholder rounded" aria-hidden="true">
-                <K7Icon Icon="@PlaceholderIcon" IconSize="@K7IconSize.Sm" />
-            </div>
-        }
-    </text>;
-
-    private RenderFragment EndContent => @<text>
-        @if (Item.UserRating is > 0)
-        {
-            <span class="library-list-item-rating">@Item.UserRating</span>
-        }
-        @if (Progress is > 0 and < 100)
-        {
-            <K7ProgressBar Value="@Progress" Class="library-list-item-progress" />
-        }
-        else if (IsWatched)
-        {
-            <K7Icon Icon="@Phosphor.CheckCircle" Color="success" IconSize="@K7IconSize.Sm" />
-        }
-    </text>;
-}

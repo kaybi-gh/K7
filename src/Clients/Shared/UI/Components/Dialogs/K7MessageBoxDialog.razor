@@ -16,12 +16,3 @@
     }
     <K7Button Color="primary" Variant="filled" OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(true)))">@YesText</K7Button>
 </div>
-
-@code {
-    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
-
-    [Parameter] public string Message { get; set; } = "";
-    [Parameter] public string YesText { get; set; } = "OK";
-    [Parameter] public string? NoText { get; set; }
-    [Parameter] public string? CancelText { get; set; }
-}
