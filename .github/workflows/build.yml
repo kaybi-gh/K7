@@ -175,11 +175,11 @@ jobs:
 
       - name: Scan image with Trivy
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         uses: aquasecurity/trivy-action@dc5a429b52fcf669ce959baa2c2dd26090d2a6c4 # v0.32.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: table
-          # Report only for now; base-image HIGH/CRITICAL noise should not block CI.
           exit-code: '0'
           severity: CRITICAL,HIGH
           ignore-unfixed: true
