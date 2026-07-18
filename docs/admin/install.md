@@ -24,6 +24,8 @@ docker compose up -d
 
 Open `http://localhost:8080` (or your reverse-proxy URL) and complete [first-run setup](#first-run-setup).
 
+The sample sets `Security__ForceHttps=false` so the setup wizard works over plain HTTP. Behind a TLS reverse proxy, set `Security__ForceHttps=true` (and `BaseUrl`) - private Docker/LAN proxies are trusted by default. See [configuration.md](configuration.md#reverse-proxy).
+
 For anything beyond a local trial (OIDC, federation, reverse proxy), set `BaseUrl` in compose to the public URL browsers and peers use - see [configuration.md](configuration.md#server-identity-and-http).
 
 Point a library at `/media/movies` (or replace the `movies` volume in compose with a bind mount to your real media folder). To build the image locally instead of pulling GHCR: `docker build -t k7-server:latest .` then set `image: k7-server:latest` on the `k7-server` service.

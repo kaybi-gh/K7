@@ -166,8 +166,9 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 
 | Key | Env | Default | Description |
 |---|---|---|---|
-| `Security:ForceHttps` | `Security__ForceHttps` | `true` | Prefer secure cookies and OpenIddict transport security. Behind TLS-terminating proxy, keep `true` and configure forwarded headers. |
-| `Security:KnownProxies` | `Security__KnownProxies` | `[]` | Proxy IPs trusted for `X-Forwarded-*`. Empty outside Development disables forwarded-header processing. |
+| `Security:ForceHttps` | `Security__ForceHttps` | `true` | Prefer secure cookies and OpenIddict transport security. Behind TLS-terminating proxy, keep `true` (private proxies are trusted by default - see `TrustPrivateProxies`). |
+| `Security:TrustPrivateProxies` | `Security__TrustPrivateProxies` | `true` | When `KnownProxies` is empty, trust RFC1918 (`10/8`, `172.16/12`, `192.168/16`), loopback, and IPv6 ULA for `X-Forwarded-Proto`. Typical Docker + Traefik/Caddy/nginx needs no extra proxy IP. Set `false` to require explicit `KnownProxies` (or disable forwarding). |
+| `Security:KnownProxies` | `Security__KnownProxies` | `[]` | Optional explicit trusted proxy **IPs** and/or **CIDR** networks. When non-empty, replaces the private-network defaults. |
 | `Security:ApiKeys:HashSecret` | `Security__ApiKeys__HashSecret` | *(required)* | HMAC secret mixed into API key hashes. Required at startup (server refuses to boot if empty). Prefer `Security__ApiKeys__HashSecret__File` in production. Changing it invalidates all existing API keys. |
 | `Security:Federation:AllowInsecurePeerHttp` | `Security__Federation__AllowInsecurePeerHttp` | `false` | Allow HTTP peer URLs (also allowed in Development). |
 | `Security:Federation:BlockPrivatePeerUrls` | `Security__Federation__BlockPrivatePeerUrls` | `false` | Reject private/link-local peer URLs. |
@@ -182,6 +183,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - API keys: header `X-Api-Key`; Admin CRUD at `/api/admin/api-keys`; least privilege; rotate unused keys. `Security:ApiKeys:HashSecret` is required at startup (env/file).
 - Enable federation only when needed; treat peering as trust.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
+- Behind a reverse proxy: prefer not publishing K7 `:8080` on the LAN while `TrustPrivateProxies` is true (default).
 
 There is no comprehensive in-app rate limiting documented; put abusive-traffic controls at the reverse proxy if you expose K7 broadly.
 
@@ -237,11 +239,14 @@ Run K7 behind a reverse proxy for TLS. The app listens on **8080** inside the co
 | Setting | Guidance |
 |---|---|
 | `BaseUrl` | Public URL users and peers use |
-| `Security:ForceHttps` | Keep `true` for public HTTPS; pair with trusted forwarded headers |
-| `Security:KnownProxies` | Proxy IP(s) as seen by the container |
+| `Security:ForceHttps` | Keep `true` for public HTTPS |
+| `Security:TrustPrivateProxies` | Default `true` - trusts Docker/LAN private ranges for `X-Forwarded-Proto` |
+| `Security:KnownProxies` | Optional override (IP/CIDR). Only needed for non-private proxies (e.g. public LB) or to narrow trust |
 | `Cors:Origins` | Only if WASM is on another origin |
 
-When `KnownProxies` is non-empty, K7 trusts `X-Forwarded-Proto` from those addresses. Misconfiguration causes cookie/HTTPS mismatches or redirect loops.
+By default K7 trusts private networks for `X-Forwarded-Proto`, so Traefik/Caddy/nginx on the same Docker network works without listing proxy IPs. Set `KnownProxies` only when you need a tighter or non-private allowlist (that list then **replaces** the private defaults). Misconfiguration still causes cookie/HTTPS mismatches or redirect loops.
+
+Do not publish K7 `:8080` on an untrusted LAN while trusting private proxies: a client on that network could spoof `X-Forwarded-Proto`. Prefer exposing only the reverse proxy.
 
 SignalR (remote control, Sync Play) needs WebSocket upgrade, reasonable timeouts, and the same host/proto headers.
 
@@ -277,11 +282,12 @@ Set on the K7 container:
 environment:
   BaseUrl: https://k7.example.com
   Security__ForceHttps: "true"
-  # Traefik container IP or Docker gateway as seen by k7-server
-  Security__KnownProxies__0: 172.18.0.1
+  # KnownProxies usually omitted: TrustPrivateProxies (default) covers Docker networks.
 ```
 
-If Traefik and K7 share a user-defined network, put Traefik's IP (or the network gateway) in `KnownProxies`. Without that, forwarded `X-Forwarded-Proto` may be ignored outside Development.
+`X-Forwarded-Proto` is set by Traefik automatically (`https` when TLS terminates there) - do not set it as a K7 env var.
+
+Prefer keeping K7 on the Traefik Docker network only (do not publish `:8080` to the host) so private-proxy trust cannot be abused from the LAN.
 
 ### Sample: nginx
 

@@ -87,9 +87,16 @@ Raise levels via Serilog env vars - see [configuration.md](configuration.md#logg
 
 Install ffmpeg or set `Paths__FFMpegBinaryFolder`. The official image already includes ffmpeg.
 
+### Setup / login 500: antiforgery SecurePolicy Always
+
+Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the current request is not an SSL request` (often on `/setup`).
+
+- Local HTTP (`http://localhost:8080`): set `Security__ForceHttps=false` (sample compose already does)
+- Behind a TLS reverse proxy: keep `Security__ForceHttps=true` and ensure the proxy sends `X-Forwarded-Proto: https` (private networks are trusted by default; set `Security__KnownProxies` only to override)
+
 ### HTTPS redirect loops
 
-- Behind a proxy: set `Security__KnownProxies` and ensure `X-Forwarded-Proto` is `https`
+- Behind a proxy: ensure `X-Forwarded-Proto` is `https` (and that `TrustPrivateProxies` is true, or set `KnownProxies`)
 - Or temporarily set `Security__ForceHttps=false` on a trusted LAN while debugging
 
 ### OIDC login fails
@@ -97,6 +104,7 @@ Install ffmpeg or set `Paths__FFMpegBinaryFolder`. The official image already in
 - `BaseUrl` must match the public URL registered at the IdP
 - Redirect URI: `{BaseUrl}/api/authentication/callback/login/oidc`
 - Clock skew, wrong client secret, or `AutomaticAccountCreation=false` for a new user
+- Symptom `Challenge operations cannot be triggered from non-HTTPS endpoints`: plain HTTP needs `Security__ForceHttps=false`; behind TLS proxy keep `true` and ensure `X-Forwarded-Proto: https` (private proxies trusted by default)
 
 ### Federation peer unreachable
 

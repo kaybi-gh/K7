@@ -70,6 +70,7 @@ public static class DependencyInjection
         var authConfiguration = configuration.GetSection("Authentication").Get<AuthenticationConfiguration>()!;
         var pathsConfiguration = configuration.GetSection("Paths").Get<PathsConfiguration>()!;
         var oidcKeysPath = Path.Combine(pathsConfiguration.Config, "openiddict-keys");
+        var forceHttps = configuration.GetValue<bool?>("Security:ForceHttps") ?? true;
 
         services.AddOpenIddict()
             .AddCore(options =>
@@ -113,7 +114,6 @@ public static class DependencyInjection
                        .EnableEndUserVerificationEndpointPassthrough()
                        .EnableStatusCodePagesIntegration();
 
-                var forceHttps = configuration.GetValue<bool?>("Security:ForceHttps") ?? true;
                 if (!forceHttps)
                 {
                     options.UseAspNetCore()
@@ -157,6 +157,12 @@ public static class DependencyInjection
                     options.UseAspNetCore()
                            .EnableStatusCodePagesIntegration()
                            .EnableRedirectionEndpointPassthrough();
+
+                    if (!forceHttps)
+                    {
+                        options.UseAspNetCore()
+                               .DisableTransportSecurityRequirement();
+                    }
 
                     var oidcRegistration = new OpenIddictClientRegistration()
                     {

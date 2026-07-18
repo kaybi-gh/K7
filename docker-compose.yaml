@@ -59,6 +59,10 @@ services:
       Paths__Transcoding: /data/transcoding
       PUID: ${PUID:-911}
       PGID: ${PGID:-911}
+      # Sample stack is plain HTTP on :8080. Secure cookies (ForceHttps=true) break
+      # antiforgery on /setup over HTTP. For a TLS reverse proxy, set true; private
+      # Docker/LAN proxies are trusted by default - see docs/admin/configuration.md#reverse-proxy.
+      Security__ForceHttps: ${SECURITY__FORCEHTTPS:-false}
       # Public URL of this instance (required for OIDC redirects and federation).
       # BaseUrl: https://k7.example.com
       # Optional display name used when inviting federation peers.

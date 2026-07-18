@@ -17,7 +17,6 @@ using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Http.Resilience;
 using OpenIddict.Validation.AspNetCore;
-using System.Net;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -48,27 +47,13 @@ public static class DependencyInjection
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
             var knownProxies = configuration.GetSection("Security:KnownProxies").Get<string[]>();
-            options.KnownIPNetworks.Clear();
-            options.KnownProxies.Clear();
-
-            if (knownProxies is { Length: > 0 })
-            {
-                foreach (var proxy in knownProxies)
-                {
-                    if (IPAddress.TryParse(proxy, out var address))
-                        options.KnownProxies.Add(address);
-                }
-            }
-            else if (environment.IsDevelopment())
-            {
-                // Development behind local proxies: trust forwarded proto from any source.
-            }
-            else
-            {
-                options.ForwardedHeaders = ForwardedHeaders.None;
-            }
+            var trustPrivateProxies = configuration.GetValue<bool?>("Security:TrustPrivateProxies") ?? true;
+            ForwardedHeadersKnownProxies.Configure(
+                options,
+                knownProxies,
+                trustPrivateProxies,
+                environment.IsDevelopment());
         });
 
         services.AddK7RateLimiting();

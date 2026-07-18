@@ -3,6 +3,13 @@ namespace K7.Server.Infrastructure.Configuration;
 public sealed class SecurityConfiguration
 {
     public bool ForceHttps { get; set; } = true;
+
+    /// <summary>
+    /// When true and <see cref="KnownProxies"/> is empty, trust RFC1918 / loopback / ULA
+    /// for <c>X-Forwarded-Proto</c> (typical Docker + Traefik / Caddy / nginx setups).
+    /// </summary>
+    public bool TrustPrivateProxies { get; set; } = true;
+
     public string[] KnownProxies { get; set; } = [];
     public ApiKeysSecurityConfiguration ApiKeys { get; set; } = new();
     public FederationSecurityConfiguration Federation { get; set; } = new();
