@@ -1,7 +1,7 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -73,22 +73,21 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            var challenge = await Task.Run(async () =>
-                await _openIddictClientService.ChallengeInteractivelyAsync(new()
+            var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
+            {
+                CancellationToken = timeout.Token,
+                ProviderName = "K7",
+                AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
                 {
-                    CancellationToken = timeout.Token,
-                    ProviderName = "K7",
-                    AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
-                    {
-                        ["prompt"] = "login"
-                    }
-                }));
+                    ["prompt"] = "login"
+                }
+            });
 
-            var result = await Task.Run(async () => await _openIddictClientService.AuthenticateInteractivelyAsync(new()
+            var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
             {
                 CancellationToken = timeout.Token,
                 Nonce = challenge.Nonce
-            }));
+            });
 
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
@@ -145,29 +144,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     new AuthenticationHeaderValue("Bearer", accessToken);
                 _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
 
-                var parts = accessToken.Split('.');
-                if (parts.Length == 3)
+                var handler = new JwtSecurityTokenHandler();
+                if (handler.CanReadToken(accessToken))
                 {
-                    var payload = parts[1].Replace('-', '+').Replace('_', '/');
-                    switch (payload.Length % 4)
-                    {
-                        case 2: payload += "=="; break;
-                        case 3: payload += "="; break;
-                    }
-                    var payloadJson = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
-                    using var payloadDoc = JsonDocument.Parse(payloadJson);
-                    var claims = new List<Claim>();
-                    foreach (var prop in payloadDoc.RootElement.EnumerateObject())
-                    {
-                        if (prop.Value.ValueKind == JsonValueKind.Array)
-                            foreach (var item in prop.Value.EnumerateArray())
-                                claims.Add(new Claim(prop.Name, item.GetString() ?? ""));
-                        else if (prop.Value.ValueKind == JsonValueKind.String)
-                            claims.Add(new Claim(prop.Name, prop.Value.GetString()!));
-                        else if (prop.Value.ValueKind == JsonValueKind.Number)
-                            claims.Add(new Claim(prop.Name, prop.Value.GetRawText()));
-                    }
-                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
+                    var jwt = handler.ReadJwtToken(accessToken);
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(jwt.Claims, "OpenIddict", Claims.Name, Claims.Role));
                 }
             }
         }

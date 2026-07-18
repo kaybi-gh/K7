@@ -49,8 +49,8 @@ public class K7MediaLibraryService : MediaLibraryService,
     private IK7ServerService? _k7ServerService;
     private DefaultHttpDataSource.Factory? _httpDataSourceFactory;
 
-    private bool _updatingFromPlayer;
-    private bool _isVideoMode;
+    private volatile bool _updatingFromPlayer;
+    private volatile bool _isVideoMode;
     private bool _videoSessionAdded;
     private bool _syncingFromExoPlayer;
     private IList<MediaItem>? _resolvedQueueMediaItems;

@@ -37,7 +37,7 @@ public partial class SetupPage : ContentPage
 
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            using var http = new HttpClient { Timeout = MauiTimeouts.ServerReachability };
             var response = await http.GetAsync($"{k7ServerUrl}/health");
             if (!response.IsSuccessStatusCode)
             {

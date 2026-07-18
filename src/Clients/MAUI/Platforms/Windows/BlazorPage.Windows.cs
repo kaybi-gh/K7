@@ -1,5 +1,6 @@
 #if WINDOWS
 using System.Runtime.InteropServices.WindowsRuntime;
+using K7.Clients.MAUI.Constants;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using SkiaSharp;
@@ -44,7 +45,7 @@ public partial class BlazorPage
     {
         if (!TrySetupSmtc())
         {
-            await Task.Delay(500);
+            await Task.Delay(MauiTimeouts.WindowsBlazorInitDelay);
             TrySetupSmtc();
         }
     }
