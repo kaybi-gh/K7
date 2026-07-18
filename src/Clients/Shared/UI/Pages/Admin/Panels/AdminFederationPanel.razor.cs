@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Extensions;
@@ -11,6 +12,7 @@ using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
@@ -22,6 +24,7 @@ public partial class AdminFederationPanel : IDisposable
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7HubClient HubClient { get; set; } = default!;
+    [Inject] private ILogger<AdminFederationPanel> Logger { get; set; } = default!;
 
     private bool _isLoading = true;
     private bool _federationEnabled;
@@ -29,6 +32,8 @@ public partial class AdminFederationPanel : IDisposable
     private Guid? _testingPeerId;
     private List<PeerServerDto>? _peers;
     private List<PeerRequestDto>? _requests;
+    private List<PeerServerDto> _outboundPeers = [];
+    private List<PeerServerDto> _inboundPeers = [];
     private FederationSocialPolicyDto _socialPolicy = new();
 
     private static readonly FederationContentType[] _socialContentTypes =
@@ -39,9 +44,6 @@ public partial class AdminFederationPanel : IDisposable
         FederationContentType.SmartPlaylists,
         FederationContentType.PlaybackHistory
     ];
-
-    private List<PeerServerDto> _outboundPeers => _peers?.Where(p => !p.IsProvider).ToList() ?? [];
-    private List<PeerServerDto> _inboundPeers => _peers?.Where(p => p.IsProvider).ToList() ?? [];
 
     private void SubscribeHubEvents()
     {
@@ -157,6 +159,7 @@ public partial class AdminFederationPanel : IDisposable
         }
         finally
         {
+            UpdatePeerLists();
             _isLoading = false;
         }
     }
@@ -183,9 +186,10 @@ public partial class AdminFederationPanel : IDisposable
         else
         {
             UnsubscribeHubEvents();
-            _ = HubClient.LeaveAdminFederationGroupAsync();
+            HubClient.LeaveAdminFederationGroupAsync().FireAndForget(Logger);
             _peers = null;
             _requests = null;
+            UpdatePeerLists();
             _isLoading = false;
         }
     }
@@ -406,7 +410,7 @@ public partial class AdminFederationPanel : IDisposable
         {
             await LoadData();
             StateHasChanged();
-        });
+        }).FireAndForget(Logger);
     }
 
     private void OnPeerRequestReceived(PeerRequestDto request)
@@ -415,7 +419,7 @@ public partial class AdminFederationPanel : IDisposable
         {
             await LoadData();
             StateHasChanged();
-        });
+        }).FireAndForget(Logger);
     }
 
     private void OnPeerTestResultReceived(Guid peerId, bool reachable)
@@ -424,12 +428,18 @@ public partial class AdminFederationPanel : IDisposable
         {
             await LoadData();
             StateHasChanged();
-        });
+        }).FireAndForget(Logger);
     }
 
     public void Dispose()
     {
         UnsubscribeHubEvents();
-        _ = HubClient.LeaveAdminFederationGroupAsync();
+        HubClient.LeaveAdminFederationGroupAsync().FireAndForget(Logger);
+    }
+
+    private void UpdatePeerLists()
+    {
+        _outboundPeers = _peers?.Where(peer => !peer.IsProvider).ToList() ?? [];
+        _inboundPeers = _peers?.Where(peer => peer.IsProvider).ToList() ?? [];
     }
 }

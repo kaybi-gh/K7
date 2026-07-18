@@ -48,7 +48,7 @@
                     <span class="library-card__stat">
                         <strong>@stats.FileCount</strong> @L["StatFiles"]
                     </span>
-                    @foreach (var entry in stats.MediaCounts.OrderBy(e => e.Key))
+                    @foreach (var entry in GetOrderedMediaCounts(library.Id))
                     {
                         <span class="library-card__stat">
                             <strong>@entry.Value</strong> @GetMediaTypeCountLabel(entry.Key)

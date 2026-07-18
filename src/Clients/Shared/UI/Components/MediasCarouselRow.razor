@@ -16,14 +16,12 @@
 else if (_items.Count > 0)
 {
     <Carousel Title="@Title">
-        @foreach (var item in _items)
+        @foreach (var item in _cardItems)
         {
-            var vm = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
-            if (vm is null) continue;
             <CarouselItem @key="item.Id">
-                <MediaCard Model="@vm"
-                           Variant="@GetVariant(item)"
-                           Href="@GetHref(item)"
+                <MediaCard Model="@item.Model"
+                           Variant="@item.Variant"
+                           Href="@item.Href"
                            OverlayEnabled="true"
                            ProgressEnabled="@ProgressEnabled"
                            WatchedStatusEnabled="@ProgressEnabled"
@@ -31,9 +29,9 @@ else if (_items.Count > 0)
                            ExcludeMenuEnabled="_canExclude"
                            WatchStateMenuEnabled="_canSetWatchState"
                            IsAdmin="_isAdmin"
-                           OnExcludeForSelf="() => ExcludeForSelf(vm)"
-                           OnExcludeForOthers="() => ExcludeForOthers(vm)"
-                           OnFocused="() => TvFocus?.OnItemFocused(vm)" />
+                           OnExcludeForSelf="() => ExcludeForSelf(item.Model)"
+                           OnExcludeForOthers="() => ExcludeForOthers(item.Model)"
+                           OnFocused="() => TvFocus?.OnItemFocused(item.Model)" />
             </CarouselItem>
         }
     </Carousel>

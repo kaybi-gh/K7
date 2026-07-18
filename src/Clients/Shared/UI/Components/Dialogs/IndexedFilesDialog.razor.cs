@@ -1,7 +1,9 @@
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Clients.Shared.Helpers;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -16,6 +18,7 @@ public partial class IndexedFilesDialog
     public EventCallback<Guid> OnReIdentifyFile { get; set; }
 
     [Inject] private IFederationService FederationService { get; set; } = default!;
+    [Inject] private ILogger<IndexedFilesDialog> Logger { get; set; } = default!;
 
     private Dictionary<Guid, IndexedFileDto?> _remoteFileDetails = [];
     private HashSet<Guid> _loadingFiles = [];
@@ -26,7 +29,7 @@ public partial class IndexedFilesDialog
         {
             foreach (var file in Media.RemoteIndexedFiles)
             {
-                _ = LoadRemoteFileDetailsAsync(file.Id);
+                LoadRemoteFileDetailsAsync(file.Id).FireAndForget(Logger);
             }
         }
     }

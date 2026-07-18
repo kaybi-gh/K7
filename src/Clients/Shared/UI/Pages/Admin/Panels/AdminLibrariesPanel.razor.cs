@@ -1,4 +1,5 @@
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
@@ -6,6 +7,7 @@ using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
@@ -17,11 +19,13 @@ public partial class AdminLibrariesPanel : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private ILogger<AdminLibrariesPanel> Logger { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<LibraryDto>? _libraries;
     private Dictionary<Guid, int> _libraryIssueCountMap = [];
     private Dictionary<Guid, LibraryStatisticsDto> _libraryStatsMap = [];
+    private Dictionary<Guid, IReadOnlyList<KeyValuePair<MediaType, int>>> _orderedMediaCountsMap = [];
     private readonly Dictionary<Guid, LibraryScanProgressState> _scanProgressMap = new();
 
     private IList<LibraryDto> _libraryItems => _libraries ?? [];
@@ -42,17 +46,17 @@ public partial class AdminLibrariesPanel : IDisposable
     private void OnLibraryScanProgress(Guid libraryId, int processed, int total, string phase)
     {
         _scanProgressMap[libraryId] = new LibraryScanProgressState(processed, total, phase);
-        _ = InvokeAsync(StateHasChanged);
+        InvokeAsync(StateHasChanged).FireAndForget(Logger);
     }
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
     {
         _scanProgressMap.Remove(libraryId);
-        _ = InvokeAsync(async () =>
+        InvokeAsync(async () =>
         {
             await LoadStatistics();
             StateHasChanged();
-        });
+        }).FireAndForget(Logger);
     }
 
     private LibraryScanProgressState? GetScanProgress(Guid libraryId) =>
@@ -84,7 +88,7 @@ public partial class AdminLibrariesPanel : IDisposable
             _isLoading = false;
         }
 
-        _ = LoadSecondaryDataAsync();
+        LoadSecondaryDataAsync().FireAndForget(Logger);
     }
 
     private async Task LoadSecondaryDataAsync()
@@ -99,10 +103,16 @@ public partial class AdminLibrariesPanel : IDisposable
         {
             var stats = await K7ServerService.GetLibraryStatisticsAsync();
             _libraryStatsMap = stats.ToDictionary(s => s.LibraryId);
+            _orderedMediaCountsMap = stats.ToDictionary(
+                statistics => statistics.LibraryId,
+                statistics => (IReadOnlyList<KeyValuePair<MediaType, int>>)statistics.MediaCounts
+                    .OrderBy(entry => entry.Key)
+                    .ToList());
         }
         catch
         {
             _libraryStatsMap = [];
+            _orderedMediaCountsMap = [];
         }
     }
 
@@ -126,6 +136,9 @@ public partial class AdminLibrariesPanel : IDisposable
 
     private LibraryStatisticsDto? GetStats(Guid libraryId) =>
         _libraryStatsMap.GetValueOrDefault(libraryId);
+
+    private IReadOnlyList<KeyValuePair<MediaType, int>> GetOrderedMediaCounts(Guid libraryId) =>
+        _orderedMediaCountsMap.GetValueOrDefault(libraryId) ?? [];
 
     private string GetMediaTypeCountLabel(MediaType type) => type switch
     {

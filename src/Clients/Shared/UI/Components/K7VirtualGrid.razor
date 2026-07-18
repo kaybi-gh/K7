@@ -19,7 +19,9 @@
                     {
                         @if (ItemTemplate is not null)
                         {
-                            @ItemTemplate(item)
+                            <div @key="item">
+                                @ItemTemplate(item)
+                            </div>
                         }
                     }
                 </div>
@@ -39,7 +41,9 @@
                         {
                             @if (ItemTemplate is not null)
                             {
-                                @ItemTemplate(item)
+                                <div @key="item">
+                                    @ItemTemplate(item)
+                                </div>
                             }
                         }
                     </div>

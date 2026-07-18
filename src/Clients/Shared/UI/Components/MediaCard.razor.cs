@@ -1,10 +1,12 @@
 ﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -37,6 +39,7 @@ public partial class MediaCard : IDisposable
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ILogger<MediaCard> Logger { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
@@ -229,7 +232,7 @@ public partial class MediaCard : IDisposable
         CancelLongPress();
         _longPressTriggered = false;
         _longPressCts = new CancellationTokenSource();
-        _ = WaitForLongPressAsync(_longPressCts.Token, fromKeyboard: true);
+        WaitForLongPressAsync(_longPressCts.Token, fromKeyboard: true).FireAndForget(Logger);
     }
 
     private void OnKeyUp(KeyboardEventArgs e)
@@ -262,7 +265,7 @@ public partial class MediaCard : IDisposable
         _touchStartX = e.Touches[0].ClientX;
         _touchStartY = e.Touches[0].ClientY;
         _longPressCts = new CancellationTokenSource();
-        _ = WaitForLongPressAsync(_longPressCts.Token);
+        WaitForLongPressAsync(_longPressCts.Token).FireAndForget(Logger);
     }
 
     private void OnTouchMove(TouchEventArgs e)
@@ -338,7 +341,9 @@ public partial class MediaCard : IDisposable
         {
             try
             {
-                _ = JS.InvokeVoidAsync("K7.unregisterMediaCardLongPress", _longPressContainerRef);
+            JS.InvokeVoidAsync("K7.unregisterMediaCardLongPress", _longPressContainerRef)
+                .AsTask()
+                .FireAndForget(Logger);
             }
             catch (JSDisconnectedException)
             {

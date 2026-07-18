@@ -1,8 +1,10 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -10,6 +12,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class K7DataTable<TItem> : IAsyncDisposable
 {
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private ILogger<K7DataTable<TItem>> Logger { get; set; } = default!;
     [Parameter] public IList<TItem>? Items { get; set; }
     [Parameter] public Func<K7DataTableState<TItem>, CancellationToken, Task<K7DataTableResult<TItem>>>? ServerData { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -29,6 +32,8 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private readonly record struct IndexedRow(TItem Item, int Index);
 
     private readonly List<K7DataColumn<TItem>> _columns = [];
+    private IReadOnlyList<K7DataColumn<TItem>> _visibleColumns = [];
+    private IReadOnlyList<K7DataColumn<TItem>> _hideableColumns = [];
     private Virtualize<IndexedRow>? _virtualizeRef;
     private List<IndexedRow>? _indexedItems;
     private bool _columnPickerOpen;
@@ -74,7 +79,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     public void ToggleColumnPicker()
     {
         if (_columnPickerOpen)
-            _ = CloseColumnPickerAsync();
+            CloseColumnPickerAsync().FireAndForget(Logger);
         else
             OpenColumnPicker();
     }
@@ -150,7 +155,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     private void OnColumnPickerLayerClosed()
     {
-        _ = InvokeAsync(() =>
+        InvokeAsync(() =>
         {
             if (!_columnPickerOpen)
             {
@@ -164,7 +169,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
             _needsRender = true;
             StateHasChanged();
             return Task.CompletedTask;
-        });
+        }).FireAndForget(Logger);
     }
 
     private Task OnColumnPickerBackdropClick() => CloseColumnPickerAsync();
@@ -186,6 +191,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         if (!_columns.Contains(column))
         {
             _columns.Add(column);
+            UpdateColumnCaches();
             _needsRender = true;
             StateHasChanged();
         }
@@ -194,6 +200,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     internal void RemoveColumn(K7DataColumn<TItem> column)
     {
         _columns.Remove(column);
+        UpdateColumnCaches();
     }
 
     public async Task RefreshAsync()
@@ -271,6 +278,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private void ToggleColumnVisibility(K7DataColumn<TItem> column)
     {
         column.SetVisible(!column.IsVisible);
+        UpdateColumnCaches();
         _needsRender = true;
         StateHasChanged();
     }
@@ -295,8 +303,11 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         }
     }
 
-    private IEnumerable<K7DataColumn<TItem>> VisibleColumns =>
-        _columns.Where(c => c.IsVisible);
+    private void UpdateColumnCaches()
+    {
+        _visibleColumns = _columns.Where(column => column.IsVisible).ToList();
+        _hideableColumns = _columns.Where(column => column.Hideable).ToList();
+    }
 
     private string ScrollContainerStyle
     {
