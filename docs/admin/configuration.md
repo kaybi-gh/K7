@@ -11,7 +11,7 @@ Install first: [install.md](install.md). Day-to-day features: [operating.md](ope
 | `BaseUrl` | `BaseUrl` | `https://localhost:5001` | Public URL of this instance. Must match what browsers and federation peers use. Required for OIDC redirects and peering. |
 | `Server:Name` | `Server__Name` | *(empty)* | Display name when initiating federation. Falls back to host of `BaseUrl`, then machine name. |
 | `Cors:Origins` | `Cors__Origins` | `[]` | Allowed CORS origins. Non-empty: only those. Empty + Development: loopback. Empty + Production: deny all. Needed if WASM is hosted on another origin. |
-| `AllowedHosts` | `AllowedHosts` | `*` | Standard ASP.NET host filtering. |
+| `AllowedHosts` | `AllowedHosts` | `*` | Standard ASP.NET host filtering. `*` disables host filtering; set explicit hostnames in production behind a known public URL. |
 
 ## Database
 
