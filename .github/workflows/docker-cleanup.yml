@@ -21,8 +21,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERSION_IDS=$(gh api "/user/packages/container/k7/versions?per_page=100" \
-            --jq ".[] | select(.metadata.container.tags[]? == \"${PR_TAG}\") | .id" 2>/dev/null || true)
+          api_error=$(mktemp)
+          if ! VERSION_IDS=$(gh api "/users/${{ github.repository_owner }}/packages/container/k7/versions?per_page=100" \
+            --jq ".[] | select(.metadata.container.tags[]? == \"${PR_TAG}\") | .id" 2>"${api_error}"); then
+            if grep -q "HTTP 404" "${api_error}"; then
+              echo "No container package found for ${{ github.repository_owner }}."
+              exit 0
+            fi
+
+            while IFS= read -r line; do
+              echo "${line}" >&2
+            done < "${api_error}"
+            exit 1
+          fi
 
           if [ -z "${VERSION_IDS}" ]; then
             echo "No image found for tag ${PR_TAG}."
