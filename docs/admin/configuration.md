@@ -160,7 +160,9 @@ Authentication__Oidc__AutomaticAccountCreation: "true"
 | OIDC only | `Local:SignInEnabled=false`, OIDC on |
 | Local only | `Oidc:Enabled=false` |
 
-When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=auto_provisioning_disabled`. First-run can still complete via OIDC on `/setup` (setup token may apply) - see [install.md](install.md#first-run-setup).
+**First-run via OIDC:** if OIDC is enabled before setup completes, `/setup` offers **Create admin with ...**. Completing IdP login creates the first Administrator - **no `K7_SETUP_TOKEN`**. The password wizard still requires the token when one exists. Details: [install.md](install.md#first-run-setup).
+
+When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=auto_provisioning_disabled`. First-run via OIDC on `/setup` still works as above.
 
 ## Security
 
@@ -215,7 +217,7 @@ Example: `Serilog__MinimumLevel__Default=Debug`.
 | Env | Description |
 |---|---|
 | `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | Create first admin and complete setup on first boot. |
-| `K7_SETUP_TOKEN` | Required setup token for the wizard (or auto-generated and logged). |
+| `K7_SETUP_TOKEN` | Required for the **password** setup wizard (or auto-generated and logged). Not required for OIDC setup. |
 | `PUID` / `PGID` | Container UID/GID (default `911`). |
 | `SmokeTest:SkipFfmpegVerification` | Skip ffmpeg check at startup (tests). |
 

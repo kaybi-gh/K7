@@ -59,7 +59,7 @@ public class SetupService(
         }
     }
 
-    public async Task<Result> CompleteSetupWithExternalLoginAsync(string email, string loginProvider, string providerKey, string? setupToken = null, CancellationToken cancellationToken = default)
+    public async Task<Result> CompleteSetupWithExternalLoginAsync(string email, string loginProvider, string providerKey, CancellationToken cancellationToken = default)
     {
         await _setupLock.WaitAsync(cancellationToken);
         try
@@ -67,9 +67,7 @@ public class SetupService(
             if (await IsSetupCompletedAsync(cancellationToken))
                 return Result.Failure(["Setup has already been completed."]);
 
-            if (!await ValidateSetupTokenAsync(setupToken, cancellationToken))
-                return Result.Failure(["A valid setup token is required. Check the server logs from first boot or set K7_SETUP_TOKEN."]);
-
+            // OIDC/external login already authenticates the operator; no setup token required.
             var adminResult = await CreateAdminWithExternalLoginAsync(email, loginProvider, providerKey, cancellationToken);
             if (!adminResult.Succeeded)
                 return adminResult;

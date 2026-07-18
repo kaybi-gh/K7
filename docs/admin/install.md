@@ -59,20 +59,36 @@ Set these to match the owner of your media mounts. The entrypoint also `chown`s 
 
 Until setup completes, the server redirects non-API browser traffic to `/setup` and returns **503** for most `/api/*` routes.
 
-### Wizard (browser)
+You can finish first-run in any of these ways:
+
+| Path | When to use | Setup token |
+|---|---|---|
+| **Password wizard** on `/setup` | Default local admin | Required when a token was generated (see logs / `K7_SETUP_TOKEN`) |
+| **OIDC on `/setup`** | OIDC already enabled in config before first boot | **Not required** - completing IdP login creates the first Administrator |
+| **Unattended env** | `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | N/A (bootstrap skips the wizard) |
+
+### Wizard (browser) - password
 
 1. Open the server URL.
-2. Create the first **Administrator** account (email + password), or complete setup via OIDC if already enabled in config.
-3. If a setup token is required, enter the token shown in the server logs (or set `K7_SETUP_TOKEN` before first start).
+2. Create the first **Administrator** with email + password.
+3. If a setup token field is shown, enter the token from the server logs (or set `K7_SETUP_TOKEN` before first start). The token stops anyone who can reach `/setup` from becoming admin without server access.
 
 Password rules (Identity defaults): length at least 10, upper and lower case, a digit, at least 4 distinct characters.
+
+### Wizard (browser) - OIDC
+
+1. Configure OIDC (and usually `BaseUrl`) **before** or on first boot - see [configuration.md](configuration.md#oidc--sso).
+2. Open `/setup` and use **Create admin with ...** (your IdP).
+3. Sign in at the IdP. On success K7 creates the Administrator and marks setup complete - **no setup token**.
+
+The first account that completes this OIDC flow becomes admin. Prefer an IdP you control (no open self-registration) if `/setup` is reachable on the network before setup finishes.
 
 ### Unattended bootstrap
 
 | Mechanism | How |
 |---|---|
 | Env credentials | Set `K7_ADMIN_EMAIL` and `K7_ADMIN_PASSWORD` before first start |
-| Setup token | Set `K7_SETUP_TOKEN`, or let the server generate one (logged as a warning) |
+| Setup token | Applies to the **password** wizard only (`K7_SETUP_TOKEN`, or auto-generated and logged) |
 | Existing admin | If an Administrator already exists, setup is treated as completed |
 
 After setup: create libraries and enable Guest from the admin UI. Registration and OIDC are config-only (env / `appsettings`) - the Authentication admin panel is read-only. See [configuration.md](configuration.md) and [operating.md](operating.md).
