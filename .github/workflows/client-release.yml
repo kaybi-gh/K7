@@ -1,0 +1,189 @@
+name: Client release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach clients to (e.g. v1.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  MAUI_PROJECT: src/Clients/MAUI/K7.Clients.MAUI.csproj
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Resolve tag and version
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "version=${TAG#v}" >> "${GITHUB_OUTPUT}"
+
+  publish-android:
+    needs: resolve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve.outputs.tag }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --skip-manifest-update
+
+      # Prefer a long-lived keystore from secrets so APK updates keep the same signature.
+      # Fallback: ephemeral CI keystore (sideload only; signature changes each run).
+      - name: Prepare Android signing keystore
+        id: keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          store="${{ runner.temp }}/k7-release.keystore"
+          envfile="${{ runner.temp }}/android-signing.env"
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${store}"
+            {
+              echo "KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+              echo "STORE_PASS=${ANDROID_KEYSTORE_PASSWORD}"
+              echo "KEY_PASS=${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+            } > "${envfile}"
+            echo "Using repository Android signing secrets."
+          else
+            keytool -genkeypair -v \
+              -keystore "${store}" \
+              -alias k7ci \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass k7-ci-store \
+              -keypass k7-ci-key \
+              -dname "CN=K7 CI, OU=K7, O=K7, L=Internet, ST=NA, C=FR"
+            {
+              echo "KEY_ALIAS=k7ci"
+              echo "STORE_PASS=k7-ci-store"
+              echo "KEY_PASS=k7-ci-key"
+            } > "${envfile}"
+            echo "::warning::ANDROID_KEYSTORE_* secrets missing; using ephemeral CI keystore (sideload only)."
+          fi
+          echo "path=${store}" >> "${GITHUB_OUTPUT}"
+          echo "envfile=${envfile}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish Android APK
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC1090
+          source "${{ steps.keystore.outputs.envfile }}"
+          dotnet publish "${{ env.MAUI_PROJECT }}" \
+            -f net10.0-android \
+            -c Release \
+            -p:Version="${{ needs.resolve.outputs.version }}" \
+            -p:ApplicationDisplayVersion="${{ needs.resolve.outputs.version }}" \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="${{ steps.keystore.outputs.path }}" \
+            -p:AndroidSigningStorePass="${STORE_PASS}" \
+            -p:AndroidSigningKeyAlias="${KEY_ALIAS}" \
+            -p:AndroidSigningKeyPass="${KEY_PASS}" \
+            -o "${{ runner.temp }}/android-publish"
+
+      - name: Stage APK
+        id: apk
+        run: |
+          set -euo pipefail
+          apk=$(find "${{ runner.temp }}/android-publish" -type f \( -name '*.apk' \) | head -n 1)
+          if [ -z "${apk}" ]; then
+            echo "::error::No APK produced under android-publish"
+            find "${{ runner.temp }}/android-publish" -type f | head -n 50
+            exit 1
+          fi
+          out="${{ runner.temp }}/K7-${{ needs.resolve.outputs.version }}-android.apk"
+          cp "${apk}" "${out}"
+          echo "path=${out}" >> "${GITHUB_OUTPUT}"
+          echo "Staged $(basename "${out}") from ${apk}"
+
+      - name: Upload APK to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ needs.resolve.outputs.tag }}" \
+            "${{ steps.apk.outputs.path }}" \
+            --repo "${{ github.repository }}" \
+            --clobber
+
+  publish-windows:
+    needs: resolve
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve.outputs.tag }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows --skip-manifest-update
+
+      - name: Publish Windows (self-contained unpackaged)
+        id: win
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "win-publish"
+          dotnet publish $env:MAUI_PROJECT `
+            -f net10.0-windows10.0.19041.0 `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:WindowsPackageType=None `
+            -p:PublishSingleFile=false `
+            -p:Version="${{ needs.resolve.outputs.version }}" `
+            -p:ApplicationDisplayVersion="${{ needs.resolve.outputs.version }}" `
+            -o $out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $exe = Get-ChildItem -Path $out -Filter "K7.Clients.MAUI.exe" -Recurse -File | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "K7.Clients.MAUI.exe not found under $out"
+            Get-ChildItem -Path $out -Recurse -File | Select-Object -First 50 FullName
+            exit 1
+          }
+
+          Copy-Item $exe.FullName (Join-Path $out "K7.exe") -Force
+          $zip = Join-Path $env:RUNNER_TEMP "K7-${{ needs.resolve.outputs.version }}-win-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -Force
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$zip"
+
+      - name: Upload Windows zip to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release upload "${{ needs.resolve.outputs.tag }}" \
+            "${{ steps.win.outputs.path }}" \
+            --repo "${{ github.repository }}" \
+            --clobber

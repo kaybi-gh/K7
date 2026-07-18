@@ -7,6 +7,26 @@
 3. Maintainers publish the release (tag `vX.Y.Z`).
 4. **sync-version** rewrites `<Version>` in `Directory.Build.props` to match the tag and commits `chore: sync version to ...`.
 5. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.
+6. **client-release** (`.github/workflows/client-release.yml`) builds native clients and uploads them as Release assets (every published tag, including when MAUI code did not change):
+   - `K7-{version}-android.apk` - sideload / Android TV
+   - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; run `K7.exe` inside the zip
+
+Manual re-attach: Actions -> Client release -> Run workflow with the tag.
+
+iOS / Mac Catalyst packages are not published from CI (Apple signing required).
+
+### Android signing
+
+Prefer repository secrets so APK updates keep a stable signature:
+
+| Secret | Purpose |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded `.keystore` / `.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias |
+| `ANDROID_KEY_PASSWORD` | Key password (defaults to store password if unset) |
+
+If secrets are missing, CI generates an ephemeral keystore (sideload only; signature changes each run).
 
 ## Labels
 

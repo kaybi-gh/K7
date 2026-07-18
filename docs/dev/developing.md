@@ -42,6 +42,19 @@ dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
   -c Release
 ```
 
+Windows unpackaged (self-contained):
+
+```bash
+dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
+  -f net10.0-windows10.0.19041.0 \
+  -c Release \
+  -r win-x64 \
+  --self-contained true \
+  -p:WindowsPackageType=None
+```
+
+Published Release assets (APK + Windows zip) are produced by [client-release](releasing.md#android-signing) on each GitHub Release.
+
 Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing.
 
 Shared UI placement: [architecture.md](architecture.md#ui-layout).
