@@ -99,14 +99,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Install MAUI workload
+        run: dotnet workload install maui --skip-manifest-update
+
       - name: Restore
-        run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
+        run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj -r win-x64
 
       - name: Build
-        run: dotnet build tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release --no-restore
+        run: dotnet build tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release -r win-x64 --no-restore
 
       - name: Test (maui smoke)
-        run: dotnet test tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj --configuration Release -r win-x64 --no-build --verbosity normal
 
   publish-image:
     needs: build-and-test
