@@ -20,11 +20,13 @@ public partial class TrackContextMenu
     [Inject] private IMusicRadioPlaybackService MusicRadio { get; set; } = default!;
 
     private bool _canCreatePlaylist;
+    private bool _canRate;
     private bool _musicIntelligenceAvailable;
 
     protected override async Task OnInitializedAsync()
     {
         _canCreatePlaylist = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
 
         try
         {
