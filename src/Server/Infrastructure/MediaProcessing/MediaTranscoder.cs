@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using FFMpegCore;
@@ -177,6 +177,8 @@ public class MediaTranscoder : IMediaTranscoder
 
         var resolvedEncoder = encoderSelection;
 
+        var scaleHeight = ResolveScaleHeight(videoResolutionIdentifier);
+
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
             {
@@ -188,6 +190,11 @@ public class MediaTranscoder : IMediaTranscoder
                     {
                         options.WithCustomArgument(burnInCanvasSizeArg);
                     }
+                }
+                else if (!string.IsNullOrWhiteSpace(resolvedEncoder?.GlobalArguments))
+                {
+                    // VAAPI (and similar): -init_hw_device must come before -i.
+                    options.WithCustomArgument(resolvedEncoder.GlobalArguments);
                 }
                 else
                 {
@@ -236,14 +243,7 @@ public class MediaTranscoder : IMediaTranscoder
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
-                    {
-                        var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
-                        if (quality?.Height is int height)
-                        {
-                            options.ConfigureVideoScalingHlsOptions(height);
-                        }
-                    }
+                    ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight);
                 }
                 else
                 {
@@ -545,6 +545,33 @@ public class MediaTranscoder : IMediaTranscoder
         _logger.LogInformation("Remux with audio transcode completed: {Output} ({Size} bytes)",
             outputFilePath, new FileInfo(outputFilePath).Length);
     }
+
+    private static int? ResolveScaleHeight(string? videoResolutionIdentifier)
+    {
+        if (string.IsNullOrEmpty(videoResolutionIdentifier) || videoResolutionIdentifier == "original")
+            return null;
+
+        var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
+        return quality?.Height;
+    }
+
+    private static void ApplyVideoFilterOrScale(
+        FFMpegArgumentOptions options,
+        VideoEncoderSelection? encoder,
+        int? scaleHeight)
+    {
+        if (!string.IsNullOrWhiteSpace(encoder?.VideoFilter))
+        {
+            var filter = scaleHeight is int height
+                ? $"scale=-2:{height},{encoder.VideoFilter}"
+                : encoder.VideoFilter;
+            options.WithCustomArgument($"-vf \"{filter}\"");
+            return;
+        }
+
+        if (scaleHeight is int h)
+            options.ConfigureVideoScalingHlsOptions(h);
+    }
 }
 
 public class AutoScaleArgument : IVideoFilterArgument
@@ -576,12 +603,6 @@ internal static class FFMpegArgumentsExtensions
                 .EndSeek(TimeSpan.FromMilliseconds(lastSegment.StartTimestamp + 10))
             : options
                 .Seek(startTimeStamp);
-    }
-
-    public static FFMpegArgumentOptions ConfigureGenericHlsOptions(this FFMpegArgumentOptions options, string tempDirectory, HlsSegment firstSegment)
-    {
-        // Deprecated: TS-based HLS generation has been replaced by MP4/CMAF-like segments.
-        return options;
     }
 
     public static FFMpegArgumentOptions ConfigureVideoScalingHlsOptions(this FFMpegArgumentOptions options, int? height)

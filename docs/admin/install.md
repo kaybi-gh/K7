@@ -55,6 +55,10 @@ The image runs as non-root. `entrypoint.sh` remaps `appuser` using:
 
 Set these to match the owner of your media mounts. The entrypoint also `chown`s `/data` and `/media` when those directories exist and are writable. You can set `PUID` / `PGID` in `.env` (see [`.env.example`](../../.env.example)).
 
+## Hardware transcoding (optional)
+
+The sample Compose file does not pass through a GPU. For Intel/AMD VAAPI mount `/dev/dri`; for NVIDIA NVENC use the NVIDIA Container Toolkit (`gpus: all`). Details and examples: [Operating - Hardware acceleration](operating.md#hardware-acceleration).
+
 ## First-run setup
 
 Until setup completes, the server redirects non-API browser traffic to `/setup` and returns **503** for most `/api/*` routes.

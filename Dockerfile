@@ -41,14 +41,28 @@ RUN dotnet publish "src/Server/Web/K7.Server.Web.csproj" \
 # VS Fast Mode debug stage (F5 in Visual Studio with Docker profile)
 FROM build AS dev
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        vainfo \
+        mesa-va-drivers \
+        intel-media-va-driver \
+        i965-va-driver \
+    && (apt-get install -y --no-install-recommends intel-media-va-driver-non-free || true) \
     && rm -rf /var/lib/apt/lists/*
 EXPOSE 8080 8081
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gosu ffmpeg curl \
+    && apt-get install -y --no-install-recommends \
+        gosu \
+        ffmpeg \
+        curl \
+        vainfo \
+        mesa-va-drivers \
+        intel-media-va-driver \
+        i965-va-driver \
+    && (apt-get install -y --no-install-recommends intel-media-va-driver-non-free || true) \
     && rm -rf /var/lib/apt/lists/*
 
 

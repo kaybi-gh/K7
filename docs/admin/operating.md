@@ -76,11 +76,13 @@ Size the transcoding volume for concurrent streams. Safe to wipe between runs (c
 
 ### Hardware acceleration
 
-The server probes ffmpeg and can use:
+The server probes ffmpeg, then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container.
+
+Supported families:
 
 - NVIDIA: `h264_nvenc`, `hevc_nvenc`
 - Intel Quick Sync: `h264_qsv`, `hevc_qsv`
-- VAAPI: `h264_vaapi`, `hevc_vaapi`
+- VAAPI (Intel/AMD via `/dev/dri`): `h264_vaapi`, `hevc_vaapi`
 - Also: VideoToolbox, AMF
 - Software fallback: `libx264` / `libx265`
 
@@ -90,7 +92,48 @@ Controlled in **Admin -> Transcoding** (server setting `TranscodeSettings`), not
 - HDR tonemap and concurrency / quota options
 - APIs: `/api/admin/transcode/settings`, `/capabilities`, `/test`
 
-The stock Compose file does **not** pass through GPUs. Add device/runtime flags, confirm capabilities in Admin, then prefer HardwarePreferred or Auto. If no hardware encoder is visible, K7 falls back to software.
+Use **Test encoder** after changing Compose devices. If verification finds no working hardware encoder, Auto falls back to software.
+
+#### Docker Compose device passthrough
+
+The stock [`docker-compose.yaml`](../../docker-compose.yaml) does **not** pass through GPUs. Add one of the following to the `k7-server` service, then recreate the container and confirm Admin -> Transcoding.
+
+**Intel / AMD (VAAPI)** - mount DRM render nodes:
+
+```yaml
+devices:
+  - /dev/dri:/dev/dri
+```
+
+Rebuild/pull an image that includes VAAPI drivers (`mesa-va-drivers`, `intel-media-va-driver`, ...). The stock K7 image installs these; older builds with only `ffmpeg` will not encode even with `/dev/dri` mounted.
+
+The entrypoint adds `appuser` to the GIDs that own `/dev/dri/renderD*` / `card*` so you usually do **not** need Compose `group_add`. If encode probes still fail with permission errors, add the host `video` / `render` GIDs explicitly:
+
+```yaml
+# group_add:
+#   - "44"    # video (example - check `getent group video` on the host)
+#   - "992"   # render (example - check `getent group render` on the host)
+```
+
+`/dev/dri` does **not** enable NVIDIA NVENC. It only exposes Intel/AMD DRM devices for VAAPI (and often QSV on Intel).
+
+K7 initializes VAAPI the same way as Jellyfin (`-init_hw_device vaapi=va:/dev/dri/renderD*` before the input, then `format=nv12,hwupload` + `h264_vaapi` / `hevc_vaapi`). If Admin still shows no hardware encoders after mounting `/dev/dri`, check container logs for `Hardware encoder h264_vaapi ... failed verification` and run `vainfo` inside the container.
+
+**NVIDIA (NVENC)** - NVIDIA Container Toolkit on the host, then either:
+
+```yaml
+gpus: all
+# or, Compose deploy form:
+# deploy:
+#   resources:
+#     reservations:
+#       devices:
+#         - driver: nvidia
+#           count: 1
+#           capabilities: [gpu]
+```
+
+After recreate: open Admin -> Transcoding, confirm detected hardware encoders lists only working encoders, and run **Test encoder**.
 
 Users pick stream quality in the player; that drives whether a remux/transcode session is needed.
 

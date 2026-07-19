@@ -2,7 +2,6 @@ using System.Text.RegularExpressions;
 using FFMpegCore;
 using K7.Server.Application.Common.Interfaces;
 using K7.Shared.Dtos;
-using K7.Shared.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
@@ -94,46 +93,29 @@ public partial class FfmpegCapabilitiesService(
         }
 
         var ffmpegPath = GlobalFFOptions.GetFFMpegBinaryPath();
-        var args = $"-hide_banner -f lavfi -i color=c=black:s={TestFrameWidth}x{TestFrameHeight}:d=0.1 {selection.EncoderArguments} -f null -";
-
-        try
+        var result = await TryEncodeAsync(ffmpegPath, selection, cancellationToken);
+        if (!result.Success)
         {
-            var result = await RunCaptureAsync(ffmpegPath, args, cancellationToken);
-            if (result.ExitCode != 0)
-            {
-                return new FfmpegTranscodeTestResultDto
-                {
-                    Success = false,
-                    SelectedEncoder = selection.EncoderName,
-                    IsHardwareAccelerated = selection.IsHardwareAccelerated,
-                    Error = result.Stderr,
-                    Capabilities = capabilities
-                };
-            }
-
-            return new FfmpegTranscodeTestResultDto
-            {
-                Success = true,
-                SelectedEncoder = selection.EncoderName,
-                IsHardwareAccelerated = selection.IsHardwareAccelerated,
-                Capabilities = capabilities
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "FFmpeg encoder test failed");
             return new FfmpegTranscodeTestResultDto
             {
                 Success = false,
                 SelectedEncoder = selection.EncoderName,
                 IsHardwareAccelerated = selection.IsHardwareAccelerated,
-                Error = ex.Message,
+                Error = result.Stderr,
                 Capabilities = capabilities
             };
         }
+
+        return new FfmpegTranscodeTestResultDto
+        {
+            Success = true,
+            SelectedEncoder = selection.EncoderName,
+            IsHardwareAccelerated = selection.IsHardwareAccelerated,
+            Capabilities = capabilities
+        };
     }
 
-    private static async Task<FfmpegCapabilitiesDto> ProbeCapabilitiesAsync(CancellationToken cancellationToken)
+    private async Task<FfmpegCapabilitiesDto> ProbeCapabilitiesAsync(CancellationToken cancellationToken)
     {
         var ffmpegPath = GlobalFFOptions.GetFFMpegBinaryPath();
         var versionResult = await RunCaptureAsync(ffmpegPath, "-hide_banner -version", cancellationToken);
@@ -144,17 +126,80 @@ public partial class FfmpegCapabilitiesService(
 
         var encodersResult = await RunCaptureAsync(ffmpegPath, "-hide_banner -encoders", cancellationToken);
         var encoders = ParseEncoderNames(encodersResult.Stdout);
-        var hardwareEncoders = encoders
+        var candidateHardwareEncoders = encoders
             .Where(e => PreferredHardwareEncoders.Contains(e, StringComparer.OrdinalIgnoreCase))
             .ToList();
+
+        var vaapiDevice = FfmpegVideoEncoderBuilder.FindVaapiRenderNode();
+        if (vaapiDevice is not null)
+            logger.LogInformation("VAAPI render node detected: {Device}", vaapiDevice);
+        else
+            logger.LogInformation("No /dev/dri/renderD* node found (VAAPI unavailable in this environment)");
+
+        var verifiedHardwareEncoders = new List<string>();
+        foreach (var encoderName in candidateHardwareEncoders)
+        {
+            var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection(encoderName);
+            if (selection is null)
+                continue;
+
+            var probe = await TryEncodeAsync(ffmpegPath, selection, cancellationToken);
+            if (probe.Success)
+            {
+                verifiedHardwareEncoders.Add(encoderName);
+                logger.LogInformation("Hardware encoder {Encoder} verified", encoderName);
+            }
+            else
+            {
+                var stderrTail = TruncateForLog(probe.Stderr, 500);
+                logger.LogInformation(
+                    "Hardware encoder {Encoder} is built into ffmpeg but failed verification: {Error}",
+                    encoderName,
+                    stderrTail);
+            }
+        }
 
         return new FfmpegCapabilitiesDto
         {
             FfmpegVersion = versionLine,
             HardwareAccelerators = hwaccels,
             VideoEncoders = encoders,
-            AvailableHardwareEncoders = hardwareEncoders
+            AvailableHardwareEncoders = verifiedHardwareEncoders
         };
+    }
+
+    private static async Task<(bool Success, string Stderr)> TryEncodeAsync(
+        string ffmpegPath,
+        VideoEncoderSelection selection,
+        CancellationToken cancellationToken)
+    {
+        // Match Jellyfin: -init_hw_device (and friends) must come before -i.
+        var global = string.IsNullOrWhiteSpace(selection.GlobalArguments)
+            ? string.Empty
+            : $"{selection.GlobalArguments} ";
+        var filter = string.IsNullOrWhiteSpace(selection.VideoFilter)
+            ? string.Empty
+            : $"-vf \"{selection.VideoFilter}\" ";
+        var args =
+            $"-hide_banner {global}-f lavfi -i color=c=black:s={TestFrameWidth}x{TestFrameHeight}:d=0.1 {filter}{selection.EncoderArguments} -f null -";
+
+        try
+        {
+            var result = await RunCaptureAsync(ffmpegPath, args, cancellationToken);
+            return (result.ExitCode == 0, result.Stderr);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    private static string TruncateForLog(string value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            return value;
+
+        return value[^maxLength..];
     }
 
     private static List<string> ParseLines(string output, bool skipHeader)

@@ -5,7 +5,11 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 public sealed record VideoEncoderSelection(
     string EncoderName,
+    /// <summary>Arguments that must appear before the input (e.g. -init_hw_device).</summary>
+    string? GlobalArguments,
     string EncoderArguments,
+    /// <summary>Optional -vf chain (without the -vf flag). Applied on the output side.</summary>
+    string? VideoFilter,
     bool IsHardwareAccelerated,
     bool UsesHardwareDecode);
 
@@ -50,12 +54,35 @@ public static class FfmpegVideoEncoderBuilder
     }
 
     /// <summary>
+    /// Builds arguments for a named hardware encoder (used by capability probes).
+    /// Returns null when the name is not a known hardware encoder.
+    /// </summary>
+    public static VideoEncoderSelection? CreateHardwareSelection(string encoderName)
+    {
+        var known = CodecMap.SelectMany(m => m.HardwareEncoders)
+            .Any(e => string.Equals(e, encoderName, StringComparison.OrdinalIgnoreCase));
+
+        return known ? CreateHardware(encoderName) : null;
+    }
+
+    /// <summary>
     /// Optional HDR to SDR filter chain. Apply only when the source stream is HDR and tonemap is enabled.
     /// </summary>
     public static string? GetHdrTonemapFilter(bool enableHdrTonemap) =>
         enableHdrTonemap
             ? "zscale=transfer=linear,tonemap=tonemap=hable:desat=0,zscale=transfer=bt709:matrix=bt709:range=tv,format=yuv420p"
             : null;
+
+    public static string? FindVaapiRenderNode()
+    {
+        const string driPath = "/dev/dri";
+        if (!Directory.Exists(driPath))
+            return null;
+
+        return Directory.EnumerateFiles(driPath, "renderD*")
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .FirstOrDefault();
+    }
 
     private static VideoEncoderSelection CreateSoftware((string LogicalCodec, string SoftwareEncoder, string[] HardwareEncoders) map)
     {
@@ -66,24 +93,36 @@ public static class FfmpegVideoEncoderBuilder
             _ => $"-c:v {map.SoftwareEncoder}"
         };
 
-        return new VideoEncoderSelection(map.SoftwareEncoder, args, false, false);
+        return new VideoEncoderSelection(map.SoftwareEncoder, null, args, null, false, false);
     }
 
     private static VideoEncoderSelection CreateHardware(string encoder)
     {
+        if (encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
+            return CreateVaapi(encoder);
+
         var args = encoder switch
         {
             var e when e.Contains("nvenc", StringComparison.OrdinalIgnoreCase) =>
                 $"-c:v {encoder} -preset p4 -pix_fmt yuv420p",
             var e when e.Contains("qsv", StringComparison.OrdinalIgnoreCase) =>
                 $"-c:v {encoder} -preset medium -pix_fmt yuv420p",
-            var e when e.Contains("vaapi", StringComparison.OrdinalIgnoreCase) =>
-                $"-vf \"format=nv12,hwupload\" -c:v {encoder} -pix_fmt yuv420p",
             var e when e.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase) =>
                 $"-c:v {encoder} -profile:v main -pix_fmt yuv420p",
             _ => $"-c:v {encoder} -pix_fmt yuv420p"
         };
 
-        return new VideoEncoderSelection(encoder, args, true, true);
+        return new VideoEncoderSelection(encoder, null, args, null, true, true);
+    }
+
+    private static VideoEncoderSelection CreateVaapi(string encoder)
+    {
+        // -init_hw_device must appear before -i (see Jellyfin / ffmpeg VAAPI docs).
+        var device = FindVaapiRenderNode() ?? "/dev/dri/renderD128";
+        var globalArgs = $"-init_hw_device vaapi=va:{device} -filter_hw_device va";
+        var encoderArgs = $"-c:v {encoder}";
+        const string videoFilter = "format=nv12,hwupload";
+
+        return new VideoEncoderSelection(encoder, globalArgs, encoderArgs, videoFilter, true, false);
     }
 }

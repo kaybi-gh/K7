@@ -39,6 +39,12 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080/tcp"
+    # Hardware transcoding (optional). Stock image falls back to libx264/libx265.
+    # Intel/AMD VAAPI - see docs/admin/operating.md#hardware-acceleration
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # NVIDIA NVENC (requires nvidia-container-toolkit) - /dev/dri alone is not enough
+    # gpus: all
     volumes:
       # Persist config keys, metadata artwork, logs, and transcoding cache across recreates.
       - k7-data:/data

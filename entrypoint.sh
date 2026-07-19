@@ -31,5 +31,24 @@ for dir in /data /data/config /data/metadatas /data/logs /data/transcoding; do
     fi
 done
 
+# When /dev/dri is mounted for VAAPI/QSV, grant appuser the device GIDs
+# (host render/video groups) so encode probes can open renderD*.
+if [ -d /dev/dri ]; then
+    for device in /dev/dri/renderD* /dev/dri/card*; do
+        [ -e "$device" ] || continue
+        gid=$(stat -c '%g' "$device" 2>/dev/null || true)
+        [ -n "${gid:-}" ] || continue
+        [ "$gid" != "0" ] || continue
+        if ! getent group "$gid" >/dev/null 2>&1; then
+            groupadd -g "$gid" "host-gid-$gid" 2>/dev/null || true
+        fi
+        gname=$(getent group "$gid" | cut -d: -f1)
+        if [ -n "$gname" ]; then
+            usermod -aG "$gname" appuser 2>/dev/null || true
+            echo "Granted appuser access to $device via group $gname ($gid)"
+        fi
+    done
+fi
+
 # Run the application as appuser
 exec gosu appuser dotnet K7.Server.Web.dll "$@"
