@@ -53,17 +53,17 @@ else if (_person is not null)
                     <div class="person-info">
                         <div class="person-name-row">
                             <h3 class="person-name">@_person.Name</h3>
-                            <K7Menu>
-                                <ActivatorContent>
-                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" Size="sm" />
-                                </ActivatorContent>
-                                <ChildContent>
-                                    <AuthorizeView Roles="Administrator">
+                            <AuthorizeView Roles="Administrator">
+                                <K7Menu>
+                                    <ActivatorContent>
+                                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" Size="sm" />
+                                    </ActivatorContent>
+                                    <ChildContent>
                                         <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                         <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                    </AuthorizeView>
-                                </ChildContent>
-                            </K7Menu>
+                                    </ChildContent>
+                                </K7Menu>
+                            </AuthorizeView>
                         </div>
 
                         <div class="person-meta">

@@ -74,17 +74,17 @@
                                 <DownloadAllButton Items="GetDownloadRequests()" />
                             }
                         }
-                        <K7Menu Title="@L["MoreActions"]">
-                            <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
-                            </ActivatorContent>
-                            <ChildContent>
-                                <AuthorizeView Roles="Administrator">
+                        <AuthorizeView Roles="Administrator">
+                            <K7Menu Title="@L["MoreActions"]">
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                                </ActivatorContent>
+                                <ChildContent>
                                     <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                     <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                </AuthorizeView>
-                            </ChildContent>
-                        </K7Menu>
+                                </ChildContent>
+                            </K7Menu>
+                        </AuthorizeView>
                     </div>
                 </div>
             </div>

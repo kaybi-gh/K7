@@ -322,8 +322,7 @@ public partial class Movie : IAsyncDisposable
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
         
-        var title = movieForDialog.IndexedFiles!.Count > 1 ? L["IndexedVersions"] : L["TracksSelection"];
-        var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(title, parameters, options);
+        var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(L["TracksSelection"], parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled && result.Data is PlaybackOptionsResult optionsResult)

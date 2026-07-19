@@ -50,6 +50,7 @@ public partial class MusicAlbumDetail : IDisposable
     private double _totalDuration;
     private bool _loading = true;
     private bool _canRate;
+    private bool _isAdmin;
     private int? _albumUserRating;
     private Guid? _libraryGroupId;
     private MediaReviewsSection? _reviewsSection;
@@ -79,7 +80,11 @@ public partial class MusicAlbumDetail : IDisposable
             _loading = true;
 
         if (!isBackgroundRefresh && !isPicturesRefresh)
+        {
             _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+            var role = await FeatureAccess.GetRoleAsync();
+            _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+        }
 
         var media = await k7ServerService.GetMediaAsync(
             Guid.Parse(Id),

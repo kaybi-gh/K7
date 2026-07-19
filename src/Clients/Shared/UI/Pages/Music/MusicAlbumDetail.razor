@@ -114,25 +114,28 @@
                         {
                             <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
                         }
-                        <K7Menu Title="@L["MoreActions"]">
-                            <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
-                            </ActivatorContent>
-                            <ChildContent>
-                                @if (_canRate)
-                                {
-                                    <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@ReviewDialogL["Title"]</K7MenuItem>
-                                }
-                                @if (_artists.Count > 0)
-                                {
-                                    <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>
-                                }
-                                <AuthorizeView Roles="Administrator">
-                                    <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                    <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                </AuthorizeView>
-                            </ChildContent>
-                        </K7Menu>
+                        @if (_canRate || _artists.Count > 0 || _isAdmin)
+                        {
+                            <K7Menu Title="@L["MoreActions"]">
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    @if (_canRate)
+                                    {
+                                        <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@ReviewDialogL["Title"]</K7MenuItem>
+                                    }
+                                    @if (_artists.Count > 0)
+                                    {
+                                        <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>
+                                    }
+                                    <AuthorizeView Roles="Administrator">
+                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                    </AuthorizeView>
+                                </ChildContent>
+                            </K7Menu>
+                        }
                     </div>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IAudioPlayerService Audio
 @inject IMediaService Server
 @inject IDeviceService DeviceService
@@ -86,7 +87,9 @@
                                 <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
                                 <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
                                 <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                <AuthorizeView Roles="Administrator">
+                                    <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                </AuthorizeView>
                             }
                         </ChildContent>
                     </K7Menu>
