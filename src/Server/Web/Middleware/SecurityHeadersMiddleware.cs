@@ -50,7 +50,7 @@ public sealed class SecurityHeadersMiddleware(
             "script-src-attr 'unsafe-inline'",
             "worker-src 'self' blob:",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob:",
+            "img-src 'self' data: blob: https://image.tmdb.org https://artworks.thetvdb.com https://coverartarchive.org https://*.archive.org",
             "font-src 'self' data:",
             $"connect-src {string.Join(' ', connectSources)}",
             "media-src 'self' blob:",
