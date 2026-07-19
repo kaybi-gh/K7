@@ -90,7 +90,8 @@
                 break;
 
             case BrowseViewMode.Grid when GridTemplate is not null && GridItemAspectRatio is null:
-                <div class="browse-view-simple-grid" style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
+                <div class="browse-view-simple-grid @(SingleColumnOnMobile ? "browse-view-simple-grid--single-col-mobile" : null)"
+                     style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
                     @foreach (var item in Items!)
                     {
                         <div @key="item">

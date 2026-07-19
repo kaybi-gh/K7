@@ -43,6 +43,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int GridFooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 10;
     [Parameter] public bool DisableViewModePersistence { get; set; }
+    [Parameter] public bool SingleColumnOnMobile { get; set; }
     [Parameter] public EventCallback<BrowseViewMode> ViewModeChanged { get; set; }
 
     private K7VirtualGrid<TItem>? _gridComponentRef;

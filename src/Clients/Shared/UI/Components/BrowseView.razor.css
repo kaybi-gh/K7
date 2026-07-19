@@ -595,6 +595,10 @@
         grid-template-columns: repeat(auto-fill, minmax(var(--media-card-grid-column-min-poster), 1fr));
     }
 
+    .browse-view-simple-grid--single-col-mobile {
+        grid-template-columns: 1fr;
+    }
+
     .browse-view-simple-grid ::deep .media-card {
         width: 100%;
         min-width: 0;
