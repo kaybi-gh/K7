@@ -16,8 +16,7 @@ More screenshots: [`screenshots/README.md`](screenshots/README.md).
 
 ## Demo
 
-Access the live demo right [here](https://k7.kaybi.dev): connect either as a guest.
-Only guest access is available for the demo meaning that a ton of features are hidden.
+Access the live demo [here](https://k7.kaybi.dev). Only guest login is available, so features that require a full account are not accessible.
 
 ## Quick start (Docker)
 
