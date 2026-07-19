@@ -49,6 +49,15 @@ public class PathContainmentHelperTests
     }
 
     [Test]
+    [Platform("Unix")]
+    public void IsPathContained_ShouldMatchChildren_WhenAllowedRootIsUnixFilesystemRoot()
+    {
+        PathContainmentHelper.IsPathContained("/", ["/"]).Should().BeTrue();
+        PathContainmentHelper.IsPathContained("/media/Animes", ["/"]).Should().BeTrue();
+        PathContainmentHelper.IsPathContained("/media/Series", ["/"]).Should().BeTrue();
+    }
+
+    [Test]
     public void EnsurePathContained_ShouldThrow_WhenNotContained()
     {
         var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "k7-root-" + Guid.NewGuid().ToString("N")));

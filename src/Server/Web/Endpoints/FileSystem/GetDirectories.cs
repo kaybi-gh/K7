@@ -1,10 +1,7 @@
-using K7.Server.Application.Common.Configuration;
-using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace K7.Server.Web.Endpoints.FileSystem;
 
@@ -17,19 +14,17 @@ public class GetDirectories : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/filesystem/directories", (
             [FromQuery] string? path,
-            [FromServices] IOptions<PathsConfiguration> pathsConfiguration,
             CancellationToken cancellationToken) =>
         {
-            var allowedRoots = GetAllowedRoots(pathsConfiguration.Value);
+            var allowedRoots = GetBrowsableRoots();
 
             if (string.IsNullOrWhiteSpace(path))
             {
-                var drives = DriveInfo.GetDrives()
-                    .Where(d => d.IsReady)
-                    .Select(d => new DirectoryEntryDto
+                var drives = allowedRoots
+                    .Select(root => new DirectoryEntryDto
                     {
-                        Name = d.Name,
-                        FullPath = d.RootDirectory.FullName
+                        Name = root,
+                        FullPath = root
                     })
                     .ToList();
 
@@ -43,11 +38,17 @@ public class GetDirectories : IEndpoint
             var fullPath = Path.GetFullPath(path);
 
             if (!PathContainmentHelper.IsPathContained(fullPath, allowedRoots))
-                return Results.Forbid();
+            {
+                return Results.Problem(
+                    detail: "Path is outside allowed browse roots.",
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
 
             if (!Directory.Exists(fullPath))
             {
-                return Results.NotFound(new { message = $"Directory not found: {path}" });
+                return Results.Problem(
+                    detail: $"Directory not found: {path}",
+                    statusCode: StatusCodes.Status404NotFound);
             }
 
             try
@@ -71,7 +72,9 @@ public class GetDirectories : IEndpoint
             }
             catch (UnauthorizedAccessException)
             {
-                return Results.Forbid();
+                return Results.Problem(
+                    detail: "Access to this directory is denied.",
+                    statusCode: StatusCodes.Status403Forbidden);
             }
         })
         .RequireAuthorization(Policies.AdminOnly)
@@ -79,11 +82,10 @@ public class GetDirectories : IEndpoint
         .WithTags(groupName);
     }
 
-    private static IEnumerable<string> GetAllowedRoots(PathsConfiguration paths) =>
-    [
-        paths.Config,
-        paths.Metadatas,
-        paths.Transcoding,
-        paths.FFMpegBinaryFolder
-    ];
+    private static IReadOnlyList<string> GetBrowsableRoots() =>
+        DriveInfo.GetDrives()
+            .Where(d => d.IsReady)
+            .Select(d => d.RootDirectory.FullName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 }

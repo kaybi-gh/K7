@@ -664,7 +664,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var requestUri = string.IsNullOrWhiteSpace(path)
             ? "api/filesystem/directories"
             : $"api/filesystem/directories?path={Uri.EscapeDataString(path)}";
-        return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
+
+        using var response = await HttpClient.GetAsync(requestUri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<DirectoryContentDto>(_serializerOptions, cancellationToken);
     }
 
     public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default)

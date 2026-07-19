@@ -17,7 +17,11 @@ public static class PathContainmentHelper
             if (fullCandidate.Equals(fullRoot, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            var prefix = fullRoot + Path.DirectorySeparatorChar;
+            // "/" on Unix must use prefix "/" not "//", otherwise nothing under root matches.
+            var prefix = fullRoot.Length == 1 && fullRoot[0] == Path.DirectorySeparatorChar
+                ? fullRoot
+                : fullRoot + Path.DirectorySeparatorChar;
+
             if (fullCandidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
