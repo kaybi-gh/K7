@@ -216,12 +216,18 @@ public partial class Serie : IAsyncDisposable
     {
         if (_serie is null) return;
 
+        var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIndexedFiles(
+            _serie.IndexedFiles,
+            MediaType.Serie,
+            fallbackQuery: _serie.Title,
+            fallbackYear: _serie.ReleaseDate?.Year);
+
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.MediaId, _serie.Id },
-            { x => x.InitialSearchQuery, _serie.Title },
-            { x => x.InitialSearchYear, _serie.ReleaseDate?.Year },
-            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie },
+            { x => x.InitialSearchQuery, searchQuery },
+            { x => x.InitialSearchYear, searchYear },
+            { x => x.MediaType, MediaType.Serie },
             { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };
 

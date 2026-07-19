@@ -1,5 +1,6 @@
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Federation;
+using K7.Server.Domain.Models;
 using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Common.Mappings;
@@ -18,7 +19,24 @@ public static class IndexedFileMappings
             ParentDirectory = domain.ParentDirectory,
             Hash = domain.Hash,
             Size = domain.Size,
+            Identification = domain.Identification?.ToMediaIdentificationDto(),
             FileMetadata = domain.FileMetadata?.ToFileMetadataDto()
+        };
+    }
+
+    extension(MediaIdentification domain)
+    {
+        public MediaIdentificationDto ToMediaIdentificationDto() => new()
+        {
+            Title = domain.Title,
+            ReleaseYear = domain.ReleaseYear,
+            TrackNumber = domain.TrackNumber,
+            AlbumName = domain.AlbumName,
+            ArtistName = domain.ArtistName,
+            SeriesTitle = domain.SeriesTitle,
+            SeasonNumber = domain.SeasonNumber,
+            EpisodeNumber = domain.EpisodeNumber,
+            AbsoluteNumber = domain.AbsoluteNumber
         };
     }
 

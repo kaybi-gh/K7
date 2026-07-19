@@ -340,12 +340,18 @@ public partial class Movie : IAsyncDisposable
     {
         if (_movie == null) return;
 
+        var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIndexedFiles(
+            _movie.IndexedFiles,
+            MediaType.Movie,
+            fallbackQuery: _movie.Title,
+            fallbackYear: _movie.ReleaseDate?.Year);
+
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.MediaId, _movie.Id },
-            { x => x.InitialSearchQuery, _movie.Title },
-            { x => x.InitialSearchYear, _movie.ReleaseDate?.Year },
-            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
+            { x => x.InitialSearchQuery, searchQuery },
+            { x => x.InitialSearchYear, searchYear },
+            { x => x.MediaType, MediaType.Movie },
             { x => x.LibraryId, GetLibraryIdForReIdentify() }
         };
 
@@ -362,12 +368,19 @@ public partial class Movie : IAsyncDisposable
 
     private async Task OpenFileReIdentifyDialogAsync(Guid indexedFileId)
     {
+        var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIndexedFiles(
+            _movie?.IndexedFiles,
+            MediaType.Movie,
+            preferredIndexedFileId: indexedFileId,
+            fallbackQuery: _movie?.Title,
+            fallbackYear: _movie?.ReleaseDate?.Year);
+
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, indexedFileId },
-            { x => x.InitialSearchQuery, _movie?.Title },
-            { x => x.InitialSearchYear, _movie?.ReleaseDate?.Year },
-            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Movie },
+            { x => x.InitialSearchQuery, searchQuery },
+            { x => x.InitialSearchYear, searchYear },
+            { x => x.MediaType, MediaType.Movie },
             { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
         };
 

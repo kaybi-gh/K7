@@ -13,5 +13,6 @@ public sealed record IndexedFileDto
     public required uint Hash { get; init; }
     public required long Size { get; init; }
 
+    public MediaIdentificationDto? Identification { get; init; }
     public FileMetadataDto? FileMetadata { get; set; }
 }

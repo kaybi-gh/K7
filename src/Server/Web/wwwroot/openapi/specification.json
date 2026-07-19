@@ -11933,6 +11933,16 @@
               }
             ]
           },
+          "identification": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaIdentificationDto"
+              }
+            ]
+          },
           "missingPictureTypes": {
             "type": [
               "null",
@@ -12624,6 +12634,16 @@
               "string"
             ],
             "format": "int64"
+          },
+          "identification": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaIdentificationDto"
+              }
+            ]
           },
           "fileMetadata": {
             "oneOf": [
@@ -16350,6 +16370,78 @@
           },
           "container": {
             "type": "string"
+          }
+        }
+      },
+      "MediaIdentificationDto": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "releaseYear": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "trackNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "albumName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seriesTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "absoluteNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

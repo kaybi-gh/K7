@@ -244,11 +244,17 @@ public partial class SerieEpisode : IAsyncDisposable
     {
         if (_episode is null) return;
 
+        var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIndexedFiles(
+            _episode.IndexedFiles,
+            MediaType.Serie,
+            preferredIndexedFileId: indexedFileId,
+            fallbackQuery: _episode.SerieTitle);
+
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, indexedFileId },
-            { x => x.InitialSearchQuery, _episode.SerieTitle },
-            { x => x.InitialSearchYear, null },
+            { x => x.InitialSearchQuery, searchQuery },
+            { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Serie },
             { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
         };

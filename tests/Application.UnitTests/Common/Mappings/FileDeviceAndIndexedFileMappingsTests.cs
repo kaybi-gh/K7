@@ -4,6 +4,7 @@ using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Models;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.UnitTests.Common.Mappings;
@@ -97,7 +98,39 @@ public class FileDeviceAndIndexedFileMappingsTests
         dto.Name.Should().Be("movie");
         dto.Path.Should().Be("/media/movie.mkv");
         dto.Hash.Should().Be(42);
+        dto.Identification.Should().BeNull();
         dto.FileMetadata.Should().BeOfType<VideoFileMetadataDto>();
+    }
+
+    [Test]
+    public void ToIndexedFileDto_ShouldMapIdentification()
+    {
+        var file = new IndexedFile
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = Guid.NewGuid(),
+            Name = "Show.S01E01",
+            Extension = ".mkv",
+            Path = "/media/Show.S01E01.mkv",
+            Hash = 1,
+            Size = 100,
+            Identification = new MediaIdentification("Show S01E01")
+            {
+                SeriesTitle = "Show",
+                SeasonNumber = 1,
+                EpisodeNumber = 1,
+                ReleaseYear = new DateOnly(2020, 1, 1)
+            }
+        };
+
+        var dto = file.ToIndexedFileDto();
+
+        dto.Identification.Should().NotBeNull();
+        dto.Identification!.Title.Should().Be("Show S01E01");
+        dto.Identification.SeriesTitle.Should().Be("Show");
+        dto.Identification.SeasonNumber.Should().Be(1);
+        dto.Identification.EpisodeNumber.Should().Be(1);
+        dto.Identification.ReleaseYear.Should().Be(new DateOnly(2020, 1, 1));
     }
 
     [Test]

@@ -9,6 +9,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Navigation;
 using Microsoft.Extensions.Options;
 
@@ -81,8 +82,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
+        var identificationById = await LoadIdentificationsByIndexedFileIdAsync(
+            rows.Select(row => row.EntityId),
+            cancellationToken);
+
         return new PaginatedList<DiagnosticItemDto>(
-            rows.Select(MapIndexedFileIssue).ToList(),
+            rows.Select(row => MapIndexedFileIssue(row, identificationById.GetValueOrDefault(row.EntityId))).ToList(),
             totalCount,
             request.PageNumber,
             request.PageSize);
@@ -190,7 +195,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         return query;
     }
 
-    private static DiagnosticItemDto MapIndexedFileIssue(IndexedFileIssueRow row) => new()
+    private static DiagnosticItemDto MapIndexedFileIssue(
+        IndexedFileIssueRow row,
+        MediaIdentificationDto? identification = null) => new()
     {
         EntityId = row.EntityId,
         EntityName = row.EntityName,
@@ -198,8 +205,28 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         LibraryId = row.LibraryId,
         LibraryTitle = row.LibraryTitle,
         Issues = [row.Issue],
-        Severity = row.Severity
+        Severity = row.Severity,
+        Identification = identification
     };
+
+    private async Task<Dictionary<Guid, MediaIdentificationDto?>> LoadIdentificationsByIndexedFileIdAsync(
+        IEnumerable<Guid> indexedFileIds,
+        CancellationToken cancellationToken)
+    {
+        var ids = indexedFileIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return [];
+
+        var rows = await _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => ids.Contains(f.Id))
+            .Select(f => new { f.Id, f.Identification })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(
+            row => row.Id,
+            row => row.Identification?.ToMediaIdentificationDto());
+    }
 
     private async Task<PaginatedList<DiagnosticItemDto>> GetMediaIssuesPaginatedAsync(
         GetDiagnosticItemsQuery request,

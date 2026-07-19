@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
@@ -688,10 +689,16 @@ public partial class AdminDiagnosticsPanel
         if (mediaType is null)
             return;
 
+        var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIdentification(
+            item.Identification,
+            mediaType.Value);
+        searchQuery ??= item.EntityName;
+
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, item.EntityId },
-            { x => x.InitialSearchQuery, item.EntityName },
+            { x => x.InitialSearchQuery, searchQuery },
+            { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, mediaType },
             { x => x.LibraryId, item.LibraryId }
         };
