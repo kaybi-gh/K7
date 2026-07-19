@@ -11,6 +11,7 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
+<div class="my-space-reviews-page">
 <BrowseView TItem="SocialUserReviewViewDto"
             Items="_filteredReviews"
             Loading="_loading"
@@ -19,7 +20,8 @@
             DefaultItemWidth="400"
             DefaultSpacing="24"
             GridItemAspectRatio="@((float?)null)"
-            ListItemHeight="248"
+            SingleColumnOnMobile="true"
+            ListItemHeight="264"
             @ref="_browseView">
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
@@ -59,9 +61,12 @@
                            OnDelete="() => DeleteReviewAsync(review)" />
     </GridTemplate>
     <ListTemplate Context="review">
-        <MySpaceReviewCard Review="review"
-                           Compact="true"
-                           OnEdit="() => EditReviewAsync(review)"
-                           OnDelete="() => DeleteReviewAsync(review)" />
+        <div class="my-space-review-list-item">
+            <MySpaceReviewCard Review="review"
+                               Compact="true"
+                               OnEdit="() => EditReviewAsync(review)"
+                               OnDelete="() => DeleteReviewAsync(review)" />
+        </div>
     </ListTemplate>
 </BrowseView>
+</div>

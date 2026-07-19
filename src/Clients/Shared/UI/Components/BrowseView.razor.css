@@ -546,6 +546,10 @@
     grid-template-columns: repeat(auto-fill, minmax(var(--item-width), 1fr));
     gap: var(--grid-gap);
     padding: 0 16px 16px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    align-content: start;
 }
 
 .browse-view-simple-grid > ::deep * {

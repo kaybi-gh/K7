@@ -1,5 +1,30 @@
-﻿.admin-devices-browse ::deep .k7-virtual-list {
+﻿.admin-devices-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    --admin-devices-list-gap: var(--space-3);
+}
+
+.admin-devices-page ::deep .admin-devices-browse {
+    flex: 1;
+    min-height: 0;
+}
+
+.admin-devices-page ::deep .k7-virtual-list {
     padding: 0 var(--space-4) var(--space-4);
+}
+
+.admin-devices-page ::deep .k7-virtual-list-item,
+.admin-devices-page ::deep .k7-virtual-list-item--alt,
+.admin-devices-page ::deep .k7-virtual-list-item:hover,
+.admin-devices-page ::deep .k7-virtual-list-item--alt:hover {
+    background: transparent;
+}
+
+.device-list-item {
+    box-sizing: border-box;
+    padding-bottom: var(--admin-devices-list-gap);
 }
 
 ::deep .current-device {
@@ -14,11 +39,6 @@
 @keyframes highlight-fade {
     0% { background-color: color-mix(in srgb, var(--color-accent) 25%, transparent); }
     100% { background-color: transparent; }
-}
-
-.device-list-item {
-    padding-bottom: var(--space-3);
-    box-sizing: border-box;
 }
 
 .device-card {
@@ -89,7 +109,7 @@
 }
 
 @media (max-width: 599.98px) {
-    .admin-devices-browse ::deep .k7-virtual-list {
+    .admin-devices-page ::deep .k7-virtual-list {
         padding: var(--space-3);
     }
 

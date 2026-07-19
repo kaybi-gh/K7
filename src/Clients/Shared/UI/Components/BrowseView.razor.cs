@@ -265,7 +265,11 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             modes.Add(BrowseViewMode.Table);
         }
 
-        if (ListTemplate is not null) modes.Add(BrowseViewMode.List);
+        if (ListTemplate is not null && !(_isMobileViewport && SingleColumnOnMobile))
+        {
+            modes.Add(BrowseViewMode.List);
+        }
+
         return modes;
     }
 

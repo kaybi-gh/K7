@@ -4,8 +4,9 @@
 @using K7.Shared.Dtos.Devices
 @inject IStringLocalizer<AdminDevicesPanel> L
 
+<div class="admin-devices-page">
 <BrowseView TItem="DeviceDto" Items="_deviceItems" Loading="_isLoading" Class="admin-devices-browse"
-            DefaultMode="BrowseViewMode.List" ListItemHeight="140">
+            DefaultMode="BrowseViewMode.List" ListItemHeight="152">
     <ToolbarContent>
         @if (_devices is not null)
         {
@@ -16,7 +17,7 @@
     </ToolbarContent>
     <EmptyContent>
         <K7Paper Class="d-flex flex-col pa-8">
-            <K7Icon Icon="@Phosphor.MonitorPlay"  IconSize="@K7IconSize.Lg" Color="secondary" />
+            <K7Icon Icon="@Phosphor.MonitorPlay" IconSize="@K7IconSize.Lg" Color="secondary" />
             <p Color="secondary">@L["NoDevices"]</p>
         </K7Paper>
     </EmptyContent>
@@ -26,58 +27,59 @@
             var isFocused = device.Id == _focusedDeviceId;
         }
         <div class="device-list-item">
-        <K7Paper id="@($"device-{device.Id}")" Outlined="true" Class="@($"{GetDeviceClass(isCurrent, isFocused)} device-card-paper")">
-            <div class="device-card">
-                <div class="device-card-row">
-                    <div class="device-card-main">
-                        <div class="device-card-icons" aria-hidden="true">
-                            <K7Icon Icon="@GetDeviceIcon(device.DeviceType)"  IconSize="@K7IconSize.Lg" Color="@(isCurrent ? "primary" : "default")" AriaLabel="@GetDeviceTypeLabel(device.DeviceType)" />
-                            <K7Icon Icon="@GetClientTypeIcon(device.ClientType)"  IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetClientTypeLabel(device.ClientType)" />
-                            @if (device.WebDeviceDetails is not null)
-                            {
-                                <K7Icon Icon="@GetBrowserIcon(device.WebDeviceDetails.Browser)"  IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetBrowserLabel(device.WebDeviceDetails.Browser)" />
-                            }
-                        </div>
-
-                        <div class="device-card-info">
-                            <div class="device-card-title">
-                                <p class="text-subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</p>
-                                @if (isCurrent)
+            <K7Paper id="@($"device-{device.Id}")" Outlined="true" Class="@($"{GetDeviceClass(isCurrent, isFocused)} device-card-paper")">
+                <div class="device-card">
+                    <div class="device-card-row">
+                        <div class="device-card-main">
+                            <div class="device-card-icons" aria-hidden="true">
+                                <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" IconSize="@K7IconSize.Lg" Color="@(isCurrent ? "primary" : "default")" AriaLabel="@GetDeviceTypeLabel(device.DeviceType)" />
+                                <K7Icon Icon="@GetClientTypeIcon(device.ClientType)" IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetClientTypeLabel(device.ClientType)" />
+                                @if (device.WebDeviceDetails is not null)
                                 {
-                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
+                                    <K7Icon Icon="@GetBrowserIcon(device.WebDeviceDetails.Browser)" IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetBrowserLabel(device.WebDeviceDetails.Browser)" />
                                 }
                             </div>
 
-                            <p class="text-sm device-card-os" Color="secondary">
-                                @device.OperatingSystem @device.OperatingSystemVersion
-                                @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
-                                {
-                                    <text> - @($"{device.DisplayWidth:0}x{device.DisplayHeight:0}")</text>
-                                }
-                            </p>
+                            <div class="device-card-info">
+                                <div class="device-card-title">
+                                    <p class="text-subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</p>
+                                    @if (isCurrent)
+                                    {
+                                        <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
+                                    }
+                                </div>
+
+                                <p class="text-sm device-card-os" Color="secondary">
+                                    @device.OperatingSystem @device.OperatingSystemVersion
+                                    @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
+                                    {
+                                        <text> - @($"{device.DisplayWidth:0}x{device.DisplayHeight:0}")</text>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="device-card-meta">
+                            <div class="device-card-lastseen">
+                                <span class="text-caption" Color="secondary">@L["LastSeen"]</span>
+                                <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
+                            </div>
+                            <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))" AriaLabel="@L["DeleteDevice"]" />
                         </div>
                     </div>
 
-                    <div class="device-card-meta">
-                        <div class="device-card-lastseen">
-                            <span class="text-caption" Color="secondary">@L["LastSeen"]</span>
-                            <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
+                    @if (device.Users.Count > 0)
+                    {
+                        <div class="device-card-users">
+                            <K7Icon Icon="@Phosphor.Users" IconSize="@K7IconSize.Sm" Color="secondary" />
+                            <span class="text-caption" Color="secondary">
+                                @(string.Format(L["UserCount"], device.Users.Count))
+                            </span>
                         </div>
-                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))" AriaLabel="@L["DeleteDevice"]" />
-                    </div>
+                    }
                 </div>
-
-                @if (device.Users.Count > 0)
-                {
-                    <div class="device-card-users">
-                        <K7Icon Icon="@Phosphor.Users"  IconSize="@K7IconSize.Sm" Color="secondary" />
-                        <span class="text-caption" Color="secondary">
-                            @(string.Format(L["UserCount"], device.Users.Count))
-                        </span>
-                    </div>
-                }
-            </div>
-        </K7Paper>
+            </K7Paper>
         </div>
     </ListTemplate>
 </BrowseView>
+</div>

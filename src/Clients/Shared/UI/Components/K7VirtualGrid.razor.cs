@@ -19,6 +19,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     [Parameter] public float AspectRatio { get; set; } = 1.5f;
     [Parameter] public int FooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 10;
+    [Parameter] public bool SingleColumnOnMobile { get; set; }
 
     private ElementReference _gridRef;
     private Virtualize<List<TItem>>? _virtualizeRef;
@@ -192,8 +193,17 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             .ToList();
     }
 
-    private int CalculateColumnCount() =>
-        VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio);
+    private int CalculateColumnCount()
+    {
+        if (SingleColumnOnMobile
+            && _containerWidth > 0
+            && _containerWidth < VirtualGridLayout.CompactBreakpoint)
+        {
+            return 1;
+        }
+
+        return VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio);
+    }
 
     private int GetEffectiveSpacing() =>
         VirtualGridLayout.GetEffectiveSpacing(_containerWidth, Spacing);
