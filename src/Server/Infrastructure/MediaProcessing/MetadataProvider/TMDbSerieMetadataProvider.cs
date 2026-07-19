@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -47,13 +48,22 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         try
         {
+            var query = identification.SeriesTitle ?? identification.Title;
             var year = identification.ReleaseYear.HasValue ? identification.ReleaseYear.Value.Year : 0;
             var searchResult = await _tmdbClient.SearchTvShowAsync(
-                identification.SeriesTitle ?? identification.Title,
+                query,
                 firstAirDateYear: year,
                 cancellationToken: cancellationToken);
 
-            return searchResult.Results.FirstOrDefault()?.Id.ToString();
+            var bestMatch = MetadataTitleMatchHelper.PickBest(
+                query,
+                year > 0 ? year : null,
+                searchResult.Results,
+                result => result.Name,
+                result => result.FirstAirDate?.Year,
+                result => [result.OriginalName]);
+
+            return bestMatch?.Id.ToString();
         }
         catch (Exception ex)
         {
@@ -93,7 +103,14 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
                 if (searchResult?.Results is not null)
                 {
-                    results.AddRange(searchResult.Results.Select(show =>
+                    var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
+                        query,
+                        year,
+                        searchResult.Results,
+                        show => show.Name,
+                        show => show.FirstAirDate?.Year,
+                        show => [show.OriginalName]);
+                    results.AddRange(ranked.Select(show =>
                         MapToSearchResult(show.Id, show.Name, show.FirstAirDate, show.PosterPath, show.Overview)));
                 }
             }

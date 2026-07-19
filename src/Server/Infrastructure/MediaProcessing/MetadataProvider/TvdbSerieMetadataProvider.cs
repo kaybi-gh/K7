@@ -46,7 +46,13 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
             var year = identification.ReleaseYear?.Year;
             var results = await _apiClient.SearchSeriesAsync(query, year, cancellationToken);
-            var bestMatch = results.FirstOrDefault();
+            var bestMatch = MetadataTitleMatchHelper.PickBest(
+                query,
+                year,
+                results,
+                result => result.Name,
+                result => ParseYear(result.FirstAirTime, result.Year),
+                result => [result.NameTranslated]);
             return bestMatch is null ? null : ResolveSearchResultId(bestMatch);
         }
         catch (Exception ex)
@@ -94,7 +100,13 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 var searchResults = await _apiClient.SearchSeriesAsync(query, year, cancellationToken);
                 var mappedResults = await Task.WhenAll(searchResults.Select(item =>
                     MapSearchResultToMetadataAsync(item, language, fallbackLanguage, cancellationToken)));
-                results.AddRange(mappedResults.Where(result => result is not null)!);
+                var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
+                    query,
+                    year,
+                    mappedResults.Where(result => result is not null).Cast<MetadataSearchResult>(),
+                    result => result.Title,
+                    result => result.Year);
+                results.AddRange(ranked);
             }
         }
         catch (Exception ex)

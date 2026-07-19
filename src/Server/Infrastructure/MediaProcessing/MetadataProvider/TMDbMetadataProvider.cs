@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas;
@@ -45,7 +46,15 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             var searchResult = await _tdmbClient.SearchMovieAsync(movieIdentification.Title,
                 year: movieIdentification.ReleaseYear.HasValue ? movieIdentification.ReleaseYear.Value.Year : 0,
                 cancellationToken: cancellationToken);
-            return searchResult.Results.FirstOrDefault()?.Id.ToString();
+            var year = movieIdentification.ReleaseYear?.Year;
+            var bestMatch = MetadataTitleMatchHelper.PickBest(
+                movieIdentification.Title,
+                year,
+                searchResult.Results,
+                result => result.Title,
+                result => result.ReleaseDate?.Year,
+                result => [result.OriginalTitle]);
+            return bestMatch?.Id.ToString();
         }
         catch (Exception ex)
         {
@@ -82,7 +91,14 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 var searchResult = await _tdmbClient.SearchMovieAsync(query, language: language, year: year ?? 0, cancellationToken: cancellationToken);
                 if (searchResult?.Results != null)
                 {
-                    results.AddRange(searchResult.Results.Select(movie => 
+                    var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
+                        query,
+                        year,
+                        searchResult.Results,
+                        movie => movie.Title,
+                        movie => movie.ReleaseDate?.Year,
+                        movie => [movie.OriginalTitle]);
+                    results.AddRange(ranked.Select(movie =>
                         MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview)));
                 }
             }

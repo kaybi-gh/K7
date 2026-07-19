@@ -1,5 +1,6 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas;
@@ -75,6 +76,16 @@ public class SearchMetadataQueryHandler(
             fallbackLanguage,
             cancellationToken));
         var results = await Task.WhenAll(tasks);
-        return results.SelectMany(r => r);
+        var flattened = results.SelectMany(r => r);
+
+        if (string.IsNullOrWhiteSpace(request.Query) || !string.IsNullOrWhiteSpace(request.ProviderId))
+            return flattened;
+
+        return MetadataTitleMatchHelper.OrderByBestMatch(
+            request.Query,
+            request.Year,
+            flattened,
+            result => result.Title,
+            result => result.Year);
     }
 }
