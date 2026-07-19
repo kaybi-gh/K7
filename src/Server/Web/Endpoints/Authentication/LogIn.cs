@@ -15,13 +15,20 @@ public class LogIn : IEndpoint
         string groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapGet("/api/authentication/login", (
-            [FromQuery] string returnUrl,
+            [FromQuery] string? returnUrl,
             [FromServices] SignInManager<ApplicationUser> signInManager,
             [FromServices] IOptions<AuthenticationConfiguration> authConfig) =>
         {
+            // Cookie middleware uses ReturnUrl; clients may send returnUrl.
+            if (string.IsNullOrWhiteSpace(returnUrl))
+                returnUrl = null;
+
             if (!authConfig.Value.Oidc.Enabled)
             {
-                return Results.Redirect("/sign-in");
+                var signInTarget = string.IsNullOrWhiteSpace(returnUrl)
+                    ? "/sign-in"
+                    : $"/sign-in?ReturnUrl={Uri.EscapeDataString(returnUrl)}";
+                return Results.Redirect(signInTarget);
             }
 
             var destination = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;

@@ -77,9 +77,10 @@ These flags are **config-only** (shown read-only under Admin -> Authentication).
 | `Authentication:Oidc:Authority` | `Authentication__Oidc__Authority` | *(empty)* | IdP issuer URL. |
 | `Authentication:Oidc:ClientId` | `Authentication__Oidc__ClientId` | *(empty)* | Client id. |
 | `Authentication:Oidc:ClientSecret` | `Authentication__Oidc__ClientSecret` | *(empty)* | Client secret. |
-| `Authentication:Oidc:Scopes` | `Authentication__Oidc__Scopes` | `openid,profile` | Comma-separated scopes. |
+| `Authentication:Oidc:Scopes` | `Authentication__Oidc__Scopes` | `openid,profile` | Comma-separated scopes requested from the IdP. |
 | `Authentication:Oidc:DisplayName` | `Authentication__Oidc__DisplayName` | *(empty)* / class default `Oidc` | Sign-in button label. |
 | `Authentication:Oidc:AutomaticAccountCreation` | `Authentication__Oidc__AutomaticAccountCreation` | `true` | Create User-role account on first login. If `false`, unknown users are rejected. |
+| `Authentication:Oidc:WebSessionLifetime` | `Authentication__Oidc__WebSessionLifetime` | `7.00:00:00` (7 days) | **Optional. Web only.** Persistent Identity cookie lifetime for OIDC on the browser client. Default is 7 days; override only if you want a longer or shorter K7 web session. Does not affect MAUI (K7 refresh tokens). Independent of IdP token validity. Local "Remember me" still uses 30 days. |
 
 **Lockout risk:** if both local sign-in and OIDC are disabled, nobody can sign in except via existing sessions / API keys until you fix config.
 
@@ -98,9 +99,12 @@ Authentication__Oidc__ClientSecret: your-secret
 Authentication__Oidc__Scopes: openid,profile
 Authentication__Oidc__DisplayName: Authentik
 Authentication__Oidc__AutomaticAccountCreation: "true"
+# Optional (web only): Authentication__Oidc__WebSessionLifetime: "14.00:00:00"
 ```
 
 Prefer a file secret in production: `Authentication__Oidc__ClientSecret__File=/run/secrets/oidc_client_secret`.
+
+Web OIDC sessions use a persistent Identity cookie. Lifetime defaults to 7 days (`Authentication:Oidc:WebSessionLifetime`); set that key only if you want a different duration. This is web-only and independent of IdP token validity (e.g. Authentik "Token validity"). K7 does not continuously refresh against the IdP after login; expired sessions return to `/welcome` so Guest or Sign In remains choosable. MAUI clients are separate: they use refresh tokens issued by K7 itself (`/connect/token`).
 
 #### Redirect URIs at the IdP
 
@@ -150,7 +154,7 @@ Authentication__Oidc__AutomaticAccountCreation: "true"
 
 5. Restart K7. On `/sign-in` you should see an **Authentik** button (the `DisplayName`). First successful login creates a local **User** role account when auto-provisioning is on.
 
-**Other IdPs (Keycloak, Pocket ID, Authelia, ...):** same idea - confidential OIDC client, set the two redirect URIs above, put the issuer / discovery base URL in `Authority`, and copy Client ID + secret. Scopes `openid,profile` are enough; add `email` only if your IdP requires it for claims you care about (K7 links accounts by provider subject, not by email).
+**Other IdPs (Keycloak, Pocket ID, Authelia, ...):** same idea - confidential OIDC client, set the two redirect URIs above, put the issuer / discovery base URL in `Authority`, and copy Client ID + secret. Prefer scopes `openid,profile`; add `email` only if your IdP requires it for claims you care about (K7 links accounts by provider subject, not by email). Optionally set `WebSessionLifetime` if you want a web cookie lifetime other than the 7-day default (MAUI is unaffected).
 
 #### Local + OIDC modes
 

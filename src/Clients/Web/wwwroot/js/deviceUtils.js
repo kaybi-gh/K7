@@ -122,7 +122,7 @@ window.getHdrSupport = async function () {
                 height: 1080,
                 bitrate: 8000000,
                 framerate: 60,
-                hdrMetadataType: "smpteSt2084",
+                hdrMetadataType: "smpteSt2086",
             }
         });
 

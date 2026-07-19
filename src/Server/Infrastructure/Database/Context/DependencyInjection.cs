@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Configuration;
@@ -151,8 +151,7 @@ public static class DependencyInjection
 
                 if (authConfiguration.Oidc.Enabled)
                 {
-                    options.AllowAuthorizationCodeFlow()
-                           .AllowRefreshTokenFlow();
+                    options.AllowAuthorizationCodeFlow();
 
                     options.UseAspNetCore()
                            .EnableStatusCodePagesIntegration()

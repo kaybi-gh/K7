@@ -20,5 +20,16 @@ public class OidcAuthenticationConfiguration
     public string Authority { get; set; } = "";
     public string ClientId { get; set; } = "";
     public string ClientSecret { get; set; } = "";
+
+    /// <summary>
+    /// Comma-separated scopes requested from the IdP (typically openid,profile).
+    /// </summary>
     public string Scopes { get; set; } = "openid,profile";
+
+    /// <summary>
+    /// Optional. Persistent Identity cookie lifetime for web OIDC sign-ins (default 7 days).
+    /// Web only; MAUI uses K7 refresh tokens. Independent of IdP token validity. Override
+    /// when a different web session length is desired.
+    /// </summary>
+    public TimeSpan WebSessionLifetime { get; set; } = TimeSpan.FromDays(7);
 }
