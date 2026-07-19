@@ -10,6 +10,8 @@ on:
       - LICENSE
       - .github/FUNDING.yml
 
+  workflow_dispatch:
+
 permissions:
   contents: write
   pull-requests: read
