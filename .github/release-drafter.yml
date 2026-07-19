@@ -2,6 +2,10 @@ name-template: 'K7 $RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 version-template: '$RESOLVED_VERSION'
 change-template: '- $TITLE @$AUTHOR ([#$NUMBER]($URL))'
+template: |
+  ## Changes
+
+  $CHANGES
 
 categories:
   - title: 'Breaking Changes'
