@@ -136,14 +136,20 @@ public partial class SerieSeason : IAsyncDisposable
     {
         if (_isTv && _season is not null && !_loading)
         {
-            if (!_seasonTvScrollInitialized)
+            try
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _seasonTvRoot);
-                _seasonTvScrollInitialized = true;
+                if (!_seasonTvScrollInitialized)
+                {
+                    await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _seasonTvRoot);
+                    _seasonTvScrollInitialized = true;
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _seasonTvRoot);
+                }
             }
-            else
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _seasonTvRoot);
             }
         }
 
@@ -152,22 +158,28 @@ public partial class SerieSeason : IAsyncDisposable
             var elementId = _focusEpisodeFragment.TrimStart('#');
             _focusEpisodeFragment = null;
 
-            if (_isTv && _tvCarousel is not null)
+            try
             {
-                var targetEpNumber = ParseEpisodeFragment("#" + elementId);
-                if (targetEpNumber is not null)
+                if (_isTv && _tvCarousel is not null)
                 {
-                    var index = _episodes.FindIndex(e => e.EpisodeNumber == targetEpNumber);
-                    if (index >= 0)
+                    var targetEpNumber = ParseEpisodeFragment("#" + elementId);
+                    if (targetEpNumber is not null)
                     {
-                        await _tvCarousel.ScrollToIndexAsync(index);
-                        await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
+                        var index = _episodes.FindIndex(e => e.EpisodeNumber == targetEpNumber);
+                        if (index >= 0)
+                        {
+                            await _tvCarousel.ScrollToIndexAsync(index);
+                            await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
+                        }
                     }
                 }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+                }
             }
-            else
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
-                await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
             }
         }
     }
@@ -478,7 +490,15 @@ public partial class SerieSeason : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_seasonTvScrollInitialized)
+        if (!_seasonTvScrollInitialized)
+            return;
+
+        try
+        {
             await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _seasonTvRoot);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 }

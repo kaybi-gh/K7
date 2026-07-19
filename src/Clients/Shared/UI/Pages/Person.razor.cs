@@ -133,11 +133,11 @@ public partial class Person : IDisposable
 
         if (_backdrops.Count > 1)
         {
-            _backdropTimer = new Timer(async _ =>
+            _backdropTimer = new Timer(_ =>
             {
                 _previousBackdropUrl = _backdrops[_activeBackdropIndex].Url;
                 _activeBackdropIndex = (_activeBackdropIndex + 1) % _backdrops.Count;
-                await InvokeAsync(StateHasChanged);
+                InvokeAsync(StateHasChanged).FireAndForget();
             }, null, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(6));
         }
 

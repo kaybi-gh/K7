@@ -115,7 +115,18 @@ public partial class VideoPlayer : IAsyncDisposable
         // visible so the native video shows through the Blazor overlay.
         if (DeviceService.GetClientType() == ClientType.Native)
         {
-            _ = JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", PlayerService.IsVisible);
+            SetNativePlayerActiveAsync(PlayerService.IsVisible).FireAndForget();
+        }
+    }
+
+    private async Task SetNativePlayerActiveAsync(bool active)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", active);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+        {
         }
     }
 

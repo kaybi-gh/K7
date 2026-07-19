@@ -6,48 +6,52 @@ namespace K7.Clients.Shared.Services;
 
 public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
 {
-    public async Task PushLayerAsync(ElementReference element, string type, SpatialNavLayerOptions? options = null)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.pushLayer", element, type, new
+    public Task PushLayerAsync(ElementReference element, string type, SpatialNavLayerOptions? options = null) =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.pushLayer", element, type, new
         {
             onClose = options?.OnClose,
             restoreFocus = options?.RestoreFocus,
             focusSelector = options?.FocusSelector
-        });
-    }
+        }));
 
-    public async Task PopLayerAsync(ElementReference element)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.popLayer", element);
-    }
+    public Task PopLayerAsync(ElementReference element) =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.popLayer", element));
 
-    public async Task AttachLayerCallbackAsync(ElementReference element, object onClose)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.attachLayerCallback", element, onClose);
-    }
+    public Task AttachLayerCallbackAsync(ElementReference element, object onClose) =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.attachLayerCallback", element, onClose));
 
-    public async Task FocusFirstAsync(string? selector = null)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.focusFirst", selector);
-    }
+    public Task FocusFirstAsync(string? selector = null) =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.focusFirst", selector));
 
-    public async Task FocusElementAsync(ElementReference element)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.focusElement", element);
-    }
+    public Task FocusElementAsync(ElementReference element) =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.focusElement", element));
 
     public async Task<bool> IsFocusInsideAsync(ElementReference element)
     {
-        return await jsRuntime.InvokeAsync<bool>("SpatialNav.isFocusInside", element);
+        try
+        {
+            return await jsRuntime.InvokeAsync<bool>("SpatialNav.isFocusInside", element);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+            return false;
+        }
     }
 
-    public async Task RegisterHomeEscapeAsync<T>(DotNetObjectReference<T> callback, string? homePattern = null) where T : class
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.registerHomeEscape", callback, homePattern);
-    }
+    public Task RegisterHomeEscapeAsync<T>(DotNetObjectReference<T> callback, string? homePattern = null) where T : class =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.registerHomeEscape", callback, homePattern));
 
-    public async Task RefreshAsync()
+    public Task RefreshAsync() =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.refresh"));
+
+    private static async Task InvokeSafeAsync(Func<ValueTask> invoke)
     {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.refresh");
+        try
+        {
+            await invoke();
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 }

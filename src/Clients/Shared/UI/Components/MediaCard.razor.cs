@@ -127,6 +127,9 @@ public partial class MediaCard : IDisposable
         catch (JSDisconnectedException)
         {
         }
+        catch (InvalidOperationException)
+        {
+        }
         catch (JSException)
         {
         }
@@ -148,6 +151,12 @@ public partial class MediaCard : IDisposable
             await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
         }
         catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (JSException)
         {
         }
 
@@ -194,7 +203,7 @@ public partial class MediaCard : IDisposable
             {
                 await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
             {
             }
         }
@@ -304,7 +313,7 @@ public partial class MediaCard : IDisposable
                 {
                     await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
                 }
-                catch (JSDisconnectedException)
+                catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
                 {
                 }
             }
@@ -341,11 +350,11 @@ public partial class MediaCard : IDisposable
         {
             try
             {
-            JS.InvokeVoidAsync("K7.unregisterMediaCardLongPress", _longPressContainerRef)
-                .AsTask()
-                .FireAndForget(Logger);
+                JS.InvokeVoidAsync("K7.unregisterMediaCardLongPress", _longPressContainerRef)
+                    .AsTask()
+                    .FireAndForget(Logger);
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
             {
             }
         }

@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @inject IJSRuntime JS
+@using Microsoft.JSInterop
 
 <K7IconButton Icon="@Phosphor.ArrowLeft"
               Size="sm"
@@ -12,6 +13,12 @@
 
     private async Task GoBack()
     {
-        await JS.InvokeVoidAsync("history.back");
+        try
+        {
+            await JS.InvokeVoidAsync("history.back");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 }

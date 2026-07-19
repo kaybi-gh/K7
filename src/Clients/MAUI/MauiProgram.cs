@@ -114,7 +114,8 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
         builder.Services.AddSingleton<IPlayerService, PlayerService>();
         builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
-        builder.Services.AddSingleton<IAmbientThemeService, AmbientThemeService>();
+        // Scoped: IJSRuntime is scoped in Blazor Hybrid; a singleton would capture a dead runtime.
+        builder.Services.AddScoped<IAmbientThemeService, AmbientThemeService>();
         builder.Services.AddSingleton<ISleepTimerService, SleepTimerService>();
         builder.Services.AddSingleton<AutoplayService>();
         builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
@@ -158,7 +159,8 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         builder.Services.AddSingleton<K7SnackbarService>();
         builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
-        builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();
+        // Scoped: IJSRuntime is scoped in Blazor Hybrid; a singleton would capture a dead runtime.
+        builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
         builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationService>();
         builder.Services.AddSingleton<RemotePlaybackHandler>();
         builder.Services.AddSingleton<RemoteControlService>();

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Shared;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
@@ -28,6 +29,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly ILocalUserService _localUserService;
     private readonly ISharedProfileSessionService? _viewingGroupSession;
     private readonly ISharedProfileLocalCache? _viewingGroupCache;
+    private readonly K7HubClient? _hubClient;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
     private Task? _restoreTask;
@@ -40,7 +42,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         IDeviceStorageService deviceStorageService,
         ILocalUserService localUserService,
         ISharedProfileSessionService? viewingGroupSession = null,
-        ISharedProfileLocalCache? viewingGroupCache = null)
+        ISharedProfileLocalCache? viewingGroupCache = null,
+        K7HubClient? hubClient = null)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
@@ -50,6 +53,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _localUserService = localUserService;
         _viewingGroupSession = viewingGroupSession;
         _viewingGroupCache = viewingGroupCache;
+        _hubClient = hubClient;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -513,6 +517,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
         _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
+        _hubClient?.UpdateAccessToken(accessToken);
     }
 
     private bool HasPersistedSessionTokens()

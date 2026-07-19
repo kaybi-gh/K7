@@ -403,8 +403,16 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
             return false;
         }
 
-        await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
-        return true;
+        try
+        {
+            await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+        {
+            logger.LogWarning(ex, "Hub send failed: {Method} (state={State})", methodName, State);
+            return false;
+        }
     }
 
     private async Task SendCoreIfConnectedAsync(string methodName, object?[] args)
@@ -415,19 +423,35 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
             return;
         }
 
-        await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+        try
+        {
+            await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+        {
+            logger.LogWarning(ex, "Hub send failed: {Method} (state={State})", methodName, State);
+        }
     }
+
+    public void UpdateAccessToken(string? accessToken) => _accessToken = accessToken;
 
     private async Task RejoinGroupsAsync()
     {
         if (_hubConnection?.State != HubConnectionState.Connected)
             return;
 
-        if (_joinedGroups.Contains(HubGroups.AdminStreams))
-            await _hubConnection.SendAsync("JoinAdminStreamsGroup");
+        try
+        {
+            if (_joinedGroups.Contains(HubGroups.AdminStreams))
+                await _hubConnection.SendAsync("JoinAdminStreamsGroup");
 
-        if (_joinedGroups.Contains(HubGroups.AdminFederation))
-            await _hubConnection.SendAsync("JoinAdminFederationGroup");
+            if (_joinedGroups.Contains(HubGroups.AdminFederation))
+                await _hubConnection.SendAsync("JoinAdminFederationGroup");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+        {
+            logger.LogWarning(ex, "Hub rejoin failed (state={State})", State);
+        }
     }
 
     private sealed class InfiniteRetryPolicy : IRetryPolicy

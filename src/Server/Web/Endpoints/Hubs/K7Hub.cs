@@ -178,7 +178,9 @@ public partial class K7Hub(
 
     private string? ResolveIdentityUserId()
     {
-        var identityUserId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        // OpenIddict access tokens expose the user id as "sub"; cookies/API keys use NameIdentifier.
+        var identityUserId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? Context.User?.FindFirstValue("sub");
         return string.IsNullOrEmpty(identityUserId) ? null : identityUserId;
     }
 

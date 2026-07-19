@@ -10,11 +10,23 @@ public sealed class AmbientThemeService(IJSRuntime js) : IAmbientThemeService
         if (string.IsNullOrWhiteSpace(themeUrl))
             return;
 
-        await js.InvokeVoidAsync("K7.AmbientTheme.play", cancellationToken, themeUrl, volume);
+        try
+        {
+            await js.InvokeVoidAsync("K7.AmbientTheme.play", cancellationToken, themeUrl, volume);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        await js.InvokeVoidAsync("K7.AmbientTheme.stop", cancellationToken);
+        try
+        {
+            await js.InvokeVoidAsync("K7.AmbientTheme.stop", cancellationToken);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 }
