@@ -65,10 +65,12 @@
   <data name="TaskType_DownloadMetadataPictureFromProviderCommand" xml:space="preserve"><value>Téléchargement d'image</value></data>
   <data name="TaskType_GenerateMetadataPictureVariantsCommand" xml:space="preserve"><value>Génération de miniatures</value></data>
   <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Génération de vignettes vidéo</value></data>
+  <data name="TaskType_GenerateEpisodeStillFromSourceCommand" xml:space="preserve"><value>Génération d'image d'épisode</value></data>
   <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Indexation de bibliothèque</value></data>
+  <data name="TaskType_IndexLibraryPathsCommand" xml:space="preserve"><value>Indexation de chemins</value></data>
   <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Rafraîchissement des métadonnées</value></data>
   <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Détection d'intros/outros</value></data>
-  <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Extraction du theme</value></data>
+  <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Génération de thème musical</value></data>
   <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Rafraîchissement des métadonnées d'artiste</value></data>
   <data name="FilterByType" xml:space="preserve"><value>Filtrer par type</value></data>
   <data name="AllTypes" xml:space="preserve"><value>Tous les types</value></data>
