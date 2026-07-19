@@ -11,7 +11,7 @@ body:
 
         - Search [existing issues](https://github.com/kaybi-gh/K7/issues) first.
         - For ideas and feature requests, use [Discussions](https://github.com/kaybi-gh/K7/discussions) instead.
-        - For security problems, follow the [security policy](https://github.com/kaybi-gh/K7/security/policy), not a public issue.
+        - For security problems, use [private vulnerability reporting](https://github.com/kaybi-gh/K7/security/advisories/new), not a public issue.
 
   - type: input
     id: version
