@@ -38,7 +38,13 @@
                     }
                 </K7Select>
 
-                <K7Select TValue="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="filled" Clearable="true" ToStringFunc="@(t => GetSubtitleTrackLabel(t))">
+                <K7Select TValue="SubtitleFileTrackDto"
+                          @bind-Value="SelectedSubtitleTrack"
+                          Label="@L["SubtitleTrack"]"
+                          Variant="filled"
+                          Clearable="true"
+                          Disabled="@(videoMetadata.SubtitleTracks is not { Count: > 0 })"
+                          ToStringFunc="@(t => GetSubtitleTrackLabel(t))">
                     @if (videoMetadata.SubtitleTracks != null)
                     {
                         @foreach (var track in videoMetadata.SubtitleTracks)
