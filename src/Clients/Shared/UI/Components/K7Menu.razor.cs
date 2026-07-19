@@ -13,6 +13,7 @@ public partial class K7Menu : IAsyncDisposable
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string? Title { get; set; }
+    [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
 
@@ -36,6 +37,9 @@ public partial class K7Menu : IAsyncDisposable
 
     private async Task Toggle()
     {
+        if (Disabled)
+            return;
+
         _open = !_open;
         await OpenChanged.InvokeAsync(_open);
 
@@ -47,14 +51,21 @@ public partial class K7Menu : IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
+        if (Disabled && _open)
+        {
+            await CloseMenuInternalAsync();
+            _open = false;
+            await OpenChanged.InvokeAsync(false);
+        }
+
         if (!OpenChanged.HasDelegate)
         {
             if (_open == Open)
                 return;
 
-            _open = Open;
+            _open = Open && !Disabled;
 
-            if (Open)
+            if (_open)
                 await OpenMenuInternalAsync();
             else
                 await CloseMenuInternalAsync();
@@ -65,9 +76,9 @@ public partial class K7Menu : IAsyncDisposable
         if (_open == Open)
             return;
 
-        _open = Open;
+        _open = Open && !Disabled;
 
-        if (Open)
+        if (_open)
             await OpenMenuInternalAsync();
         else
             await CloseMenuInternalAsync();

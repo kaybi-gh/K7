@@ -12,9 +12,9 @@
          @onclick:preventDefault="true"
          @onclick:stopPropagation="true"></div>
 }
-<div class="k7-menu @(_open ? "k7-menu--open" : "") @Class" @ref="_root">
+<div class="k7-menu @(_open ? "k7-menu--open" : "") @(Disabled ? "k7-menu--disabled" : "") @Class" @ref="_root">
     <div class="k7-menu-activator" @onclick:stopPropagation="true">
-        <div class="k7-menu-activator-inner" @onclick="Toggle">
+        <div class="k7-menu-activator-inner" @onclick="Toggle" aria-disabled="@(Disabled ? "true" : null)">
             @ActivatorContent
         </div>
     </div>
