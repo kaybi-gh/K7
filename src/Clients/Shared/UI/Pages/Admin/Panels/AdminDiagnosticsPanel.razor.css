@@ -6,6 +6,11 @@
     flex-wrap: nowrap;
 }
 
+.diagnostics-name-cell {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .diagnostics-name-cell__title,
 .diagnostics-name-cell__meta,
 .diagnostics-issues-cell {
@@ -17,6 +22,18 @@
 
 .diagnostics-name-cell__meta {
     margin-top: 2px;
+}
+
+.diagnostics-page .data-page-body ::deep .k7-data-table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.diagnostics-page .data-page-body ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: 100%;
 }
 
 .diagnostics-toolbar__row {
@@ -33,6 +50,19 @@
 }
 
 @media (max-width: 599.98px) {
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el {
+        min-width: max-content;
+    }
+
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el th,
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el td {
+        white-space: nowrap;
+    }
+
+    .diagnostics-name-cell {
+        max-width: 16rem;
+    }
+
     .diagnostics-toolbar__row {
         flex-wrap: nowrap;
         gap: var(--space-2);
