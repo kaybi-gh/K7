@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -7,9 +9,11 @@ public partial class MySpacePage
 {
     [Inject] private IPlaylistService PlaylistService { get; set; } = default!;
     [Inject] private ICollectionService CollectionService { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     private int _playlistCount;
     private int _collectionCount;
+    private bool _canRate;
 
     private string PlaylistDescription =>
         _playlistCount > 0 ? string.Format(L["PlaylistsCount"], _playlistCount) : L["PlaylistsDesc"];
@@ -21,6 +25,7 @@ public partial class MySpacePage
 
     protected override async Task OnInitializedAsync()
     {
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
         await Task.WhenAll(
             LoadPlaylistsCountAsync(),
             LoadCollectionsCountAsync());

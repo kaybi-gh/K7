@@ -37,12 +37,15 @@
                         Class="k7-category-card--lg"
                         OnClick="@(() => NavigationManager.NavigateTo("/my-space/history"))" />
 
-        <K7CategoryCard Title="@L["Reviews"]"
-                        Description="@L["ReviewsDesc"]"
-                        Icon="chat-circle-text"
-                        GradientStart="rgba(80,60,20,0.85)"                        IconColor="rgba(160,120,40,0.6)"
-                        Class="k7-category-card--lg"
-                        OnClick="@(() => NavigationManager.NavigateTo("/my-space/reviews"))" />
+        @if (_canRate)
+        {
+            <K7CategoryCard Title="@L["Reviews"]"
+                            Description="@L["ReviewsDesc"]"
+                            Icon="chat-circle-text"
+                            GradientStart="rgba(80,60,20,0.85)"                        IconColor="rgba(160,120,40,0.6)"
+                            Class="k7-category-card--lg"
+                            OnClick="@(() => NavigationManager.NavigateTo("/my-space/reviews"))" />
+        }
 
         @if (DeviceService.GetClientType() != ClientType.Web)
         {
