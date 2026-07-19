@@ -90,7 +90,11 @@ public class ApplicationDbContextInitializer(
         }
 
         await userManager.AddToRoleAsync(guestIdentity, Roles.Guest);
-        context.Users.Add(new K7.Server.Domain.Entities.Users.User { IdentityUserId = guestIdentity.Id });
+        context.Users.Add(new K7.Server.Domain.Entities.Users.User
+        {
+            IdentityUserId = guestIdentity.Id,
+            IsActive = false
+        });
         await context.SaveChangesAsync();
         logger.LogInformation("Guest user seeded.");
     }

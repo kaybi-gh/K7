@@ -49,14 +49,9 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResul
             .Where(user => user.IdentityUserId is not null)
             .Select(user => user.IdentityUserId!)
             .ToList();
-        var userNamesTask = _identityService.GetUserNamesAsync(identityUserIds);
-        var emailsTask = _identityService.GetEmailsAsync(identityUserIds);
-        var rolesTask = _identityService.GetRolesAsync(identityUserIds);
-        await Task.WhenAll(userNamesTask, emailsTask, rolesTask);
-
-        var userNames = await userNamesTask;
-        var emails = await emailsTask;
-        var rolesByIdentityUserId = await rolesTask;
+        var userNames = await _identityService.GetUserNamesAsync(identityUserIds);
+        var emails = await _identityService.GetEmailsAsync(identityUserIds);
+        var rolesByIdentityUserId = await _identityService.GetRolesAsync(identityUserIds);
         var result = domainUsers
             .Select(user =>
             {
