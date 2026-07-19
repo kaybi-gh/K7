@@ -6,7 +6,7 @@
 @inject IStringLocalizer<AdminBackgroundTasksPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="full-bleed-page">
+<div class="full-bleed-page background-tasks-page">
     <div class="data-page-toolbar background-tasks-toolbar">
         <div class="background-tasks-toolbar__primary">
         <K7FilterMenu HasActiveFilters="@HasActiveFilters"
@@ -66,7 +66,7 @@
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
                      RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
-            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false" Width="35%">
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false" Width="220px">
                 <CellTemplate>
                     <div class="task-name-cell">
                         <span class="text-sm task-name-label">@GetTaskTypeLabel(context.Name)</span>

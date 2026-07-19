@@ -3,8 +3,16 @@
     max-width: 100%;
 }
 
-::deep .k7-data-table-el {
-    table-layout: fixed;
+.background-tasks-page .data-page-body ::deep .k7-data-table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.background-tasks-page .data-page-body ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: 100%;
 }
 
 .task-name-label,
@@ -35,6 +43,19 @@
 }
 
 @media (max-width: 599.98px) {
+    .background-tasks-page .data-page-body ::deep .k7-data-table-el {
+        min-width: max-content;
+    }
+
+    .background-tasks-page .data-page-body ::deep .k7-data-table-el th,
+    .background-tasks-page .data-page-body ::deep .k7-data-table-el td {
+        white-space: nowrap;
+    }
+
+    .task-name-cell {
+        max-width: 16rem;
+    }
+
     .background-tasks-toolbar__primary {
         flex: 1 1 100%;
         width: 100%;
