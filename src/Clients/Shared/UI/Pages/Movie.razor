@@ -190,19 +190,20 @@ else
                                        OnClick="ToggleWatchStateAsync" />
                     </AuthorizeView>
 
-                    <K7Menu>
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <AuthorizeView Roles="Administrator">
+                    @if (_isAdmin)
+                    {
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                            </ActivatorContent>
+                            <ChildContent>
                                 <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
                                 <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                 <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                            </AuthorizeView>
-                            <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</K7MenuItem>
-                        </ChildContent>
-                    </K7Menu>
+                                <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</K7MenuItem>
+                            </ChildContent>
+                        </K7Menu>
+                    }
                     </div>
                 </div>
             </div>
