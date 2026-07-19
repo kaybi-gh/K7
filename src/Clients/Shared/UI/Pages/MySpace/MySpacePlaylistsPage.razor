@@ -79,7 +79,7 @@ else
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
-        <K7Menu Class="my-space-toolbar-new">
+        <K7Menu Class="my-space-toolbar-new" Disabled="@(!_canCreate)">
             <ActivatorContent>
                 <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" Disabled="@(!_canCreate)" AriaLabel="@L["New"]">
                     <span class="my-space-toolbar-new__label">@L["New"]</span>
