@@ -1,12 +1,42 @@
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Common.Services;
 
 public static class SupplementalEpisodeMetadataResolver
 {
+    public static async Task<ExternalSerieMetadata?> TryFetchTmdbSerieMetadataAsync(
+        ISerieMetadataProvider primaryProvider,
+        ISerieMetadataProvider tmdbProvider,
+        Serie serie,
+        string language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(primaryProvider.ProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var supplementalProviderId = ResolveTmdbProviderId(serie);
+        if (string.IsNullOrWhiteSpace(supplementalProviderId))
+            return null;
+
+        try
+        {
+            return await tmdbProvider.FetchSerieMetadataAsync(
+                supplementalProviderId,
+                language,
+                cancellationToken,
+                fallbackLanguage);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public static async Task<ExternalEpisodeMetadata?> TryFetchTmdbEpisodeMetadataAsync(
         ISerieMetadataProvider primaryProvider,
         ISerieMetadataProvider tmdbProvider,
@@ -20,9 +50,7 @@ public static class SupplementalEpisodeMetadataResolver
         if (!string.Equals(primaryProvider.ProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        var supplementalProviderId = serie.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")?.Value
-            ?? serie.ExternalIds.FirstOrDefault(e => e.ProviderName == "imdb")?.Value;
-
+        var supplementalProviderId = ResolveTmdbProviderId(serie);
         if (string.IsNullOrWhiteSpace(supplementalProviderId))
             return null;
 
@@ -67,4 +95,29 @@ public static class SupplementalEpisodeMetadataResolver
             });
         }
     }
+
+    public static void MergeMetadataProviderRatings(BaseMedia media, IEnumerable<MetadataProviderRating>? ratings)
+    {
+        if (ratings is null)
+            return;
+
+        foreach (var rating in ratings)
+        {
+            var existing = media.Ratings.OfType<MetadataProviderRating>()
+                .FirstOrDefault(r => r.MetadataProvider == rating.MetadataProvider);
+            if (existing is not null)
+            {
+                existing.Value = rating.Value;
+                existing.RatingCount = rating.RatingCount;
+            }
+            else
+            {
+                media.Ratings.Add(rating);
+            }
+        }
+    }
+
+    private static string? ResolveTmdbProviderId(Serie serie) =>
+        serie.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")?.Value
+        ?? serie.ExternalIds.FirstOrDefault(e => e.ProviderName == "imdb")?.Value;
 }

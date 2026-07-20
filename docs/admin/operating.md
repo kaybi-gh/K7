@@ -54,6 +54,8 @@ When a directory already has episodes attached to a single series, new files in 
 | TheTVDB | Series | No - bundled in the server |
 | MusicBrainz / Cover Art Archive | Music | No API key; polite User-Agent only |
 
+Series libraries use TheTVDB as the primary provider. When a TMDb (or IMDb) external id is available on the series, K7 also pulls **TMDb community ratings** (series and episodes) and prefers **TMDb episode stills** during metadata refresh.
+
 Field locks in the UI prevent refreshes from overwriting manual edits. Artwork lives under `Paths:Metadatas` - recommended in backups (regenerable via metadata refresh, but slow).
 
 After federation peering, remote libraries can appear according to share agreements - see [Federation](#federation).

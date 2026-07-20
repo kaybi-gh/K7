@@ -258,7 +258,10 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             Runtime = episode.Runtime,
             StillImageUrl = stillUrl,
             ExternalIds = externalIds,
-            PersonRoles = await ConvertToPersonRolesAsync(episode.Credits, language, cancellationToken)
+            PersonRoles = await ConvertToPersonRolesAsync(episode.Credits, language, cancellationToken),
+            Ratings = episode.VoteCount > 0
+                ? [new MetadataProviderRating { MetadataProvider = Domain.Enums.MetadataProvider.TMDb, Value = episode.VoteAverage, MinimumValue = 0, MaximumValue = 10, RatingCount = episode.VoteCount }]
+                : []
         };
     }
 

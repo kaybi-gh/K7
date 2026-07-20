@@ -74,12 +74,18 @@ else if (_episode is not null)
                         }
                     </div>
 
-                    @if (_canRate)
-                    {
-                        <div class="episode-user-rating" @onclick:stopPropagation="true">
-                            <RatingStars MediaId="_episode.Id" Value="_episodeUserRating" Size="md" />
-                        </div>
-                    }
+                    <div class="episode-ratings">
+                        @if (_episode.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
+                        {
+                            <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
+                        }
+                        @if (_canRate)
+                        {
+                            <div class="episode-user-rating" @onclick:stopPropagation="true">
+                                <RatingStars MediaId="_episode.Id" Value="_episodeUserRating" Size="md" />
+                            </div>
+                        }
+                    </div>
 
                     <div class="episode-actions">
                         <K7Button Variant="filled"

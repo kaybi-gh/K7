@@ -372,6 +372,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Include(s => s.ExternalIds)
             .Include(s => s.Episodes).ThenInclude(e => e.ExternalIds)
             .Include(s => s.Episodes).ThenInclude(e => e.Pictures)
+            .Include(s => s.Episodes).ThenInclude(e => e.Ratings)
             .Include(s => s.Episodes).ThenInclude(e => e.PersonRoles)
                 .ThenInclude(pr => pr.PortraitPicture!)
                     .ThenInclude(p => p.Variants)
@@ -419,20 +420,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        // Ratings
-        foreach (var rating in serieMetadata.Ratings)
+        SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(serie, serieMetadata.Ratings);
+
+        if (tmdbSerieProvider is not null)
         {
-            var existing = serie.Ratings.OfType<MetadataProviderRating>()
-                .FirstOrDefault(r => r.MetadataProvider == rating.MetadataProvider);
-            if (existing is not null)
-            {
-                existing.Value = rating.Value;
-                existing.RatingCount = rating.RatingCount;
-            }
-            else
-            {
-                serie.Ratings.Add(rating);
-            }
+            var supplementalSerieMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbSerieMetadataAsync(
+                metadataProvider,
+                tmdbSerieProvider,
+                serie,
+                request.Language,
+                request.FallbackLanguage,
+                cancellationToken);
+
+            SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(
+                serie,
+                supplementalSerieMetadata?.Ratings);
         }
 
         // Federation: create seasons and episodes from peer metadata (no local scan to do it)
@@ -492,6 +494,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     episodeRemoteIds[(season.SeasonNumber, episode.EpisodeNumber)] = episodeMetadata.RemoteId.Value;
 
                 var stillImageUrl = episodeMetadata.StillImageUrl;
+                var episodeRatings = episodeMetadata.Ratings;
                 if (tmdbSerieProvider is not null)
                 {
                     var supplementalMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbEpisodeMetadataAsync(
@@ -507,10 +510,15 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     if (!string.IsNullOrWhiteSpace(supplementalMetadata?.StillImageUrl))
                         stillImageUrl = supplementalMetadata.StillImageUrl;
 
+                    if (supplementalMetadata?.Ratings is { Count: > 0 })
+                        episodeRatings = supplementalMetadata.Ratings;
+
                     SupplementalEpisodeMetadataResolver.MergeSupplementalExternalIds(
                         episode,
                         supplementalMetadata?.ExternalIds);
                 }
+
+                SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(episode, episodeRatings);
 
                 if (!string.IsNullOrEmpty(stillImageUrl)
                     && !episode.IsPictureTypeLocked(MetadataPictureType.Still)

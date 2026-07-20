@@ -94,6 +94,13 @@
     color: var(--color-text-secondary);
 }
 
+.episode-ratings {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+}
+
 .episode-user-rating {
     display: flex;
     align-items: center;
@@ -175,10 +182,15 @@
         justify-content: center;
     }
 
-    .episode-user-rating {
+    .episode-ratings {
         display: flex;
         justify-content: center;
         width: 100%;
+    }
+
+    .episode-user-rating {
+        display: flex;
+        justify-content: center;
     }
 
     .episode-title {
