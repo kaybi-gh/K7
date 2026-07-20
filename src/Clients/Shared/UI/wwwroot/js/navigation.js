@@ -1536,6 +1536,12 @@ var SpatialNav = (function () {
         return !!(el && el.hasAttribute('data-sn-editing'));
     }
 
+    function hasEditingIn(rootSelector) {
+        var root = rootSelector ? document.querySelector(rootSelector) : document;
+        if (!root) return false;
+        return !!root.querySelector('[data-sn-editing]');
+    }
+
     // Init
 
     function init() {
@@ -1719,6 +1725,7 @@ var SpatialNav = (function () {
         cancelEditingIn: cancelEditingIn,
         isFocusInside: isFocusInside,
         isElementEditing: isElementEditing,
+        hasEditingIn: hasEditingIn,
         handleBack: handleBack
     };
 

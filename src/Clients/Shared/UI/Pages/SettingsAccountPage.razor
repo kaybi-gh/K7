@@ -31,7 +31,7 @@
                 }
             </div>
         </div>
-        <InputFile @ref="_fileInput" OnChange="OnFileSelected" accept="image/*" style="display:none" />
+        <InputFile id="@_avatarFileInputId" @ref="_fileInput" OnChange="OnFileSelected" accept="image/*" style="display:none" />
         @if (_avatarError is not null)
         {
             <K7Alert Severity="K7Severity.Error" Class="mt-2">@_avatarError</K7Alert>

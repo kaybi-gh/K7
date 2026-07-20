@@ -72,3 +72,22 @@ window.K7.getBoundingRect = function (el) {
     var r = el.getBoundingClientRect();
     return { left: r.left, top: r.top, width: r.width, height: r.height };
 };
+
+window.K7.getViewportWidth = function () {
+    return window.innerWidth;
+};
+
+window.K7.clickById = function (id) {
+    var el = document.getElementById(id);
+    if (el) el.click();
+};
+
+window.K7.clickElement = function (el) {
+    if (el) el.click();
+};
+
+window.K7.preloadImage = function (url) {
+    if (!url) return;
+    var img = new Image();
+    img.src = url;
+};

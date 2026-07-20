@@ -70,7 +70,7 @@ public partial class SeekBar : IAsyncDisposable
                 if (ThumbnailsUri is not null)
                 {
                     // Preload the thumbnail sprite to avoid freeze on first seekbar hovering
-                    await JS.InvokeVoidAsync("eval", $"(new Image()).src = '{ThumbnailsUri}'");
+                    await JS.InvokeVoidAsync("K7.preloadImage", ThumbnailsUri.ToString());
                 }
             }
             catch (JSException) { }

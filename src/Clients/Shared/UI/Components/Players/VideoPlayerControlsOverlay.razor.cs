@@ -443,7 +443,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                 if (_isMenuOpen || _isSeeking) return;
                 // Keep overlay visible while seekbar is being scrubbed (keyboard editing mode)
                 var isEditing = await JSRuntime.InvokeAsync<bool>(
-                    "eval", "!!document.querySelector('.video-controls-overlay [data-sn-editing]')");
+                    "SpatialNav.hasEditingIn", ".video-controls-overlay");
                 if (isEditing)
                 {
                     ResetOverlayTimeout();
@@ -591,7 +591,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         if (_viewportWidth <= 0)
         {
-            _viewportWidth = await JSRuntime.InvokeAsync<double>("eval", "window.innerWidth");
+            _viewportWidth = await JSRuntime.InvokeAsync<double>("K7.getViewportWidth");
         }
     }
 

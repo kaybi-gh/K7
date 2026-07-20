@@ -17,6 +17,7 @@ public partial class SettingsAccountPage
     private string? _identityUserId;
 
     // Avatar
+    private readonly string _avatarFileInputId = $"k7-avatar-{Guid.NewGuid():N}";
     private string? _avatarUrl;
     private string _avatarLetter = "";
     private string? _avatarError;
@@ -120,7 +121,7 @@ public partial class SettingsAccountPage
     private async Task UploadAvatar()
     {
         _avatarError = null;
-        await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('input[type=file][accept]').click()");
+        await JSRuntime.InvokeVoidAsync("K7.clickById", _avatarFileInputId);
     }
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)

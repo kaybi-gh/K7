@@ -23,7 +23,7 @@ public partial class K7ImageUploadButton
         if (Disabled)
             return;
 
-        await JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('{_inputId}')?.click()");
+        await JSRuntime.InvokeVoidAsync("K7.clickById", _inputId);
     }
 
     private async Task HandleFileSelectedAsync(InputFileChangeEventArgs args)
