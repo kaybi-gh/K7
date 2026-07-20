@@ -104,6 +104,7 @@ public static class DependencyInjection
                 policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
                 policy.AuthenticationSchemes.Add(EphemeralStreamTokenDefaults.AuthenticationScheme);
+                policy.AuthenticationSchemes.Add(ApiKeyAuthenticationDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
             });
 
