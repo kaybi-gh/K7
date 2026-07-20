@@ -8,6 +8,11 @@ public partial class LinkDeviceAuthorize
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
+    private ElementReference _formRef;
+    private ElementReference _hiddenRef;
+    private ElementReference _segment0Ref;
+    private ElementReference _segment1Ref;
+    private ElementReference _segment2Ref;
     private string? _userCode;
     private string? _error;
     private bool _approved;
@@ -24,63 +29,20 @@ public partial class LinkDeviceAuthorize
         if (!firstRender || _approved)
             return;
 
-        await JSRuntime.InvokeVoidAsync("eval", """
-            (function () {
-                var segments = document.querySelectorAll('.code-segment');
-                var hidden = document.getElementById('user-code-hidden');
-                if (!hidden || segments.length === 0) return;
-
-                var initial = hidden.value || '';
-                if (initial) {
-                    var parts = initial.replace(/[^0-9]/g, '');
-                    for (var i = 0; i < segments.length; i++) {
-                        segments[i].value = parts.substring(i * 4, (i + 1) * 4);
-                    }
-                    syncHidden();
-                }
-
-                var form = document.getElementById('link-form');
-                if (form) {
-                    form.addEventListener('submit', syncHidden);
-                }
-
-                function syncHidden() {
-                    var vals = [];
-                    segments.forEach(function (s) { vals.push(s.value); });
-                    hidden.value = vals.join('-');
-                }
-
-                segments.forEach(function (seg, idx) {
-                    seg.addEventListener('input', function () {
-                        this.value = this.value.replace(/[^0-9]/g, '');
-                        syncHidden();
-                        if (this.value.length >= 4 && idx < segments.length - 1) {
-                            segments[idx + 1].focus();
-                        }
-                    });
-
-                    seg.addEventListener('keydown', function (e) {
-                        if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
-                            segments[idx - 1].focus();
-                        }
-                    });
-
-                    seg.addEventListener('paste', function (e) {
-                        e.preventDefault();
-                        var pasted = (e.clipboardData || window.clipboardData).getData('text');
-                        var digits = pasted.replace(/[^0-9]/g, '');
-                        for (var i = 0; i < segments.length; i++) {
-                            segments[i].value = digits.substring(i * 4, (i + 1) * 4);
-                        }
-                        syncHidden();
-                        var lastFilled = Math.min(Math.floor(digits.length / 4), segments.length - 1);
-                        segments[lastFilled].focus();
-                    });
-                });
-
-                if (segments[0]) segments[0].focus();
-            })();
-            """);
+        var module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/K7.Clients.Shared.UI/js/linkDeviceAuthorize.js");
+        try
+        {
+            await module.InvokeVoidAsync(
+                "initCodeSegments",
+                _formRef,
+                _hiddenRef,
+                new[] { _segment0Ref, _segment1Ref, _segment2Ref });
+        }
+        finally
+        {
+            await module.DisposeAsync();
+        }
     }
 
     private string? GetQueryValue(string key)

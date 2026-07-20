@@ -26,15 +26,15 @@
             <p class="link-device__hint">@L["EnterCode"]</p>
             <hr class="k7-divider" />
 
-            <form method="post" action="/connect/verify" id="link-form" data-enhance="false">
-                <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+            <form @ref="_formRef" method="post" action="/connect/verify" id="link-form" data-enhance="false">
+                <input @ref="_hiddenRef" type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
                 <div class="link-device__form">
                     <div class="link-device__code-row">
-                        <input type="text" class="code-segment link-device__segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
+                        <input @ref="_segment0Ref" type="text" class="code-segment link-device__segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
                         <span class="link-device__separator">-</span>
-                        <input type="text" class="code-segment link-device__segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
+                        <input @ref="_segment1Ref" type="text" class="code-segment link-device__segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
                         <span class="link-device__separator">-</span>
-                        <input type="text" class="code-segment link-device__segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
+                        <input @ref="_segment2Ref" type="text" class="code-segment link-device__segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
                     </div>
                     <K7Button Type="submit" Class="link-device__authorize">@L["AuthorizeDevice"]</K7Button>
                 </div>
