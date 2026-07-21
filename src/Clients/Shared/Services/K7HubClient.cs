@@ -397,39 +397,45 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
 
     private async Task<bool> TrySendIfConnectedAsync(string methodName, params object?[] args)
     {
-        if (_hubConnection?.State != HubConnectionState.Connected)
+        var connection = _hubConnection;
+        if (connection is null || connection.State != HubConnectionState.Connected)
         {
-            logger.LogWarning("Hub send dropped: {Method} (state={State})", methodName, State);
+            logger.LogDebug("Hub send dropped: {Method} (state={State})", methodName, State);
             return false;
         }
 
         try
         {
-            await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+            await connection.SendCoreAsync(methodName, args, CancellationToken.None);
             return true;
         }
         catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
         {
-            logger.LogWarning(ex, "Hub send failed: {Method} (state={State})", methodName, State);
+            // Connection can drop between the state check above and this call (HubConnectionState
+            // is a snapshot); this is an expected race, not an actionable error, so log quietly.
+            logger.LogDebug(ex, "Hub send failed: {Method} (state={State})", methodName, State);
             return false;
         }
     }
 
     private async Task SendCoreIfConnectedAsync(string methodName, object?[] args)
     {
-        if (_hubConnection?.State != HubConnectionState.Connected)
+        var connection = _hubConnection;
+        if (connection is null || connection.State != HubConnectionState.Connected)
         {
-            logger.LogWarning("Hub send dropped: {Method} (state={State})", methodName, State);
+            logger.LogDebug("Hub send dropped: {Method} (state={State})", methodName, State);
             return;
         }
 
         try
         {
-            await _hubConnection.SendCoreAsync(methodName, args, CancellationToken.None);
+            await connection.SendCoreAsync(methodName, args, CancellationToken.None);
         }
         catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
         {
-            logger.LogWarning(ex, "Hub send failed: {Method} (state={State})", methodName, State);
+            // Connection can drop between the state check above and this call (HubConnectionState
+            // is a snapshot); this is an expected race, not an actionable error, so log quietly.
+            logger.LogDebug(ex, "Hub send failed: {Method} (state={State})", methodName, State);
         }
     }
 
