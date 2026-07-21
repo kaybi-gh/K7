@@ -67,7 +67,9 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
+builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
+builder.Services.AddSingleton<IAppExitService, AppExitService>();
 builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
 builder.Services.AddSingleton<IVolumeService, VolumeService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
@@ -115,7 +117,10 @@ builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7Di
 builder.Services.AddSingleton<K7SnackbarService>();
 builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
 builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
+builder.Services.AddSingleton<ISoftKeyboardService, NoOpSoftKeyboardService>();
 builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();
+builder.Services.AddScoped<SoftKeyboardJsBridge>();
+builder.Services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
 
 var wasmHost = builder.Build();
 

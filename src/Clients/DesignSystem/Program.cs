@@ -28,6 +28,9 @@ builder.Services.AddScoped<IK7DialogService>(sp => sp.GetRequiredService<K7Dialo
 builder.Services.AddScoped<K7SnackbarService>();
 builder.Services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
 builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
+builder.Services.AddScoped<ISoftKeyboardService, NoOpSoftKeyboardService>();
+builder.Services.AddScoped<SoftKeyboardJsBridge>();
+builder.Services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
 
 // Client-side mock services with mutable playback/UI state
 builder.Services.AddScoped<MockAudioPlayerService>();
@@ -39,7 +42,9 @@ builder.Services.AddScoped<IPlayerService>(sp => sp.GetRequiredService<DemoPlaye
 builder.Services.AddSingleton<IMediaPlayerService, MockMediaPlayerService>();
 builder.Services.AddSingleton<IFeatureAccessService, MockFeatureAccessService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
+builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, MockDeviceService>();
+builder.Services.AddSingleton<IAppExitService, MockAppExitService>();
 builder.Services.AddSingleton<IDeviceStorageService, MockDeviceStorageService>();
 builder.Services.AddSingleton<IPageFilterStorage, MockPageFilterStorage>();
 builder.Services.AddSingleton<IVolumeService, MockVolumeService>();
