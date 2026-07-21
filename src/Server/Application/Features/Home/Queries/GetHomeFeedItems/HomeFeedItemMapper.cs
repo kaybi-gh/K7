@@ -31,6 +31,7 @@ internal static class HomeFeedItemMapper
                 _ => $"/medias/{item.Id}"
             },
             Pictures = pictures,
+            AdditionalInfo = item is MusicAlbum album ? album.Artist?.Title : null,
             ReleaseDate = item.ReleaseDate,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
@@ -58,7 +59,7 @@ internal static class HomeFeedItemMapper
         switch (item)
         {
             case SerieEpisode episode:
-                pictures = EpisodePictureResolver.ResolveDisplayPictures(episode);
+                pictures = EpisodePictureResolver.MergeHeroAndDisplayPictures(episode);
                 navTarget = $"/series/{episode.Serie?.Id ?? item.Id}/seasons/{episode.Season?.SeasonNumber ?? 0}#ep-{episode.EpisodeNumber}";
                 title = episode.Serie?.Title ?? episode.Title ?? "";
                 additionalInfo = $"S{episode.Season?.SeasonNumber ?? 0:D2}E{episode.EpisodeNumber:D2}";
@@ -130,4 +131,5 @@ internal static class HomeFeedItemMapper
             return null;
         return Math.Round(rating.Value / rating.MaximumValue * 10, 1);
     }
+
 }

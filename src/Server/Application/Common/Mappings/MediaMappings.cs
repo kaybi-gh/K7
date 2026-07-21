@@ -255,6 +255,8 @@ public static class MediaMappings
                     ReleaseDate = domain.ReleaseDate,
                     Created = domain.Created,
                     Pictures = MapPictures(domain.Pictures),
+                    ArtistId = album.ArtistId,
+                    ArtistName = album.Artist?.Title,
                     UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                         ? state.ToUserMediaStateDto()
                         : null,

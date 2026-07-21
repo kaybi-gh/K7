@@ -43,7 +43,7 @@ public static class LiteMediaMappings
             ? LiteMediaPictureResolver.ResolveEpisodeStill(episodeDto)
             : LiteMediaPictureResolver.ResolvePicture(item);
 
-        var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+        var backdropPicture = ResolveHeroBackdropPicture(GetMediaType(item), item.Pictures);
 
         string? cardTitle;
         if (useParentTitle)
@@ -101,6 +101,12 @@ public static class LiteMediaMappings
         if (season is not null)
             return seasonFormatter(season.SeasonNumber);
 
+        if (item is LiteMusicAlbumDto { ArtistName: { Length: > 0 } artistName })
+            return artistName;
+
+        if (item is LiteMusicTrackDto { ArtistName: { Length: > 0 } trackArtistName })
+            return trackArtistName;
+
         return item.ReleaseDate?.Year.ToString();
     }
 
@@ -115,14 +121,18 @@ public static class LiteMediaMappings
             _ => MediaCardKind.Poster
         };
 
+        // Card tile must stay poster-shaped. Stills are landscape and are only for TV hero backdrop.
         var bestPicture = item.MediaType == MediaType.SerieEpisode
-            ? LiteMediaPictureResolver.ResolveEpisodePictures(item.Pictures)
+            ? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? item.Pictures?.FirstOrDefault(p =>
+                    p.Type is not MetadataPictureType.Still and not MetadataPictureType.Backdrop)
             : item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
                 ?? item.Pictures?.FirstOrDefault();
 
-        var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+        var backdropPicture = ResolveHeroBackdropPicture(item.MediaType, item.Pictures);
 
         return new MediaCardViewModel
         {
@@ -158,9 +168,9 @@ public static class LiteMediaMappings
         MediaDto media,
         IK7ServerService apiClient)
     {
-        var backdropPicture = media.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+        var backdropPicture = ResolveHeroBackdropPictureFromMedia(media);
         var backdropUrl = backdropPicture is not null
-            ? apiClient.GetAbsoluteUri(backdropPicture.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
+            ? ResolveCardPictureUrl(backdropPicture, apiClient, MetadataPictureSize.Medium)
             : source.BackdropUrl;
 
         return source with
@@ -171,9 +181,17 @@ public static class LiteMediaMappings
             RuntimeMinutes = GetRuntimeMinutes(media),
             Rating = GetBestRating(media.Ratings),
             ReleaseYear = source.ReleaseYear ?? media.ReleaseDate?.Year,
-            BackdropUrl = backdropUrl ?? source.BackdropUrl
+            BackdropUrl = backdropUrl ?? source.BackdropUrl,
+            AdditionalInformations = GetHeroAdditionalInformations(media) ?? source.AdditionalInformations
         };
     }
+
+    private static string? GetHeroAdditionalInformations(MediaDto media) => media switch
+    {
+        MusicAlbumDto album => album.ArtistName,
+        MusicTrackDto track => track.ArtistName,
+        _ => null
+    };
 
     private static string? GetOverview(MediaDto media) => media switch
     {
@@ -204,6 +222,40 @@ public static class LiteMediaMappings
             return null;
 
         return Math.Round(rating.Value.Value / rating.MaximumValue.Value * 10, 1);
+    }
+
+    public static string? ResolveHeroBackdropUrl(this MediaCardViewModel item) =>
+        item.BackdropUrl ?? item.PictureUrl;
+
+    private static MetadataPictureDto? ResolveHeroBackdropPicture(
+        MediaType mediaType,
+        IReadOnlyList<MetadataPictureDto>? pictures) =>
+        mediaType switch
+        {
+            MediaType.SerieEpisode =>
+                pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop),
+            MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist =>
+                pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop),
+            _ => pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
+        };
+
+    private static MetadataPictureDto? ResolveHeroBackdropPictureFromMedia(MediaDto media)
+    {
+        var pictures = media.Pictures;
+        return media switch
+        {
+            MusicAlbumDto or MusicTrackDto or MusicArtistDto =>
+                pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop),
+            SerieEpisodeDto =>
+                pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?? pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop),
+            _ => pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
+        };
     }
 
     private static string? ResolveCardPictureUrl(

@@ -45,6 +45,7 @@ internal sealed class HomeFeedTopLevelStrategy(
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
+            .Include(x => ((MusicAlbum)x).Artist)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 

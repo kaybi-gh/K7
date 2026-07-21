@@ -30,6 +30,7 @@ public static class LiteMediaQueryExtensions
                 .ThenInclude(a => a.Pictures)
             .Include(m => ((MusicTrack)m).Album!)
                 .ThenInclude(a => a.Artist)
+            .Include(m => ((MusicAlbum)m).Artist)
             .Include(m => ((MusicTrack)m).Artist)
             .Include(m => ((MusicTrack)m).AudioAnalysis)
             .Include(m => ((MusicTrack)m).ArtistCredits)

@@ -14,6 +14,7 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
 {
     private sealed record BaseRow(Guid Id, MediaType Type, string? Title, string? SortTitle, DateOnly? ReleaseDate, DateTimeOffset? Created);
     private sealed record PictureRow(Guid Id, Guid MediaId, MetadataPictureType Type, bool IsLocal, string? DominantColor, int? OriginalWidth, int? OriginalHeight);
+    private sealed record AlbumRow(Guid Id, Guid? ArtistId, string? ArtistName);
     private sealed record TrackRow(Guid Id, Guid AlbumId, int? TrackNumber, Guid? ArtistId, string? AlbumTitle, Guid? AlbumArtistId, string? AlbumArtistName, string? ArtistName, double? LoudnessLufs, double? FadeInDuration, double? FadeOutDuration, double? ReplayGainTrackGain, string? Genre);
     private sealed record EpisodeRow(Guid Id, int EpisodeNumber, int SeasonNumber, Guid SerieId, string? SerieTitle, DateOnly? SerieReleaseDate, Guid SeasonId, string? Overview);
     private sealed record SeasonRow(Guid Id, Guid SerieId, int SeasonNumber, string? SerieTitle, int EpisodeCount);
@@ -95,6 +96,20 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
         var trackById = trackRows.ToDictionary(t => t.Id);
 
+        var albumIdsInRequest = baseRows.Where(r => r.Type == MediaType.MusicAlbum).Select(r => r.Id).ToHashSet();
+        var albumRows = albumIdsInRequest.Count == 0
+            ? []
+            : await context.Medias
+                .OfType<MusicAlbum>()
+                .AsNoTracking()
+                .Where(a => albumIdsInRequest.Contains(a.Id))
+                .Select(a => new AlbumRow(
+                    a.Id,
+                    a.ArtistId,
+                    a.Artist != null ? a.Artist.Title : null))
+                .ToListAsync(cancellationToken);
+        var albumById = albumRows.ToDictionary(a => a.Id);
+
         var episodeRows = await context.Medias
             .OfType<SerieEpisode>()
             .AsNoTracking()
@@ -155,9 +170,21 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 .OfType<MusicAlbum>()
                 .AsNoTracking()
                 .Where(a => linkedAlbumIds.Contains(a.Id))
-                .Select(a => new BaseRow(a.Id, a.Type, a.Title, a.SortTitle, a.ReleaseDate, a.Created))
+                .Select(a => new AlbumRow(
+                    a.Id,
+                    a.ArtistId,
+                    a.Artist != null ? a.Artist.Title : null))
                 .ToListAsync(cancellationToken);
             foreach (var album in linkedAlbumRows)
+                albumById[album.Id] = album;
+
+            var linkedBaseRows = await context.Medias
+                .OfType<MusicAlbum>()
+                .AsNoTracking()
+                .Where(a => linkedAlbumIds.Contains(a.Id))
+                .Select(a => new BaseRow(a.Id, a.Type, a.Title, a.SortTitle, a.ReleaseDate, a.Created))
+                .ToListAsync(cancellationToken);
+            foreach (var album in linkedBaseRows)
                 baseById[album.Id] = album;
         }
 
@@ -269,7 +296,19 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             resultById[row.Id] = row.Type switch
             {
                 MediaType.Movie => new LiteMovieDto { Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures, UserState = common.UserState, UserRating = common.UserRating },
-                MediaType.MusicAlbum => new LiteMusicAlbumDto { Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures, UserState = common.UserState, UserRating = common.UserRating },
+                MediaType.MusicAlbum when albumById.TryGetValue(row.Id, out var album) => new LiteMusicAlbumDto
+                {
+                    Id = common.Id,
+                    Title = common.Title,
+                    SortTitle = common.SortTitle,
+                    ReleaseDate = common.ReleaseDate,
+                    Created = common.Created,
+                    Pictures = common.Pictures,
+                    ArtistId = album.ArtistId,
+                    ArtistName = album.ArtistName,
+                    UserState = common.UserState,
+                    UserRating = common.UserRating
+                },
                 MediaType.Serie => new LiteSerieDto { Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures, UserState = common.UserState, UserRating = common.UserRating },
                 MediaType.MusicTrack when trackById.TryGetValue(row.Id, out var track) => new LiteMusicTrackDto
                 {
@@ -304,8 +343,8 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 {
                     Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures,
                     ArtistType = artist.ArtistType, Country = artist.Country,
-                    Albums = ToLiteAlbums(artistAlbumRows.Where(a => a.ArtistId == row.Id).Select(a => a.Id), baseById, picturesByMediaId),
-                    GuestAppearanceAlbums = ToLiteAlbums(guestAlbumRows.Where(a => a.MusicArtistId == row.Id).Select(a => a.AlbumId), baseById, picturesByMediaId),
+                    Albums = ToLiteAlbums(artistAlbumRows.Where(a => a.ArtistId == row.Id).Select(a => a.Id), baseById, picturesByMediaId, albumById),
+                    GuestAppearanceAlbums = ToLiteAlbums(guestAlbumRows.Where(a => a.MusicArtistId == row.Id).Select(a => a.AlbumId), baseById, picturesByMediaId, albumById),
                     UserState = common.UserState, UserRating = common.UserRating
                 },
                 _ => throw new NotSupportedException($"Unknown media type: {row.Type}")
@@ -355,20 +394,27 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
     private static IReadOnlyList<LiteMusicAlbumDto>? ToLiteAlbums(
         IEnumerable<Guid> albumIds,
         IReadOnlyDictionary<Guid, BaseRow> baseById,
-        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureDto>> picturesByMediaId)
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureDto>> picturesByMediaId,
+        IReadOnlyDictionary<Guid, AlbumRow> albumById)
     {
         var albums = albumIds
             .Distinct()
             .Where(baseById.ContainsKey)
             .Select(id => baseById[id])
-            .Select(a => new LiteMusicAlbumDto
+            .Select(a =>
             {
-                Id = a.Id,
-                Title = a.Title,
-                SortTitle = a.SortTitle,
-                ReleaseDate = a.ReleaseDate,
-                Created = a.Created,
-                Pictures = GetPictures(picturesByMediaId, a.Id)
+                albumById.TryGetValue(a.Id, out var albumArtist);
+                return new LiteMusicAlbumDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    SortTitle = a.SortTitle,
+                    ReleaseDate = a.ReleaseDate,
+                    Created = a.Created,
+                    Pictures = GetPictures(picturesByMediaId, a.Id),
+                    ArtistId = albumArtist?.ArtistId,
+                    ArtistName = albumArtist?.ArtistName
+                };
             })
             .ToList();
         return albums.Count > 0 ? albums : null;

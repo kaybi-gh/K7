@@ -35,6 +35,7 @@ internal sealed class HomeFeedBecauseYouWatchedStrategy(
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+            .Include(x => ((MusicAlbum)x).Artist)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 

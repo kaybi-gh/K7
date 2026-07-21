@@ -205,7 +205,9 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
+            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Artist)
             .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures)
+            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Ratings)
             .AsNoTracking()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -265,7 +267,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
 
         foreach (var (albumId, (order, tracks)) in albumGroups)
         {
-            result.Add((order, AggregateAlbumTracks(albumId, tracks, pictureSizes)));
+            result.Add((order, AggregateAlbumTracks(albumId, tracks, detailed, pictureSizes)));
         }
 
         return result.OrderBy(x => x.Order).Select(x => x.Item).ToList();
@@ -291,14 +293,14 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         {
             // Single episode (weekly) -- link to the episode anchor
             var ep = first;
-            var seasonPictures = ep.Season?.Pictures ?? serie.Pictures;
+            var pictures = EpisodePictureResolver.MergeHeroAndDisplayPictures(ep);
             return new HomeFeedItemDto
             {
                 Id = serieId,
                 Title = serie.Title ?? ep.Title ?? "",
                 MediaType = MediaType.SerieEpisode,
                 NavigationTarget = $"/series/{serieId}/seasons/{ep.Season?.SeasonNumber ?? 0}#ep-{ep.EpisodeNumber}",
-                Pictures = seasonPictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
+                Pictures = pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
                 AdditionalInfo = $"S{ep.Season?.SeasonNumber ?? 0:D2}E{ep.EpisodeNumber:D2}",
                 GroupCount = 1,
                 ReleaseDate = serie.ReleaseDate,
@@ -356,12 +358,14 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
     private static HomeFeedItemDto AggregateAlbumTracks(
         Guid albumId,
         List<MusicTrack> tracks,
+        bool detailed,
         IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
         var first = tracks[0];
         var album = first.Album!;
         var allWatched = tracks.All(t =>
             t.UserMediaStates.Any(s => s.IsCompleted));
+        var artistName = album.Artist?.Title;
 
         return new HomeFeedItemDto
         {
@@ -370,10 +374,12 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             MediaType = MediaType.MusicAlbum,
             NavigationTarget = $"/music/albums/{albumId}",
             Pictures = album.Pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
-            AdditionalInfo = tracks.Count > 1 ? $"{tracks.Count} tracks" : null,
+            AdditionalInfo = artistName,
             GroupCount = tracks.Count,
             ReleaseDate = album.ReleaseDate,
-            Watched = allWatched
+            Watched = allWatched,
+            Overview = detailed ? album.Overview : null,
+            Rating = detailed ? HomeFeedItemMapper.GetBestRating(album) : null
         };
     }
 }
