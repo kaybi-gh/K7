@@ -3,6 +3,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 
@@ -14,6 +15,7 @@ public partial class WatchStats : IDisposable
 
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "period")]
     public string? QueryPeriod { get; set; }
@@ -35,6 +37,7 @@ public partial class WatchStats : IDisposable
 
     private WatchStatsDto? _stats;
     private bool _loading = true;
+    private bool _isTv;
     private string _selectedPeriod = "month";
     private string _selectedMediaType = "";
     private Timer? _debounceTimer;
@@ -49,6 +52,16 @@ public partial class WatchStats : IDisposable
     private List<ChartDataPoint> _deviceData = [];
     private List<ChartDataPoint> _decisionData = [];
     private List<ChartDataPoint> _resolutionData = [];
+
+    private List<StatsRankRow> _hourRankRows = [];
+    private List<StatsRankRow> _dowRankRows = [];
+    private List<StatsRankRow> _genreRankRows = [];
+    private List<StatsRankRow> _deviceRankRows = [];
+    private List<StatsRankRow> _decisionRankRows = [];
+    private List<StatsRankRow> _resolutionRankRows = [];
+    private List<StatsRankRow> _audioLangRankRows = [];
+    private List<StatsRankRow> _subtitleLangRankRows = [];
+    private List<StatsRankRow> _transcodeRankRows = [];
 
     private ApexChartOptions<ChartDataPoint> _areaChartOptions = CreateAreaChartOptions();
     private ApexChartOptions<ChartDataPoint> _barChartOptionsHour = CreateBarChartOptions();
@@ -97,6 +110,7 @@ public partial class WatchStats : IDisposable
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.ProgressUpdated += OnProgressUpdated;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         if (PageFilterUrlSync.HasAnyQuery(Navigation, "period", "mediaType", "type", "tab", "from", "to"))
         {
@@ -320,12 +334,46 @@ public partial class WatchStats : IDisposable
             _resolutionData = pd.TopResolutions
                 .Select(r => new ChartDataPoint(r.Label, r.Count))
                 .ToList();
+
+            _audioLangRankRows = pd.TopAudioLanguages
+                .Select(l => new StatsRankRow(FormatLanguage(l.Label), l.Count.ToString()))
+                .ToList();
+            _subtitleLangRankRows = pd.TopSubtitleLanguages
+                .Select(l => new StatsRankRow(FormatLanguage(l.Label), l.Count.ToString()))
+                .ToList();
+            _transcodeRankRows = pd.TopTranscodeReasons
+                .Select(r => new StatsRankRow(r.Label, r.Count.ToString()))
+                .ToList();
         }
         else
         {
             _decisionData = [];
             _resolutionData = [];
+            _audioLangRankRows = [];
+            _subtitleLangRankRows = [];
+            _transcodeRankRows = [];
         }
+
+        _hourRankRows = _hourData
+            .Where(d => d.Value > 0)
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
+        _dowRankRows = _dowData
+            .Where(d => d.Value > 0)
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
+        _genreRankRows = _genreData
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
+        _deviceRankRows = _deviceData
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
+        _decisionRankRows = _decisionData
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
+        _resolutionRankRows = _resolutionData
+            .Select(d => new StatsRankRow(d.Label, d.Value.ToString("0")))
+            .ToList();
     }
 
     private static ApexChartOptions<ChartDataPoint> CreateAreaChartOptions() => new()

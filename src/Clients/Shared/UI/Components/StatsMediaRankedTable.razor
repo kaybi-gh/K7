@@ -1,0 +1,41 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+@using K7.Shared.Dtos
+@inject NavigationManager Navigation
+
+@if (Items.Count > 0)
+{
+    <K7Paper Elevation="0" Class="stats-chart-card">
+        <h6>@Title</h6>
+        <table class="stats-table">
+            <tbody>
+                @foreach (var (item, index) in Items.Select((a, i) => (a, i)))
+                {
+                    var href = StatsMediaNavigation.GetHref(item);
+                    <tr class="focusable @(href is not null ? "stats-table-row--link" : "")"
+                        tabindex="0"
+                        role="@(href is not null ? "link" : null)"
+                        @onclick="() => OnRowClick(href)">
+                        <td class="stats-table-rank">@(index + 1)</td>
+                        <td class="stats-table-name">
+                            <StatsTableMediaName Name="@item.Name" ImageUrl="@item.ImageUrl" MediaType="@(MediaTypeOverride ?? item.MediaType)" />
+                        </td>
+                        <td class="stats-table-count">@item.PlayCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </K7Paper>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<TopItemDto> Items { get; set; } = [];
+    [Parameter] public string? MediaTypeOverride { get; set; }
+
+    private void OnRowClick(string? href)
+    {
+        if (href is not null)
+            Navigation.NavigateTo(href);
+    }
+}

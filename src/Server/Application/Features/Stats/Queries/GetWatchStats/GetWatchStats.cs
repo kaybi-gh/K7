@@ -232,6 +232,8 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         topAlbums = topAlbums.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
         topShows = topShows.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
 
+        topItems = await AttachTopItemNavigationAsync(topItems, cancellationToken);
+
         var playbackDetails = request.MediaType == MediaType.MusicTrack
             ? null
             : await BuildPlaybackDetailsStatsAsync(sessionsWithMedia, cancellationToken);
@@ -447,6 +449,66 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         TranscodeReason.QualityDownscale => "Quality downscale",
         _ => reason.ToString()
     };
+
+    private async Task<List<TopItemDto>> AttachTopItemNavigationAsync(
+        List<TopItemDto> items,
+        CancellationToken cancellationToken)
+    {
+        var trackIds = items
+            .Where(i => i.MediaType == nameof(MediaType.MusicTrack))
+            .Select(i => i.Id)
+            .ToList();
+        var episodeIds = items
+            .Where(i => i.MediaType == nameof(MediaType.SerieEpisode))
+            .Select(i => i.Id)
+            .ToList();
+
+        Dictionary<Guid, Guid> trackAlbums = [];
+        if (trackIds.Count > 0)
+        {
+            trackAlbums = await context.Medias
+                .AsNoTracking()
+                .OfType<MusicTrack>()
+                .Where(t => trackIds.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id, t => t.AlbumId, cancellationToken);
+        }
+
+        Dictionary<Guid, EpisodeNav> episodeNav = [];
+        if (episodeIds.Count > 0)
+        {
+            episodeNav = await context.Medias
+                .AsNoTracking()
+                .OfType<SerieEpisode>()
+                .Where(e => episodeIds.Contains(e.Id))
+                .Select(e => new EpisodeNav(e.Id, e.SerieId, e.Season.SeasonNumber, e.EpisodeNumber))
+                .ToDictionaryAsync(e => e.EpisodeId, cancellationToken);
+        }
+
+        return items.Select(item =>
+        {
+            if (item.MediaType == nameof(MediaType.MusicTrack)
+                && trackAlbums.TryGetValue(item.Id, out var albumId)
+                && albumId != Guid.Empty)
+            {
+                return item with { ParentId = albumId };
+            }
+
+            if (item.MediaType == nameof(MediaType.SerieEpisode)
+                && episodeNav.TryGetValue(item.Id, out var nav))
+            {
+                return item with
+                {
+                    ParentId = nav.SerieId,
+                    SeasonNumber = nav.SeasonNumber,
+                    EpisodeNumber = nav.EpisodeNumber
+                };
+            }
+
+            return item;
+        }).ToList();
+    }
+
+    private sealed record EpisodeNav(Guid EpisodeId, Guid SerieId, int SeasonNumber, int EpisodeNumber);
 
     private sealed record SessionRow(
         Guid MediaId,

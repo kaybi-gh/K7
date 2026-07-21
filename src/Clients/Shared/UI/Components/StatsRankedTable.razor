@@ -1,0 +1,26 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@if (Rows.Count > 0)
+{
+    <K7Paper Elevation="0" Class="@($"stats-chart-card {Class}".Trim())">
+        <h6>@Title</h6>
+        <table class="stats-table">
+            <tbody>
+                @foreach (var (row, index) in Rows.Select((r, i) => (r, i)))
+                {
+                    <tr class="focusable" tabindex="0">
+                        <td class="stats-table-rank">@(index + 1)</td>
+                        <td class="stats-table-name">@row.Name</td>
+                        <td class="stats-table-count">@row.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </K7Paper>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<StatsRankRow> Rows { get; set; } = [];
+    [Parameter] public string Class { get; set; } = "";
+}

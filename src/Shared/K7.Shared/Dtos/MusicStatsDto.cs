@@ -7,6 +7,10 @@ public sealed record TopItemDto
     public string? ImageUrl { get; init; }
     public string? MediaType { get; init; }
     public int PlayCount { get; init; }
+    /// <summary>Album id for tracks, or serie id for episodes/seasons.</summary>
+    public Guid? ParentId { get; init; }
+    public int? SeasonNumber { get; init; }
+    public int? EpisodeNumber { get; init; }
 }
 
 public sealed record GenreStatDto
