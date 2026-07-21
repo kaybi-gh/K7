@@ -9,6 +9,8 @@ namespace K7.Server.Application.Helpers;
 /// </summary>
 internal static class HlsSegmentFileWaiter
 {
+    public const string InitSegmentFileName = "init.m4s";
+
     public static async Task<Exception?> WaitUntilAvailableAsync(
         string segmentPath,
         TranscodeJob job,
@@ -25,7 +27,7 @@ internal static class HlsSegmentFileWaiter
         // uses the request token so disconnected clients stop waiting.
         await ensureGenerationAsync(CancellationToken.None);
 
-        while (!File.Exists(segmentPath) && DateTime.UtcNow < absoluteDeadline)
+        while (!HasNonEmptyContent(segmentPath) && DateTime.UtcNow < absoluteDeadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -43,7 +45,7 @@ internal static class HlsSegmentFileWaiter
             await Task.Delay(pollingIntervalMs, cancellationToken);
         }
 
-        return File.Exists(segmentPath)
+        return HasNonEmptyContent(segmentPath)
             ? null
             : new TimeoutException("FFmpeg did not generate the requested segment before the timeout.");
     }
@@ -57,10 +59,19 @@ internal static class HlsSegmentFileWaiter
 
         while (DateTime.UtcNow < accessDeadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!HasNonEmptyContent(segmentPath))
+            {
+                await Task.Delay(100, cancellationToken);
+                continue;
+            }
+
             try
             {
                 using var probe = new FileStream(segmentPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                return;
+                if (probe.Length > 0)
+                    return;
             }
             catch (IOException)
             {
@@ -68,4 +79,37 @@ internal static class HlsSegmentFileWaiter
             }
         }
     }
+
+    public static bool HasNonEmptyContent(string segmentPath)
+    {
+        if (!File.Exists(segmentPath))
+            return false;
+
+        try
+        {
+            return new FileInfo(segmentPath).Length > 0;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Segment 0 also requires a non-empty init.m4s; later segments only need their .m4s file.
+    /// </summary>
+    public static bool IsSegmentReadyOnDisk(string outputDirectory, int segmentIndex)
+    {
+        var segmentPath = Path.Combine(outputDirectory, $"{segmentIndex}.m4s");
+        if (!HasNonEmptyContent(segmentPath))
+            return false;
+
+        if (segmentIndex != 0)
+            return true;
+
+        return HasNonEmptyContent(GetInitSegmentPath(outputDirectory));
+    }
+
+    public static string GetInitSegmentPath(string outputDirectory) =>
+        Path.Combine(outputDirectory, InitSegmentFileName);
 }

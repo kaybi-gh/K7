@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -148,9 +149,9 @@ public class TranscodeJobManager(
         var currentIndex = job.GetCurrentSegmentIndex();
         var gap = requestedSegmentIndex - currentIndex;
 
-        // Check if requested segment already exists on disk (for backward seeks)
-        var segmentPath = Path.Combine(job.OutputDirectory, $"{requestedSegmentIndex}.m4s");
-        var segmentExists = File.Exists(segmentPath);
+        // Check if requested segment already exists on disk (for backward seeks).
+        // FFmpeg may create zero-byte placeholders before writing fMP4 init/media data.
+        var segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
 
         // Calculate gap duration
         var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
@@ -175,7 +176,7 @@ public class TranscodeJobManager(
         try
         {
             // Re-check after acquiring lock - another request may have already started FFmpeg
-            segmentExists = File.Exists(segmentPath);
+            segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
             if (segmentExists)
             {
                 return;
