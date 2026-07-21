@@ -29,6 +29,12 @@ public static partial class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+#if WINDOWS
+        // Capture JSException.Message (VS only shows "Exception thrown" without details).
+        // Also reports a rate-limited sample to the server via IClientErrorReporter once DI is ready.
+        JsExceptionDebugListener.Install();
+#endif
+
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -44,6 +50,9 @@ public static partial class MauiProgram
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
+        builder.Logging.AddFilter("Microsoft.AspNetCore.Components.WebView", LogLevel.Debug);
+        builder.Logging.AddFilter("Microsoft.JSInterop", LogLevel.Trace);
+        builder.Logging.AddFilter("Microsoft.AspNetCore.Components", LogLevel.Information);
 #endif
 
         // https://github.com/dotnet/maui/issues/14185
@@ -108,7 +117,12 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<K7ServerManagerService>();
         builder.Services.AddSingleton<IServerConnectionService>(sp => sp.GetRequiredService<K7ServerManagerService>());
 
+        builder.Services.AddSingleton<WebViewJsBridge>();
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
+#if !ANDROID
+        builder.Services.AddSingleton<ISoftKeyboardService, NoOpSoftKeyboardService>();
+#endif
+        builder.Services.AddSingleton<IAppExitService, AppExitService>();
         builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
         builder.Services.AddSingleton<IVolumeService, VolumeService>();
         builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
@@ -161,6 +175,12 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
         // Scoped: IJSRuntime is scoped in Blazor Hybrid; a singleton would capture a dead runtime.
         builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
+        builder.Services.AddScoped<SoftKeyboardJsBridge>();
+#if WINDOWS
+        builder.Services.AddScoped<IWindowsStreamFetchJsBridge, WindowsStreamFetchJsBridge>();
+#else
+        builder.Services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
+#endif
         builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationService>();
         builder.Services.AddSingleton<RemotePlaybackHandler>();
         builder.Services.AddSingleton<RemoteControlService>();
@@ -253,8 +273,19 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
                 options.AddEphemeralEncryptionKey()
                        .AddEphemeralSigningKey();
 #else
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
+                // Development certificates live in the CurrentUser X.509 store and often
+                // break after wiping LocalState. Prefer ephemeral keys on desktop too.
+                options.AddEphemeralEncryptionKey()
+                       .AddEphemeralSigningKey();
+#endif
+
+                // Required whenever authorization code flow is enabled, even before a
+                // server URL/registration exists (first-run SetupPage). Without this,
+                // IOptions validation throws SR.ID0356 on first CurrentValue access.
+#if ANDROID || IOS || MACCATALYST
+                options.SetRedirectionEndpointUris(new Uri("k7://callback/login", UriKind.Absolute));
+#else
+                options.SetRedirectionEndpointUris(new Uri("http://localhost/", UriKind.Absolute));
 #endif
 
                 options.UseSystemIntegration();
@@ -282,17 +313,32 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
 #if !ANDROID
         // Resolve the SAME singleton instances that OpenIddict registered as IHostedService,
         // so that handlers (e.g. AttachDynamicPortToRedirectUri) see the started instances.
-        services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationActivationHandler>().Single(),
-            provider.GetRequiredService<IHostApplicationLifetime>()));
+        services.AddSingleton<IMauiInitializeService>(static provider =>
+        {
+            var service = provider.GetServices<IHostedService>()
+                .OfType<OpenIddictClientSystemIntegrationActivationHandler>()
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException("OpenIddict activation handler is not registered.");
+            return new MauiHostedServiceAdapter(service, provider.GetRequiredService<IHostApplicationLifetime>());
+        });
 
-        services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationHttpListener>().Single(),
-            provider.GetRequiredService<IHostApplicationLifetime>()));
+        services.AddSingleton<IMauiInitializeService>(static provider =>
+        {
+            var service = provider.GetServices<IHostedService>()
+                .OfType<OpenIddictClientSystemIntegrationHttpListener>()
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException("OpenIddict HTTP listener is not registered.");
+            return new MauiHostedServiceAdapter(service, provider.GetRequiredService<IHostApplicationLifetime>());
+        });
 
-        services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationPipeListener>().Single(),
-            provider.GetRequiredService<IHostApplicationLifetime>()));
+        services.AddSingleton<IMauiInitializeService>(static provider =>
+        {
+            var service = provider.GetServices<IHostedService>()
+                .OfType<OpenIddictClientSystemIntegrationPipeListener>()
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException("OpenIddict pipe listener is not registered.");
+            return new MauiHostedServiceAdapter(service, provider.GetRequiredService<IHostApplicationLifetime>());
+        });
 #endif
 
         services.AddScoped<IMauiInitializeScopedService, MauiDatabaseInitializer>();

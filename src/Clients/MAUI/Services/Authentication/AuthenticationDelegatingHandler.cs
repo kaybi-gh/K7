@@ -19,18 +19,17 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        // Wait for startup session restore before attaching stored tokens. Without this,
+        // an expired access token can be sent while restore is refreshing, causing a
+        // concurrent /connect/token call and OpenIddict refresh-token replay revocation.
+        var authProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
+        await authProvider.GetAuthenticationStateAsync();
+
         // Pre-set the auth token before sending (avoids 401 race on concurrent requests)
         if (request.Headers.Authorization is null)
         {
             var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
             var token = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
-            if (string.IsNullOrEmpty(token))
-            {
-                var authProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
-                await authProvider.GetAuthenticationStateAsync();
-                token = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
-            }
-
             if (!string.IsNullOrEmpty(token))
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
@@ -48,9 +47,9 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
 
         try
         {
-            var authProvider = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
+            var customAuthProvider = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
 
-            if (await authProvider.TryRefreshAsync(cancellationToken))
+            if (await customAuthProvider.TryRefreshAsync(cancellationToken))
             {
                 // Retry the original request with the new access token
                 var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();

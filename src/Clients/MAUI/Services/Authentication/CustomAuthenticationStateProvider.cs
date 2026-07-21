@@ -15,6 +15,9 @@ using OpenIddict.Client;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using static OpenIddict.Abstractions.OpenIddictExceptions;
 
+#if WINDOWS
+using K7.Clients.MAUI.Platforms.Windows;
+#endif
 namespace K7.Clients.MAUI.Services.Authentication;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
@@ -30,6 +33,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly ISharedProfileSessionService? _viewingGroupSession;
     private readonly ISharedProfileLocalCache? _viewingGroupCache;
     private readonly K7HubClient? _hubClient;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
     private Task? _restoreTask;
@@ -77,41 +81,46 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
+            // Run interactive auth off the Blazor sync context so the WebView UI
+            // stays responsive while the system browser completes the redirect.
+            await Task.Run(async () =>
             {
-                CancellationToken = timeout.Token,
-                ProviderName = "K7",
-                AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+                var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
                 {
-                    ["prompt"] = "login"
+                    CancellationToken = timeout.Token,
+                    ProviderName = "K7",
+                    AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+                    {
+                        ["prompt"] = "login"
+                    }
+                }).ConfigureAwait(false);
+
+                var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
+                {
+                    CancellationToken = timeout.Token,
+                    Nonce = challenge.Nonce
+                }).ConfigureAwait(false);
+
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
+
+                var accessToken = ResolveInteractiveAccessToken(result);
+                StoreAccessToken(accessToken);
+
+                if (!string.IsNullOrEmpty(result.RefreshToken))
+                    _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+
+                if (!HasPersistedSessionTokens())
+                {
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+                    ClearStoredTokens();
+                    _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
                 }
-            });
-
-            var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
-            {
-                CancellationToken = timeout.Token,
-                Nonce = challenge.Nonce
-            });
-
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
-
-            var accessToken = ResolveInteractiveAccessToken(result);
-            StoreAccessToken(accessToken);
-
-            if (!string.IsNullOrEmpty(result.RefreshToken))
-                _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
-
-            if (!HasPersistedSessionTokens())
-            {
-                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
-                ClearStoredTokens();
-                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
-            }
-            else
-            {
-                await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
-                await TryAttachCurrentUserToDeviceAsync(cancellationToken);
-            }
+                else
+                {
+                    await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", timeout.Token).ConfigureAwait(false);
+                    await TryAttachCurrentUserToDeviceAsync(timeout.Token).ConfigureAwait(false);
+                }
+            }, timeout.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -299,9 +308,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     private async Task RestoreUserInBackgroundAsync(LocalUser localUser)
     {
-        if (await TryRefreshTokenAsync(localUser.RefreshToken))
+        var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN) ?? localUser.RefreshToken;
+
+        if (await TryRefreshTokenAsync(refreshToken))
         {
-            await SaveLocalUserFromCurrentUserAsync(localUser.RefreshToken);
+            await SaveLocalUserFromCurrentUserAsync(refreshToken);
             await RestoreSharedProfileAsync();
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
@@ -313,63 +324,80 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    private async Task<bool> TryRefreshTokenAsync(string refreshToken)
+    private async Task<bool> TryRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(refreshToken))
             return false;
 
+        await _refreshLock.WaitAsync(cancellationToken);
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var storedRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+            if (!string.IsNullOrEmpty(storedRefreshToken))
+                refreshToken = storedRefreshToken;
 
-            var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
+            var accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
+            if (TryRestoreFromAccessToken(accessToken))
+                return true;
+
+            try
             {
-                CancellationToken = cts.Token,
-                RefreshToken = refreshToken,
-                ProviderName = "K7"
-            });
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(15));
 
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
-
-            StoreAccessToken(result.AccessToken);
-
-            if (!string.IsNullOrEmpty(result.RefreshToken))
-                _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
-
-            if (!HasPersistedSessionTokens())
-                return false;
-
-            // Refresh token flow may not include the name claim in the principal.
-            if (_currentUser.Identity?.Name is null)
-            {
-                try
+                var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
                 {
-                    var serverUser = await _userAdminService.GetCurrentUserAsync(cts.Token);
-                    if (serverUser?.UserName is not null)
-                    {
-                        var claims = new List<Claim>(_currentUser.Claims)
-                        {
-                            new(Claims.Name, serverUser.UserName)
-                        };
-                        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
-                    }
-                }
-                catch { }
-            }
+                    CancellationToken = cts.Token,
+                    RefreshToken = refreshToken,
+                    ProviderName = "K7"
+                });
 
-            return true;
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
+
+                StoreAccessToken(result.AccessToken);
+
+                if (!string.IsNullOrEmpty(result.RefreshToken))
+                    _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+
+                if (!HasPersistedSessionTokens())
+                    return false;
+
+                // Refresh token flow may not include the name claim in the principal.
+                if (_currentUser.Identity?.Name is null)
+                {
+                    try
+                    {
+                        var serverUser = await _userAdminService.GetCurrentUserAsync(cts.Token);
+                        if (serverUser?.UserName is not null)
+                        {
+                            var claims = new List<Claim>(_currentUser.Claims)
+                            {
+                                new(Claims.Name, serverUser.UserName)
+                            };
+                            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
+                        }
+                    }
+                    catch { }
+                }
+
+                return true;
+            }
+            catch (HttpRequestException)
+            {
+                throw;
+            }
+            catch (TaskCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                return false;
+            }
         }
-        catch (HttpRequestException)
+        finally
         {
-            throw;
-        }
-        catch (TaskCanceledException)
-        {
-            throw;
-        }
-        catch
-        {
-            return false;
+            _refreshLock.Release();
         }
     }
 
@@ -379,9 +407,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (string.IsNullOrEmpty(refreshToken))
             return false;
 
-        var success = await TryRefreshTokenAsync(refreshToken);
+        var success = await TryRefreshTokenAsync(refreshToken, cancellationToken);
         if (success)
+        {
+            await SaveLocalUserFromCurrentUserAsync(refreshToken, cancellationToken);
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        }
 
         return success;
     }
@@ -475,18 +506,52 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(15));
 
-            var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
-            {
-                CancellationToken = cts.Token,
-                RefreshToken = refreshToken,
-                ProviderName = "K7"
-            });
+            string? accessToken = null;
+            var storedRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+            var isActiveSession = refreshToken == storedRefreshToken;
 
-            if (string.IsNullOrEmpty(result.AccessToken))
+            if (isActiveSession)
+            {
+                var storedAccessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
+                if (IsAccessTokenValid(storedAccessToken))
+                    accessToken = storedAccessToken;
+            }
+
+            if (accessToken is null)
+            {
+                if (isActiveSession)
+                {
+                    if (!await TryRefreshTokenAsync(refreshToken, cts.Token))
+                        return null;
+
+                    accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
+                }
+                else
+                {
+                    await _refreshLock.WaitAsync(cts.Token);
+                    try
+                    {
+                        var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
+                        {
+                            CancellationToken = cts.Token,
+                            RefreshToken = refreshToken,
+                            ProviderName = "K7"
+                        });
+
+                        accessToken = result.AccessToken;
+                    }
+                    finally
+                    {
+                        _refreshLock.Release();
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(accessToken))
                 return null;
 
             using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/me");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             var response = await _k7ServerService.HttpClient.SendAsync(request, cts.Token);
             if (!response.IsSuccessStatusCode)
@@ -498,6 +563,31 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         {
             return null;
         }
+    }
+
+    private static bool IsAccessTokenValid(string? accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            return false;
+
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(accessToken))
+            return false;
+
+        var jwt = handler.ReadJwtToken(accessToken);
+        return jwt.ValidTo > DateTime.UtcNow.AddMinutes(1);
+    }
+
+    private bool TryRestoreFromAccessToken(string? accessToken)
+    {
+        if (!IsAccessTokenValid(accessToken))
+            return false;
+
+        var handler = new JwtSecurityTokenHandler();
+        var jwt = handler.ReadJwtToken(accessToken!);
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(jwt.Claims, "OpenIddict", Claims.Name, Claims.Role));
+        StoreAccessToken(accessToken);
+        return true;
     }
 
     private void ClearStoredTokens()
@@ -518,6 +608,9 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             new AuthenticationHeaderValue("Bearer", accessToken);
         _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
         _hubClient?.UpdateAccessToken(accessToken);
+#if WINDOWS
+        WindowsStreamAuthContext.UpdateFrom(_k7ServerService);
+#endif
     }
 
     private bool HasPersistedSessionTokens()

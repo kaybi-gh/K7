@@ -6,9 +6,13 @@
     <VerticalStackLayout Padding="20" VerticalOptions="Center" Spacing="12">
         <Label Text="K7" FontSize="32" HorizontalOptions="Center" FontAttributes="Bold" />
         <Label Text="Enter your K7 server address:" />
-        <Entry x:Name="BackendUrlEntry" Placeholder="k7.example.com" Keyboard="Url" />
-        <Button Text="Connect" Clicked="OnValidateClicked" />
-        <Label x:Name="InfoLabel" Text="" IsVisible="False" TextColor="Gray" />
+        <Entry x:Name="BackendUrlEntry"
+               Placeholder="k7.example.com or http://192.168.1.10:5000"
+               Keyboard="Url"
+               ReturnType="Go"
+               Completed="OnValidateClicked" />
+        <Button x:Name="ConnectButton" Text="Connect" Clicked="OnValidateClicked" />
+        <Label x:Name="InfoLabel" Text="" IsVisible="False" TextColor="Gray" LineBreakMode="WordWrap" />
     </VerticalStackLayout>
 
 </ContentPage>
