@@ -23,4 +23,19 @@ public class DeviceStorageService(ISyncLocalStorageService localStorageService) 
     {
         localStorageService.RemoveItem(key.Name);
     }
+
+    public void ClearAllPreferences()
+    {
+        var preserved = PreferenceKeyCatalog.SnapshotPreservedStringValues(ReadString);
+
+        foreach (var keyName in PreferenceKeyCatalog.CustomizationKeyNames)
+            localStorageService.RemoveItem(keyName);
+
+        PreferenceKeyCatalog.RestorePreservedStringValues(
+            preserved,
+            (name, value) => localStorageService.SetItem(name, value));
+    }
+
+    private string? ReadString(string name) =>
+        localStorageService.ContainKey(name) ? localStorageService.GetItem<string>(name) : null;
 }

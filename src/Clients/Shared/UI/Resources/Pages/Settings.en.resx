@@ -80,5 +80,11 @@
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Plays the theme in the background on series or movie pages when a theme file is available.</value></data>
   <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Disable on this device</value></data>
   <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Turns off theme songs on this device only, even when theme songs are enabled for your account.</value></data>
+  <data name="LocalDataSection" xml:space="preserve"><value>Local customizations</value></data>
+  <data name="LocalDataSectionHint" xml:space="preserve"><value>Remove local settings on this device (player, sidebar, downloads, filters, etc.). The server URL and device ID are kept. You stay signed in.</value></data>
+  <data name="ClearAllPreferences" xml:space="preserve"><value>Clear preferences</value></data>
+  <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Clear preferences</value></data>
+  <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Remove local customizations on this device (player, sidebar, downloads, filters, etc.)? The server URL and device ID will be kept. The app will reload.</value></data>
+  <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Local customizations cleared.</value></data>
 </root>
 

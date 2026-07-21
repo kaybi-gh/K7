@@ -1,4 +1,5 @@
 using System.Globalization;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services.Resources;
 using K7.Shared;
@@ -22,6 +23,7 @@ public partial class SettingsGeneralPage : IDisposable
     private bool _playThemeSongs = true;
     private bool _disableThemeSongsOnDevice;
     private bool _themeSongsSaving;
+    private bool _clearingPreferences;
 
     private bool IsOnDefaults =>
         !_hasLanguageOverride
@@ -37,7 +39,7 @@ public partial class SettingsGeneralPage : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        _backendUrl = ApiClient.HttpClient.BaseAddress?.AbsoluteUri;
+        _backendUrl = ResolveBackendUrlDisplay();
 
         try
         {
@@ -199,6 +201,15 @@ public partial class SettingsGeneralPage : IDisposable
         }
     }
 
+    private string? ResolveBackendUrlDisplay()
+    {
+        var storedUrl = DeviceStorageService.Get(PreferenceKeys.K7_SERVER_URL);
+        if (!string.IsNullOrEmpty(storedUrl))
+            return storedUrl;
+
+        return ApiClient.HttpClient.BaseAddress?.AbsoluteUri;
+    }
+
     private async Task ChangeBackendUrl()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
@@ -209,6 +220,39 @@ public partial class SettingsGeneralPage : IDisposable
         if (result == true)
         {
             ServerConnectionService.DisconnectAndReset();
+        }
+    }
+
+    private async Task ClearAllPreferencesAsync()
+    {
+        if (_clearingPreferences)
+            return;
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["ClearAllPreferencesTitle"],
+            L["ClearAllPreferencesMessage"],
+            yesText: L["ClearAllPreferences"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed is not true)
+            return;
+
+        _clearingPreferences = true;
+        try
+        {
+            DeviceStorageService.ClearAllPreferences();
+            _backendUrl = ResolveBackendUrlDisplay();
+            await JSRuntime.InvokeVoidAsync("K7.clearSavedTheme");
+            Snackbar.Add(L["ClearPreferencesSuccess"], K7Severity.Success);
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _clearingPreferences = false;
         }
     }
 }

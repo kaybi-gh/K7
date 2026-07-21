@@ -50,7 +50,7 @@
     }
     else
     {
-        <K7TextField @bind-Value="@_backendUrl"
+        <K7TextField Value="@_backendUrl"
                      Label="@L["ServerUrl"]"
                      ReadOnly="true"
                      Variant="text"
@@ -83,4 +83,16 @@
             @S["ResetToDefaults"]
         </K7Button>
     </div>
+
+    <hr class="k7-divider my-6" />
+    <section>
+        <h6 class="mb-2 text-error">@L["LocalDataSection"]</h6>
+        <p class="text-sm mb-3">@L["LocalDataSectionHint"]</p>
+        <K7Button Variant="outlined"
+                  Color="error"
+                  Disabled="_clearingPreferences"
+                  OnClick="ClearAllPreferencesAsync">
+            @L["ClearAllPreferences"]
+        </K7Button>
+    </section>
 </div>

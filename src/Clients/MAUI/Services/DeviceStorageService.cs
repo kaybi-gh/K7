@@ -16,14 +16,14 @@ public class DeviceStorageService : IDeviceStorageService
     {
         if (IsSecureKey(key) && typeof(T) == typeof(string))
         {
-            var secureValue = SecureStorage.Default.GetAsync(key.Name).GetAwaiter().GetResult();
+            var secureValue = GetSecureString(key.Name);
             if (secureValue is not null)
                 return (T?)(object)secureValue;
 
             var legacyValue = Preferences.Default.Get<string?>(key.Name, null);
             if (legacyValue is not null)
             {
-                SecureStorage.Default.SetAsync(key.Name, legacyValue).GetAwaiter().GetResult();
+                SetSecureString(key.Name, legacyValue);
                 Preferences.Default.Remove(key.Name);
                 return (T?)(object)legacyValue;
             }
@@ -44,7 +44,7 @@ public class DeviceStorageService : IDeviceStorageService
     {
         if (IsSecureKey(key) && value is string secureValue)
         {
-            SecureStorage.Default.SetAsync(key.Name, secureValue).GetAwaiter().GetResult();
+            SetSecureString(key.Name, secureValue);
             Preferences.Default.Remove(key.Name);
             return;
         }
@@ -63,10 +63,44 @@ public class DeviceStorageService : IDeviceStorageService
     public void Remove<T>(PreferenceKey<T> key)
     {
         if (IsSecureKey(key))
-            SecureStorage.Default.Remove(key.Name);
+            RemoveSecureString(key.Name);
 
         Preferences.Default.Remove(key.Name);
     }
+
+    public void ClearAllPreferences()
+    {
+        var preserved = PreferenceKeyCatalog.SnapshotPreservedStringValues(
+            name => Preferences.Default.Get<string?>(name, null));
+
+        foreach (var keyName in PreferenceKeyCatalog.CustomizationKeyNames)
+            Preferences.Default.Remove(keyName);
+
+        PreferenceKeyCatalog.RestorePreservedStringValues(
+            preserved,
+            (name, value) => Preferences.Default.Set(name, value));
+    }
+
+    // SecureStorage APIs are async. Calling GetAwaiter().GetResult() on the UI /
+    // Blazor sync context deadlocks on Windows (PasswordVault completion posts back
+    // to that same context). Run on the thread pool to avoid capturing it.
+    private static string? GetSecureString(string key) =>
+        Task.Run(async () => await SecureStorage.Default.GetAsync(key).ConfigureAwait(false))
+            .GetAwaiter()
+            .GetResult();
+
+    private static void SetSecureString(string key, string value) =>
+        Task.Run(async () =>
+            {
+                await SecureStorage.Default.SetAsync(key, value).ConfigureAwait(false);
+            })
+            .GetAwaiter()
+            .GetResult();
+
+    private static void RemoveSecureString(string key) =>
+        Task.Run(() => SecureStorage.Default.Remove(key))
+            .GetAwaiter()
+            .GetResult();
 
     private static bool IsSecureKey<T>(PreferenceKey<T> key) => SecureKeys.Contains(key.Name);
 
