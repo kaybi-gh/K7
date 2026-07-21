@@ -12,10 +12,19 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
     {
         base.ConnectHandler(platformView);
 
+        AndroidWebViewAccessor.Current = platformView;
         platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
 
         ApplyTvScalingIfNeeded(platformView);
         SetupSafeAreaInsets(platformView);
+    }
+
+    protected override void DisconnectHandler(global::Android.Webkit.WebView platformView)
+    {
+        if (AndroidWebViewAccessor.Current == platformView)
+            AndroidWebViewAccessor.Current = null;
+
+        base.DisconnectHandler(platformView);
     }
 
     private static void SetupSafeAreaInsets(global::Android.Webkit.WebView webView)
@@ -77,6 +86,10 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         var settings = webView.Settings;
         settings.UseWideViewPort = true;
         settings.LoadWithOverviewMode = true;
+        ConfigureWebViewImeOnFocus(settings);
+
+        webView.Focusable = true;
+        webView.FocusableInTouchMode = true;
 
         // Tag the User-Agent so the page can detect TV mode synchronously in <head>
         // and rewrite its <meta viewport> to compensate for the high pixel density.
@@ -88,6 +101,36 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
             settings.UserAgentString = string.IsNullOrWhiteSpace(currentUa)
                 ? TvUserAgentMarker
                 : $"{currentUa} {TvUserAgentMarker}";
+        }
+    }
+
+    private static void ConfigureWebViewImeOnFocus(global::Android.Webkit.WebSettings settings)
+    {
+        // WebSettings.ShowSoftInputOnFocus is not bound in current Android SDK bindings.
+        // Class.GetMethod throws NoSuchMethodException when the primitive/boxed signature
+        // does not match; some TV WebView builds also reject Invoke. Best effort only.
+        try
+        {
+            var settingsClass = settings.Class;
+            if (settingsClass is null)
+                return;
+
+            foreach (var method in settingsClass.GetMethods())
+            {
+                if (method.Name != "setShowSoftInputOnFocus")
+                    continue;
+
+                var parameters = method.GetParameterTypes();
+                if (parameters is null || parameters.Length != 1)
+                    continue;
+
+                method.Invoke(settings, [Java.Lang.Boolean.True!]);
+                return;
+            }
+        }
+        catch (Exception)
+        {
+            // SoftKeyboardService still shows IME explicitly when entering edit mode.
         }
     }
 }

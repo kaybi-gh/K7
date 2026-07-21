@@ -10,5 +10,6 @@ public static partial class MauiProgram
         services.AddSingleton<ICodecService, CodecService>();
         services.AddSingleton<IDeviceIdService, DeviceIdService>();
         services.AddSingleton<ICastService, AndroidCastService>();
+        services.AddSingleton<ISoftKeyboardService, SoftKeyboardService>();
     }
 }
