@@ -90,45 +90,6 @@
             </div>
         </div>
 
-            @if (_topTracks.Count > 0)
-            {
-                <div class="artist-top-tracks-section">
-                    <h6 class="section-title">@L["TopTracks"]</h6>
-                    <K7Table Items="_topTracks"
-                              TItem="TrackViewModel"
-                              OnRowClick="@(args => OnTrackClick(args))"
-                              RowClass="cursor-pointer">
-                        <HeaderContent>
-                            <th class="col-track-number">#</th>
-                            <th>@S["Title"]</th>
-                            <th class="col-duration">@S["Duration"]</th>
-                            <th class="col-actions"></th>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <td>
-                                @if (context.IsPlaying)
-                                {
-                                    <K7Icon Name="equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
-                                }
-                                else
-                                {
-                                    <span class="track-number">@context.Rank</span>
-                                }
-                            </td>
-                            <td>
-                                <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
-                            </td>
-                            <td class="col-duration">
-                                <span class="track-duration">@FormatTime(context.Duration)</span>
-                            </td>
-                            <td>
-                                <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" />
-                            </td>
-                        </RowTemplate>
-                    </K7Table>
-                </div>
-            }
-
             @if (_albums.Count > 0)
             {
                 <div class="artist-albums-section">
@@ -168,6 +129,45 @@
                             </CarouselItem>
                         }
                     </Carousel>
+                </div>
+            }
+
+            @if (_topTracks.Count > 0)
+            {
+                <div class="artist-top-tracks-section">
+                    <h6 class="section-title">@L["TopTracks"]</h6>
+                    <K7Table Items="_topTracks"
+                              TItem="TrackViewModel"
+                              OnRowClick="@(args => OnTrackClick(args))"
+                              RowClass="cursor-pointer">
+                        <HeaderContent>
+                            <th class="col-track-number">#</th>
+                            <th>@S["Title"]</th>
+                            <th class="col-duration">@S["Duration"]</th>
+                            <th class="col-actions"></th>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <td>
+                                @if (context.IsPlaying)
+                                {
+                                    <K7Icon Name="equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
+                                }
+                                else
+                                {
+                                    <span class="track-number">@context.Rank</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
+                            </td>
+                            <td class="col-duration">
+                                <span class="track-duration">@FormatTime(context.Duration)</span>
+                            </td>
+                            <td>
+                                <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" />
+                            </td>
+                        </RowTemplate>
+                    </K7Table>
                 </div>
             }
         </div>

@@ -42,6 +42,7 @@ public interface IAudioPlayerService
 
     // Queue state
     IReadOnlyList<AudioQueueItem> Queue { get; }
+    IReadOnlyList<AudioQueueItem> PlayHistory { get; }
     AudioQueueItem? CurrentTrack { get; }
     int CurrentIndex { get; }
     RepeatMode Repeat { get; }

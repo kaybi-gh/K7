@@ -495,12 +495,17 @@
 }
 
 .queue-item:hover ::deep .queue-item-remove,
-.queue-item:focus-visible ::deep .queue-item-remove {
+.queue-item:focus-visible ::deep .queue-item-remove,
+::deep .queue-item-remove:focus-visible {
     opacity: 0.5;
 }
 
 ::deep .queue-item-remove:hover {
     opacity: 1 !important;
+}
+
+:global(html.platform-tv) ::deep .queue-item-remove {
+    opacity: 1;
 }
 
 @media (max-width: 599.98px) {

@@ -37,6 +37,13 @@ public class MusicCacheService : IMusicCacheService
         _connectivity = connectivity;
         _logger = logger;
 
+        var isTv = DeviceInfo.Current.Idiom == DeviceIdiom.TV;
+        if (isTv)
+        {
+            LookaheadCount = 0;
+            MaxCacheSizeBytes = 0;
+        }
+
         var storedMax = _deviceStorageService.Get(PreferenceKeys.MAX_CACHE_STORAGE_BYTES);
         if (storedMax > 0)
             MaxCacheSizeBytes = storedMax;

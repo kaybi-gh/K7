@@ -88,6 +88,7 @@ public sealed class MockDeviceStorageService : IDeviceStorageService
     public T? Get<T>(PreferenceKey<T> key, T? defaultValue = default) => defaultValue;
     public void Set<T>(PreferenceKey<T> key, T value) { }
     public void Remove<T>(PreferenceKey<T> key) { }
+    public void ClearAllPreferences() { }
 }
 
 public sealed class MockPageFilterStorage : IPageFilterStorage
@@ -180,11 +181,13 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public bool IsMuted { get; set; }
 
     private List<AudioQueueItem> _queue = [];
+    private readonly List<AudioQueueItem> _playHistory = [];
     private readonly object _timerLock = new();
     private Timer? _progressTimer;
 
     public bool IsVisible { get; private set; }
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
+    public IReadOnlyList<AudioQueueItem> PlayHistory => _playHistory;
     public AudioQueueItem? CurrentTrack { get; private set; }
     public int CurrentIndex { get; private set; }
     public RepeatMode Repeat => RepeatMode.Off;

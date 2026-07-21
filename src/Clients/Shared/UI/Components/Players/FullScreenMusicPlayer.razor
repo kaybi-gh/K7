@@ -86,7 +86,10 @@
                                 <K7MenuItem Icon="@Phosphor.Plus" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
                                 <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
                                 <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                                @if (_visualizerAvailable)
+                                {
+                                    <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                                }
                                 <AuthorizeView Roles="Administrator">
                                     <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
                                 </AuthorizeView>
@@ -233,33 +236,36 @@
                     @if (_queueTab == QueueTab.Previous)
                     {
                         <div class="queue-list">
-                            @for (var i = 0; i < Audio.CurrentIndex; i++)
-                            {
-                                var index = i;
-                                var track = Audio.Queue[i];
-                                <div class="queue-item focusable"
-                                     tabindex="0" role="button"
-                                     @onclick="() => PlayFromQueue(index)"
-                                     @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
-                                    <div class="queue-item-index"><span>@(i + 1)</span></div>
-                                    @if (!string.IsNullOrEmpty(track.CoverUrl))
-                                    {
-                                        <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
-                                    }
-                                    else
-                                    {
-                                        <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
-                                    }
-                                    <div class="queue-item-info">
-                                        <span class="queue-item-title">@track.Title</span>
-                                        <span class="queue-item-artist">@track.Artist</span>
-                                    </div>
-                                    <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
-                                </div>
-                            }
-                            @if (Audio.CurrentIndex == 0)
+                            @if (Audio.PlayHistory.Count == 0)
                             {
                                 <div class="queue-empty">@S["NoPreviousTracks"]</div>
+                            }
+                            else
+                            {
+                                @for (var i = Audio.PlayHistory.Count - 1; i >= 0; i--)
+                                {
+                                    var historyIndex = i;
+                                    var track = Audio.PlayHistory[i];
+                                    <div class="queue-item focusable"
+                                         tabindex="0" role="button"
+                                         @onclick="() => PlayFromHistory(historyIndex)"
+                                         @onkeydown="(e) => OnHistoryItemKeyDown(e, historyIndex)">
+                                        <div class="queue-item-index"><span>@(Audio.PlayHistory.Count - i)</span></div>
+                                        @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                        {
+                                            <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                        }
+                                        <div class="queue-item-info">
+                                            <span class="queue-item-title">@track.Title</span>
+                                            <span class="queue-item-artist">@track.Artist</span>
+                                        </div>
+                                        <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                    </div>
+                                }
                             }
                         </div>
                     }
@@ -394,7 +400,12 @@
                                         <span class="queue-item-artist">@track.Artist</span>
                                     </div>
                                     <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
-                                    <K7IconButton Icon="@Phosphor.X" OnClick="() => Audio.RemoveFromQueue(index)" Class="queue-item-remove" />
+                                    <span @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                                        <K7IconButton Icon="@Phosphor.X"
+                                                       OnClick="() => Audio.RemoveFromQueue(index)"
+                                                       Class="queue-item-remove"
+                                                       AriaLabel="@S["Remove"]" />
+                                    </span>
                                 </div>
                             }
                             @if (Audio.CurrentIndex >= Audio.Queue.Count - 1)

@@ -888,34 +888,45 @@ window.K7.Visualizer = {
     },
 
     _loop: function () {
-        if (!this._canvas || !this._ctx || !audioState.analyserNode) return;
+        try {
+            if (!this._canvas || !this._ctx || !audioState.analyserNode) return;
 
-        const ctx = this._ctx;
-        const canvas = this._canvas;
-        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+            const ctx = this._ctx;
+            const canvas = this._canvas;
+            const clientW = canvas.clientWidth || 0;
+            const clientH = canvas.clientHeight || 0;
+            if (clientW <= 0 || clientH <= 0) {
+                this._animId = requestAnimationFrame(() => this._loop());
+                return;
+            }
 
-        const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);
-        audioState.analyserNode.getByteFrequencyData(data);
+            const w = canvas.width = clientW * (window.devicePixelRatio || 1);
+            const h = canvas.height = clientH * (window.devicePixelRatio || 1);
 
-        ctx.clearRect(0, 0, w, h);
+            const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);
+            audioState.analyserNode.getByteFrequencyData(data);
 
-        // Draw frequency bars
-        const barCount = 64;
-        const step = Math.floor(data.length / barCount);
-        const barWidth = w / barCount;
-        const gap = 2;
+            ctx.clearRect(0, 0, w, h);
 
-        for (let i = 0; i < barCount; i++) {
-            const value = data[i * step] / 255;
-            const barHeight = value * h * 0.8;
-            const x = i * barWidth;
-            const y = h - barHeight;
+            // Draw frequency bars
+            const barCount = 64;
+            const step = Math.floor(data.length / barCount);
+            const barWidth = w / barCount;
+            const gap = 2;
 
-            ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + value * 0.6) + ')';
-            ctx.fillRect(x + gap / 2, y, barWidth - gap, barHeight);
+            for (let i = 0; i < barCount; i++) {
+                const value = data[i * step] / 255;
+                const barHeight = value * h * 0.8;
+                const x = i * barWidth;
+                const y = h - barHeight;
+
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + value * 0.6) + ')';
+                ctx.fillRect(x + gap / 2, y, barWidth - gap, barHeight);
+            }
+
+            this._animId = requestAnimationFrame(() => this._loop());
+        } catch (e) {
+            this.stop();
         }
-
-        this._animId = requestAnimationFrame(() => this._loop());
     }
 };

@@ -149,11 +149,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     // Queue state
     private readonly List<AudioQueueItem> _queue = [];
+    private readonly List<AudioQueueItem> _playHistory = [];
     private readonly List<int> _shuffleOrder = [];
     private int _currentIndex = -1;
     private int _shufflePosition = -1;
+    private const int MaxPlayHistory = 50;
 
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
+    public IReadOnlyList<AudioQueueItem> PlayHistory => _playHistory;
     public AudioQueueItem? CurrentTrack => _currentIndex >= 0 && _currentIndex < _queue.Count ? _queue[_currentIndex] : null;
     public int CurrentIndex => _currentIndex;
 
@@ -275,6 +278,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         _queue.Clear();
         _queue.AddRange(tracks);
+        _playHistory.Clear();
         _currentIndex = startIndex;
         RebuildShuffleOrder();
         QueueChanged?.Invoke();
@@ -368,6 +372,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         ClearPlaylistContext();
         _queue.Clear();
+        _playHistory.Clear();
         _shuffleOrder.Clear();
         _currentIndex = -1;
         _shufflePosition = -1;
@@ -379,6 +384,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public async Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default)
     {
         if (index < 0 || index >= _queue.Count || index == _currentIndex) return;
+        PushCurrentToPlayHistory();
         _currentIndex = index;
         if (_shuffle)
             _shufflePosition = _shuffleOrder.IndexOf(index);
@@ -396,6 +402,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             return;
         }
 
+        PushCurrentToPlayHistory();
         _currentIndex = nextIndex.Value;
         await LoadAndPlayCurrentAsync(cancellationToken);
     }
@@ -546,6 +553,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
 
         _crossfadeTriggered = true;
+        PushCurrentToPlayHistory();
         _currentIndex = nextIndex.Value;
         CurrentTrackChanged?.Invoke(CurrentTrack);
         CrossfadeRequested?.Invoke(source, duration);
@@ -605,6 +613,17 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             return await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, cancellationToken: cancellationToken);
 
         return await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
+    }
+
+    private void PushCurrentToPlayHistory()
+    {
+        var track = CurrentTrack;
+        if (track is null)
+            return;
+
+        _playHistory.Add(track);
+        while (_playHistory.Count > MaxPlayHistory)
+            _playHistory.RemoveAt(0);
     }
 
     private async Task LoadAndPlayCurrentAsync(CancellationToken cancellationToken)

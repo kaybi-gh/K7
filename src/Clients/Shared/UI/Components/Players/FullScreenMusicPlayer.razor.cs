@@ -36,6 +36,8 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private ElementReference _seekBarRef;
     private bool _isDragging;
     private bool _showVolumeControls = true;
+    private bool _isTv;
+    private bool _visualizerAvailable;
     private bool _isScrubbing;
     private double _scrubTime;
     private BoundingRect? _seekBarBounds;
@@ -137,7 +139,9 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         SyncPlay.CommandReceived += OnSyncPlayCommandReceived;
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
+        _isTv = deviceType == DeviceType.TV;
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
+        _visualizerAvailable = DeviceService.GetClientType() == ClientType.Web && !_isTv;
 
         try
         {
@@ -238,6 +242,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         if (_visualizerEnabled)
         {
             try { await JS.InvokeVoidAsync("K7.Visualizer.stop"); }
+            catch (JSException) { }
             catch (JSDisconnectedException) { }
             catch (InvalidOperationException) { }
         }
@@ -509,6 +514,18 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         await Audio.SkipToIndexAsync(index);
     }
 
+    private async Task PlayFromHistory(int historyIndex)
+    {
+        if (historyIndex < 0 || historyIndex >= Audio.PlayHistory.Count) return;
+        await Audio.PlayTrackAsync(Audio.PlayHistory[historyIndex]);
+    }
+
+    private async Task OnHistoryItemKeyDown(KeyboardEventArgs e, int historyIndex)
+    {
+        if (e.Key is "Enter" or " ")
+            await PlayFromHistory(historyIndex);
+    }
+
     private async Task OnSeekPointerDown(PointerEventArgs e)
     {
         _isDragging = true;
@@ -745,17 +762,34 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private async Task ToggleVisualizer()
     {
         _menuOpen = false;
+
+        if (!_visualizerAvailable)
+        {
+            Snackbar.Add(S["VisualizerUnavailable"], K7Severity.Normal);
+            return;
+        }
+
         _visualizerEnabled = !_visualizerEnabled;
         StateHasChanged();
 
-        if (_visualizerEnabled)
+        try
         {
-            await Task.Yield();
-            await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas);
+            if (_visualizerEnabled)
+            {
+                await Task.Yield();
+                await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("K7.Visualizer.stop");
+            }
         }
-        else
+        catch (JSException)
         {
-            await JS.InvokeVoidAsync("K7.Visualizer.stop");
+            _visualizerEnabled = false;
+            _visualizerAvailable = false;
+            Snackbar.Add(S["VisualizerUnavailable"], K7Severity.Normal);
+            StateHasChanged();
         }
     }
 
