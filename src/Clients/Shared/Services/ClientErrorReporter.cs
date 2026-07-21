@@ -12,7 +12,7 @@ public sealed class ClientErrorReporter(
     IDeviceService deviceService,
     ILogger<ClientErrorReporter> logger) : IClientErrorReporter
 {
-    public void ReportError(Exception exception, string? context = null)
+    public void ReportError(Exception exception, string? context = null, bool notifyUser = true)
     {
         var message = context is not null
             ? $"{context}: {exception.Message}"
@@ -20,7 +20,10 @@ public sealed class ClientErrorReporter(
 
         logger.LogError(exception, "Client error: {Context}", context ?? "unhandled");
 
-        snackbar.Add(message, K7Severity.Error, "Error");
+        if (notifyUser)
+        {
+            snackbar.Add(message, K7Severity.Error, "Error");
+        }
 
         _ = SendToServerAsync(exception, context);
     }
