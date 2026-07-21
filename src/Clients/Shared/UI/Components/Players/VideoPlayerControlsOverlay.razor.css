@@ -6,7 +6,9 @@
     height: 100%;
     pointer-events: auto;
     touch-action: none;
-    background-color: rgba(0, 0, 0, 0);
+    /* WebView2 on Windows passes pointer hits through fully transparent pixels
+       to native MAUI layers below; keep a non-zero alpha for hit testing. */
+    background-color: rgba(0, 0, 0, 0.01);
     color: white;
     z-index: 100000;
     outline: none;

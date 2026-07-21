@@ -44,6 +44,7 @@ public sealed class DemoPlayerService : IPlayerService
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
     public event Action? BackPressed;
+    public event Action? PlaybackStartFailed;
 #pragma warning restore CS0067
 
     public IReadOnlyList<AudioFileTrackDto> AudioTracks => [];
@@ -132,4 +133,10 @@ public sealed class DemoPlayerService : IPlayerService
 
     public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
+
+    public Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

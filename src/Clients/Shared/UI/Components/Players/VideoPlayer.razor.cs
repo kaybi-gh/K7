@@ -1,7 +1,10 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Players;
@@ -12,9 +15,16 @@ public partial class VideoPlayer : IAsyncDisposable
     private ElementReference _videoContainer;
     private DotNetObjectReference<VideoPlayer>? _dotNetRef;
     private bool _isInitialized;
+    private bool _initInProgress;
     private bool _playPending;
+    private bool _sourceApplyPending;
     private string? _lastPlayerId;
     private bool _syncPlaySidebarOpen;
+    private CancellationTokenSource? _durationWaitCts;
+    private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(12);
+    private static readonly TimeSpan WindowsWebDurationReadyTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan NativeDurationReadyTimeout = TimeSpan.FromSeconds(6);
+    private const int MaxNativeRecoveryRounds = 3;
     
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
@@ -22,37 +32,65 @@ public partial class VideoPlayer : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (DeviceService.GetClientType() == ClientType.Web)
+        if (UsesWebVideoPlayer())
         {
-            if (PlayerService.IsVisible && !_isInitialized)
+            if (PlayerService.IsVisible && !_isInitialized && !_initInProgress)
             {
-                var pendingSeek = PlayerService.Source?.PendingSeekTime;
-                // Never autoplay from the embedded <source> when resuming mid-stream -
-                // that would fetch segment 0 before changeSourceAndSeek can run.
-                var options = new
+                _initInProgress = true;
+                try
                 {
-                    // K7's own VideoPlayerControlsOverlay is the only UI; never let video.js render its default control bar.
-                    controls = false,
-                    volume = PlayerService.Volume,
-                    muted = PlayerService.IsMuted,
-                    autoplay = _playPending && pendingSeek is null
-                };
+                    var pendingSeek = PlayerService.Source?.PendingSeekTime;
+                    // Never autoplay from the embedded <source> when resuming mid-stream -
+                    // that would fetch segment 0 before changeSourceAndSeek can run.
+                    var options = new
+                    {
+                        // K7's own VideoPlayerControlsOverlay is the only UI; never let video.js render its default control bar.
+                        controls = false,
+                        volume = PlayerService.Volume,
+                        muted = PlayerService.IsMuted,
+                        autoplay = _playPending && pendingSeek is null
+                    };
 
-                _dotNetRef ??= DotNetObjectReference.Create(this);
+                    _dotNetRef ??= DotNetObjectReference.Create(this);
 
-                await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
-                _isInitialized = true;
-                _lastPlayerId = _player.Id;
+                    System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init starting");
+                    try
+                    {
+                        await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
+                        System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init succeeded id=" + _player.Id);
+                    }
+                    catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+                    {
+                        System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init failed: " + ex.Message);
+                        throw;
+                    }
 
-                if (pendingSeek is double seekTime && !string.IsNullOrEmpty(SourceUri))
-                {
-                    _playPending = false;
-                    await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+                    _isInitialized = true;
+                    _lastPlayerId = _player.Id;
+
+                    if (pendingSeek is double seekTime && !string.IsNullOrEmpty(SourceUri))
+                    {
+                        _playPending = false;
+                        _sourceApplyPending = false;
+                        await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+                    }
+                    else if (_sourceApplyPending || !string.IsNullOrEmpty(SourceUri))
+                    {
+                        _sourceApplyPending = false;
+                        var source = PlayerService.Source;
+                        if (source?.Url is not null)
+                            await ApplySourceAsync(source);
+                    }
+
+                    if (_playPending && !string.IsNullOrEmpty(_player.Id))
+                    {
+                        _playPending = false;
+                        await JSRuntime.InvokeVoidAsync("play", _player.Id);
+                    }
                 }
-                else if (_playPending && !string.IsNullOrEmpty(_player.Id))
+                finally
                 {
-                    _playPending = false;
-                    await JSRuntime.InvokeVoidAsync("play", _player.Id);
+                    _initInProgress = false;
                 }
             }
             else if (!PlayerService.IsVisible && _isInitialized)
@@ -73,6 +111,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
                 _isInitialized = false;
                 _playPending = false;
+                _sourceApplyPending = false;
                 _lastPlayerId = null;
             }
         }
@@ -82,11 +121,12 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         PlayerService.SourceChanged += OnSourceChange;
         PlayerService.IsVisibleChanged += OnVisibilityChanged;
+        PlayerService.PlaybackStartFailed += OnPlaybackStartFailed;
         RemoteControl.SessionChanged += OnRemoteSessionChanged;
         RemoteControl.StateChanged += OnRemoteSessionChanged;
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
 
-        if (DeviceService.GetClientType() == ClientType.Web)
+        if (UsesWebVideoPlayer())
         {
             PlayerService.PlayRequested += PlayAsync;
             PlayerService.PauseRequested += PauseAsync;
@@ -110,9 +150,9 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         StateHasChanged();
 
-        // On MAUI Native, MediaElement sits behind the transparent WebView.
-        // native-player-active hides the app shell and keeps only .video-container
-        // visible so the native video shows through the Blazor overlay.
+        // On MAUI Native, hide app chrome so only the video overlay receives input.
+        // On Windows the video renders in WebView2 but still needs native-player-active
+        // so sibling shell UI does not compete for hit testing / focus.
         if (DeviceService.GetClientType() == ClientType.Native)
         {
             SetNativePlayerActiveAsync(PlayerService.IsVisible).FireAndForget();
@@ -123,11 +163,19 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", active);
+            await JSRuntime.InvokeVoidAsync(
+                "K7.setNativePlayerActive",
+                active,
+                UsesWebVideoPlayer());
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
         {
         }
+    }
+
+    private void OnVideoPlayerRootClick()
+    {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] video-player root click");
     }
 
     private async Task OnResumeHere()
@@ -185,8 +233,13 @@ public partial class VideoPlayer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _durationWaitCts?.Cancel();
+        _durationWaitCts?.Dispose();
+        _durationWaitCts = null;
+
         PlayerService.SourceChanged -= OnSourceChange;
         PlayerService.IsVisibleChanged -= OnVisibilityChanged;
+        PlayerService.PlaybackStartFailed -= OnPlaybackStartFailed;
         RemoteControl.SessionChanged -= OnRemoteSessionChanged;
         RemoteControl.StateChanged -= OnRemoteSessionChanged;
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
@@ -205,7 +258,7 @@ public partial class VideoPlayer : IAsyncDisposable
             }
         }
 
-        if (DeviceService.GetClientType() == ClientType.Web)
+        if (UsesWebVideoPlayer())
         {
             PlayerService.PlayRequested -= PlayAsync;
             PlayerService.PauseRequested -= PauseAsync;
@@ -260,22 +313,163 @@ public partial class VideoPlayer : IAsyncDisposable
             ThumbnailsSource = playerSource.ThumbnailsUrl;
         }
 
-        if (DeviceService.GetClientType() == ClientType.Web && _isInitialized && !string.IsNullOrEmpty(_player.Id))
+        if (UsesWebVideoPlayer() && !string.IsNullOrEmpty(playerSource.Url))
         {
-            if (playerSource.PendingSeekTime is double seekTime)
+            if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
             {
-                await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+                await ApplySourceAsync(playerSource);
             }
             else
             {
-                var subtitleSlug = PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
-                    ? $"sub-{sub.Index}"
-                    : null;
-                await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, SourceUri, SourceMimeType, subtitleSlug);
+                _sourceApplyPending = true;
             }
         }
 
+        if (string.IsNullOrEmpty(playerSource.Url))
+        {
+            _durationWaitCts?.Cancel();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        ScheduleDurationReadyCheck();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ApplySourceAsync(PlayerSource source)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(_player.Id) || string.IsNullOrEmpty(source.Url))
+            return;
+
+        if (source.PendingSeekTime is double seekTime)
+        {
+            System.Diagnostics.Debug.WriteLine("[K7-Player] source applied with seek url=" + source.Url + " seek=" + seekTime);
+            await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, source.Url, source.MimeType ?? SourceMimeType, seekTime);
+            return;
+        }
+
+        var subtitleSlug = PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
+            ? $"sub-{sub.Index}"
+            : null;
+        System.Diagnostics.Debug.WriteLine("[K7-Player] source applied url=" + source.Url);
+        await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, source.Url, source.MimeType ?? SourceMimeType, subtitleSlug);
+    }
+
+    private bool UsesWebVideoPlayer() =>
+        DeviceService.GetClientType() == ClientType.Web
+        || (DeviceService.GetClientType() == ClientType.Native
+            && WindowsVideoPlayback.UsesWebVideoPlayer);
+
+    private bool IsPlaybackReady()
+    {
+        if (PlayerService.Duration > 0)
+            return true;
+
+        // Windows MAUI Video.js can enter Buffering on play before HLS is playable.
+        // Do not treat Buffering alone as ready so the startup watchdog still fires.
+        var isWindowsWebPlayer = DeviceService.GetClientType() == ClientType.Native
+            && WindowsVideoPlayback.UsesWebVideoPlayer;
+        if (isWindowsWebPlayer)
+        {
+            return PlayerService.PlaybackState is PlaybackState.Playing
+                || PlayerService.CurrentTime > 0
+                || PlayerService.BufferedTime > 0;
+        }
+
+        if (UsesWebVideoPlayer())
+            return PlayerService.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering
+                || PlayerService.CurrentTime > 0
+                || PlayerService.BufferedTime > 0;
+
+        if (DeviceService.GetClientType() != ClientType.Native)
+            return false;
+
+        return PlayerService.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering
+            || PlayerService.CurrentTime > 0;
+    }
+
+    private void ScheduleDurationReadyCheck()
+    {
+        _durationWaitCts?.Cancel();
+        _durationWaitCts?.Dispose();
+        _durationWaitCts = new CancellationTokenSource();
+        _ = WaitForDurationReadyAsync(_durationWaitCts.Token);
+    }
+
+    private async Task WaitForDurationReadyAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var isNative = DeviceService.GetClientType() == ClientType.Native && !UsesWebVideoPlayer();
+            // Windows MAUI uses Video.js + C# xhr bridge; allow longer first-buffer time.
+            var isWindowsWebPlayer = UsesWebVideoPlayer() && WindowsVideoPlayback.UsesWebVideoPlayer;
+            var maxRounds = isNative ? MaxNativeRecoveryRounds : 1;
+            var waitTimeout = isNative
+                ? NativeDurationReadyTimeout
+                : isWindowsWebPlayer
+                    ? WindowsWebDurationReadyTimeout
+                    : DurationReadyTimeout;
+
+            for (var round = 0; round < maxRounds; round++)
+            {
+                var deadline = DateTime.UtcNow + waitTimeout;
+                while (DateTime.UtcNow < deadline)
+                {
+                    if (IsPlaybackReady() || !PlayerService.IsVisible)
+                        return;
+
+                    await Task.Delay(500, cancellationToken);
+                }
+
+                if (IsPlaybackReady() || !PlayerService.IsVisible)
+                    return;
+
+                if (isNative && round < maxRounds - 1)
+                {
+                    var recovered = await PlayerService.TryRecoverPlaybackStartAsync(cancellationToken);
+                    if (recovered)
+                        continue;
+
+                    break;
+                }
+
+                break;
+            }
+
+            if (IsPlaybackReady() || !PlayerService.IsVisible)
+                return;
+
+            System.Diagnostics.Debug.WriteLine("[K7-Player] WaitForDurationReadyAsync timed out, aborting playback start");
+            await PlayerService.AbortPlaybackStartAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void OnPlaybackStartFailed() => OnPlaybackStartFailedAsync().FireAndForget();
+
+    private async Task OnPlaybackStartFailedAsync()
+    {
+        _durationWaitCts?.Cancel();
+
+        try
+        {
+            await InvokeAsync(ShowPlaybackStartFailedSnackbarAsync);
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private Task ShowPlaybackStartFailedSnackbarAsync()
+    {
+        var messageKey = PlayerService.Source?.StreamSessionId is not null
+            ? "StreamPlaybackFailed"
+            : "StreamNotReady";
+
+        Snackbar.Add(S[messageKey], K7Severity.Error);
+        return Task.CompletedTask;
     }
 
     private void OnSwitchAudioTrack(string trackName) => OnSwitchAudioTrackAsync(trackName).FireAndForget();
@@ -342,7 +536,11 @@ public partial class VideoPlayer : IAsyncDisposable
             _playPending = false;
         }
     }
-    public async Task SeekAsync(double seconds) => await JSRuntime.InvokeVoidAsync("seek", _player.Id, seconds);
+    public async Task SeekAsync(double seconds)
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+            await JSRuntime.InvokeVoidAsync("seek", _player.Id, seconds);
+    }
     public async Task MuteAsync() => await JSRuntime.InvokeVoidAsync("mute", _player.Id);
     public async Task UnmuteAsync() => await JSRuntime.InvokeVoidAsync("unmute", _player.Id);
     public async Task SetVolumeAsync(double volume) => await JSRuntime.InvokeVoidAsync("changeVolume", _player.Id, volume);
@@ -390,6 +588,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Fires when the browser has loaded meta data for the audio/video.ed.
             case "loadedmetadata":
+                PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // Triggered when a Component is ready.
@@ -398,6 +597,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Triggered whenever a play event happens. Indicates that playback has started or resumed
             case "play":
+                PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // Fired whenever the media has been paused
@@ -444,6 +644,13 @@ public partial class VideoPlayer : IAsyncDisposable
             case "canplaythrough":
                 break;
         }
+    }
+
+    [JSInvokable]
+    public void OnPlayerError(int code, string message)
+    {
+        System.Diagnostics.Debug.WriteLine(
+            "[K7-Player] Video.js error code=" + code + " message=" + message);
     }
 
     [JSInvokable]

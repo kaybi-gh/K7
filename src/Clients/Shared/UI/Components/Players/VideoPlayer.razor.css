@@ -9,6 +9,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: auto;
 }
 
 .video-container.syncplay-sidebar-open {
@@ -69,11 +70,18 @@
 .video-container ::deep .video-js {
     width: 100% !important;
     height: 100% !important;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.video-container ::deep .video-js .vjs-tech {
+    pointer-events: none;
 }
 
 .video-container video {
     width: 100%;
     height: 100%;
+    pointer-events: none;
 }
 
 media-player {

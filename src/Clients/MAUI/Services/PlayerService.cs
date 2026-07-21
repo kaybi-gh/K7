@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -41,6 +42,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
     public event Action? BackPressed;
+    public event Action? PlaybackStartFailed;
 
     private PlayerSource _source = new();
     public PlayerSource Source
@@ -99,6 +101,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             if (_duration != value)
             {
                 _duration = value;
+                if (value > 0)
+                    _playbackStartRecoveryAttempts = 0;
                 DurationChanged?.Invoke(value);
             }
         }
@@ -204,6 +208,10 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     /// </summary>
     private string? _baseManifestUrl;
 
+    private int _playbackStartRecoveryAttempts;
+    private const int MaxPlaybackStartRecoveryAttempts = 4;
+    private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
+
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
@@ -217,8 +225,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         _availableQualities = videoResolution is not null
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
-        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
-            ?? _availableQualities.FirstOrDefault();
+        _selectedQuality = SelectInitialQuality(_availableQualities);
 
         Source = new PlayerSource();
 
@@ -243,13 +250,16 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             : null;
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
+        _playbackStartRecoveryAttempts = 0;
+
+        var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
 
         var playerSource = new PlayerSource
         {
             MediaId = mediaId,
             StreamSessionId = session.Id,
             IndexedFileId = indexedFileId,
-            Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
+            Url = BuildManifestUrlWithStartPosition(manifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,
             Chapters = chapters ?? session.Chapters,
@@ -279,8 +289,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         _availableQualities = videoResolution is not null
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
-        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
-            ?? _availableQualities.FirstOrDefault();
+        _selectedQuality = SelectInitialQuality(_availableQualities);
 
         Source = new PlayerSource();
 
@@ -297,12 +306,15 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             SetSubtitleTracks(session.SubtitleTracks);
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
+        _playbackStartRecoveryAttempts = 0;
+
+        var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
 
         Source = new PlayerSource
         {
             MediaId = mediaId,
             StreamSessionId = session.Id,
-            Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
+            Url = BuildManifestUrlWithStartPosition(manifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             Title = title,
             CoverUrl = coverUrl,
@@ -422,15 +434,113 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         return Task.CompletedTask;
     }
 
+    public async Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
+            return false;
+
+        // Windows video uses Video.js in WebView2, not native MediaElement.
+        if (WindowsVideoPlayback.UsesWebVideoPlayer)
+            return false;
+
+        await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
+                return false;
+
+            _playbackStartRecoveryAttempts++;
+
+            if (_selectedQuality?.IsOriginal == true)
+            {
+                var fallbackQuality = _availableQualities.FirstOrDefault(q => !q.IsOriginal);
+                if (fallbackQuality is not null)
+                {
+                    await ChangeQualityAsync(fallbackQuality, cancellationToken);
+                    return true;
+                }
+            }
+
+            var nextQuality = GetNextLowerTranscodedQuality();
+            if (nextQuality is not null)
+            {
+                await ChangeQualityAsync(nextQuality, cancellationToken);
+                return true;
+            }
+
+            if (_playbackStartRecoveryAttempts <= 2)
+            {
+                ReloadCurrentSource();
+                return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            _playbackStartRecoveryLock.Release();
+        }
+    }
+
+    public async Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsVisible)
+            return;
+
+        System.Diagnostics.Debug.WriteLine("[K7-Player] AbortPlaybackStartAsync -> HideAsync (duration never became ready)");
+        Stop();
+        await HideAsync();
+        PlaybackStartFailed?.Invoke();
+    }
+
+    private void ReloadCurrentSource()
+    {
+        if (_baseManifestUrl is null || Source is null)
+            return;
+
+        var seekTime = CurrentTime > 0 ? CurrentTime : Source.PendingSeekTime;
+        var previousDuration = Duration;
+
+        var url = BuildManifestUrlWithStartPosition(
+            BuildManifestUrlWithQuality(
+                BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, _selectedSubtitleTrack),
+                _selectedQuality),
+            seekTime);
+
+        Source = new PlayerSource
+        {
+            MediaId = Source.MediaId,
+            StreamSessionId = Source.StreamSessionId,
+            IndexedFileId = Source.IndexedFileId,
+            Url = url,
+            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
+            ThumbnailsUrl = Source.ThumbnailsUrl,
+            Chapters = Source.Chapters,
+            Title = Source.Title,
+            CoverUrl = Source.CoverUrl,
+            PendingSeekTime = seekTime is > 0 ? seekTime : null
+        };
+
+        if (seekTime is > 0)
+        {
+            CurrentTime = seekTime.Value;
+            if (previousDuration > 0)
+                Duration = previousDuration;
+        }
+    }
+
     public Task ShowAsync()
     {
         IsVisible = true;
+        System.Diagnostics.Debug.WriteLine("[K7-Player] PlayerService.ShowAsync -> IsVisible=true");
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
 
     public Task HideAsync()
     {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] HideAsync called from: " + Environment.StackTrace);
+
         if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
         {
             PlaybackState = PlaybackState.Idle;
@@ -441,7 +551,11 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         return Task.CompletedTask;
     }
 
-    public void OnBackPressed() => BackPressed?.Invoke();
+    public void OnBackPressed()
+    {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] PlayerService.OnBackPressed");
+        BackPressed?.Invoke();
+    }
 
     public void Play() => PlayRequested?.Invoke();
     public void Pause() => PauseRequested?.Invoke();
@@ -508,6 +622,28 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         }
 
         return url;
+    }
+
+    private static VideoQualityOption? SelectInitialQuality(IReadOnlyList<VideoQualityOption> availableQualities)
+    {
+        if (availableQualities.Count == 0)
+            return null;
+
+        return availableQualities.FirstOrDefault(q => q.IsOriginal)
+            ?? availableQualities.FirstOrDefault();
+    }
+
+    private VideoQualityOption? GetNextLowerTranscodedQuality()
+    {
+        if (_selectedQuality is null || _selectedQuality.IsOriginal)
+            return null;
+
+        var transcodedQualities = _availableQualities.Where(q => !q.IsOriginal).ToList();
+        var currentIndex = transcodedQualities.FindIndex(q => q.Height == _selectedQuality.Height);
+        if (currentIndex < 0 || currentIndex >= transcodedQualities.Count - 1)
+            return null;
+
+        return transcodedQualities[currentIndex + 1];
     }
 
     private static string BuildManifestUrlWithStartPosition(string baseUrl, double? startPosition)

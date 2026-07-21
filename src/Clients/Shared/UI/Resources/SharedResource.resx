@@ -123,6 +123,10 @@
   <data name="QueueSavedAsPlaylist" xml:space="preserve"><value>File enregistrée en playlist</value></data>
   <data name="Visualizer" xml:space="preserve"><value>Activer le visualiseur</value></data>
   <data name="DisableVisualizer" xml:space="preserve"><value>Désactiver le visualiseur</value></data>
+  <data name="VisualizerUnavailableOnTv" xml:space="preserve"><value>Le visualiseur n'est pas disponible sur TV</value></data>
+  <data name="VisualizerUnavailable" xml:space="preserve"><value>Le visualiseur n'est pas disponible sur cet appareil</value></data>
+  <data name="StreamNotReady" xml:space="preserve"><value>La lecture n'a pas pu demarrer. Le flux est peut-etre encore en indexation.</value></data>
+  <data name="StreamPlaybackFailed" xml:space="preserve"><value>La lecture n'a pas pu demarrer. Veuillez reessayer.</value></data>
   <data name="TrackInfo" xml:space="preserve"><value>Infos du morceau</value></data>
   <data name="AudioDetails" xml:space="preserve"><value>Détails audio</value></data>
   <data name="Codec" xml:space="preserve"><value>Codec</value></data>

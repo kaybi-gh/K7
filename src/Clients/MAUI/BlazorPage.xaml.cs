@@ -31,6 +31,9 @@ public partial class BlazorPage : ContentPage
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
         InitializeComponent();
+#if WINDOWS
+        SyncWindowsStreamAuthContext();
+#endif
         blazorWebView.WebResourceRequested += OnWebResourceRequested;
         InitializeSplashOverlay();
         InitializePlayer();
@@ -114,6 +117,7 @@ public partial class BlazorPage : ContentPage
         // When native video player is active, signal the overlay component
         if (_playerService.IsVisible)
         {
+            System.Diagnostics.Debug.WriteLine("[K7-Player] BlazorPage.HandleBackButton -> PlayerService.OnBackPressed");
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 if (_playerService is MAUI.Services.PlayerService ps)
@@ -222,6 +226,7 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged += OnSourceChanged;
         _playerService.IsVisibleChanged += OnIsVisibleChanged;
+#if !WINDOWS
         _playerService.PlayRequested += HandleVideoPlayRequested;
         _playerService.PauseRequested += HandleVideoPauseRequested;
         _playerService.MuteRequested += HandleVideoMuteRequested;
@@ -231,13 +236,28 @@ public partial class BlazorPage : ContentPage
         _playerService.StopRequested += HandleVideoStopRequested;
         _playerService.SeekRequested += HandleVideoSeekRequested;
         _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
+#endif
         InitializePlayerPlatform();
     }
 
+#if !WINDOWS
     private Task HandleVideoPlayRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativePlayer.Play);
-        return Task.CompletedTask;
+        return MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            // Stopped/Ended after a backward seek (especially to zero) may ignore Play()
+            // until the timeline position is re-established.
+            if (NativePlayer.CurrentState is MediaElementState.Stopped)
+            {
+                var position = NativePlayer.Position;
+                if (position < TimeSpan.Zero)
+                    position = TimeSpan.Zero;
+
+                await NativePlayer.SeekTo(position);
+            }
+
+            NativePlayer.Play();
+        });
     }
 
     private Task HandleVideoPauseRequested()
@@ -278,12 +298,19 @@ public partial class BlazorPage : ContentPage
 
     private Task HandleVideoSeekRequested(double position)
     {
-        MainThread.BeginInvokeOnMainThread(() => NativePlayer.SeekTo(TimeSpan.FromSeconds(position)));
-        return Task.CompletedTask;
+        return SeekMediaElementAsync(
+            NativePlayer,
+            TimeSpan.FromSeconds(position),
+            () => _playerService.PlaybackState,
+            t => _playerService.CurrentTime = t);
     }
+#endif
 
     private void NativePlayer_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+#if WINDOWS
+        return;
+#else
         if (e.PropertyName == nameof(MediaElement.Duration))
         {
             var duration = NativePlayer.Duration.TotalSeconds;
@@ -306,44 +333,74 @@ public partial class BlazorPage : ContentPage
                 _ => Server.Domain.Enums.PlaybackState.Unknown,
             };
         }
+#endif
     }
 
     private void OnSourceChanged(PlayerSource source)
     {
+#if WINDOWS
+        SyncWindowsStreamAuthContext();
+
+        // All Windows video uses Video.js in WebView2, not native MediaElement.
+        return;
+#else
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (!string.IsNullOrEmpty(source.Url))
             {
-                NativePlayer.Stop();
-                NativePlayer.ShouldAutoPlay = true;
-                NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
-                NativePlayer.Play();
-
-                if (source.PendingSeekTime is double seekTime)
-                {
-                    // Seek once the player starts playing (MediaOpened may not fire on source swap)
-                    void OnStateChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
-                    {
-                        if (e.PropertyName != nameof(MediaElement.CurrentState))
-                            return;
-
-                        if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
-                        {
-                            NativePlayer.PropertyChanged -= OnStateChanged;
-                            NativePlayer.SeekTo(TimeSpan.FromSeconds(seekTime));
-                        }
-                    }
-
-                    NativePlayer.PropertyChanged += OnStateChanged;
-                }
+                OpenNativePlayerSource(source);
             }
         });
+#endif
     }
+
+#if !WINDOWS
+    private void OpenNativePlayerSource(PlayerSource source)
+    {
+        ClearNativePlayerMediaSurface();
+        NativePlayer.ShouldAutoPlay = true;
+        NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
+        NativePlayer.Play();
+        AttachPendingSeekHandler(source);
+    }
+
+    private void AttachPendingSeekHandler(PlayerSource source)
+    {
+        if (source.PendingSeekTime is not double seekTime)
+            return;
+
+        // Seek once the player starts playing (MediaOpened may not fire on source swap)
+        void OnStateChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(MediaElement.CurrentState))
+                return;
+
+            if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
+            {
+                NativePlayer.PropertyChanged -= OnStateChanged;
+                SeekMediaElementAsync(
+                    NativePlayer,
+                    TimeSpan.FromSeconds(seekTime),
+                    () => _playerService.PlaybackState,
+                    t => _playerService.CurrentTime = t).FireAndForget();
+            }
+        }
+
+        NativePlayer.PropertyChanged += OnStateChanged;
+    }
+#endif
 
     private void OnIsVisibleChanged()
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+#if WINDOWS
+            System.Diagnostics.Debug.WriteLine(
+                _playerService.IsVisible
+                    ? "[K7-Player] IsVisible=true, configuring Windows layout"
+                    : "[K7-Player] IsVisible=false, restoring Windows layout");
+            ConfigureWindowsVideoPlayerLayout();
+#else
             NativePlayer.IsVisible = _playerService.IsVisible;
 
             if (_playerService.IsVisible)
@@ -354,14 +411,6 @@ public partial class BlazorPage : ContentPage
                 DeviceDisplay.Current.KeepScreenOn = true;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayInfoChanged;
                 SetLandscapeOrientation();
-#endif
-#if WINDOWS
-                // WebView2 transparency is broken on WinUI3 (microsoft-ui-xaml#6527).
-                // Place MediaElement in front of the BlazorWebView and use native controls.
-                NativePlayer.ZIndex = 3;
-                NativePlayer.ShouldShowPlaybackControls = true;
-                NativePlayer.InputTransparent = false;
-                NativePlayerCloseButton.IsVisible = true;
 #endif
             }
             else
@@ -374,16 +423,12 @@ public partial class BlazorPage : ContentPage
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayInfoChanged;
                 RestoreOrientation();
 #endif
-#if WINDOWS
-                NativePlayer.ZIndex = 1;
-                NativePlayer.ShouldShowPlaybackControls = false;
-                NativePlayer.InputTransparent = true;
-                NativePlayerCloseButton.IsVisible = false;
-#endif
             }
+#endif
         });
     }
 
+#if !WINDOWS
     private void OnAspectRatioModeChanged(AspectRatioMode mode)
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -396,25 +441,61 @@ public partial class BlazorPage : ContentPage
             };
         });
     }
+#endif
 
     private void NativePlayer_MediaOpened(object? sender, EventArgs e)
     {
+#if !WINDOWS
         _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Idle;
+#endif
     }
 
     private void NativePlayer_MediaEnded(object? sender, EventArgs e)
     {
+#if !WINDOWS
         _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Ended;
+#endif
     }
 
     private void NativePlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
     {
         System.Diagnostics.Debug.WriteLine($"[K7-Player] Media playback failed: {e.ErrorMessage}");
+
+        if (_playerService is not Services.PlayerService playerService)
+            return;
+
+#if WINDOWS
+        return;
+#else
+        MainThread.BeginInvokeOnMainThread(() =>
+            HandleNativePlayerMediaFailedAsync(playerService).FireAndForget());
+#endif
     }
+
+#if !WINDOWS
+    private async Task HandleNativePlayerMediaFailedAsync(Services.PlayerService playerService)
+    {
+        ClearNativePlayerMediaSurface();
+
+        var recovered = await playerService.TryRecoverPlaybackStartAsync();
+        if (!recovered)
+            await playerService.AbortPlaybackStartAsync();
+    }
+
+    private void ClearNativePlayerMediaSurface()
+    {
+        NativePlayer.Stop();
+        NativePlayer.Source = null;
+    }
+#endif
 
     private void NativePlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
+#if WINDOWS
+        return;
+#else
         _playerService.CurrentTime = e.Position.TotalSeconds;
+#endif
     }
 
     protected override void OnDisappearing()
@@ -478,11 +559,12 @@ public partial class BlazorPage : ContentPage
         return Task.CompletedTask;
     }
 
-    private Task HandleAudioSeekRequested(double position)
-    {
-        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.SeekTo(TimeSpan.FromSeconds(position)));
-        return Task.CompletedTask;
-    }
+    private Task HandleAudioSeekRequested(double position) =>
+        SeekMediaElementAsync(
+            NativeAudioPlayer,
+            TimeSpan.FromSeconds(position),
+            () => _audioPlayerService.PlaybackState,
+            t => _audioPlayerService.CurrentTime = t);
 
     private Task HandleAudioMuteRequested()
     {
@@ -542,6 +624,7 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged -= OnSourceChanged;
         _playerService.IsVisibleChanged -= OnIsVisibleChanged;
+#if !WINDOWS
         _playerService.PlayRequested -= HandleVideoPlayRequested;
         _playerService.PauseRequested -= HandleVideoPauseRequested;
         _playerService.MuteRequested -= HandleVideoMuteRequested;
@@ -551,6 +634,7 @@ public partial class BlazorPage : ContentPage
         _playerService.StopRequested -= HandleVideoStopRequested;
         _playerService.SeekRequested -= HandleVideoSeekRequested;
         _playerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChanged;
+#endif
 
 #if !ANDROID && !IOS
         NativeAudioPlayer.PositionChanged -= AudioPlayer_PositionChanged;
@@ -653,4 +737,51 @@ public partial class BlazorPage : ContentPage
 #endif
 
     partial void InitializePlayerPlatform();
+
+#if WINDOWS
+    partial void ConfigureWindowsVideoPlayerLayout();
+
+    private void SyncWindowsStreamAuthContext() =>
+        Platforms.Windows.WindowsStreamAuthContext.UpdateFrom(_k7ServerService);
+#endif
+
+    private static Task SeekMediaElementAsync(
+        MediaElement mediaElement,
+        TimeSpan position,
+        Func<Server.Domain.Enums.PlaybackState>? getPlaybackState = null,
+        Action<double>? setCurrentTime = null) =>
+        MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            var target = position < TimeSpan.Zero ? TimeSpan.Zero : position;
+            var resumePlayback = getPlaybackState?.Invoke()
+                is Server.Domain.Enums.PlaybackState.Playing
+                or Server.Domain.Enums.PlaybackState.Buffering;
+
+            try
+            {
+                await mediaElement.SeekTo(target);
+
+                // Some native stacks ignore an exact-zero seek after jumping forward.
+                if (target == TimeSpan.Zero
+                    && mediaElement.Duration > TimeSpan.Zero
+                    && mediaElement.Position.TotalSeconds > 1)
+                {
+                    await mediaElement.SeekTo(TimeSpan.FromMilliseconds(1));
+                    await mediaElement.SeekTo(TimeSpan.Zero);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[K7-Player] Seek failed at {target}: {ex.Message}");
+            }
+
+            setCurrentTime?.Invoke(target.TotalSeconds);
+
+            if (resumePlayback
+                && mediaElement.CurrentState is not MediaElementState.Playing
+                && mediaElement.CurrentState is not MediaElementState.Buffering)
+            {
+                mediaElement.Play();
+            }
+        });
 }

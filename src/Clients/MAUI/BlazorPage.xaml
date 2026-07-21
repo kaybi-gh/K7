@@ -28,9 +28,10 @@
                               InputTransparent="True"
                               WidthRequest="0" HeightRequest="0" />
         
-        <!-- Blazor overlay -->
+        <!-- Blazor overlay (topmost for input on Windows video; ZIndex raised further in code when player opens) -->
         <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"
-                   BackgroundColor="Transparent" ZIndex="2">
+                   HorizontalOptions="Fill" VerticalOptions="Fill"
+                   BackgroundColor="Black" ZIndex="2">
             <BlazorWebView.RootComponents>
                 <RootComponent Selector="#app" ComponentType="{x:Type mauiPages:MauiRoutes}" />
             </BlazorWebView.RootComponents>
@@ -51,7 +52,7 @@
                                VerticalOptions="Center" />
         </Grid>
 
-        <!-- Close button for native player on Windows (overlay is not usable due to opaque WebView2) -->
+        <!-- Fallback close for native-only paths (Android/iOS); hidden on Windows (Blazor overlay handles close) -->
         <Button x:Name="NativePlayerCloseButton"
                 Text="&#x2715;"
                 IsVisible="False"

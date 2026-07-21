@@ -69,6 +69,14 @@
       ]
     },
     {
+      "library": "video.js@8.22.0",
+      "destination": "wwwroot/dist/video.js/",
+      "files": [
+        "video.min.js",
+        "video-js.min.css"
+      ]
+    },
+    {
       "provider": "jsdelivr",
       "library": "lottie-web@5.12.2",
       "destination": "wwwroot/dist/lottie/",

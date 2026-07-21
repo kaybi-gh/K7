@@ -77,6 +77,7 @@ public interface IPlayerService
     Task HideAsync();
 
     event Action? BackPressed;
+    event Action? PlaybackStartFailed;
 
     Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default);
     Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default);
@@ -84,5 +85,16 @@ public interface IPlayerService
     Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default);
     Task ChangeSubtitleTrackAsync(SubtitleFileTrackDto? track, CancellationToken cancellationToken = default);
     Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retries opening the current HLS source or falls back to a transcoded quality after a transient native failure.
+    /// Returns true when a recovery attempt was scheduled.
+    /// </summary>
+    Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stops playback, hides the player, and raises <see cref="PlaybackStartFailed"/>.
+    /// </summary>
+    Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default);
 
 }

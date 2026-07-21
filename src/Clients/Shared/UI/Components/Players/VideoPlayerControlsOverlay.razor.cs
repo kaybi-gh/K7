@@ -189,7 +189,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             await SpatialNav.PushLayerAsync(activeLayer, "overlay", new SpatialNavLayerOptions
             {
                 OnClose = _overlayCloseRef,
-                FocusSelector = ".play-pause-btn"
+                FocusSelector = _deviceType == DeviceType.TV ? ".seekbar-container" : ".play-pause-btn"
             });
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
@@ -206,15 +206,18 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         switch (code)
         {
             case "Space" or " " or "MediaPlayPause" or "MediaPlay" or "MediaPause":
+                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: play/pause");
                 TogglePlayPause();
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
+                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: escape/back");
                 PerformBackStep();
                 _ = ReattachLayerCallbackAsync();
                 StateHasChanged();
                 return;
             case "MediaStop":
+                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: media stop");
                 OnCloseButtonClick();
                 return;
             case "KeyM" or "m" or "M":
@@ -281,7 +284,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         try
         {
-            await SpatialNav.FocusFirstAsync(".play-pause-btn");
+            var selector = _deviceType == DeviceType.TV ? ".seekbar-container" : ".play-pause-btn";
+            await SpatialNav.FocusFirstAsync(selector);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
@@ -496,6 +500,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnCloseButtonClick()
     {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay close click");
         PlayerService.Stop();
         PlayerService.HideAsync();
     }
@@ -525,6 +530,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         if (_disposed) return;
 
+        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay HandleBack (layer/spatial nav)");
         InvokeAsync(async () =>
         {
             PerformBackStep();
@@ -546,7 +552,11 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
-    private void OnBackPressed() => HandleBack();
+    private void OnBackPressed()
+    {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay OnBackPressed (PlayerService.BackPressed)");
+        HandleBack();
+    }
 
     private void OnOverlayMouseMove(MouseEventArgs args)
     {
@@ -569,6 +579,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnOverlayTap()
     {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay tap");
         if (_showOverlay && !_isMouseOverControlsBar && !_isMenuOpen)
         {
             _showOverlay = false;
@@ -850,6 +861,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void TogglePlayPause()
     {
+        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay play/pause click");
         if (PlayerService.PlaybackState != PlaybackState.Playing)
         {
             PlayerService.Play();

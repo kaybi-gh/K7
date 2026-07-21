@@ -43,6 +43,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
     public event Action? BackPressed;
+    public event Action? PlaybackStartFailed;
 
     public PlayerSource Source { get; set
         {
@@ -515,5 +516,18 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         var separator = url.Contains('?') ? "&" : "?";
         return $"{url}{separator}startSeconds={startPosition.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    public Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public async Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsVisible)
+            return;
+
+        Stop();
+        await HideAsync();
+        PlaybackStartFailed?.Invoke();
     }
 }

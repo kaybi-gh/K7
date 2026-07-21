@@ -16,12 +16,16 @@ namespace K7.Clients.Shared.UI.Layout;
 public partial class MainLayout : IDisposable
 {
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private IAppExitService AppExitService { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
     [Inject] private ITvHubHostService TvHubHost { get; set; } = default!;
     [Inject] private ILogger<MainLayout> Logger { get; set; } = default!;
+    [Inject] private SoftKeyboardJsBridge SoftKeyboardBridge { get; set; } = default!;
+    [Inject] private IWindowsStreamFetchJsBridge WindowsStreamFetchBridge { get; set; } = default!;
+    [Inject] private WebViewJsBridge WebViewJsBridge { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
@@ -35,6 +39,9 @@ public partial class MainLayout : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ThemeService.ThemeOnChange += OnThemeChanged;
+
+        if (DeviceService.GetClientType() == ClientType.Native && System.OperatingSystem.IsWindows())
+            WebViewJsBridge.SetRuntime(JS);
 
         try
         {
@@ -109,6 +116,25 @@ public partial class MainLayout : IDisposable
                 await SpatialNav.RegisterHomeEscapeAsync(_selfRef);
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+
+            try
+            {
+                await SoftKeyboardBridge.RegisterAsync(JS);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+                Logger.LogDebug(ex, "Soft keyboard bridge registration failed");
+            }
+
+            // No-op on non-Windows hosts; Windows MAUI registers the VHS xhr bridge.
+            try
+            {
+                await WindowsStreamFetchBridge.RegisterAsync(JS);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+                Logger.LogDebug(ex, "Windows stream fetch bridge registration failed");
+            }
         }
 
         if (_showOverlay && !_reconnectAnimationPlayed)
@@ -137,11 +163,7 @@ public partial class MainLayout : IDisposable
     public void OnHomeEscapeSecond()
     {
         if (DeviceService.GetClientType() != ClientType.Web)
-        {
-#if MAUI
-            Microsoft.Maui.Controls.Application.Current?.Quit();
-#endif
-        }
+            AppExitService.Exit();
     }
 
     private void OnThemeChanged() => OnThemeChangedAsync().FireAndForget(Logger);
@@ -179,6 +201,7 @@ public partial class MainLayout : IDisposable
         TvHubHost.Changed -= OnTvHubHostChanged;
         _overlayTimer?.Dispose();
         _selfRef?.Dispose();
+        SoftKeyboardBridge.Dispose();
     }
 
     private void Recover()
