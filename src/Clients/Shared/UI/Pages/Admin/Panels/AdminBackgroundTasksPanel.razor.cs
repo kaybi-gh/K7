@@ -399,7 +399,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     {
         var confirmed = await DialogService.ShowMessageBoxAsync(
             L["CancelTitle"],
-            string.Format(L["CancelMessage"], task.Name),
+            string.Format(L["CancelMessage"], GetTaskTypeLabel(task.Name)),
             yesText: L["CancelConfirm"],
             cancelText: S["Cancel"]);
 
@@ -436,12 +436,12 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private async Task LoadPeerNamesAsync()
     {
-        var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync(_cts.Token);
-        if (!flags.FederationEnabled)
-            return;
-
         try
         {
+            var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync(_cts.Token);
+            if (!flags.FederationEnabled)
+                return;
+
             var peers = await FederationService.GetPeerServersAsync(_cts.Token);
             _peerNames = peers.ToDictionary(p => p.Id, p => p.Name);
         }
@@ -468,12 +468,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         _ => status.ToString()
     };
 
-    private string GetTaskTypeLabel(string taskName)
-    {
-        var key = $"TaskType_{taskName}";
-        var localized = L[key];
-        return localized.ResourceNotFound ? taskName : localized.Value;
-    }
+    private string GetTaskTypeLabel(string taskName) =>
+        BackgroundTaskLabelHelper.GetTaskTypeLabel(L, taskName);
 
     private static string GetStatusIcon(BackgroundTaskStatus status) => status switch
     {
@@ -534,14 +530,14 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        await DialogService.ShowAsync<Dialogs.BackgroundTaskDetailDialog>(task.Name, parameters, options);
+        await DialogService.ShowAsync<Dialogs.BackgroundTaskDetailDialog>(GetTaskTypeLabel(task.Name), parameters, options);
     }
 
     private async Task DeleteTaskAsync(BackgroundTaskDto task)
     {
         var confirmed = await DialogService.ShowMessageBoxAsync(
             L["DeleteTitle"],
-            string.Format(L["DeleteMessage"], task.Name),
+            string.Format(L["DeleteMessage"], GetTaskTypeLabel(task.Name)),
             yesText: L["DeleteConfirm"],
             cancelText: S["Cancel"]);
 

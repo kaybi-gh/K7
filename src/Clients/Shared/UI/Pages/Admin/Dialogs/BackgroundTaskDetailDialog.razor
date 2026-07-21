@@ -1,4 +1,5 @@
 @inject IStringLocalizer<BackgroundTaskDetailDialog> L
+@inject IStringLocalizer<AdminBackgroundTasksPanel> TaskTypesL
 
 <div class="k7-dialog-content">
         @if (BackgroundTask.ErrorDetails is not null)
@@ -11,7 +12,7 @@
             <tbody>
                 <tr>
                     <td><strong>@L["Name"]</strong></td>
-                    <td>@BackgroundTask.Name</td>
+                    <td>@BackgroundTaskLabelHelper.GetTaskTypeLabel(TaskTypesL, BackgroundTask.Name)</td>
                 </tr>
                 <tr>
                     <td><strong>@L["Status"]</strong></td>
