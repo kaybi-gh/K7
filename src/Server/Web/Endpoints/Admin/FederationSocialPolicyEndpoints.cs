@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Federation.Social;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class GetFederationSocialPolicy : IEndpoint
             var policy = await policyService.GetAsync(cancellationToken);
             return Results.Ok(policy);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -39,7 +40,7 @@ public class UpdateFederationSocialPolicy : IEndpoint
             await policyService.SetAsync(policy, cancellationToken);
             return Results.NoContent();
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

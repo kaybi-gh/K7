@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Federation.Commands.CopyFederatedPlaylist;
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Federation.Social;
@@ -26,7 +27,7 @@ public class GetFederatedSocialUserProfileEndpoint : IEndpoint
             var profile = await profileService.GetFederatedProfileAsync(peerServerId, originUserId, viewerUserId, cancellationToken);
             return profile is null ? Results.NotFound() : Results.Ok(profile);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -49,7 +50,7 @@ public class CopyFederatedPlaylistEndpoint : IEndpoint
             var id = await sender.Send(new CopyFederatedPlaylistCommand(peerServerId, originUserId, playlistId), cancellationToken);
             return Results.Ok(id);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

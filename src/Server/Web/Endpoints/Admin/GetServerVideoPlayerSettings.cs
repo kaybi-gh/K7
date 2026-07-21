@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.VideoPlayerSettings.Queries.GetDefaultVideoPlayerSettings;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Admin;
@@ -17,7 +18,7 @@ public class GetServerVideoPlayerSettings : IEndpoint
             var result = await sender.Send(new GetDefaultVideoPlayerSettingsQuery(), cancellationToken);
             return result is not null ? Results.Ok(result) : Results.NoContent();
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

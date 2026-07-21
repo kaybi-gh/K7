@@ -2,6 +2,7 @@ using K7.Server.Application.Features.Federation.Queries.GetFederationGrantTarget
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Federation.Social;
@@ -24,7 +25,7 @@ public class GetFederationSocialCollectionsEndpoint : IEndpoint
             var collections = await consumerService.GetCollectionsAsync(userId, cancellationToken);
             return Results.Ok(collections);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -48,7 +49,7 @@ public class GetFederationSocialPlaylistsEndpoint : IEndpoint
             var playlists = await consumerService.GetPlaylistsAsync(userId, cancellationToken);
             return Results.Ok(playlists);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -72,7 +73,7 @@ public class GetFederationSocialSmartPlaylistsEndpoint : IEndpoint
             var playlists = await consumerService.GetSmartPlaylistsAsync(userId, cancellationToken);
             return Results.Ok(playlists);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -96,7 +97,7 @@ public class GetFederationPlaybackHistoryEndpoint : IEndpoint
             var history = await consumerService.GetPlaybackHistoryAsync(userId, cancellationToken);
             return Results.Ok(history);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
@@ -116,7 +117,7 @@ public class GetFederationGrantTargetsEndpoint : IEndpoint
             var targets = await sender.Send(new GetFederationGrantTargetsQuery(), cancellationToken);
             return Results.Ok(targets);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags("Users");
     }
