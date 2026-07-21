@@ -24,6 +24,11 @@ var SpatialNav = (function () {
     var _videoPlayerBackCallback = null;
     var _videoPlayerRemoteRef = null;
     var _refreshTimer = null;
+    var _sectionLastFocused = {};
+    var _currentSectionId = null;
+    var _tvTextEditStartedAt = 0;
+    var _tvEditDismissViaBack = false;
+    var TV_TEXT_EDIT_BLUR_GRACE_MS = 400;
 
     var FOCUSABLE = [
         '.focusable'
@@ -216,7 +221,7 @@ var SpatialNav = (function () {
             if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
             lockActivatableInputs();
             ensurePageFocus();
-        }, 100);
+        }, 32);
     }
 
     function refresh() {
@@ -245,9 +250,71 @@ var SpatialNav = (function () {
 
     function getFocusables(container) {
         return Array.from(container.querySelectorAll(FOCUSABLE)).filter(function (el) {
+            if (isInClosedSidebarNavGroup(el)) return false;
             if (el.closest('[data-carousel-item]')) return isVisibleInCarouselViewport(el);
             return isElementVisible(el);
         });
+    }
+
+    function isSidebarNavGroupOpen(details) {
+        return !!(details && details.matches && details.matches('details.nav-group') && details.open);
+    }
+
+    function isInClosedSidebarNavGroup(el) {
+        if (!el || !el.closest) return false;
+        var group = el.closest('details.nav-group:not([open])');
+        if (!group) return false;
+        if (el.matches && el.matches('summary.nav-group-toggle')) return false;
+        return group.contains(el);
+    }
+
+    function clearStaleSectionLastFocused(details) {
+        var section = details && details.closest ? details.closest('[data-sn-section]') : null;
+        if (!section) return;
+        var sectionId = section.getAttribute('data-sn-section');
+        if (!sectionId || !_sectionLastFocused[sectionId]) return;
+        var last = _sectionLastFocused[sectionId];
+        if (!last || !last.isConnected || !section.contains(last)) {
+            delete _sectionLastFocused[sectionId];
+            return;
+        }
+        if (!isElementVisible(last)) {
+            delete _sectionLastFocused[sectionId];
+            return;
+        }
+        if (!isSidebarNavGroupOpen(details) && details.contains(last)) {
+            delete _sectionLastFocused[sectionId];
+        }
+    }
+
+    function relocateFocusFromCollapsedNavGroup(details) {
+        if (!details || isSidebarNavGroupOpen(details)) return;
+        var active = document.activeElement;
+        if (!active || !details.contains(active)) return;
+        if (active.matches && active.matches('summary.nav-group-toggle')) return;
+        var summary = details.querySelector('summary.nav-group-toggle');
+        if (summary && isElementVisible(summary)) {
+            summary.focus({ preventScroll: true });
+        }
+    }
+
+    function ensureSidebarFocusVisible() {
+        var active = document.activeElement;
+        if (!active || !isInClosedSidebarNavGroup(active)) return false;
+        var group = active.closest('details.nav-group');
+        if (!group) return false;
+        relocateFocusFromCollapsedNavGroup(group);
+        return true;
+    }
+
+    function handleNavGroupToggle(e) {
+        var details = e.target;
+        if (!details || !details.matches || !details.matches('details.nav-group')) return;
+        clearStaleSectionLastFocused(details);
+        if (!details.open) {
+            relocateFocusFromCollapsedNavGroup(details);
+        }
+        scheduleRefresh();
     }
 
     // Scroll
@@ -281,6 +348,42 @@ var SpatialNav = (function () {
 
     function isNearPageTop(el) {
         return el.getBoundingClientRect().top < window.innerHeight * 0.4;
+    }
+
+    // Scroll the TV detail-page root just enough to fully reveal a focused card,
+    // including its footer metadata below the poster. The focused element itself
+    // (e.g. .media-card-link) only spans the poster - measuring its own rect would
+    // miss the title/subtitle text below it, which is why cards used to stay
+    // clipped at the bottom of the viewport. Measuring the whole card/item instead
+    // accounts for that extra height.
+    function getFocusScrollRoot(el) {
+        if (!el || !el.closest) return null;
+        var tvScroll = el.closest('[data-tv-scroll]');
+        if (tvScroll && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(tvScroll)) {
+            return tvScroll;
+        }
+        var pageScroll = el.closest('.page-scrollable');
+        if (pageScroll) return pageScroll;
+        return document.querySelector('.app-main');
+    }
+
+    function scrollCardIntoTvView(root, el) {
+        if (!root || !el) return;
+        var card = el.closest('.media-card') || el.closest('[data-carousel-item]');
+        if (!card) return;
+
+        var margin = 24;
+        var rootRect = root.getBoundingClientRect();
+        var cardRect = card.getBoundingClientRect();
+
+        var overflowBottom = cardRect.bottom - rootRect.bottom;
+        var overflowTop = rootRect.top - cardRect.top;
+
+        if (overflowBottom > -margin) {
+            root.scrollBy({ top: overflowBottom + margin, behavior: 'smooth' });
+        } else if (overflowTop > -margin) {
+            root.scrollBy({ top: -(overflowTop + margin), behavior: 'smooth' });
+        }
     }
 
     // Carousel Navigation
@@ -339,16 +442,53 @@ var SpatialNav = (function () {
         el.setAttribute('data-sn-editing', 'true');
         if (isTextInput(el)) {
             el.removeAttribute('readonly');
-            el.focus();
+            el.focus({ preventScroll: true });
+            // Android TV WebView (MAUI) routes OK via onTvRemoteSelect, not keydown Enter.
+            // focus()/click() alone do not raise IME; native InputMethodManager is required.
+            if (isTvLongPressMode()) {
+                _tvTextEditStartedAt = Date.now();
+                _tvEditDismissViaBack = false;
+                try { el.click(); } catch (err) { /* ignore */ }
+                setTimeout(function () {
+                    if (window.K7 && window.K7.showSoftKeyboard) {
+                        window.K7.showSoftKeyboard();
+                    }
+                    // Recover if IME/WebView focus handling briefly blurs the input.
+                    setTimeout(function () {
+                        if (isEditing(el) && document.activeElement !== el) {
+                            el.focus({ preventScroll: true });
+                        }
+                    }, 50);
+                }, 0);
+            }
         }
     }
     function stopEditing(el) {
         el.removeAttribute('data-sn-editing');
         if (isTextInput(el)) {
             el.setAttribute('readonly', '');
+            if (isTvLongPressMode() && window.K7 && window.K7.hideSoftKeyboard) {
+                window.K7.hideSoftKeyboard();
+            }
         }
     }
     function isActivatable(el) { return el && el.hasAttribute('data-sn-activatable'); }
+
+    // Shared OK/Enter activation for data-sn-activatable controls (text fields, seekbar, sliders).
+    // Used by handleEnter and handleTvRemoteSelect so both paths stay in sync on TV.
+    function toggleActivatableEdit(el) {
+        if (!el || !isActivatable(el)) return false;
+        if (isEditing(el)) {
+            stopEditing(el);
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            el.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
+        } else {
+            startEditing(el);
+            if (window.SpatialNavigation) SpatialNavigation.pause();
+            el.dispatchEvent(new CustomEvent('sn:editstart', { bubbles: false }));
+        }
+        return true;
+    }
 
     function isTextInput(el) {
         var tag = (el.tagName || '').toLowerCase();
@@ -428,11 +568,17 @@ var SpatialNav = (function () {
 
         if (openMenuEl) {
             if (phase === 'up' && heldMs < 600) {
-                if (active && active !== document.body
-                    && (active.classList.contains('k7-menu-close')
+                if (active && active !== document.body) {
+                    // Menu-local activatable fields (e.g. actor K7SearchSelect) must use the
+                    // same edit + soft-keyboard path as page-level K7TextField on TV.
+                    if (toggleActivatableEdit(active)) {
+                        return;
+                    }
+                    if (active.classList.contains('k7-menu-close')
                         || active.classList.contains('k7-menu-item')
-                        || active.tagName === 'BUTTON')) {
-                    active.click();
+                        || active.tagName === 'BUTTON') {
+                        active.click();
+                    }
                 }
             }
             if (phase === 'long-up' || phase === 'up') {
@@ -515,6 +661,11 @@ var SpatialNav = (function () {
             }
 
             if (active && active !== document.body && heldMs < 600) {
+                // MAUI Android TV consumes Select keys before keydown reaches handleEnter.
+                // Activatable controls (search fields, seekbar, sliders) must enter edit mode here.
+                if (toggleActivatableEdit(active)) {
+                    return;
+                }
                 var tag = (active.tagName || '').toLowerCase();
                 if (tag === 'button' || tag === 'a' || active.classList.contains('focusable')) {
                     active.click();
@@ -729,13 +880,14 @@ var SpatialNav = (function () {
             return;
         }
 
-        // Long-press on [data-longpress]: block native Enter navigation; JS handles timing on TV.
+        // Long-press on [data-longpress]: block native Enter navigation on the <a> itself.
+        // On TV, handleMediaCardLongPressKeyDown already owns timing and returns before this
+        // runs. On desktop/mobile, MediaCard's own OnKeyDown/OnKeyUp own the short vs long
+        // press timing, so the keydown must keep bubbling to Blazor - do not stop propagation
+        // here or the component's @onkeydown handler never fires and Enter stops navigating.
         var longPressContainer = active.closest('[data-longpress]');
         if (longPressContainer) {
             e.preventDefault();
-            if (!document.documentElement.classList.contains('platform-tv')) {
-                e.stopImmediatePropagation();
-            }
             var card = longPressContainer.closest('.media-card');
             var openMenu = card && card.querySelector('.k7-menu-dropdown--open');
             if (openMenu) {
@@ -745,18 +897,9 @@ var SpatialNav = (function () {
             return;
         }
 
-        if (isActivatable(active)) {
+        if (toggleActivatableEdit(active)) {
             e.preventDefault();
             e.stopImmediatePropagation();
-            if (isEditing(active)) {
-                stopEditing(active);
-                if (window.SpatialNavigation) SpatialNavigation.resume();
-                active.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
-            } else {
-                startEditing(active);
-                if (window.SpatialNavigation) SpatialNavigation.pause();
-                active.dispatchEvent(new CustomEvent('sn:editstart', { bubbles: false }));
-            }
             return;
         }
 
@@ -805,12 +948,6 @@ var SpatialNav = (function () {
         if (handleMediaCardLongPressKeyUp(e)) return;
 
         if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
-            var openMenu = document.querySelector('.k7-menu-dropdown--open');
-            if (!openMenu) {
-                window.K7._suppressEnterUntilKeyUp = false;
-                return;
-            }
-
             window.K7._suppressEnterUntilKeyUp = false;
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -826,8 +963,12 @@ var SpatialNav = (function () {
                     try { callbacks[i](); } catch (err) { /* ignore */ }
                 }
             }, 0);
-            var menuItem = openMenu.querySelector('.k7-menu-item');
-            if (menuItem) menuItem.focus({ preventScroll: true });
+            var openMenu = document.querySelector('.k7-menu-dropdown--open');
+            if (openMenu) {
+                var menuItem = openMenu.querySelector('.k7-menu-item');
+                if (menuItem) menuItem.focus({ preventScroll: true });
+            }
+            return;
         }
     }
 
@@ -898,9 +1039,11 @@ var SpatialNav = (function () {
 
     function handleEscape(e) {
         var active = document.activeElement;
-        if (isOpenSearchSelectInput(active)) return;
 
         if (active && isEditing(active)) {
+            if (isTextInput(active) && isTvLongPressMode()) {
+                _tvEditDismissViaBack = true;
+            }
             stopEditing(active);
             if (window.SpatialNavigation) SpatialNavigation.resume();
             active.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
@@ -908,6 +1051,8 @@ var SpatialNav = (function () {
             e.stopImmediatePropagation();
             return;
         }
+
+        if (isOpenSearchSelectInput(active)) return;
 
         var playbackDetail = document.querySelector('.playback-settings-menu--open.playback-settings-menu--detail');
         if (playbackDetail) {
@@ -998,8 +1143,6 @@ var SpatialNav = (function () {
     function handleBackKey(e) {
         var key = e.key;
         if (key !== 'Backspace' && key !== 'GoBack' && key !== 'XF86Back') return;
-        var active = document.activeElement;
-        if (active && (isEditing(active) || isTextInput(active))) return;
         handleEscape(e);
     }
 
@@ -1106,10 +1249,35 @@ var SpatialNav = (function () {
         if (!window.__snBlurAdded) {
             window.__snBlurAdded = true;
             document.addEventListener('blur', function (ev) {
-                if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-sn-editing')) {
-                    stopEditing(ev.target);
+                if (!ev.target || !ev.target.hasAttribute || !ev.target.hasAttribute('data-sn-editing')) return;
+                var editingEl = ev.target;
+                // Seekbar/slider divs and desktop blur-to-commit keep the old behavior.
+                if (!isTextInput(editingEl) || !isTvLongPressMode()) {
+                    stopEditing(editingEl);
                     if (window.SpatialNavigation) SpatialNavigation.resume();
+                    return;
                 }
+                if (_tvEditDismissViaBack) {
+                    _tvEditDismissViaBack = false;
+                    return;
+                }
+                // TV text inputs: blur right after edit start is usually a spurious WebView/IME
+                // side effect while the keyboard opens. Later blur (IME Back) should exit edit
+                // mode in one step instead of leaving data-sn-editing set.
+                setTimeout(function () {
+                    if (!editingEl.isConnected || !editingEl.hasAttribute('data-sn-editing')) return;
+                    if (document.activeElement === editingEl) return;
+                    if (Date.now() - _tvTextEditStartedAt < TV_TEXT_EDIT_BLUR_GRACE_MS) {
+                        editingEl.focus({ preventScroll: true });
+                        if (document.activeElement !== editingEl && window.K7 && window.K7.showSoftKeyboard) {
+                            window.K7.showSoftKeyboard();
+                        }
+                        return;
+                    }
+                    stopEditing(editingEl);
+                    if (window.SpatialNavigation) SpatialNavigation.resume();
+                    editingEl.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+                }, 50);
             }, true);
         }
 
@@ -1141,6 +1309,7 @@ var SpatialNav = (function () {
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1
             || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.code || '') !== -1
             || [19, 20, 21, 22, 37, 38, 39, 40].indexOf(e.keyCode || 0) !== -1) {
+            ensureSidebarFocusVisible();
             var el = document.activeElement;
             // Next-episode overlay: keep focus and navigation inside the overlay
             var nepOverlay = document.querySelector('.nep-overlay');
@@ -1223,9 +1392,7 @@ var SpatialNav = (function () {
 
     var _guardingFocus = false;
 
-    // Section last-focused tracking: remember and restore last focused element per section
-    var _sectionLastFocused = {};
-    var _currentSectionId = null;
+    document.addEventListener('toggle', handleNavGroupToggle, true);
 
     document.addEventListener('focus', function (e) {
         if (_guardingFocus) return;
@@ -1253,7 +1420,7 @@ var SpatialNav = (function () {
                 var enterTo = section.getAttribute('data-sn-enter');
                 if (id !== _currentSectionId && enterTo === 'last-focused' && _sectionLastFocused[id]) {
                     var last = _sectionLastFocused[id];
-                    if (last.isConnected && last !== e.target && section.contains(last)) {
+                    if (last.isConnected && last !== e.target && section.contains(last) && isElementVisible(last)) {
                         _guardingFocus = true;
                         _currentSectionId = id;
                         last.focus({ preventScroll: true });
@@ -1278,28 +1445,42 @@ var SpatialNav = (function () {
         setTimeout(function () {
             if (!el.matches || !el.matches(FOCUSABLE)) return;
             if (isNearPageTop(el)) {
-                var mainContent = document.querySelector('.app-main');
-                if (mainContent && mainContent.scrollTop > 0) {
-                    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+                var nearTopScrollRoot = getFocusScrollRoot(el);
+                if (nearTopScrollRoot && nearTopScrollRoot.scrollTop > 0) {
+                    nearTopScrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
             }
             if (!_carouselNavHandled) {
                 scrollCarouselToElement(el);
             }
-            if (el.closest('[data-tv-scroll]') && !el.closest('[data-tv-scroll-zone="below"]')) {
+            var tvScrollRoot = el.closest('[data-tv-scroll]');
+            var hasTvScroll = !!(tvScrollRoot && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(tvScrollRoot));
+            if (tvScrollRoot && !el.closest('[data-tv-scroll-zone="below"]')) {
                 if (!_carouselNavHandled) {
                     scrollCarouselToElement(el);
                 }
-                var tvScrollRoot = el.closest('[data-tv-scroll]');
-                if (window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(tvScrollRoot)) {
+                if (hasTvScroll) {
                     window.K7.TvDetailScroll.clampMainView(el);
                     return;
                 }
             }
-            if (!el.closest('[data-carousel-item]')) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            if (el.closest('[data-carousel-item]')) {
+                // Carousel items are horizontally positioned by embla (handled above);
+                // only the vertical page position may still need adjusting so the card's
+                // footer metadata below the poster is not clipped.
+                var cardScrollRoot = hasTvScroll ? tvScrollRoot : getFocusScrollRoot(el);
+                if (cardScrollRoot) {
+                    scrollCardIntoTvView(cardScrollRoot, el);
+                }
+                return;
             }
+            var focusScrollRoot = getFocusScrollRoot(el);
+            if (focusScrollRoot && focusScrollRoot.classList.contains('page-scrollable')) {
+                scrollCardIntoTvView(focusScrollRoot, el);
+                return;
+            }
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         }, 10);
     }, true);
 
@@ -1457,6 +1638,7 @@ var SpatialNav = (function () {
 
     function ensurePageFocus() {
         if (_layers.length > 0) return;
+        if (document.querySelector('[data-sn-editing]')) return;
         if (!shouldRefocusPage(document.activeElement)) return;
 
         var pageTarget = getPageFocusTarget();
@@ -1555,6 +1737,7 @@ var SpatialNav = (function () {
             SpatialNavigation.set({
                 navigableFilter: function (el) {
                     if (window.getComputedStyle(el).visibility === 'hidden') return false;
+                    if (isInClosedSidebarNavGroup(el)) return false;
                     var layer = peekLayer();
                     if (layer && layer.el) {
                         return layer.el.contains(el);
@@ -1651,7 +1834,7 @@ var SpatialNav = (function () {
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-initial-focus', 'data-sn-layer', 'data-sn-section']
+                attributeFilter: ['disabled', 'tabindex', 'hidden', 'open', 'data-initial-focus', 'data-sn-layer', 'data-sn-section']
             });
         }
 
@@ -1683,8 +1866,7 @@ var SpatialNav = (function () {
         document.addEventListener('mousedown', function (e) {
             var el = e.target;
             if (el && isTextInput(el) && isActivatable(el) && !isEditing(el)) {
-                startEditing(el);
-                if (window.SpatialNavigation) SpatialNavigation.pause();
+                toggleActivatableEdit(el);
             }
         }, true);
 
@@ -1737,9 +1919,12 @@ window.K7 = window.K7 || {};
 K7._backgroundLockCount = 0;
 K7._dialogLockActive = false;
 
-K7.setNativePlayerActive = function (active) {
+K7.setNativePlayerActive = function (active, windowsWebVideo) {
     document.documentElement.classList.toggle('native-player-active', !!active);
     document.body.classList.toggle('native-player-active', !!active);
+    var useWindowsWebVideo = !!active && !!windowsWebVideo;
+    document.documentElement.classList.toggle('windows-web-video', useWindowsWebVideo);
+    document.body.classList.toggle('windows-web-video', useWindowsWebVideo);
     if (!active) {
         requestAnimationFrame(function () {
             var app = document.getElementById('app');
@@ -1842,6 +2027,39 @@ K7.unbindSearchSelectMenuDismiss = function (root) {
 
 K7.isFocusWithin = function (root) {
     return !!(root && document.activeElement && root.contains(document.activeElement));
+};
+
+K7.isSpatialEditingIn = function (root) {
+    if (!root || !root.querySelector) return false;
+    var input = root.querySelector('input, textarea');
+    return !!(input && input.hasAttribute('data-sn-editing'));
+};
+
+K7.initSoftKeyboardBridge = function (dotNetRef) {
+    K7._softKeyboardDotNetRef = dotNetRef;
+};
+
+K7.showSoftKeyboard = function () {
+    if (K7._softKeyboardDotNetRef) {
+        K7._softKeyboardDotNetRef.invokeMethodAsync('Show').catch(function () { });
+    }
+};
+
+K7.hideSoftKeyboard = function () {
+    if (K7._softKeyboardDotNetRef) {
+        K7._softKeyboardDotNetRef.invokeMethodAsync('Hide').catch(function () { });
+    }
+};
+
+// Gives the input real DOM focus without entering edit mode, so the existing
+// OK/Enter activation flow (SpatialNav.handleEnter -> startEditing) picks it up
+// the same way it does for a control the user spatial-navigated to manually.
+// Do NOT start editing here: this runs from Blazor's OnAfterRenderAsync, outside
+// a direct user gesture, so most WebViews (Android TV included) will not raise
+// the on-screen keyboard even if we removed readonly and focused synchronously.
+K7.focusSearchSelectInput = function (root) {
+    var input = root && root.querySelector ? root.querySelector('input, textarea') : null;
+    if (input) input.focus({ preventScroll: true });
 };
 
 K7.bindSearchSelectEditing = function (root, dotNetRef) {
@@ -2130,9 +2348,12 @@ K7._teleportMenuElement = function (el, root) {
 };
 
 K7._restoreMenuElement = function (el, root) {
-    if (!el) return;
-    if (el._k7MenuAnchor && el._k7MenuAnchor.parentNode === root) {
+    if (!el || !el.classList) return;
+    if (el._k7MenuAnchor && root && root.isConnected && el._k7MenuAnchor.parentNode === root) {
         root.insertBefore(el, el._k7MenuAnchor);
+    } else if (el._k7MenuAnchor && el._k7MenuAnchor.parentNode) {
+        el._k7MenuAnchor.remove();
+        el._k7MenuAnchor = null;
     } else if (el.parentElement === document.body) {
         // Blazor loses track of reparented nodes; drop body orphans.
         el.remove();
@@ -2278,13 +2499,12 @@ K7.positionPlaybackSettingsDetail = function (stack, detail) {
 };
 
 K7.detachMobileMenu = function (root, dropdown, backdrop) {
-    if (!root) return;
-    K7._releaseMobileOverlayLock(root);
-    if (dropdown) {
+    if (root) K7._releaseMobileOverlayLock(root);
+    if (dropdown && dropdown.classList) {
         K7._restoreMenuElement(dropdown, root);
         dropdown.classList.remove('k7-menu-dropdown--video-player', 'k7-menu-dropdown--teleported', 'k7-menu-dropdown--open');
     }
-    if (backdrop) {
+    if (backdrop && backdrop.classList) {
         K7._restoreMenuElement(backdrop, root);
         if (backdrop.isConnected && backdrop.parentElement === document.body) {
             backdrop.remove();
@@ -2412,6 +2632,10 @@ K7.TvDetailScroll = (function () {
             if (!inst.root.contains(e.target)) return;
             if (isInZone(e.target, 'actions')) {
                 scrollToMain(false);
+            } else if (isInZone(e.target, 'below')) {
+                if (!inst.showingBelow) {
+                    scrollToBelow();
+                }
             } else if ((isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) && !inst.showingBelow) {
                 clampMainView();
             }
@@ -2423,11 +2647,6 @@ K7.TvDetailScroll = (function () {
         inst.onFocusIn = onFocusIn;
         inst.handleVerticalNav = function (key, el) {
             if (!el || !inst.root.contains(el)) return;
-
-            if (key === 'ArrowUp' && (isInZoneCarousel(el, 'below') || isInZoneCarousel(el, 'seasons'))) {
-                scrollToMain(false);
-                return;
-            }
 
             if (!getZone(inst.root, 'below')) return;
 

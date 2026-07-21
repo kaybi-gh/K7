@@ -19,6 +19,7 @@ public partial class K7Menu : IAsyncDisposable
 
     private bool _open;
     private bool _layerPushed;
+    private bool _mobileMenuAttached;
     private ElementReference _root;
     private ElementReference _dropdown;
     private ElementReference _backdrop;
@@ -103,13 +104,15 @@ public partial class K7Menu : IAsyncDisposable
         if (!_open)
         {
             _layerPushed = false;
-            try
+            if (_mobileMenuAttached)
             {
-                await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
-                await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
-            }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException)
-            {
+                try
+                {
+                    await DetachMobileMenuAsync();
+                }
+                catch (Exception ex) when (ex is JSException or InvalidOperationException)
+                {
+                }
             }
 
             return;
@@ -118,6 +121,7 @@ public partial class K7Menu : IAsyncDisposable
         try
         {
             await JS.InvokeVoidAsync("K7.attachMobileMenu", _root, _dropdown, _backdrop);
+            _mobileMenuAttached = true;
             await JS.InvokeVoidAsync("K7.positionDropdownDeferred", _root, _dropdown);
 
             if (!_layerPushed)
@@ -135,13 +139,20 @@ public partial class K7Menu : IAsyncDisposable
         }
     }
 
+    private async Task DetachMobileMenuAsync()
+    {
+        await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
+        _mobileMenuAttached = false;
+    }
+
     private async Task CloseMenuInternalAsync()
     {
         _layerPushed = false;
         try
         {
             await JS.InvokeVoidAsync("K7.resetDropdown", _root);
-            await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
+            if (_mobileMenuAttached)
+                await DetachMobileMenuAsync();
             await SpatialNav.PopLayerAsync(_dropdown);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
@@ -156,16 +167,17 @@ public partial class K7Menu : IAsyncDisposable
         {
             try
             {
-                await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
+                if (_mobileMenuAttached)
+                    await DetachMobileMenuAsync();
                 await SpatialNav.PopLayerAsync(_dropdown);
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
-        else
+        else if (_mobileMenuAttached)
         {
             try
             {
-                await JS.InvokeVoidAsync("K7.releaseMobileOverlayLock", _root);
+                await DetachMobileMenuAsync();
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }

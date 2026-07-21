@@ -367,7 +367,7 @@ public partial class Serie : IAsyncDisposable
 
     private async Task ResolveLibraryGroupIdAsync()
     {
-        var libraryId = _serie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+        var libraryId = GetLibraryIdForReIdentify();
         var groups = await LibraryService.GetLibraryGroupsAsync();
         _libraryGroupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
             groups,

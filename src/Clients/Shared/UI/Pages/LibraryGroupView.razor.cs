@@ -42,10 +42,12 @@ public partial class LibraryGroupView : IDisposable
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
     private bool _loading = true;
+    private bool _contentLoading;
     private bool _canSetWatchState;
     private bool _canExclude;
     private bool _isAdmin;
     private int _totalCount;
+    private bool _totalCountKnown;
     private const int PageSize = 50;
     private LibraryMediaType? _libraryMediaType;
     private IReadOnlyList<Guid>? _libraryIds;
@@ -74,6 +76,11 @@ public partial class LibraryGroupView : IDisposable
 
     private bool _canPlayMusic =>
         _totalCount > 0 && !_loading && !_intelligentSearchLoading;
+
+    // Null while the current query's total is not yet known (e.g. before the first
+    // ItemsProvider/table load resolves). Passing a definite 0 in that window makes
+    // BrowseView think results are confirmed empty before it ever asked for data.
+    private int? EffectiveTotalCount => _totalCountKnown ? _totalCount : null;
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
     private string _tableScopeKey = "initial";
@@ -156,6 +163,8 @@ public partial class LibraryGroupView : IDisposable
         _intelligentSearchResults = [];
         _browseViewMode = BrowseViewMode.Grid;
         _selectedContentSource = ContentSourceAll;
+        _totalCount = 0;
+        _totalCountKnown = false;
 
         await LoadContentSourceOptionsAsync();
 
@@ -175,16 +184,9 @@ public partial class LibraryGroupView : IDisposable
 
         await LoadTagsAsync();
 
-        // Initial load to get total count
+        // Intelligent search needs an upfront resolve; otherwise BrowseView loads the first page.
         if (_intelligentSearch is not null)
-        {
             await OnIntelligentSearchChanged(_intelligentSearch);
-        }
-        else
-        {
-            var result = await k7ServerService.QueryMediasAsync(BuildQuery(1, PageSize));
-            _totalCount = result?.TotalCount ?? 0;
-        }
 
         _loading = false;
     }
@@ -314,20 +316,20 @@ public partial class LibraryGroupView : IDisposable
             var allItems = new List<LiteMediaDto>(count);
             foreach (var result in results)
             {
-                if (result?.Items is { Count: > 0 })
-                {
-                    _totalCount = result.TotalCount ?? 0;
+                if (result is null)
+                    continue;
+
+                _totalCount = result.TotalCount ?? 0;
+                _totalCountKnown = true;
+
+                if (result.Items is { Count: > 0 })
                     allItems.AddRange(result.Items);
-                }
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
 
-            if (items.Count > 0)
-            {
-                await InvokeAsync(StateHasChanged);
-            }
+            await InvokeAsync(StateHasChanged);
 
             return new ItemsProviderResult<LiteMediaDto>(items, _totalCount);
         }
@@ -369,20 +371,20 @@ public partial class LibraryGroupView : IDisposable
             var allItems = new List<LiteMediaDto>(count);
             foreach (var result in results)
             {
-                if (result?.Items is { Count: > 0 })
-                {
-                    _totalCount = result.TotalCount ?? 0;
+                if (result is null)
+                    continue;
+
+                _totalCount = result.TotalCount ?? 0;
+                _totalCountKnown = true;
+
+                if (result.Items is { Count: > 0 })
                     allItems.AddRange(result.Items);
-                }
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
 
-            if (items.Count > 0)
-            {
-                await InvokeAsync(StateHasChanged);
-            }
+            await InvokeAsync(StateHasChanged);
 
             return new K7DataTableResult<LiteMediaDto>(items, _totalCount);
         }
@@ -510,9 +512,21 @@ public partial class LibraryGroupView : IDisposable
         if (value == _selectedContentSource)
             return;
 
+        _contentLoading = true;
+        _totalCount = 0;
+        _totalCountKnown = false;
+        StateHasChanged();
         _selectedContentSource = value;
-        await PersistFiltersAsync();
-        await RefreshAllAsync();
+
+        try
+        {
+            await PersistFiltersAsync();
+            await RefreshAllAsync();
+        }
+        finally
+        {
+            _contentLoading = false;
+        }
     }
 
     private async Task LoadTagsAsync()
@@ -537,8 +551,20 @@ public partial class LibraryGroupView : IDisposable
             _intelligentSearchResults = [];
         }
 
-        await PersistFiltersAsync();
-        await RefreshAllAsync();
+        _contentLoading = true;
+        _totalCount = 0;
+        _totalCountKnown = false;
+        StateHasChanged();
+
+        try
+        {
+            await PersistFiltersAsync();
+            await RefreshAllAsync();
+        }
+        finally
+        {
+            _contentLoading = false;
+        }
     }
 
     private async Task OnIntelligentSearchChanged(IntelligentSearchRequest? value)
@@ -550,6 +576,7 @@ public partial class LibraryGroupView : IDisposable
         {
             _intelligentSearchResults = [];
             _totalCount = 0;
+            _totalCountKnown = false;
             await PersistFiltersAsync();
             await RefreshAllAsync();
             return;
@@ -569,6 +596,7 @@ public partial class LibraryGroupView : IDisposable
                 Snackbar.Add(L["IntelligentSearchNoResults"], K7Severity.Info);
                 _intelligentSearchResults = [];
                 _totalCount = 0;
+                _totalCountKnown = true;
                 return;
             }
 
@@ -580,12 +608,14 @@ public partial class LibraryGroupView : IDisposable
 
             _intelligentSearchResults = tracks.Cast<LiteMediaDto>().ToList();
             _totalCount = _intelligentSearchResults.Count;
+            _totalCountKnown = true;
         }
         catch
         {
             Snackbar.Add(L["IntelligentSearchError"], K7Severity.Error);
             _intelligentSearchResults = [];
             _totalCount = 0;
+            _totalCountKnown = true;
         }
         finally
         {
@@ -653,27 +683,46 @@ public partial class LibraryGroupView : IDisposable
     {
         if (value == default || value == _selectedMediaType) return;
 
+        _contentLoading = true;
+        StateHasChanged();
         _selectedMediaType = value;
         _filter = MediaBrowseFilterPresets.Empty;
         _intelligentSearch = null;
         _intelligentSearchResults = [];
         _totalCount = 0;
+        _totalCountKnown = false;
         _tableScopeKey = $"{value}:{Guid.NewGuid():N}";
-        await LoadTagsAsync();
-        await PersistFiltersAsync();
-        await RefreshAllAsync();
+        try
+        {
+            await LoadTagsAsync();
+            await PersistFiltersAsync();
+            await RefreshAllAsync();
+        }
+        finally
+        {
+            _contentLoading = false;
+        }
     }
 
     private async Task OnSortChanged(MediaOrderingOption value)
     {
         if (value == _selectedSort) return;
+        _contentLoading = true;
+        StateHasChanged();
         _selectedSort = value;
 
         // Sync sort key/direction from dropdown
         (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(value);
 
-        await PersistFiltersAsync();
-        await RefreshAllAsync();
+        try
+        {
+            await PersistFiltersAsync();
+            await RefreshAllAsync();
+        }
+        finally
+        {
+            _contentLoading = false;
+        }
     }
 
     private async Task OnTableSortChanged(SortChangedEventArgs args)

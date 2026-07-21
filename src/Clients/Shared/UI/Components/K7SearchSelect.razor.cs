@@ -19,8 +19,10 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     [Parameter] public bool CommitOnSelectOnly { get; set; }
     [Parameter] public EventCallback<string?> OnDebouncedCommit { get; set; }
     [Parameter] public Func<string, CancellationToken, Task<IReadOnlyList<string>>>? SearchAsync { get; set; }
+    [Parameter] public bool AutoFocusEdit { get; set; }
 
     private bool _open;
+    private bool _autoFocusEditStarted;
     private bool _loading;
     private bool _editing;
     private bool _disposed;
@@ -197,6 +199,9 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
         try
         {
+            if (await JS.InvokeAsync<bool>("K7.isSpatialEditingIn", _root))
+                return;
+
             if (await JS.InvokeAsync<bool>("K7.isFocusWithin", _root))
                 return;
         }
@@ -251,7 +256,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_editingListenerBound && SearchAsync is not null)
+        if (!_editingListenerBound)
         {
             _dotNetRef ??= DotNetObjectReference.Create(this);
             try
@@ -262,6 +267,30 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
             }
+        }
+
+        if (AutoFocusEdit && !_autoFocusEditStarted && !_editing && !_disposed)
+        {
+            _autoFocusEditStarted = true;
+
+            // Give the input real DOM focus only. Entering edit mode here (instead of
+            // via the OK/Enter spatial-nav activation path) desyncs the JS-tracked
+            // editing state from _editing: lockActivatableInputs() would re-add
+            // readonly since data-sn-editing was never set, and the next OK press
+            // would then no-op because _editing already reads true. Focusing puts
+            // the control in the same state a manual spatial-nav visit would, so
+            // OK/Enter still reliably enters edit mode and raises the keyboard on TV.
+            try
+            {
+                await JS.InvokeVoidAsync("K7.focusSearchSelectInput", _root);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+        else if (!AutoFocusEdit)
+        {
+            _autoFocusEditStarted = false;
         }
 
         if (_scrollIntoMenuView && _open && !_disposed)

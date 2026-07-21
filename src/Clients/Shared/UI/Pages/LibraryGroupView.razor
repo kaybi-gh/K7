@@ -12,7 +12,8 @@
 
 <BrowseView TItem="LiteMediaDto"
             ItemsProvider="ProvideMediasAsync"
-            Loading="_loading || _intelligentSearchLoading"
+            TotalItemCount="EffectiveTotalCount"
+            Loading="_loading || _intelligentSearchLoading || _contentLoading"
             @ref="_browseView"
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="@GridItemWidth"

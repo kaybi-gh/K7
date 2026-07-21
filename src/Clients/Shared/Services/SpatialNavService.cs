@@ -34,6 +34,7 @@ public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {
+            System.Diagnostics.Debug.WriteLine($"[SpatialNav] IsFocusInside failed: {ex.Message}");
             return false;
         }
     }
@@ -52,6 +53,7 @@ public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {
+            System.Diagnostics.Debug.WriteLine($"[SpatialNav] JS call failed: {ex.Message}");
         }
     }
 }

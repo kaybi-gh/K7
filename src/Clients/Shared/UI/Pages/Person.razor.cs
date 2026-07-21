@@ -208,6 +208,14 @@ public partial class Person : IDisposable
         if (episode.ToCardViewModel(apiClient, FormatSeasonNumber, useParentTitle: true) is not { } card)
             return null;
 
+        var seriePoster = episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+            ?? episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? episode.SeriePictures?.FirstOrDefault();
+
+        var posterUrl = seriePoster is not null
+            ? apiClient.GetAbsoluteUri(seriePoster.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+            : card.PictureUrl;
+
         return card with
         {
             Id = episode.SerieId.ToString(),
@@ -215,6 +223,7 @@ public partial class Person : IDisposable
             MediaType = MediaType.Serie,
             Title = episode.SerieTitle ?? card.Title,
             AdditionalInformations = episode.SerieReleaseDate?.Year.ToString(),
+            PictureUrl = posterUrl,
             ParentId = null,
             SeasonNumber = null,
             EpisodeNumber = null

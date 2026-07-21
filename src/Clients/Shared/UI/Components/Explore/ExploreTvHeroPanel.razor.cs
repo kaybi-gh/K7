@@ -40,7 +40,9 @@ public partial class ExploreTvHeroPanel : IAsyncDisposable
 
     private async Task FocusItemAsync(MediaCardViewModel item)
     {
-        if (_focusedItem?.Id == item.Id && _focusedItem.HasHeroDetails())
+        if (_focusedItem?.Id == item.Id
+            && _focusedItem.HasHeroDetails()
+            && string.Equals(item.ResolveHeroBackdropUrl(), _focusedItem.ResolveHeroBackdropUrl(), StringComparison.Ordinal))
             return;
 
         var generation = ++_focusGeneration;

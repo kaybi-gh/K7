@@ -6,6 +6,8 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 
@@ -73,6 +75,44 @@ public class MediaCardTests
 
         // Assert
         cut.FindAll(".k7-menu-item").Should().ContainSingle(item => item.TextContent.Contains("Play"));
+    }
+
+    [Test]
+    public async Task OnKeyUp_ShouldNotNavigate_WhenStrayKeyUpArrivesAfterKeyboardLongPressMenuCloses()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel();
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.Href, "/movies/1"));
+
+        var link = cut.Find(".media-card-link");
+
+        // Holding Enter for a long-press opens the context menu. The physical
+        // keyup that ends this hold is swallowed by navigation.js and never
+        // reaches OnKeyUp - simulated here by invoking the JS-triggered open
+        // callback directly instead of the real 600ms timer.
+        await link.KeyDownAsync("Enter");
+        await cut.InvokeAsync(() => cut.Instance.OpenContextMenuFromLongPressAsync());
+        cut.Find(".k7-menu-dropdown--open").Should().NotBeNull();
+
+        // Closing the menu (e.g. pressing Enter on the close button) resets
+        // the long-press state and restores focus to the media card link.
+        var closeButton = cut.Find(".k7-menu-close");
+        await cut.InvokeAsync(() => closeButton.Click());
+
+        var navigationManager = ctx.Services.GetRequiredService<NavigationManager>();
+        var uriBeforeStrayKeyUp = navigationManager.Uri;
+
+        // Act - a stray keyup from the same Enter press lands back on the
+        // media card link once focus is restored there.
+        await link.KeyUpAsync("Enter");
+
+        // Assert - it must not be misread as the release of a short press.
+        navigationManager.Uri.Should().Be(uriBeforeStrayKeyUp);
     }
 
     private static BunitContext CreateContext()

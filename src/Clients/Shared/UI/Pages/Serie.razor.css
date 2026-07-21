@@ -200,12 +200,20 @@
     overflow-x: hidden;
 }
 
+:global(html.platform-tv) .serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+:global(html.platform-tv) .serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+    scroll-margin-bottom: 64px;
+}
+
 .serie-page-below {
     position: relative;
     z-index: 1;
     flex-shrink: 0;
+    padding-bottom: var(--space-6);
+}
+
+.serie-page-sections {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
-    padding-bottom: var(--space-6);
 }

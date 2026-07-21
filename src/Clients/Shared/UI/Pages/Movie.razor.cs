@@ -549,7 +549,7 @@ public partial class Movie : IAsyncDisposable
 
     private async Task ResolveLibraryGroupIdAsync()
     {
-        var libraryId = _movie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+        var libraryId = GetLibraryIdForReIdentify();
         var groups = await LibraryService.GetLibraryGroupsAsync();
         _libraryGroupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
             groups,

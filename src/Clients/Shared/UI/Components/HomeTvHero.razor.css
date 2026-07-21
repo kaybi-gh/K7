@@ -21,6 +21,14 @@
     opacity: 1;
 }
 
+.home-tv-hero__backdrop--soft {
+    /* Prefer soft stills without transform: transform on this fixed layer
+       creates containing-block side effects that churn TV focus/layout. */
+    filter: blur(12px);
+    background-size: 108%;
+    background-position: center 20%;
+}
+
 .home-tv-hero__gradient {
     position: absolute;
     inset: 0;
@@ -56,6 +64,16 @@
     font-size: 2rem;
     font-weight: 700;
     color: var(--color-text-primary, #fff);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.home-tv-hero__subtitle {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.75));
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;

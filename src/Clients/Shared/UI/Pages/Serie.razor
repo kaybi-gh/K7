@@ -47,7 +47,8 @@ else if (_serie is not null)
                 <K7Image Class="serie-logo media-hero-logo"
                          ObjectFit="scale-down"
                          Src="@_logoUrl"
-                         Alt="">
+                         Alt=""
+                         ShowLoadingState="false">
                     <FallbackContent>
                         <h2 class="media-logo-title media-hero-title">@_serie.Title?.ToUpper()</h2>
                     </FallbackContent>
@@ -282,7 +283,7 @@ else if (_serie is not null)
         @if (_isTv && HasTvBelowContent)
         {
             <MediaPageContent Class="serie-page-below" Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
-                <div data-tv-scroll-zone="below">
+                <div class="serie-page-sections" data-tv-scroll-zone="below">
                 @if ((_serie.PersonRoles?.Count ?? 0) > 0)
                 {
                     <Carousel Title="@L["CastingAndCrew"]">

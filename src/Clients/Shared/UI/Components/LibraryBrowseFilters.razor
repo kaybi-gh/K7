@@ -49,6 +49,7 @@
                                         OnDebouncedCommit="SetActorAsync"
                                         Variant="outlined"
                                         Placeholder="@L["SearchPlaceholderActor"]"
+                                        AutoFocusEdit="true"
                                         SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(SmartPlaylistField.ActorName), text, ct)" />
                     </div>
                     break;

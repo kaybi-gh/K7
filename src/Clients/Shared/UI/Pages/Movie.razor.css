@@ -153,7 +153,13 @@
     z-index: 1;
 }
 
-.movie-page-content ::deep .carousel-wrapper {
+.movie-page-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.movie-page-sections ::deep .carousel-wrapper {
     position: relative;
     flex-shrink: 0;
 }
@@ -222,10 +228,21 @@
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-bottom: 48px;
 }
 
 :global(html.platform-tv) .movie-page[data-tv-scroll] .movie-main {
     min-height: 100%;
+}
+
+:global(html.platform-tv) .movie-page-content {
+    padding-bottom: 64px;
+}
+
+/* TV detail similar rows: footer text sits below the poster link focus target. */
+:global(html.platform-tv) .movie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+:global(html.platform-tv) .movie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+    scroll-margin-bottom: 64px;
 }
 
 @media (max-width: 599.98px) {

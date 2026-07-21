@@ -90,7 +90,8 @@ else
                          @key="_logoUrl"
                          ObjectFit="scale-down"
                          Src="@GetLogoUrl()"
-                         Alt="">
+                         Alt=""
+                         ShowLoadingState="false">
                     <FallbackContent>
                         <h2 class="media-logo-title media-hero-title">@_movie.Title?.ToUpper()</h2>
                     </FallbackContent>
@@ -223,7 +224,7 @@ else
         <MediaPageContent Class="movie-page-content"
                           DominantColor="@_dominantColor"
                           Tinted="@(_dominantColor is not null)">
-        <div data-tv-scroll-zone="below">
+        <div class="movie-page-sections" data-tv-scroll-zone="below">
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">

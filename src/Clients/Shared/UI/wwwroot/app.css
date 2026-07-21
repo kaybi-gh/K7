@@ -382,6 +382,11 @@ body.native-player-active {
     background: transparent !important;
 }
 
+html.native-player-active.windows-web-video,
+body.native-player-active.windows-web-video {
+    background: #000 !important;
+}
+
 body.native-player-active > * {
     visibility: hidden !important;
 }

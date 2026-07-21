@@ -66,17 +66,6 @@
     --media-content-bottom-vignette: color-mix(in srgb, var(--media-content-top-color) 68%, white);
 }
 
-/* Layout helper when passed from movie page (parent scoped CSS cannot target this root). */
-.media-page-content.movie-page-content {
-    gap: var(--space-6);
-}
-
-.media-page-content.movie-page-content > div {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-}
-
 @media (max-width: 599.98px) {
     .media-page-content:not(.media-page-content--full-wash) {
         --media-content-fade-height: 0px;

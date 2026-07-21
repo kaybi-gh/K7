@@ -33,18 +33,30 @@ public partial class VerticalCarousel : IAsyncDisposable
         if (_module is null)
             return;
 
-        if (firstRender)
+        try
         {
-            await _module.InvokeVoidAsync("init", _root);
-            _lastSlideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
-            return;
-        }
+            if (firstRender)
+            {
+                await _module.InvokeVoidAsync("init", _root);
+                _lastSlideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
+                return;
+            }
 
-        var slideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
-        if (slideCount != _lastSlideCount)
+            var slideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
+            if (slideCount != _lastSlideCount)
+            {
+                _lastSlideCount = slideCount;
+                await _module.InvokeVoidAsync("refresh", _root);
+            }
+        }
+        catch (JSException)
         {
-            _lastSlideCount = slideCount;
-            await _module.InvokeVoidAsync("refresh", _root);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
         }
     }
 

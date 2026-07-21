@@ -8,32 +8,32 @@
         <span class="sidebar-mobile-title">@Title</span>
     </header>
 
-    <CascadingValue Value="_sidebarContext">
-        <aside class="page-sidebar @GetSidebarClass()" data-sn-section="sidebar-nav" data-sn-enter="last-focused" data-sn-restrict="self-first">
-            <div class="page-sidebar-header">
-                @if (!IsCollapsed)
-                {
-                    <div class="page-sidebar-title">@Title</div>
-                }
-                @if (_showDesktopCollapseToggle)
-                {
-                    <button type="button"
-                            class="page-sidebar-collapse-toggle focusable"
-                            aria-label="@(IsCollapsed ? L["ExpandSidebar"] : L["CollapseSidebar"])"
-                            aria-expanded="@(!IsCollapsed)"
-                            @onclick="ToggleDesktopCollapse"
-                            @onclick:stopPropagation="true">
-                        <K7Icon Icon="@(IsCollapsed ? Phosphor.CaretRight : Phosphor.CaretLeft)" />
-                    </button>
-                }
-            </div>
-            <div class="page-sidebar-scroll">
+    <aside class="page-sidebar @GetSidebarClass()" data-sn-section="sidebar-nav" data-sn-enter="last-focused" data-sn-restrict="self-first">
+        <div class="page-sidebar-header">
+            @if (!IsCollapsed)
+            {
+                <div class="page-sidebar-title">@Title</div>
+            }
+            @if (_showDesktopCollapseToggle)
+            {
+                <button type="button"
+                        class="page-sidebar-collapse-toggle focusable"
+                        aria-label="@(IsCollapsed ? L["ExpandSidebar"] : L["CollapseSidebar"])"
+                        aria-expanded="@(!IsCollapsed)"
+                        @onclick="ToggleDesktopCollapse"
+                        @onclick:stopPropagation="true">
+                    <K7Icon Icon="@(IsCollapsed ? Phosphor.CaretRight : Phosphor.CaretLeft)" />
+                </button>
+            }
+        </div>
+        <div class="page-sidebar-scroll">
+            <CascadingValue Value="_sidebarContext" IsFixed="false">
                 @SidebarContent
-            </div>
-        </aside>
+            </CascadingValue>
+        </div>
+    </aside>
 
-        <main class="page-sidebar-body @(_sidebarOpen ? "sidebar-body-hidden" : "")" data-sn-section="sidebar-content" data-sn-enter="last-focused" data-sn-restrict="self-first">
-            @ChildContent
-        </main>
-    </CascadingValue>
+    <main class="page-sidebar-body @(_sidebarOpen ? "sidebar-body-hidden" : "")" data-sn-section="sidebar-content" data-sn-enter="last-focused" data-sn-restrict="self-first">
+        @ChildContent
+    </main>
 </div>

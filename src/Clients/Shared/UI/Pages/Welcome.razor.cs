@@ -87,6 +87,9 @@ public partial class Welcome : IDisposable
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, K7Severity.Error);
+        }
+        finally
+        {
             _loading = false;
             StateHasChanged();
         }
@@ -105,6 +108,9 @@ public partial class Welcome : IDisposable
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, K7Severity.Error);
+        }
+        finally
+        {
             _loading = false;
             StateHasChanged();
         }
@@ -120,8 +126,6 @@ public partial class Welcome : IDisposable
         else
         {
             Snackbar.Add(L["SignInFailed"], K7Severity.Error);
-            _loading = false;
-            StateHasChanged();
         }
     }
 

@@ -591,11 +591,21 @@
 
     var currentFocusedElement = getCurrentFocusedElement();
 
+    function applyFocus(target) {
+      if (target.closest && target.closest('[data-carousel-item]')) {
+        try {
+          target.focus({ preventScroll: true });
+          return;
+        } catch (err) { /* fall through */ }
+      }
+      target.focus();
+    }
+
     var silentFocus = function() {
       if (currentFocusedElement) {
         currentFocusedElement.blur();
       }
-      elem.focus();
+      applyFocus(elem);
       focusChanged(elem, sectionId);
     };
 
@@ -637,7 +647,7 @@
       _duringFocusChange = false;
       return false;
     }
-    elem.focus();
+    applyFocus(elem);
     fireEvent(elem, 'focused', focusProperties, false);
 
     _duringFocusChange = false;

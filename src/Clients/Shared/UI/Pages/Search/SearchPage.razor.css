@@ -7,6 +7,16 @@
     --carousel-margin-start: 40px;
 }
 
+.search-page.page-scrollable {
+    flex: 1;
+    min-height: 0;
+}
+
+:global(html.platform-tv) .search-page.page-scrollable {
+    height: 100%;
+    max-height: 100%;
+}
+
 .search-page ::deep .carousel-wrapper {
     --carousel-gap: 40px;
 }

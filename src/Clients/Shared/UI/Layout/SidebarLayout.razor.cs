@@ -42,6 +42,12 @@ public partial class SidebarLayout : IAsyncDisposable
         _isPhoneDevice = deviceType == DeviceType.Phone;
         _showDesktopCollapseToggle = !_isTv && !_isPhoneDevice;
 
+        // Non-phone hosts use the desktop sidebar on first render; JS may switch to mobile drawer later.
+        if (!_isPhoneDevice)
+        {
+            _isMobileViewport = false;
+        }
+
         if (_showDesktopCollapseToggle)
         {
             _desktopCollapsed = DeviceStorage.Get(PreferenceKeys.PAGE_SIDEBAR_COLLAPSED, false);
@@ -73,10 +79,18 @@ public partial class SidebarLayout : IAsyncDisposable
             return;
         }
 
-        _jsModule = await JS.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
-        _dotnetRef ??= DotNetObjectReference.Create(this);
-        _isMobileViewport = await _jsModule.InvokeAsync<bool>("observeViewport", _dotnetRef);
+        try
+        {
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+            _dotnetRef ??= DotNetObjectReference.Create(this);
+            _isMobileViewport = await _jsModule.InvokeAsync<bool>("observeViewport", _dotnetRef);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+        {
+            _isMobileViewport = false;
+        }
+
         UpdateSidebarContext();
         StateHasChanged();
     }
@@ -121,22 +135,27 @@ public partial class SidebarLayout : IAsyncDisposable
         _disposed = true;
         NavigationManager.LocationChanged -= OnLocationChanged;
 
-        if (_jsModule is not null)
+        var dotnetRef = _dotnetRef;
+        var jsModule = _jsModule;
+        _dotnetRef = null;
+        _jsModule = null;
+
+        if (jsModule is not null)
         {
             try
             {
-                if (_dotnetRef is not null)
+                if (dotnetRef is not null)
                 {
-                    await _jsModule.InvokeVoidAsync("disposeViewport", _dotnetRef);
+                    await jsModule.InvokeVoidAsync("disposeViewport", dotnetRef);
                 }
 
-                await _jsModule.DisposeAsync();
+                await jsModule.DisposeAsync();
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or ObjectDisposedException)
             {
             }
         }
 
-        _dotnetRef?.Dispose();
+        dotnetRef?.Dispose();
     }
 }

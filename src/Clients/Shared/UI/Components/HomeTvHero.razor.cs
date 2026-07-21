@@ -1,3 +1,6 @@
+using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -9,9 +12,14 @@ public partial class HomeTvHero
 
     [Parameter] public MediaCardViewModel? Model { get; set; }
 
+    private bool UseSoftBackdrop =>
+        Model?.MediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist
+            or MediaType.SerieEpisode
+        || Model?.Kind is MediaCardKind.Cover or MediaCardKind.Episode;
+
     protected override void OnParametersSet()
     {
-        var newUrl = Model?.BackdropUrl ?? Model?.PictureUrl;
+        var newUrl = Model?.ResolveHeroBackdropUrl();
         if (newUrl == _layerUrls[_activeLayer])
             return;
 
@@ -19,6 +27,17 @@ public partial class HomeTvHero
         var inactiveLayer = 1 - _activeLayer;
         _layerUrls[inactiveLayer] = newUrl;
         _activeLayer = inactiveLayer;
+    }
+
+    private static string FormatBackdropCss(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return "none";
+
+        var escaped = url.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("'", "\\'", StringComparison.Ordinal);
+        return $"url('{escaped}')";
     }
 
     private static string FormatRuntime(int minutes)

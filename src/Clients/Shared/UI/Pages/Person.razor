@@ -28,7 +28,9 @@ else if (_person is not null)
         <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
                            SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
                            SecondaryImageKey="@ActiveBackdropUrl"
-                           ScrollTarget="@_scrollRoot" />
+                           ScrollTarget="@_scrollRoot"
+                           Class="media-page-backdrop--soft-still"
+                           SoftStillBlurEnabled="true" />
 
         <div class="person-main media-hero-main">
             <K7BackButton />
@@ -165,6 +167,7 @@ else if (_person is not null)
                             <CarouselItem @key="item.ExternalId">
                                 <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
                                            FooterVisible="true"
+                                           OverlayEnabled="true"
                                            ContextMenuEnabled="false" />
                             </CarouselItem>
                         }

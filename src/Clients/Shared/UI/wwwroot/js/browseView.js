@@ -39,6 +39,10 @@ export function observeViewport(dotnetRef) {
 }
 
 export function disposeViewport(dotnetRef) {
+    if (!dotnetRef) {
+        return;
+    }
+
     const handler = _viewportObservers.get(dotnetRef);
     if (handler) {
         window.removeEventListener("resize", handler);

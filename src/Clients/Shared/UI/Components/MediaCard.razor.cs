@@ -144,6 +144,7 @@ public partial class MediaCard : IDisposable
         _longPressTriggered = true;
         _preventNextClick = true;
         _menuOpenedViaKeyboard = true;
+        _keyHeldDown = false;
         CancelLongPress();
 
         try
@@ -309,6 +310,16 @@ public partial class MediaCard : IDisposable
             if (fromKeyboard)
             {
                 _menuOpenedViaKeyboard = true;
+
+                // The physical keyup that ends this long-press is swallowed by
+                // navigation.js (K7._suppressEnterUntilKeyUp) and never reaches
+                // OnKeyUp, so this flag must be cleared here or it stays stuck
+                // "true". Otherwise a later, unrelated keyup that lands back on
+                // this element (e.g. after closing the context menu restores
+                // focus here) gets misread as the release of a genuine short
+                // press and triggers navigation.
+                _keyHeldDown = false;
+
                 try
                 {
                     await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");

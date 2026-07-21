@@ -117,22 +117,31 @@ public partial class HomeView : IAsyncDisposable
             var resolved = ResolveSavedFocus(saved);
             if (resolved is not null)
             {
-                await _homeRestoreModule.InvokeVoidAsync("scrollToCard", resolved.MediaId);
-
-                if (_isTv)
+                try
                 {
-                    try
-                    {
-                        await JSRuntime.InvokeVoidAsync("K7.focusById", $"home-card-{resolved.MediaId}");
-                    }
-                    catch (JSException)
-                    {
-                    }
+                    await _homeRestoreModule.InvokeVoidAsync("scrollToCard", resolved.MediaId);
 
-                    _focusedItem = resolved.Item;
+                    if (_isTv)
+                    {
+                        try
+                        {
+                            await JSRuntime.InvokeVoidAsync("K7.focusById", $"home-card-{resolved.MediaId}");
+                        }
+                        catch (JSException)
+                        {
+                        }
+
+                        _focusedItem = resolved.Item;
+                    }
+                }
+                catch (JSException)
+                {
+                }
+                finally
+                {
+                    _focusRestored = true;
                 }
 
-                _focusRestored = true;
                 return;
             }
         }
@@ -275,6 +284,10 @@ public partial class HomeView : IAsyncDisposable
         NavigationState.Save(row.Id, item.Id, cardIndex);
 
         if (!_isTv)
+            return;
+
+        // Avoid re-render loops: focusin can re-fire after parent StateHasChanged patches the DOM.
+        if (_focusedItem?.Id == item.Id)
             return;
 
         _focusedItem = item;

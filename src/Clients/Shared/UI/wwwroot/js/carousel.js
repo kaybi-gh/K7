@@ -36,8 +36,16 @@ export function init(rootElement) {
         function doLoopBack(fromKeyboard) {
             embla.scrollTo(0);
 
+            // TV remotes often omit keyup; always focus first item with a fallback.
             if (fromKeyboard && window.K7 && window.K7.suppressEnterUntilKeyUp) {
-                window.K7.suppressEnterUntilKeyUp(focusFirstCarouselItem);
+                var focused = false;
+                var focusOnce = function () {
+                    if (focused) return;
+                    focused = true;
+                    focusFirstCarouselItem();
+                };
+                window.K7.suppressEnterUntilKeyUp(focusOnce);
+                setTimeout(focusOnce, 80);
                 return;
             }
 

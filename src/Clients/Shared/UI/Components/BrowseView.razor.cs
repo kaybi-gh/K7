@@ -44,6 +44,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int OverscanCount { get; set; } = 10;
     [Parameter] public bool DisableViewModePersistence { get; set; }
     [Parameter] public bool SingleColumnOnMobile { get; set; }
+    [Parameter] public int? TotalItemCount { get; set; }
     [Parameter] public EventCallback<BrowseViewMode> ViewModeChanged { get; set; }
 
     private K7VirtualGrid<TItem>? _gridComponentRef;
@@ -167,7 +168,9 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         }
     }
 
-    private bool IsEmpty => _totalItemCount is 0 && !Loading && _initialized;
+    private bool IsEmpty => EffectiveItemCount is 0 && !Loading && _initialized;
+
+    private int? EffectiveItemCount => TotalItemCount ?? _totalItemCount;
 
     private bool UseProvider => ItemsProvider is not null;
 

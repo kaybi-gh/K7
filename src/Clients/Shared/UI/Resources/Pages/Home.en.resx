@@ -21,6 +21,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Home</value></data>
   <data name="ContinueWatching" xml:space="preserve"><value>Continue watching</value></data>
+  <data name="RecommendedForYou" xml:space="preserve"><value>Recommended for you</value></data>
   <data name="NewlyAddedIn" xml:space="preserve"><value>Newly added in {0}</value></data>
   <data name="BecauseYouWatched" xml:space="preserve"><value>Because you watched {0}</value></data>
   <data name="RecentlyAdded" xml:space="preserve"><value>Recently added</value></data>

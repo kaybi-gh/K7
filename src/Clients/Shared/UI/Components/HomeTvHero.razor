@@ -1,15 +1,19 @@
 @if (Model is not null)
 {
     <div class="home-tv-hero__backdrop-fixed">
-        <div class="home-tv-hero__backdrop @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
-             style="background-image: url('@_layerUrls[0]')" />
-        <div class="home-tv-hero__backdrop @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
-             style="background-image: url('@_layerUrls[1]')" />
+        <div class="home-tv-hero__backdrop @(UseSoftBackdrop ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
+             style="background-image: @FormatBackdropCss(_layerUrls[0])" />
+        <div class="home-tv-hero__backdrop @(UseSoftBackdrop ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
+             style="background-image: @FormatBackdropCss(_layerUrls[1])" />
         <div class="home-tv-hero__gradient"></div>
     </div>
     <div class="home-tv-hero">
         <div class="home-tv-hero__content">
             <h2 class="home-tv-hero__title">@Model.Title</h2>
+            @if (!string.IsNullOrEmpty(Model.AdditionalInformations))
+            {
+                <p class="home-tv-hero__subtitle">@Model.AdditionalInformations</p>
+            }
             <div class="home-tv-hero__meta">
                 @if (Model.ReleaseYear.HasValue)
                 {

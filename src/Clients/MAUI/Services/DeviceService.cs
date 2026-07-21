@@ -57,7 +57,17 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
 
     public Task<DeviceType> GetDeviceTypeAsync()
     {
-        return Task.FromResult(MapDeviceType(DeviceInfo.Idiom));
+        var mapped = MapDeviceType(DeviceInfo.Idiom);
+        if (mapped == DeviceType.TV)
+            return Task.FromResult(DeviceType.TV);
+
+#if ANDROID
+        // Many Android TV boxes report Tablet/Phone idiom; UiMode is authoritative.
+        if (IsAndroidTelevision())
+            return Task.FromResult(DeviceType.TV);
+#endif
+
+        return Task.FromResult(mapped);
     }
 
     public Task<OperatingSystem> GetOperatingSystemAsync()
@@ -159,6 +169,16 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             _ => DeviceType.Unknown,
         };
     }
+
+#if ANDROID
+    private static bool IsAndroidTelevision()
+    {
+        var context = global::Android.App.Application.Context;
+        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
+        return (uiMode & global::Android.Content.Res.UiMode.TypeMask)
+            == global::Android.Content.Res.UiMode.TypeTelevision;
+    }
+#endif
 
     private static OperatingSystem MapOperatingSystem(DevicePlatform devicePlatform)
     {

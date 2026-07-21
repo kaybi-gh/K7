@@ -248,6 +248,27 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow: visible;
 }
 
+.page-sidebar .nav-link,
+.page-sidebar .nav-group-toggle {
+    overflow: visible;
+    scroll-margin: 2px;
+}
+
+.page-sidebar .nav-group-items .nav-link.focusable:focus,
+.page-sidebar .nav-group-items .nav-link.focusable:focus-visible,
+.page-sidebar .nav-group-items .nav-link.focusable:focus-within {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.page-sidebar .nav-group-items .nav-link.active:focus,
+.page-sidebar .nav-group-items .nav-link.active:focus-visible,
+.page-sidebar .nav-group-items .nav-link.active:focus-within {
+    color: var(--color-accent);
+}
+
 /* Nav group (collapsible) */
 .nav-group-toggle {
     display: flex;
@@ -652,6 +673,26 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow: visible;
 }
 
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) > .page-sidebar {
+    width: var(--page-sidebar-width-collapsed, 56px);
+    min-width: var(--page-sidebar-width-collapsed, 56px);
+    max-width: var(--page-sidebar-width-collapsed, 56px);
+    overflow: visible;
+}
+
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) .page-sidebar-scroll {
+    overflow: visible;
+}
+
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) .page-sidebar-nav,
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) .nav-group--rail {
+    overflow: visible;
+}
+
+.page-with-sidebar.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer) .page-sidebar-nav > .nav-link > .nav-label {
+    display: none;
+}
+
 .app-main:has(.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer)),
 .page-viewport:has(.page-with-sidebar--rail:not(.page-with-sidebar--mobile-drawer)) {
     overflow: visible;
@@ -661,9 +702,33 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     display: none;
 }
 
+/* Rail markup always hides flyout until hover/focus (covers collapsed CSS desync on MAUI). */
+.nav-group--rail {
+    position: relative;
+}
+
+.nav-group--rail > .nav-group-flyout {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    z-index: var(--z-drawer);
+    min-width: 12rem;
+    padding: var(--space-2);
+    padding-inline-start: var(--space-2);
+    background: var(--color-drawer);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
 @media (min-width: 600px) {
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar.page-sidebar--collapsed {
         width: var(--page-sidebar-width-collapsed, 56px);
+        min-width: var(--page-sidebar-width-collapsed, 56px);
+        max-width: var(--page-sidebar-width-collapsed, 56px);
         overflow: visible;
         position: relative;
         z-index: var(--z-above);
@@ -676,9 +741,11 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     .page-sidebar.page-sidebar--collapsed .page-sidebar-nav {
         align-items: center;
         padding-inline: var(--space-1);
+        overflow: visible;
     }
 
     .page-sidebar.page-sidebar--collapsed .nav-link > .nav-label,
+    .page-sidebar.page-sidebar--collapsed .nav-group-items,
     .page-sidebar.page-sidebar--collapsed .nav-group:not(.nav-group--rail) .nav-group-toggle > .nav-label,
     .page-sidebar.page-sidebar--collapsed .nav-group-toggle > .nav-group-arrow {
         display: none;
@@ -703,6 +770,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     .page-sidebar.page-sidebar--collapsed .nav-group--rail {
         position: relative;
         width: 100%;
+        overflow: visible;
     }
 
     .page-sidebar.page-sidebar--collapsed .nav-group--rail > .nav-rail-entry {
@@ -766,7 +834,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 
     .page-sidebar.page-sidebar--collapsed .nav-group--rail:hover > .nav-group-flyout,
     .page-sidebar.page-sidebar--collapsed .nav-group--rail:focus-within > .nav-group-flyout,
-    .page-sidebar.page-sidebar--collapsed .nav-group--rail.nav-group--rail-open > .nav-group-flyout {
+    .page-sidebar.page-sidebar--collapsed .nav-group--rail.nav-group--rail-open > .nav-group-flyout,
+    .page-with-sidebar--rail .nav-group--rail:hover > .nav-group-flyout,
+    .page-with-sidebar--rail .nav-group--rail:focus-within > .nav-group-flyout,
+    .page-with-sidebar--rail .nav-group--rail.nav-group--rail-open > .nav-group-flyout {
         display: flex;
     }
 
@@ -780,12 +851,29 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
         justify-content: flex-start;
         padding: var(--space-2) var(--space-3);
         gap: var(--space-2);
+        overflow: visible;
+        scroll-margin: 2px;
     }
 
     .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link > .nav-label {
         display: inline;
         max-width: none;
         overflow: visible;
+    }
+
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.focusable:focus,
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.focusable:focus-visible,
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.focusable:focus-within {
+        color: var(--color-text);
+        background: var(--color-surface-hover);
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus,
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus-visible,
+    .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus-within {
+        color: var(--color-accent);
     }
 
     .page-sidebar.page-sidebar--collapsed .nav-group--active > .nav-rail-entry .nav-icon {
