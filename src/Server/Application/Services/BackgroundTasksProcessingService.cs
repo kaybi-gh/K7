@@ -274,155 +274,213 @@ public class BackgroundTasksProcessingService : BackgroundService
 
     private async Task PickAndExecuteNextTaskAsync(CancellationToken stoppingToken)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var executionContext = scope.ServiceProvider.GetRequiredService<IBackgroundTaskExecutionContext>();
-        executionContext.Reset();
-
-        var limits = GetCachedConcurrencyLimits();
-        var saturatedGroups = _activeCountByGroup
-            .Where(kvp => kvp.Value >= limits.GetValueOrDefault(kvp.Key, DefaultConcurrencyLimit))
-            .Select(kvp => kvp.Key)
-            .ToHashSet();
-
-        var now = DateTimeOffset.UtcNow;
-        var query = context.BackgroundTasks
-            .Where(t => t.Status == BackgroundTaskStatus.Pending
-                || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)));
-
-        if (saturatedGroups.Count > 0)
-        {
-            query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
-        }
-
-        var taskId = await query
-            .OrderByDescending(t => t.Priority)
-            .ThenBy(t => t.Created)
-            .Select(t => t.Id)
-            .FirstOrDefaultAsync(stoppingToken);
-
-        if (taskId == default)
-        {
-            return;
-        }
-
-        // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
-        // This prevents duplicate execution when multiple workers race on the same task.
-        var claimTime = DateTimeOffset.UtcNow;
-        var claimed = await context.BackgroundTasks
-            .Where(t => t.Id == taskId
-                && (t.Status == BackgroundTaskStatus.Pending
-                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= claimTime))))
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(t => t.Status, BackgroundTaskStatus.InProgress)
-                .SetProperty(t => t.StartedAt, claimTime)
-                .SetProperty(t => t.CompletedAt, (DateTimeOffset?)null)
-                .SetProperty(t => t.LastModified, claimTime),
-                stoppingToken);
-
-        if (claimed == 0)
-        {
-            return; // Another worker claimed this task first.
-        }
-
-        await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
-
-        var task = await context.BackgroundTasks.FindAsync([taskId], stoppingToken);
-        if (task is null)
-        {
-            return;
-        }
-
-        if (task.ConcurrencyGroup is not null)
-        {
-            _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 1, (_, count) => count + 1);
-        }
-
-        var sw = Stopwatch.StartNew();
+        var scope = _serviceProvider.CreateScope();
+        var scopeOwnedByAbandonedTask = false;
 
         try
         {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(task.TimeoutSeconds));
+            var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+            var executionContext = scope.ServiceProvider.GetRequiredService<IBackgroundTaskExecutionContext>();
+            executionContext.Reset();
 
-            var requestType = _typeRegistry.Resolve(task.RequestType);
-            if (requestType is null)
+            var limits = GetCachedConcurrencyLimits();
+            var saturatedGroups = _activeCountByGroup
+                .Where(kvp => kvp.Value >= limits.GetValueOrDefault(kvp.Key, DefaultConcurrencyLimit))
+                .Select(kvp => kvp.Key)
+                .ToHashSet();
+
+            var now = DateTimeOffset.UtcNow;
+            var query = context.BackgroundTasks
+                .Where(t => t.Status == BackgroundTaskStatus.Pending
+                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)));
+
+            if (saturatedGroups.Count > 0)
             {
-                _logger.LogError("Unknown request type {RequestType} for task {TaskId}, marking as failed", task.RequestType, task.Id);
-                task.Status = BackgroundTaskStatus.Failed;
-                task.ErrorDetails = $"Unknown request type: {task.RequestType}";
-                await context.SaveChangesAsync(stoppingToken);
-                await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
+            }
+
+            var taskId = await query
+                .OrderByDescending(t => t.Priority)
+                .ThenBy(t => t.Created)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync(stoppingToken);
+
+            if (taskId == default)
+            {
                 return;
             }
 
-            var request = JsonSerializer.Deserialize(task.RequestData, requestType);
-            if (request is null)
+            // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
+            // This prevents duplicate execution when multiple workers race on the same task.
+            var claimTime = DateTimeOffset.UtcNow;
+            var claimed = await context.BackgroundTasks
+                .Where(t => t.Id == taskId
+                    && (t.Status == BackgroundTaskStatus.Pending
+                        || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= claimTime))))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, BackgroundTaskStatus.InProgress)
+                    .SetProperty(t => t.StartedAt, claimTime)
+                    .SetProperty(t => t.CompletedAt, (DateTimeOffset?)null)
+                    .SetProperty(t => t.LastModified, claimTime),
+                    stoppingToken);
+
+            if (claimed == 0)
             {
-                _logger.LogError("Failed to deserialize task {TaskId} ({TaskName}) with type {RequestType}", task.Id, task.Name, task.RequestType);
-                task.Status = BackgroundTaskStatus.Failed;
-                task.ErrorDetails = $"Failed to deserialize request data for type: {task.RequestType}";
-                await context.SaveChangesAsync(stoppingToken);
-                await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                return; // Another worker claimed this task first.
+            }
+
+            await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+
+            var task = await context.BackgroundTasks.FindAsync([taskId], stoppingToken);
+            if (task is null)
+            {
                 return;
             }
 
-            await sender.Send(request, timeoutCts.Token);
-
-            sw.Stop();
-
-            if (executionContext.IsCancelled)
+            if (task.ConcurrencyGroup is not null)
             {
-                task.ErrorDetails = TruncateErrorDetails(executionContext.CancellationDetails);
-                BackgroundTaskFailure.MarkCancelled(task);
-                _logger.LogWarning(
-                    "Task {TaskId} ({TaskName}) cancelled after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}): {ErrorDetails}",
-                    task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ErrorDetails);
+                _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 1, (_, count) => count + 1);
             }
-            else
+
+            var sw = Stopwatch.StartNew();
+
+            try
             {
-                task.Status = BackgroundTaskStatus.Completed;
-                task.CompletedAt = DateTimeOffset.UtcNow;
-                task.ErrorDetails = null;
-                _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
-                    task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(task.TimeoutSeconds));
+
+                var requestType = _typeRegistry.Resolve(task.RequestType);
+                if (requestType is null)
+                {
+                    _logger.LogError("Unknown request type {RequestType} for task {TaskId}, marking as failed", task.RequestType, task.Id);
+                    task.Status = BackgroundTaskStatus.Failed;
+                    task.ErrorDetails = $"Unknown request type: {task.RequestType}";
+                    await context.SaveChangesAsync(stoppingToken);
+                    await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                    return;
+                }
+
+                var request = JsonSerializer.Deserialize(task.RequestData, requestType);
+                if (request is null)
+                {
+                    _logger.LogError("Failed to deserialize task {TaskId} ({TaskName}) with type {RequestType}", task.Id, task.Name, task.RequestType);
+                    task.Status = BackgroundTaskStatus.Failed;
+                    task.ErrorDetails = $"Failed to deserialize request data for type: {task.RequestType}";
+                    await context.SaveChangesAsync(stoppingToken);
+                    await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                    return;
+                }
+
+                // WaitAsync lets the worker abandon hung sync I/O when the timeout fires,
+                // so concurrency slots are released instead of staying zombie InProgress.
+                var sendTask = sender.Send(request, timeoutCts.Token);
+                try
+                {
+                    await sendTask.WaitAsync(timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested && !sendTask.IsCompleted)
+                {
+                    sw.Stop();
+                    _logger.LogError(
+                        "Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s and was abandoned to free the worker slot",
+                        task.Id, task.Name, task.TimeoutSeconds);
+                    task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
+                    BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
+                    LogTaskFailureOutcome(task);
+
+                    task.AttemptCount++;
+                    await context.SaveChangesAsync(stoppingToken);
+                    await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+
+                    scopeOwnedByAbandonedTask = true;
+                    _ = ObserveAbandonedTaskAsync(sendTask, scope, task.Id, task.Name);
+                    return;
+                }
+
+                sw.Stop();
+
+                if (executionContext.IsCancelled)
+                {
+                    task.ErrorDetails = TruncateErrorDetails(executionContext.CancellationDetails);
+                    BackgroundTaskFailure.MarkCancelled(task);
+                    _logger.LogWarning(
+                        "Task {TaskId} ({TaskName}) cancelled after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}): {ErrorDetails}",
+                        task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ErrorDetails);
+                }
+                else
+                {
+                    task.Status = BackgroundTaskStatus.Completed;
+                    task.CompletedAt = DateTimeOffset.UtcNow;
+                    task.ErrorDetails = null;
+                    _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
+                        task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
+                }
             }
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-        {
-            _logger.LogWarning("Task {TaskId} ({TaskName}) interrupted by host shutdown, will be recovered on next startup", task.Id, task.Name);
-            return;
-        }
-        catch (OperationCanceledException)
-        {
-            sw.Stop();
-            _logger.LogError("Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s", task.Id, task.Name, task.TimeoutSeconds);
-            task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
-            BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
-            LogTaskFailureOutcome(task);
-        }
-        catch (Exception ex)
-        {
-            sw.Stop();
-            _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
-                task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
-            task.ErrorDetails = TruncateErrorDetails(ex.Message);
-            BackgroundTaskFailure.Handle(task, ex, MaxBackoff);
-            LogTaskFailureOutcome(task);
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Task {TaskId} ({TaskName}) interrupted by host shutdown, will be recovered on next startup", task.Id, task.Name);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                sw.Stop();
+                _logger.LogError("Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s", task.Id, task.Name, task.TimeoutSeconds);
+                task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
+                BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
+                LogTaskFailureOutcome(task);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
+                    task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
+                task.ErrorDetails = TruncateErrorDetails(ex.Message);
+                BackgroundTaskFailure.Handle(task, ex, MaxBackoff);
+                LogTaskFailureOutcome(task);
+            }
+            finally
+            {
+                if (task.ConcurrencyGroup is not null)
+                {
+                    _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 0, (_, count) => Math.Max(0, count - 1));
+                    _taskQueue.Enqueue(Guid.Empty);
+                }
+            }
+
+            task.AttemptCount++;
+            await context.SaveChangesAsync(stoppingToken);
+            await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
         }
         finally
         {
-            if (task.ConcurrencyGroup is not null)
+            if (!scopeOwnedByAbandonedTask)
             {
-                _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 0, (_, count) => Math.Max(0, count - 1));
-                _taskQueue.Enqueue(Guid.Empty);
+                scope.Dispose();
             }
         }
+    }
 
-        task.AttemptCount++;
-        await context.SaveChangesAsync(stoppingToken);
-        await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+    private async Task ObserveAbandonedTaskAsync(Task sendTask, IServiceScope scope, Guid taskId, string taskName)
+    {
+        try
+        {
+            await sendTask;
+            _logger.LogWarning(
+                "Abandoned timed-out task {TaskId} ({TaskName}) completed after the worker slot was released",
+                taskId, taskName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Abandoned timed-out task {TaskId} ({TaskName}) ended after the worker slot was released",
+                taskId, taskName);
+        }
+        finally
+        {
+            scope.Dispose();
+        }
     }
 
     private void LogTaskFailureOutcome(BackgroundTask task)

@@ -11,8 +11,28 @@ public static class FileInfoHelper
         ".synology",
         "#recycle",
         "@Recycle",
+        ".@__thumb",
+        "@tmp",
         ".DS_Store"
     };
+
+    public static bool IsExcludedDirectoryName(string? directoryName)
+    {
+        if (string.IsNullOrEmpty(directoryName))
+            return false;
+
+        return ExcludedDirectoryNames.Contains(directoryName)
+            || directoryName.StartsWith(".Trash-", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsExcludedPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        var segments = path.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+        return segments.Any(IsExcludedDirectoryName);
+    }
 
     public static (List<ScannedFileEntry> Files, List<(string Path, string Error)> InaccessiblePaths) GetSupportedFilesRecursively(
         string rootDirectory,
@@ -42,6 +62,9 @@ public static class FileInfoHelper
         foreach (var path in paths)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (IsExcludedPath(path))
+                continue;
 
             if (File.Exists(path))
             {
@@ -85,6 +108,12 @@ public static class FileInfoHelper
             throw new DirectoryNotFoundException($"Root directory not found: {rootDirectory}");
         }
 
+        var rootName = Path.GetFileName(rootDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (IsExcludedDirectoryName(rootName))
+        {
+            return ([], []);
+        }
+
         var files = new List<FileInfo>();
         var inaccessiblePaths = new List<(string Path, string Error)>();
         var stack = new Stack<string>();
@@ -119,11 +148,8 @@ public static class FileInfoHelper
                 {
                     var dirName = Path.GetFileName(subDir);
 
-                    if (ExcludedDirectoryNames.Contains(dirName)
-                        || dirName.StartsWith(".Trash-", StringComparison.OrdinalIgnoreCase))
-                    {
+                    if (IsExcludedDirectoryName(dirName))
                         continue;
-                    }
 
                     stack.Push(subDir);
                 }

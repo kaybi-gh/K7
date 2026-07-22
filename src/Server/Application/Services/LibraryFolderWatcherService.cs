@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.IndexLibraryPaths;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using MediatR;
@@ -120,6 +121,9 @@ public sealed class LibraryFolderWatcherService(
 
     private void OnFileSystemEvent(Guid libraryId, string path)
     {
+        if (FileInfoHelper.IsExcludedPath(path))
+            return;
+
         lock (_sync)
         {
             if (!_pendingScans.TryGetValue(libraryId, out var pending))
@@ -143,7 +147,7 @@ public sealed class LibraryFolderWatcherService(
             if (!_pendingScans.TryGetValue(libraryId, out var pending))
                 return;
 
-            paths = pending.Paths.ToList();
+            paths = pending.Paths.Where(path => !FileInfoHelper.IsExcludedPath(path)).ToList();
             pending.Paths.Clear();
             pending.DebounceTimer?.Dispose();
             pending.DebounceTimer = null;

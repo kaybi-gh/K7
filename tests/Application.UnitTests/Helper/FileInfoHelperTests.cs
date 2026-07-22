@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Helpers;
+using K7.Server.Application.Helpers;
 using K7.Tests.Helpers.Fixtures;
 using K7.Tests.Helpers.Helpers;
 
@@ -58,6 +58,14 @@ public class FileInfoHelperTests : FileFixture
         Directory.CreateDirectory(trashPath);
         File.WriteAllText(Path.Combine(trashPath, "trashed.mp3"), "trashed");
 
+        var thumbPath = Path.Combine(FileHelper.TestDirectoryPath, ".@__thumb");
+        Directory.CreateDirectory(thumbPath);
+        File.WriteAllText(Path.Combine(thumbPath, "thumb.jpg"), "thumb");
+
+        var tmpPath = Path.Combine(FileHelper.TestDirectoryPath, "@tmp");
+        Directory.CreateDirectory(tmpPath);
+        File.WriteAllText(Path.Combine(tmpPath, "tmp.dat"), "tmp");
+
         // Act
         var (files, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(FileHelper.TestDirectoryPath);
 
@@ -66,7 +74,65 @@ public class FileInfoHelperTests : FileFixture
         files.Should().NotContain(f => f.FullName.Contains(".synology"));
         files.Should().NotContain(f => f.FullName.Contains("#recycle"));
         files.Should().NotContain(f => f.FullName.Contains(".Trash-1000"));
+        files.Should().NotContain(f => f.FullName.Contains(".@__thumb"));
+        files.Should().NotContain(f => f.FullName.Contains("@tmp"));
         inaccessiblePaths.Should().BeEmpty();
+    }
+
+    [Test]
+    public void GetAllFilesRecursively_ShouldReturnEmpty_WhenRootIsExcludedDirectory()
+    {
+        // Arrange
+        var eaDirPath = Path.Combine(FileHelper.TestDirectoryPath, "@eaDir");
+        Directory.CreateDirectory(eaDirPath);
+        File.WriteAllText(Path.Combine(eaDirPath, "hidden.txt"), "nas metadata");
+
+        // Act
+        var (files, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(eaDirPath);
+
+        // Assert
+        files.Should().BeEmpty();
+        inaccessiblePaths.Should().BeEmpty();
+    }
+
+    [Test]
+    public void GetSupportedFilesForPaths_ShouldSkipExcludedPaths()
+    {
+        // Arrange
+        FileHelper.CreateTestFiles();
+        var mediaPath = Path.Combine(FileHelper.TestDirectoryPath, "song.mp3");
+        File.WriteAllText(mediaPath, "audio");
+        var eaDirPath = Path.Combine(FileHelper.TestDirectoryPath, "@eaDir");
+        Directory.CreateDirectory(eaDirPath);
+        File.WriteAllText(Path.Combine(eaDirPath, "track.mp3"), "hidden audio");
+
+        // Act
+        var (files, inaccessiblePaths) = FileInfoHelper.GetSupportedFilesForPaths(
+            [mediaPath, eaDirPath, Path.Combine(eaDirPath, "track.mp3")]);
+
+        // Assert
+        files.Should().ContainSingle(f => f.Path == mediaPath);
+        files.Should().NotContain(f => f.Path.Contains("@eaDir", StringComparison.OrdinalIgnoreCase));
+        inaccessiblePaths.Should().BeEmpty();
+    }
+
+    [TestCase("@eaDir", true)]
+    [TestCase(".@__thumb", true)]
+    [TestCase("@tmp", true)]
+    [TestCase(".Trash-1000", true)]
+    [TestCase("Music", false)]
+    public void IsExcludedDirectoryName_ShouldMatchNasFolders(string name, bool expected)
+    {
+        FileInfoHelper.IsExcludedDirectoryName(name).Should().Be(expected);
+    }
+
+    [Test]
+    public void IsExcludedPath_ShouldDetectExcludedSegment()
+    {
+        var path = Path.Combine("library", "Artist", "@eaDir", "SYNOFILE.db");
+
+        FileInfoHelper.IsExcludedPath(path).Should().BeTrue();
+        FileInfoHelper.IsExcludedPath(Path.Combine("library", "Artist", "Album")).Should().BeFalse();
     }
 
     [Test]

@@ -61,15 +61,28 @@ public class FileIndexer : IFileIndexer
         Guard.Against.NullOrEmpty(library.RootPath);
 
         var normalizedRoot = PathHelper.NormalizePath(library.RootPath!);
-        var normalizedPaths = paths
+        var underRootPaths = paths
             .Select(path => PathHelper.NormalizePath(path, library.RootPath!))
             .Where(path => PathHelper.IsPathUnderRoot(path, normalizedRoot))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (normalizedPaths.Count == 0)
+        if (underRootPaths.Count == 0)
         {
             throw new ArgumentException("No paths are within the library root.", nameof(paths));
+        }
+
+        var normalizedPaths = underRootPaths
+            .Where(path => !FileInfoHelper.IsExcludedPath(path))
+            .ToList();
+
+        if (normalizedPaths.Count == 0)
+        {
+            _logger.LogInformation(
+                "Skipping path indexing for library {LibraryId}: all paths are excluded NAS/system directories.",
+                library.Id);
+
+            return Task.FromResult(new LibraryScanResult(0, 0, 0, 0, 0, [], []));
         }
 
         return IndexInternalAsync(
@@ -100,8 +113,8 @@ public class FileIndexer : IFileIndexer
 
             var existingFiles = await LoadExistingFilesAsync(library.Id, scopePaths, cancellationToken);
 
-            var diff = BuildDiff(library.Id, library.RootPath!, scannedEntries, existingFiles, skippedFilePaths);
-            var removedFiles = CollectFilesAbsentFromDisk(diff.RemovedFiles, existingFiles);
+            var diff = BuildDiff(library.Id, library.RootPath!, scannedEntries, existingFiles, skippedFilePaths, cancellationToken);
+            var removedFiles = CollectFilesAbsentFromDisk(diff.RemovedFiles, existingFiles, cancellationToken);
             var removedIds = removedFiles.Select(f => f.Id).ToHashSet();
 
             var unchangedFiles = diff.UnchangedFiles.Where(f => !removedIds.Contains(f.Id)).ToList();
@@ -114,7 +127,7 @@ public class FileIndexer : IFileIndexer
 
             var modifiedAsNew = diff.ModifiedFiles
                 .Where(pair => !removedIds.Contains(pair.ExistingFile.Id))
-                .Select(pair => ApplyContentChange(pair.ExistingFile, pair.ScannedFile))
+                .Select(pair => ApplyContentChange(pair.ExistingFile, pair.ScannedFile, cancellationToken))
                 .ToList();
 
             var toBeIdentifiedFiles = addedFiles
@@ -238,13 +251,18 @@ public class FileIndexer : IFileIndexer
         string libraryRootPath,
         IReadOnlyList<ScannedFileEntry> scannedEntries,
         IReadOnlyList<IndexedFile> existingFiles,
-        HashSet<string> skippedFilePaths)
+        HashSet<string> skippedFilePaths,
+        CancellationToken cancellationToken)
     {
         var hashCache = new ConcurrentDictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
 
         uint ComputeHash(ScannedFileEntry entry)
         {
-            return hashCache.GetOrAdd(entry.Path, _ => new FileInfo(entry.Path).ComputeFileHash());
+            return hashCache.GetOrAdd(entry.Path, _ =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return new FileInfo(entry.Path).ComputeFileHash(cancellationToken);
+            });
         }
 
         return LibraryScanDiffBuilder.Build(
@@ -257,12 +275,15 @@ public class FileIndexer : IFileIndexer
 
     private static List<IndexedFile> CollectFilesAbsentFromDisk(
         IReadOnlyList<IndexedFile> removedFromDiff,
-        IReadOnlyList<IndexedFile> existingFiles)
+        IReadOnlyList<IndexedFile> existingFiles,
+        CancellationToken cancellationToken)
     {
         var removedById = removedFromDiff.ToDictionary(f => f.Id);
 
         foreach (var existing in existingFiles)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (removedById.ContainsKey(existing.Id))
                 continue;
 
@@ -275,10 +296,13 @@ public class FileIndexer : IFileIndexer
         return removedById.Values.ToList();
     }
 
-    private static IndexedFile ApplyContentChange(IndexedFile existingFile, ScannedFileEntry scannedFile)
+    private static IndexedFile ApplyContentChange(
+        IndexedFile existingFile,
+        ScannedFileEntry scannedFile,
+        CancellationToken cancellationToken)
     {
         var fileInfo = new FileInfo(scannedFile.Path);
-        existingFile.Hash = fileInfo.ComputeFileHash();
+        existingFile.Hash = fileInfo.ComputeFileHash(cancellationToken);
         existingFile.Size = scannedFile.Size;
         existingFile.LastWriteTimeUtc = scannedFile.LastWriteTimeUtc;
         existingFile.Name = scannedFile.Name;

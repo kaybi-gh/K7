@@ -25,21 +25,26 @@ public static class FileInfoExtensions
         };
     }
 
-    public static uint ComputeFileHash(this FileInfo fileInfo)
+    public static uint ComputeFileHash(this FileInfo fileInfo, CancellationToken cancellationToken = default)
     {
         // Changing count will invalidate every IndexedFile seed
         const int kiloBytesCount = 10;
         const int bufferSize = kiloBytesCount * 1024;
 
-        byte[] buffer = new byte[bufferSize];
-        int bytesRead;
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var buffer = new byte[bufferSize];
 
         using var fileStream = fileInfo.OpenRead();
-        using var bufferedStream = new BufferedStream(fileStream, bufferSize);
+        var bytesRead = fileStream.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
 
-        bytesRead = bufferedStream.Read(buffer, 0, bufferSize);
-        if (bytesRead == 0) return 0;
-        byte[] hashBytes = SHA256.HashData(buffer.AsSpan(0, bytesRead));
+        if (bytesRead == 0)
+            return 0;
+
+        var hashBytes = SHA256.HashData(buffer.AsSpan(0, bytesRead));
 
         // Combine content hash with file size for a stronger seed
         return BitConverter.ToUInt32(hashBytes) ^ (uint)fileInfo.Length;
@@ -61,13 +66,13 @@ public static class FileInfoExtensions
         };
     }
 
-    public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId)
+    public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId, CancellationToken cancellationToken = default)
     {
         if (!fileInfo.IsSupportedFile())
         {
             return null;
         }
 
-        return fileInfo.ToScannedFileEntry().ToIndexedFile(libraryId, fileInfo.ComputeFileHash());
+        return fileInfo.ToScannedFileEntry().ToIndexedFile(libraryId, fileInfo.ComputeFileHash(cancellationToken));
     }
 }

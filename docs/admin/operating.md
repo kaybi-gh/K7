@@ -184,6 +184,10 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 
 - List / cancel / summary: `/api/background-tasks`
 - Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3; per-group concurrency for metadata, `ffmpeg`, `library-scan`, federation, etc.)
+- Library scans use the `library-scan` concurrency group (default limit 1). A hung scan would otherwise block all other library/path indexing.
+- Task timeouts abandon the in-flight handler when sync filesystem I/O ignores cancellation, so the worker slot is released and the task is marked failed/retry instead of staying zombie `InProgress`.
+- Realtime folder monitoring and path scans ignore NAS/system folders: `@eaDir`, `.@__thumb`, `@tmp`, `#recycle`, `@Recycle`, `.synology`, `.Trash-*`.
+- After upgrading, restart the server once so any existing zombie `InProgress` scans are recovered (`RecoverStuckTasksAsync`), then re-run indexing if needed.
 
 ### Outgoing notifications (webhooks)
 
