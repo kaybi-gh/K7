@@ -117,7 +117,7 @@ public static class FfmpegVideoEncoderBuilder
 
     private static VideoEncoderSelection CreateVaapi(string encoder)
     {
-        // -init_hw_device must appear before -i (see Jellyfin / ffmpeg VAAPI docs).
+        // ffmpeg requires -init_hw_device before -i.
         var device = FindVaapiRenderNode() ?? "/dev/dri/renderD128";
         var globalArgs = $"-init_hw_device vaapi=va:{device} -filter_hw_device va";
         var encoderArgs = $"-c:v {encoder}";

@@ -78,7 +78,7 @@ Size the transcoding volume for concurrent streams. Safe to wipe between runs (c
 
 ### Hardware acceleration
 
-The server probes ffmpeg, then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container.
+The server probes ffmpeg once per process lifetime (in-memory cache), then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container. Failed probes (for example NVENC without a GPU) are summarized once at Information without dumping full ffmpeg stderr; details stay at Debug.
 
 Supported families:
 
@@ -119,7 +119,9 @@ The entrypoint adds `appuser` to the GIDs that own `/dev/dri/renderD*` / `card*`
 
 `/dev/dri` does **not** enable NVIDIA NVENC. It only exposes Intel/AMD DRM devices for VAAPI (and often QSV on Intel).
 
-K7 initializes VAAPI the same way as Jellyfin (`-init_hw_device vaapi=va:/dev/dri/renderD*` before the input, then `format=nv12,hwupload` + `h264_vaapi` / `hevc_vaapi`). If Admin still shows no hardware encoders after mounting `/dev/dri`, check container logs for `Hardware encoder h264_vaapi ... failed verification` and run `vainfo` inside the container.
+K7 initializes VAAPI the same way as Jellyfin (`-init_hw_device vaapi=va:/dev/dri/renderD*` before the input, then `format=nv12,hwupload` + `h264_vaapi` / `hevc_vaapi`). If Admin still shows no hardware encoders after mounting `/dev/dri`, check container logs for `Hardware encoder probe complete` / Debug verification lines and run `vainfo` inside the container.
+
+PGS subtitle burn-in still does the overlay on the CPU (`scale2ref` / `overlay`). When VAAPI (or another encoder that sets a post-overlay `-vf`) is selected, K7 appends that filter inside the same `-filter_complex` (for VAAPI: `format=nv12,hwupload`) so encode can stay on the GPU. Decode stays software for burn-in so the overlay filters keep system-memory frames.
 
 **NVIDIA (NVENC)** - NVIDIA Container Toolkit on the host, then either:
 

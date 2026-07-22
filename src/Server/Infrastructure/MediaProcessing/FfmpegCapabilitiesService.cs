@@ -19,6 +19,7 @@ public partial class FfmpegCapabilitiesService(
         "h264_amf", "hevc_amf"
     ];
 
+    // Process-lifetime cache: probe once, reuse for GetStreamUri / Admin / transcoder.
     private FfmpegCapabilitiesDto? _cachedCapabilities;
     private readonly SemaphoreSlim _probeLock = new(1, 1);
 
@@ -30,7 +31,13 @@ public partial class FfmpegCapabilitiesService(
         await _probeLock.WaitAsync(cancellationToken);
         try
         {
-            _cachedCapabilities ??= await ProbeCapabilitiesAsync(cancellationToken);
+            if (_cachedCapabilities is not null)
+                return _cachedCapabilities;
+
+            // Finish the probe even if the requesting HTTP call is cancelled. Otherwise a
+            // cancelled GetStreamUri would discard results and re-run noisy encoder tests
+            // on the next stream.
+            _cachedCapabilities = await ProbeCapabilitiesAsync(CancellationToken.None);
             return _cachedCapabilities;
         }
         finally
@@ -134,9 +141,10 @@ public partial class FfmpegCapabilitiesService(
         if (vaapiDevice is not null)
             logger.LogInformation("VAAPI render node detected: {Device}", vaapiDevice);
         else
-            logger.LogInformation("No /dev/dri/renderD* node found (VAAPI unavailable in this environment)");
+            logger.LogDebug("No /dev/dri/renderD* node found (VAAPI unavailable in this environment)");
 
         var verifiedHardwareEncoders = new List<string>();
+        var failedHardwareEncoders = new List<string>();
         foreach (var encoderName in candidateHardwareEncoders)
         {
             var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection(encoderName);
@@ -151,13 +159,31 @@ public partial class FfmpegCapabilitiesService(
             }
             else
             {
-                var stderrTail = TruncateForLog(probe.Stderr, 500);
-                logger.LogInformation(
+                failedHardwareEncoders.Add(encoderName);
+                var summary = SummarizeProbeError(probe.Stderr);
+                logger.LogDebug(
                     "Hardware encoder {Encoder} is built into ffmpeg but failed verification: {Error}",
                     encoderName,
-                    stderrTail);
+                    summary);
+                logger.LogDebug(
+                    "Hardware encoder {Encoder} verification stderr: {Stderr}",
+                    encoderName,
+                    TruncateForLog(probe.Stderr, 2000));
             }
         }
+
+        if (failedHardwareEncoders.Count > 0)
+        {
+            logger.LogInformation(
+                "Hardware encoder probe skipped {Count} built-in encoder(s) (not usable here): {Encoders}",
+                failedHardwareEncoders.Count,
+                string.Join(", ", failedHardwareEncoders));
+        }
+
+        logger.LogInformation(
+            "Hardware encoder probe complete: {VerifiedCount} available ({Encoders})",
+            verifiedHardwareEncoders.Count,
+            verifiedHardwareEncoders.Count == 0 ? "none" : string.Join(", ", verifiedHardwareEncoders));
 
         return new FfmpegCapabilitiesDto
         {
@@ -173,7 +199,7 @@ public partial class FfmpegCapabilitiesService(
         VideoEncoderSelection selection,
         CancellationToken cancellationToken)
     {
-        // Match Jellyfin: -init_hw_device (and friends) must come before -i.
+        // ffmpeg requires -init_hw_device (and friends) before -i.
         var global = string.IsNullOrWhiteSpace(selection.GlobalArguments)
             ? string.Empty
             : $"{selection.GlobalArguments} ";
@@ -194,12 +220,46 @@ public partial class FfmpegCapabilitiesService(
         }
     }
 
+    private static string SummarizeProbeError(string stderr)
+    {
+        if (string.IsNullOrWhiteSpace(stderr))
+            return "unknown error";
+
+        foreach (var line in stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (line.StartsWith("Press [", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("frame=", StringComparison.OrdinalIgnoreCase)
+                || line.Equals("Conversion failed!", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (line.Contains("Cannot load", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Error creating", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Error while opening encoder", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("No device", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("does not support", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Permission denied", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Operation not permitted", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Failed to", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("Unknown error", StringComparison.OrdinalIgnoreCase))
+            {
+                return TruncateForLog(line, 200);
+            }
+        }
+
+        var fallback = stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault(l => !l.StartsWith("Press [", StringComparison.OrdinalIgnoreCase));
+        return TruncateForLog(fallback ?? "encode probe failed", 200);
+    }
+
     private static string TruncateForLog(string value, int maxLength)
     {
         if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
             return value;
 
-        return value[^maxLength..];
+        return value[..maxLength] + "...";
     }
 
     private static List<string> ParseLines(string output, bool skipHeader)
