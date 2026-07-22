@@ -26,6 +26,7 @@ var SpatialNav = (function () {
     var _refreshTimer = null;
     var _sectionLastFocused = {};
     var _currentSectionId = null;
+    var _pageFocusSettled = false;
     var _tvTextEditStartedAt = 0;
     var _tvEditDismissViaBack = false;
     var TV_TEXT_EDIT_BLUR_GRACE_MS = 400;
@@ -1577,6 +1578,18 @@ var SpatialNav = (function () {
         return null;
     }
 
+    function markPageFocusSettled() {
+        _pageFocusSettled = true;
+    }
+
+    function resetPageFocusSettled() {
+        _pageFocusSettled = false;
+    }
+
+    function isAppNavFocusable(el) {
+        return !!(el && el.closest && el.closest('.app-nav') && el.matches && el.matches(FOCUSABLE));
+    }
+
     function focusFirst(selector) {
         var delays = selector
             ? (isStandaloneAuthPage() ? [100, 300, 600, 1200, 2000] : [100, 300, 600])
@@ -1586,15 +1599,24 @@ var SpatialNav = (function () {
         function attempt(index) {
             if (resolved) return;
 
+            // After initial page focus landed, do not yank focus back from the navbar
+            // on delayed retries (user may have already moved up intentionally).
+            if (_pageFocusSettled && isAppNavFocusable(document.activeElement)) {
+                resolved = true;
+                return;
+            }
+
             var el = selector ? queryFocusSelector(selector) : null;
             if (el && focusTargetElement(el)) {
                 resolved = true;
+                markPageFocusSettled();
                 return;
             }
 
             var pageTarget = getPageFocusTarget();
             if (pageTarget && focusTargetElement(pageTarget)) {
                 resolved = true;
+                markPageFocusSettled();
                 return;
             }
 
@@ -1612,24 +1634,35 @@ var SpatialNav = (function () {
         var layer = peekLayer();
         if (layer) {
             var items = getFocusables(layer.el);
-            if (items.length > 0) { items[0].focus({ preventScroll: true }); return; }
+            if (items.length > 0) {
+                items[0].focus({ preventScroll: true });
+                markPageFocusSettled();
+                return;
+            }
         }
 
         var items = getFocusablesInPageContent();
         if (items.length > 0) {
             items[0].focus({ preventScroll: true });
+            markPageFocusSettled();
             return;
         }
 
         var all = getFocusables(document.body).filter(function (el) {
             return !el.closest('.app-nav');
         });
-        if (all.length > 0) all[0].focus({ preventScroll: true });
+        if (all.length > 0) {
+            all[0].focus({ preventScroll: true });
+            markPageFocusSettled();
+        }
     }
 
     function focusFirstInPage() {
         var pageTarget = getPageFocusTarget();
-        if (pageTarget && focusTargetElement(pageTarget)) return;
+        if (pageTarget && focusTargetElement(pageTarget)) {
+            markPageFocusSettled();
+            return;
+        }
         focusFirstFocusableInPage();
     }
 
@@ -1637,7 +1670,9 @@ var SpatialNav = (function () {
         if (!el || el === document.body || el === document.documentElement) return true;
         if (/^H[1-6]$/.test(el.tagName)) return true;
         if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') === '-1' && !el.matches(FOCUSABLE)) return true;
-        if (el.closest && el.closest('.app-nav') && getPageFocusTarget()) return true;
+        // Pull focus off the navbar only until the page's initial focus has landed.
+        // After that, MutationObserver refresh must not yank focus back from intentional nav use.
+        if (!_pageFocusSettled && el.closest && el.closest('.app-nav') && getPageFocusTarget()) return true;
         if (isStandaloneAuthPage()) {
             var authTarget = getPageFocusTarget();
             if (authTarget && el !== authTarget && !authTarget.contains(el)) return true;
@@ -1654,8 +1689,8 @@ var SpatialNav = (function () {
         if (pageTarget) {
             if (isStandaloneAuthPage()) {
                 focusFirst('[data-initial-focus]');
-            } else {
-                focusTargetElement(pageTarget);
+            } else if (focusTargetElement(pageTarget)) {
+                markPageFocusSettled();
             }
             return;
         }
@@ -1670,6 +1705,7 @@ var SpatialNav = (function () {
     }
 
     function onPageNavigated() {
+        resetPageFocusSettled();
         setTimeout(ensurePageFocus, 150);
     }
 
