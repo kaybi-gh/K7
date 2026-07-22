@@ -222,12 +222,41 @@ var SpatialNav = (function () {
             if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
             lockActivatableInputs();
             ensurePageFocus();
+            focusActivatableInOpenMenus();
         }, 32);
     }
 
     function refresh() {
         if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
         lockActivatableInputs();
+        focusActivatableInOpenMenus();
+    }
+
+    // When a menu opens (or its submenu content swaps), focus the first activatable
+    // text field once so TV OK hits toggleActivatableEdit. Do not enter edit mode.
+    function focusActivatableInOpenMenus() {
+        var closedMarked = document.querySelectorAll('.k7-menu-dropdown:not(.k7-menu-dropdown--open) [data-sn-menu-focused]');
+        for (var c = 0; c < closedMarked.length; c++) {
+            closedMarked[c].removeAttribute('data-sn-menu-focused');
+        }
+
+        var menus = document.querySelectorAll('.k7-menu-dropdown--open');
+        for (var m = 0; m < menus.length; m++) {
+            var menu = menus[m];
+            var active = document.activeElement;
+            if (active && menu.contains(active) && isTextInput(active) && isActivatable(active)) {
+                continue;
+            }
+            var candidates = menu.querySelectorAll('input[data-sn-activatable], textarea[data-sn-activatable]');
+            for (var i = 0; i < candidates.length; i++) {
+                var input = candidates[i];
+                if (!isTextInput(input) || !isElementVisible(input)) continue;
+                if (input.getAttribute('data-sn-menu-focused') === '1') continue;
+                input.setAttribute('data-sn-menu-focused', '1');
+                input.focus({ preventScroll: true });
+                break;
+            }
+        }
     }
 
     // Focusable Discovery
@@ -439,6 +468,12 @@ var SpatialNav = (function () {
     // Editing Mode
 
     function isEditing(el) { return el && el.hasAttribute('data-sn-editing'); }
+    function requestSoftKeyboard(el) {
+        if (!window.K7 || !window.K7.showSoftKeyboard) return;
+        if (el && !isEditing(el)) return;
+        window.K7.showSoftKeyboard();
+    }
+
     function startEditing(el) {
         el.setAttribute('data-sn-editing', 'true');
         if (isTextInput(el)) {
@@ -451,15 +486,17 @@ var SpatialNav = (function () {
                 _tvEditDismissViaBack = false;
                 try { el.click(); } catch (err) { /* ignore */ }
                 setTimeout(function () {
-                    if (window.K7 && window.K7.showSoftKeyboard) {
-                        window.K7.showSoftKeyboard();
-                    }
+                    requestSoftKeyboard(el);
                     // Recover if IME/WebView focus handling briefly blurs the input.
                     setTimeout(function () {
                         if (isEditing(el) && document.activeElement !== el) {
                             el.focus({ preventScroll: true });
                         }
                     }, 50);
+                    // Retry once: JS->.NET interop is async and TV IME often misses the first show.
+                    setTimeout(function () {
+                        requestSoftKeyboard(el);
+                    }, 100);
                 }, 0);
             }
         }
@@ -475,14 +512,37 @@ var SpatialNav = (function () {
     }
     function isActivatable(el) { return el && el.hasAttribute('data-sn-activatable'); }
 
+    function isOpenSearchSelectRoot(el) {
+        return !!(el && el.closest && el.closest('.k7-search-select--open'));
+    }
+
+    function resumeSpatialNavUnlessSearchSelectOpen(el) {
+        if (isOpenSearchSelectRoot(el)) {
+            if (window.SpatialNavigation) SpatialNavigation.pause();
+            return;
+        }
+        if (window.SpatialNavigation) SpatialNavigation.resume();
+    }
+
+    // After IME dismiss: OK on the input should pick the highlighted hint, not re-enter edit.
+    function tryActivateOpenSearchSelectHint(el) {
+        if (!el || !isTextInput(el) || !isOpenSearchSelectRoot(el) || isEditing(el)) return false;
+        var root = el.closest('.k7-search-select--open');
+        var activeOpt = root && root.querySelector('.k7-search-select-option--active');
+        if (!activeOpt) return false;
+        activeOpt.click();
+        return true;
+    }
+
     // Shared OK/Enter activation for data-sn-activatable controls (text fields, seekbar, sliders).
     // Used by handleEnter and handleTvRemoteSelect so both paths stay in sync on TV.
     function toggleActivatableEdit(el) {
         if (!el || !isActivatable(el)) return false;
+        if (tryActivateOpenSearchSelectHint(el)) return true;
         if (isEditing(el)) {
             stopEditing(el);
-            if (window.SpatialNavigation) SpatialNavigation.resume();
             el.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
+            resumeSpatialNavUnlessSearchSelectOpen(el);
         } else {
             startEditing(el);
             if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -1046,8 +1106,12 @@ var SpatialNav = (function () {
                 _tvEditDismissViaBack = true;
             }
             stopEditing(active);
-            if (window.SpatialNavigation) SpatialNavigation.resume();
             active.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+            // Keep focus on the input so open search-select hints stay keyboard-navigable.
+            if (isTextInput(active) && isOpenSearchSelectRoot(active)) {
+                active.focus({ preventScroll: true });
+            }
+            resumeSpatialNavUnlessSearchSelectOpen(active);
             e.preventDefault();
             e.stopImmediatePropagation();
             return;
@@ -1270,14 +1334,15 @@ var SpatialNav = (function () {
                     if (document.activeElement === editingEl) return;
                     if (Date.now() - _tvTextEditStartedAt < TV_TEXT_EDIT_BLUR_GRACE_MS) {
                         editingEl.focus({ preventScroll: true });
-                        if (document.activeElement !== editingEl && window.K7 && window.K7.showSoftKeyboard) {
-                            window.K7.showSoftKeyboard();
-                        }
+                        requestSoftKeyboard(editingEl);
                         return;
                     }
                     stopEditing(editingEl);
-                    if (window.SpatialNavigation) SpatialNavigation.resume();
                     editingEl.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+                    if (isOpenSearchSelectRoot(editingEl)) {
+                        editingEl.focus({ preventScroll: true });
+                    }
+                    resumeSpatialNavUnlessSearchSelectOpen(editingEl);
                 }, 50);
             }, true);
         }
@@ -1293,16 +1358,23 @@ var SpatialNav = (function () {
                 }
             }
             if (searchRoot.classList.contains('k7-search-select--open')) {
-                if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Escape') {
+                if (key === 'ArrowDown' || key === 'ArrowUp') {
                     if (window.SpatialNavigation) SpatialNavigation.pause();
                     return;
                 }
-                if (isEnterKey(key, e.code, e.keyCode)) {
-                    var enterInput = searchRoot.querySelector('input, textarea');
-                    if (enterInput && isEditing(enterInput)) {
+                if (key === 'Escape') {
+                    var escapeInput = searchRoot.querySelector('input, textarea');
+                    // While editing, fall through to handleEscape so Back dismisses IME first
+                    // and keeps hints. After edit end, Blazor closes the dropdown.
+                    if (escapeInput && !isEditing(escapeInput)) {
                         if (window.SpatialNavigation) SpatialNavigation.pause();
                         return;
                     }
+                }
+                if (isEnterKey(key, e.code, e.keyCode)) {
+                    // Let Blazor select a highlighted hint whether still editing or after IME dismiss.
+                    if (window.SpatialNavigation) SpatialNavigation.pause();
+                    return;
                 }
             }
         }
@@ -1749,8 +1821,11 @@ var SpatialNav = (function () {
         var editing = root.querySelector('[data-sn-editing]');
         if (!editing) return;
         stopEditing(editing);
-        if (window.SpatialNavigation) SpatialNavigation.resume();
         editing.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+        if (isTextInput(editing) && isOpenSearchSelectRoot(editing)) {
+            editing.focus({ preventScroll: true });
+        }
+        resumeSpatialNavUnlessSearchSelectOpen(editing);
     }
 
     // Utility
@@ -2078,6 +2153,12 @@ K7.isSpatialEditingIn = function (root) {
     if (!root || !root.querySelector) return false;
     var input = root.querySelector('input, textarea');
     return !!(input && input.hasAttribute('data-sn-editing'));
+};
+
+K7.resumeSpatialNavIfIdle = function () {
+    if (document.querySelector('[data-sn-editing]')) return;
+    if (document.querySelector('.k7-search-select--open')) return;
+    if (window.SpatialNavigation) SpatialNavigation.resume();
 };
 
 K7.initSoftKeyboardBridge = function (dotNetRef) {

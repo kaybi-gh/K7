@@ -19,10 +19,8 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     [Parameter] public bool CommitOnSelectOnly { get; set; }
     [Parameter] public EventCallback<string?> OnDebouncedCommit { get; set; }
     [Parameter] public Func<string, CancellationToken, Task<IReadOnlyList<string>>>? SearchAsync { get; set; }
-    [Parameter] public bool AutoFocusEdit { get; set; }
 
     private bool _open;
-    private bool _autoFocusEditStarted;
     private bool _loading;
     private bool _editing;
     private bool _disposed;
@@ -131,22 +129,20 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     private async Task OnInputKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key is "Enter" && !_editing)
+        if (e.Key is "Enter" && !_editing && !_open)
         {
             await BeginEditingAsync();
             return;
         }
 
-        if (!_editing)
+        if (!_editing && !_open)
             return;
 
         if (!_open || _loading || _suggestions.Count == 0)
         {
             if (e.Key is "Escape" && _open)
             {
-                CloseDropdown();
-                if (!_disposed)
-                    StateHasChanged();
+                await CloseDropdownAndResumeAsync();
             }
 
             return;
@@ -173,16 +169,14 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
                     await SelectSuggestionAsync(_suggestions[_highlightedIndex]);
                 break;
             case "Escape":
-                CloseDropdown();
-                if (!_disposed)
-                    StateHasChanged();
+                await CloseDropdownAndResumeAsync();
                 break;
         }
     }
 
     private void OnFocus(FocusEventArgs _)
     {
-        if (_editing && _suggestions.Count > 0)
+        if ((_editing || _open) && _suggestions.Count > 0)
             _open = true;
     }
 
@@ -224,6 +218,21 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         await OnDebouncedSearch(Value);
     }
 
+    private async Task ExitSpatialEditAsync()
+    {
+        _editing = false;
+
+        // Keep suggestions open after IME dismiss so TV can D-pad + OK a hint.
+        if (_open && _suggestions.Count > 0)
+        {
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        await EndEditingAsync();
+    }
+
     private async Task EndEditingAsync()
     {
         _editing = false;
@@ -232,6 +241,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         try
         {
             await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
+            await JS.InvokeVoidAsync("K7.resumeSpatialNavIfIdle");
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {
@@ -241,11 +251,27 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             await InvokeAsync(StateHasChanged);
     }
 
+    private async Task CloseDropdownAndResumeAsync()
+    {
+        CloseDropdown();
+        try
+        {
+            await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
+            await JS.InvokeVoidAsync("K7.resumeSpatialNavIfIdle");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
+
+        if (!_disposed)
+            StateHasChanged();
+    }
+
     [JSInvokable]
     public Task OnSpatialEditStarted() => BeginEditingAsync();
 
     [JSInvokable]
-    public Task OnSpatialEditEnded() => EndEditingAsync();
+    public Task OnSpatialEditEnded() => ExitSpatialEditAsync();
 
     private void CloseDropdown()
     {
@@ -267,30 +293,6 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
             }
-        }
-
-        if (AutoFocusEdit && !_autoFocusEditStarted && !_editing && !_disposed)
-        {
-            _autoFocusEditStarted = true;
-
-            // Give the input real DOM focus only. Entering edit mode here (instead of
-            // via the OK/Enter spatial-nav activation path) desyncs the JS-tracked
-            // editing state from _editing: lockActivatableInputs() would re-add
-            // readonly since data-sn-editing was never set, and the next OK press
-            // would then no-op because _editing already reads true. Focusing puts
-            // the control in the same state a manual spatial-nav visit would, so
-            // OK/Enter still reliably enters edit mode and raises the keyboard on TV.
-            try
-            {
-                await JS.InvokeVoidAsync("K7.focusSearchSelectInput", _root);
-            }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
-            {
-            }
-        }
-        else if (!AutoFocusEdit)
-        {
-            _autoFocusEditStarted = false;
         }
 
         if (_scrollIntoMenuView && _open && !_disposed)

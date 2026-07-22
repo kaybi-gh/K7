@@ -7,6 +7,8 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
 
 public sealed class SoftKeyboardService : ISoftKeyboardService
 {
+    private const int ShowRetryDelayMs = 100;
+
     public void Show()
     {
         MainThread.BeginInvokeOnMainThread(ShowOnMainThread);
@@ -33,7 +35,12 @@ public sealed class SoftKeyboardService : ISoftKeyboardService
 
         // Do not call RequestFocus on the WebView: it blurs the focused DOM input,
         // which triggers navigation.js edit-mode teardown and SpatialNavigation resume.
-        webView.Post(() => imm.ShowSoftInput(webView, ShowFlags.Implicit));
+        // Forced: Implicit often no-ops on TV WebView when the engine has not yet
+        // treated the focused DOM node as an editable field.
+        void ShowOnce() => imm.ShowSoftInput(webView, ShowFlags.Forced);
+
+        webView.Post(ShowOnce);
+        webView.PostDelayed(ShowOnce, ShowRetryDelayMs);
     }
 
     private static void HideOnMainThread()

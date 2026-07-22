@@ -20,6 +20,7 @@ public class K7SearchSelectTests
 
         cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
 
+        // Readonly until edit mode; ForceSpatialActivatable keeps data-sn-activatable.
         cut.Find("input").HasAttribute("data-sn-activatable").Should().BeTrue();
         cut.Find("input").HasAttribute("readonly").Should().BeTrue();
     }
@@ -185,6 +186,85 @@ public class K7SearchSelectTests
         await BeginEditingAsync(input);
         await input.InputAsync("tom");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
+
+        await input.KeyDownAsync("Escape");
+        cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
+        commitCount.Should().Be(0);
+    }
+
+    [Test]
+    public async Task SpatialEditEnded_ShouldKeepSuggestionsOpen()
+    {
+        using var ctx = new BunitContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7SearchSelect>(p => p
+            .Add(x => x.DebounceInterval, 50)
+            .Add(x => x.MinSearchLength, 2)
+            .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A", "Actor B"])));
+
+        var input = cut.Find("input");
+        await BeginEditingAsync(input);
+        await input.InputAsync("to");
+        cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
+
+        await cut.InvokeAsync(() => cut.Instance.OnSpatialEditEnded());
+
+        cut.FindAll(".k7-search-select-option").Count.Should().Be(2);
+        cut.Find(".k7-search-select").ClassList.Should().Contain("k7-search-select--open");
+        cut.Find(".k7-search-select").ClassList.Should().NotContain("k7-search-select--editing");
+    }
+
+    [Test]
+    public async Task AfterSpatialEditEnded_ArrowAndEnter_ShouldSelectSuggestion()
+    {
+        string? committed = null;
+        using var ctx = new BunitContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7SearchSelect>(p => p
+            .Add(x => x.DebounceInterval, 50)
+            .Add(x => x.MinSearchLength, 2)
+            .Add(x => x.CommitOnSelectOnly, true)
+            .Add(x => x.OnDebouncedCommit, EventCallback.Factory.Create<string?>(this, v => committed = v))
+            .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Alpha", "Beta"])));
+
+        var input = cut.Find("input");
+        await BeginEditingAsync(input);
+        await input.InputAsync("ab");
+        cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
+
+        await cut.InvokeAsync(() => cut.Instance.OnSpatialEditEnded());
+
+        await input.KeyDownAsync("ArrowDown");
+        cut.Find(".k7-search-select-option--active").TextContent.Should().Be("Beta");
+
+        await input.KeyDownAsync("Enter");
+        committed.Should().Be("Beta");
+        cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
+    }
+
+    [Test]
+    public async Task AfterSpatialEditEnded_Escape_ShouldCloseDropdownWithoutCommit()
+    {
+        var commitCount = 0;
+        using var ctx = new BunitContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7SearchSelect>(p => p
+            .Add(x => x.DebounceInterval, 50)
+            .Add(x => x.MinSearchLength, 2)
+            .Add(x => x.CommitOnSelectOnly, true)
+            .Add(x => x.OnDebouncedCommit, EventCallback.Factory.Create<string?>(this, _ => commitCount++))
+            .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
+
+        var input = cut.Find("input");
+        await BeginEditingAsync(input);
+        await input.InputAsync("tom");
+        cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
+
+        await cut.InvokeAsync(() => cut.Instance.OnSpatialEditEnded());
+        cut.FindAll(".k7-search-select-option").Count.Should().Be(1);
 
         await input.KeyDownAsync("Escape");
         cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
