@@ -64,12 +64,10 @@ public static class StreamDecisionEnrichment
         if (decision.VideoEncoder is not null && decision.IsHardwareAccelerated.HasValue)
             return decision;
 
-        var forceSoftware = decision.IsSubtitleBurnIn
-            || decision.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn);
-
+        // Burn-in overlays on CPU then hwuploads for VAAPI (and similar); do not force software.
         var encoder = await ResolveEncoderWithFallbackAsync(
             decision.StreamVideoCodec!,
-            forceSoftware,
+            forceSoftware: false,
             ffmpegCapabilitiesService,
             cancellationToken);
 

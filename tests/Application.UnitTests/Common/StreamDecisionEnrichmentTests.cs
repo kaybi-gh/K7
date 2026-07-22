@@ -72,6 +72,34 @@ public class StreamDecisionEnrichmentTests
     }
 
     [Test]
+    public async Task EnrichVideoEncoderAsync_ShouldPreferHardware_WhenSubtitleBurnIn()
+    {
+        var ffmpeg = Substitute.For<IFfmpegCapabilitiesService>();
+        ffmpeg.ResolveVideoEncoderAsync("h264", false, Arg.Any<CancellationToken>())
+            .Returns(new VideoEncoderInfoDto
+            {
+                EncoderName = "h264_vaapi",
+                IsHardwareAccelerated = true
+            });
+
+        var decision = new StreamDecisionDto
+        {
+            Mode = PlaybackMode.Transcode,
+            Reason = TranscodeReason.SubtitlesBurnIn,
+            SourceVideoCodec = "hevc",
+            StreamVideoCodec = "h264",
+            IsSubtitleBurnIn = true
+        };
+
+        var enriched = await StreamDecisionEnrichment.EnrichVideoEncoderAsync(decision, ffmpeg);
+
+        enriched.VideoEncoder.Should().Be("h264_vaapi");
+        enriched.IsHardwareAccelerated.Should().BeTrue();
+        await ffmpeg.Received(1).ResolveVideoEncoderAsync("h264", false, Arg.Any<CancellationToken>());
+        await ffmpeg.DidNotReceive().ResolveVideoEncoderAsync("h264", true, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
     public async Task EnrichEncodersAsync_ShouldPopulateVideoAndAudioEncoders()
     {
         var ffmpeg = Substitute.For<IFfmpegCapabilitiesService>();
