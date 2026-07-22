@@ -79,29 +79,30 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var primaryFile = indexedFiles.First();
         Guard.Against.NullOrEmpty(primaryFile.Path);
 
-        var metadataProvider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(library.MetadataProviderName);
-        var metadataProviderExternalId = await metadataProvider.SearchAsync(primaryFile.Identification!, cancellationToken);
-
-        if (string.IsNullOrEmpty(metadataProviderExternalId))
-        {
-            throw new NullReferenceException($"No result returned by metadata provider for {primaryFile.Identification?.Title} - {primaryFile.Identification?.ReleaseYear}");
-        }
-
-        var existingExternalId = await _context.ExternalIds
-            .Include(x => x.Media)
-                .ThenInclude(x => x!.IndexedFiles)
-            .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId
-                && x.ProviderName == library.MetadataProviderName
-                && x.Media is Movie, cancellationToken);
-
-        if (existingExternalId?.Media is Movie existingMovie)
-        {
-            await AttachMovieIndexedFilesAsync(existingMovie, indexedFiles, cancellationToken);
-            return existingMovie.Id;
-        }
-
         var identification = primaryFile.Identification;
-        if (identification?.Title is not null)
+        Guard.Against.Null(identification);
+
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(library.MetadataProviderName);
+        var metadataProviderExternalId = await metadataProvider.SearchAsync(identification, cancellationToken);
+
+        // Match music/serie: provider miss is not fatal - create from local identification.
+        if (!string.IsNullOrEmpty(metadataProviderExternalId))
+        {
+            var existingExternalId = await _context.ExternalIds
+                .Include(x => x.Media)
+                    .ThenInclude(x => x!.IndexedFiles)
+                .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId
+                    && x.ProviderName == library.MetadataProviderName
+                    && x.Media is Movie, cancellationToken);
+
+            if (existingExternalId?.Media is Movie existingMovie)
+            {
+                await AttachMovieIndexedFilesAsync(existingMovie, indexedFiles, cancellationToken);
+                return existingMovie.Id;
+            }
+        }
+
+        if (identification.Title is not null)
         {
             var existingByTitle = await _context.Medias
                 .OfType<Movie>()
@@ -120,32 +121,47 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         foreach (var file in indexedFiles.Where(f => _context.Entry(f).State == EntityState.Detached))
             _context.IndexedFiles.Attach(file);
 
-        var movie = new Movie { IndexedFiles = indexedFiles };
-        movie.ExternalIds.Add(new ExternalId
+        var title = identification.Title ?? primaryFile.Name;
+        var movie = new Movie
         {
-            ProviderName = library.MetadataProviderName!,
-            Value = metadataProviderExternalId
-        });
+            IndexedFiles = indexedFiles,
+            Title = title,
+            SortTitle = MediaSortTitleHelper.Compute(title),
+            ReleaseDate = identification.ReleaseYear
+        };
+
+        if (!string.IsNullOrEmpty(metadataProviderExternalId))
+        {
+            movie.ExternalIds.Add(new ExternalId
+            {
+                ProviderName = library.MetadataProviderName!,
+                Value = metadataProviderExternalId
+            });
+        }
+
         _context.Medias.Add(movie);
         movie.AddDomainEvent(new MediaCreatedEvent(movie));
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _sender.Send(new CreateBackgroundTaskCommand
+        if (!string.IsNullOrEmpty(metadataProviderExternalId))
         {
-            Request = new RefreshMediaMetadatasCommand
+            await _sender.Send(new CreateBackgroundTaskCommand
             {
-                MediaId = movie.Id,
-                MetadataProviderExternalId = metadataProviderExternalId,
-                MetadataProviderName = library.MetadataProviderName!,
-                Language = library.MetadataLanguage,
-                FallbackLanguage = library.MetadataFallbackLanguage
-            },
-            Priority = BackgroundTaskPriority.Low,
-            TargetEntityId = movie.Id,
-            TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 3,
-            ConcurrencyGroup = library.MetadataProviderName
-        }, cancellationToken);
+                Request = new RefreshMediaMetadatasCommand
+                {
+                    MediaId = movie.Id,
+                    MetadataProviderExternalId = metadataProviderExternalId,
+                    MetadataProviderName = library.MetadataProviderName!,
+                    Language = library.MetadataLanguage,
+                    FallbackLanguage = library.MetadataFallbackLanguage
+                },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = movie.Id,
+                TargetEntityTypeName = nameof(BaseMedia),
+                MaxAttempts = 3,
+                ConcurrencyGroup = library.MetadataProviderName
+            }, cancellationToken);
+        }
 
         return movie.Id;
     }

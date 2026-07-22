@@ -115,6 +115,8 @@ public class CreateMediaCommandHandlerTests
         }, CancellationToken.None);
 
         var movie = await _context.Medias.OfType<Movie>().SingleAsync(m => m.Id == mediaId);
+        movie.Title.Should().Be("Inception");
+        movie.ReleaseDate.Should().Be(new DateOnly(2010, 1, 1));
         movie.ExternalIds.Should().ContainSingle(e => e.Value == "tmdb-42" && e.ProviderName == "tmdb");
         movie.IndexedFiles.Should().ContainSingle(f => f.Id == indexedFile.Id);
 
@@ -173,6 +175,64 @@ public class CreateMediaCommandHandlerTests
 
         mediaId.Should().Be(existingId);
         (await _context.Medias.OfType<Movie>().CountAsync()).Should().Be(1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldCreateMovieFromIdentification_WhenProviderReturnsNoResult()
+    {
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+            .Returns((string?)null);
+
+        var indexedFile = await SeedMovieIndexedFileAsync("La Tour de controle infernale", 2016);
+
+        var mediaId = await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Movie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [indexedFile.Id]
+        }, CancellationToken.None);
+
+        var movie = await _context.Medias.OfType<Movie>()
+            .Include(m => m.ExternalIds)
+            .Include(m => m.IndexedFiles)
+            .SingleAsync(m => m.Id == mediaId);
+
+        movie.Title.Should().Be("La Tour de controle infernale");
+        movie.SortTitle.Should().NotBeNullOrEmpty();
+        movie.ReleaseDate.Should().Be(new DateOnly(2016, 1, 1));
+        movie.ExternalIds.Should().BeEmpty();
+        movie.IndexedFiles.Should().ContainSingle(f => f.Id == indexedFile.Id);
+
+        await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldReuseMovieByTitle_WhenProviderReturnsNoResult()
+    {
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+            .Returns(string.Empty);
+
+        var existingId = Guid.NewGuid();
+        _context.Medias.Add(new Movie
+        {
+            Id = existingId,
+            Title = "La Tour de controle infernale",
+            ReleaseDate = new DateOnly(2016, 1, 1)
+        });
+        await _context.SaveChangesAsync();
+
+        var indexedFile = await SeedMovieIndexedFileAsync("La Tour de controle infernale", 2016);
+
+        var mediaId = await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Movie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [indexedFile.Id]
+        }, CancellationToken.None);
+
+        mediaId.Should().Be(existingId);
+        (await _context.Medias.OfType<Movie>().CountAsync()).Should().Be(1);
+        await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>());
     }
 
     private async Task<IndexedFile> SeedMovieIndexedFileAsync(string title, int year)
