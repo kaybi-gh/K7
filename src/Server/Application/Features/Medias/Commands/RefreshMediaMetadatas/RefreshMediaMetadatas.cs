@@ -37,6 +37,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
     private readonly MetadataPictureDeletionService _pictureDeletionService;
+    private readonly ITvdbPersonLinkProvider _tvdbPersonLinkProvider;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
@@ -44,7 +45,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         ISender sender,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders,
         IMediaMetadataTagSyncService metadataTagSyncService,
-        MetadataPictureDeletionService pictureDeletionService)
+        MetadataPictureDeletionService pictureDeletionService,
+        ITvdbPersonLinkProvider tvdbPersonLinkProvider)
     {
         _context = context;
         _serviceProvider = serviceProvider;
@@ -52,6 +54,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
         _metadataTagSyncService = metadataTagSyncService;
         _pictureDeletionService = pictureDeletionService;
+        _tvdbPersonLinkProvider = tvdbPersonLinkProvider;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -435,6 +438,16 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(
                 serie,
                 supplementalSerieMetadata?.Ratings);
+
+            if (!serie.IsFieldLocked(nameof(Serie.PersonRoles))
+                && supplementalSerieMetadata?.PersonRoles is { Count: > 0 })
+            {
+                await EnrichSerieCastFromSupplementalAsync(
+                    serie,
+                    supplementalSerieMetadata.PersonRoles.ToList(),
+                    request.Language,
+                    cancellationToken);
+            }
         }
 
         // Federation: create seasons and episodes from peer metadata (no local scan to do it)
@@ -879,29 +892,125 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
     }
 
+    private async Task EnrichSerieCastFromSupplementalAsync(
+        Serie serie,
+        IReadOnlyList<BasePersonRole> supplementalRoles,
+        string language,
+        CancellationToken cancellationToken)
+    {
+        var enrichment = SupplementalSerieCastEnricher.Enrich(serie.PersonRoles, supplementalRoles);
+
+        foreach (var tvdbPeopleId in enrichment.UnresolvedTvdbPeopleIds)
+        {
+            var linkedIds = await _tvdbPersonLinkProvider.FetchLinkedExternalIdsAsync(tvdbPeopleId, cancellationToken);
+            if (linkedIds.Count == 0)
+                continue;
+
+            foreach (var role in serie.PersonRoles.Where(r =>
+                         r.Person.ExternalIds.Any(e => e.ProviderName == "tvdb" && e.Value == tvdbPeopleId)))
+            {
+                foreach (var linked in linkedIds)
+                {
+                    if (role.Person.ExternalIds.Any(e =>
+                            string.Equals(e.ProviderName, linked.ProviderName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    role.Person.ExternalIds.Add(new ExternalId
+                    {
+                        ProviderName = linked.ProviderName,
+                        Value = linked.Value,
+                        PersonId = role.Person.Id
+                    });
+                }
+            }
+        }
+
+        if (enrichment.RolesToAppend.Count > 0)
+        {
+            await ResolvePersonReferencesAsync(enrichment.RolesToAppend, cancellationToken);
+            foreach (var role in enrichment.RolesToAppend)
+                serie.PersonRoles.Add(role);
+        }
+
+        // Re-resolve primary roles after id enrichment so tvdb stubs can collapse onto existing tmdb persons
+        await ResolvePersonReferencesAsync(serie.PersonRoles, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var person in serie.PersonRoles.Select(r => r.Person).Distinct())
+        {
+            if (person.Id == Guid.Empty || !PersonMetadataMergeHelper.NeedsProviderRefresh(person))
+                continue;
+
+            var tmdbId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")?.Value;
+            if (string.IsNullOrWhiteSpace(tmdbId))
+                continue;
+
+            await _sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new RefreshPersonMetadataCommand
+                {
+                    PersonId = person.Id,
+                    ProviderName = "tmdb",
+                    ProviderId = tmdbId,
+                    Language = language
+                },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = person.Id,
+                TargetEntityTypeName = nameof(Person),
+                MaxAttempts = 3,
+                ConcurrencyGroup = "tmdb"
+            }, cancellationToken);
+        }
+    }
+
     private async Task ResolvePersonReferencesAsync(IEnumerable<BasePersonRole> roles, CancellationToken cancellationToken)
     {
         foreach (var role in roles)
         {
-            Person? existingPerson = null;
+            var matchedPersons = new List<Person>();
             foreach (var externalId in role.Person.ExternalIds)
             {
-                existingPerson = await _context.Persons
+                var match = await _context.Persons
                     .Include(p => p.ExternalIds)
+                    .Include(p => p.PortraitPicture)
                     .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
                         e.ProviderName == externalId.ProviderName && e.Value == externalId.Value),
                         cancellationToken);
-                if (existingPerson is not null)
-                    break;
+                if (match is not null && matchedPersons.All(p => p.Id != match.Id))
+                    matchedPersons.Add(match);
             }
 
-            existingPerson ??= await _context.Persons
-                .Include(p => p.ExternalIds)
-                .FirstOrDefaultAsync(p => p.Name == role.Person.Name, cancellationToken);
+            Person? existingPerson = matchedPersons.Count > 0
+                ? PickCanonicalPerson(matchedPersons)
+                : await _context.Persons
+                    .Include(p => p.ExternalIds)
+                    .Include(p => p.PortraitPicture)
+                    .FirstOrDefaultAsync(p => p.Name == role.Person.Name, cancellationToken);
 
-            if (existingPerson is not null)
-                role.Person = existingPerson;
+            if (existingPerson is null)
+                continue;
+
+            foreach (var duplicate in matchedPersons.Where(p => !ReferenceEquals(p, existingPerson)))
+                PersonMetadataMergeHelper.MergeMissingPersonData(existingPerson, duplicate);
+
+            if (!ReferenceEquals(existingPerson, role.Person))
+                PersonMetadataMergeHelper.MergeMissingPersonData(existingPerson, role.Person);
+
+            role.Person = existingPerson;
         }
+    }
+
+    private static Person PickCanonicalPerson(IReadOnlyList<Person> persons)
+    {
+        return persons
+            .OrderByDescending(p => p.ExternalIds.Any(e => e.ProviderName == "tmdb"))
+            .ThenByDescending(p => !string.IsNullOrWhiteSpace(p.Biography))
+            .ThenByDescending(p => p.Birthday.HasValue)
+            .ThenBy(p => p.Id)
+            .First();
     }
 
     private void RemovePersonRolePortraits(IEnumerable<BasePersonRole> roles)

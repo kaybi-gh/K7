@@ -126,6 +126,9 @@ public sealed class TvdbApiClient
         return results?.FirstOrDefault(r => r.Series is not null)?.Series?.Id;
     }
 
+    public async Task<TvdbPeopleExtended?> GetPeopleExtendedAsync(int peopleId, CancellationToken cancellationToken = default) =>
+        await GetAsync<TvdbPeopleExtended>($"people/{peopleId}/extended", cancellationToken);
+
     private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken) where T : class
     {
         if (!IsConfigured)

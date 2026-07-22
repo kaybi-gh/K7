@@ -338,6 +338,27 @@ public sealed class TvdbRemoteId
     public int? Type { get; init; }
 }
 
+public sealed class TvdbPeopleExtended
+{
+    [JsonPropertyName("id")]
+    public int Id { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("birth")]
+    public string? Birth { get; init; }
+
+    [JsonPropertyName("death")]
+    public string? Death { get; init; }
+
+    [JsonPropertyName("birthPlace")]
+    public string? BirthPlace { get; init; }
+
+    [JsonPropertyName("remoteIds")]
+    public List<TvdbRemoteId>? RemoteIds { get; init; }
+}
+
 public sealed class TvdbTrailer
 {
     [JsonPropertyName("name")]

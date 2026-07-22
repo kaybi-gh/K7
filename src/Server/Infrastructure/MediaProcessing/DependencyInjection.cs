@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
         services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<TvdbSerieMetadataProvider>());
+        services.AddScoped<ITvdbPersonLinkProvider, TvdbPersonLinkProvider>();
         services.AddScoped<MusicBrainzMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("musicbrainz", (sp, _) => sp.GetRequiredService<MusicBrainzMetadataProvider>());
