@@ -9,7 +9,7 @@ namespace K7.Clients.MAUI.Services.Authentication;
 public class AuthenticationDelegatingHandler : DelegatingHandler
 {
     private readonly IServiceProvider _serviceProvider;
-    private int _refreshing;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private int _logoutTriggered;
 
     public AuthenticationDelegatingHandler(IServiceProvider serviceProvider)
@@ -41,18 +41,33 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
             return response;
 
-        // Only one thread attempts the refresh
-        if (Interlocked.CompareExchange(ref _refreshing, 1, 0) != 0)
-            return response;
-
+        // Serialize refresh so concurrent 401s wait and retry with the new token instead of
+        // returning Unauthorized while only the first request refreshes (Movie page race).
+        await _refreshGate.WaitAsync(cancellationToken);
         try
         {
+            var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
+            var tokenAfterWait = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
+            var tokenBefore = request.Headers.Authorization?.Parameter;
+
+            // Another waiter may have already refreshed successfully - retry first.
+            if (!string.IsNullOrEmpty(tokenAfterWait)
+                && !string.Equals(tokenAfterWait, tokenBefore, StringComparison.Ordinal))
+            {
+                var earlyRetry = await CloneAndRetryAsync(request, tokenAfterWait, cancellationToken);
+                if (earlyRetry.IsSuccessStatusCode)
+                {
+                    response.Dispose();
+                    return earlyRetry;
+                }
+
+                earlyRetry.Dispose();
+            }
+
             var customAuthProvider = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
 
             if (await customAuthProvider.TryRefreshAsync(cancellationToken))
             {
-                // Retry the original request with the new access token
-                var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
                 var newToken = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
 
                 if (!string.IsNullOrEmpty(newToken))
@@ -81,7 +96,7 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         }
         finally
         {
-            Interlocked.Exchange(ref _refreshing, 0);
+            _refreshGate.Release();
         }
 
         return response;
