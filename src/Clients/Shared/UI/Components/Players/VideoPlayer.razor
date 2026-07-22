@@ -6,6 +6,7 @@
 @inject IRemoteControlService RemoteControl
 @inject ISyncPlayService SyncPlay
 @inject IK7Snackbar Snackbar
+@inject IClientErrorReporter ClientErrorReporter
 @inject IStringLocalizer<SharedResource> S
 
 @if (RemoteControl.IsControlling && !RemoteControl.IsAudio)
@@ -37,13 +38,9 @@ else if (PlayerService.IsVisible)
             @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web
                  || usesWebVideoOnNative)
             {
-            <video id="video-player" class="video-js" @ref="_player">
-                @* Omit <source> when resuming mid-stream so Video.js does not start buffering
-                   segment 0 before changeSourceAndSeek / #EXT-X-START can apply. *@
-                @if (!string.IsNullOrEmpty(SourceUri) && PlayerService.Source?.PendingSeekTime is null)
-                {
-                    <source src="@SourceUri" type="@SourceMimeType" />
-                }
+            @* Never embed <source> here: Video.js owns src via changeSource/changeSourceAndSeek.
+               Blazor re-rendering a <source> while VHS is attached causes reload thrash / black frames. *@
+            <video id="video-player" class="video-js" @ref="_player" playsinline>
                 <p class="vjs-no-js">
                     To view this video please enable JavaScript, and consider upgrading to a
                     web browser that

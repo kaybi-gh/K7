@@ -127,6 +127,7 @@
   <data name="VisualizerUnavailable" xml:space="preserve"><value>Visualizer is not available on this device</value></data>
   <data name="StreamNotReady" xml:space="preserve"><value>Playback could not start. The stream may still be indexing.</value></data>
   <data name="StreamPlaybackFailed" xml:space="preserve"><value>Playback could not start. Please try again.</value></data>
+  <data name="StreamPlaybackTimedOut" xml:space="preserve"><value>Playback took too long to start. Transcoding may still be in progress.</value></data>
   <data name="TrackInfo" xml:space="preserve"><value>Track Info</value></data>
   <data name="AudioDetails" xml:space="preserve"><value>Audio Details</value></data>
   <data name="Codec" xml:space="preserve"><value>Codec</value></data>

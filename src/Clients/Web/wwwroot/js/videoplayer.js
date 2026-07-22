@@ -302,6 +302,17 @@ window.getCurrentTime = function (id) {
     return players[id]?.currentTime() ?? 0;
 }
 
+window.getBufferedTime = function (id) {
+    try {
+        const buffered = players[id]?.buffered?.();
+        if (buffered && buffered.length > 0)
+            return buffered.end(buffered.length - 1);
+    } catch (e) {
+    }
+
+    return 0;
+}
+
 window.getDuration = function (id) {
     return players[id]?.duration() ?? 0;
 }

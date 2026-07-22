@@ -79,6 +79,12 @@ public interface IPlayerService
     event Action? BackPressed;
     event Action? PlaybackStartFailed;
 
+    /// <summary>
+    /// SharedResource key for the snackbar shown after <see cref="PlaybackStartFailed"/>.
+    /// Set by <see cref="AbortPlaybackStartAsync"/> before the event is raised.
+    /// </summary>
+    string? PlaybackStartFailureMessageKey { get; }
+
     Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default);
     Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default);
     void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto>? tracks);
@@ -87,14 +93,23 @@ public interface IPlayerService
     Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retries opening the current HLS source or falls back to a transcoded quality after a transient native failure.
-    /// Returns true when a recovery attempt was scheduled.
+    /// Retries opening the current HLS source or falls back to a transcoded quality after a transient failure.
+    /// Used by Web / Windows Video.js watchdogs only; native MediaElement implementations no-op.
+    /// Returns true when a recovery attempt was scheduled or when recovery was skipped because media is progressing.
     /// </summary>
-    Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default);
+    /// <param name="allowQualityLadder">
+    /// When false, soft idle timeouts do not step quality.
+    /// Hard Video.js SRC_NOT_SUPPORTED should pass true.
+    /// </param>
+    Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops playback, hides the player, and raises <see cref="PlaybackStartFailed"/>.
     /// </summary>
-    Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default);
+    /// <param name="messageKey">
+    /// Optional SharedResource key. When null, uses StreamPlaybackTimedOut if a stream session exists,
+    /// otherwise StreamNotReady (indexing).
+    /// </param>
+    Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default);
 
 }

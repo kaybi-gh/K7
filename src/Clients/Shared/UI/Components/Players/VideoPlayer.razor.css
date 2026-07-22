@@ -72,10 +72,17 @@
     height: 100% !important;
     z-index: 0;
     pointer-events: none;
+    background: #000;
+    /* Keep the tech in the normal paint tree on Windows WebView2 (visibility tricks break frames). */
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .video-container ::deep .video-js .vjs-tech {
     pointer-events: none;
+    visibility: visible !important;
+    opacity: 1 !important;
+    object-fit: contain;
 }
 
 .video-container video {

@@ -62,6 +62,13 @@ public sealed class MockFeatureAccessService : IFeatureAccessService
     public Task<string?> GetRoleAsync() => Task.FromResult<string?>("admin");
 }
 
+public sealed class MockClientErrorReporter : IClientErrorReporter
+{
+    public void ReportError(Exception exception, string? context = null, bool notifyUser = true)
+    {
+    }
+}
+
 public sealed class MockDeviceService : IDeviceService
 {
     public string? GetDeviceId() => "design-device";

@@ -47,6 +47,8 @@ public sealed class DemoPlayerService : IPlayerService
     public event Action? PlaybackStartFailed;
 #pragma warning restore CS0067
 
+    public string? PlaybackStartFailureMessageKey { get; private set; }
+
     public IReadOnlyList<AudioFileTrackDto> AudioTracks => [];
     public AudioFileTrackDto? SelectedAudioTrack => null;
     public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks => [];
@@ -134,9 +136,12 @@ public sealed class DemoPlayerService : IPlayerService
     public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 
-    public Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default) =>
+    public Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 
-    public Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+    public Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default)
+    {
+        PlaybackStartFailureMessageKey = messageKey ?? "StreamPlaybackFailed";
+        return Task.CompletedTask;
+    }
 }

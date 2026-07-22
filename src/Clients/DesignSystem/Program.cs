@@ -41,6 +41,7 @@ builder.Services.AddScoped<DemoPlayerService>();
 builder.Services.AddScoped<IPlayerService>(sp => sp.GetRequiredService<DemoPlayerService>());
 builder.Services.AddSingleton<IMediaPlayerService, MockMediaPlayerService>();
 builder.Services.AddSingleton<IFeatureAccessService, MockFeatureAccessService>();
+builder.Services.AddSingleton<IClientErrorReporter, MockClientErrorReporter>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
 builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, MockDeviceService>();

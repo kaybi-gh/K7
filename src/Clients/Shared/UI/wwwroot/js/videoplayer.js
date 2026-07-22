@@ -18,6 +18,41 @@ function normalizeHlsMimeType(type) {
     return type;
 }
 
+function getPlayerBufferedEnd(player) {
+    try {
+        const buffered = player?.buffered?.();
+        if (buffered && buffered.length > 0)
+            return buffered.end(buffered.length - 1);
+    } catch (e) {
+    }
+
+    return 0;
+}
+
+function ensurePlaybackStarted(player, id) {
+    if (!player || typeof player.paused !== 'function')
+        return;
+
+    if (!player.paused())
+        return;
+
+    const bufferedEnd = getPlayerBufferedEnd(player);
+    if (!(bufferedEnd > 0) && player.readyState() < 2)
+        return;
+
+    console.log('[K7-Player] ensurePlaybackStarted id=' + id
+        + ' readyState=' + player.readyState()
+        + ' buffered=' + bufferedEnd
+        + ' currentTime=' + player.currentTime());
+
+    var promise = player.play();
+    if (promise !== undefined) {
+        promise.catch(function (error) {
+            console.warn('[K7-Player] play() blocked id=' + id, error);
+        });
+    }
+}
+
 function logVideoJsError(id, context, player) {
     const err = player?.error?.();
     const code = err?.code ?? 'unknown';
@@ -124,15 +159,24 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
 
     // Fired while the user agent is downloading media data.
     player.on('progress', function () {
-        const buffered = player.buffered();
-        let bufferedEnd = 0;
-
-        if (buffered && buffered.length > 0) {
-            bufferedEnd = buffered.end(buffered.length - 1);
-        }
-
+        const bufferedEnd = getPlayerBufferedEnd(player);
         dotNetRef.invokeMethodAsync('OnBufferedUpdated', bufferedEnd)
             .catch((error) => console.error('Error invoking C# method', error));
+    });
+
+    // Autoplay may be blocked until media is buffered; retry once media can play.
+    player.on('canplay', function () {
+        ensurePlaybackStarted(player, id);
+    });
+
+    player.on('loadeddata', function () {
+        const el = player.tech(true)?.el?.() || player.el()?.querySelector('video');
+        console.log('[K7-Player] loadeddata id=' + id
+            + ' readyState=' + player.readyState()
+            + ' paused=' + player.paused()
+            + ' videoWidth=' + (el?.videoWidth ?? 0)
+            + ' buffered=' + getPlayerBufferedEnd(player));
+        ensurePlaybackStarted(player, id);
     });
 
     // // Fires when the volume has been changed
@@ -354,6 +398,10 @@ window.changePlaybackRate = function (id, rate) {
 
 window.getCurrentTime = function (id) {
     return players[id]?.currentTime() ?? 0;
+}
+
+window.getBufferedTime = function (id) {
+    return getPlayerBufferedEnd(players[id]);
 }
 
 window.getDuration = function (id) {

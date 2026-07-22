@@ -45,6 +45,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action? BackPressed;
     public event Action? PlaybackStartFailed;
 
+    public string? PlaybackStartFailureMessageKey { get; private set; }
+
     public PlayerSource Source { get; set
         {
             if (field != value)
@@ -518,13 +520,16 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         return $"{url}{separator}startSeconds={startPosition.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 
-    public Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default) =>
+    public Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 
-    public async Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default)
+    public async Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default)
     {
         if (!IsVisible)
             return;
+
+        PlaybackStartFailureMessageKey = messageKey
+            ?? (Source?.StreamSessionId is not null ? "StreamPlaybackTimedOut" : "StreamNotReady");
 
         Stop();
         await HideAsync();

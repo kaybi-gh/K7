@@ -21,10 +21,18 @@ public partial class VideoPlayer : IAsyncDisposable
     private string? _lastPlayerId;
     private bool _syncPlaySidebarOpen;
     private CancellationTokenSource? _durationWaitCts;
-    private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(12);
-    private static readonly TimeSpan WindowsWebDurationReadyTimeout = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan NativeDurationReadyTimeout = TimeSpan.FromSeconds(6);
-    private const int MaxNativeRecoveryRounds = 3;
+    private bool _mediaCanPlay;
+    // HLS index.m3u8 exposes duration before segment 0 exists; wait for real media progress.
+    // Applies to Web + Windows Video.js only - native MediaElement has no idle watchdog.
+    private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan WindowsWebDurationReadyTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan RecoveryRoundTimeout = TimeSpan.FromSeconds(30);
+    private const int MaxWindowsWebRecoveryRounds = 3;
+    // Video.js MEDIA_ERR_SRC_NOT_SUPPORTED - hard failure only, not network stalls while burn-in runs.
+    private const int MediaErrSrcNotSupported = 4;
+    private DateTime _lastHardPlayerErrorReportUtc = DateTime.MinValue;
+    private string? _lastHardPlayerErrorReportKey;
+    private static readonly TimeSpan HardPlayerErrorReportDedupeWindow = TimeSpan.FromSeconds(30);
     
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
@@ -332,7 +340,11 @@ public partial class VideoPlayer : IAsyncDisposable
             return;
         }
 
-        ScheduleDurationReadyCheck();
+        // Native MediaElement (Android/iOS/MacCatalyst): no duration/idle watchdog.
+        // That logic was added with Windows Video.js and false-positive ABR killed working streams.
+        if (UsesWebVideoPlayer())
+            ScheduleDurationReadyCheck();
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -360,39 +372,38 @@ public partial class VideoPlayer : IAsyncDisposable
         || (DeviceService.GetClientType() == ClientType.Native
             && WindowsVideoPlayback.UsesWebVideoPlayer);
 
+    private static bool IsFinitePositive(double value) =>
+        !double.IsNaN(value) && !double.IsInfinity(value) && value > 0;
+
     private bool IsPlaybackReady()
     {
-        if (PlayerService.Duration > 0)
+        // Duration alone is NOT ready: HLS playlists report duration as soon as index.m3u8
+        // loads, which is often several seconds before burn-in produces segment 0.
+        if (IsFinitePositive(PlayerService.CurrentTime)
+            || IsFinitePositive(PlayerService.BufferedTime)
+            || PlayerService.PlaybackState is PlaybackState.Playing)
+            return true;
+
+        // canplay without buffered media is common during HLS startup; require buffer too.
+        if (_mediaCanPlay && IsFinitePositive(PlayerService.BufferedTime))
             return true;
 
         // Windows MAUI Video.js can enter Buffering on play before HLS is playable.
         // Do not treat Buffering alone as ready so the startup watchdog still fires.
-        var isWindowsWebPlayer = DeviceService.GetClientType() == ClientType.Native
-            && WindowsVideoPlayback.UsesWebVideoPlayer;
-        if (isWindowsWebPlayer)
-        {
-            return PlayerService.PlaybackState is PlaybackState.Playing
-                || PlayerService.CurrentTime > 0
-                || PlayerService.BufferedTime > 0;
-        }
-
-        if (UsesWebVideoPlayer())
-            return PlayerService.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering
-                || PlayerService.CurrentTime > 0
-                || PlayerService.BufferedTime > 0;
-
-        if (DeviceService.GetClientType() != ClientType.Native)
-            return false;
-
-        return PlayerService.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering
-            || PlayerService.CurrentTime > 0;
+        return false;
     }
+
+    private bool HasPlaybackStartProgress(double lastBuffered) =>
+        IsFinitePositive(PlayerService.BufferedTime) && PlayerService.BufferedTime > lastBuffered
+        || IsFinitePositive(PlayerService.CurrentTime)
+        || PlayerService.PlaybackState is PlaybackState.Playing;
 
     private void ScheduleDurationReadyCheck()
     {
         _durationWaitCts?.Cancel();
         _durationWaitCts?.Dispose();
         _durationWaitCts = new CancellationTokenSource();
+        _mediaCanPlay = false;
         _ = WaitForDurationReadyAsync(_durationWaitCts.Token);
     }
 
@@ -400,22 +411,58 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         try
         {
-            var isNative = DeviceService.GetClientType() == ClientType.Native && !UsesWebVideoPlayer();
-            // Windows MAUI uses Video.js + C# xhr bridge; allow longer first-buffer time.
             var isWindowsWebPlayer = UsesWebVideoPlayer() && WindowsVideoPlayback.UsesWebVideoPlayer;
-            var maxRounds = isNative ? MaxNativeRecoveryRounds : 1;
-            var waitTimeout = isNative
-                ? NativeDurationReadyTimeout
-                : isWindowsWebPlayer
-                    ? WindowsWebDurationReadyTimeout
-                    : DurationReadyTimeout;
+            var maxRounds = isWindowsWebPlayer ? MaxWindowsWebRecoveryRounds : 1;
+            var waitTimeout = isWindowsWebPlayer
+                ? WindowsWebDurationReadyTimeout
+                : DurationReadyTimeout;
 
             for (var round = 0; round < maxRounds; round++)
             {
-                var deadline = DateTime.UtcNow + waitTimeout;
+                // First chosen quality gets the full window; later ladder steps use the recovery window.
+                var roundTimeout = round > 0 ? RecoveryRoundTimeout : waitTimeout;
+
+                var deadline = DateTime.UtcNow + roundTimeout;
+                var lastBuffered = PlayerService.BufferedTime;
+
                 while (DateTime.UtcNow < deadline)
                 {
                     if (IsPlaybackReady() || !PlayerService.IsVisible)
+                        return;
+
+                    // Keep waiting while the stream is making real media progress (slow burn-in).
+                    if (HasPlaybackStartProgress(lastBuffered))
+                    {
+                        lastBuffered = Math.Max(lastBuffered, PlayerService.BufferedTime);
+                        deadline = DateTime.UtcNow + roundTimeout;
+                    }
+
+                    // Poll JS in case event interop missed buffer/time updates.
+                    if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+                    {
+                        try
+                        {
+                            var buffered = await GetBufferedTimeAsync();
+                            if (IsFinitePositive(buffered) && buffered > PlayerService.BufferedTime)
+                                PlayerService.BufferedTime = buffered;
+
+                            var currentTime = await GetCurrentTimeAsync();
+                            if (IsFinitePositive(currentTime) && currentTime > PlayerService.CurrentTime)
+                                PlayerService.CurrentTime = currentTime;
+
+                            // Buffer without Playing often means autoplay was blocked; nudge play().
+                            if (IsFinitePositive(PlayerService.BufferedTime)
+                                && PlayerService.PlaybackState is not PlaybackState.Playing)
+                            {
+                                await JSRuntime.InvokeVoidAsync("play", _player.Id);
+                            }
+                        }
+                        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+                        {
+                        }
+                    }
+
+                    if (IsPlaybackReady())
                         return;
 
                     await Task.Delay(500, cancellationToken);
@@ -424,9 +471,17 @@ public partial class VideoPlayer : IAsyncDisposable
                 if (IsPlaybackReady() || !PlayerService.IsVisible)
                     return;
 
-                if (isNative && round < maxRounds - 1)
+                if (isWindowsWebPlayer && round < maxRounds - 1)
                 {
-                    var recovered = await PlayerService.TryRecoverPlaybackStartAsync(cancellationToken);
+                    System.Diagnostics.Debug.WriteLine(
+                        "[K7-Player] WaitForDurationReadyAsync idle timeout round="
+                        + round
+                        + " after "
+                        + roundTimeout.TotalSeconds
+                        + "s, attempting recovery");
+                    var recovered = await PlayerService.TryRecoverPlaybackStartAsync(
+                        allowQualityLadder: true,
+                        cancellationToken: cancellationToken);
                     if (recovered)
                         continue;
 
@@ -440,7 +495,7 @@ public partial class VideoPlayer : IAsyncDisposable
                 return;
 
             System.Diagnostics.Debug.WriteLine("[K7-Player] WaitForDurationReadyAsync timed out, aborting playback start");
-            await PlayerService.AbortPlaybackStartAsync(cancellationToken);
+            await PlayerService.AbortPlaybackStartAsync(cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -464,9 +519,10 @@ public partial class VideoPlayer : IAsyncDisposable
 
     private Task ShowPlaybackStartFailedSnackbarAsync()
     {
-        var messageKey = PlayerService.Source?.StreamSessionId is not null
-            ? "StreamPlaybackFailed"
-            : "StreamNotReady";
+        var messageKey = PlayerService.PlaybackStartFailureMessageKey
+            ?? (PlayerService.Source?.StreamSessionId is not null
+                ? "StreamPlaybackTimedOut"
+                : "StreamNotReady");
 
         Snackbar.Add(S[messageKey], K7Severity.Error);
         return Task.CompletedTask;
@@ -638,10 +694,12 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // The media has a readyState of HAVE_FUTURE_DATA or greater.
             case "canplay":
+                _mediaCanPlay = true;
                 break;
 
             // The media has a readyState of HAVE_ENOUGH_DATA or greater. This means that the entire media file can be played without buffering.
             case "canplaythrough":
+                _mediaCanPlay = true;
                 break;
         }
     }
@@ -649,29 +707,104 @@ public partial class VideoPlayer : IAsyncDisposable
     [JSInvokable]
     public void OnPlayerError(int code, string message)
     {
+        // Soft errors (network/decode) are common while the server produces segment 0 for
+        // burn-in. Only hard SRC_NOT_SUPPORTED may step quality, and only after cooldown.
         System.Diagnostics.Debug.WriteLine(
             "[K7-Player] Video.js error code=" + code + " message=" + message);
+
+        // Never recover while media is already demuxing - reloads cause the blink loop.
+        if (code != MediaErrSrcNotSupported
+            || !PlayerService.IsVisible
+            || IsPlaybackReady()
+            || IsFinitePositive(PlayerService.BufferedTime))
+            return;
+
+        ReportHardVideoJsErrorToServer(code, message);
+        OnHardPlayerErrorAsync().FireAndForget();
+    }
+
+    private void ReportHardVideoJsErrorToServer(int code, string message)
+    {
+        try
+        {
+            var source = PlayerService.Source;
+            var sessionId = source?.StreamSessionId?.ToString() ?? "(none)";
+            var quality = PlayerService.SelectedQuality?.Label ?? "(none)";
+            var dedupeKey = code + "|" + message + "|" + sessionId + "|" + quality;
+            var now = DateTime.UtcNow;
+            if (_lastHardPlayerErrorReportKey == dedupeKey
+                && now - _lastHardPlayerErrorReportUtc < HardPlayerErrorReportDedupeWindow)
+            {
+                return;
+            }
+
+            _lastHardPlayerErrorReportKey = dedupeKey;
+            _lastHardPlayerErrorReportUtc = now;
+
+            var reportMessage =
+                "Video.js hard error code="
+                + code
+                + " message="
+                + message
+                + " StreamSessionId="
+                + sessionId
+                + " IndexedFileId="
+                + (source?.IndexedFileId?.ToString() ?? "(none)")
+                + " quality="
+                + quality
+                + " Position="
+                + PlayerService.CurrentTime.ToString("F2")
+                + "s Duration="
+                + PlayerService.Duration.ToString("F2")
+                + "s UsesWebVideoPlayer="
+                + WindowsVideoPlayback.UsesWebVideoPlayer;
+
+            ClientErrorReporter.ReportError(
+                new InvalidOperationException(reportMessage),
+                "VideoPlayer.OnPlayerError",
+                notifyUser: false);
+        }
+        catch
+        {
+            // Best-effort reporting.
+        }
+    }
+
+    private async Task OnHardPlayerErrorAsync()
+    {
+        try
+        {
+            var recovered = await PlayerService.TryRecoverPlaybackStartAsync(allowQualityLadder: true);
+            if (!recovered)
+                await PlayerService.AbortPlaybackStartAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     [JSInvokable]
     public void OnDurationChanged(double? duration)
     {
-        if (duration.HasValue)
-            PlayerService.Duration = duration.Value;
+        if (duration is { } value && IsFinitePositive(value))
+            PlayerService.Duration = value;
     }
 
     [JSInvokable]
     public void OnTimeUpdated(double? time)
     {
-        if (time.HasValue)
-            PlayerService.CurrentTime = time.Value;
+        if (time is { } value && !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0)
+            PlayerService.CurrentTime = value;
     }
 
     [JSInvokable]
     public void OnBufferedUpdated(double? time)
     {
-        if (time.HasValue)
-            PlayerService.BufferedTime = time.Value;
+        if (time is { } value && IsFinitePositive(value))
+            PlayerService.BufferedTime = value;
     }
 
     [JSInvokable]
