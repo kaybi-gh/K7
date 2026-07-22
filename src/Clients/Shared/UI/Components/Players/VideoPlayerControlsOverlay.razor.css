@@ -6,9 +6,9 @@
     height: 100%;
     pointer-events: auto;
     touch-action: none;
-    /* WebView2 on Windows passes pointer hits through fully transparent pixels
-       to native MAUI layers below; keep a non-zero alpha for hit testing. */
-    background-color: rgba(0, 0, 0, 0.01);
+    /* Default transparent so Android/iOS MediaElement shows through the WebView.
+       Windows Video.js hit-testing alpha is applied via app.css (.windows-web-video). */
+    background-color: transparent;
     color: white;
     z-index: 100000;
     outline: none;

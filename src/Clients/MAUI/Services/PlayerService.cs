@@ -1,3 +1,4 @@
+using K7.Clients.MAUI.Diagnostics;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -6,11 +7,16 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.MAUI.Services;
 
-internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageService deviceStorageService) : IPlayerService
+internal class PlayerService(
+    IStreamUriService streamUriService,
+    IDeviceStorageService deviceStorageService,
+    ILogger<PlayerService> logger) : IPlayerService
 {
+    private readonly ILogger _nativePlayerLogger = logger;
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
     public event Func<Task>? StopRequested;
@@ -44,6 +50,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     public event Action? BackPressed;
     public event Action? PlaybackStartFailed;
 
+    public string? PlaybackStartFailureMessageKey { get; private set; }
+
     private PlayerSource _source = new();
     public PlayerSource Source
     {
@@ -57,6 +65,16 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
                 Duration = 0;
                 BufferedTime = 0;
                 PlaybackState = PlaybackState.Idle;
+                NativePlayerDiagnostics.Info(
+                    _nativePlayerLogger,
+                    "PlayerService.SourceChanged url="
+                    + NativePlayerDiagnostics.RedactUrl(value.Url)
+                    + " sessionId="
+                    + (value.StreamSessionId?.ToString() ?? "(none)")
+                    + " quality="
+                    + (_selectedQuality?.Label ?? "(none)")
+                    + " UsesWebVideoPlayer="
+                    + WindowsVideoPlayback.UsesWebVideoPlayer);
                 SourceChanged?.Invoke(value);
             }
         }
@@ -101,8 +119,6 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             if (_duration != value)
             {
                 _duration = value;
-                if (value > 0)
-                    _playbackStartRecoveryAttempts = 0;
                 DurationChanged?.Invoke(value);
             }
         }
@@ -210,6 +226,9 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
     private int _playbackStartRecoveryAttempts;
     private const int MaxPlaybackStartRecoveryAttempts = 4;
+    // Windows Video.js only: avoid stacking burn-in jobs / reload thrash on hard SRC_NOT_SUPPORTED.
+    private static readonly TimeSpan MinQualityFallbackInterval = TimeSpan.FromSeconds(25);
+    private DateTime _lastQualityFallbackUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default)
@@ -251,6 +270,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
+        _lastQualityFallbackUtc = DateTime.MinValue;
+        PlaybackStartFailureMessageKey = null;
 
         var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
 
@@ -307,6 +328,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
+        _lastQualityFallbackUtc = DateTime.MinValue;
+        PlaybackStartFailureMessageKey = null;
 
         var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
 
@@ -407,6 +430,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             return Task.CompletedTask;
         }
 
+        // Explicit user quality changes reset Windows Video.js recovery budget for the new selection.
+        _playbackStartRecoveryAttempts = 0;
         _selectedQuality = quality;
         QualityChanged?.Invoke(quality);
 
@@ -434,13 +459,14 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         return Task.CompletedTask;
     }
 
-    public async Task<bool> TryRecoverPlaybackStartAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default)
     {
-        if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
+        // Android/iOS/MacCatalyst MediaElement had no ABR/watchdog before Windows Video.js.
+        // Keep recovery for Windows Video.js (hard SRC_NOT_SUPPORTED / idle watchdog) only.
+        if (!WindowsVideoPlayback.UsesWebVideoPlayer)
             return false;
 
-        // Windows video uses Video.js in WebView2, not native MediaElement.
-        if (WindowsVideoPlayback.UsesWebVideoPlayer)
+        if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
             return false;
 
         await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
@@ -449,6 +475,36 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
                 return false;
 
+            // Growing buffer / playing: black frames are a display issue, not a ladder issue.
+            if (BufferedTime > 0
+                || CurrentTime > 0
+                || PlaybackState is PlaybackState.Playing)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "[K7-Player] TryRecoverPlaybackStartAsync skipped; media already progressing"
+                    + " buffered="
+                    + BufferedTime
+                    + " currentTime="
+                    + CurrentTime
+                    + " state="
+                    + PlaybackState);
+                return true;
+            }
+
+            if (!allowQualityLadder)
+                return false;
+
+            var sinceLastFallback = DateTime.UtcNow - _lastQualityFallbackUtc;
+            if (_lastQualityFallbackUtc != DateTime.MinValue
+                && sinceLastFallback < MinQualityFallbackInterval)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "[K7-Player] TryRecoverPlaybackStartAsync cooldown "
+                    + (MinQualityFallbackInterval - sinceLastFallback).TotalSeconds.ToString("F1")
+                    + "s remaining; keeping current quality");
+                return true;
+            }
+
             _playbackStartRecoveryAttempts++;
 
             if (_selectedQuality?.IsOriginal == true)
@@ -456,6 +512,9 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
                 var fallbackQuality = _availableQualities.FirstOrDefault(q => !q.IsOriginal);
                 if (fallbackQuality is not null)
                 {
+                    System.Diagnostics.Debug.WriteLine(
+                        "[K7-Player] TryRecoverPlaybackStartAsync falling back from original to " + fallbackQuality.Label);
+                    _lastQualityFallbackUtc = DateTime.UtcNow;
                     await ChangeQualityAsync(fallbackQuality, cancellationToken);
                     return true;
                 }
@@ -464,12 +523,17 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             var nextQuality = GetNextLowerTranscodedQuality();
             if (nextQuality is not null)
             {
+                System.Diagnostics.Debug.WriteLine(
+                    "[K7-Player] TryRecoverPlaybackStartAsync stepping down to " + nextQuality.Label);
+                _lastQualityFallbackUtc = DateTime.UtcNow;
                 await ChangeQualityAsync(nextQuality, cancellationToken);
                 return true;
             }
 
             if (_playbackStartRecoveryAttempts <= 2)
             {
+                System.Diagnostics.Debug.WriteLine("[K7-Player] TryRecoverPlaybackStartAsync reloading current source");
+                _lastQualityFallbackUtc = DateTime.UtcNow;
                 ReloadCurrentSource();
                 return true;
             }
@@ -482,12 +546,16 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         }
     }
 
-    public async Task AbortPlaybackStartAsync(CancellationToken cancellationToken = default)
+    public async Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default)
     {
         if (!IsVisible)
             return;
 
-        System.Diagnostics.Debug.WriteLine("[K7-Player] AbortPlaybackStartAsync -> HideAsync (duration never became ready)");
+        PlaybackStartFailureMessageKey = messageKey
+            ?? (Source?.StreamSessionId is not null ? "StreamPlaybackTimedOut" : "StreamNotReady");
+
+        System.Diagnostics.Debug.WriteLine(
+            "[K7-Player] AbortPlaybackStartAsync -> HideAsync key=" + PlaybackStartFailureMessageKey);
         Stop();
         await HideAsync();
         PlaybackStartFailed?.Invoke();
@@ -532,14 +600,19 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     public Task ShowAsync()
     {
         IsVisible = true;
-        System.Diagnostics.Debug.WriteLine("[K7-Player] PlayerService.ShowAsync -> IsVisible=true");
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "PlayerService.ShowAsync IsVisible=true UsesWebVideoPlayer="
+            + WindowsVideoPlayback.UsesWebVideoPlayer);
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
 
     public Task HideAsync()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] HideAsync called from: " + Environment.StackTrace);
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "PlayerService.HideAsync PlaybackState=" + PlaybackState);
 
         if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
         {
@@ -553,18 +626,28 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
     public void OnBackPressed()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] PlayerService.OnBackPressed");
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.OnBackPressed");
         BackPressed?.Invoke();
     }
 
-    public void Play() => PlayRequested?.Invoke();
+    public void Play()
+    {
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.Play()");
+        PlayRequested?.Invoke();
+    }
+
     public void Pause() => PauseRequested?.Invoke();
     public void Seek(double time) => SeekRequested?.Invoke(time);
     public void Mute() => MuteRequested?.Invoke();
     public void Unmute() => UnmuteRequest?.Invoke();
     public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
     public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
-    public void Stop() => StopRequested?.Invoke();
+
+    public void Stop()
+    {
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.Stop()");
+        StopRequested?.Invoke();
+    }
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 

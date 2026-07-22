@@ -382,17 +382,49 @@ body.native-player-active {
     background: transparent !important;
 }
 
+/* Keep #app clear too - body alone is not enough for Android WebView see-through. */
+html.native-player-active:not(.windows-web-video) #app,
+body.native-player-active:not(.windows-web-video) #app {
+    background: transparent !important;
+}
+
 html.native-player-active.windows-web-video,
 body.native-player-active.windows-web-video {
     background: #000 !important;
 }
 
-body.native-player-active > * {
+/* Android/iOS: hide WebView chrome so native MediaElement shows through a transparent surface.
+   Windows Video.js plays inside WebView2 - do NOT hide ancestors. Chromium often fails to
+   composite hardware-decoded video frames when an ancestor has visibility:hidden, which
+   yields a black player despite healthy HLS buffering. */
+body.native-player-active:not(.windows-web-video) > * {
     visibility: hidden !important;
 }
 
-body.native-player-active .video-container {
+body.native-player-active:not(.windows-web-video) .video-container {
     visibility: visible !important;
+}
+
+/* Native MediaElement path: fully transparent controls backdrop so video shows through.
+   Windows Video.js needs a non-zero alpha for WebView2 hit testing (see below). */
+body.native-player-active:not(.windows-web-video) .video-controls-overlay {
+    background-color: transparent !important;
+}
+
+/* Windows: keep shell chrome out of the way without hiding the video ancestry. */
+body.native-player-active.windows-web-video .app-nav,
+body.native-player-active.windows-web-video .app-nav-bar,
+body.native-player-active.windows-web-video .app-nav-popover,
+body.native-player-active.windows-web-video .page-viewport,
+body.native-player-active.windows-web-video .mini-player-dock,
+body.native-player-active.windows-web-video .k7-menu-dropdown {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Windows Video.js: WebView2 passes hits through fully transparent pixels to native layers. */
+body.native-player-active.windows-web-video .video-controls-overlay {
+    background-color: rgba(0, 0, 0, 0.01) !important;
 }
 
 /* ============================================================

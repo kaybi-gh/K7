@@ -1,5 +1,6 @@
 #if ANDROID
 using AndroidX.Core.View;
+using K7.Clients.MAUI.Diagnostics;
 using Microsoft.AspNetCore.Components.WebView.Maui;
 
 namespace K7.Clients.MAUI.Platforms.Android;
@@ -14,6 +15,19 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
 
         AndroidWebViewAccessor.Current = platformView;
         platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+        platformView.SetBackgroundResource(0);
+        platformView.Background = null;
+
+        if (platformView.Parent is global::Android.Views.View parentView)
+        {
+            parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+            parentView.SetBackgroundResource(0);
+        }
+
+        NativePlayerDiagnostics.Info(
+            null,
+            "TransparentBlazorWebViewHandler.ConnectHandler: WebView Background=Transparent parentCleared="
+            + (platformView.Parent is not null));
 
         ApplyTvScalingIfNeeded(platformView);
         SetupSafeAreaInsets(platformView);

@@ -1,5 +1,7 @@
 using AndroidX.Media3.Common;
+using AndroidX.Media3.DataSource;
 using CommunityToolkit.Maui.Views;
+using K7.Clients.MAUI.Diagnostics;
 using Log = Android.Util.Log;
 
 namespace K7.Clients.MAUI;
@@ -12,6 +14,172 @@ public partial class BlazorPage
     {
         _playerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
         _playerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
+    }
+
+    /// <summary>
+    /// Enriches MediaFailed with ExoPlayer error code and HTTP response details when available.
+    /// ERROR_CODE_IO_UNSPECIFIED (2000) alone is not enough - ResponseCode distinguishes 401 vs 404.
+    /// DataSpecUri identifies which playlist/segment URL failed when the exception carries it.
+    /// </summary>
+    private string FormatAndroidPlayerErrorDetail()
+    {
+        try
+        {
+            var player = GetPlayer(NativePlayer);
+            if (player?.PlayerError is not { } error)
+                return string.Empty;
+
+            var codeName = PlaybackException.GetErrorCodeName(error.ErrorCode) ?? "(unknown)";
+            var detail =
+                " PlayerErrorCode="
+                + error.ErrorCode
+                + " PlayerErrorCodeName="
+                + codeName
+                + " PlayerErrorMessage="
+                + (error.Message ?? "(null)");
+
+            // Parser failures (e.g. Top bit not zero) wrap IllegalStateException without DataSpec.
+            // MediaItem URI is the playlist; still useful when segment DataSpec is absent.
+            if (TryGetMediaItemUri(player.CurrentMediaItem, out var mediaItemUri)
+                && !string.IsNullOrEmpty(mediaItemUri))
+            {
+                detail += " MediaItemUri=" + NativePlayerDiagnostics.RedactUrl(mediaItemUri);
+            }
+
+            Java.Lang.Throwable? cause = error.Cause;
+            var depth = 0;
+            var sawDataSpecUri = false;
+            while (cause is not null && depth < 8)
+            {
+                detail +=
+                    " Cause["
+                    + depth
+                    + "]="
+                    + cause.GetType().Name
+                    + ": "
+                    + (cause.Message ?? "(null)");
+
+                // Xamarin bindings flatten Java nested types (HttpDataSource$InvalidResponseCodeException).
+                if (cause is HttpDataSourceInvalidResponseCodeException invalidResponse)
+                {
+                    detail += " ResponseCode=" + invalidResponse.ResponseCode;
+                    var dataSpecUri = invalidResponse.DataSpec?.Uri?.ToString();
+                    if (!string.IsNullOrEmpty(dataSpecUri))
+                    {
+                        detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(dataSpecUri);
+                        sawDataSpecUri = true;
+                    }
+                }
+                else if (cause is HttpDataSourceHttpDataSourceException httpEx)
+                {
+                    var dataSpecUri = httpEx.DataSpec?.Uri?.ToString();
+                    if (!string.IsNullOrEmpty(dataSpecUri))
+                    {
+                        detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(dataSpecUri);
+                        sawDataSpecUri = true;
+                    }
+                }
+                else if (!sawDataSpecUri
+                    && TryGetDataSpecUriFromCause(cause, out var reflectedUri)
+                    && !string.IsNullOrEmpty(reflectedUri))
+                {
+                    detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(reflectedUri);
+                    sawDataSpecUri = true;
+                }
+
+                cause = cause.Cause;
+                depth++;
+            }
+
+            if (!sawDataSpecUri)
+                detail += " DataSpecUri=(none-parser-or-non-http)";
+
+            return detail;
+        }
+        catch (Exception ex)
+        {
+            return " PlayerErrorDetailFailed=" + ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Parser/load failures after HTTP 200 often wrap IllegalStateException without a typed
+    /// HttpDataSourceException. Reflect DataSpec when the binding exposes it on any cause.
+    /// </summary>
+    private static bool TryGetDataSpecUriFromCause(Java.Lang.Throwable cause, out string? uri)
+    {
+        uri = null;
+        try
+        {
+            var dataSpecProp = cause.GetType().GetProperty("DataSpec");
+            if (dataSpecProp?.GetValue(cause) is DataSpec dataSpec)
+            {
+                uri = dataSpec.Uri?.ToString();
+                return !string.IsNullOrEmpty(uri);
+            }
+        }
+        catch
+        {
+            // Best-effort diagnostics only.
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Xamarin Media3 bindings expose LocalConfiguration as a nested type name that shadows the
+    /// instance property, so read the playlist URI via reflection.
+    /// </summary>
+    private static bool TryGetMediaItemUri(MediaItem? mediaItem, out string? uri)
+    {
+        uri = null;
+        if (mediaItem is null)
+            return false;
+
+        try
+        {
+            var localConfigProp = typeof(MediaItem).GetProperty("LocalConfiguration");
+            var localConfig = localConfigProp?.GetValue(mediaItem);
+            if (localConfig is null)
+                return false;
+
+            var uriProp = localConfig.GetType().GetProperty("Uri");
+            uri = uriProp?.GetValue(localConfig)?.ToString();
+            return !string.IsNullOrEmpty(uri);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void EnsureAndroidWebViewTransparent()
+    {
+        // MAUI property mapper can re-apply an opaque BackgroundColor after the handler connects.
+        // Re-assert platform transparency whenever the native player becomes visible.
+        if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView platformView)
+        {
+            NativePlayerDiagnostics.Warn(
+                _nativePlayerLogger,
+                "EnsureAndroidWebViewTransparent: PlatformView not ready (Handler="
+                + (blazorWebView.Handler is null ? "null" : "set")
+                + ")");
+            return;
+        }
+
+        platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+        platformView.SetBackgroundResource(0);
+        platformView.Background = null;
+
+        if (platformView.Parent is Android.Views.View parentView)
+        {
+            parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+            parentView.SetBackgroundResource(0);
+        }
+
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "EnsureAndroidWebViewTransparent applied (WebView + parent Background=Transparent)");
     }
 
     private static void SetImmersiveMode(Android.App.Activity activity)

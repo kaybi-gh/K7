@@ -10,7 +10,8 @@
              Padding="0">
 
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
-        <!-- Native MediaElement (video) -->
+        <!-- Native MediaElement (video) - Android/iOS/MacCatalyst only at runtime.
+             Pre-Windows-Video.js used the toolkit default (SurfaceView on Android). -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
                               IsVisible="False"
@@ -28,10 +29,12 @@
                               InputTransparent="True"
                               WidthRequest="0" HeightRequest="0" />
         
-        <!-- Blazor overlay (topmost for input on Windows video; ZIndex raised further in code when player opens) -->
+        <!-- Blazor overlay MUST stay Transparent on Android/iOS so MediaElement (ZIndex 1) shows through.
+             Windows Video.js forces an opaque WebView2 surface in Platforms/Windows only.
+             Do not set Black here - that regresses Android TV to audio-only / black picture. -->
         <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"
                    HorizontalOptions="Fill" VerticalOptions="Fill"
-                   BackgroundColor="Black" ZIndex="2">
+                   BackgroundColor="Transparent" ZIndex="2">
             <BlazorWebView.RootComponents>
                 <RootComponent Selector="#app" ComponentType="{x:Type mauiPages:MauiRoutes}" />
             </BlazorWebView.RootComponents>

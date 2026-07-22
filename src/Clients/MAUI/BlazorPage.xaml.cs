@@ -1,11 +1,13 @@
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
+using K7.Clients.MAUI.Diagnostics;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.MAUI;
@@ -16,6 +18,7 @@ public partial class BlazorPage : ContentPage
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly BackButtonService _backButtonService;
     private readonly IK7ServerService _k7ServerService;
+    private readonly ILogger _nativePlayerLogger;
 
     private static readonly string DownloadsBasePath = Path.GetFullPath(Path.Combine(FileSystem.AppDataDirectory, "downloads"));
     private static readonly string DownloadsBasePathPrefix = DownloadsBasePath.EndsWith(Path.DirectorySeparatorChar)
@@ -23,13 +26,30 @@ public partial class BlazorPage : ContentPage
         : DownloadsBasePath + Path.DirectorySeparatorChar;
 
     private bool _eventsDetached;
+#if !WINDOWS
+    private DateTime _lastNativePositionLogUtc = DateTime.MinValue;
+    private bool _loggedFirstNonZeroDuration;
+    private static readonly TimeSpan NativePositionLogInterval = TimeSpan.FromSeconds(5);
+    // MediaFailed can flap on Source swaps; report once per distinct failure within the window.
+    private DateTime _lastMediaFailedReportUtc = DateTime.MinValue;
+    private string? _lastMediaFailedReportKey;
+    private static readonly TimeSpan MediaFailedReportDedupeWindow = TimeSpan.FromSeconds(30);
+#endif
 
-    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService, IK7ServerService k7ServerService)
+    public BlazorPage(
+        IPlayerService playerService,
+        IAudioPlayerService audioPlayerService,
+        BackButtonService backButtonService,
+        IK7ServerService k7ServerService,
+        ILoggerFactory? loggerFactory = null)
     {
         _playerService = playerService;
         _audioPlayerService = audioPlayerService;
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
+        _nativePlayerLogger = (loggerFactory ?? Application.Current?.Handler?.MauiContext?.Services.GetService<ILoggerFactory>())
+            ?.CreateLogger(NativePlayerDiagnostics.Tag)
+            ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
         InitializeComponent();
 #if WINDOWS
         SyncWindowsStreamAuthContext();
@@ -216,6 +236,12 @@ public partial class BlazorPage : ContentPage
 
     private void InitializePlayer()
     {
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "InitializePlayer UsesWebVideoPlayer="
+            + WindowsVideoPlayback.UsesWebVideoPlayer
+            + " (false => native MediaElement path)");
+
         NativePlayer.Volume = _playerService.Volume;
         NativePlayer.ShouldMute = _playerService.IsMuted;
         NativePlayer.MediaOpened += NativePlayer_MediaOpened;
@@ -245,6 +271,12 @@ public partial class BlazorPage : ContentPage
     {
         return MainThread.InvokeOnMainThreadAsync(async () =>
         {
+            NativePlayerDiagnostics.Info(
+                _nativePlayerLogger,
+                "Play() requested CurrentState=" + NativePlayer.CurrentState
+                + " Position=" + NativePlayer.Position.TotalSeconds.ToString("F2")
+                + "s Duration=" + NativePlayer.Duration.TotalSeconds.ToString("F2") + "s");
+
             // Stopped/Ended after a backward seek (especially to zero) may ignore Play()
             // until the timeline position is re-established.
             if (NativePlayer.CurrentState is MediaElementState.Stopped)
@@ -262,6 +294,7 @@ public partial class BlazorPage : ContentPage
 
     private Task HandleVideoPauseRequested()
     {
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "Pause() requested");
         MainThread.BeginInvokeOnMainThread(NativePlayer.Pause);
         return Task.CompletedTask;
     }
@@ -292,12 +325,16 @@ public partial class BlazorPage : ContentPage
 
     private Task HandleVideoStopRequested()
     {
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "Stop() requested");
         MainThread.BeginInvokeOnMainThread(NativePlayer.Stop);
         return Task.CompletedTask;
     }
 
     private Task HandleVideoSeekRequested(double position)
     {
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "Seek() requested position=" + position.ToString("F2") + "s");
         return SeekMediaElementAsync(
             NativePlayer,
             TimeSpan.FromSeconds(position),
@@ -315,7 +352,22 @@ public partial class BlazorPage : ContentPage
         {
             var duration = NativePlayer.Duration.TotalSeconds;
             if (duration > 0 && duration != _playerService.Duration)
+            {
+                if (!_loggedFirstNonZeroDuration)
+                {
+                    _loggedFirstNonZeroDuration = true;
+                    NativePlayerDiagnostics.Info(
+                        _nativePlayerLogger,
+                        "MediaElement Duration first non-zero="
+                        + duration.ToString("F2")
+                        + "s Position="
+                        + NativePlayer.Position.TotalSeconds.ToString("F2")
+                        + "s CurrentState="
+                        + NativePlayer.CurrentState);
+                }
+
                 _playerService.Duration = duration;
+            }
         }
 
         if (e.PropertyName == nameof(MediaElement.ShouldMute))
@@ -323,15 +375,34 @@ public partial class BlazorPage : ContentPage
 
         if (e.PropertyName == nameof(MediaElement.CurrentState))
         {
-            _playerService.PlaybackState = NativePlayer.CurrentState switch
+            var mediaState = NativePlayer.CurrentState;
+            // Opening must not map to Idle: ExoPlayer stays Opening/Buffering while HLS
+            // init + early segments load (PGS burn-in can take tens of seconds). Idle made
+            // the startup watchdog treat successful segment streaming as "not ready".
+            var mapped = mediaState switch
             {
                 MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
                 MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
                 MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
-                MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
+                // ExoPlayer stays Opening while HLS init + early segments load.
+                MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Buffering,
                 MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
                 _ => Server.Domain.Enums.PlaybackState.Unknown,
             };
+
+            NativePlayerDiagnostics.Info(
+                _nativePlayerLogger,
+                "MediaElement CurrentState="
+                + mediaState
+                + " mappedPlaybackState="
+                + mapped
+                + " Position="
+                + NativePlayer.Position.TotalSeconds.ToString("F2")
+                + "s Duration="
+                + NativePlayer.Duration.TotalSeconds.ToString("F2")
+                + "s");
+
+            _playerService.PlaybackState = mapped;
         }
 #endif
     }
@@ -350,6 +421,13 @@ public partial class BlazorPage : ContentPage
             {
                 OpenNativePlayerSource(source);
             }
+            else
+            {
+                // PlayIndexedFileAsync sets an empty PlayerSource before ShowAsync + real URL.
+                // Do not Stop/Source=null here - that races the subsequent open and can fire
+                // MediaFailed after init/seg0 (playback dead, UI stuck at 0:00/0:00).
+                NativePlayerDiagnostics.Info(_nativePlayerLogger, "SourceChanged with empty Url (ignored)");
+            }
         });
 #endif
     }
@@ -357,9 +435,44 @@ public partial class BlazorPage : ContentPage
 #if !WINDOWS
     private void OpenNativePlayerSource(PlayerSource source)
     {
-        ClearNativePlayerMediaSurface();
+        _loggedFirstNonZeroDuration = false;
+        _lastNativePositionLogUtc = DateTime.MinValue;
+
+        // ShowAsync and SourceChanged both marshal to the main thread; if visibility is still
+        // pending, force the MediaElement visible before Play or ExoPlayer may not bind a surface.
+        if (_playerService.IsVisible && !NativePlayer.IsVisible)
+            NativePlayer.IsVisible = true;
+
+        var quality = _playerService.SelectedQuality?.Label ?? "(none)";
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "OpenNativePlayerSource url="
+            + NativePlayerDiagnostics.RedactUrl(source.Url)
+            + " quality="
+            + quality
+            + " sessionId="
+            + (source.StreamSessionId?.ToString() ?? "(none)")
+            + " mimeType="
+            + (source.MimeType ?? "(null)")
+            + " pendingSeek="
+            + (source.PendingSeekTime?.ToString("F2") ?? "(none)")
+            + " UsesWebVideoPlayer="
+            + WindowsVideoPlayback.UsesWebVideoPlayer
+            + " IsVisible="
+            + _playerService.IsVisible
+            + " NativePlayer.IsVisible="
+            + NativePlayer.IsVisible);
+
+        // Baseline open path: Stop() then assign Source. Never Source=null first -
+        // nulling the surface fires MediaFailed on Android and kills the next open mid-HLS.
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "OpenNativePlayerSource Stop() then set Source (no Source=null)");
+        NativePlayer.Stop();
         NativePlayer.ShouldAutoPlay = true;
+        // CommunityToolkit.Maui.MediaElement 9.0+ (PR #3169) applies UriMediaSource.HttpHeaders via
+        // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
+        // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
         NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "Source set + Play()");
         NativePlayer.Play();
         AttachPendingSeekHandler(source);
     }
@@ -378,6 +491,10 @@ public partial class BlazorPage : ContentPage
             if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
             {
                 NativePlayer.PropertyChanged -= OnStateChanged;
+                NativePlayerDiagnostics.Info(
+                    _nativePlayerLogger,
+                    "PendingSeek applying seekTime=" + seekTime.ToString("F2")
+                    + "s at state=" + NativePlayer.CurrentState);
                 SeekMediaElementAsync(
                     NativePlayer,
                     TimeSpan.FromSeconds(seekTime),
@@ -402,20 +519,41 @@ public partial class BlazorPage : ContentPage
             ConfigureWindowsVideoPlayerLayout();
 #else
             NativePlayer.IsVisible = _playerService.IsVisible;
+            NativePlayerDiagnostics.Info(
+                _nativePlayerLogger,
+                "IsVisibleChanged IsVisible="
+                + _playerService.IsVisible
+                + " NativePlayer.IsVisible="
+                + NativePlayer.IsVisible
+                + " pageBg="
+                + (BackgroundColor?.ToArgbHex() ?? "(null)")
+                + " webViewBg="
+                + (blazorWebView.BackgroundColor?.ToArgbHex() ?? "(null)"));
 
             if (_playerService.IsVisible)
             {
+                // Page chrome behind the player can be black; the WebView itself must stay
+                // transparent or it paints over MediaElement (classic audio-only black video).
                 BackgroundColor = Colors.Black;
+                blazorWebView.BackgroundColor = Colors.Transparent;
                 Padding = new Thickness(0);
+                NativePlayerDiagnostics.Info(
+                    _nativePlayerLogger,
+                    "Visibility layout: page BackgroundColor=Black, blazorWebView BackgroundColor=Transparent");
 #if ANDROID || IOS
                 DeviceDisplay.Current.KeepScreenOn = true;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayInfoChanged;
                 SetLandscapeOrientation();
 #endif
+#if ANDROID
+                EnsureAndroidWebViewTransparent();
+#endif
             }
             else
             {
                 BackgroundColor = Colors.Transparent;
+                blazorWebView.BackgroundColor = Colors.Transparent;
+                NativePlayerDiagnostics.Info(_nativePlayerLogger, "Visibility hide: Stop + Source=null");
                 NativePlayer.Stop();
                 NativePlayer.Source = null;
 #if ANDROID || IOS
@@ -446,46 +584,120 @@ public partial class BlazorPage : ContentPage
     private void NativePlayer_MediaOpened(object? sender, EventArgs e)
     {
 #if !WINDOWS
-        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Idle;
+        // Toolkit raises MediaOpened right after ExoPlayer.Prepare(), before HLS has finished
+        // loading - Duration=0 here is normal and does not mean the master playlist succeeded.
+        var duration = NativePlayer.Duration.TotalSeconds;
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "MediaOpened Duration="
+            + duration.ToString("F2")
+            + "s Position="
+            + NativePlayer.Position.TotalSeconds.ToString("F2")
+            + "s CurrentState="
+            + NativePlayer.CurrentState);
+
+        if (duration > 0 && duration != _playerService.Duration)
+            _playerService.Duration = duration;
+
+        // Do not force Idle here - PropertyChanged owns state (Opening/Buffering/Playing).
 #endif
     }
 
     private void NativePlayer_MediaEnded(object? sender, EventArgs e)
     {
 #if !WINDOWS
+        NativePlayerDiagnostics.Info(_nativePlayerLogger, "MediaEnded");
         _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Ended;
 #endif
     }
 
     private void NativePlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[K7-Player] Media playback failed: {e.ErrorMessage}");
+        // Native MediaElement path: never Abort/Stop here - MediaFailed fires spuriously on
+        // Source swaps and thrash-killed working Android streams. Still log + report once.
+        var detail = e.ErrorMessage ?? "(null)";
+#if ANDROID
+        detail += FormatAndroidPlayerErrorDetail();
+#endif
+        var stateDetail =
+            " CurrentState="
+            + NativePlayer.CurrentState
+            + " Position="
+            + NativePlayer.Position.TotalSeconds.ToString("F2")
+            + "s Duration="
+            + NativePlayer.Duration.TotalSeconds.ToString("F2")
+            + "s";
 
-        if (_playerService is not Services.PlayerService playerService)
-            return;
+        NativePlayerDiagnostics.Error(
+            _nativePlayerLogger,
+            "MediaFailed (no abort) ErrorMessage=" + detail + stateDetail);
 
-#if WINDOWS
-        return;
-#else
-        MainThread.BeginInvokeOnMainThread(() =>
-            HandleNativePlayerMediaFailedAsync(playerService).FireAndForget());
+#if !WINDOWS
+        ReportNativePlayerMediaFailedToServer(detail + stateDetail);
 #endif
     }
 
 #if !WINDOWS
-    private async Task HandleNativePlayerMediaFailedAsync(Services.PlayerService playerService)
+    private void ReportNativePlayerMediaFailedToServer(string failureDetail)
     {
-        ClearNativePlayerMediaSurface();
+        try
+        {
+            var source = _playerService.Source;
+            var sessionId = source?.StreamSessionId?.ToString() ?? "(none)";
+            var indexedFileId = source?.IndexedFileId?.ToString() ?? "(none)";
+            var quality = _playerService.SelectedQuality?.Label ?? "(none)";
+            var redactedUrl = NativePlayerDiagnostics.RedactUrl(source?.Url);
 
-        var recovered = await playerService.TryRecoverPlaybackStartAsync();
-        if (!recovered)
-            await playerService.AbortPlaybackStartAsync();
-    }
+            var dedupeKey = failureDetail + "|" + sessionId + "|" + quality;
+            var now = DateTime.UtcNow;
+            if (_lastMediaFailedReportKey == dedupeKey
+                && now - _lastMediaFailedReportUtc < MediaFailedReportDedupeWindow)
+            {
+                return;
+            }
 
-    private void ClearNativePlayerMediaSurface()
-    {
-        NativePlayer.Stop();
-        NativePlayer.Source = null;
+            _lastMediaFailedReportKey = dedupeKey;
+            _lastMediaFailedReportUtc = now;
+
+            var platform =
+#if ANDROID
+                "Android";
+#elif IOS
+                "iOS";
+#elif MACCATALYST
+                "MacCatalyst";
+#else
+                "Unknown";
+#endif
+
+            var message =
+                "ErrorMessage="
+                + failureDetail
+                + " url="
+                + redactedUrl
+                + " StreamSessionId="
+                + sessionId
+                + " IndexedFileId="
+                + indexedFileId
+                + " quality="
+                + quality
+                + " Platform="
+                + platform
+                + " UsesWebVideoPlayer="
+                + WindowsVideoPlayback.UsesWebVideoPlayer;
+
+            var services = Application.Current?.Handler?.MauiContext?.Services
+                ?? IPlatformApplication.Current?.Services;
+            var reporter = services?.GetService<IClientErrorReporter>();
+            reporter?.ReportError(
+                new InvalidOperationException(message),
+                "NativePlayer.MediaFailed",
+                notifyUser: false);
+        }
+        catch
+        {
+            // Best-effort - never throw from MediaFailed.
+        }
     }
 #endif
 
@@ -495,6 +707,20 @@ public partial class BlazorPage : ContentPage
         return;
 #else
         _playerService.CurrentTime = e.Position.TotalSeconds;
+
+        var now = DateTime.UtcNow;
+        if (now - _lastNativePositionLogUtc < NativePositionLogInterval)
+            return;
+
+        _lastNativePositionLogUtc = now;
+        NativePlayerDiagnostics.Info(
+            _nativePlayerLogger,
+            "Position/Duration tick Position="
+            + e.Position.TotalSeconds.ToString("F2")
+            + "s Duration="
+            + NativePlayer.Duration.TotalSeconds.ToString("F2")
+            + "s CurrentState="
+            + NativePlayer.CurrentState);
 #endif
     }
 
@@ -686,6 +912,7 @@ public partial class BlazorPage : ContentPage
     {
         if (File.Exists(url))
         {
+            NativePlayerDiagnostics.Info(_nativePlayerLogger, "CreateMediaSource FromFile");
             return MediaSource.FromFile(url);
         }
 
@@ -696,9 +923,20 @@ public partial class BlazorPage : ContentPage
             {
                 ["Authorization"] = authHeader.ToString()
             };
-            return MediaSource.FromUri(new Uri(url), headers);
+            var mediaSource = MediaSource.FromUri(new Uri(url), headers);
+            var headerCount = mediaSource is UriMediaSource uriSource ? uriSource.HttpHeaders.Count : 0;
+            NativePlayerDiagnostics.Info(
+                _nativePlayerLogger,
+                "CreateMediaSource FromUri with Authorization scheme="
+                + authHeader.Scheme
+                + " HttpHeaders.Count="
+                + headerCount);
+            return mediaSource;
         }
 
+        NativePlayerDiagnostics.Warn(
+            _nativePlayerLogger,
+            "CreateMediaSource FromUri WITHOUT Authorization header");
         return MediaSource.FromUri(url);
     }
 
