@@ -330,6 +330,17 @@ public class TranscodeJobManager(
         return -1;
     }
 
+    public TranscodeJob? FindVideoJobForIndexedFile(Guid indexedFileId)
+    {
+        foreach (var job in _activeJobs.Values)
+        {
+            if (!job.IsAudioOnly && job.IndexedFileId == indexedFileId)
+                return job;
+        }
+
+        return null;
+    }
+
     private async Task RestartJobWithSeekAsync(
         TranscodeJob job,
         int startSegmentIndex,

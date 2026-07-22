@@ -51,6 +51,12 @@ public interface ITranscodeJobManager
     /// Gets the current segment index (last completed segment) for a job.
     /// </summary>
     int GetCurrentSegmentIndex(Guid jobId);
+
+    /// <summary>
+    /// Finds an active video (non-audio) transcode job for the indexed file, if any.
+    /// Used to soft-gate demuxed audio until video init and segment 0 are ready.
+    /// </summary>
+    TranscodeJob? FindVideoJobForIndexedFile(Guid indexedFileId);
 }
 
 public class TranscodeJob

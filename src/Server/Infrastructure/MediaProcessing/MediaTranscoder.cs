@@ -14,6 +14,16 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 public class MediaTranscoder : IMediaTranscoder
 {
+    /// <summary>
+    /// HLS fMP4 movflags: frag_discont only.
+    /// -hls_segment_options movflags=+frag_discont
+    /// ffmpeg's HLS fMP4 muxer already sets default_base_is_moof. Do NOT add
+    /// negative_cts_offsets (writes trun v1 CTS like -1024 -> ExoPlayer
+    /// "Top bit not zero: -1024"). Do NOT add empty_moov/frag_keyframe here
+    /// (breaks HLS into init.m4s + empty media segments).
+    /// </summary>
+    public const string HlsFmp4MovFlags = "frag_discont";
+
     private readonly ILogger<MediaTranscoder> _logger;
     private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService;
     private readonly ITranscodeSettingsProvider _transcodeSettingsProvider;
@@ -51,6 +61,7 @@ public class MediaTranscoder : IMediaTranscoder
                 .CopyChannel(Channel.All)
                 .WithCustomArgument("-f hls")
                 .WithCustomArgument("-hls_segment_type fmp4")
+                .WithCustomArgument($"-hls_segment_options movflags=+{HlsFmp4MovFlags}")
                 .WithCustomArgument("-hls_flags independent_segments")
                 .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
                 .WithCustomArgument("-hls_segment_filename segment_%05d.m4s"))
@@ -96,6 +107,7 @@ public class MediaTranscoder : IMediaTranscoder
                 .WithCustomArgument($"-t {segmentDuration.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}")
                 .WithCustomArgument("-f hls")
                 .WithCustomArgument("-hls_segment_type fmp4")
+                .WithCustomArgument($"-hls_segment_options movflags=+{HlsFmp4MovFlags}")
                 .WithCustomArgument("-hls_flags independent_segments")
                 .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
                 .WithCustomArgument("-hls_segment_filename segment_%05d.m4s"))
@@ -136,30 +148,30 @@ public class MediaTranscoder : IMediaTranscoder
         var stderrLines = new List<string>();
         var burnInFilterComplex = string.Empty;
         string? burnInCanvasSizeArg = null;
+        (int VideoWidth, int VideoHeight, int SubtitleWidth, int SubtitleHeight)? burnInDimensions = null;
 
         if (hasBurnIn)
         {
-            var dimensions = await GetBurnInStreamDimensionsAsync(
+            var probed = await GetBurnInStreamDimensionsAsync(
                 inputFilePath,
                 subtitleBurnInStreamIndex!.Value,
                 cancellationToken);
-            burnInFilterComplex = PgsBurnInFilterBuilder.BuildFilterComplex(
-                subtitleBurnInStreamIndex.Value,
-                dimensions.VideoWidth,
-                dimensions.VideoHeight,
-                dimensions.SubtitleWidth,
-                dimensions.SubtitleHeight);
+            burnInDimensions = PgsBurnInFilterBuilder.ResolveDimensions(
+                probed.VideoWidth,
+                probed.VideoHeight,
+                probed.SubtitleWidth,
+                probed.SubtitleHeight);
             burnInCanvasSizeArg = PgsBurnInFilterBuilder.BuildCanvasSizeArgument(
-                dimensions.SubtitleWidth,
-                dimensions.SubtitleHeight);
+                burnInDimensions.Value.SubtitleWidth,
+                burnInDimensions.Value.SubtitleHeight);
 
             _logger.LogInformation(
                 "PGS burn-in filter for stream {SubStreamIndex}: video={VideoWidth}x{VideoHeight}, subtitle={SubtitleWidth}x{SubtitleHeight}, canvasSize={CanvasSize}",
                 subtitleBurnInStreamIndex.Value,
-                dimensions.VideoWidth,
-                dimensions.VideoHeight,
-                dimensions.SubtitleWidth,
-                dimensions.SubtitleHeight,
+                burnInDimensions.Value.VideoWidth,
+                burnInDimensions.Value.VideoHeight,
+                burnInDimensions.Value.SubtitleWidth,
+                burnInDimensions.Value.SubtitleHeight,
                 burnInCanvasSizeArg ?? "default");
         }
 
@@ -171,13 +183,28 @@ public class MediaTranscoder : IMediaTranscoder
             {
                 var settings = await _transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
                 var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
-                encoderSelection = FfmpegVideoEncoderBuilder.Resolve(effectiveCodec, settings, capabilities, hasBurnIn);
+                // Burn-in overlays run on CPU; VAAPI still works via format=nv12,hwupload
+                // appended inside the filter_complex (see PgsBurnInFilterBuilder).
+                encoderSelection = FfmpegVideoEncoderBuilder.Resolve(effectiveCodec, settings, capabilities);
             }
         }
 
         var resolvedEncoder = encoderSelection;
-
         var scaleHeight = ResolveScaleHeight(videoResolutionIdentifier);
+
+        // Scale and encoder -vf chains must live inside -filter_complex when burn-in is active;
+        // FFmpeg rejects combining simple -vf with a complex graph on the same stream.
+        if (hasBurnIn && burnInDimensions is { } dims)
+        {
+            burnInFilterComplex = PgsBurnInFilterBuilder.BuildFilterComplex(
+                subtitleBurnInStreamIndex!.Value,
+                dims.VideoWidth,
+                dims.VideoHeight,
+                dims.SubtitleWidth,
+                dims.SubtitleHeight,
+                scaleHeight,
+                resolvedEncoder?.VideoFilter);
+        }
 
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
@@ -191,16 +218,21 @@ public class MediaTranscoder : IMediaTranscoder
                         options.WithCustomArgument(burnInCanvasSizeArg);
                     }
                 }
-                else if (!string.IsNullOrWhiteSpace(resolvedEncoder?.GlobalArguments))
+
+                if (!string.IsNullOrWhiteSpace(resolvedEncoder?.GlobalArguments))
                 {
                     // VAAPI (and similar): -init_hw_device must come before -i.
+                    // Required for burn-in too when VideoFilter uploads frames after overlay.
                     options.WithCustomArgument(resolvedEncoder.GlobalArguments);
                 }
-                else
+                else if (!hasBurnIn)
                 {
+                    // Do not use Auto hwaccel with burn-in: overlay/scale2ref need system frames.
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
                 }
 
+                // Generate missing PTS so DTS/PTS stay monotonic after seeks.
+                options.WithCustomArgument("-fflags +genpts");
                 options.Seek(startTime);
             })
             .OutputToFile("index.m3u8", overwrite: true, options =>
@@ -241,9 +273,18 @@ public class MediaTranscoder : IMediaTranscoder
                                 effectiveCodec);
                             options.WithCustomArgument(resolvedEncoder.EncoderArguments);
                         }
+
+                        // Force keyframes on HLS segment boundaries.
+                        ApplyHlsCompatibleEncodeFlags(
+                            options,
+                            effectiveCodec,
+                            resolvedEncoder?.EncoderName);
                     }
 
-                    ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight);
+                    if (!hasBurnIn)
+                    {
+                        ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight);
+                    }
                 }
                 else
                 {
@@ -381,6 +422,7 @@ public class MediaTranscoder : IMediaTranscoder
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options => options
                 .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
+                .WithCustomArgument("-fflags +genpts")
                 .Seek(startTime))
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
@@ -440,21 +482,54 @@ public class MediaTranscoder : IMediaTranscoder
         // Duration limit (using -to because of -copyts)
         options.WithCustomArgument($"-to {endTime.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
 
-        // Use absolute timestamps to align with the initial init.m4s
+        // fMP4 HLS: preserve timestamps (copyts) but never emit negative decode times.
+        // avoid_negative_ts disabled + AAC encoder delay writes tfdt v1 =
+        // 0xFFFFFFFFFFFFFC00 (-1024) -> ExoPlayer readUnsignedLongToLong
+        // "Top bit not zero: -1024". make_non_negative keeps relative offsets.
+        // movflags via -hls_segment_options (not global -movflags).
         options.WithCustomArgument("-copyts")
-            .WithCustomArgument("-avoid_negative_ts disabled");
-
-        // HLS output format with fMP4
-        options.WithCustomArgument("-f hls")
+            .WithCustomArgument("-avoid_negative_ts make_non_negative")
+            .WithCustomArgument("-start_at_zero")
+            .WithCustomArgument("-max_muxing_queue_size 2048")
+            .WithCustomArgument("-f hls")
+            .WithCustomArgument("-max_delay 5000000")
             .WithCustomArgument("-hls_time 6")
             .WithCustomArgument("-hls_segment_type fmp4")
-            .WithCustomArgument("-hls_segment_options movflags=+frag_discont")
+            .WithCustomArgument($"-hls_segment_options movflags=+{HlsFmp4MovFlags}")
             .WithCustomArgument("-hls_flags independent_segments")
             .WithCustomArgument($"-start_number {startSegmentIndex}")
             .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
             .WithCustomArgument("-hls_segment_filename %d.m4s")
             .WithCustomArgument("-hls_playlist_type vod")
             .WithCustomArgument("-hls_list_size 0");
+    }
+
+    /// <summary>
+    /// Force keyframes on HLS segment boundaries (hls_time = 6s).
+    /// -bf 0 disables B-frames so trun needs no composition offsets (ExoPlayer-safe).
+    /// </summary>
+    private static void ApplyHlsCompatibleEncodeFlags(
+        FFMpegArgumentOptions options,
+        string logicalCodec,
+        string? encoderName)
+    {
+        // Align keyframes with VOD segment length (hls_time = 6).
+        options.WithCustomArgument("-force_key_frames expr:gte(t,n_forced*6)");
+
+        // No B-frames for software x264/x265 (and when falling back to libx264).
+        var effectiveEncoder = encoderName
+            ?? (logicalCodec is "h264" or "hevc" or "h265"
+                ? (logicalCodec == "h264" ? "libx264" : "libx265")
+                : null);
+        if (effectiveEncoder is not null
+            && (effectiveEncoder.Contains("libx264", StringComparison.OrdinalIgnoreCase)
+                || effectiveEncoder.Contains("libx265", StringComparison.OrdinalIgnoreCase)))
+        {
+            options.WithCustomArgument("-bf 0");
+        }
+
+        if (logicalCodec is "hevc" or "h265")
+            options.WithCustomArgument("-tag:v hvc1");
     }
 
     public async Task ExtractSubtitleAsVttAsync(

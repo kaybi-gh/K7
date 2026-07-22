@@ -265,7 +265,19 @@ public sealed class StreamPlaybackService(
         string contentType,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Looking for segment file at: {SegmentPath}", segmentPath);
+        logger.LogInformation(
+            "Looking for segment file at: {SegmentPath} (audioOnly={IsAudioOnly}, job={JobId})",
+            segmentPath,
+            job.IsAudioOnly,
+            job.JobId);
+
+        // Demuxed HLS: if the paired video job already exists but segment 0 is not ready yet,
+        // hold audio responses so ExoPlayer does not start parsing audio while video fMP4 is
+        // still generating (PGS burn-in can take seconds). Soft-gate only - never wait
+        // for a video job that has not been created yet (avoids deadlock if audio is first).
+        if (job.IsAudioOnly)
+            await WaitForExistingPairedVideoSegment0Async(job, cancellationToken);
+
         var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
             segmentPath,
             job,
@@ -276,10 +288,11 @@ public sealed class StreamPlaybackService(
         {
             logger.LogError(
                 generationFailure,
-                "Segment {SegmentNumber} was not generated for job {JobId} (ffmpeg running: {FfmpegRunning})",
+                "Segment {SegmentNumber} was not generated for job {JobId} (ffmpeg running: {FfmpegRunning}, unreadiness: {Unreadiness})",
                 segmentNumber,
                 job.JobId,
-                job.FfmpegTask is { IsCompleted: false });
+                job.FfmpegTask is { IsCompleted: false },
+                HlsSegmentFileWaiter.DescribeUnreadiness(segmentPath));
             return new TextHttpContentResult(
                 $"Transcoding failed: {generationFailure.Message}",
                 "text/plain",
@@ -287,7 +300,80 @@ public sealed class StreamPlaybackService(
         }
 
         await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
-        return new FileHttpContentResult(segmentPath, contentType);
+        if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out var segmentBytes))
+        {
+            logger.LogError(
+                "Segment {SegmentNumber} for job {JobId} was not a complete fMP4 after wait (path: {SegmentPath}, unreadiness: {Unreadiness})",
+                segmentNumber,
+                job.JobId,
+                segmentPath,
+                HlsSegmentFileWaiter.DescribeUnreadiness(segmentPath));
+            return new TextHttpContentResult(
+                "Transcoding failed: segment file is incomplete or corrupt.",
+                "text/plain",
+                503);
+        }
+
+        logger.LogInformation(
+            "Serving fMP4 segment {SegmentNumber} for job {JobId}: {ByteCount} bytes, leading=[{LeadingHex}], boxes=[{Boxes}], trun=[{Trun}]",
+            segmentNumber,
+            job.JobId,
+            segmentBytes.Length,
+            HlsSegmentFileWaiter.FormatLeadingBytesHex(segmentBytes),
+            HlsSegmentFileWaiter.DescribeTopLevelBoxes(segmentBytes),
+            HlsSegmentFileWaiter.DescribeMoofTrun(segmentBytes));
+
+        // Serve a snapshot - never stream a live ffmpeg output file (partial init.m4s
+        // parses as ISO BMFF garbage; ExoPlayer reports "Top bit not zero").
+        return new BytesHttpContentResult(segmentBytes, contentType);
+    }
+
+    private async Task WaitForExistingPairedVideoSegment0Async(
+        TranscodeJob audioJob,
+        CancellationToken cancellationToken)
+    {
+        var videoJob = transcodeJobManager.FindVideoJobForIndexedFile(audioJob.IndexedFileId);
+        if (videoJob is null)
+            return;
+
+        // Hold until video init AND segment 0 are ready so ExoPlayer does not start the
+        // audio MediaPeriod while video fMP4 is still mid-generate (PGS burn-in).
+        if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, 0))
+            return;
+
+        logger.LogInformation(
+            "Holding audio job {AudioJobId} until paired video segment 0 is ready (videoJob={VideoJobId}, videoDir={VideoDir})",
+            audioJob.JobId,
+            videoJob.JobId,
+            videoJob.OutputDirectory);
+
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (DateTime.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, 0))
+            {
+                logger.LogInformation(
+                    "Paired video segment 0 ready for audio job {AudioJobId}; continuing audio serve",
+                    audioJob.JobId);
+                return;
+            }
+
+            if (videoJob.FfmpegTask is { IsFaulted: true })
+            {
+                logger.LogWarning(
+                    "Paired video job {VideoJobId} faulted while holding audio; serving audio without video gate",
+                    videoJob.JobId);
+                return;
+            }
+
+            await Task.Delay(200, cancellationToken);
+        }
+
+        logger.LogWarning(
+            "Timed out waiting for paired video segment 0 ({VideoDir}); serving audio anyway",
+            videoJob.OutputDirectory);
     }
 
     private static List<HlsSegment> ComputeEqualLengthHlsSegments(long totalDurationMs, int desiredSegmentLengthMs = 6000)
