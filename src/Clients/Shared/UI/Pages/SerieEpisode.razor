@@ -20,6 +20,8 @@
 @inject IK7Snackbar Snackbar
 @inject IUserAdminService UserAdminService
 @inject K7HubClient K7HubClient
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -33,19 +35,22 @@
 }
 else if (_episode is not null)
 {
-    <div @ref="_scrollRoot" class="episode-page" style="@DominantColorStyle">
+    <div @ref="_tvScrollRoot"
+         class="episode-page"
+         style="@DominantColorStyle"
+         data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
         @if (_stillUrl is not null)
         {
             <MediaPageBackdrop ImageUrl="@_stillUrl"
                                DominantColor="@_dominantColor"
-                               ScrollTarget="@_scrollRoot"
+                               ScrollTarget="@_tvScrollRoot"
                                Class="@(_useHdStillBackdrop ? "" : "media-page-backdrop--soft-still")"
                                SoftStillBlurEnabled="@(!_useHdStillBackdrop)"
                                SoftStillSourceWidth="_stillSourceWidth"
                                SoftStillSourceHeight="_stillSourceHeight" />
         }
 
-        <div class="episode-main media-hero-main">
+        <div class="episode-main media-hero-main" data-tv-scroll-zone="main">
             <K7BackButton Class="episode-back-btn" />
 
             <div class="episode-hero media-hero">
@@ -87,7 +92,7 @@ else if (_episode is not null)
                         }
                     </div>
 
-                    <div class="episode-actions">
+                    <div class="episode-actions" data-tv-scroll-zone="actions">
                         <K7Button Variant="filled"
                                    Color="primary"
                                    StartIcon="@Phosphor.Play"
@@ -162,7 +167,7 @@ else if (_episode is not null)
                 </div>
             </div>
 
-            @if ((_episode.PersonRoles?.Count ?? 0) > 0 || _moreEpisodes.Count > 0)
+            @if (HasBelowContent)
             {
                 <div class="media-hero-scroll-hint" aria-hidden="true">
                     <K7Icon Icon="@Phosphor.CaretDown" />
@@ -170,7 +175,10 @@ else if (_episode is not null)
             }
         </div>
 
-        <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
+        <MediaPageContent Class="episode-page-content"
+                          Tinted="@(_dominantColor is not null)"
+                          DominantColor="@_dominantColor">
+        <div class="episode-page-sections" data-tv-scroll-zone="@(HasBelowContent ? "below" : null)">
         @if (_moreEpisodes.Count > 0)
         {
             <Carousel Title="@L["MoreEpisodes"]">
@@ -217,6 +225,7 @@ else if (_episode is not null)
         }
 
         <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" />
+        </div>
         </MediaPageContent>
     </div>
 }

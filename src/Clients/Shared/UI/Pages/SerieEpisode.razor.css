@@ -2,6 +2,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -10,8 +13,36 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    min-height: 100%;
     flex-shrink: 0;
     z-index: 2;
+    overflow: hidden;
+}
+
+.episode-page[data-tv-scroll] {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.episode-page[data-tv-scroll] .episode-main {
+    min-height: 100%;
+}
+
+.episode-page[data-tv-scroll] .episode-page-content {
+    padding-bottom: 64px;
+}
+
+.episode-page-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.episode-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.episode-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+    scroll-margin-bottom: 64px;
 }
 
 .episode-hero {
@@ -24,10 +55,6 @@
 }
 
 @media (min-width: 600px) {
-    .episode-main {
-        min-height: 85vh;
-    }
-
     .episode-hero.media-hero {
         padding: var(--space-10) var(--space-8) var(--space-8);
     }

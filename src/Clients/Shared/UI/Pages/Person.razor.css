@@ -10,6 +10,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     transition: --media-dominant-color 1.2s var(--ease-out);
@@ -214,8 +217,9 @@
 @media (max-width: 599.98px) {
     .person-main {
         height: auto;
-        min-height: 0;
-        overflow: visible;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow: hidden;
     }
 
     .person-hero.media-hero {
@@ -321,6 +325,26 @@
     ::deep .carousel-wrapper {
         --carousel-margin-start: 80px;
     }
+}
+
+.person-page[data-tv-scroll] {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.person-page[data-tv-scroll] .person-main {
+    min-height: 100%;
+}
+
+.person-page[data-tv-scroll] .person-page-content {
+    padding-bottom: 64px;
+}
+
+/* Detail rows: footer text sits below the poster link focus target. */
+.person-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.person-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+    scroll-margin-bottom: 64px;
 }
 
 /* Known For cards */

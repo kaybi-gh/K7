@@ -2,6 +2,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     --carousel-margin-start: 40px;
@@ -24,7 +27,7 @@
     padding-bottom: 32px;
 }
 
-:global(html.platform-tv) .serie-page[data-tv-scroll] .serie-main {
+.serie-page[data-tv-scroll] .serie-main {
     height: 100%;
     min-height: 100%;
     overflow: hidden;
@@ -109,10 +112,11 @@
     }
 
     .serie-main {
-        height: 100%;
-        min-height: 0;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
         flex-shrink: 0;
-        overflow: visible;
+        overflow: hidden;
     }
 
     .serie-hero {
@@ -194,14 +198,14 @@
     font-size: 1.05rem;
 }
 
-:global(html.platform-tv) .serie-page[data-tv-scroll] {
+.serie-page[data-tv-scroll] {
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-:global(html.platform-tv) .serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
-:global(html.platform-tv) .serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+.serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.serie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
     scroll-margin-bottom: 64px;
 }
 

@@ -78,7 +78,7 @@ else
         <div @ref="_tvScrollRoot"
              class="movie-page"
              style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)"
-             data-tv-scroll>
+             data-tv-scroll="@(HasTvBelowContent ? string.Empty : null)">
         <MediaPageBackdrop ImageUrl="@_backdropUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_tvScrollRoot" />

@@ -35,7 +35,7 @@ else if (_serie is not null)
     <div @ref="_tvScrollRoot"
          class="serie-page"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)"
-         data-tv-scroll="@(_isTv && HasTvScrollContent ? string.Empty : null)">
+         data-tv-scroll="@(HasTvScrollContent ? string.Empty : null)">
         <MediaPageBackdrop ImageUrl="@_backdropUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_tvScrollRoot" />
@@ -209,6 +209,7 @@ else if (_serie is not null)
         @if (!_isTv && (_seasons.Count > 0 || (_serie.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0))
         {
             <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
+            <div class="serie-page-sections" data-tv-scroll-zone="below">
                 @if (_seasons.Count > 0)
                 {
                     <Carousel Title="@L["Seasons"]">
@@ -277,6 +278,7 @@ else if (_serie is not null)
                         }
                     </Carousel>
                 }
+            </div>
             </MediaPageContent>
         }
 

@@ -184,7 +184,7 @@ public partial class Movie : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_isTv && !isLoading && _movie is not null && HasTvBelowContent)
+        if (!isLoading && _movie is not null && HasTvBelowContent)
         {
             if (!_tvScrollInitialized)
             {

@@ -176,6 +176,7 @@ public partial class SerieSeason : IAsyncDisposable
                 else
                 {
                     await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+                    await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
                 }
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
@@ -215,7 +216,19 @@ public partial class SerieSeason : IAsyncDisposable
         else
             LoadFocusedEpisodeCastAsync(episode).FireAndForget();
 
+        SyncEpisodeAnchorInUrl(episode.EpisodeNumber);
         StateHasChanged();
+    }
+
+    private void SyncEpisodeAnchorInUrl(int episodeNumber)
+    {
+        try
+        {
+            _ = JSRuntime.InvokeVoidAsync("K7.replaceUrlHash", $"ep-{episodeNumber}");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 
     private async Task LoadFocusedEpisodeCastAsync(LiteSerieEpisodeDto episode)

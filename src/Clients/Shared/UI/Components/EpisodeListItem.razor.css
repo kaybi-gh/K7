@@ -8,6 +8,16 @@
     margin-top: var(--space-3);
 }
 
+.episode-card[data-longpress] {
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+.episode-card:focus-within {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
 .episode-card-link {
     display: flex;
     align-items: center;
@@ -17,12 +27,20 @@
     text-decoration: none;
     color: inherit;
     cursor: pointer;
+    border-radius: var(--radius-md);
+}
+
+/* Whole-card ring via :focus-within; keep the still free of an inset outline. */
+.episode-card-link:focus {
+    outline: none;
 }
 
 .episode-card-link:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: -2px;
-    border-radius: var(--radius-md);
+    outline: none;
+}
+
+.episode-card-menu :focus-visible {
+    outline: none;
 }
 
 .episode-card-still {

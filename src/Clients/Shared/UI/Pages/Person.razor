@@ -5,11 +5,13 @@
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Clients.Shared.UI.Components.Dialogs
 @using Microsoft.AspNetCore.Components.Authorization
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<Person> L
 @inject IStringLocalizer<SharedResource> S
+@inject IDeviceService DeviceService
+@inject IJSRuntime JSRuntime
 <PageTitle>@_person?.Name</PageTitle>
 
 @if (_loading)
@@ -22,18 +24,28 @@
 }
 else if (_person is not null)
 {
-    <div @ref="_scrollRoot"
+    <div @ref="_tvScrollRoot"
          class="person-page"
-         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)">
+         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)"
+         data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
         <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
                            SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
                            SecondaryImageKey="@ActiveBackdropUrl"
-                           ScrollTarget="@_scrollRoot"
+                           ScrollTarget="@_tvScrollRoot"
                            Class="media-page-backdrop--soft-still"
                            SoftStillBlurEnabled="true" />
 
-        <div class="person-main media-hero-main">
-            <K7BackButton />
+        <div class="person-main media-hero-main" data-tv-scroll-zone="main">
+            @if (string.IsNullOrEmpty(_person.Biography))
+            {
+                <div class="person-hero-actions" data-tv-scroll-zone="actions" data-initial-focus>
+                    <K7BackButton />
+                </div>
+            }
+            else
+            {
+                <K7BackButton />
+            }
             <div class="person-hero media-hero">
                 <div class="media-hero-backdrop-zone">
                     <div class="person-portrait">
@@ -98,7 +110,12 @@ else if (_person is not null)
 
                         @if (!string.IsNullOrEmpty(_person.Biography))
                         {
-                            <div class="person-bio overview-clickable focusable" tabindex="0" role="button" @onclick="OpenBioDialogAsync">
+                            <div class="person-bio overview-clickable focusable"
+                                 data-tv-scroll-zone="actions"
+                                 data-initial-focus
+                                 tabindex="0"
+                                 role="button"
+                                 @onclick="OpenBioDialogAsync">
                                 <p class="person-bio-text">@_person.Biography</p>
                             </div>
                         }
@@ -119,7 +136,7 @@ else if (_person is not null)
         {
             <MediaPageContent Class="person-page-content"
                               Tinted="@(ActiveDominantColor is not null)">
-            <div class="person-content">
+            <div class="person-content" data-tv-scroll-zone="below">
                 @if (_discography.Count > 0)
                 {
                     <Carousel Title="@L["Discography"]">

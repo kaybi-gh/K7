@@ -11,6 +11,7 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Enums;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -38,11 +39,15 @@ public partial class SerieEpisode : IAsyncDisposable
     private LiteSerieEpisodeDto? _nextEpisode;
     private List<LiteSerieEpisodeDto> _moreEpisodes = [];
     private MediaReviewsSection? _reviewsSection;
-    private ElementReference _scrollRoot;
+    private ElementReference _tvScrollRoot;
+    private bool _tvScrollInitialized;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
     private Guid? _watchedEpisodeId;
 
     private string DominantColorStyle => DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor);
+
+    private bool HasBelowContent =>
+        _moreEpisodes.Count > 0 || (_episode?.PersonRoles?.Count ?? 0) > 0;
 
     protected override void OnInitialized()
     {
@@ -52,6 +57,22 @@ public partial class SerieEpisode : IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         await LoadEpisodeAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loading && _episode is not null && HasBelowContent)
+        {
+            if (!_tvScrollInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
+                _tvScrollInitialized = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+            }
+        }
     }
 
     private async Task LoadEpisodeAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
@@ -76,6 +97,7 @@ public partial class SerieEpisode : IAsyncDisposable
             return;
         }
 
+        _tvScrollInitialized = false;
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
@@ -347,7 +369,9 @@ public partial class SerieEpisode : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _metadataRefreshWatcher?.Dispose();
-        await ValueTask.CompletedTask;
+
+        if (_tvScrollInitialized)
+            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }
 
     private async Task ToggleWatchStateAsync()

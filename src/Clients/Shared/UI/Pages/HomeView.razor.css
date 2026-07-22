@@ -3,12 +3,12 @@
     isolation: isolate;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
     gap: 24px;
     padding-top: var(--space-6);
     padding-bottom: 32px;
     --carousel-margin-start: 40px;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 :global(html.platform-tv) .home-page,

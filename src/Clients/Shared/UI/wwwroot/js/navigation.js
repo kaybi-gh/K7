@@ -402,9 +402,16 @@ var SpatialNav = (function () {
         var card = el.closest('.media-card') || el.closest('[data-carousel-item]');
         if (!card) return;
 
+        // On vertical page feeds, keep the whole carousel row (title + cards) in view
+        // so scrolling up does not clip the section header.
+        var measureEl = card;
+        if (root.classList && root.classList.contains('page-scrollable')) {
+            measureEl = el.closest('.carousel-wrapper') || card;
+        }
+
         var margin = 24;
         var rootRect = root.getBoundingClientRect();
-        var cardRect = card.getBoundingClientRect();
+        var cardRect = measureEl.getBoundingClientRect();
 
         var overflowBottom = cardRect.bottom - rootRect.bottom;
         var overflowTop = rootRect.top - cardRect.top;
@@ -1545,7 +1552,12 @@ var SpatialNav = (function () {
             var tvScrollRootEarly = el.closest('[data-tv-scroll]');
             if (isNearPageTop(el) && !tvScrollRootEarly) {
                 var nearTopScrollRoot = getFocusScrollRoot(el);
-                if (nearTopScrollRoot && nearTopScrollRoot.scrollTop > 0) {
+                // Home / Explore feeds: never yank to scrollTop 0 - that overshoots and
+                // leaves the focused carousel truncated below the viewport. Incremental
+                // scrollCardIntoTvView below keeps the row in view instead.
+                if (nearTopScrollRoot
+                    && !nearTopScrollRoot.classList.contains('page-scrollable')
+                    && nearTopScrollRoot.scrollTop > 0) {
                     nearTopScrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }

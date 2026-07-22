@@ -3,7 +3,7 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="@(_isTv ? "tv-feed-page home-page home-page--tv" : "home-page")" data-initial-focus="@_homeFocusSelector">
+<div class="@(_isTv ? "tv-feed-page home-page home-page--tv" : "home-page page-scrollable")" data-initial-focus="@_homeFocusSelector">
     @if (_isOffline)
     {
         <div class="home-offline-banner">

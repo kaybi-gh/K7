@@ -164,7 +164,7 @@ public partial class Serie : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_isTv && !_loading && _serie is not null && HasTvScrollContent)
+        if (!_loading && _serie is not null && HasTvScrollContent)
         {
             if (!_tvScrollInitialized)
             {

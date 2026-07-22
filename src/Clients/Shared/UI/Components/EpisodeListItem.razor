@@ -1,10 +1,25 @@
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 @using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
 @inject IStringLocalizer<SharedResource> S
 
-<div class="episode-card">
-    <a class="episode-card-link focusable" href="@Href">
+<div class="episode-card"
+     data-longpress="true"
+     @ontouchstart="OnTouchStart"
+     @ontouchmove="OnTouchMove"
+     @ontouchend="OnTouchEnd"
+     @ontouchend:preventDefault="@_longPressTriggered"
+     @ontouchcancel="OnTouchCancel"
+     @oncontextmenu="OnContextMenu"
+     @oncontextmenu:preventDefault="true">
+    <a class="episode-card-link focusable"
+       href="@Href"
+       @onclick="OnLinkClick"
+       @onclick:preventDefault="@ShouldPreventLinkActivation"
+       @onfocusin="OnLinkFocusIn"
+       @onkeydown="OnKeyDown"
+       @onkeyup="OnKeyUp">
         <div class="episode-card-still">
             @if (!string.IsNullOrEmpty(StillUrl))
             {
@@ -56,12 +71,15 @@
         </div>
     </a>
 
-    <div class="episode-card-menu" @onclick:stopPropagation="true">
-        <K7Menu Title="@(Episode.Title ?? S["Untitled"])">
+    <div class="episode-card-menu" data-longpress-target @onclick:stopPropagation="true">
+        <K7Menu Title="@(Episode.Title ?? S["Untitled"])"
+                Open="_menuOpen"
+                OpenChanged="OnMenuOpenChangedAsync">
             <ActivatorContent>
                 <K7IconButton Icon="@Phosphor.DotsThreeVertical"
                                Size="sm"
                                AriaLabel="more-actions"
+                               Focusable="false"
                                @onclick:preventDefault="true" />
             </ActivatorContent>
             <ChildContent>

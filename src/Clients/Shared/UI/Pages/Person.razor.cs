@@ -11,10 +11,11 @@ using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class Person : IDisposable
+public partial class Person : IAsyncDisposable
 {
     [Parameter]
     public required string Id { get; set; }
@@ -34,7 +35,10 @@ public partial class Person : IDisposable
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
-    private ElementReference _scrollRoot;
+    private bool _isTv;
+    private ElementReference _tvScrollRoot;
+    private bool _tvScrollInitialized;
+    private bool _initialFocusApplied;
 
     private bool HasBelowContent => _discography.Count > 0 || _medias.Count > 0 || _knownFor.Count > 0;
 
@@ -52,9 +56,12 @@ public partial class Person : IDisposable
 
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
 
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.PersonPicturesUpdated += OnPersonPicturesUpdated;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
@@ -144,6 +151,32 @@ public partial class Person : IDisposable
         _loading = false;
 
         LoadKnownForAsync().FireAndForget();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loading && _person is not null && HasBelowContent)
+        {
+            if (!_tvScrollInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
+                _tvScrollInitialized = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+            }
+        }
+
+        if (!_initialFocusApplied && !_loading && _person is not null)
+        {
+            _initialFocusApplied = true;
+            try
+            {
+                await SpatialNav.FocusFirstAsync("[data-initial-focus]");
+            }
+            catch (InvalidOperationException) { }
+        }
     }
 
     private async Task LoadKnownForAsync()
@@ -340,10 +373,13 @@ public partial class Person : IDisposable
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         K7HubClient.PersonPicturesUpdated -= OnPersonPicturesUpdated;
         _backdropTimer?.Dispose();
+
+        if (_tvScrollInitialized)
+            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }
 
     private readonly record struct PersonBackdropSlide(string Url, string? DominantColor);
