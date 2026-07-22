@@ -1553,12 +1553,21 @@ var SpatialNav = (function () {
         return root ? getFocusables(root) : [];
     }
 
+    // Blazor bool true attributes render as "True"; treat those as marker-self, not CSS selectors.
+    function isInitialFocusSelector(value) {
+        if (value == null) return false;
+        var v = String(value).trim();
+        if (!v) return false;
+        if (/^(true|false)$/i.test(v)) return false;
+        return true;
+    }
+
     function getPageFocusTarget() {
         var markers = document.querySelectorAll('[data-initial-focus]');
         for (var i = 0; i < markers.length; i++) {
             var marker = markers[i];
             var selector = marker.getAttribute('data-initial-focus');
-            if (selector) {
+            if (isInitialFocusSelector(selector)) {
                 var target = marker.querySelector(selector) || queryFocusSelector(selector);
                 if (target) return target;
                 continue;

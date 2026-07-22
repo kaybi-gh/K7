@@ -87,23 +87,19 @@
     }
 }
 
-/* Logo */
+/* Logo (decorative only - not clickable / focusable) */
 .app-nav-logo {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     color: var(--color-accent);
-    text-decoration: none;
     font-weight: 700;
     flex-shrink: 0;
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-md);
     margin-right: var(--space-3);
-    transition: background var(--transition-fast);
-}
-
-.app-nav-logo:hover {
-    background: var(--color-surface-hover);
+    pointer-events: none;
+    user-select: none;
 }
 
 .app-nav-logo-text {

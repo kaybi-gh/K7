@@ -1,4 +1,3 @@
-using K7.Clients.MAUI.Diagnostics;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -7,16 +6,13 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
-using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.MAUI.Services;
 
 internal class PlayerService(
     IStreamUriService streamUriService,
-    IDeviceStorageService deviceStorageService,
-    ILogger<PlayerService> logger) : IPlayerService
+    IDeviceStorageService deviceStorageService) : IPlayerService
 {
-    private readonly ILogger _nativePlayerLogger = logger;
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
     public event Func<Task>? StopRequested;
@@ -65,16 +61,6 @@ internal class PlayerService(
                 Duration = 0;
                 BufferedTime = 0;
                 PlaybackState = PlaybackState.Idle;
-                NativePlayerDiagnostics.Info(
-                    _nativePlayerLogger,
-                    "PlayerService.SourceChanged url="
-                    + NativePlayerDiagnostics.RedactUrl(value.Url)
-                    + " sessionId="
-                    + (value.StreamSessionId?.ToString() ?? "(none)")
-                    + " quality="
-                    + (_selectedQuality?.Label ?? "(none)")
-                    + " UsesWebVideoPlayer="
-                    + WindowsVideoPlayback.UsesWebVideoPlayer);
                 SourceChanged?.Invoke(value);
             }
         }
@@ -600,20 +586,12 @@ internal class PlayerService(
     public Task ShowAsync()
     {
         IsVisible = true;
-        NativePlayerDiagnostics.Info(
-            _nativePlayerLogger,
-            "PlayerService.ShowAsync IsVisible=true UsesWebVideoPlayer="
-            + WindowsVideoPlayback.UsesWebVideoPlayer);
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
 
     public Task HideAsync()
     {
-        NativePlayerDiagnostics.Info(
-            _nativePlayerLogger,
-            "PlayerService.HideAsync PlaybackState=" + PlaybackState);
-
         if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
         {
             PlaybackState = PlaybackState.Idle;
@@ -624,17 +602,9 @@ internal class PlayerService(
         return Task.CompletedTask;
     }
 
-    public void OnBackPressed()
-    {
-        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.OnBackPressed");
-        BackPressed?.Invoke();
-    }
+    public void OnBackPressed() => BackPressed?.Invoke();
 
-    public void Play()
-    {
-        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.Play()");
-        PlayRequested?.Invoke();
-    }
+    public void Play() => PlayRequested?.Invoke();
 
     public void Pause() => PauseRequested?.Invoke();
     public void Seek(double time) => SeekRequested?.Invoke(time);
@@ -643,11 +613,7 @@ internal class PlayerService(
     public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
     public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
 
-    public void Stop()
-    {
-        NativePlayerDiagnostics.Info(_nativePlayerLogger, "PlayerService.Stop()");
-        StopRequested?.Invoke();
-    }
+    public void Stop() => StopRequested?.Invoke();
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 

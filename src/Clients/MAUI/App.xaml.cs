@@ -4,7 +4,6 @@ using K7.Clients.MAUI.Services;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.MAUI;
 
@@ -15,22 +14,19 @@ public partial class App : Application
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly BackButtonService _backButtonService;
     private readonly IK7ServerService _k7ServerService;
-    private readonly ILoggerFactory _loggerFactory;
 
     public App(
         K7ServerManagerService k7ServerManagerService,
         IPlayerService playerService,
         IAudioPlayerService audioPlayerService,
         BackButtonService backButtonService,
-        IK7ServerService k7ServerService,
-        ILoggerFactory loggerFactory)
+        IK7ServerService k7ServerService)
     {
         _k7ServerManagerService = k7ServerManagerService;
         _playerService = playerService;
         _audioPlayerService = audioPlayerService;
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
-        _loggerFactory = loggerFactory;
         InitializeComponent();
     }
 
@@ -90,7 +86,7 @@ public partial class App : Application
         {
             _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
             Debug.WriteLine("K7 MAUI - GetStartPage - creating BlazorPage");
-            var page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService, _loggerFactory);
+            var page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService);
             Debug.WriteLine("K7 MAUI - GetStartPage - BlazorPage created");
             return page;
         }

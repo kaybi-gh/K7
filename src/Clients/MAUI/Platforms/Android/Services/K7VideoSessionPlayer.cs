@@ -10,8 +10,8 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
 
 /// <summary>
 /// A virtual player (SimpleBasePlayer) that reports video playback state to the MediaSession
-/// without actually playing any media. This drives the notification for video playback,
-/// following the same pattern as Jellyfin's MediaSessionPlayer.
+/// without actually playing any media. This drives the notification for video playback
+/// via a session-only player that mirrors IPlayerService state.
 /// Commands (play/pause/seek) are forwarded to IPlayerService.
 /// </summary>
 public class K7VideoSessionPlayer : SimpleBasePlayer

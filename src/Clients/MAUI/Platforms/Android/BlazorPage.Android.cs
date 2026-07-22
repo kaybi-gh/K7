@@ -1,7 +1,6 @@
 using AndroidX.Media3.Common;
 using AndroidX.Media3.DataSource;
 using CommunityToolkit.Maui.Views;
-using K7.Clients.MAUI.Diagnostics;
 using Log = Android.Util.Log;
 
 namespace K7.Clients.MAUI;
@@ -43,7 +42,7 @@ public partial class BlazorPage
             if (TryGetMediaItemUri(player.CurrentMediaItem, out var mediaItemUri)
                 && !string.IsNullOrEmpty(mediaItemUri))
             {
-                detail += " MediaItemUri=" + NativePlayerDiagnostics.RedactUrl(mediaItemUri);
+                detail += " MediaItemUri=" + RedactUrl(mediaItemUri);
             }
 
             Java.Lang.Throwable? cause = error.Cause;
@@ -66,7 +65,7 @@ public partial class BlazorPage
                     var dataSpecUri = invalidResponse.DataSpec?.Uri?.ToString();
                     if (!string.IsNullOrEmpty(dataSpecUri))
                     {
-                        detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(dataSpecUri);
+                        detail += " DataSpecUri=" + RedactUrl(dataSpecUri);
                         sawDataSpecUri = true;
                     }
                 }
@@ -75,7 +74,7 @@ public partial class BlazorPage
                     var dataSpecUri = httpEx.DataSpec?.Uri?.ToString();
                     if (!string.IsNullOrEmpty(dataSpecUri))
                     {
-                        detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(dataSpecUri);
+                        detail += " DataSpecUri=" + RedactUrl(dataSpecUri);
                         sawDataSpecUri = true;
                     }
                 }
@@ -83,7 +82,7 @@ public partial class BlazorPage
                     && TryGetDataSpecUriFromCause(cause, out var reflectedUri)
                     && !string.IsNullOrEmpty(reflectedUri))
                 {
-                    detail += " DataSpecUri=" + NativePlayerDiagnostics.RedactUrl(reflectedUri);
+                    detail += " DataSpecUri=" + RedactUrl(reflectedUri);
                     sawDataSpecUri = true;
                 }
 
@@ -158,14 +157,7 @@ public partial class BlazorPage
         // MAUI property mapper can re-apply an opaque BackgroundColor after the handler connects.
         // Re-assert platform transparency whenever the native player becomes visible.
         if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView platformView)
-        {
-            NativePlayerDiagnostics.Warn(
-                _nativePlayerLogger,
-                "EnsureAndroidWebViewTransparent: PlatformView not ready (Handler="
-                + (blazorWebView.Handler is null ? "null" : "set")
-                + ")");
             return;
-        }
 
         platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
         platformView.SetBackgroundResource(0);
@@ -176,10 +168,6 @@ public partial class BlazorPage
             parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
             parentView.SetBackgroundResource(0);
         }
-
-        NativePlayerDiagnostics.Info(
-            _nativePlayerLogger,
-            "EnsureAndroidWebViewTransparent applied (WebView + parent Background=Transparent)");
     }
 
     private static void SetImmersiveMode(Android.App.Activity activity)

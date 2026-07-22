@@ -54,6 +54,7 @@ public partial class Movie : IAsyncDisposable
     private bool _isTv;
     private ElementReference _tvScrollRoot;
     private bool _tvScrollInitialized;
+    private bool _initialFocusApplied;
     private Guid? _libraryGroupId;
     private MediaReviewsSection? _reviewsSection;
     private int? _movieUserRating;
@@ -98,6 +99,7 @@ public partial class Movie : IAsyncDisposable
         if (!isBackgroundRefresh && !isPicturesRefresh)
         {
             _tvScrollInitialized = false;
+            _initialFocusApplied = false;
             _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
             isLoading = true;
             _similarMedia = [];
@@ -195,11 +197,12 @@ public partial class Movie : IAsyncDisposable
             }
         }
 
-        if (firstRender)
+        if (!_initialFocusApplied && !isLoading && _movie is not null)
         {
+            _initialFocusApplied = true;
             try
             {
-                await SpatialNav.FocusFirstAsync(".k7-btn--filled");
+                await SpatialNav.FocusFirstAsync("[data-initial-focus]");
             }
             catch (InvalidOperationException) { }
         }

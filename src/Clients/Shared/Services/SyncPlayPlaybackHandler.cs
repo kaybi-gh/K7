@@ -9,7 +9,7 @@ namespace K7.Clients.Shared.Services;
 /// <summary>
 /// Coordinates local player state with the SyncPlay group.
 ///
-/// Design philosophy (inspired by Jellyfin SyncPlay):
+/// Design:
 /// - Sync happens ONLY at state transitions (Play, Pause, Seek, PlayAt).
 /// - No continuous position polling or server-side drift detection.
 /// - After a PlayAt, clients are trusted to stay in sync (HLS keyframes may differ by a few seconds - that is acceptable).
