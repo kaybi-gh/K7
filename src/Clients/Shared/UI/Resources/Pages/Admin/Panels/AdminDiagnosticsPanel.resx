@@ -41,8 +41,10 @@
   <data name="MissingHlsSegments" xml:space="preserve"><value>Segments HLS manquants</value></data>
   <data name="MissingChapters" xml:space="preserve"><value>Chapitres non extraits</value></data>
   <data name="ActionExtractChapters" xml:space="preserve"><value>Extraire les chapitres</value></data>
-  <data name="MissingThemeSong" xml:space="preserve"><value>Theme non genere</value></data>
-  <data name="ActionExtractThemeSong" xml:space="preserve"><value>Generer le theme</value></data>
+  <data name="MissingThemeSong" xml:space="preserve"><value>Thème non généré</value></data>
+  <data name="ActionExtractThemeSong" xml:space="preserve"><value>Générer le thème</value></data>
+  <data name="MissingIntroOutro" xml:space="preserve"><value>Intro/outro manquant</value></data>
+  <data name="ActionDetectIntroOutro" xml:space="preserve"><value>Détecter intros/outros</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Analyse audio manquante</value></data>
   <data name="MissingMembers" xml:space="preserve"><value>Membres manquants</value></data>
   <data name="BackgroundTasksSection" xml:space="preserve"><value>Tâches de fond</value></data>

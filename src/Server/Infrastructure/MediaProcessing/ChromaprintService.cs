@@ -29,7 +29,9 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
                 inputArgs.Add($"-t {duration.Value.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
             inputArgs.Add($"-i \"{filePath}\"");
 
-            var args = string.Join(" ", inputArgs) + " -f chromaprint -fp_format raw -";
+            // Chromaprint is audio-only. Without -vn/-map/-ac, FFmpeg can fail immediately
+            // (exit 234 / EINVAL) on multi-stream MKV (video + 5.1 + PGS subtitles).
+            var args = string.Join(" ", inputArgs) + " -vn -map 0:a:0 -ac 1 -f chromaprint -fp_format raw -";
 
             // FFmpeg's -fp_format raw outputs uint32 values as raw binary to stdout.
             // We must read stdout as a binary stream, not as text lines.
@@ -79,11 +81,15 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
             }
 
             var rawBytes = await stdoutTask;
-            _ = await stderrTask;
+            var stderr = await stderrTask;
 
             if (process.ExitCode != 0)
             {
-                logger.LogWarning("Chromaprint extraction failed for '{FilePath}' with exit code {ExitCode}", filePath, process.ExitCode);
+                logger.LogWarning(
+                    "Chromaprint extraction failed for '{FilePath}' with exit code {ExitCode}: {Stderr}",
+                    filePath,
+                    process.ExitCode,
+                    TruncateStderr(stderr));
                 return null;
             }
 
@@ -117,5 +123,15 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
         using var ms = new MemoryStream();
         await process.StandardOutput.BaseStream.CopyToAsync(ms, cancellationToken);
         return ms.ToArray();
+    }
+
+    private static string TruncateStderr(string stderr)
+    {
+        const int maxLength = 500;
+        if (string.IsNullOrWhiteSpace(stderr))
+            return "(empty)";
+
+        var trimmed = stderr.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "...";
     }
 }

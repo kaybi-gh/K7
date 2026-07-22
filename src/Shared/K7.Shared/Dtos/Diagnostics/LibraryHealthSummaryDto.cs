@@ -22,6 +22,7 @@ public sealed record LibraryHealthSummaryDto
     public required int MissingHlsSegmentsCount { get; init; }
     public required int MissingChaptersCount { get; init; }
     public required int MissingThemeSongCount { get; init; }
+    public required int MissingIntroOutroCount { get; init; }
 
     public required int MissingAudioAnalysisCount { get; init; }
 

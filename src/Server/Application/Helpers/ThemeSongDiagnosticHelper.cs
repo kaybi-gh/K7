@@ -9,31 +9,49 @@ public static class ThemeSongDiagnosticHelper
 {
     public sealed record SerieThemeCandidate(Guid SerieId, Guid LibraryId, string EpisodePath);
 
-    public static async Task<List<SerieThemeCandidate>> GetCandidatesWithIntroAsync(
+    /// <summary>
+    /// Series in libraries with intro+theme generation enabled that have at least one
+    /// detection-eligible season (2+ episodes with existing indexed files). Does not require
+    /// an Intro segment to already exist.
+    /// </summary>
+    public static async Task<List<SerieThemeCandidate>> GetEligibleSerieCandidatesAsync(
         IApplicationDbContext context,
         Guid? libraryId,
         CancellationToken cancellationToken = default)
     {
-        var query =
+        var episodeRows =
             from episode in context.Medias.OfType<SerieEpisode>().AsNoTracking()
-            join segment in context.MediaSegments.AsNoTracking() on episode.Id equals segment.MediaId
-            where segment.Type == MediaSegmentType.Intro
             join file in context.IndexedFiles.AsNoTracking() on episode.Id equals file.MediaId
-            where file.Path != null
+            where file.Path != null && file.FileMetadata != null
             join library in context.Libraries.AsNoTracking() on file.LibraryId equals library.Id
             where library.PeerServerId == null
                 && library.MediaType == LibraryMediaType.Serie
                 && library.IntroDetectionEnabled
                 && library.ThemeSongGenerationEnabled
-            select new { episode.SerieId, file.LibraryId, Path = file.Path! };
+            select new
+            {
+                episode.SerieId,
+                episode.SeasonId,
+                file.LibraryId,
+                Path = file.Path!
+            };
 
         if (libraryId.HasValue)
-            query = query.Where(x => x.LibraryId == libraryId.Value);
+            episodeRows = episodeRows.Where(x => x.LibraryId == libraryId.Value);
 
-        var rows = await query.ToListAsync(cancellationToken);
+        var rows = await episodeRows.ToListAsync(cancellationToken);
 
-        return rows
-            .GroupBy(x => x.SerieId)
+        var existing = rows.Where(r => File.Exists(r.Path)).ToList();
+
+        var eligibleSeasonIds = existing
+            .GroupBy(r => r.SeasonId)
+            .Where(g => g.Select(x => x.Path).Distinct().Count() >= 2)
+            .Select(g => g.Key)
+            .ToHashSet();
+
+        return existing
+            .Where(r => eligibleSeasonIds.Contains(r.SeasonId))
+            .GroupBy(r => r.SerieId)
             .Select(g =>
             {
                 var first = g.First();
@@ -58,7 +76,7 @@ public static class ThemeSongDiagnosticHelper
         IReadOnlyCollection<Guid>? limitToSerieIds,
         CancellationToken cancellationToken = default)
     {
-        var candidates = await GetCandidatesWithIntroAsync(context, libraryId, cancellationToken);
+        var candidates = await GetEligibleSerieCandidatesAsync(context, libraryId, cancellationToken);
         if (limitToSerieIds is not null)
             candidates = candidates.Where(c => limitToSerieIds.Contains(c.SerieId)).ToList();
 
@@ -73,10 +91,45 @@ public static class ThemeSongDiagnosticHelper
         PathsConfiguration paths,
         CancellationToken cancellationToken = default)
     {
-        var candidates = await GetCandidatesWithIntroAsync(context, libraryId: null, cancellationToken);
+        var candidates = await GetEligibleSerieCandidatesAsync(context, libraryId: null, cancellationToken);
         return candidates
             .Where(c => IsMissingTheme(paths, c.SerieId, c.EpisodePath))
             .GroupBy(c => c.LibraryId)
             .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    public static async Task<List<Guid>> GetEligibleSeasonIdsForSerieAsync(
+        IApplicationDbContext context,
+        Guid serieId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await (
+            from episode in context.Medias.OfType<SerieEpisode>().AsNoTracking()
+            where episode.SerieId == serieId
+            join file in context.IndexedFiles.AsNoTracking() on episode.Id equals file.MediaId
+            where file.Path != null && file.FileMetadata != null
+            select new { episode.SeasonId, Path = file.Path! }
+        ).ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => File.Exists(r.Path))
+            .GroupBy(r => r.SeasonId)
+            .Where(g => g.Select(x => x.Path).Distinct().Count() >= 2)
+            .Select(g => g.Key)
+            .ToList();
+    }
+
+    public static async Task<bool> SerieHasIntroAsync(
+        IApplicationDbContext context,
+        Guid serieId,
+        CancellationToken cancellationToken = default)
+    {
+        return await (
+            from episode in context.Medias.OfType<SerieEpisode>().AsNoTracking()
+            where episode.SerieId == serieId
+            join segment in context.MediaSegments.AsNoTracking() on episode.Id equals segment.MediaId
+            where segment.Type == MediaSegmentType.Intro
+            select episode.Id
+        ).AnyAsync(cancellationToken);
     }
 }

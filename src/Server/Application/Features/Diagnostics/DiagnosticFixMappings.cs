@@ -14,6 +14,7 @@ public static class DiagnosticFixMappings
         DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
         DiagnosticIssue.MissingChapters => DiagnosticFixAction.ExtractChapters,
         DiagnosticIssue.MissingThemeSong => DiagnosticFixAction.ExtractSerieThemeSong,
+        DiagnosticIssue.MissingIntroOutro => DiagnosticFixAction.DetectMediaSegments,
         DiagnosticIssue.OrphanFile => DiagnosticFixAction.RetryCreateMedia,
         _ => null
     };

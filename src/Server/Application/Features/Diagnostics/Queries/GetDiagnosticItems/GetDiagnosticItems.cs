@@ -162,28 +162,48 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
         var query = flags.Where(f => f.IsOrphan).Select(f => new IndexedFileIssueRow
         {
-            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
-            Issue = DiagnosticIssue.OrphanFile, Severity = DiagnosticSeverity.Error
+            EntityId = f.Id,
+            EntityName = f.Name,
+            LibraryId = f.LibraryId,
+            LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.OrphanFile,
+            Severity = DiagnosticSeverity.Error
         })
         .Concat(flags.Where(f => f.IsUnidentified).Select(f => new IndexedFileIssueRow
         {
-            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
-            Issue = DiagnosticIssue.UnidentifiedFile, Severity = DiagnosticSeverity.Warning
+            EntityId = f.Id,
+            EntityName = f.Name,
+            LibraryId = f.LibraryId,
+            LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.UnidentifiedFile,
+            Severity = DiagnosticSeverity.Warning
         }))
         .Concat(flags.Where(f => f.HasNoFileMetadata).Select(f => new IndexedFileIssueRow
         {
-            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
-            Issue = DiagnosticIssue.MissingFileMetadata, Severity = DiagnosticSeverity.Error
+            EntityId = f.Id,
+            EntityName = f.Name,
+            LibraryId = f.LibraryId,
+            LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingFileMetadata,
+            Severity = DiagnosticSeverity.Error
         }))
         .Concat(flags.Where(f => f.HasNoHlsSegments).Select(f => new IndexedFileIssueRow
         {
-            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
-            Issue = DiagnosticIssue.MissingHlsSegments, Severity = DiagnosticSeverity.Warning
+            EntityId = f.Id,
+            EntityName = f.Name,
+            LibraryId = f.LibraryId,
+            LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingHlsSegments,
+            Severity = DiagnosticSeverity.Warning
         }))
         .Concat(flags.Where(f => f.HasNoChapters).Select(f => new IndexedFileIssueRow
         {
-            EntityId = f.Id, EntityName = f.Name, LibraryId = f.LibraryId, LibraryTitle = f.LibraryTitle,
-            Issue = DiagnosticIssue.MissingChapters, Severity = DiagnosticSeverity.Warning
+            EntityId = f.Id,
+            EntityName = f.Name,
+            LibraryId = f.LibraryId,
+            LibraryTitle = f.LibraryTitle,
+            Issue = DiagnosticIssue.MissingChapters,
+            Severity = DiagnosticSeverity.Warning
         }));
 
         if (request.Issue.HasValue)
@@ -198,16 +218,16 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     private static DiagnosticItemDto MapIndexedFileIssue(
         IndexedFileIssueRow row,
         MediaIdentificationDto? identification = null) => new()
-    {
-        EntityId = row.EntityId,
-        EntityName = row.EntityName,
-        EntityType = DiagnosticEntityType.IndexedFile,
-        LibraryId = row.LibraryId,
-        LibraryTitle = row.LibraryTitle,
-        Issues = [row.Issue],
-        Severity = row.Severity,
-        Identification = identification
-    };
+        {
+            EntityId = row.EntityId,
+            EntityName = row.EntityName,
+            EntityType = DiagnosticEntityType.IndexedFile,
+            LibraryId = row.LibraryId,
+            LibraryTitle = row.LibraryTitle,
+            Issues = [row.Issue],
+            Severity = row.Severity,
+            Identification = identification
+        };
 
     private async Task<Dictionary<Guid, MediaIdentificationDto?>> LoadIdentificationsByIndexedFileIdAsync(
         IEnumerable<Guid> indexedFileIds,
@@ -445,6 +465,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             : await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
                 _context, _paths, request.LibraryId, serieIds, cancellationToken);
 
+        var episodeIds = medias.Where(m => m.Type == MediaType.SerieEpisode).Select(m => m.Id).ToList();
+        var missingIntroOutroEpisodeIds = episodeIds.Count == 0
+            ? new HashSet<Guid>()
+            : await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodeIdsAsync(
+                _context, request.LibraryId, episodeIds, cancellationToken);
+
         return medias.Select(m =>
         {
             var libraryId = mediaToLibrary.GetValueOrDefault(m.Id);
@@ -482,6 +508,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             if (m.Type == MediaType.Serie && missingThemeSerieIds.Contains(m.Id))
                 issues.Add(DiagnosticIssue.MissingThemeSong);
 
+            if (m.Type == MediaType.SerieEpisode && missingIntroOutroEpisodeIds.Contains(m.Id))
+                issues.Add(DiagnosticIssue.MissingIntroOutro);
+
             if (issues.Count == 0) return null;
 
             episodeNavById.TryGetValue(m.Id, out var episodeNav);
@@ -493,6 +522,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 : issues.Contains(DiagnosticIssue.MissingPictures) || issues.Contains(DiagnosticIssue.MissingMetadata)
                     || issues.Contains(DiagnosticIssue.MissingExternalId)
                     || issues.Contains(DiagnosticIssue.MissingThemeSong)
+                    || issues.Contains(DiagnosticIssue.MissingIntroOutro)
                     ? DiagnosticSeverity.Warning
                     : DiagnosticSeverity.Info;
 
@@ -529,6 +559,20 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         GetDiagnosticItemsQuery request,
         CancellationToken cancellationToken)
     {
+        // MissingThemeSong depends on filesystem checks; candidate SQL alone over-counts
+        // (series with intros that already have a theme) and breaks filter TotalCount / bulk fix UI.
+        if (IsOnlyIssueFilter(request, DiagnosticIssue.MissingThemeSong))
+            return await GetMissingThemeSongIssuePageAsync(request, cancellationToken);
+
+        if (IsOnlyIssueFilter(request, DiagnosticIssue.MissingIntroOutro))
+            return await GetMissingIntroOutroIssuePageAsync(request, cancellationToken);
+
+        if (request.Issue is { } singleIssue && !IsMediaCatalogIssue(singleIssue))
+            return EmptyPage(request);
+
+        if (request.Issues is { Count: > 0 } && !request.Issues.Any(IsMediaCatalogIssue))
+            return EmptyPage(request);
+
         var availability = _context.MediaLibraryAvailabilities
             .Where(a => !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null));
 
@@ -553,14 +597,20 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                         || m.Type == MediaType.Serie
                             && _context.Medias.OfType<SerieEpisode>().Any(e =>
                                 e.SerieId == m.Id
-                                && _context.MediaSegments.Any(s =>
-                                    s.MediaId == e.Id && s.Type == MediaSegmentType.Intro)
                                 && _context.IndexedFiles.Any(f =>
                                     f.MediaId == e.Id
                                     && _context.Libraries.Any(l =>
                                         l.Id == f.LibraryId
                                         && l.IntroDetectionEnabled
                                         && l.ThemeSongGenerationEnabled)))
+                        || m.Type == MediaType.SerieEpisode
+                            && !_context.MediaSegments.Any(s =>
+                                s.MediaId == m.Id
+                                && (s.Type == MediaSegmentType.Intro || s.Type == MediaSegmentType.Outro))
+                            && _context.IndexedFiles.Any(f =>
+                                f.MediaId == m.Id
+                                && _context.Libraries.Any(l =>
+                                    l.Id == f.LibraryId && l.IntroDetectionEnabled))
                         || availability.Join(
                                 _context.Libraries,
                                 a => a.LibraryId,
@@ -583,6 +633,92 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         items = ApplyIssueFilters(items, request);
         return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
     }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetMissingThemeSongIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var missingIds = await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
+            _context, _paths, request.LibraryId, limitToSerieIds: null, cancellationToken);
+
+        if (missingIds.Count == 0)
+            return EmptyPage(request);
+
+        var ordered = await _context.Medias
+            .OfType<Serie>()
+            .AsNoTracking()
+            .Where(s => missingIds.Contains(s.Id))
+            .OrderBy(s => s.Title ?? "(untitled)")
+            .ThenBy(s => s.Id)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = ordered.Count;
+        var pageIds = ordered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<DiagnosticItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var items = await GetMediaIssuesAsync(request, cancellationToken, pageIds);
+        items = ExpandToOneRowPerIssue(items);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetMissingIntroOutroIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var missing = await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodesAsync(
+            _context, request.LibraryId, limitToEpisodeIds: null, cancellationToken);
+
+        if (missing.Count == 0)
+            return EmptyPage(request);
+
+        var missingIds = missing.Select(c => c.EpisodeId).ToHashSet();
+        var ordered = await _context.Medias
+            .OfType<SerieEpisode>()
+            .AsNoTracking()
+            .Where(e => missingIds.Contains(e.Id))
+            .OrderBy(e => e.Title ?? "(untitled)")
+            .ThenBy(e => e.Id)
+            .Select(e => e.Id)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = ordered.Count;
+        var pageIds = ordered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<DiagnosticItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var items = await GetMediaIssuesAsync(request, cancellationToken, pageIds);
+        items = ExpandToOneRowPerIssue(items);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private static PaginatedList<DiagnosticItemDto> EmptyPage(GetDiagnosticItemsQuery request) =>
+        new([], 0, request.PageNumber, request.PageSize);
+
+    private static bool IsOnlyIssueFilter(GetDiagnosticItemsQuery request, DiagnosticIssue issue) =>
+        request.Issue == issue
+        || request.Issues is { Count: > 0 } && request.Issues.All(i => i == issue);
+
+    private static bool IsMediaCatalogIssue(DiagnosticIssue issue) => issue is
+        DiagnosticIssue.MissingPictures
+        or DiagnosticIssue.MissingExternalId
+        or DiagnosticIssue.MissingMetadata
+        or DiagnosticIssue.MissingFiles
+        or DiagnosticIssue.StaleMetadata
+        or DiagnosticIssue.MissingAudioAnalysis
+        or DiagnosticIssue.MissingThemeSong
+        or DiagnosticIssue.MissingIntroOutro;
 
     private static IReadOnlyList<MetadataPictureType> GetExpectedPictureTypes(MediaType type) => type switch
     {
@@ -690,6 +826,18 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         GetDiagnosticItemsQuery request,
         CancellationToken cancellationToken)
     {
+        if (request.Issue is { } singleIssue
+            && singleIssue is not (DiagnosticIssue.MissingMembers or DiagnosticIssue.MissingMetadata))
+        {
+            return EmptyPage(request);
+        }
+
+        if (request.Issues is { Count: > 0 }
+            && !request.Issues.Any(i => i is DiagnosticIssue.MissingMembers or DiagnosticIssue.MissingMetadata))
+        {
+            return EmptyPage(request);
+        }
+
         var artists = _context.Medias.OfType<MusicArtist>()
             .AsNoTracking()
             .Where(a => !a.PersonRoles.Any() || !a.ExternalIds.Any());

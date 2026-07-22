@@ -53,6 +53,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         var missingChaptersCounts = await GetMissingChaptersCountsAsync(cancellationToken);
         var missingThemeSongCounts = await ThemeSongDiagnosticHelper.GetMissingThemeCountsByLibraryAsync(
             _context, _paths, cancellationToken);
+        var missingIntroOutroCounts = await IntroOutroDiagnosticHelper.GetMissingIntroOutroCountsByLibraryAsync(
+            _context, cancellationToken);
         var inaccessiblePathCounts = await GetInaccessiblePathCountsAsync(cancellationToken);
         var mediaWithoutFilesCounts = await GetMediaWithoutFilesCountsAsync(cancellationToken);
 
@@ -79,6 +81,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             missingHlsSegmentCounts.TryGetValue(library.Id, out var missingHlsSegmentsCount);
             missingChaptersCounts.TryGetValue(library.Id, out var missingChaptersCount);
             missingThemeSongCounts.TryGetValue(library.Id, out var missingThemeSongCount);
+            missingIntroOutroCounts.TryGetValue(library.Id, out var missingIntroOutroCount);
             inaccessiblePathCounts.TryGetValue(library.Id, out var inaccessiblePathCount);
             mediaWithoutFilesCounts.TryGetValue(library.Id, out var mediaWithoutFilesCount);
             missingAudioAnalysisCounts.TryGetValue(library.Id, out var missingAudioAnalysisCount);
@@ -101,6 +104,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MissingHlsSegmentsCount = missingHlsSegmentsCount,
                 MissingChaptersCount = missingChaptersCount,
                 MissingThemeSongCount = missingThemeSongCount,
+                MissingIntroOutroCount = missingIntroOutroCount,
                 MissingAudioAnalysisCount = missingAudioAnalysisCount,
                 InaccessiblePathCount = inaccessiblePathCount,
                 PendingBackgroundTaskCount = backgroundTaskStats.PendingCount,

@@ -9,5 +9,6 @@ public enum DiagnosticFixAction
     AnalyzeMusicTrackAudio = 5,
     RetryCreateMedia = 6,
     ExtractChapters = 7,
-    ExtractSerieThemeSong = 8
+    ExtractSerieThemeSong = 8,
+    DetectMediaSegments = 9
 }

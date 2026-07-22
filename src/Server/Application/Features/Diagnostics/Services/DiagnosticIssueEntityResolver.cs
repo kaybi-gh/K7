@@ -32,6 +32,7 @@ public class DiagnosticIssueEntityResolver(
             DiagnosticIssue.MissingMembers => await GetMusicArtistIdsMissingMembersAsync(libraryId, cancellationToken),
             DiagnosticIssue.OrphanFile => await GetOrphanIndexedFileIdsAsync(libraryId, cancellationToken),
             DiagnosticIssue.MissingThemeSong => await GetSerieIdsMissingThemeSongAsync(libraryId, cancellationToken),
+            DiagnosticIssue.MissingIntroOutro => await GetEpisodeIdsMissingIntroOutroAsync(libraryId, cancellationToken),
             _ => []
         };
     }
@@ -40,6 +41,13 @@ public class DiagnosticIssueEntityResolver(
     {
         var ids = await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
             context, _paths, libraryId, limitToSerieIds: null, cancellationToken);
+        return ids.ToList();
+    }
+
+    private async Task<List<Guid>> GetEpisodeIdsMissingIntroOutroAsync(Guid? libraryId, CancellationToken cancellationToken)
+    {
+        var ids = await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodeIdsAsync(
+            context, libraryId, limitToEpisodeIds: null, cancellationToken);
         return ids.ToList();
     }
 

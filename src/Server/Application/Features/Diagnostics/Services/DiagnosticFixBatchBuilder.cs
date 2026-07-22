@@ -4,7 +4,9 @@ using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.IndexedFiles.Commands.ExtractChapters;
 using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
+using K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
 using K7.Server.Application.Features.Medias.Commands.ExtractSerieThemeSong;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -48,15 +50,8 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
                 MaxAttempts = 3,
                 ConcurrencyGroup = "ffprobe"
             }).ToList(),
-            DiagnosticFixAction.ExtractSerieThemeSong => entityIds.Select(serieId => new CreateBackgroundTasksBatchItem
-            {
-                Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
-                Priority = BackgroundTaskPriority.Lowest,
-                TargetEntityId = serieId,
-                TargetEntityTypeName = nameof(Serie),
-                MaxAttempts = 2,
-                ConcurrencyGroup = "ffmpeg"
-            }).ToList(),
+            DiagnosticFixAction.ExtractSerieThemeSong => await BuildExtractSerieThemeSongItemsAsync(entityIds, cancellationToken),
+            DiagnosticFixAction.DetectMediaSegments => await BuildDetectMediaSegmentsItemsFromEpisodesAsync(entityIds, cancellationToken),
             DiagnosticFixAction.ExtractFileMetadata => await BuildExtractFileMetadataItemsAsync(entityIds, cancellationToken),
             _ => []
         };
@@ -67,8 +62,73 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
             or DiagnosticFixAction.ComputeHlsSegments
             or DiagnosticFixAction.ExtractChapters
             or DiagnosticFixAction.ExtractSerieThemeSong
+            or DiagnosticFixAction.DetectMediaSegments
             or DiagnosticFixAction.ExtractFileMetadata
             or DiagnosticFixAction.RetryCreateMedia;
+
+    private async Task<List<CreateBackgroundTasksBatchItem>> BuildExtractSerieThemeSongItemsAsync(
+        IReadOnlyList<Guid> serieIds,
+        CancellationToken cancellationToken)
+    {
+        var items = new List<CreateBackgroundTasksBatchItem>();
+        var queuedSeasonIds = new HashSet<Guid>();
+
+        foreach (var serieId in serieIds)
+        {
+            var hasIntro = await ThemeSongDiagnosticHelper.SerieHasIntroAsync(context, serieId, cancellationToken);
+            if (hasIntro)
+            {
+                items.Add(new CreateBackgroundTasksBatchItem
+                {
+                    Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
+                    Priority = BackgroundTaskPriority.Lowest,
+                    TargetEntityId = serieId,
+                    TargetEntityTypeName = nameof(Serie),
+                    MaxAttempts = 2,
+                    ConcurrencyGroup = "ffmpeg"
+                });
+                continue;
+            }
+
+            var seasonIds = await ThemeSongDiagnosticHelper.GetEligibleSeasonIdsForSerieAsync(
+                context, serieId, cancellationToken);
+            foreach (var seasonId in seasonIds)
+            {
+                if (!queuedSeasonIds.Add(seasonId))
+                    continue;
+
+                items.Add(CreateDetectMediaSegmentsItem(seasonId));
+            }
+        }
+
+        return items;
+    }
+
+    private async Task<List<CreateBackgroundTasksBatchItem>> BuildDetectMediaSegmentsItemsFromEpisodesAsync(
+        IReadOnlyList<Guid> episodeIds,
+        CancellationToken cancellationToken)
+    {
+        var seasonIds = await context.Medias
+            .OfType<SerieEpisode>()
+            .AsNoTracking()
+            .Where(e => episodeIds.Contains(e.Id))
+            .Select(e => e.SeasonId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return seasonIds.Select(CreateDetectMediaSegmentsItem).ToList();
+    }
+
+    private static CreateBackgroundTasksBatchItem CreateDetectMediaSegmentsItem(Guid seasonId) =>
+        new()
+        {
+            Request = new DetectMediaSegmentsCommand { SeasonId = seasonId },
+            Priority = BackgroundTaskPriority.Low,
+            TargetEntityId = seasonId,
+            TargetEntityTypeName = nameof(SerieSeason),
+            MaxAttempts = 2,
+            ConcurrencyGroup = "ffmpeg"
+        };
 
     private async Task<List<CreateBackgroundTasksBatchItem>> BuildExtractFileMetadataItemsAsync(
         IReadOnlyList<Guid> indexedFileIds,

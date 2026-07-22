@@ -26,7 +26,8 @@ Detail pages can play an ambient theme when a file is available (user toggle: Se
 - **Library sidecar (read-only):** `theme.mp3` / `.flac` / `.m4a` / `.ogg` at the series root (next to season folders) or in the movie folder. For movies, same-basename audio is also accepted (for example `Movie Name (2020).mkv` + `Movie Name (2020).mp3`). Sidecars are never written by K7.
 - **Series auto-extract:** when **theme song generation** and **intro/outro detection** are enabled on the library, and no sidecar exists, K7 may extract a faded MP3 from an Intro segment into `Metadatas/medias/{serieId}/theme.mp3`. Movies are not extracted from video; sidecar only.
 - Existing metadata themes still play if generation or intro detection is later turned off; new extracts do not run.
-- Series that have a detected Intro but no theme file show as **Theme song not generated** (warning) in Admin diagnostics when generation is on. Fix with **Generate theme song**, or re-run intro/outro detection on a season (also queues extract when intros already exist).
+- **Theme song not generated** (warning): series with generation on, at least one detection-eligible season (2+ episodes with files), and no theme file. Fix with **Generate theme song** (extracts if an Intro already exists; otherwise queues intro/outro detection on eligible seasons, which then queues theme extract).
+- **Intro/outro missing** (warning): episodes in intro-detection-enabled libraries whose season is eligible and that have neither Intro nor Outro segments. Fix with **Detect intros/outros** (queues season-level detection; multiple episodes in the same season share one background task). Re-running detection also queues theme extract when intros are found and theme generation is on.
 
 ### Folder and naming conventions
 

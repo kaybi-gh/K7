@@ -43,6 +43,8 @@
   <data name="ActionExtractChapters" xml:space="preserve"><value>Extract chapters</value></data>
   <data name="MissingThemeSong" xml:space="preserve"><value>Theme song not generated</value></data>
   <data name="ActionExtractThemeSong" xml:space="preserve"><value>Generate theme song</value></data>
+  <data name="MissingIntroOutro" xml:space="preserve"><value>Intro/outro missing</value></data>
+  <data name="ActionDetectIntroOutro" xml:space="preserve"><value>Detect intros/outros</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Missing audio analysis</value></data>
   <data name="MissingMembers" xml:space="preserve"><value>Missing members</value></data>
   <data name="BackgroundTasksSection" xml:space="preserve"><value>Background tasks</value></data>
