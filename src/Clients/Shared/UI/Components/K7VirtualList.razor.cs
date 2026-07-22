@@ -14,7 +14,7 @@ public partial class K7VirtualList<TItem>
     [Parameter] public RenderFragment? Placeholder { get; set; }
     [Parameter] public RenderFragment? EmptyContent { get; set; }
     [Parameter] public float ItemHeight { get; set; } = 64;
-    [Parameter] public int OverscanCount { get; set; } = 10;
+    [Parameter] public int OverscanCount { get; set; } = 5;
 
     private ElementReference _listRef;
     private Virtualize<IndexedListItem>? _virtualizeRef;

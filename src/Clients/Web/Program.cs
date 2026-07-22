@@ -116,6 +116,8 @@ builder.Services.AddSingleton<K7DialogService>();
 builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
 builder.Services.AddSingleton<K7SnackbarService>();
 builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+builder.Services.AddSingleton<MediaCardContextMenuService>();
+builder.Services.AddSingleton<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
 builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
 builder.Services.AddSingleton<ISoftKeyboardService, NoOpSoftKeyboardService>();
 builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();

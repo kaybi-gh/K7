@@ -1,0 +1,18 @@
+.media-card-context-menu-host {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    overflow: visible;
+    z-index: 100010;
+    pointer-events: none;
+}
+
+.media-card-context-menu-host ::deep .k7-menu {
+    pointer-events: auto;
+}
+
+.media-card-context-menu-host__activator {
+    display: none;
+}

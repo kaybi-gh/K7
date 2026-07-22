@@ -7,6 +7,7 @@ using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
@@ -64,13 +65,10 @@ public class MediaCardTests
         using var ctx = CreateContext();
         var model = CreateModel();
 
-        var cut = ctx.Render<MediaCard>(p => p
-            .Add(c => c.Model, model)
-            .Add(c => c.OverlayEnabled, true)
-            .Add(c => c.Href, "/movies/1"));
+        var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/movies/1"));
 
         // Act
-        var activator = cut.Find(".k7-menu-activator-inner");
+        var activator = cut.Find(".media-card-menu-trigger");
         await cut.InvokeAsync(() => activator.Click());
 
         // Assert
@@ -83,12 +81,11 @@ public class MediaCardTests
         // Arrange
         using var ctx = CreateContext();
         var model = CreateModel();
+        var contextMenu = ctx.Services.GetRequiredService<IMediaCardContextMenuService>();
 
-        var cut = ctx.Render<MediaCard>(p => p
-            .Add(c => c.Model, model)
-            .Add(c => c.OverlayEnabled, true)
-            .Add(c => c.Href, "/movies/1"));
+        var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/movies/1"));
 
+        var card = cut.FindComponent<MediaCard>();
         var link = cut.Find(".media-card-link");
 
         // Holding Enter for a long-press opens the context menu. The physical
@@ -96,13 +93,14 @@ public class MediaCardTests
         // reaches OnKeyUp - simulated here by invoking the JS-triggered open
         // callback directly instead of the real 600ms timer.
         await link.KeyDownAsync("Enter");
-        await cut.InvokeAsync(() => cut.Instance.OpenContextMenuFromLongPressAsync());
+        await cut.InvokeAsync(() => card.Instance.OpenContextMenuFromLongPressAsync());
         cut.Find(".k7-menu-dropdown--open").Should().NotBeNull();
 
         // Closing the menu (e.g. pressing Enter on the close button) resets
         // the long-press state and restores focus to the media card link.
         var closeButton = cut.Find(".k7-menu-close");
         await cut.InvokeAsync(() => closeButton.Click());
+        contextMenu.Current.Should().BeNull();
 
         var navigationManager = ctx.Services.GetRequiredService<NavigationManager>();
         var uriBeforeStrayKeyUp = navigationManager.Uri;
@@ -111,9 +109,25 @@ public class MediaCardTests
         // media card link once focus is restored there.
         await link.KeyUpAsync("Enter");
 
-        // Assert - it must not be misread as the release of a short press.
+        // Assert - it must not be misread as the release of a genuine short
+        // press and triggers navigation.
         navigationManager.Uri.Should().Be(uriBeforeStrayKeyUp);
     }
+
+    private static RenderFragment BuildCardWithHost(
+        MediaCardViewModel model,
+        bool overlayEnabled,
+        string href) => builder =>
+    {
+        builder.OpenComponent<MediaCardContextMenuHost>(0);
+        builder.CloseComponent();
+
+        builder.OpenComponent<MediaCard>(1);
+        builder.AddAttribute(2, nameof(MediaCard.Model), model);
+        builder.AddAttribute(3, nameof(MediaCard.OverlayEnabled), overlayEnabled);
+        builder.AddAttribute(4, nameof(MediaCard.Href), href);
+        builder.CloseComponent();
+    };
 
     private static BunitContext CreateContext()
     {
@@ -128,6 +142,8 @@ public class MediaCardTests
         ctx.Services.AddSingleton(Substitute.For<IK7DialogService>());
         ctx.Services.AddSingleton(Substitute.For<IK7Snackbar>());
         ctx.Services.AddSingleton(new MediaCacheStore());
+        ctx.Services.AddSingleton<MediaCardContextMenuService>();
+        ctx.Services.AddSingleton<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
         ctx.JSInterop.Mode = JSRuntimeMode.Loose;
 
         var contextMenuLocalizer = Substitute.For<IStringLocalizer<MediaCardContextMenu>>();

@@ -3,26 +3,13 @@
 <div class="library-browse-row-actions" @onclick:stopPropagation="true">
     @if (HasMenu)
     {
-        <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
-            <ActivatorContent>
-                <K7IconButton Icon="@Phosphor.DotsThreeVertical" Size="sm" aria-label="@L["MoreActions"]" />
-            </ActivatorContent>
-            <ChildContent>
-                <MediaCardContextMenu Model="Model"
-                                      Href="Href"
-                                      ShowPlay="OverlayEnabled && !string.IsNullOrEmpty(Href)"
-                                      ShowRating="_showRating"
-                                      ShowReview="_showReview"
-                                      ShowPlaylist="_showPlaylist"
-                                      ShowCollection="_showCollection"
-                                      ShowWatchState="_watchStateMenuVisible"
-                                      ExcludeMenuEnabled="ExcludeMenuEnabled"
-                                      IsAdmin="IsAdmin"
-                                      OnExcludeForSelf="OnExcludeForSelf"
-                                      OnExcludeForOthers="OnExcludeForOthers"
-                                      OnWatchStateChanged="OnWatchStateChanged" />
-            </ChildContent>
-        </K7Menu>
+        <div @ref="_triggerRef" class="library-browse-row-actions__menu">
+            <K7IconButton Icon="@Phosphor.DotsThreeVertical"
+                           Size="sm"
+                           Class="library-browse-row-actions__menu-trigger"
+                           AriaLabel="@L["MoreActions"]"
+                           OnClick="OpenSharedMenuAsync" />
+        </div>
     }
     @if (OnRemove.HasDelegate)
     {

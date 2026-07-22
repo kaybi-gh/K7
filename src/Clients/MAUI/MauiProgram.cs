@@ -172,6 +172,8 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
         builder.Services.AddSingleton<K7SnackbarService>();
         builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+        builder.Services.AddSingleton<MediaCardContextMenuService>();
+        builder.Services.AddSingleton<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
         builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
         // Scoped: IJSRuntime is scoped in Blazor Hybrid; a singleton would capture a dead runtime.
         builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();

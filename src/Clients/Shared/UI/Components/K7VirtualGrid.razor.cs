@@ -18,7 +18,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     [Parameter] public int Spacing { get; set; } = 6;
     [Parameter] public float AspectRatio { get; set; } = 1.5f;
     [Parameter] public int FooterHeight { get; set; } = 44;
-    [Parameter] public int OverscanCount { get; set; } = 10;
+    [Parameter] public int OverscanCount { get; set; } = 5;
     [Parameter] public bool SingleColumnOnMobile { get; set; }
 
     private ElementReference _gridRef;

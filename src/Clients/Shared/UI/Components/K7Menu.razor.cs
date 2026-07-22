@@ -16,6 +16,8 @@ public partial class K7Menu : IAsyncDisposable
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public ElementReference PositionAnchor { get; set; }
+    [Parameter] public bool HasPositionAnchor { get; set; }
 
     private bool _open;
     private bool _layerPushed;
@@ -120,6 +122,11 @@ public partial class K7Menu : IAsyncDisposable
 
         try
         {
+            if (HasPositionAnchor)
+                await JS.InvokeVoidAsync("K7.setMenuPositionAnchor", PositionAnchor);
+            else
+                await JS.InvokeVoidAsync("K7.clearMenuPositionAnchor");
+
             await JS.InvokeVoidAsync("K7.attachMobileMenu", _root, _dropdown, _backdrop);
             _mobileMenuAttached = true;
             await JS.InvokeVoidAsync("K7.positionDropdownDeferred", _root, _dropdown);
@@ -150,6 +157,7 @@ public partial class K7Menu : IAsyncDisposable
         _layerPushed = false;
         try
         {
+            await JS.InvokeVoidAsync("K7.clearMenuPositionAnchor");
             await JS.InvokeVoidAsync("K7.resetDropdown", _root);
             if (_mobileMenuAttached)
                 await DetachMobileMenuAsync();

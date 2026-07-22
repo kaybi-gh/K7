@@ -1,5 +1,3 @@
-@inject IFeatureAccessService FeatureAccess
-
 @if (Skeleton)
 {
     <div class="media-card @VariantClass">
@@ -120,29 +118,11 @@ else
             @if (LongPressEnabled)
             {
                 <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
-                    <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MediaCardContextMenu Model="Model"
-                                                  Href="Href"
-                                                  ShowPlay="OverlayEnabled && !string.IsNullOrEmpty(Href)"
-                                                  ShowRating="_showRating"
-                                                  ShowReview="_showReview"
-                                                  ShowPlaylist="_showPlaylist"
-                                                  ShowCollection="_showCollection"
-                                                  ShowWatchState="_watchStateMenuVisible"
-                                                  ExcludeMenuEnabled="ExcludeMenuEnabled"
-                                                  ContinueWatchingMenuEnabled="ContinueWatchingMenuEnabled"
-                                                  IsAdmin="IsAdmin"
-                                                  BulkEpisodeCount="BulkEpisodeCount"
-                                                  OnExcludeForSelf="OnExcludeForSelf"
-                                                  OnExcludeForOthers="OnExcludeForOthers"
-                                                  OnDismissFromContinueWatching="OnDismissFromContinueWatching"
-                                                  OnWatchStateChanged="OnWatchStateChanged" />
-                        </ChildContent>
-                    </K7Menu>
+                    <K7IconButton Icon="@Phosphor.DotsThreeVertical"
+                                  Class="media-card-menu-trigger"
+                                  AriaLabel="Menu"
+                                  Focusable="false"
+                                  OnClick="OpenSharedMenuAsync" />
                 </div>
             }
 

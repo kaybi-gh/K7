@@ -32,12 +32,15 @@ public partial class LibraryGroupView : IDisposable
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
 
     private const string ContentSourceAll = "";
     private const string ContentSourceLocal = "local";
+    private const int TvOverscanCount = 2;
+    private const int DefaultOverscanCount = 5;
 
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
@@ -46,6 +49,8 @@ public partial class LibraryGroupView : IDisposable
     private bool _canSetWatchState;
     private bool _canExclude;
     private bool _isAdmin;
+    private bool _isTv;
+    private int _overscanCount = DefaultOverscanCount;
     private int _totalCount;
     private bool _totalCountKnown;
     private const int PageSize = 50;
@@ -119,6 +124,8 @@ public partial class LibraryGroupView : IDisposable
     {
         _loading = true;
         _selectedMediaType = default;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        _overscanCount = _isTv ? TvOverscanCount : DefaultOverscanCount;
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
 
@@ -329,8 +336,8 @@ public partial class LibraryGroupView : IDisposable
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
 
-            await InvokeAsync(StateHasChanged);
-
+            // BrowseView.WrappedItemsProvider already re-renders when TotalItemCount changes.
+            // Avoid a full-page StateHasChanged here: it re-runs every mounted MediaCard.
             return new ItemsProviderResult<LiteMediaDto>(items, _totalCount);
         }
         catch (OperationCanceledException)
@@ -383,8 +390,6 @@ public partial class LibraryGroupView : IDisposable
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
-
-            await InvokeAsync(StateHasChanged);
 
             return new K7DataTableResult<LiteMediaDto>(items, _totalCount);
         }

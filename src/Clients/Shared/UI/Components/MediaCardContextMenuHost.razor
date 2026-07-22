@@ -1,0 +1,38 @@
+@namespace K7.Clients.Shared.UI.Components
+@implements IDisposable
+@inject IMediaCardContextMenuService ContextMenuService
+@inject IJSRuntime JS
+
+@if (_request is not null)
+{
+    <div class="media-card-context-menu-host">
+        <K7Menu Open="_open"
+                OpenChanged="OnOpenChanged"
+                Title="@(_request.Title ?? _request.Model.Title)"
+                PositionAnchor="_request.Anchor"
+                HasPositionAnchor="true"
+                Class="media-card-context-menu-host__menu">
+            <ActivatorContent>
+                <span class="media-card-context-menu-host__activator" aria-hidden="true"></span>
+            </ActivatorContent>
+            <ChildContent>
+                <MediaCardContextMenu Model="_request.Model"
+                                      Href="_request.Href"
+                                      ShowPlay="_request.ShowPlay"
+                                      ShowRating="_request.ShowRating"
+                                      ShowReview="_request.ShowReview"
+                                      ShowPlaylist="_request.ShowPlaylist"
+                                      ShowCollection="_request.ShowCollection"
+                                      ShowWatchState="_request.ShowWatchState"
+                                      ExcludeMenuEnabled="_request.ExcludeMenuEnabled"
+                                      ContinueWatchingMenuEnabled="_request.ContinueWatchingMenuEnabled"
+                                      IsAdmin="_request.IsAdmin"
+                                      BulkEpisodeCount="_request.BulkEpisodeCount"
+                                      OnExcludeForSelf="_request.OnExcludeForSelf"
+                                      OnExcludeForOthers="_request.OnExcludeForOthers"
+                                      OnDismissFromContinueWatching="_request.OnDismissFromContinueWatching"
+                                      OnWatchStateChanged="_request.OnWatchStateChanged" />
+            </ChildContent>
+        </K7Menu>
+    </div>
+}

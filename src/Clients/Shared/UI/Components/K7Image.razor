@@ -16,19 +16,43 @@
     }
     else
     {
-        @if (ShowLoading)
+        @if (ShowInteractiveSpinner)
         {
             <div class="k7-img-loading" aria-hidden="true">
                 <K7Spinner Size="sm" />
             </div>
         }
-        <img @ref="_imgRef"
-             class="@ImageCssClass"
-             src="@Src"
-             alt="@Alt"
-             loading="@Loading"
-             @onload="OnLoad"
-             @onerror="OnError"
-             @attributes="ImageAttributes" />
+        else if (ShowCssSpinner)
+        {
+            <div class="k7-img-loading k7-img-loading--css" aria-hidden="true">
+                <div class="k7-img-loading-pulse"></div>
+            </div>
+        }
+
+        @if (UseInteractiveLoading)
+        {
+            <img @ref="_imgRef"
+                 @key="Src"
+                 class="@ImageCssClass"
+                 src="@Src"
+                 alt="@Alt"
+                 loading="@Loading"
+                 decoding="async"
+                 @onload="OnLoad"
+                 @onerror="OnError"
+                 @attributes="ImageAttributes" />
+        }
+        else
+        {
+            <img @ref="_imgRef"
+                 @key="Src"
+                 class="@ImageCssClass"
+                 src="@Src"
+                 alt="@Alt"
+                 loading="@Loading"
+                 decoding="async"
+                 @onerror="OnError"
+                 @attributes="ImageAttributes" />
+        }
     }
 </div>

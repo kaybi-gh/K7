@@ -40,10 +40,13 @@ public partial class MediaCard : IDisposable
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ILogger<MediaCard> Logger { get; set; } = default!;
+    [Inject] private IMediaCardContextMenuService ContextMenuService { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
 
+    private readonly Guid _menuOwnerId = Guid.NewGuid();
     private bool _menuOpen;
     private bool _longPressTriggered;
     private bool _keyHeldDown;
@@ -54,6 +57,7 @@ public partial class MediaCard : IDisposable
     private bool _showReview;
     private bool _showPlaylist;
     private bool _showCollection;
+    private string? _menuCapabilitiesKey;
     private CancellationTokenSource? _longPressCts;
     private double _touchStartX;
     private double _touchStartY;
@@ -84,6 +88,9 @@ public partial class MediaCard : IDisposable
 
     private bool ProgressBarIsHidden() => Model.Progress < 1 || Model.Progress >= 100;
 
+    protected override void OnInitialized() =>
+        ContextMenuService.Changed += OnContextMenuServiceChanged;
+
     protected override async Task OnParametersSetAsync()
     {
         if (Model is null)
@@ -93,10 +100,16 @@ public partial class MediaCard : IDisposable
             _showReview = false;
             _showPlaylist = false;
             _showCollection = false;
+            _menuCapabilitiesKey = null;
             return;
         }
 
         var hasValidMediaId = Guid.TryParse(Model.Id, out _);
+        var capabilitiesKey = $"{Model.Id}|{Model.Kind}|{Model.MediaType}|{WatchStateMenuEnabled}";
+        if (_menuCapabilitiesKey == capabilitiesKey)
+            return;
+
+        _menuCapabilitiesKey = capabilitiesKey;
 
         _watchStateMenuVisible = hasValidMediaId
             && WatchStateMenuEnabled
@@ -135,6 +148,24 @@ public partial class MediaCard : IDisposable
         }
     }
 
+    private void OnContextMenuServiceChanged()
+    {
+        var open = ContextMenuService.Current?.OwnerId == _menuOwnerId;
+        if (open == _menuOpen)
+            return;
+
+        _menuOpen = open;
+        if (!open)
+        {
+            _longPressTriggered = false;
+            _preventNextClick = false;
+            _menuOpenedViaKeyboard = false;
+            CancelLongPress();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
     [JSInvokable]
     public async Task OpenContextMenuFromLongPressAsync()
     {
@@ -161,37 +192,23 @@ public partial class MediaCard : IDisposable
         {
         }
 
-        _menuOpen = true;
-        await InvokeAsync(StateHasChanged);
+        await OpenSharedMenuAsync();
     }
 
     [JSInvokable]
-    public async Task CloseContextMenuFromBackAsync()
+    public Task CloseContextMenuFromBackAsync()
     {
         if (!_menuOpen)
-            return;
+            return Task.CompletedTask;
 
-        _menuOpen = false;
-        _longPressTriggered = false;
-        _preventNextClick = false;
-        _menuOpenedViaKeyboard = false;
-        CancelLongPress();
-        await InvokeAsync(StateHasChanged);
+        ContextMenuService.Close();
+        return Task.CompletedTask;
     }
 
-    private void OnMenuOpenChanged(bool open) => OnMenuOpenChangedAsync(open).FireAndForget();
-
-    private async Task OnMenuOpenChangedAsync(bool open)
+    private Task OpenSharedMenuAsync()
     {
-        _menuOpen = open;
-        if (!open)
-        {
-            _longPressTriggered = false;
-            _preventNextClick = false;
-            _menuOpenedViaKeyboard = false;
-            CancelLongPress();
-            return;
-        }
+        if (!LongPressEnabled || Model is null)
+            return Task.CompletedTask;
 
         _longPressTriggered = true;
         _preventNextClick = true;
@@ -202,12 +219,38 @@ public partial class MediaCard : IDisposable
             _menuOpenedViaKeyboard = false;
             try
             {
-                await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+                _ = JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
             }
             catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
             {
             }
         }
+
+        ContextMenuService.Open(new MediaCardContextMenuRequest
+        {
+            OwnerId = _menuOwnerId,
+            Model = Model,
+            Anchor = _longPressContainerRef,
+            AnchorKind = MediaCardContextMenuAnchorKind.Card,
+            Href = Href,
+            Title = Model.Title,
+            ShowPlay = OverlayEnabled && !string.IsNullOrEmpty(Href),
+            ShowRating = _showRating,
+            ShowReview = _showReview,
+            ShowPlaylist = _showPlaylist,
+            ShowCollection = _showCollection,
+            ShowWatchState = _watchStateMenuVisible,
+            ExcludeMenuEnabled = ExcludeMenuEnabled,
+            ContinueWatchingMenuEnabled = ContinueWatchingMenuEnabled,
+            IsAdmin = IsAdmin,
+            BulkEpisodeCount = BulkEpisodeCount,
+            OnExcludeForSelf = OnExcludeForSelf,
+            OnExcludeForOthers = OnExcludeForOthers,
+            OnDismissFromContinueWatching = OnDismissFromContinueWatching,
+            OnWatchStateChanged = OnWatchStateChanged
+        });
+
+        return Task.CompletedTask;
     }
 
     private void OnContextMenu(MouseEventArgs e)
@@ -217,8 +260,7 @@ public partial class MediaCard : IDisposable
 
         _longPressTriggered = true;
         _preventNextClick = true;
-        _menuOpen = true;
-        StateHasChanged();
+        OpenSharedMenuAsync().FireAndForget(Logger);
     }
 
     private static bool IsEnterKey(KeyboardEventArgs e)
@@ -329,8 +371,7 @@ public partial class MediaCard : IDisposable
                 }
             }
 
-            _menuOpen = true;
-            await InvokeAsync(StateHasChanged);
+            await InvokeAsync(OpenSharedMenuAsync);
         }
         catch (TaskCanceledException)
         {
@@ -355,6 +396,10 @@ public partial class MediaCard : IDisposable
 
     public void Dispose()
     {
+        ContextMenuService.Changed -= OnContextMenuServiceChanged;
+        if (_menuOpen)
+            ContextMenuService.Close();
+
         CancelLongPress();
 
         if (_longPressRegistered)
@@ -396,7 +441,8 @@ public partial class MediaCard : IDisposable
             builder.AddAttribute(5, "Fluid", true);
             builder.AddAttribute(6, "ObjectFit", "cover");
             builder.AddAttribute(7, "loading", "lazy");
-            builder.AddAttribute(8, "FallbackContent", CardPlaceholder);
+            builder.AddAttribute(8, "LoadingMode", K7ImageLoadingMode.Css);
+            builder.AddAttribute(9, "FallbackContent", CardPlaceholder);
             builder.CloseComponent();
             return;
         }

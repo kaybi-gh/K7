@@ -27,6 +27,8 @@ builder.Services.AddScoped<K7DialogService>();
 builder.Services.AddScoped<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
 builder.Services.AddScoped<K7SnackbarService>();
 builder.Services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+builder.Services.AddScoped<MediaCardContextMenuService>();
+builder.Services.AddScoped<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
 builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
 builder.Services.AddScoped<ISoftKeyboardService, NoOpSoftKeyboardService>();
 builder.Services.AddScoped<SoftKeyboardJsBridge>();

@@ -3,6 +3,21 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
+public enum K7ImageLoadingMode
+{
+    /// <summary>Blazor spinner + @onload re-render (heroes / detail).</summary>
+    Interactive,
+
+    /// <summary>
+    /// CSS spinner stays in the DOM; native onload toggles a class.
+    /// No Blazor re-render per image - safe for dense grids on TV.
+    /// </summary>
+    Css,
+
+    /// <summary>No loading indicator.</summary>
+    None
+}
+
 public partial class K7Image
 {
     [Parameter] public string Src { get; set; } = "";
@@ -15,6 +30,7 @@ public partial class K7Image
     [Parameter] public string Loading { get; set; } = "lazy";
     [Parameter] public bool Fluid { get; set; }
     [Parameter] public bool ShowLoadingState { get; set; } = true;
+    [Parameter] public K7ImageLoadingMode? LoadingMode { get; set; }
     [Parameter] public string FallbackIcon { get; set; } = Phosphor.ImageBroken;
     [Parameter] public RenderFragment? FallbackContent { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
@@ -24,11 +40,17 @@ public partial class K7Image
     private bool _loaded;
     private bool _failed;
 
+    private K7ImageLoadingMode EffectiveLoadingMode =>
+        LoadingMode ?? (ShowLoadingState ? K7ImageLoadingMode.Interactive : K7ImageLoadingMode.None);
+
     private bool HasSource => !string.IsNullOrEmpty(Src);
     private bool HasCustomFallback => FallbackContent is not null;
     private bool ShowFallback => !HasSource || _failed;
-    private bool ShowLoading => HasSource && !_loaded && !_failed && ShowLoadingState;
-    private bool UseLoadTransition => HasSource && !_failed;
+    private bool UseInteractiveLoading => EffectiveLoadingMode == K7ImageLoadingMode.Interactive;
+    private bool UseCssLoading => EffectiveLoadingMode == K7ImageLoadingMode.Css;
+    private bool ShowInteractiveSpinner => HasSource && !_loaded && !_failed && UseInteractiveLoading;
+    private bool ShowCssSpinner => HasSource && !_failed && UseCssLoading;
+    private bool UseLoadTransition => HasSource && !_failed && UseInteractiveLoading;
 
     private string WrapCssClass =>
         string.Join(" ",
@@ -37,6 +59,7 @@ public partial class K7Image
                 "k7-img-wrap",
                 Fluid ? "k7-img-wrap--fluid" : null,
                 ShowFallback && HasCustomFallback ? "k7-img-wrap--custom-fallback" : null,
+                UseCssLoading ? "k7-img-wrap--css-loading" : null,
                 _loaded ? "k7-img-wrap--loaded" : null,
                 UseLoadTransition && !_loaded ? "k7-img-wrap--pending" : null,
                 Class
@@ -83,6 +106,12 @@ public partial class K7Image
                 attributes["height"] = Height;
             if (!string.IsNullOrEmpty(Style))
                 attributes["style"] = Style;
+            if (UseCssLoading)
+            {
+                // Native handler - no Blazor event / StateHasChanged.
+                attributes["onload"] = "this.classList.add('k7-img--loaded')";
+            }
+
             if (AdditionalAttributes is not null)
             {
                 foreach (var pair in AdditionalAttributes)

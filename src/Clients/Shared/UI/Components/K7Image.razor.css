@@ -55,3 +55,35 @@
     border-radius: inherit;
     transition: opacity 0.2s ease;
 }
+
+/* CSS loading: spinner stays mounted; native onload adds .k7-img--loaded (no Blazor). */
+.k7-img-wrap--css-loading ::deep .k7-img {
+    opacity: 0;
+    border-radius: inherit;
+    transition: opacity 0.2s ease;
+}
+
+.k7-img-wrap--css-loading ::deep .k7-img.k7-img--loaded {
+    opacity: 1;
+}
+
+.k7-img-wrap--css-loading:has(.k7-img--loaded) .k7-img-loading {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.k7-img-loading-pulse {
+    box-sizing: border-box;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(128, 128, 128, 0.35);
+    border-top-color: var(--color-accent, currentColor);
+    border-radius: 50%;
+    animation: k7-img-spin 0.7s linear infinite;
+}
+
+@keyframes k7-img-spin {
+    to { transform: rotate(360deg); }
+}
+

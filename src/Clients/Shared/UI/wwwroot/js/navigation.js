@@ -409,10 +409,22 @@ var SpatialNav = (function () {
         var overflowBottom = cardRect.bottom - rootRect.bottom;
         var overflowTop = rootRect.top - cardRect.top;
 
+        // While focused in the below zone, never scroll back into the hero.
+        var minScroll = 0;
+        if (el.closest('[data-tv-scroll-zone="below"]')) {
+            var mainZone = root.querySelector('[data-tv-scroll-zone="main"]');
+            if (mainZone) minScroll = mainZone.offsetHeight;
+        }
+
         if (overflowBottom > -margin) {
             root.scrollBy({ top: overflowBottom + margin, behavior: 'smooth' });
         } else if (overflowTop > -margin) {
-            root.scrollBy({ top: -(overflowTop + margin), behavior: 'smooth' });
+            var delta = -(overflowTop + margin);
+            var nextTop = root.scrollTop + delta;
+            if (nextTop < minScroll) delta = minScroll - root.scrollTop;
+            if (delta !== 0) {
+                root.scrollBy({ top: delta, behavior: 'smooth' });
+            }
         }
     }
 
@@ -782,7 +794,8 @@ var SpatialNav = (function () {
             invokeCallback(container._k7MediaCardDotNet, 'OpenContextMenuFromLongPressAsync');
             return true;
         }
-        var activator = card.querySelector('[data-longpress-target] .k7-menu-activator-inner');
+        var activator = card.querySelector('[data-longpress-target] .media-card-menu-trigger')
+            || card.querySelector('[data-longpress-target] .k7-menu-activator-inner');
         if (activator) activator.click();
         return !!activator;
     }
@@ -1037,6 +1050,10 @@ var SpatialNav = (function () {
 
     function findMediaCardForMenu(openMenu) {
         if (!openMenu) return null;
+        if (window.K7 && K7._menuPositionAnchor && K7._menuPositionAnchor.closest) {
+            var fromAnchor = K7._menuPositionAnchor.closest('.media-card');
+            if (fromAnchor) return fromAnchor;
+        }
         var card = openMenu.closest('.media-card');
         if (card) return card;
         if (openMenu._k7MenuAnchor && openMenu._k7MenuAnchor.closest) {
@@ -1416,7 +1433,11 @@ var SpatialNav = (function () {
                 return;
             }
             if ((key === 'ArrowDown' || key === 'ArrowUp') && window.K7 && window.K7.TvDetailScroll) {
-                window.K7.TvDetailScroll.handleVerticalNav(key, el);
+                if (window.K7.TvDetailScroll.handleVerticalNav(key, el)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
             }
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
@@ -1517,7 +1538,12 @@ var SpatialNav = (function () {
 
         setTimeout(function () {
             if (!el.matches || !el.matches(FOCUSABLE)) return;
-            if (isNearPageTop(el)) {
+            // Mouse / touch focus must not auto-scroll the page (carousel drag, clicks).
+            if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
+            // Hero pages: return to hero only via TvDetailScroll actions zone, never via
+            // "near top" heuristics (that wrongly snaps when moving between below carousels).
+            var tvScrollRootEarly = el.closest('[data-tv-scroll]');
+            if (isNearPageTop(el) && !tvScrollRootEarly) {
                 var nearTopScrollRoot = getFocusScrollRoot(el);
                 if (nearTopScrollRoot && nearTopScrollRoot.scrollTop > 0) {
                     nearTopScrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1527,16 +1553,19 @@ var SpatialNav = (function () {
             if (!_carouselNavHandled) {
                 scrollCarouselToElement(el);
             }
-            var tvScrollRoot = el.closest('[data-tv-scroll]');
+            var tvScrollRoot = tvScrollRootEarly;
             var hasTvScroll = !!(tvScrollRoot && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(tvScrollRoot));
             if (tvScrollRoot && !el.closest('[data-tv-scroll-zone="below"]')) {
                 if (!_carouselNavHandled) {
                     scrollCarouselToElement(el);
                 }
-                if (hasTvScroll) {
+                // Only clamp the hero view for the actions row; other hero focusables
+                // (synopsis, etc.) must not yank scroll while browsing below content.
+                if (hasTvScroll && el.closest('[data-tv-scroll-zone="actions"]')) {
                     window.K7.TvDetailScroll.clampMainView(el);
                     return;
                 }
+                if (hasTvScroll) return;
             }
             if (el.closest('[data-carousel-item]')) {
                 // Carousel items are horizontally positioned by embla (handled above);
@@ -1943,9 +1972,13 @@ var SpatialNav = (function () {
                 _trackedLayerIds = currentIds;
             }
 
-            // Auto-refresh after any DOM mutation (covers all Blazor re-renders)
+            // Auto-refresh after meaningful DOM mutations (covers Blazor re-renders).
+            // Ignore image loading churn (spinner nodes under .k7-img-wrap) so TV remote
+            // input is not starved while a grid of MediaCards finishes loading.
             syncSections();
-            var observer = new MutationObserver(function () {
+            var observer = new MutationObserver(function (mutations) {
+                if (!hasMeaningfulDomMutation(mutations))
+                    return;
                 scheduleRefresh();
                 syncSections();
                 syncLayers();
@@ -1956,6 +1989,34 @@ var SpatialNav = (function () {
                 attributes: true,
                 attributeFilter: ['disabled', 'tabindex', 'hidden', 'open', 'data-initial-focus', 'data-sn-layer', 'data-sn-section']
             });
+        }
+
+        function isImageLoadingNode(node) {
+            if (!node || node.nodeType !== 1) return false;
+            var el = node;
+            if (el.classList && el.classList.contains('k7-img-loading')) return true;
+            if (el.closest && el.closest('.k7-img-loading')) return true;
+            return false;
+        }
+
+        function isImageLoadingMutation(mutation) {
+            if (mutation.type !== 'childList') return false;
+            var i;
+            for (i = 0; i < mutation.addedNodes.length; i++) {
+                if (!isImageLoadingNode(mutation.addedNodes[i])) return false;
+            }
+            for (i = 0; i < mutation.removedNodes.length; i++) {
+                if (!isImageLoadingNode(mutation.removedNodes[i])) return false;
+            }
+            return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+        }
+
+        function hasMeaningfulDomMutation(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                if (!isImageLoadingMutation(mutations[i]))
+                    return true;
+            }
+            return false;
         }
 
         document.addEventListener('keydown', handleKeyDown, true);
@@ -2035,6 +2096,29 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+
+// Hero snap / focus-scroll is for keyboard and TV remotes only.
+// Mouse and touch must not move the page when focusing or dragging carousels.
+K7._inputModality = 'keyboard';
+K7.isKeyboardNavMode = function () {
+    return document.documentElement.classList.contains('platform-tv')
+        || K7._inputModality === 'keyboard';
+};
+(function trackInputModality() {
+    document.addEventListener('pointerdown', function () {
+        K7._inputModality = 'pointer';
+    }, true);
+    document.addEventListener('keydown', function (e) {
+        var key = e.key;
+        if (key === 'Tab'
+            || key === 'ArrowUp' || key === 'ArrowDown'
+            || key === 'ArrowLeft' || key === 'ArrowRight'
+            || key === 'Home' || key === 'End'
+            || key === 'PageUp' || key === 'PageDown') {
+            K7._inputModality = 'keyboard';
+        }
+    }, true);
+})();
 
 K7._backgroundLockCount = 0;
 K7._dialogLockActive = false;
@@ -2219,12 +2303,16 @@ K7.positionDropdown = function (root, dropdown) {
     if (window.innerWidth < 600) return;
 
     var isSubmenu = !!root.closest('.k7-menu-dropdown');
+    var positionAnchor = K7._menuPositionAnchor;
     var anchor = K7._resolveMenuAnchor(root);
+    if (positionAnchor) {
+        anchor = positionAnchor;
+    }
     var anchorRect = anchor.getBoundingClientRect();
     if (anchorRect.width === 0 && anchorRect.height === 0) {
-        var mediaCard = root.closest('.media-card');
-        if (mediaCard) {
-            anchor = mediaCard.querySelector('.media-card-container') || mediaCard;
+        var mediaCardFallback = resolveMediaCardFromMenuRoot(root, positionAnchor);
+        if (mediaCardFallback) {
+            anchor = mediaCardFallback.querySelector('.media-card-container') || mediaCardFallback;
             anchorRect = anchor.getBoundingClientRect();
         }
     }
@@ -2290,7 +2378,7 @@ K7.positionDropdown = function (root, dropdown) {
         dropdown.style.zIndex = '100014';
     } else {
         root.classList.remove('k7-menu--upward');
-        var mediaCard = root.closest('.media-card');
+        var mediaCard = resolveMediaCardFromMenuRoot(root, positionAnchor);
         if (mediaCard) {
             dropdown.classList.add('k7-menu-dropdown--card-corner');
             var cardEl = mediaCard.querySelector('.media-card-container') || anchor;
@@ -2324,6 +2412,16 @@ K7.positionDropdown = function (root, dropdown) {
         dropdown.style.left = (left - cbOffset.left) + 'px';
     }
 };
+
+function resolveMediaCardFromMenuRoot(root, positionAnchor) {
+    if (positionAnchor && positionAnchor.closest) {
+        var fromAnchor = positionAnchor.closest('.media-card');
+        if (fromAnchor) return fromAnchor;
+        if (positionAnchor.classList && positionAnchor.classList.contains('media-card'))
+            return positionAnchor;
+    }
+    return root && root.closest ? root.closest('.media-card') : null;
+}
 
 K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect, cbOffset, vw, vh) {
     var margin = 8;
@@ -2375,7 +2473,8 @@ K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect,
     dropdown.style.maxWidth = Math.min(280, vw - margin * 2) + 'px';
     dropdown.style.maxHeight = 'min(320px, calc(100vh - ' + (margin * 2) + 'px))';
 
-    var activator = mediaCard.querySelector('.media-card-menu .k7-menu-activator-inner');
+    var activator = mediaCard.querySelector('.media-card-menu .media-card-menu-trigger')
+        || mediaCard.querySelector('.media-card-menu .k7-menu-activator-inner');
     var trigger = activator ? activator.getBoundingClientRect() : null;
     var triggerTop = trigger && trigger.height > 0 ? trigger.top : cardRect.bottom - 48;
 
@@ -2410,12 +2509,31 @@ K7.unregisterMediaCardLongPress = function (el) {
     el._k7MediaCardDotNet = null;
 };
 
+K7._menuPositionAnchor = null;
+
+K7.setMenuPositionAnchor = function (el) {
+    K7._menuPositionAnchor = el || null;
+};
+
+K7.clearMenuPositionAnchor = function () {
+    K7._menuPositionAnchor = null;
+};
+
 K7.suppressEnterUntilKeyUp = function (callback) {
     K7._suppressEnterUntilKeyUp = true;
     K7._swallowNextEnterClick = true;
     if (typeof callback === 'function') {
         K7._enterSuppressCallbacks.push(callback);
     }
+};
+
+// Update the URL hash without involving Blazor navigation (so a mouse click
+// on a focused episode link is not cancelled by NavigateTo).
+K7.replaceUrlHash = function (hash) {
+    if (!hash) return;
+    var normalized = hash.charAt(0) === '#' ? hash : '#' + hash;
+    if (window.location.hash === normalized) return;
+    history.replaceState(null, '', window.location.pathname + window.location.search + normalized);
 };
 
 K7.positionDropdownDeferred = function (root, dropdown) {
@@ -2435,6 +2553,8 @@ K7._resolveMenuAnchor = function (root) {
             || mediaCard.querySelector('[data-longpress]');
         if (cardContainer) return cardContainer;
     }
+    var episodeCard = root.closest('.episode-card');
+    if (episodeCard) return episodeCard;
     var activatorEl = root.querySelector('.k7-menu-activator');
     return (activatorEl && activatorEl.firstElementChild) || root;
 };
@@ -2560,8 +2680,11 @@ K7._needsMenuPortal = function (root) {
 K7.attachMobileMenu = function (root, dropdown, backdrop) {
     if (!root || !dropdown) return;
 
-    var inMediaCard = !!root.closest('.media-card');
-    if (!inMediaCard && !K7._needsMenuPortal(root)) {
+    var positionAnchor = K7._menuPositionAnchor;
+    var inMediaCard = !!root.closest('.media-card')
+        || !!(positionAnchor && positionAnchor.closest && positionAnchor.closest('.media-card'));
+    var forcePortal = !!positionAnchor;
+    if (!inMediaCard && !forcePortal && !K7._needsMenuPortal(root)) {
         if (dropdown.classList.contains('k7-menu-portal')) {
             K7._restoreMenuElement(dropdown, root);
             K7._restoreMenuElement(backdrop, root);
@@ -2756,11 +2879,19 @@ K7.TvDetailScroll = (function () {
 
         function onFocusIn(e) {
             if (!inst.root.contains(e.target)) return;
+            if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
+            // Return to hero only when focusing the hero controls row.
             if (isInZone(e.target, 'actions')) {
                 scrollToMain(false);
             } else if (isInZone(e.target, 'below')) {
                 if (!inst.showingBelow) {
                     scrollToBelow();
+                } else {
+                    // Keep the below snap if a prior scroll nudge revealed the hero.
+                    var main = getZone(inst.root, 'main');
+                    if (main && inst.root.scrollTop < main.offsetHeight - 8) {
+                        inst.root.scrollTop = main.offsetHeight;
+                    }
                 }
             } else if ((isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) && !inst.showingBelow) {
                 clampMainView();
@@ -2772,9 +2903,9 @@ K7.TvDetailScroll = (function () {
         inst.clampMainView = clampMainView;
         inst.onFocusIn = onFocusIn;
         inst.handleVerticalNav = function (key, el) {
-            if (!el || !inst.root.contains(el)) return;
+            if (!el || !inst.root.contains(el)) return false;
 
-            if (!getZone(inst.root, 'below')) return;
+            if (!getZone(inst.root, 'below')) return false;
 
             if (key === 'ArrowDown') {
                 if (isInZoneCarousel(el, 'episodes') || isInZoneCarousel(el, 'seasons')) {
@@ -2782,7 +2913,46 @@ K7.TvDetailScroll = (function () {
                 } else if (isInZone(el, 'actions') && !getZone(inst.root, 'seasons') && !getZone(inst.root, 'episodes')) {
                     scrollToBelow();
                 }
+                return false;
             }
+
+            if (key === 'ArrowUp' && isInZone(el, 'below')) {
+                // If nothing in the below zone sits above the focused card, leave toward
+                // hero actions (or back). Otherwise spatial nav would pick the top navbar
+                // because the hero controls are scrolled off-screen.
+                var below = getZone(inst.root, 'below');
+                var currentRect = el.getBoundingClientRect();
+                var candidates = below ? below.querySelectorAll('.focusable') : [];
+                var hasAboveInBelow = false;
+                for (var i = 0; i < candidates.length; i++) {
+                    var cand = candidates[i];
+                    if (cand === el || el.contains(cand) || cand.contains(el)) continue;
+                    if (cand.offsetWidth <= 0 && cand.offsetHeight <= 0) continue;
+                    var r = cand.getBoundingClientRect();
+                    if (r.bottom < currentRect.top + 8) {
+                        hasAboveInBelow = true;
+                        break;
+                    }
+                }
+                if (hasAboveInBelow) return false;
+
+                scrollToMain(false);
+                var target = null;
+                var actions = getZone(inst.root, 'actions');
+                if (actions) {
+                    target = actions.matches('.focusable') ? actions : actions.querySelector('.focusable');
+                }
+                if (!target) {
+                    var main = getZone(inst.root, 'main');
+                    target = main && main.querySelector('.k7-back-btn.focusable, .k7-back-btn .focusable, .focusable');
+                }
+                if (target) {
+                    target.focus({ preventScroll: true });
+                    return true;
+                }
+            }
+
+            return false;
         };
     }
 
@@ -2806,14 +2976,16 @@ K7.TvDetailScroll = (function () {
         },
         sync: function (root) {
             var inst = root ? _instances.get(root) : null;
-            if (inst && !inst.showingBelow) {
-                inst.root.scrollTop = 0;
-            }
+            if (!inst || inst.showingBelow) return;
+            // Do not yank scroll back to the hero while the user is on mouse/touch.
+            if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
+            inst.root.scrollTop = 0;
         },
         hasInstance: function (root) {
             return !!(root && _instances.has(root));
         },
         clampMainView: function (el) {
+            if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
             var root = el && el.closest('[data-tv-scroll]');
             var inst = root && _instances.get(root);
             if (inst) inst.clampMainView();
