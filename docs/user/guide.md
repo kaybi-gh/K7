@@ -60,9 +60,9 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, subtitle appearance, resume / continue-watching, seekbar thumbnails, chapter markers |
+| Settings -> Video playback | Intro/outro skip, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers |
 | Track selection | Preferred audio languages; when to show subtitles (Off, Forced only, Full, Hearing impaired) |
-| Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
+| Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume / completion threshold |
 
 Seekbar thumbnails only appear if the server generated them. Chapter markers appear when **Settings -> Video playback -> chapter markers** is on (server default under Admin -> Video playback) and either the file has embedded chapters (for example MKV, when library chapter extraction is enabled) or the episode has intro/outro segments in the library. When both exist in the same time range, the seekbar shows the file chapter and skips a duplicate intro/outro tick. The first play can extract missing chapters automatically.
 
@@ -116,7 +116,7 @@ Libraries are on Home (and library browse). What you see depends on admin librar
 |---|---|
 | Playlists | Manual lists and **smart playlists** (rules that refresh as the library grows). With AudioMuse, you can also build a playlist from a text prompt - see [Music discovery](#music-discovery-audiomuse). |
 | Collections | Group titles your way |
-| Stats / History / Reviews | Your activity and ratings |
+| Stats / History / Reviews | Your activity and ratings. Watch stats (and home "Recommended for you") only count plays that met your completion threshold; brief opens do not. History still lists incomplete sessions. |
 | Downloads | Native apps only - see [Offline](#offline-downloads) |
 
 Playlist views can include a "show shared" option. What others see of your playlists, collections, reviews, and history is controlled under [Privacy](#privacy-and-visibility) (and per-item visibility where offered).

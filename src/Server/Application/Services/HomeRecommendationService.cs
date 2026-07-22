@@ -207,10 +207,12 @@ public class HomeRecommendationService(
 
     private async Task<List<Guid>> GetSeedMediaIdsAsync(Guid userId, CancellationToken cancellationToken)
     {
+        // Only sessions that met the playback completion threshold seed recommendations.
+        // Brief opens (StoppedAt without CompletedAt) must not pollute the feed.
         var fromSessions = await context.MediaPlaybackSessions
             .AsNoTracking()
-            .Where(s => s.UserId == userId && (s.CompletedAt != null || s.StoppedAt != null))
-            .OrderByDescending(s => s.CompletedAt ?? s.StoppedAt)
+            .Where(s => s.UserId == userId && s.CompletedAt != null)
+            .OrderByDescending(s => s.CompletedAt)
             .Take(SeedSessionLimit)
             .Select(s => s.MediaId)
             .Distinct()
@@ -221,7 +223,7 @@ public class HomeRecommendationService(
 
         var fromStates = await context.UserMediaStates
             .AsNoTracking()
-            .Where(s => s.UserId == userId && s.LastInteractedAt != null)
+            .Where(s => s.UserId == userId && s.IsCompleted)
             .OrderByDescending(s => s.LastInteractedAt)
             .Take(SeedStateLimit)
             .Select(s => s.MediaId)

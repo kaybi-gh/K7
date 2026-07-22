@@ -44,7 +44,10 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             sessionsQuery = sessionsQuery.Where(s => s.SharedProfileId == null && s.UserId == targetUserId.Value);
         }
 
+        // Count only sessions that met the playback completion threshold (CompletedAt).
+        // Accidental opens must not inflate plays, watch time, or top lists.
         var sessionsWithMedia = sessionsQuery
+            .Where(s => s.CompletedAt != null)
             .Join(
                 context.Medias.Where(m => mediaTypes.Contains(m.Type)),
                 s => s.MediaId,
