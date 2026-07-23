@@ -298,7 +298,8 @@
 }
 
 .seek-bar:hover .seek-thumb,
-.seek-bar:focus-visible .seek-thumb {
+.seek-bar:focus-visible .seek-thumb,
+.seek-bar.scrubbing .seek-thumb {
     opacity: 1;
 }
 
@@ -568,7 +569,10 @@
         display: none;
     }
 
-    .seek-bar {
+    .seek-bar,
+    .seek-bar:hover,
+    .seek-bar:focus-visible,
+    .seek-bar.scrubbing {
         height: 32px;
         border-radius: var(--radius-sm);
     }
@@ -642,7 +646,10 @@
         display: none;
     }
 
-    .seek-bar {
+    .seek-bar,
+    .seek-bar:hover,
+    .seek-bar:focus-visible,
+    .seek-bar.scrubbing {
         height: 32px;
         border-radius: var(--radius-sm);
     }
