@@ -247,6 +247,8 @@ public partial class Movie : IAsyncDisposable
         var videoResolution = videoMetadata.VideoResolution;
         var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
+        await RefreshMovieUserStateAsync();
+
         PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress), indexedFileId: indexedFileId);
 
         var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
@@ -261,6 +263,15 @@ public partial class Movie : IAsyncDisposable
         await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl, startPosition, videoMetadata.Chapters);
     }
 
+    private async Task RefreshMovieUserStateAsync()
+    {
+        if (_movie is null) return;
+
+        var fresh = await k7ServerService.GetMovieAsync(_movie.Id, bypassCache: true);
+        if (fresh is not null)
+            _movie = _movie with { UserState = fresh.UserState };
+    }
+
     private bool HasPlayableFiles()
     {
         if (_movie is null) return false;
@@ -270,6 +281,8 @@ public partial class Movie : IAsyncDisposable
     private async Task PlayRemoteFileAsync(RemoteIndexedFileDto remoteFile)
     {
         if (_movie is null) return;
+
+        await RefreshMovieUserStateAsync();
 
         PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress));
 

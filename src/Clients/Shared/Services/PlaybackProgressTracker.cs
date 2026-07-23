@@ -160,47 +160,54 @@ public class PlaybackProgressTracker : IDisposable
         if (mediaId is null) return;
         if (!_isAuthenticated) return;
 
-        var position = _playerService.CurrentTime;
+        // Prefer last known time: CurrentTime can briefly drop when the player is disposed on Idle.
+        var position = _playerService.CurrentTime > 0 ? _playerService.CurrentTime : _lastKnownTime;
         var duration = _playerService.Duration;
-
-        if (duration <= 0) return;
-        if (Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
-
-        _lastReportedPosition = position;
-
-        if (!_connectivity.IsOnline && _currentIndexedFileId.HasValue)
-        {
-            await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration, _viewingGroupSession?.ActiveGroupId);
-            return;
-        }
+        var isTerminal = _lastState is PlaybackState.Idle or PlaybackState.Ended;
 
         try
         {
-            var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
-            Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
-            await _serverService.ReportPlaybackProgressAsync(
-                mediaId.Value,
-                _sessionId,
-                _referenceId,
-                position,
-                duration,
-                (int)_lastState,
-                deviceId,
-                sharedProfileId: _viewingGroupSession?.ActiveGroupId,
-                syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
+            if (duration <= 0) return;
+            if (Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
 
-            if (_lastState is PlaybackState.Idle or PlaybackState.Ended)
-            {
-                _cacheStore.InvalidateHomeFeed();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to report playback progress: {ex.Message}");
-            if (_currentIndexedFileId.HasValue)
+            _lastReportedPosition = position;
+
+            if (!_connectivity.IsOnline && _currentIndexedFileId.HasValue)
             {
                 await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration, _viewingGroupSession?.ActiveGroupId);
+                return;
             }
+
+            try
+            {
+                var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
+                Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
+                await _serverService.ReportPlaybackProgressAsync(
+                    mediaId.Value,
+                    _sessionId,
+                    _referenceId,
+                    position,
+                    duration,
+                    (int)_lastState,
+                    deviceId,
+                    sharedProfileId: _viewingGroupSession?.ActiveGroupId,
+                    syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to report playback progress: {ex.Message}");
+                if (_currentIndexedFileId.HasValue)
+                {
+                    await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration, _viewingGroupSession?.ActiveGroupId);
+                }
+            }
+        }
+        finally
+        {
+            // Always refresh Keep Watching when playback stops, even if the last tick
+            // already reported nearly the same position (delta gate would skip the POST).
+            if (isTerminal)
+                _cacheStore.InvalidateHomeFeed();
         }
     }
 

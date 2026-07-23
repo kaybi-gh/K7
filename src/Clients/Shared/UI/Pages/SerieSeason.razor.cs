@@ -300,16 +300,16 @@ public partial class SerieSeason : IAsyncDisposable
 
     private async Task PlayEpisodeAsync(LiteSerieEpisodeDto episode)
     {
-        var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id);
+        var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id, bypassCache: true);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
         await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            && episodeDto.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
-            startPosition = episode.UserState.LastPlaybackPosition;
+            startPosition = episodeDto.UserState.LastPlaybackPosition;
         }
 
         // Try local file first, then remote

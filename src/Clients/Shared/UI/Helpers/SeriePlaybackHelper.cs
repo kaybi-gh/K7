@@ -44,15 +44,15 @@ internal static class SeriePlaybackHelper
         IK7ServerService apiClient,
         CancellationToken cancellationToken = default)
     {
-        var episodeMedia = await mediaService.GetMediaAsync(episode.Id, cancellationToken);
+        var episodeMedia = await mediaService.GetMediaAsync(episode.Id, cancellationToken, bypassCache: true);
         if (episodeMedia is not SerieEpisodeDto episodeDto)
             return;
 
         double? startPosition = null;
         if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            && episodeDto.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
-            startPosition = episode.UserState.LastPlaybackPosition;
+            startPosition = episodeDto.UserState.LastPlaybackPosition;
         }
 
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();

@@ -212,6 +212,8 @@ public partial class SerieEpisode : IAsyncDisposable
 
         await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
+        await RefreshEpisodeUserStateAsync();
+
         PlaybackProgressTracker.StartTracking(_episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
             Guid.Parse(SerieId),
@@ -239,6 +241,15 @@ public partial class SerieEpisode : IAsyncDisposable
             _stillUrl,
             startPosition,
             videoMetadata.Chapters);
+    }
+
+    private async Task RefreshEpisodeUserStateAsync()
+    {
+        if (_episode is null) return;
+
+        var fresh = await k7ServerService.GetMediaAsync(_episode.Id, bypassCache: true);
+        if (fresh is SerieEpisodeDto episode)
+            _episode = _episode with { UserState = episode.UserState };
     }
 
     private async Task OpenEditMetadataAsync()

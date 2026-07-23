@@ -301,21 +301,16 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             }
         }
 
-        if (changed && !isCompleted)
-        {
+        if (changed)
             NotifyChanged();
-            return;
-        }
 
+        // Always refresh Continue Watching membership. Patching progress on another home row
+        // (e.g. Recently Added) must not skip adding/removing the item from Keep Watching.
         if (!GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
-        {
-            if (changed)
-                NotifyChanged();
             return;
-        }
 
         InvalidateCache();
-        _ = RefreshContinueWatchingRowsAsync();
+        _ = RefreshContinueWatchingRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
     }
 
     private void OnMediaMetadataRefreshed(Guid mediaId) =>
