@@ -15,7 +15,14 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
 
         try
         {
-            return JsonSerializer.Deserialize<List<LocalUser>>(json) ?? [];
+            var users = JsonSerializer.Deserialize<List<LocalUser>>(json) ?? [];
+            foreach (var user in users)
+            {
+                if (user.PinHash is not null)
+                    user.HasPin = true;
+            }
+
+            return users;
         }
         catch
         {
@@ -40,7 +47,8 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         {
             var previous = users[existing];
             user.PinHash = previous.PinHash;
-            user.AvatarUrl ??= previous.AvatarUrl;
+            if (user.PinHash is not null)
+                user.HasPin = true;
             user.DisplayName ??= previous.DisplayName;
             user.UserId ??= previous.UserId;
             users[existing] = user;
@@ -52,6 +60,20 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
 
         Persist(users);
         SetLastActiveId(user.IdentityUserId);
+    }
+
+    public void UpdateRefreshToken(string identityUserId, string refreshToken)
+    {
+        if (string.IsNullOrEmpty(identityUserId) || string.IsNullOrEmpty(refreshToken))
+            return;
+
+        var users = GetAll();
+        var user = users.FirstOrDefault(u => u.IdentityUserId == identityUserId);
+        if (user is null)
+            return;
+
+        user.RefreshToken = refreshToken;
+        Persist(users);
     }
 
     public void Remove(string identityUserId)
@@ -76,6 +98,7 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
             return;
 
         user.PinHash = pin is null ? null : PinVerifier.Hash(pin);
+        user.HasPin = pin is not null;
         Persist(users);
     }
 

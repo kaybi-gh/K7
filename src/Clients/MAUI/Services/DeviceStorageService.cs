@@ -9,7 +9,9 @@ public class DeviceStorageService : IDeviceStorageService
     private static readonly HashSet<string> SecureKeys =
     [
         PreferenceKeys.ACCESS_TOKEN.Name,
-        PreferenceKeys.REFRESH_TOKEN.Name
+        PreferenceKeys.REFRESH_TOKEN.Name,
+        // Contains per-profile refresh tokens (and PIN hashes) - must not sit in plain Preferences.
+        PreferenceKeys.LOCAL_USERS.Name
     ];
 
     public T? Get<T>(PreferenceKey<T> key, T? defaultValue = default)

@@ -7,6 +7,7 @@ public interface ILocalUserService
     List<LocalUser> GetAll();
     LocalUser? GetLastActive();
     void SaveOrUpdate(LocalUser user);
+    void UpdateRefreshToken(string identityUserId, string refreshToken);
     void Remove(string identityUserId);
     void SetLastActiveId(string identityUserId);
     void SetPin(string identityUserId, string? pin);

@@ -1,15 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared;
-using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
-using K7.Shared.Json;
 using Microsoft.AspNetCore.Components.Authorization;
 using OpenIddict.Client;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -22,8 +19,6 @@ namespace K7.Clients.MAUI.Services.Authentication;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
 {
-    private static readonly JsonSerializerOptions SerializerOptions = K7JsonSerializerOptions.CreateDefault();
-
     private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IUserAdminService _userAdminService;
@@ -107,7 +102,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 StoreAccessToken(accessToken);
 
                 if (!string.IsNullOrEmpty(result.RefreshToken))
-                    _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+                    PersistRefreshToken(result.RefreshToken);
 
                 if (!HasPersistedSessionTokens())
                 {
@@ -117,7 +112,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 }
                 else
                 {
-                    await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", timeout.Token).ConfigureAwait(false);
+                    await SaveLocalUserFromCurrentUserAsync(timeout.Token).ConfigureAwait(false);
                     await TryAttachCurrentUserToDeviceAsync(timeout.Token).ConfigureAwait(false);
                 }
             }, timeout.Token).ConfigureAwait(false);
@@ -201,7 +196,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         StoreAccessToken(result.AccessToken);
 
         if (!string.IsNullOrEmpty(result.RefreshToken))
-            _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+            PersistRefreshToken(result.RefreshToken);
 
         if (!HasPersistedSessionTokens())
         {
@@ -231,7 +226,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             catch { }
         }
 
-        await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
+        await SaveLocalUserFromCurrentUserAsync(cancellationToken);
         await TryAttachCurrentUserToDeviceAsync(cancellationToken);
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -312,7 +307,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         if (await TryRefreshTokenAsync(refreshToken))
         {
-            await SaveLocalUserFromCurrentUserAsync(refreshToken);
+            await SaveLocalUserFromCurrentUserAsync();
             await RestoreSharedProfileAsync();
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
@@ -324,7 +319,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    private async Task<bool> TryRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    private async Task<bool> TryRefreshTokenAsync(
+        string refreshToken,
+        CancellationToken cancellationToken = default,
+        string? rejectedAccessToken = null,
+        bool forUserSwitch = false)
     {
         if (string.IsNullOrEmpty(refreshToken))
             return false;
@@ -332,12 +331,19 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         await _refreshLock.WaitAsync(cancellationToken);
         try
         {
-            var storedRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
-            if (!string.IsNullOrEmpty(storedRefreshToken))
-                refreshToken = storedRefreshToken;
+            var requestedRefreshToken = refreshToken;
+            refreshToken = ResolveRefreshTokenForGrant(requestedRefreshToken, forUserSwitch);
 
             var accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
-            if (TryRestoreFromAccessToken(accessToken))
+
+            // Reuse a still-valid access token unless the caller just got a 401 for that exact token.
+            // Never reuse on user switch - SwitchToUserAsync clears the prior session first.
+            var mustHitTokenEndpoint = !string.IsNullOrEmpty(rejectedAccessToken)
+                && string.Equals(accessToken, rejectedAccessToken, StringComparison.Ordinal);
+
+            if (!forUserSwitch
+                && !mustHitTokenEndpoint
+                && TryRestoreFromAccessToken(accessToken))
                 return true;
 
             try
@@ -357,7 +363,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 StoreAccessToken(result.AccessToken);
 
                 if (!string.IsNullOrEmpty(result.RefreshToken))
-                    _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
+                    PersistRefreshToken(result.RefreshToken);
 
                 if (!HasPersistedSessionTokens())
                     return false;
@@ -401,62 +407,74 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    public async Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null)
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
         if (string.IsNullOrEmpty(refreshToken))
             return false;
 
-        var success = await TryRefreshTokenAsync(refreshToken, cancellationToken);
+        var success = await TryRefreshTokenAsync(refreshToken, cancellationToken, rejectedAccessToken);
         if (success)
         {
-            await SaveLocalUserFromCurrentUserAsync(refreshToken, cancellationToken);
+            await SaveLocalUserFromCurrentUserAsync(cancellationToken);
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         return success;
     }
 
-    public async Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public async Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default)
     {
-        if (!await TryRefreshTokenAsync(refreshToken))
+        if (string.IsNullOrEmpty(identityUserId))
             return false;
 
-        await SaveLocalUserFromCurrentUserAsync(refreshToken, cancellationToken);
+        // Always re-read from storage - the in-memory SelectProfile list can hold a stale RT
+        // after a background rotation of another (or the same) session.
+        var localUser = _localUserService.GetAll()
+            .FirstOrDefault(u => string.Equals(u.IdentityUserId, identityUserId, StringComparison.Ordinal));
+        if (localUser is null || string.IsNullOrEmpty(localUser.RefreshToken))
+            return false;
+
+        // SecureStorage only holds the *active* session. Drop it before redeeming another
+        // profile's refresh token, otherwise a still-valid access token / RT from the previous
+        // user would keep us signed in as that previous user.
+        ClearActiveSession();
+
+        if (!await TryRefreshTokenAsync(localUser.RefreshToken, cancellationToken, forUserSwitch: true))
+            return false;
+
+        if (!string.Equals(GetCurrentIdentityUserId(), identityUserId, StringComparison.Ordinal))
+        {
+            ClearActiveSession();
+            return false;
+        }
+
+        await SaveLocalUserFromCurrentUserAsync(cancellationToken);
         await TryAttachCurrentUserToDeviceAsync(cancellationToken);
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         return true;
     }
 
-    public async Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default)
+    private void ClearActiveSession()
     {
-        foreach (var user in _localUserService.GetAll())
-        {
-            if (!string.IsNullOrEmpty(user.AvatarUrl))
-                continue;
-
-            var profile = await FetchUserProfileAsync(user.RefreshToken, cancellationToken);
-            if (profile is null)
-                continue;
-
-            user.UserId = profile.Id;
-            user.AvatarUrl = profile.AvatarUrl;
-            if (profile.DisplayName is not null)
-                user.DisplayName = profile.DisplayName;
-
-            _localUserService.SaveOrUpdate(user);
-        }
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+        ClearStoredTokens();
     }
 
-    private async Task SaveLocalUserFromCurrentUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    private async Task SaveLocalUserFromCurrentUserAsync(CancellationToken cancellationToken = default)
     {
-        var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
-            ?? _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var identityUserId = GetCurrentIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId))
             return;
 
         var existing = _localUserService.GetAll().FirstOrDefault(u => u.IdentityUserId == identityUserId);
         var currentRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+        if (string.IsNullOrEmpty(currentRefreshToken))
+            currentRefreshToken = existing?.RefreshToken;
+
+        if (string.IsNullOrEmpty(currentRefreshToken))
+            return;
 
         var localUser = new LocalUser
         {
@@ -469,10 +487,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             Email = _currentUser.FindFirst(ClaimTypes.Email)?.Value
                     ?? _currentUser.FindFirst("email")?.Value
                     ?? existing?.Email,
-            RefreshToken = currentRefreshToken ?? refreshToken,
+            RefreshToken = currentRefreshToken,
             AvatarUrl = existing?.AvatarUrl,
             DisplayName = existing?.DisplayName,
-            UserId = existing?.UserId
+            UserId = existing?.UserId,
+            HasPin = existing?.HasPin ?? false
         };
 
         try
@@ -496,73 +515,69 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _localUserService.SaveOrUpdate(localUser);
     }
 
-    private async Task<UserDto?> FetchUserProfileAsync(string refreshToken, CancellationToken cancellationToken)
+    /// <summary>
+    /// For same-session refresh, always prefer SecureStorage (may already hold a rotated RT).
+    /// For user switch, only prefer SecureStorage when it belongs to the same LocalUser
+    /// (e.g. a prior rotation that was not yet mirrored into LocalUser.RefreshToken).
+    /// </summary>
+    private string ResolveRefreshTokenForGrant(string requestedRefreshToken, bool forUserSwitch)
     {
-        if (string.IsNullOrEmpty(refreshToken))
+        var storedRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+        if (string.IsNullOrEmpty(storedRefreshToken))
+            return requestedRefreshToken;
+
+        if (!forUserSwitch)
+            return storedRefreshToken;
+
+        if (string.Equals(storedRefreshToken, requestedRefreshToken, StringComparison.Ordinal))
+            return storedRefreshToken;
+
+        var targetIdentity = FindIdentityUserIdForRefreshToken(requestedRefreshToken);
+        if (string.IsNullOrEmpty(targetIdentity))
+            return requestedRefreshToken;
+
+        var accessSubject = TryReadSubject(_deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN));
+        if (string.Equals(accessSubject, targetIdentity, StringComparison.Ordinal))
+            return storedRefreshToken;
+
+        if (_localUserService.GetAll().Any(u =>
+                u.IdentityUserId == targetIdentity
+                && string.Equals(u.RefreshToken, storedRefreshToken, StringComparison.Ordinal)))
+            return storedRefreshToken;
+
+        return requestedRefreshToken;
+    }
+
+    private string? FindIdentityUserIdForRefreshToken(string refreshToken) =>
+        _localUserService.GetAll()
+            .FirstOrDefault(u => string.Equals(u.RefreshToken, refreshToken, StringComparison.Ordinal))
+            ?.IdentityUserId;
+
+    private string? GetCurrentIdentityUserId() =>
+        _currentUser.FindFirst(Claims.Subject)?.Value
+        ?? _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    private void PersistRefreshToken(string refreshToken)
+    {
+        _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, refreshToken);
+
+        var identityUserId = GetCurrentIdentityUserId();
+        if (!string.IsNullOrEmpty(identityUserId))
+            _localUserService.UpdateRefreshToken(identityUserId, refreshToken);
+    }
+
+    private static string? TryReadSubject(string? accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
             return null;
 
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(15));
-
-            string? accessToken = null;
-            var storedRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
-            var isActiveSession = refreshToken == storedRefreshToken;
-
-            if (isActiveSession)
-            {
-                var storedAccessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
-                if (IsAccessTokenValid(storedAccessToken))
-                    accessToken = storedAccessToken;
-            }
-
-            if (accessToken is null)
-            {
-                if (isActiveSession)
-                {
-                    if (!await TryRefreshTokenAsync(refreshToken, cts.Token))
-                        return null;
-
-                    accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
-                }
-                else
-                {
-                    await _refreshLock.WaitAsync(cts.Token);
-                    try
-                    {
-                        var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
-                        {
-                            CancellationToken = cts.Token,
-                            RefreshToken = refreshToken,
-                            ProviderName = "K7"
-                        });
-
-                        accessToken = result.AccessToken;
-                    }
-                    finally
-                    {
-                        _refreshLock.Release();
-                    }
-                }
-            }
-
-            if (string.IsNullOrEmpty(accessToken))
-                return null;
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/me");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var response = await _k7ServerService.HttpClient.SendAsync(request, cts.Token);
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            return await response.Content.ReadFromJsonAsync<UserDto>(SerializerOptions, cts.Token);
-        }
-        catch
-        {
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(accessToken))
             return null;
-        }
+
+        var jwt = handler.ReadJwtToken(accessToken);
+        return jwt.Subject
+               ?? jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
     }
 
     private static bool IsAccessTokenValid(string? accessToken)

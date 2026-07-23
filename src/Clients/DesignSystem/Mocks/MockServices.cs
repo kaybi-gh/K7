@@ -49,10 +49,9 @@ public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProv
     public Task LoginAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginAsGuestAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
-    public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default) => Task.FromResult(true);
+    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null) => Task.FromResult(true);
+    public Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public void SignInOffline(LocalUser user) { }
-    public Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
@@ -140,6 +139,7 @@ public sealed class MockLocalUserService : ILocalUserService
     public List<LocalUser> GetAll() => [];
     public LocalUser? GetLastActive() => null;
     public void SaveOrUpdate(LocalUser user) { }
+    public void UpdateRefreshToken(string identityUserId, string refreshToken) { }
     public void Remove(string identityUserId) { }
     public void SetLastActiveId(string identityUserId) { }
     public void SetPin(string identityUserId, string? pin) { }

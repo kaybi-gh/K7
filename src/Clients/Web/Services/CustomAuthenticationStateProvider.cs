@@ -42,12 +42,12 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
         throw new NotSupportedException("Device code flow is not supported in the web client.");
     }
 
-    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default)
+    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null)
     {
         return Task.FromResult(false);
     }
 
-    public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("User switching is not supported in the web client.");
     }
@@ -56,7 +56,4 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
     {
         // Not applicable for web client
     }
-
-    public Task RefreshStoredUserProfilesAsync(CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
 }

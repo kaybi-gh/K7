@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Extensions;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
@@ -147,6 +149,7 @@ public partial class SettingsAccountPage
             await UserService.UploadAvatarAsync(memoryStream, file.Name);
             var me = await UserService.GetCurrentUserAsync();
             _avatarUrl = me?.AvatarUrl;
+            CacheLocalUserAvatar(_avatarUrl);
         }
         catch (Exception ex)
         {
@@ -161,6 +164,7 @@ public partial class SettingsAccountPage
         {
             await UserService.RemoveAvatarAsync();
             _avatarUrl = null;
+            CacheLocalUserAvatar(null);
         }
         catch (Exception ex)
         {
@@ -364,7 +368,8 @@ public partial class SettingsAccountPage
 
     private async Task<string?> ShowPinDialog(string title)
     {
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        var options = K7DialogServiceExtensions.CreatePinDialogOptions(deviceType);
         var dialog = await DialogService.ShowAsync<PinDialog>(title, null, options);
         var result = await dialog.Result;
 
@@ -543,5 +548,19 @@ public partial class SettingsAccountPage
         {
             _deleteError = S["ErrorWithDetails", ex.Message];
         }
+    }
+
+    private void CacheLocalUserAvatar(string? avatarUrl)
+    {
+        if (string.IsNullOrEmpty(_identityUserId))
+            return;
+
+        var local = LocalUserService.GetAll()
+            .FirstOrDefault(u => u.IdentityUserId == _identityUserId);
+        if (local is null)
+            return;
+
+        local.AvatarUrl = avatarUrl;
+        LocalUserService.SaveOrUpdate(local);
     }
 }

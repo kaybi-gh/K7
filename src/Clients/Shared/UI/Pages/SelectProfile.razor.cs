@@ -3,13 +3,13 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Extensions;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using K7.Shared.Dtos.SharedProfiles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -38,6 +38,7 @@ public partial class SelectProfile
     private bool _singleUserMode;
     private bool _loading;
     private bool _isTv;
+    private DeviceType _deviceType;
     private bool _showOfflineButton;
     private LocalUser? _pendingUser;
     private CancellationTokenSource? _offlineTimerCts;
@@ -47,6 +48,7 @@ public partial class SelectProfile
     private bool _initialFocusAddCard;
     private int _initialFocusCarouselIndex;
     private bool _profileFocusApplied;
+    private bool _selecting;
 
     private static IReadOnlyDictionary<string, object>? GetInitialFocusAttributes(bool isTarget) =>
         isTarget ? new Dictionary<string, object> { ["data-initial-focus"] = true } : null;
@@ -61,7 +63,8 @@ public partial class SelectProfile
 
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        _deviceType = await DeviceService.GetDeviceTypeAsync();
+        _isTv = _deviceType == DeviceType.TV;
 
         if (Connectivity.IsOnline)
         {
@@ -72,16 +75,6 @@ public partial class SelectProfile
             catch
             {
                 // Use cached groups
-            }
-
-            try
-            {
-                await AuthService.RefreshStoredUserProfilesAsync();
-                _users = LocalUserService.GetAll();
-            }
-            catch
-            {
-                // Keep cached user profiles
             }
         }
 
@@ -216,19 +209,46 @@ public partial class SelectProfile
 
     private async Task SelectUserAsync(LocalUser user)
     {
-        SharedProfileSession.ClearActiveGroup();
+        if (_selecting)
+            return;
 
-        if (user.HasPin)
+        _selecting = true;
+        try
         {
-            var pinValid = await PromptPinAsync(user);
-            if (!pinValid)
-                return;
-        }
+            SharedProfileSession.ClearActiveGroup();
 
-        await AuthenticateUserAsync(user);
+            if (user.HasPin)
+            {
+                var pinValid = await PromptPinAsync(user);
+                if (!pinValid)
+                    return;
+            }
+
+            await AuthenticateUserAsync(user);
+        }
+        finally
+        {
+            _selecting = false;
+        }
     }
 
     private async Task SelectGroupAsync(SharedProfileDto group)
+    {
+        if (_selecting)
+            return;
+
+        _selecting = true;
+        try
+        {
+            await SelectGroupCoreAsync(group);
+        }
+        finally
+        {
+            _selecting = false;
+        }
+    }
+
+    private async Task SelectGroupCoreAsync(SharedProfileDto group)
     {
         if (group.HasPin)
         {
@@ -265,7 +285,7 @@ public partial class SelectProfile
 
         try
         {
-            var success = await AuthService.SwitchToUserAsync(host.RefreshToken);
+            var success = await AuthService.SwitchToUserAsync(host.IdentityUserId);
             CancelOfflineTimer();
             if (success)
             {
@@ -323,7 +343,7 @@ public partial class SelectProfile
 
         try
         {
-            var success = await AuthService.SwitchToUserAsync(user.RefreshToken);
+            var success = await AuthService.SwitchToUserAsync(user.IdentityUserId);
             CancelOfflineTimer();
             if (success)
             {
@@ -412,7 +432,7 @@ public partial class SelectProfile
         {
             { x => x.UserName, user.UserName }
         };
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
+        var options = K7DialogServiceExtensions.CreatePinDialogOptions(_deviceType);
         var dialog = await DialogService.ShowAsync<PinDialog>(L["EnterPin"], parameters, options);
         var result = await dialog.Result;
 
@@ -451,7 +471,7 @@ public partial class SelectProfile
         {
             { x => x.UserName, group.Name }
         };
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
+        var options = K7DialogServiceExtensions.CreatePinDialogOptions(_deviceType);
         var dialog = await DialogService.ShowAsync<PinDialog>(L["EnterGroupPin"], parameters, options);
         var result = await dialog.Result;
 
@@ -506,24 +526,6 @@ public partial class SelectProfile
     {
         _singleUserMode = value;
         LocalUserService.IsSingleUserMode = value;
-    }
-
-    private async Task OnUserKeyDown(KeyboardEventArgs e, LocalUser user)
-    {
-        if (e.Key is "Enter" or " ")
-            await SelectUserAsync(user);
-    }
-
-    private async Task OnGroupKeyDown(KeyboardEventArgs e, SharedProfileDto group)
-    {
-        if (e.Key is "Enter" or " ")
-            await SelectGroupAsync(group);
-    }
-
-    private async Task OnAddUserKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key is "Enter" or " ")
-            await AddUserAsync();
     }
 
     private static string GetInitial(LocalUser user)
