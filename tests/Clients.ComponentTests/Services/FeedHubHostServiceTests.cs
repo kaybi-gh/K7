@@ -70,4 +70,22 @@ public class FeedHubHostServiceTests
         sut.MountedKeys.Should().Contain(FeedHubKey.ForLibraryGroup(g1));
         sut.MountedKeys.Should().Contain(FeedHubKey.ForLibraryGroup(g3));
     }
+
+    [Test]
+    public void SetEnabled_ShouldReplayPendingHomeLocation_WhenEnabledAfterUpdateLocation()
+    {
+        var sut = new FeedHubHostService();
+
+        // Simulates FeedHubPageHost.OnInitialized during MainLayout's async init.
+        sut.UpdateLocation("https://k7.local/");
+
+        sut.IsHubRouteActive.Should().BeFalse();
+        sut.MountedKeys.Should().BeEmpty();
+
+        sut.SetEnabled(true);
+
+        sut.IsHubRouteActive.Should().BeTrue();
+        sut.ActiveKey.Should().Be(FeedHubKey.Home);
+        sut.MountedKeys.Should().ContainSingle().Which.Should().Be(FeedHubKey.Home);
+    }
 }

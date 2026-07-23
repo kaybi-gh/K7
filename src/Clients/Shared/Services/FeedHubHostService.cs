@@ -8,6 +8,7 @@ public sealed class FeedHubHostService : IFeedHubHostService
     private readonly List<FeedHubKey> _mountedKeys = [];
     private readonly object _sync = new();
     private int? _maxNonHomeKeys;
+    private string? _lastUri;
 
     public event Action? Changed;
 
@@ -43,9 +44,17 @@ public sealed class FeedHubHostService : IFeedHubHostService
 
             ActiveKey = null;
             IsHubRouteActive = false;
+            NotifyChanged();
+            return;
         }
 
-        NotifyChanged();
+        // FeedHubPageHost may call UpdateLocation during the first render while
+        // MainLayout is still awaiting OnInitializedAsync (auth/hub). Replay the
+        // last URI so hub routes (e.g. Home on refresh) become active.
+        if (_lastUri is not null)
+            ApplyLocation(_lastUri);
+        else
+            NotifyChanged();
     }
 
     public void SetMountLimit(int? maxNonHomeKeys)
@@ -111,9 +120,16 @@ public sealed class FeedHubHostService : IFeedHubHostService
 
     public void UpdateLocation(string uri)
     {
+        _lastUri = uri;
+
         if (!IsEnabled)
             return;
 
+        ApplyLocation(uri);
+    }
+
+    private void ApplyLocation(string uri)
+    {
         if (TryParseHubRoute(uri, out var key))
         {
             lock (_sync)
