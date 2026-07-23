@@ -209,18 +209,15 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         switch (code)
         {
             case "Space" or " " or "MediaPlayPause" or "MediaPlay" or "MediaPause":
-                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: play/pause");
                 TogglePlayPause();
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
-                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: escape/back");
                 PerformBackStep();
                 _ = ReattachLayerCallbackAsync();
                 StateHasChanged();
                 return;
             case "MediaStop":
-                System.Diagnostics.Debug.WriteLine("[K7-Player] overlay keydown: media stop");
                 OnCloseButtonClick();
                 return;
             case "KeyM" or "m" or "M":
@@ -534,7 +531,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnCloseButtonClick()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay close click");
         PlayerService.Stop();
         PlayerService.HideAsync();
     }
@@ -564,7 +560,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         if (_disposed) return;
 
-        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay HandleBack (layer/spatial nav)");
         InvokeAsync(async () =>
         {
             PerformBackStep();
@@ -588,7 +583,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnBackPressed()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay OnBackPressed (PlayerService.BackPressed)");
         HandleBack();
     }
 
@@ -613,7 +607,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnOverlayTap()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay tap");
         if (_showOverlay && !_isMouseOverControlsBar && !_isMenuOpen)
         {
             _showOverlay = false;
@@ -892,7 +885,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void TogglePlayPause()
     {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] overlay play/pause click");
         if (PlayerService.PlaybackState != PlaybackState.Playing)
         {
             PlayerService.Play();

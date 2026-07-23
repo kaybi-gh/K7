@@ -39,43 +39,18 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService) :
             return null;
         }
 
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            if (!string.IsNullOrEmpty(rangeHeader))
-                request.Headers.TryAddWithoutValidation("Range", rangeHeader);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        if (!string.IsNullOrEmpty(rangeHeader))
+            request.Headers.TryAddWithoutValidation("Range", rangeHeader);
 
-            System.Diagnostics.Debug.WriteLine(
-                "[K7-Player] Stream fetch via C# url=" + requestUri);
+        using var response = await httpClient.SendAsync(request);
+        var bodyBytes = await response.Content.ReadAsByteArrayAsync();
+        bodyBytes = PrepareBodyBytes(bodyBytes, requestUri);
 
-            using var response = await httpClient.SendAsync(request);
-            var bodyBytes = await response.Content.ReadAsByteArrayAsync();
-            bodyBytes = PrepareBodyBytes(bodyBytes, requestUri);
+        var contentType = response.Content.Headers.ContentType?.MediaType
+            ?? GetFallbackContentType(requestUri);
 
-            var contentType = response.Content.Headers.ContentType?.MediaType
-                ?? GetFallbackContentType(requestUri);
-
-            System.Diagnostics.Debug.WriteLine(
-                "[K7-Player] Stream fetch response status="
-                + (int)response.StatusCode
-                + " url="
-                + requestUri
-                + " bytes="
-                + bodyBytes.Length);
-
-            return new StreamFetchResponse((int)response.StatusCode, contentType, bodyBytes);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                "[K7-Player] Stream fetch failed url="
-                + requestUri
-                + " error="
-                + ex.Message
-                + " type="
-                + ex.GetType().Name);
-            throw;
-        }
+        return new StreamFetchResponse((int)response.StatusCode, contentType, bodyBytes);
     }
 
     private static byte[] PrepareBodyBytes(byte[] bodyBytes, Uri requestUri)
@@ -88,11 +63,6 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService) :
 
         var manifestText = Encoding.UTF8.GetString(bodyBytes);
         var rewritten = HlsStreamUrlHelper.AbsolutizeManifestUrls(manifestText, requestUri);
-        var previewLength = Math.Min(rewritten.Length, 200);
-        var preview = rewritten[..previewLength].Replace("\r", "\\r").Replace("\n", "\\n");
-
-        System.Diagnostics.Debug.WriteLine(
-            "[K7-Player] Stream fetch manifest preview=" + preview);
 
         return Encoding.UTF8.GetBytes(rewritten);
     }

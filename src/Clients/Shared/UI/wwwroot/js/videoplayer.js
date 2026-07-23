@@ -40,29 +40,15 @@ function ensurePlaybackStarted(player, id) {
     if (!(bufferedEnd > 0) && player.readyState() < 2)
         return;
 
-    console.log('[K7-Player] ensurePlaybackStarted id=' + id
-        + ' readyState=' + player.readyState()
-        + ' buffered=' + bufferedEnd
-        + ' currentTime=' + player.currentTime());
-
     var promise = player.play();
     if (promise !== undefined) {
-        promise.catch(function (error) {
-            console.warn('[K7-Player] play() blocked id=' + id, error);
+        promise.catch(function () {
         });
     }
 }
 
-function logVideoJsError(id, context, player) {
-    const err = player?.error?.();
-    const code = err?.code ?? 'unknown';
-    const message = err?.message ?? 'unknown';
-    console.error('[K7-Player] Video.js error context=' + context + ' id=' + id + ' code=' + code + ' message=' + message, err);
-}
-
 window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetRef) {
     ensurePlatformStreamBridge();
-    console.log('[K7-Player] initVideoJs id=' + id);
     // If a player already exists for this id, dispose it first to avoid duplicate streams/listeners
     if (players[id]) {
         try {
@@ -136,7 +122,6 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     });
 
     player.on('error', function () {
-        logVideoJsError(id, 'player', player);
         dotNetRef.invokeMethodAsync('OnPlayerError', player.error()?.code ?? 0, player.error()?.message ?? '')
             .catch((error) => console.error('Error invoking OnPlayerError', error));
     });
@@ -146,7 +131,6 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     // Fires when the browser has loaded meta data for the audio/video.ed.
     player.on('loadedmetadata', function () {
         const duration = player.duration();
-        console.log('[K7-Player] loadedmetadata id=' + id + ' duration=' + duration);
         dotNetRef.invokeMethodAsync('OnDurationChanged', duration)
             .catch((error) => console.error('Error invoking C# method', error));
     });
@@ -170,12 +154,6 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     });
 
     player.on('loadeddata', function () {
-        const el = player.tech(true)?.el?.() || player.el()?.querySelector('video');
-        console.log('[K7-Player] loadeddata id=' + id
-            + ' readyState=' + player.readyState()
-            + ' paused=' + player.paused()
-            + ' videoWidth=' + (el?.videoWidth ?? 0)
-            + ' buffered=' + getPlayerBufferedEnd(player));
         ensurePlaybackStarted(player, id);
     });
 
@@ -196,7 +174,6 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     });
 
     players[id] = player;
-    console.log('[K7-Player] initVideoJs ready id=' + id);
     return player;
 }
 
@@ -239,13 +216,12 @@ window.changeSource = function (id, src, type, subtitleSlug) {
     const player = players[id];
     if (player) {
         const normalizedType = normalizeHlsMimeType(type);
-        console.log('[K7-Player] changeSource id=' + id + ' src=' + src + ' type=' + normalizedType);
         player.src({ src: src, type: normalizedType });
         player.ready(function () {
             var promise = player.play();
             if (promise !== undefined) {
                 promise.catch(function (error) {
-                    console.warn('[K7-Player] Auto-play was prevented after changing source', error);
+                    console.warn('Auto-play was prevented after changing source', error);
                 });
             }
         });
@@ -263,7 +239,6 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
     if (!player) return;
 
     const normalizedType = normalizeHlsMimeType(type);
-    console.log('[K7-Player] changeSourceAndSeek id=' + id + ' src=' + src + ' type=' + normalizedType + ' seek=' + seekTime);
 
     let seekApplied = false;
     const applySeekAndPlay = function () {
@@ -273,7 +248,7 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
         var promise = player.play();
         if (promise !== undefined) {
             promise.catch(function (error) {
-                console.warn('[K7-Player] Auto-play was prevented after seek', error);
+                console.warn('Auto-play was prevented after seek', error);
             });
         }
     };
@@ -288,9 +263,6 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
         if (!seekApplied) {
             applySeekAndPlay();
         }
-    });
-    player.one('error', function () {
-        logVideoJsError(id, 'changeSourceAndSeek', player);
     });
     player.pause();
     player.src({ src: src, type: normalizedType });

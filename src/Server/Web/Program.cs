@@ -17,6 +17,7 @@ using K7.Server.Web.Middleware;
 using K7.Shared;
 using Scalar.AspNetCore;
 using Serilog;
+using Serilog.Events;
 
 try
 {
@@ -48,6 +49,17 @@ try
     app.InitializeMediaProcessing();
     app.UseSerilogRequestLogging(options =>
     {
+        options.GetLevel = (httpContext, _, ex) =>
+        {
+            // Health probes are polled frequently and drown useful request logs.
+            if (httpContext.Request.Path.StartsWithSegments("/health")
+                || httpContext.Request.Path.StartsWithSegments("/alive"))
+                return LogEventLevel.Verbose;
+
+            return ex is not null || httpContext.Response.StatusCode > 499
+                ? LogEventLevel.Error
+                : LogEventLevel.Information;
+        };
         options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
         {
             if (httpContext.Request.Query.ContainsKey(EphemeralStreamTokenDefaults.QueryParameterName))

@@ -1,14 +1,11 @@
 using AndroidX.Media3.Common;
 using AndroidX.Media3.DataSource;
 using CommunityToolkit.Maui.Views;
-using Log = Android.Util.Log;
 
 namespace K7.Clients.MAUI;
 
 public partial class BlazorPage
 {
-    private const string Tag = "K7-Player";
-
     partial void InitializePlayerPlatform()
     {
         _playerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
@@ -262,23 +259,13 @@ public partial class BlazorPage
     {
         var platformView = mediaElement.Handler?.PlatformView as Android.Views.View;
         if (platformView is null)
-        {
-            Log.Warn(Tag, "Handler or PlatformView is null");
             return null;
-        }
 
         var playerView = FindPlayerView(platformView);
         if (playerView is null)
-        {
-            Log.Warn(Tag, "PlayerView not found in view tree");
             return null;
-        }
 
-        var player = playerView.Player;
-        if (player is null)
-            Log.Warn(Tag, "PlayerView.Player is null");
-
-        return player;
+        return playerView.Player;
     }
 
     private static AndroidX.Media3.UI.PlayerView? FindPlayerView(Android.Views.View view)
@@ -328,13 +315,10 @@ public partial class BlazorPage
                             .Build();
 
                         player.TrackSelectionParameters = newParams;
-                        Log.Info(Tag, $"Switched audio track to: {trackName}");
                         return;
                     }
                 }
             }
-
-            Log.Warn(Tag, $"Audio track not found: {trackName}");
         });
     }
 
@@ -352,7 +336,6 @@ public partial class BlazorPage
                     .SetTrackTypeDisabled(C.TrackTypeText, true)!
                     .Build();
                 player.TrackSelectionParameters = disableParams;
-                Log.Info(Tag, "Subtitles disabled");
                 return;
             }
 
@@ -394,7 +377,7 @@ public partial class BlazorPage
                     var format = group.GetTrackFormat(j);
                     if (format?.Label == slug || format?.Id == slug)
                     {
-                        SelectTextTrack(player, group, j, slug);
+                        SelectTextTrack(player, group, j);
                         return;
                     }
                 }
@@ -402,18 +385,16 @@ public partial class BlazorPage
                 // Match by sequential text group order
                 if (targetTextGroupOrder == textGroupIndex)
                 {
-                    SelectTextTrack(player, group, 0, slug);
+                    SelectTextTrack(player, group, 0);
                     return;
                 }
 
                 textGroupIndex++;
             }
-
-            Log.Warn(Tag, $"Subtitle track not found: {slug}");
         });
     }
 
-    private static void SelectTextTrack(IPlayer player, Tracks.Group group, int trackIdx, string slug)
+    private static void SelectTextTrack(IPlayer player, Tracks.Group group, int trackIdx)
     {
         var newParams = player.TrackSelectionParameters!
             .BuildUpon()!
@@ -422,7 +403,6 @@ public partial class BlazorPage
             .Build();
 
         player.TrackSelectionParameters = newParams;
-        Log.Info(Tag, $"Switched subtitle track to: {slug} (index {trackIdx})");
     }
 
 }

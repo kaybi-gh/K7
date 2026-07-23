@@ -63,8 +63,7 @@
                 bytes[i] = binary.charCodeAt(i);
 
             return bytes;
-        } catch (err) {
-            console.warn('[K7-Player] Stream fetch body base64 decode failed, treating as plain text', err);
+        } catch {
             return null;
         }
     }
@@ -223,8 +222,6 @@
             : null;
         const request = createBridgeXhrRequest(options);
 
-        console.log('[K7-Player] Stream fetch via C# url=' + uri + ' responseType=' + responseType);
-
         dotNetRef.invokeMethodAsync('FetchStreamAsync', uri, rangeHeader)
             .then(function (result) {
                 if (request.aborted)
@@ -237,20 +234,6 @@
 
                 const contentType = result.contentType || '';
                 const body = resolveBridgeXhrBody(result.body, responseType, contentType, uri);
-                const bodyLength = getBridgeXhrBodyByteLength(body);
-
-                console.log('[K7-Player] Stream fetch response status=' + result.statusCode
-                    + ' url=' + uri
-                    + ' bytes=' + bodyLength
-                    + ' bodyType=' + (typeof body === 'string' ? 'text' : (body ? 'binary' : 'empty')));
-
-                if (typeof body === 'string' && body.indexOf('#EXTM3U') === 0) {
-                    const previewLength = Math.min(body.length, 200);
-                    console.log('[K7-Player] Stream fetch manifest preview='
-                        + body.substring(0, previewLength).replace(/\r/g, '\\r').replace(/\n/g, '\\n'));
-                } else if (wantsTextXhrBody(responseType, contentType, uri) && typeof body !== 'string') {
-                    console.error('[K7-Player] VHS expected text playlist body but got ' + typeof body + ' url=' + uri);
-                }
 
                 request.status = result.statusCode;
                 completeBridgeXhrRequest(request, body, responseType);
@@ -266,7 +249,6 @@
                 if (request.aborted)
                     return;
 
-                console.error('[K7-Player] Stream fetch failed url=' + uri, err);
                 request.readyState = 4;
                 request.dispatchEvent('error', { target: request });
                 request.dispatchEvent('loadend', { target: request });
@@ -300,21 +282,15 @@
     }
 
     function installWindowsStreamXhr(dotNetRef) {
-        if (!dotNetRef) {
-            console.warn('[K7-Player] Windows stream bridge missing DotNet reference');
+        if (!dotNetRef)
             return false;
-        }
 
-        if (!window.videojs) {
-            console.warn('[K7-Player] video.js not loaded yet for Windows stream bridge');
+        if (!window.videojs)
             return false;
-        }
 
         const vhsModule = getVhsModule();
-        if (!vhsModule || !vhsModule.xhr) {
-            console.warn('[K7-Player] VHS xhr not available for Windows stream bridge');
+        if (!vhsModule || !vhsModule.xhr)
             return false;
-        }
 
         if (window.__k7WindowsStreamXhrInstalled)
             return true;
@@ -329,7 +305,6 @@
         }
 
         window.__k7WindowsStreamXhrInstalled = true;
-        console.log('[K7-Player] Windows stream xhr bridge installed');
         return true;
     }
 
@@ -355,42 +330,6 @@
         }, 100);
     }
 
-    function attachVhsDiagnostics(player, id) {
-        const attach = function () {
-            try {
-                const tech = player.tech({ IWillNotUseThisInPlugins: true });
-                const vhs = tech?.vhs;
-                if (!vhs?.xhr?.onResponse)
-                    return;
-
-                vhs.xhr.onResponse(function (request, error, response) {
-                    const url = request?.uri || request?.url || 'unknown';
-                    if (error) {
-                        console.error('[K7-Player] VHS xhr error url=' + url, error);
-                        return;
-                    }
-
-                    if (!response || response.statusCode < 200 || response.statusCode >= 300)
-                        return;
-
-                    const contentType = response.headers
-                        ? (response.headers['content-type'] || response.headers['Content-Type'] || '')
-                        : '';
-                    const wantsText = wantsTextXhrBody(request?.responseType || '', contentType, url);
-                    if (wantsText && typeof response.body !== 'string') {
-                        console.error('[K7-Player] VHS parse risk: expected text playlist body but got '
-                            + typeof response.body + ' url=' + url);
-                    }
-                });
-            } catch (err) {
-                console.warn('[K7-Player] Failed to attach VHS diagnostics id=' + id, err);
-            }
-        };
-
-        player.one('xhr-hooks-ready', attach);
-        player.ready(attach);
-    }
-
     K7.initWindowsStreamFetchBridge = function (dotNetRef) {
         K7._windowsStreamFetchRef = dotNetRef;
         scheduleWindowsStreamBridgeInstall(dotNetRef);
@@ -398,8 +337,7 @@
 
     K7.ensureWindowsStreamBridge = ensureWindowsStreamBridge;
 
-    K7.onVideoJsPlayerCreated = function (player, id) {
+    K7.onVideoJsPlayerCreated = function () {
         ensureWindowsStreamBridge();
-        attachVhsDiagnostics(player, id);
     };
 })();

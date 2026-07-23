@@ -126,8 +126,6 @@ public partial class BlazorPage
             RootGrid.Children.RemoveAt(i);
         }
 
-        System.Diagnostics.Debug.WriteLine(
-            $"[K7-Player] Windows layout: BlazorWebView only ({_windowsVideoLayoutHiddenViews.Count} siblings removed)");
     }
 
     private void RestoreWindowsVideoLayoutHiddenViews()
@@ -144,8 +142,6 @@ public partial class BlazorPage
             RootGrid.Insert(insertIndex, view);
         }
 
-        System.Diagnostics.Debug.WriteLine(
-            $"[K7-Player] Windows layout restored ({_windowsVideoLayoutHiddenViews.Count} siblings)");
         _windowsVideoLayoutHiddenViews.Clear();
     }
 
@@ -153,14 +149,12 @@ public partial class BlazorPage
     {
         if (!TryGetWindowsWebView(out var webView))
         {
-            System.Diagnostics.Debug.WriteLine("[K7-Player] WinUI WebView2 not ready for opaque input surface");
             return;
         }
 
         webView.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 13, 9, 7);
         webView.IsHitTestVisible = true;
         webView.IsTabStop = true;
-        System.Diagnostics.Debug.WriteLine("[K7-Player] Windows layout configured; opaque WebView2 input surface applied");
     }
 
     private async Task FocusWindowsWebViewAsync()
@@ -174,7 +168,6 @@ public partial class BlazorPage
                 webView.IsHitTestVisible = true;
                 webView.IsTabStop = true;
                 webView.Focus(FocusState.Programmatic);
-                System.Diagnostics.Debug.WriteLine("[K7-Player] WinUI WebView2 focused for input");
             }
         });
     }
@@ -206,7 +199,6 @@ public partial class BlazorPage
     {
         if (args.Exception is not null)
         {
-            System.Diagnostics.Debug.WriteLine("[K7-Player] CoreWebView2 init failed: " + args.Exception.Message);
             return;
         }
 
@@ -214,7 +206,6 @@ public partial class BlazorPage
         sender.IsHitTestVisible = true;
         AttachWindowsWebViewEscapeHandler(sender);
         ApplyWindowsWebViewOpaqueInputSurface();
-        System.Diagnostics.Debug.WriteLine("[K7-Player] CoreWebView2 ready; opaque background applied");
     }
 
     private void OnWindowsWebViewPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -223,7 +214,6 @@ public partial class BlazorPage
             return;
 
         webView.Focus(FocusState.Pointer);
-        System.Diagnostics.Debug.WriteLine("[K7-Player] WebView2 PointerPressed -> focus");
     }
 
     private void AttachWindowsWebViewEscapeHandler(WinUiWebView2 webView)
@@ -234,7 +224,6 @@ public partial class BlazorPage
         webView.KeyDown += OnWindowsWebViewKeyDown;
         _windowsWebViewEscapeTarget = webView;
         _windowsWebViewEscapeAttached = true;
-        System.Diagnostics.Debug.WriteLine("[K7-Player] WebView2 KeyDown wired");
     }
 
     private void DetachWindowsWebViewEscapeHandler()
@@ -257,7 +246,6 @@ public partial class BlazorPage
         if (e.Key is not VirtualKey.Escape)
             return;
 
-        System.Diagnostics.Debug.WriteLine("[K7-Player] WebView2 KeyDown Escape");
         e.Handled = true;
 
         MainThread.BeginInvokeOnMainThread(() =>
@@ -335,7 +323,6 @@ public partial class BlazorPage
         if (e.Key is not VirtualKey.Escape)
             return;
 
-        System.Diagnostics.Debug.WriteLine("[K7-Player] WinUI root KeyDown Escape");
         e.Handled = true;
 
         if (_playerService is Services.PlayerService playerService)

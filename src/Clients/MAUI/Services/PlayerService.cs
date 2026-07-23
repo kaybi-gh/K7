@@ -466,14 +466,6 @@ internal class PlayerService(
                 || CurrentTime > 0
                 || PlaybackState is PlaybackState.Playing)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[K7-Player] TryRecoverPlaybackStartAsync skipped; media already progressing"
-                    + " buffered="
-                    + BufferedTime
-                    + " currentTime="
-                    + CurrentTime
-                    + " state="
-                    + PlaybackState);
                 return true;
             }
 
@@ -484,10 +476,6 @@ internal class PlayerService(
             if (_lastQualityFallbackUtc != DateTime.MinValue
                 && sinceLastFallback < MinQualityFallbackInterval)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[K7-Player] TryRecoverPlaybackStartAsync cooldown "
-                    + (MinQualityFallbackInterval - sinceLastFallback).TotalSeconds.ToString("F1")
-                    + "s remaining; keeping current quality");
                 return true;
             }
 
@@ -498,8 +486,6 @@ internal class PlayerService(
                 var fallbackQuality = _availableQualities.FirstOrDefault(q => !q.IsOriginal);
                 if (fallbackQuality is not null)
                 {
-                    System.Diagnostics.Debug.WriteLine(
-                        "[K7-Player] TryRecoverPlaybackStartAsync falling back from original to " + fallbackQuality.Label);
                     _lastQualityFallbackUtc = DateTime.UtcNow;
                     await ChangeQualityAsync(fallbackQuality, cancellationToken);
                     return true;
@@ -509,8 +495,6 @@ internal class PlayerService(
             var nextQuality = GetNextLowerTranscodedQuality();
             if (nextQuality is not null)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[K7-Player] TryRecoverPlaybackStartAsync stepping down to " + nextQuality.Label);
                 _lastQualityFallbackUtc = DateTime.UtcNow;
                 await ChangeQualityAsync(nextQuality, cancellationToken);
                 return true;
@@ -518,7 +502,6 @@ internal class PlayerService(
 
             if (_playbackStartRecoveryAttempts <= 2)
             {
-                System.Diagnostics.Debug.WriteLine("[K7-Player] TryRecoverPlaybackStartAsync reloading current source");
                 _lastQualityFallbackUtc = DateTime.UtcNow;
                 ReloadCurrentSource();
                 return true;
@@ -540,8 +523,6 @@ internal class PlayerService(
         PlaybackStartFailureMessageKey = messageKey
             ?? (Source?.StreamSessionId is not null ? "StreamPlaybackTimedOut" : "StreamNotReady");
 
-        System.Diagnostics.Debug.WriteLine(
-            "[K7-Player] AbortPlaybackStartAsync -> HideAsync key=" + PlaybackStartFailureMessageKey);
         Stop();
         await HideAsync();
         PlaybackStartFailed?.Invoke();

@@ -61,17 +61,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
                     _dotNetRef ??= DotNetObjectReference.Create(this);
 
-                    System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init starting");
-                    try
-                    {
-                        await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
-                        System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init succeeded id=" + _player.Id);
-                    }
-                    catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
-                    {
-                        System.Diagnostics.Debug.WriteLine("[K7-Player] Video.js init failed: " + ex.Message);
-                        throw;
-                    }
+                    await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
 
                     _isInitialized = true;
                     _lastPlayerId = _player.Id;
@@ -179,11 +169,6 @@ public partial class VideoPlayer : IAsyncDisposable
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
         {
         }
-    }
-
-    private void OnVideoPlayerRootClick()
-    {
-        System.Diagnostics.Debug.WriteLine("[K7-Player] video-player root click");
     }
 
     private async Task OnResumeHere()
@@ -355,7 +340,6 @@ public partial class VideoPlayer : IAsyncDisposable
 
         if (source.PendingSeekTime is double seekTime)
         {
-            System.Diagnostics.Debug.WriteLine("[K7-Player] source applied with seek url=" + source.Url + " seek=" + seekTime);
             await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, source.Url, source.MimeType ?? SourceMimeType, seekTime);
             return;
         }
@@ -363,7 +347,6 @@ public partial class VideoPlayer : IAsyncDisposable
         var subtitleSlug = PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
             ? $"sub-{sub.Index}"
             : null;
-        System.Diagnostics.Debug.WriteLine("[K7-Player] source applied url=" + source.Url);
         await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, source.Url, source.MimeType ?? SourceMimeType, subtitleSlug);
     }
 
@@ -473,12 +456,6 @@ public partial class VideoPlayer : IAsyncDisposable
 
                 if (isWindowsWebPlayer && round < maxRounds - 1)
                 {
-                    System.Diagnostics.Debug.WriteLine(
-                        "[K7-Player] WaitForDurationReadyAsync idle timeout round="
-                        + round
-                        + " after "
-                        + roundTimeout.TotalSeconds
-                        + "s, attempting recovery");
                     var recovered = await PlayerService.TryRecoverPlaybackStartAsync(
                         allowQualityLadder: true,
                         cancellationToken: cancellationToken);
@@ -494,7 +471,6 @@ public partial class VideoPlayer : IAsyncDisposable
             if (IsPlaybackReady() || !PlayerService.IsVisible)
                 return;
 
-            System.Diagnostics.Debug.WriteLine("[K7-Player] WaitForDurationReadyAsync timed out, aborting playback start");
             await PlayerService.AbortPlaybackStartAsync(cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException)
@@ -709,8 +685,6 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         // Soft errors (network/decode) are common while the server produces segment 0 for
         // burn-in. Only hard SRC_NOT_SUPPORTED may step quality, and only after cooldown.
-        System.Diagnostics.Debug.WriteLine(
-            "[K7-Player] Video.js error code=" + code + " message=" + message);
 
         // Never recover while media is already demuxing - reloads cause the blink loop.
         if (code != MediaErrSrcNotSupported

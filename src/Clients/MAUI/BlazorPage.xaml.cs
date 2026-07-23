@@ -142,7 +142,6 @@ public partial class BlazorPage : ContentPage
         // When native video player is active, signal the overlay component
         if (_playerService.IsVisible)
         {
-            System.Diagnostics.Debug.WriteLine("[K7-Player] BlazorPage.HandleBackButton -> PlayerService.OnBackPressed");
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 if (_playerService is MAUI.Services.PlayerService ps)
@@ -440,10 +439,6 @@ public partial class BlazorPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
 #if WINDOWS
-            System.Diagnostics.Debug.WriteLine(
-                _playerService.IsVisible
-                    ? "[K7-Player] IsVisible=true, configuring Windows layout"
-                    : "[K7-Player] IsVisible=false, restoring Windows layout");
             ConfigureWindowsVideoPlayerLayout();
 #else
             NativePlayer.IsVisible = _playerService.IsVisible;
@@ -965,7 +960,6 @@ public partial class BlazorPage : ContentPage
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[K7-Player] Seek failed at {target}: {ex.Message}");
             }
 
             setCurrentTime?.Invoke(target.TotalSeconds);
