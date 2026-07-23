@@ -1638,6 +1638,10 @@ var SpatialNav = (function () {
                 if (SpatialNavigation.focus(el, true)) return;
             } catch (ex) { }
         }
+        var prev = document.activeElement;
+        if (prev && prev !== el && prev !== document.body && typeof prev.blur === 'function') {
+            try { prev.blur(); } catch (ex) { }
+        }
         try {
             el.focus({ preventScroll: true, focusVisible: true });
         } catch (ex) {
@@ -2129,8 +2133,26 @@ K7.isKeyboardNavMode = function () {
         || K7._inputModality === 'keyboard';
 };
 (function trackInputModality() {
+    function setModality(mode) {
+        if (K7._inputModality === mode
+            && document.documentElement.getAttribute('data-input-modality') === mode) {
+            return;
+        }
+        K7._inputModality = mode;
+        document.documentElement.setAttribute('data-input-modality', mode);
+    }
+
+    setModality('keyboard');
+
     document.addEventListener('pointerdown', function () {
-        K7._inputModality = 'pointer';
+        setModality('pointer');
+    }, true);
+    // Mouse hover without a click must still exit keyboard mode, otherwise
+    // hover overlays stay suppressed after arrow-key navigation.
+    document.addEventListener('pointermove', function (e) {
+        if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+            setModality('pointer');
+        }
     }, true);
     document.addEventListener('keydown', function (e) {
         var key = e.key;
@@ -2139,7 +2161,7 @@ K7.isKeyboardNavMode = function () {
             || key === 'ArrowLeft' || key === 'ArrowRight'
             || key === 'Home' || key === 'End'
             || key === 'PageUp' || key === 'PageDown') {
-            K7._inputModality = 'keyboard';
+            setModality('keyboard');
         }
     }, true);
 })();

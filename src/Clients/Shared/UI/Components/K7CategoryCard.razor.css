@@ -59,9 +59,14 @@
     pointer-events: none;
 }
 
-.k7-category-card:hover .k7-category-card__focus-overlay,
 .k7-category-card:focus-within .k7-category-card__focus-overlay {
     display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .k7-category-card:hover .k7-category-card__focus-overlay {
+        display: block;
+    }
 }
 
 .k7-category-card__hit:focus-visible {

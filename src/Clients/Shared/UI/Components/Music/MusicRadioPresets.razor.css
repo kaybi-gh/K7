@@ -74,9 +74,14 @@
     pointer-events: none;
 }
 
-.music-radio-presets__item:hover .music-radio-presets__overlay,
 .music-radio-presets__item:focus-within .music-radio-presets__overlay {
     display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .music-radio-presets__item:hover .music-radio-presets__overlay {
+        display: block;
+    }
 }
 
 .music-radio-presets__visual:focus-visible {

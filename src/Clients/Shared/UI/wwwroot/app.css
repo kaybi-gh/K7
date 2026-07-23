@@ -105,6 +105,21 @@ html.platform-tv .k7-menu-dropdown:hover {
     background-color: var(--color-surface);
 }
 
+/* Sticky :hover leaves the same accent overlay as real keyboard focus.
+   While navigating with keys / on TV, only :focus-within may show it. */
+html[data-input-modality="keyboard"] .media-card:hover:not(:focus-within) .media-card-overlay,
+html[data-input-modality="keyboard"] .media-card:hover:not(:focus-within) .media-card-menu,
+html[data-input-modality="keyboard"] .k7-category-card:hover:not(:focus-within) .k7-category-card__focus-overlay,
+html[data-input-modality="keyboard"] .user-card:hover:not(:focus-within) .user-card__overlay,
+html[data-input-modality="keyboard"] .music-radio-presets__item:hover:not(:focus-within) .music-radio-presets__overlay,
+html.platform-tv .media-card:hover:not(:focus-within) .media-card-overlay,
+html.platform-tv .media-card:hover:not(:focus-within) .media-card-menu,
+html.platform-tv .k7-category-card:hover:not(:focus-within) .k7-category-card__focus-overlay,
+html.platform-tv .user-card:hover:not(:focus-within) .user-card__overlay,
+html.platform-tv .music-radio-presets__item:hover:not(:focus-within) .music-radio-presets__overlay {
+    display: none !important;
+}
+
 /* html.platform-tv :focus-visible {
     outline: 3px solid var(--color-accent);
     outline-offset: 3px;

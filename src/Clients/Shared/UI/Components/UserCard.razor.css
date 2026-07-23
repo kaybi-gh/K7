@@ -44,10 +44,15 @@
     z-index: 2;
 }
 
-.user-card:hover .user-card__overlay,
 .user-card:focus-within .user-card__overlay,
 .user-card:focus-visible .user-card__overlay {
     display: flex;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .user-card:hover .user-card__overlay {
+        display: flex;
+    }
 }
 
 .user-card:focus-visible {
