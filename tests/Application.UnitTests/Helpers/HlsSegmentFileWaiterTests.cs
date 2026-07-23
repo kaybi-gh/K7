@@ -298,6 +298,47 @@ public class HlsSegmentFileWaiterTests
     }
 
     [Test]
+    public void IsInitReadyOnDisk_ShouldReturnFalse_WhenInitMissing()
+    {
+        HlsSegmentFileWaiter.IsInitReadyOnDisk(_tempDirectory).Should().BeFalse();
+    }
+
+    [Test]
+    public void IsInitReadyOnDisk_ShouldReturnFalse_WhenInitIsOnlyFtyp()
+    {
+        File.WriteAllBytes(
+            HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory),
+            BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]));
+
+        HlsSegmentFileWaiter.IsInitReadyOnDisk(_tempDirectory).Should().BeFalse();
+    }
+
+    [Test]
+    public void IsInitReadyOnDisk_ShouldReturnTrue_WhenInitIsValid()
+    {
+        File.WriteAllBytes(
+            HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory),
+            Concat(BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]), BuildBox("moov", [0x00])));
+
+        HlsSegmentFileWaiter.IsInitReadyOnDisk(_tempDirectory).Should().BeTrue();
+    }
+
+    [Test]
+    public void IsInitReadyOnDisk_ShouldReturnTrue_WhenMidSeekInitExistsWithoutSegment0()
+    {
+        File.WriteAllBytes(
+            HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory),
+            Concat(BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]), BuildBox("moov", [0x00])));
+        File.WriteAllBytes(
+            Path.Combine(_tempDirectory, "96.m4s"),
+            Concat(BuildMinimalMoof(sampleSizes: [1]), BuildBox("mdat", [0x02])));
+
+        HlsSegmentFileWaiter.IsInitReadyOnDisk(_tempDirectory).Should().BeTrue();
+        HlsSegmentFileWaiter.IsSegmentReadyOnDisk(_tempDirectory, 0).Should().BeFalse();
+        HlsSegmentFileWaiter.IsSegmentReadyOnDisk(_tempDirectory, 96).Should().BeTrue();
+    }
+
+    [Test]
     public void GetInitSegmentPath_ShouldCombineOutputDirectoryAndInitFileName()
     {
         var path = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);

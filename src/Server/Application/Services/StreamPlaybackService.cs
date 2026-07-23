@@ -162,9 +162,9 @@ public sealed class StreamPlaybackService(
         transcodeJobManager.PingJob(job.JobId, query.StreamSessionId);
 
         var segmentPath = Path.Combine(job.OutputDirectory, query.SegmentNumber == -1 ? "init.m4s" : $"{query.SegmentNumber}.m4s");
-        var requestedIndex = query.SegmentNumber == -1 ? 0 : query.SegmentNumber;
+        // Keep -1 for init.m4s so EnsureSegmentWillBeGeneratedAsync does not treat it as a seek to media segment 0.
         return await GetSegmentResultAsync(
-            segmentPath, job, requestedIndex, allSegments, query.SegmentNumber, "video/mp4", cancellationToken);
+            segmentPath, job, query.SegmentNumber, allSegments, query.SegmentNumber, "video/mp4", cancellationToken);
     }
 
     public async Task<HttpContentResult> GetHlsAudioSegmentAsync(
@@ -203,9 +203,9 @@ public sealed class StreamPlaybackService(
         transcodeJobManager.PingJob(job.JobId, query.StreamSessionId);
 
         var segmentPath = Path.Combine(job.OutputDirectory, query.SegmentNumber == -1 ? "init.m4s" : $"{query.SegmentNumber}.m4s");
-        var requestedIndex = query.SegmentNumber == -1 ? 0 : query.SegmentNumber;
+        // Keep -1 for init.m4s so EnsureSegmentWillBeGeneratedAsync does not treat it as a seek to media segment 0.
         return await GetSegmentResultAsync(
-            segmentPath, job, requestedIndex, allSegments, query.SegmentNumber, "audio/mp4", cancellationToken);
+            segmentPath, job, query.SegmentNumber, allSegments, query.SegmentNumber, "audio/mp4", cancellationToken);
     }
 
     private async Task<string?> ApplyVideoStreamDecisionAsync(
@@ -271,12 +271,13 @@ public sealed class StreamPlaybackService(
             job.IsAudioOnly,
             job.JobId);
 
-        // Demuxed HLS: if the paired video job already exists but segment 0 is not ready yet,
+        // Demuxed HLS: if the paired video job already exists but init.m4s is not ready yet,
         // hold audio responses so ExoPlayer does not start parsing audio while video fMP4 is
-        // still generating (PGS burn-in can take seconds). Soft-gate only - never wait
-        // for a video job that has not been created yet (avoids deadlock if audio is first).
+        // still generating (PGS burn-in can take seconds). Wait for init only - mid-seek
+        // windows never produce 0.m4s. Soft-gate only - never wait for a video job that has
+        // not been created yet (avoids deadlock if audio is first).
         if (job.IsAudioOnly)
-            await WaitForExistingPairedVideoSegment0Async(job, cancellationToken);
+            await WaitForExistingPairedVideoInitAsync(job, cancellationToken);
 
         var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
             segmentPath,
@@ -328,7 +329,7 @@ public sealed class StreamPlaybackService(
         return new BytesHttpContentResult(segmentBytes, contentType);
     }
 
-    private async Task WaitForExistingPairedVideoSegment0Async(
+    private async Task WaitForExistingPairedVideoInitAsync(
         TranscodeJob audioJob,
         CancellationToken cancellationToken)
     {
@@ -336,13 +337,14 @@ public sealed class StreamPlaybackService(
         if (videoJob is null)
             return;
 
-        // Hold until video init AND segment 0 are ready so ExoPlayer does not start the
-        // audio MediaPeriod while video fMP4 is still mid-generate (PGS burn-in).
-        if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, 0))
+        // Hold until video init is ready so ExoPlayer does not start the audio MediaPeriod
+        // while video fMP4 headers are still mid-generate (PGS burn-in). Mid-seek windows
+        // produce init without ever writing 0.m4s.
+        if (HlsSegmentFileWaiter.IsInitReadyOnDisk(videoJob.OutputDirectory))
             return;
 
         logger.LogInformation(
-            "Holding audio job {AudioJobId} until paired video segment 0 is ready (videoJob={VideoJobId}, videoDir={VideoDir})",
+            "Holding audio job {AudioJobId} until paired video init is ready (videoJob={VideoJobId}, videoDir={VideoDir})",
             audioJob.JobId,
             videoJob.JobId,
             videoJob.OutputDirectory);
@@ -352,10 +354,10 @@ public sealed class StreamPlaybackService(
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, 0))
+            if (HlsSegmentFileWaiter.IsInitReadyOnDisk(videoJob.OutputDirectory))
             {
                 logger.LogInformation(
-                    "Paired video segment 0 ready for audio job {AudioJobId}; continuing audio serve",
+                    "Paired video init ready for audio job {AudioJobId}; continuing audio serve",
                     audioJob.JobId);
                 return;
             }
@@ -372,7 +374,7 @@ public sealed class StreamPlaybackService(
         }
 
         logger.LogWarning(
-            "Timed out waiting for paired video segment 0 ({VideoDir}); serving audio anyway",
+            "Timed out waiting for paired video init ({VideoDir}); serving audio anyway",
             videoJob.OutputDirectory);
     }
 

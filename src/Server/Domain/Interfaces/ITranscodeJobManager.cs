@@ -30,6 +30,7 @@ public interface ITranscodeJobManager
     /// <summary>
     /// Ensures that the requested segment will be generated, potentially restarting
     /// ffmpeg with seek if the gap is too large, or extending the target if reasonable.
+    /// Pass <paramref name="requestedSegmentIndex"/> = -1 for init.m4s (never treat as media segment 0).
     /// </summary>
     Task EnsureSegmentWillBeGeneratedAsync(
         Guid jobId,
@@ -54,7 +55,7 @@ public interface ITranscodeJobManager
 
     /// <summary>
     /// Finds an active video (non-audio) transcode job for the indexed file, if any.
-    /// Used to soft-gate demuxed audio until video init and segment 0 are ready.
+    /// Used to soft-gate demuxed audio until video init.m4s is ready.
     /// </summary>
     TranscodeJob? FindVideoJobForIndexedFile(Guid indexedFileId);
 }

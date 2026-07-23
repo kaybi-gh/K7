@@ -189,8 +189,14 @@ internal static class HlsSegmentFileWaiter
         if (segmentIndex != 0)
             return true;
 
-        return IsSegmentFileReady(GetInitSegmentPath(outputDirectory));
+        return IsInitReadyOnDisk(outputDirectory);
     }
+
+    /// <summary>
+    /// True when a valid fMP4 init.m4s is present (mid-seek windows never produce 0.m4s).
+    /// </summary>
+    public static bool IsInitReadyOnDisk(string outputDirectory) =>
+        IsSegmentFileReady(GetInitSegmentPath(outputDirectory));
 
     public static string GetInitSegmentPath(string outputDirectory) =>
         Path.Combine(outputDirectory, InitSegmentFileName);

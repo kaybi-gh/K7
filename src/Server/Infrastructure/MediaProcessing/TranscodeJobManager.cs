@@ -146,6 +146,13 @@ public class TranscodeJobManager(
             throw new InvalidOperationException($"Job {jobId} not found");
         }
 
+        // init.m4s: never map to media segment 0 (that false-triggers seek-to-start on resume).
+        if (requestedSegmentIndex < 0)
+        {
+            await EnsureInitWillBeGeneratedAsync(job, allSegments, cancellationToken);
+            return;
+        }
+
         var currentIndex = job.GetCurrentSegmentIndex();
         var gap = requestedSegmentIndex - currentIndex;
 
@@ -242,6 +249,66 @@ public class TranscodeJobManager(
                     }
                 }
             }
+        }
+        finally
+        {
+            job.FfmpegStartLock.Release();
+        }
+    }
+
+    private async Task EnsureInitWillBeGeneratedAsync(
+        TranscodeJob job,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        if (HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory))
+            return;
+
+        await job.FfmpegStartLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory))
+                return;
+
+            // Active ffmpeg window will write init.m4s; do not restart from segment 0.
+            if (job.FfmpegTask is { IsCompleted: false })
+            {
+                logger.LogDebug(
+                    "Job {JobId}: Waiting for init.m4s from running ffmpeg (generating until {GeneratingUntil})",
+                    job.JobId,
+                    job.GeneratingUntilSegmentIndex);
+                return;
+            }
+
+            if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
+            {
+                var fault = job.FfmpegTask.Exception?.GetBaseException();
+                logger.LogError(fault, "Job {JobId}: ffmpeg task faulted while ensuring init", job.JobId);
+                job.FfmpegTask = null;
+            }
+
+            var currentIndex = job.GetCurrentSegmentIndex();
+            if (currentIndex >= 0)
+            {
+                // Mid-file segments exist without a usable init (e.g. purge race). Restart near
+                // the current window - never force start at 0 solely because init was requested.
+                var startSegmentIndex = Math.Clamp(currentIndex - 5, 0, allSegments.Count - 1);
+                logger.LogInformation(
+                    "Job {JobId}: init.m4s missing with media segments present (current={CurrentIndex}); restarting from {StartIndex}",
+                    job.JobId,
+                    currentIndex,
+                    startSegmentIndex);
+                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+                return;
+            }
+
+            // Cold start: begin at segment 0 to produce init + first media window.
+            job.TargetSegmentIndex = Math.Max(job.TargetSegmentIndex, job.BufferSize);
+
+            logger.LogInformation(
+                "Job {JobId}: Starting ffmpeg to produce init.m4s from segment 0",
+                job.JobId);
+            await ContinueJobAsync(job, allSegments, cancellationToken);
         }
         finally
         {
