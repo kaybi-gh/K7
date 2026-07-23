@@ -385,6 +385,13 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Func<PlayerSource, Task>? GaplessPrebufferRequested;
     public Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+    public bool StopAfterCurrentTrack => false;
+    public event Action? StopAfterCurrentTrackCompleted;
+    public event Func<double, Task>? FadeOutRequested;
+    public event Func<Task>? FadeResetRequested;
+    public void RequestStopAfterCurrentTrack() { }
+    public void ClearStopAfterCurrentTrack() { }
+
     public void ToggleFullScreen() { IsFullScreenVisible = !IsFullScreenVisible; IsFullScreenVisibleChanged?.Invoke(); }
     public Task ShowAsync() { IsVisible = true; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
     public Task HideAsync() { IsVisible = false; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }

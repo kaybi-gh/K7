@@ -133,4 +133,16 @@ public interface IAudioPlayerService
 
     // Called by the component when the current track finishes playing
     Task OnTrackEndedAsync(CancellationToken cancellationToken = default);
+
+    // Sleep timer: finish the current track (with fade), then pause
+    bool StopAfterCurrentTrack { get; }
+    void RequestStopAfterCurrentTrack();
+    void ClearStopAfterCurrentTrack();
+    event Action? StopAfterCurrentTrackCompleted;
+
+    /// <summary>Ramp output gain to silence over the given duration (does not change Volume UI).</summary>
+    event Func<double, Task>? FadeOutRequested;
+
+    /// <summary>Restore output gain after a sleep-timer fade.</summary>
+    event Func<Task>? FadeResetRequested;
 }

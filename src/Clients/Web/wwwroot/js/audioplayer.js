@@ -314,6 +314,44 @@ window.audioSetEq = function (enabled, bands) {
     applyEqBands();
 };
 
+window.audioFadeOut = function (durationSec) {
+    return new Promise((resolve) => {
+        const ctx = audioState.audioContext;
+        const gain = audioState.fadeGainNode;
+        if (!ctx || !gain) {
+            resolve();
+            return;
+        }
+
+        const seconds = Math.max(0.05, Number(durationSec) || 0);
+        const now = ctx.currentTime;
+        try {
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setValueAtTime(gain.gain.value, now);
+            gain.gain.linearRampToValueAtTime(0, now + seconds);
+        } catch (e) {
+            console.warn('audioFadeOut failed', e);
+            resolve();
+            return;
+        }
+
+        setTimeout(resolve, Math.ceil(seconds * 1000));
+    });
+};
+
+window.audioResetFadeGain = function () {
+    const gain = audioState.fadeGainNode;
+    if (!gain) return;
+    try {
+        const ctx = audioState.audioContext;
+        const now = ctx ? ctx.currentTime : 0;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(1, now);
+    } catch (e) {
+        gain.gain.value = 1;
+    }
+};
+
 window.audioGetAnalyserData = function () {
     if (!audioState.analyserNode) return null;
     const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);

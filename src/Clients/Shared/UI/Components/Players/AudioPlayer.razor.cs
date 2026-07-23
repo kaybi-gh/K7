@@ -65,6 +65,8 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
         AudioPlayerService.CrossfadeDurationChanged += OnCrossfadeDurationChanged;
         AudioPlayerService.PlayerUxSettingsChanged += OnPlayerUxSettingsChanged;
+        AudioPlayerService.FadeOutRequested += OnFadeOutRequested;
+        AudioPlayerService.FadeResetRequested += OnFadeResetRequested;
     }
 
     public async ValueTask DisposeAsync()
@@ -91,6 +93,8 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
         AudioPlayerService.CrossfadeDurationChanged -= OnCrossfadeDurationChanged;
         AudioPlayerService.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
+        AudioPlayerService.FadeOutRequested -= OnFadeOutRequested;
+        AudioPlayerService.FadeResetRequested -= OnFadeResetRequested;
 
         if (_isInitialized)
         {
@@ -405,5 +409,25 @@ public partial class AudioPlayer : IAsyncDisposable
         await JSRuntime.InvokeVoidAsync("audioSetEq",
             AudioPlayerService.EqEnabled,
             AudioPlayerService.EqBands);
+    }
+
+    private async Task OnFadeOutRequested(double durationSeconds)
+    {
+        if (!_isInitialized) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("audioFadeOut", durationSeconds);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private async Task OnFadeResetRequested()
+    {
+        if (!_isInitialized) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("audioResetFadeGain");
+        }
+        catch (JSDisconnectedException) { }
     }
 }

@@ -23,6 +23,7 @@ public class NativeAudioService : NSObject, IDisposable
     private NSObject? _endObserver;
     private AVPlayerItem? _observedItem;
     private volatile bool _updatingFromPlayer;
+    private CancellationTokenSource? _fadeCts;
 
     public NativeAudioService(IAudioPlayerService audioPlayerService, IK7ServerService k7ServerService)
     {
@@ -45,6 +46,8 @@ public class NativeAudioService : NSObject, IDisposable
         _audioPlayerService.VolumeChangeRequested += OnVolumeChanged;
         _audioPlayerService.MuteRequested += OnMuteRequested;
         _audioPlayerService.UnmuteRequested += OnUnmuteRequested;
+        _audioPlayerService.FadeOutRequested += OnFadeOutRequested;
+        _audioPlayerService.FadeResetRequested += OnFadeResetRequested;
 
         StartPositionObserver();
     }
@@ -211,6 +214,46 @@ public class NativeAudioService : NSObject, IDisposable
         return Task.CompletedTask;
     }
 
+    private async Task OnFadeOutRequested(double durationSeconds)
+    {
+        _fadeCts?.Cancel();
+        _fadeCts?.Dispose();
+        _fadeCts = new CancellationTokenSource();
+        var ct = _fadeCts.Token;
+
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        try
+        {
+            for (var i = 1; i <= steps; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var volume = 1f - (i / (float)steps);
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (_player is not null)
+                        _player.Volume = volume;
+                });
+                await Task.Delay(stepMs, ct);
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+        }
+    }
+
+    private Task OnFadeResetRequested()
+    {
+        _fadeCts?.Cancel();
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_player is not null)
+                _player.Volume = (float)_audioPlayerService.Volume;
+        });
+        return Task.CompletedTask;
+    }
+
     private Task OnMuteRequested()
     {
         if (_player is not null)
@@ -242,6 +285,12 @@ public class NativeAudioService : NSObject, IDisposable
         _audioPlayerService.VolumeChangeRequested -= OnVolumeChanged;
         _audioPlayerService.MuteRequested -= OnMuteRequested;
         _audioPlayerService.UnmuteRequested -= OnUnmuteRequested;
+        _audioPlayerService.FadeOutRequested -= OnFadeOutRequested;
+        _audioPlayerService.FadeResetRequested -= OnFadeResetRequested;
+
+        _fadeCts?.Cancel();
+        _fadeCts?.Dispose();
+        _fadeCts = null;
 
         RemoveEndObserver();
         RemoveItemStatusObserver();

@@ -697,8 +697,11 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private static string FormatRemaining(TimeSpan remaining)
     {
+        if (remaining < TimeSpan.Zero)
+            remaining = TimeSpan.Zero;
+
         if (remaining.TotalHours >= 1)
-            return $"{remaining.Hours}:{remaining.Minutes:00}:{remaining.Seconds:00}";
+            return $"{(int)remaining.TotalHours}:{remaining.Minutes:00}:{remaining.Seconds:00}";
         return $"{remaining.Minutes}:{remaining.Seconds:00}";
     }
 

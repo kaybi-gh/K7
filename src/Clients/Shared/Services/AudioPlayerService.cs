@@ -25,6 +25,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public event Action? IsFullScreenVisibleChanged;
     public event Func<PlayerSource, double, Task>? CrossfadeRequested;
     public event Func<PlayerSource, Task>? GaplessPrebufferRequested;
+    public event Func<double, Task>? FadeOutRequested;
+    public event Func<Task>? FadeResetRequested;
 #pragma warning restore CS0067
     public event Action<PlaybackState>? PlaybackStateChanged;
     public event Action<double>? DurationChanged;
@@ -66,7 +68,13 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public double CurrentTime
     {
         get => _currentTime;
-        set { if (_currentTime != value) { _currentTime = value; CurrentTimeChanged?.Invoke(value); } }
+        set
+        {
+            if (_currentTime == value) return;
+            _currentTime = value;
+            CurrentTimeChanged?.Invoke(value);
+            ConsiderStopAfterTrackFade();
+        }
     }
 
     private double _bufferedTime;
@@ -528,6 +536,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public async Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default)
     {
+        if (_stopAfterCurrentTrack) return;
         if (_crossfadeTriggered || _queue.Count == 0) return;
         if (_repeat == RepeatMode.One) return;
 
@@ -563,6 +572,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public async Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default)
     {
+        if (_stopAfterCurrentTrack) return;
         if (_gaplessPrebufferTriggered || _crossfadeTriggered || _queue.Count == 0) return;
         if (_repeat == RepeatMode.One) return;
 
@@ -590,6 +600,12 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     // Called by the component when JS reports track ended
     public async Task OnTrackEndedAsync(CancellationToken cancellationToken = default)
     {
+        if (_stopAfterCurrentTrack)
+        {
+            await FinishStopAfterCurrentTrackAsync();
+            return;
+        }
+
         if (_repeat == RepeatMode.One)
         {
             Seek(0);
@@ -604,6 +620,72 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
 
         await NextAsync(cancellationToken);
+    }
+
+    private bool _stopAfterCurrentTrack;
+    private bool _sleepFadeStarted;
+    private const double SleepFadeSeconds = 8.0;
+
+    public bool StopAfterCurrentTrack => _stopAfterCurrentTrack;
+    public event Action? StopAfterCurrentTrackCompleted;
+
+    public void RequestStopAfterCurrentTrack()
+    {
+        _stopAfterCurrentTrack = true;
+        _sleepFadeStarted = false;
+        ConsiderStopAfterTrackFade();
+    }
+
+    public void ClearStopAfterCurrentTrack()
+    {
+        _stopAfterCurrentTrack = false;
+        _sleepFadeStarted = false;
+    }
+
+    private void ConsiderStopAfterTrackFade()
+    {
+        if (!_stopAfterCurrentTrack || _sleepFadeStarted || _duration <= 0)
+            return;
+
+        var remaining = _duration - _currentTime;
+        if (remaining <= 0 || remaining > SleepFadeSeconds)
+            return;
+
+        _sleepFadeStarted = true;
+        _ = StartSleepFadeAsync(remaining);
+    }
+
+    private async Task StartSleepFadeAsync(double durationSeconds)
+    {
+        try
+        {
+            if (FadeOutRequested is not null)
+                await FadeOutRequested.Invoke(Math.Max(0.25, durationSeconds));
+        }
+        catch
+        {
+            // Platform fade is best-effort; stop-after-track still pauses at end.
+        }
+    }
+
+    private async Task FinishStopAfterCurrentTrackAsync()
+    {
+        _stopAfterCurrentTrack = false;
+        _sleepFadeStarted = false;
+        Pause();
+        PlaybackState = PlaybackState.Ended;
+
+        try
+        {
+            if (FadeResetRequested is not null)
+                await FadeResetRequested.Invoke();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        StopAfterCurrentTrackCompleted?.Invoke();
     }
 
     // Private helpers
@@ -658,17 +740,29 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
         else
         {
-            var session = await GetSessionForTrackAsync(track, cancellationToken);
-
-            if (session?.Source is null)
-                throw new InvalidOperationException("Streaming session did not return a source URI.");
-
-            source = new PlayerSource
+            try
             {
-                StreamSessionId = session.Id,
-                Url = session.Source.Uri.OriginalString,
-                MimeType = session.Source.MimeType
-            };
+                var session = await GetSessionForTrackAsync(track, cancellationToken);
+
+                if (session?.Source is null)
+                {
+                    PlaybackState = PlaybackState.Idle;
+                    return;
+                }
+
+                source = new PlayerSource
+                {
+                    StreamSessionId = session.Id,
+                    Url = session.Source.Uri.OriginalString,
+                    MimeType = session.Source.MimeType
+                };
+            }
+            catch (HttpRequestException)
+            {
+                // Auth refresh races / transient network should not crash the UI via ErrorBoundary.
+                PlaybackState = PlaybackState.Idle;
+                return;
+            }
         }
 
         SourceChanged?.Invoke(source);

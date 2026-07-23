@@ -49,6 +49,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     private IK7ServerService? _k7ServerService;
     private DefaultHttpDataSource.Factory? _httpDataSourceFactory;
     private readonly AndroidAudioEqualizer _audioEqualizer = new();
+    private CancellationTokenSource? _fadeCts;
 
     private volatile bool _updatingFromPlayer;
     private volatile bool _isVideoMode;
@@ -181,6 +182,9 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         UnsubscribeFromAudioPlayerEvents();
         UnsubscribeFromVideoPlayerEvents();
+        _fadeCts?.Cancel();
+        _fadeCts?.Dispose();
+        _fadeCts = null;
         _audioEqualizer.Dispose();
         _videoSession?.Release();
         _session?.Release();
@@ -344,6 +348,8 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.SeekRequested += OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
         _audioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
+        _audioPlayerService.FadeOutRequested += OnFadeOutRequested;
+        _audioPlayerService.FadeResetRequested += OnFadeResetRequested;
     }
 
     private void UnsubscribeFromAudioPlayerEvents()
@@ -357,12 +363,59 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.SeekRequested -= OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
         _audioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
+        _audioPlayerService.FadeOutRequested -= OnFadeOutRequested;
+        _audioPlayerService.FadeResetRequested -= OnFadeResetRequested;
     }
 
     private void OnEqSettingsChanged()
     {
         if (_audioPlayerService is null) return;
         _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
+    }
+
+    private async Task OnFadeOutRequested(double durationSeconds)
+    {
+        if (_isVideoMode || _player is null) return;
+
+        _fadeCts?.Cancel();
+        _fadeCts?.Dispose();
+        _fadeCts = new CancellationTokenSource();
+        var ct = _fadeCts.Token;
+
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        try
+        {
+            for (var i = 1; i <= steps; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var volume = 1f - (i / (float)steps);
+                var player = _player;
+                if (player is null) return;
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (_player is not null)
+                        _player.Volume = volume;
+                });
+                await Task.Delay(stepMs, ct);
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+            // superseded by reset or a newer fade
+        }
+    }
+
+    private Task OnFadeResetRequested()
+    {
+        _fadeCts?.Cancel();
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_player is not null)
+                _player.Volume = 1f;
+        });
+        return Task.CompletedTask;
     }
 
     private void OnSourceChanged(PlayerSource source)

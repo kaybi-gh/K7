@@ -23,6 +23,7 @@ public partial class BlazorPage : ContentPage
         : DownloadsBasePath + Path.DirectorySeparatorChar;
 
     private bool _eventsDetached;
+    private CancellationTokenSource? _audioFadeCts;
 #if !WINDOWS
     // MediaFailed can flap on Source swaps; report once per distinct failure within the window.
     private DateTime _lastMediaFailedReportUtc = DateTime.MinValue;
@@ -693,6 +694,8 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.MuteRequested += HandleAudioMuteRequested;
         _audioPlayerService.UnmuteRequested += HandleAudioUnmuteRequested;
         _audioPlayerService.VolumeChangeRequested += HandleAudioVolumeChangeRequested;
+        _audioPlayerService.FadeOutRequested += HandleAudioFadeOutRequested;
+        _audioPlayerService.FadeResetRequested += HandleAudioFadeResetRequested;
 #endif
     }
 
@@ -736,6 +739,38 @@ public partial class BlazorPage : ContentPage
     private Task HandleAudioVolumeChangeRequested(double volume)
     {
         MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = volume);
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleAudioFadeOutRequested(double durationSeconds)
+    {
+        _audioFadeCts?.Cancel();
+        _audioFadeCts?.Dispose();
+        _audioFadeCts = new CancellationTokenSource();
+        var ct = _audioFadeCts.Token;
+        var startVolume = NativeAudioPlayer.Volume;
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        try
+        {
+            for (var i = 1; i <= steps; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var volume = startVolume * (1.0 - (i / (double)steps));
+                await MainThread.InvokeOnMainThreadAsync(() => NativeAudioPlayer.Volume = volume);
+                await Task.Delay(stepMs, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private Task HandleAudioFadeResetRequested()
+    {
+        _audioFadeCts?.Cancel();
+        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = _audioPlayerService.Volume);
         return Task.CompletedTask;
     }
 
@@ -806,6 +841,11 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.MuteRequested -= HandleAudioMuteRequested;
         _audioPlayerService.UnmuteRequested -= HandleAudioUnmuteRequested;
         _audioPlayerService.VolumeChangeRequested -= HandleAudioVolumeChangeRequested;
+        _audioPlayerService.FadeOutRequested -= HandleAudioFadeOutRequested;
+        _audioPlayerService.FadeResetRequested -= HandleAudioFadeResetRequested;
+        _audioFadeCts?.Cancel();
+        _audioFadeCts?.Dispose();
+        _audioFadeCts = null;
 #endif
 
         DetachPlayerPlatform();
