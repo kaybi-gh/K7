@@ -5,6 +5,8 @@ public class UpdateUserPinCommandValidator : AbstractValidator<UpdateUserPinComm
     public UpdateUserPinCommandValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Pin).MaximumLength(20);
+        RuleFor(x => x.Pin)
+            .Matches(@"^\d{4}$")
+            .When(x => x.Pin is not null);
     }
 }

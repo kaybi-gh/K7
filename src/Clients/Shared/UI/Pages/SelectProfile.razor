@@ -30,8 +30,7 @@
                         <button type="button"
                                 class="select-profile-card focusable my-2"
                                 @attributes="GetInitialFocusAttributes(user.IdentityUserId == _initialFocusUserId)"
-                                @onclick="() => SelectUserAsync(user)"
-                                @onkeydown="(e) => OnUserKeyDown(e, user)">
+                                @onclick="() => SelectUserAsync(user)">
                             <K7Avatar Class="ma-2" Size="xl" Color="primary"
                                       Image="@user.AvatarUrl"
                                       Letter="@GetInitial(user)"
@@ -40,7 +39,7 @@
                                 <span>@(user.DisplayName ?? user.UserName)</span>
                                 @if (user.HasPin)
                                 {
-                                    <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                                    <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                                 }
                             </div>
                         </button>
@@ -53,8 +52,7 @@
                         <button type="button"
                                 class="select-profile-card select-profile-card--group focusable my-2"
                                 @attributes="GetInitialFocusAttributes(group.Id == _initialFocusGroupId)"
-                                @onclick="() => SelectGroupAsync(group)"
-                                @onkeydown="(e) => OnGroupKeyDown(e, group)">
+                                @onclick="() => SelectGroupAsync(group)">
                             <div class="select-profile-group-avatars">
                                 @foreach (var member in group.Members.Take(3))
                                 {
@@ -67,7 +65,7 @@
                                 <span>@group.Name</span>
                                 @if (group.HasPin)
                                 {
-                                    <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                                    <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                                 }
                             </div>
                         </button>
@@ -78,8 +76,7 @@
                     <button type="button"
                             class="select-profile-card focusable my-2"
                             @attributes="GetInitialFocusAttributes(_initialFocusAddCard)"
-                            @onclick="AddUserAsync"
-                            @onkeydown="OnAddUserKeyDown">
+                            @onclick="AddUserAsync">
                         <K7Avatar Class="ma-2" Size="xl" Color="default">
                             <K7Icon Icon="@Phosphor.Plus" IconSize="@K7IconSize.Lg" />
                         </K7Avatar>

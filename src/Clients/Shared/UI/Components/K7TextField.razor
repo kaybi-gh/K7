@@ -17,11 +17,13 @@
                   rows="@Lines"
                   maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                   value="@Value"
+                  @attributes="UserAttributes"
                   @oninput="OnInput"
                   @onchange="OnChange"
                   @onfocus="OnFocus"
                   @onfocusout="OnFocusOut"
                   @onkeydown="OnKeyDown"
+                  @onkeyup="OnKeyUp"
                   @onclick="OnClick"></textarea>
     }
     else
@@ -36,11 +38,13 @@
                    data-sn-activatable="@SpatialActivatable"
                    maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                    value="@Value"
+                   @attributes="UserAttributes"
                    @oninput="OnInput"
                    @onchange="OnChange"
                    @onfocus="OnFocus"
                    @onfocusout="OnFocusOut"
                    @onkeydown="OnKeyDown"
+                   @onkeyup="OnKeyUp"
                    @onclick="OnClick" />
             @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
             {

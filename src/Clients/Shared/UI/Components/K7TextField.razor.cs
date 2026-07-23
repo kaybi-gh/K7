@@ -31,9 +31,13 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public EventCallback<FocusEventArgs> OnFocus { get; set; }
     [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
     [Parameter] public EventCallback<KeyboardEventArgs> OnKeyDown { get; set; }
+    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyUp { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter] public bool DisableSpatialActivatable { get; set; }
     [Parameter] public bool ForceSpatialActivatable { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? UserAttributes { get; set; }
 
     private readonly string _id = $"k7tf-{Guid.NewGuid():N}";
     private bool _hasError;

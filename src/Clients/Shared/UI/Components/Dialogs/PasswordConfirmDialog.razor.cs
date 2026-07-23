@@ -12,7 +12,7 @@ public partial class PasswordConfirmDialog
     private void Submit() => Dialog.Close(K7DialogResult.Ok(_password));
     private void Cancel() => Dialog.Cancel();
 
-    private void OnKeyUp(KeyboardEventArgs e)
+    private void OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !string.IsNullOrEmpty(_password))
             Submit();

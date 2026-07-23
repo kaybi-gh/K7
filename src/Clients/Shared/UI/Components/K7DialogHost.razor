@@ -40,7 +40,12 @@
                               OnClick="() => entry.Cancel()" />
             }
             <CascadingValue Value="@((IK7DialogInstance)entry)" IsFixed="true">
-                <DynamicComponent Type="entry.Type" Parameters="entry.ComponentParameters" />
+                <K7DialogErrorBoundary OnDialogError="() => entry.Cancel()">
+                    <ChildContent>
+                        <DynamicComponent Type="entry.Type" Parameters="entry.ComponentParameters" />
+                    </ChildContent>
+                    <ErrorContent></ErrorContent>
+                </K7DialogErrorBoundary>
             </CascadingValue>
         </div>
     </div>

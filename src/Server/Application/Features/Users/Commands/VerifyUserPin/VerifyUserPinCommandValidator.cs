@@ -5,6 +5,8 @@ public class VerifyUserPinCommandValidator : AbstractValidator<VerifyUserPinComm
     public VerifyUserPinCommandValidator()
     {
         RuleFor(x => x.UserId).NotEmpty();
-        RuleFor(x => x.Pin).NotEmpty().MaximumLength(20);
+        RuleFor(x => x.Pin)
+            .NotEmpty()
+            .Matches(@"^\d{4}$");
     }
 }

@@ -21,5 +21,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="EnterForUser" xml:space="preserve"><value>Enter PIN for <b>{0}</b></value></data>
   <data name="PinLabel" xml:space="preserve"><value>PIN</value></data>
+  <data name="DigitAria" xml:space="preserve"><value>Digit {0}</value></data>
+  <data name="BackspaceAria" xml:space="preserve"><value>Delete last digit</value></data>
+  <data name="ClearAria" xml:space="preserve"><value>Clear all</value></data>
 </root>
 

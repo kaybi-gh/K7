@@ -15,10 +15,11 @@
     </K7ErrorBoundary>
 </div>
 
+<K7DialogHost />
 <K7SnackbarHost />
 
 <div id="blazor-error-ui">
     @L["UnhandledError"]
-    <a href="." class="reload">@L["Reload"]</a>
-    <span class="dismiss">&#x2715;</span>
+    <a href="." class="reload focusable" tabindex="0">@L["Reload"]</a>
+    <span class="dismiss focusable" tabindex="0">&#x2715;</span>
 </div>

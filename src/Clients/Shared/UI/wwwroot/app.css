@@ -315,6 +315,20 @@ html.platform-tv .media-card--menu-open .media-card-menu {
     z-index: var(--z-max);
 }
 
+#blazor-error-ui .reload {
+    margin-left: 0.5rem;
+    color: #fff;
+    text-decoration: underline;
+}
+
+#blazor-error-ui .reload:focus,
+#blazor-error-ui .reload:focus-visible,
+#blazor-error-ui .dismiss:focus,
+#blazor-error-ui .dismiss:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
 #blazor-error-ui .dismiss {
     cursor: pointer;
     position: absolute;

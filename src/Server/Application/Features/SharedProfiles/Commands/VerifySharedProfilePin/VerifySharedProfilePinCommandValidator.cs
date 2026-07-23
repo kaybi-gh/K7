@@ -5,6 +5,8 @@ public class VerifySharedProfilePinCommandValidator : AbstractValidator<VerifySh
     public VerifySharedProfilePinCommandValidator()
     {
         RuleFor(x => x.SharedProfileId).NotEmpty();
-        RuleFor(x => x.Pin).NotEmpty().MaximumLength(20);
+        RuleFor(x => x.Pin)
+            .NotEmpty()
+            .Matches(@"^\d{4}$");
     }
 }

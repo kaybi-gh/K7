@@ -177,6 +177,15 @@ var SpatialNav = (function () {
                 target = container.querySelector(layer.focusSelector);
             }
             if (!target) {
+                var initial = container.querySelector('[data-initial-focus]');
+                if (initial) {
+                    var selector = initial.getAttribute('data-initial-focus');
+                    target = (selector && selector !== 'true' && selector !== '')
+                        ? (container.querySelector(selector) || initial)
+                        : initial;
+                }
+            }
+            if (!target) {
                 var items = getFocusables(container);
                 target = items.length > 0 ? items[0] : null;
             }
@@ -1242,7 +1251,19 @@ var SpatialNav = (function () {
 
     function handleBackKey(e) {
         var key = e.key;
-        if (key !== 'Backspace' && key !== 'GoBack' && key !== 'XF86Back') return;
+        if (key === 'Backspace') {
+            var active = document.activeElement;
+            if (active && isTextInput(active) && (isEditing(active) || !isActivatable(active)))
+                return;
+
+            var layer = peekLayer();
+            // On dialogs, only Escape (and platform back keys) close - keyboard Backspace
+            // is reserved for editing (PIN pad, etc.).
+            if (layer && layer.type === 'dialog')
+                return;
+        } else if (key !== 'GoBack' && key !== 'XF86Back') {
+            return;
+        }
         handleEscape(e);
     }
 
@@ -2089,6 +2110,59 @@ var SpatialNav = (function () {
 
         window.K7 = window.K7 || {};
         window.K7.onTvRemoteSelect = handleTvRemoteSelect;
+
+        watchBlazorErrorUi();
+    }
+
+    // When Blazor shows #blazor-error-ui (circuit/render failure outside ErrorBoundary),
+    // promote it as the top spatial-nav layer and focus Reload so TV remotes can recover.
+    function watchBlazorErrorUi() {
+        var el = document.getElementById('blazor-error-ui');
+        if (!el) return;
+
+        var reload = el.querySelector('a.reload, .reload');
+        var dismiss = el.querySelector('.dismiss');
+        if (reload) {
+            reload.classList.add('focusable');
+            if (!reload.hasAttribute('tabindex')) reload.setAttribute('tabindex', '0');
+        }
+        if (dismiss) {
+            dismiss.classList.add('focusable');
+            if (!dismiss.hasAttribute('tabindex')) dismiss.setAttribute('tabindex', '0');
+        }
+
+        var wasVisible = isBlazorErrorUiVisible(el);
+
+        function sync() {
+            var visible = isBlazorErrorUiVisible(el);
+            if (visible === wasVisible) return;
+            wasVisible = visible;
+
+            if (visible) {
+                pushLayer(el, 'error', {});
+                if (window.SpatialNavigation) {
+                    try { SpatialNavigation.makeFocusable(); } catch (e) { }
+                }
+                if (reload) {
+                    setTimeout(function () {
+                        try { reload.focus({ preventScroll: true }); } catch (e2) { }
+                    }, 50);
+                }
+            } else {
+                popLayer(el);
+            }
+        }
+
+        var observer = new MutationObserver(sync);
+        observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    function isBlazorErrorUiVisible(el) {
+        if (!el) return false;
+        // Blazor toggles the inline style to display:block on unhandled errors.
+        if (el.style && el.style.display === 'block') return true;
+        if (el.style && el.style.display === 'none') return false;
+        return isElementVisible(el);
     }
 
     // Public API
@@ -2544,6 +2618,38 @@ K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect,
 K7._suppressEnterUntilKeyUp = false;
 K7._swallowNextEnterClick = false;
 K7._enterSuppressCallbacks = [];
+
+// Physical keyboard capture for PinDialog (focus often stays on the page behind the dialog).
+K7.pinDialogKeyCapture = {
+    _ref: null,
+    _onKey: null,
+    attach: function (dotNetRef) {
+        this.detach();
+        this._ref = dotNetRef;
+        var self = this;
+        this._onKey = function (e) {
+            if (!self._ref) return;
+            if (!document.querySelector('.k7-dialog-backdrop .pin-dialog')) return;
+
+            var key = e.key;
+            var isDigit = key.length === 1 && key >= '0' && key <= '9';
+            if (!isDigit && key !== 'Backspace' && key !== 'Enter')
+                return;
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            self._ref.invokeMethodAsync('OnCapturedKey', key);
+        };
+        document.addEventListener('keydown', this._onKey, true);
+    },
+    detach: function () {
+        if (this._onKey) {
+            document.removeEventListener('keydown', this._onKey, true);
+            this._onKey = null;
+        }
+        this._ref = null;
+    }
+};
 
 K7.registerMediaCardLongPress = function (el, dotNetRef) {
     if (!el) return;

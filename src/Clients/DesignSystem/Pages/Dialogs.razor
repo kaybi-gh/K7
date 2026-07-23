@@ -1,6 +1,8 @@
 ﻿@page "/dialogs"
+@using K7.Clients.Shared.UI.Extensions
 @inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
+@inject IDeviceService DeviceService
 
 <PageTitle>Dialogs - K7 Design System</PageTitle>
 
@@ -166,7 +168,9 @@
     {
         var p = new K7DialogParameters<PinDialog>();
         p.Add(x => x.UserName, "Alice");
-        await DialogService.ShowAsync<PinDialog>("Enter PIN", p);
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        var options = K7DialogServiceExtensions.CreatePinDialogOptions(deviceType);
+        await DialogService.ShowAsync<PinDialog>("Enter PIN", p, options);
     }
 
     private async Task ShowCreatePlaylistDialog()

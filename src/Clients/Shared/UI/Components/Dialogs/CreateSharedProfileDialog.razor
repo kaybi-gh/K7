@@ -46,14 +46,22 @@
             @if (EditGroup is null)
             {
                 <K7TextField @bind-Value="_pin" Label="@L["GroupPinOptional"]" Variant="outlined" Type="password"
-                              HelperText="@L["GroupPinHelper"]" />
-                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password" />
+                              MaxLength="4"
+                              HelperText="@L["GroupPinHelper"]"
+                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
+                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password"
+                              MaxLength="4"
+                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
             }
             else
             {
                 <K7TextField @bind-Value="_pin" Label="@L["NewPinOptional"]" Variant="outlined" Type="password"
-                              HelperText="@L["GroupPinHelper"]" />
-                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password" />
+                              MaxLength="4"
+                              HelperText="@L["GroupPinHelper"]"
+                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
+                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password"
+                              MaxLength="4"
+                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
             }
         </div>
     }

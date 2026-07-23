@@ -24,7 +24,9 @@ public class CreateSharedProfileCommandValidator : AbstractValidator<CreateShare
         RuleFor(x => x.MemberUserIds).Must(ids => ids.Count is >= 2 and <= 8);
         RuleFor(x => x).Must(x => x.MemberUserIds.Contains(x.HostUserId))
             .WithMessage("Host must be a group member.");
-        RuleFor(x => x.Pin).MaximumLength(20).When(x => x.Pin is not null);
+        RuleFor(x => x.Pin)
+            .Matches(@"^\d{4}$")
+            .When(x => x.Pin is not null);
     }
 }
 
