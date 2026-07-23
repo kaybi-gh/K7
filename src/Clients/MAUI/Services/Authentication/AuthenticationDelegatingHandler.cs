@@ -25,6 +25,10 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         var authProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
         await authProvider.GetAuthenticationStateAsync();
 
+        // Buffer the body so a 401 retry can resend POSTs (JsonContent is one-shot otherwise).
+        if (request.Content is not null)
+            await request.Content.LoadIntoBufferAsync(cancellationToken);
+
         // Pre-set the auth token before sending (avoids 401 race on concurrent requests)
         if (request.Headers.Authorization is null)
         {
@@ -41,6 +45,8 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
             return response;
 
+        var rejectedToken = request.Headers.Authorization?.Parameter;
+
         // Serialize refresh so concurrent 401s wait and retry with the new token instead of
         // returning Unauthorized while only the first request refreshes (Movie page race).
         await _refreshGate.WaitAsync(cancellationToken);
@@ -48,42 +54,47 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         {
             var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
             var tokenAfterWait = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
-            var tokenBefore = request.Headers.Authorization?.Parameter;
 
             // Another waiter may have already refreshed successfully - retry first.
             if (!string.IsNullOrEmpty(tokenAfterWait)
-                && !string.Equals(tokenAfterWait, tokenBefore, StringComparison.Ordinal))
+                && !string.Equals(tokenAfterWait, rejectedToken, StringComparison.Ordinal))
             {
+                response.Dispose();
                 var earlyRetry = await CloneAndRetryAsync(request, tokenAfterWait, cancellationToken);
-                if (earlyRetry.IsSuccessStatusCode)
+                if (earlyRetry.StatusCode is not HttpStatusCode.Unauthorized)
                 {
-                    response.Dispose();
+                    Interlocked.Exchange(ref _logoutTriggered, 0);
                     return earlyRetry;
                 }
 
                 earlyRetry.Dispose();
+                rejectedToken = tokenAfterWait;
             }
 
             var customAuthProvider = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
 
-            if (await customAuthProvider.TryRefreshAsync(cancellationToken))
+            // Force the token endpoint when this exact Bearer was rejected (do not trust
+            // client-side JWT expiry alone - server may disagree after long sleep / skew).
+            if (await customAuthProvider.TryRefreshAsync(cancellationToken, rejectedAccessToken: rejectedToken))
             {
+                Interlocked.Exchange(ref _logoutTriggered, 0);
                 var newToken = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
 
                 if (!string.IsNullOrEmpty(newToken))
                 {
+                    response.Dispose();
                     var retry = await CloneAndRetryAsync(request, newToken, cancellationToken);
-                    if (retry.IsSuccessStatusCode)
-                    {
-                        response.Dispose();
-                        return retry;
-                    }
 
-                    retry.Dispose();
+                    // Refresh worked: return the retry outcome (success or business error).
+                    // Only treat a second 401 as a hard auth failure.
+                    if (retry.StatusCode is not HttpStatusCode.Unauthorized)
+                        return retry;
+
+                    response = retry;
                 }
             }
 
-            // Refresh failed or retry still 401 -- logout unless offline session (no bearer token by design)
+            // Refresh failed, or retry still unauthorized after a real token rotation.
             var authStateProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
             var authState = await authStateProvider.GetAuthenticationStateAsync();
             var isOfflineSession = authState.User.Identity?.AuthenticationType == "Offline";
@@ -127,8 +138,8 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         {
             var contentBytes = await original.Content.ReadAsByteArrayAsync(cancellationToken);
             var newContent = new ByteArrayContent(contentBytes);
-            if (original.Content.Headers.ContentType is not null)
-                newContent.Headers.ContentType = original.Content.Headers.ContentType;
+            foreach (var header in original.Content.Headers)
+                newContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
             clone.Content = newContent;
         }
 

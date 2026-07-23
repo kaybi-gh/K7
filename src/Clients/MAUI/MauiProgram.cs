@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 using OpenIddict.Client;
 using OpenIddict.Client.SystemIntegration;
 using SkiaSharp.Views.Maui.Controls.Hosting;
@@ -46,6 +47,24 @@ public static partial class MauiProgram
             });
 
         builder.Services.AddMauiBlazorWebView();
+
+        builder.Services.AddSingleton<AuthSessionKeeper>();
+        builder.ConfigureLifecycleEvents(events =>
+        {
+#if ANDROID
+            events.AddAndroid(android => android.OnResume(_ =>
+            {
+                if (IPlatformApplication.Current?.Services is { } services)
+                    services.GetService<AuthSessionKeeper>()?.OnAppResumed();
+            }));
+#elif IOS || MACCATALYST
+            events.AddiOS(ios => ios.OnActivated(_ =>
+            {
+                if (IPlatformApplication.Current?.Services is { } services)
+                    services.GetService<AuthSessionKeeper>()?.OnAppResumed();
+            }));
+#endif
+        });
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
