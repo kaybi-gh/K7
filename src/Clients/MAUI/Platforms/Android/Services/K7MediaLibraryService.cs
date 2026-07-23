@@ -48,6 +48,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     private IStreamUriService? _streamUriService;
     private IK7ServerService? _k7ServerService;
     private DefaultHttpDataSource.Factory? _httpDataSourceFactory;
+    private readonly AndroidAudioEqualizer _audioEqualizer = new();
 
     private volatile bool _updatingFromPlayer;
     private volatile bool _isVideoMode;
@@ -160,6 +161,9 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         SubscribeToAudioPlayerEvents();
         SubscribeToVideoPlayerEvents();
+
+        if (_audioPlayerService is not null)
+            _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
     }
 
     public override MediaLibrarySession? OnGetSessionFromMediaLibraryService(
@@ -177,6 +181,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         UnsubscribeFromAudioPlayerEvents();
         UnsubscribeFromVideoPlayerEvents();
+        _audioEqualizer.Dispose();
         _videoSession?.Release();
         _session?.Release();
         _player?.RemoveListener(this);
@@ -315,6 +320,17 @@ public class K7MediaLibraryService : MediaLibraryService,
         }
     }
 
+    public void OnAudioSessionIdChanged(int audioSessionId)
+    {
+        if (_isVideoMode)
+        {
+            _audioEqualizer.Detach();
+            return;
+        }
+
+        _audioEqualizer.Attach(audioSessionId);
+    }
+
     // --- IAudioPlayerService events -> ExoPlayer ---
 
     private void SubscribeToAudioPlayerEvents()
@@ -327,6 +343,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.StopRequested += OnStopRequested;
         _audioPlayerService.SeekRequested += OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
+        _audioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
     }
 
     private void UnsubscribeFromAudioPlayerEvents()
@@ -339,6 +356,13 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.StopRequested -= OnStopRequested;
         _audioPlayerService.SeekRequested -= OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
+        _audioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
+    }
+
+    private void OnEqSettingsChanged()
+    {
+        if (_audioPlayerService is null) return;
+        _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
     }
 
     private void OnSourceChanged(PlayerSource source)
@@ -1061,6 +1085,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     private void EnterVideoMode()
     {
         _isVideoMode = true;
+        _audioEqualizer.Detach();
         Log.Info(Tag, "Entering video mode - activating video session");
 
         var source = _playerService?.Source;
@@ -1087,6 +1112,9 @@ public class K7MediaLibraryService : MediaLibraryService,
             RemoveSession(_videoSession);
             _videoSessionAdded = false;
         }
+
+        if (_player is not null && _player.AudioSessionId != AndroidX.Media3.Common.C.AudioSessionIdUnset)
+            _audioEqualizer.Attach(_player.AudioSessionId);
     }
 
     private void OnVideoPlaybackStateChanged(PlaybackState state)

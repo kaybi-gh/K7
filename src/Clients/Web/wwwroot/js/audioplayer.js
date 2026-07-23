@@ -240,6 +240,10 @@ function initAudioGraph(element) {
     limiter.connect(masterGain);
     masterGain.connect(analyser);
     analyser.connect(ctx.destination);
+
+    applyEqBands();
+    computeLoudnessGain();
+    applyLimiter();
 }
 
 function resumeAudioContext() {

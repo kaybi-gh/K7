@@ -41,6 +41,8 @@ public partial class AudioPlayer : IAsyncDisposable
             }
             await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
             await JSRuntime.InvokeVoidAsync("audioSetKeepScreenOn", AudioPlayerService.KeepScreenOn);
+            await PushLoudnessSettingsAsync();
+            await PushEqSettingsAsync();
         }
     }
 

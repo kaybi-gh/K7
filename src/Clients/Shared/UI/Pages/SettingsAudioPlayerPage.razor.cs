@@ -54,6 +54,7 @@ public partial class SettingsAudioPlayerPage
     private void OnSettingsChanged(AudioPlayerSettingsDto value)
     {
         _settings = value;
+        ApplySettingsToRuntime(_settings);
         StateHasChanged();
     }
 
