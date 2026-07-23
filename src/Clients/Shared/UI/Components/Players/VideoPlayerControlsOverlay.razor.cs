@@ -45,7 +45,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private double _seekBaseTime;
     private bool _isSeeking;
     private string? _hudText;
+    private double _hudScale = 1;
     private string _hudIcon = Phosphor.FastForward;
+    private DateTime _lastSeekHudRenderUtc;
     private ElementReference _overlayRef;
     private SkipSegmentOverlay? _skipOverlay;
     private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
@@ -67,7 +69,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private System.Timers.Timer? _doubleTapTimer;
     private System.Timers.Timer? _tapDelayTimer;
     private bool _tapPending;
-    private int _doubleTapSeekCount;
     private double _viewportWidth;
     private const double SwipeThreshold = 15;
     private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
@@ -138,7 +139,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             _overlayVisibleTimer.Start();
         }
-        _seekDebounceTimer = new System.Timers.Timer(300) { AutoReset = false };
+        // Idle fallback only: keyboard seek commits on keyup. Interval must stay above typical
+        // OS key-repeat initial delay (~250-500ms) so we never Seek mid-hold.
+        _seekDebounceTimer = new System.Timers.Timer(1000) { AutoReset = false };
         _seekDebounceTimer.Elapsed += OnSeekDebounceElapsed;
         _hudTimer = new System.Timers.Timer(800) { AutoReset = false };
         _hudTimer.Elapsed += OnHudTimerElapsed;
@@ -252,9 +255,11 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             {
                 case "ArrowLeft":
                     AccumulateSeek(-10);
+                    RequestSeekHudRender();
                     return;
                 case "ArrowRight":
                     AccumulateSeek(10);
+                    RequestSeekHudRender();
                     return;
                 case "ArrowUp":
                     AdjustVolume(0.1);
@@ -265,6 +270,19 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             }
         }
         // When overlay is visible, JS handles arrow navigation between controls.
+    }
+
+    private void OnKeyUp(KeyboardEventArgs e)
+    {
+        if (_showOverlay || _isMenuOpen || !_isSeeking)
+            return;
+
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
+        if (code is not ("ArrowLeft" or "ArrowRight"))
+            return;
+
+        CommitSeek();
+        RequestSeekHudRender(force: true);
     }
 
     private static bool IsSelectKey(KeyboardEventArgs e)
@@ -312,7 +330,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private bool ShouldIgnoreMouseOverlayShow() =>
         _deviceType == DeviceType.TV || DateTime.UtcNow < _suppressOverlayShowUntil;
 
-    private void AccumulateSeek(double offset)
+    private void AccumulateSeek(double offset, bool startIdleCommit = true)
     {
         if (!_isSeeking)
         {
@@ -323,9 +341,15 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         _seekTarget = Math.Clamp(_seekBaseTime + _seekOffset, 0, PlayerService.Duration);
         _isSeeking = true;
         _hudIcon = _seekOffset >= 0 ? Phosphor.FastForward : Phosphor.Rewind;
+        _hudScale = 1.0 + Math.Min(Math.Abs(_seekOffset) / 200.0, 0.35);
         ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
-        _seekDebounceTimer?.Stop();
-        _seekDebounceTimer?.Start();
+
+        // Preview only while holding / tapping - Seek runs on keyup or idle end of burst.
+        if (startIdleCommit)
+        {
+            _seekDebounceTimer?.Stop();
+            _seekDebounceTimer?.Start();
+        }
     }
 
     private void CommitSeek()
@@ -337,6 +361,15 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.Seek(_seekTarget);
         _isSeeking = false;
         _seekOffset = 0;
+    }
+
+    private void RequestSeekHudRender(bool force = false)
+    {
+        if (!force && DateTime.UtcNow - _lastSeekHudRenderUtc < TimeSpan.FromMilliseconds(50))
+            return;
+
+        _lastSeekHudRenderUtc = DateTime.UtcNow;
+        RequestRender();
     }
 
     [JSInvokable]
@@ -371,7 +404,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             if (_showOverlay || _isMenuOpen) return;
             AccumulateSeek(offset);
-            StateHasChanged();
+            RequestSeekHudRender();
         });
     }
 
@@ -384,7 +417,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             if (_showOverlay || _isMenuOpen) return;
             CommitSeek();
-            StateHasChanged();
+            RequestSeekHudRender(force: true);
         });
     }
 
@@ -429,7 +462,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         InvokeAsync(() =>
         {
             _hudText = null;
-            StateHasChanged();
+            _hudScale = 1;
+            RequestRender();
         });
     }
 
@@ -470,7 +504,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         InvokeAsync(() =>
         {
             CommitSeek();
-            StateHasChanged();
+            RequestRender();
         });
     }
 
@@ -704,18 +738,15 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void HandleDoubleTap(bool isRightHalf)
     {
-        _doubleTapSeekCount++;
         var seekStep = isRightHalf ? 10.0 : -10.0;
         _doubleTapSide = isRightHalf ? "right" : "left";
-        _hudIcon = isRightHalf ? Phosphor.FastForward : Phosphor.Rewind;
-        ShowHud($"{(seekStep > 0 ? "+" : "")}{(int)(seekStep * _doubleTapSeekCount)}s");
 
-        var target = Math.Clamp(PlayerService.CurrentTime + seekStep, 0, PlayerService.Duration);
-        PlayerService.Seek(target);
+        // Same model as keyboard hold: accumulate offset, seek once when the burst ends.
+        AccumulateSeek(seekStep, startIdleCommit: false);
 
         _doubleTapTimer?.Stop();
         _doubleTapTimer?.Start();
-        StateHasChanged();
+        RequestSeekHudRender(force: true);
     }
 
     private void OnDoubleTapTimerElapsed(object? sender, ElapsedEventArgs args)
@@ -724,9 +755,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         InvokeAsync(() =>
         {
+            CommitSeek();
             _doubleTapSide = null;
-            _doubleTapSeekCount = 0;
-            StateHasChanged();
+            RequestRender();
         });
     }
 

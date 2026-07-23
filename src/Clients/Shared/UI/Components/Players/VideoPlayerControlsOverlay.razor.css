@@ -22,7 +22,7 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(var(--hud-scale, 1));
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -35,6 +35,13 @@
     z-index: 100010;
     pointer-events: none;
     font-variant-numeric: tabular-nums;
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hud-indicator {
+        transition: transform 0.12s linear;
+    }
 }
 
 .double-tap-ripple {

@@ -31,6 +31,7 @@
      @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
      @ontouchend="OnTouchEnd" @ontouchend:preventDefault
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
+     @onkeyup="OnKeyUp" @onkeyup:stopPropagation
      @onfocusin="OnFocusIn">
 
     <div class="controls-bar top d-flex align-right" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
@@ -96,7 +97,7 @@
 
 @if (_hudText is not null)
 {
-    <div class="hud-indicator">
+    <div class="hud-indicator" style="--hud-scale: @_hudScale.ToString(CultureInfo.InvariantCulture)">
         <K7Icon Name="@_hudIcon"  IconSize="@K7IconSize.Lg" />
         <span>@_hudText</span>
     </div>
