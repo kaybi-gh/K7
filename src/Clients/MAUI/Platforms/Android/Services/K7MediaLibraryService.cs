@@ -203,15 +203,34 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         try
         {
-            _updatingFromPlayer = true;
             // Player state constants: Idle=1, Buffering=2, Ready=3, Ended=4
+            // Single-item Blazor playback has no ExoPlayer playlist, so STATE_ENDED
+            // must drive queue advance (same as iOS DidPlayToEndTime -> OnTrackEndedAsync).
+            // Multi-item Android Auto playlists auto-advance via OnMediaItemTransition instead;
+            // STATE_ENDED only fires after the last playlist item.
+            if (playbackState == 4)
+            {
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    try
+                    {
+                        await _audioPlayerService.OnTrackEndedAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(Tag, $"OnTrackEndedAsync failed: {ex.Message}");
+                    }
+                });
+                return;
+            }
+
+            _updatingFromPlayer = true;
             _audioPlayerService.PlaybackState = playbackState switch
             {
                 3 => _player?.IsPlaying == true
                     ? PlaybackState.Playing
                     : PlaybackState.Paused,
                 2 => PlaybackState.Buffering,
-                4 => PlaybackState.Ended,
                 _ => PlaybackState.Idle,
             };
             _updatingFromPlayer = false;
@@ -227,6 +246,11 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         if (_isVideoMode) return; // Video mode handled by K7VideoSessionPlayer
         if (_audioPlayerService is null) return;
+
+        // Track end reports isPlaying=false alongside STATE_ENDED; let OnTrackEndedAsync
+        // own the transition so we do not overwrite with Paused and race NextAsync.
+        if (!isPlaying && _player?.PlaybackState == 4)
+            return;
 
         try
         {
