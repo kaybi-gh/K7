@@ -12,7 +12,10 @@ public static class K7DialogServiceExtensions
         MaxWidth = K7DialogMaxWidth.ExtraSmall,
         FullWidth = false,
         FullScreen = deviceType is DeviceType.Phone or DeviceType.Tablet,
-        CloseOnEscapeKey = true
+        CloseOnEscapeKey = true,
+        // Header close sits top-right and spatial-nav skips the centered keypad to Cancel.
+        // Escape / Cancel / platform back still dismiss.
+        CloseButton = false
     };
 
     public static async Task<bool?> ShowMessageBoxAsync(

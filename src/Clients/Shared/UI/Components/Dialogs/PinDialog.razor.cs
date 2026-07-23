@@ -1,6 +1,5 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -8,22 +7,25 @@ namespace K7.Clients.Shared.UI.Components.Dialogs;
 public partial class PinDialog : IAsyncDisposable
 {
     public const int PinLength = 4;
+    private const string FirstKeySelector = ".pin-dialog__keypad .k7-btn[data-initial-focus]";
 
     private static readonly char[] Digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter]
     public string UserName { get; set; } = "";
 
-    private ElementReference _rootRef;
     private DotNetObjectReference<PinDialog>? _jsRef;
     private string _pin = "";
     private bool _submitted;
     private bool _keysAttached;
+
+    private static IReadOnlyDictionary<string, object>? GetInitialKeyAttributes(char digit) =>
+        digit == '1' ? new Dictionary<string, object> { ["data-initial-focus"] = true } : null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -41,21 +43,15 @@ public partial class PinDialog : IAsyncDisposable
         {
         }
 
-        // Prefer keypad focus for TV / spatial nav after the dialog layer settles.
-        await Task.Delay(200);
+        // After dialog layer auto-focus, land on the first keypad key.
+        await Task.Delay(220);
         try
         {
-            await SpatialNav.FocusElementAsync(_rootRef);
+            await SpatialNav.RefreshAsync();
+            await SpatialNav.FocusFirstAsync(FirstKeySelector);
         }
         catch (InvalidOperationException)
         {
-            try
-            {
-                await _rootRef.FocusAsync();
-            }
-            catch (InvalidOperationException)
-            {
-            }
         }
     }
 
@@ -110,8 +106,6 @@ public partial class PinDialog : IAsyncDisposable
         Dialog.Cancel();
     }
 
-    private void OnKeyDown(KeyboardEventArgs e) => HandleKey(e.Key);
-
     private void HandleKey(string key)
     {
         if (_submitted)
@@ -120,13 +114,6 @@ public partial class PinDialog : IAsyncDisposable
         if (key is "Escape")
         {
             Cancel();
-            return;
-        }
-
-        if (key is "Enter")
-        {
-            if (_pin.Length == PinLength)
-                Submit();
             return;
         }
 

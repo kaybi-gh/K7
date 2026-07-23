@@ -1,13 +1,7 @@
 @inject IStringLocalizer<PinDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="pin-dialog focusable"
-     @ref="_rootRef"
-     tabindex="0"
-     role="group"
-     data-initial-focus
-     aria-label="@L["PinLabel"]"
-     @onkeydown="OnKeyDown">
+<div class="pin-dialog" role="group" aria-label="@L["PinLabel"]">
     <div class="k7-dialog-content pin-dialog__content">
         @if (!string.IsNullOrEmpty(UserName))
         {
@@ -32,32 +26,35 @@
             @foreach (var digit in Digits)
             {
                 var d = digit;
-                <button type="button"
-                        class="pin-dialog__key focusable"
-                        aria-label="@string.Format(L["DigitAria"], d)"
-                        @onclick="() => AppendDigit(d)">
+                <K7Button Class="w-full"
+                          Variant="outlined"
+                          Size="lg"
+                          AriaLabel="@string.Format(L["DigitAria"], d)"
+                          OnClick="() => AppendDigit(d)"
+                          @attributes="GetInitialKeyAttributes(d)">
                     @d
-                </button>
+                </K7Button>
             }
-            <button type="button"
-                    class="pin-dialog__key pin-dialog__key--action focusable"
-                    aria-label="@L["BackspaceAria"]"
-                    @onclick="Backspace">
-                <K7Icon Icon="@Phosphor.Backspace" IconSize="@K7IconSize.Md" />
-            </button>
-            <button type="button"
-                    class="pin-dialog__key focusable"
-                    aria-label="@string.Format(L["DigitAria"], 0)"
-                    @onclick="() => AppendDigit('0')">
+            <K7Button Class="w-full"
+                      Variant="outlined"
+                      Size="lg"
+                      StartIcon="@Phosphor.Backspace"
+                      AriaLabel="@L["BackspaceAria"]"
+                      OnClick="Backspace" />
+            <K7Button Class="w-full"
+                      Variant="outlined"
+                      Size="lg"
+                      AriaLabel="@string.Format(L["DigitAria"], 0)"
+                      OnClick="() => AppendDigit('0')">
                 0
-            </button>
-            <button type="button"
-                    class="pin-dialog__key pin-dialog__key--action focusable"
-                    aria-label="@L["ClearAria"]"
-                    @onclick="Clear"
-                    disabled="@string.IsNullOrEmpty(_pin)">
-                <K7Icon Icon="@Phosphor.X" IconSize="@K7IconSize.Md" />
-            </button>
+            </K7Button>
+            <K7Button Class="w-full"
+                      Variant="outlined"
+                      Size="lg"
+                      StartIcon="@Phosphor.X"
+                      AriaLabel="@L["ClearAria"]"
+                      Disabled="@string.IsNullOrEmpty(_pin)"
+                      OnClick="Clear" />
         </div>
     </div>
 

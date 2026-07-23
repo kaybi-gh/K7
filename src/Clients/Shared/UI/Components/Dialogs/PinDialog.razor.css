@@ -3,7 +3,6 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    outline: none;
     width: 100%;
     max-width: 22rem;
     margin-inline: auto;
@@ -47,10 +46,6 @@
     box-shadow: 0 0 0 1px var(--color-accent);
 }
 
-.pin-dialog__slot--filled {
-    border-color: var(--color-border);
-}
-
 .pin-dialog__dot {
     width: 0.75rem;
     height: 0.75rem;
@@ -65,41 +60,6 @@
     justify-content: center;
     width: 100%;
     max-width: 20rem;
-}
-
-.pin-dialog__key {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 3.5rem;
-    padding: var(--space-3);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface);
-    color: var(--color-text);
-    font-family: var(--font-heading);
-    font-size: var(--text-xl);
-    font-weight: 600;
-    cursor: pointer;
-    user-select: none;
-    outline: none;
-}
-
-.pin-dialog__key:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
-}
-
-.pin-dialog__key:active:not(:disabled) {
-    background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
-}
-
-.pin-dialog__key:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.pin-dialog__key--action {
-    color: var(--color-text-secondary);
 }
 
 .pin-dialog__actions {

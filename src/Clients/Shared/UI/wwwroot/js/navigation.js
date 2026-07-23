@@ -2619,7 +2619,7 @@ K7._suppressEnterUntilKeyUp = false;
 K7._swallowNextEnterClick = false;
 K7._enterSuppressCallbacks = [];
 
-// Physical keyboard capture for PinDialog (focus often stays on the page behind the dialog).
+// Physical keyboard capture for PinDialog (works even if focus is behind the dialog).
 K7.pinDialogKeyCapture = {
     _ref: null,
     _onKey: null,
@@ -2629,22 +2629,23 @@ K7.pinDialogKeyCapture = {
         var self = this;
         this._onKey = function (e) {
             if (!self._ref) return;
-            if (!document.querySelector('.k7-dialog-backdrop .pin-dialog')) return;
+            if (!document.querySelector('.pin-dialog')) return;
 
             var key = e.key;
             var isDigit = key.length === 1 && key >= '0' && key <= '9';
-            if (!isDigit && key !== 'Backspace' && key !== 'Enter')
+            // Do not intercept Enter: keypad buttons need native OK/Enter activation.
+            if (!isDigit && key !== 'Backspace')
                 return;
 
             e.preventDefault();
-            e.stopImmediatePropagation();
             self._ref.invokeMethodAsync('OnCapturedKey', key);
         };
-        document.addEventListener('keydown', this._onKey, true);
+        // Bubble phase so spatial-nav capture (dialog Backspace rules) runs first.
+        document.addEventListener('keydown', this._onKey, false);
     },
     detach: function () {
         if (this._onKey) {
-            document.removeEventListener('keydown', this._onKey, true);
+            document.removeEventListener('keydown', this._onKey, false);
             this._onKey = null;
         }
         this._ref = null;
