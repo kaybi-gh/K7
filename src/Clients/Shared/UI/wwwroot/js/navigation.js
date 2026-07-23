@@ -3071,8 +3071,8 @@ K7.TvDetailScroll = (function () {
 
             if (key === 'ArrowUp' && isInZone(el, 'below')) {
                 // If nothing in the below zone sits above the focused card, leave toward
-                // hero actions (or back). Otherwise spatial nav would pick the top navbar
-                // because the hero controls are scrolled off-screen.
+                // the hero carousel (seasons/episodes), then actions, then back. Otherwise
+                // spatial nav would pick the top navbar because hero controls are off-screen.
                 var below = getZone(inst.root, 'below');
                 var currentRect = el.getBoundingClientRect();
                 var candidates = below ? below.querySelectorAll('.focusable') : [];
@@ -3091,9 +3091,17 @@ K7.TvDetailScroll = (function () {
 
                 scrollToMain(false);
                 var target = null;
-                var actions = getZone(inst.root, 'actions');
-                if (actions) {
-                    target = actions.matches('.focusable') ? actions : actions.querySelector('.focusable');
+                // TV detail pages keep seasons/episodes on the hero between casting and
+                // actions/synopsis; prefer those so ArrowUp from casting does not skip them.
+                var heroCarousel = getZone(inst.root, 'seasons') || getZone(inst.root, 'episodes');
+                if (heroCarousel) {
+                    target = heroCarousel.querySelector('.focusable');
+                }
+                if (!target) {
+                    var actions = getZone(inst.root, 'actions');
+                    if (actions) {
+                        target = actions.matches('.focusable') ? actions : actions.querySelector('.focusable');
+                    }
                 }
                 if (!target) {
                     var main = getZone(inst.root, 'main');
@@ -3146,7 +3154,7 @@ K7.TvDetailScroll = (function () {
         handleVerticalNav: function (key, el) {
             var root = el && el.closest('[data-tv-scroll]');
             var inst = root && _instances.get(root);
-            if (inst) inst.handleVerticalNav(key, el);
+            return !!(inst && inst.handleVerticalNav(key, el));
         }
     };
 })();
