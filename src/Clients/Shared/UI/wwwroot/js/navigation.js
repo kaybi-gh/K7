@@ -477,7 +477,9 @@ var SpatialNav = (function () {
         if (currentIdx === -1) return false;
 
         var targetIdx = direction === 'ArrowRight' ? currentIdx + 1 : currentIdx - 1;
-        if (targetIdx < 0 || targetIdx >= allItems.length) return false;
+        // At horizontal edges, stay on the current tile (do not let spatial nav escape
+        // to hero controls like the back button).
+        if (targetIdx < 0 || targetIdx >= allItems.length) return true;
 
         var targetItem = allItems[targetIdx];
         var target = targetItem.matches(FOCUSABLE) ? targetItem : targetItem.querySelector(FOCUSABLE);
