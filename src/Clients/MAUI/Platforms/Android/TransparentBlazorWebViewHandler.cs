@@ -17,6 +17,10 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         platformView.SetBackgroundResource(0);
         platformView.Background = null;
 
+        // Allow ambient theme songs (HTML5 Audio) without a fresh user gesture.
+        // Navigation into a media page already counts as intentional interaction.
+        platformView.Settings.MediaPlaybackRequiresUserGesture = false;
+
         if (platformView.Parent is global::Android.Views.View parentView)
         {
             parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);

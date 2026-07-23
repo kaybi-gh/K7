@@ -199,7 +199,7 @@ public partial class Serie : IAsyncDisposable
         if (episode is null)
             return;
 
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         await SeriePlaybackHelper.PlayEpisodeAsync(
             episode,
@@ -298,7 +298,7 @@ public partial class Serie : IAsyncDisposable
     {
         if (_serie?.Trailers is not { Count: > 0 }) return;
 
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         var trailer = _serie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _serie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>
@@ -491,7 +491,6 @@ public partial class Serie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

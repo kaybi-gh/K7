@@ -21,7 +21,7 @@ Files already indexed without chapters show as **Chapters not extracted** in Adm
 
 ### Theme songs
 
-Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs; optional per-device disable on the same page. Server default: Admin -> Experience -> General).
+Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs; optional per-device disable on the same page. Server default: Admin -> Experience -> General). Theme continues across related series pages (serie / season / episode) and cast person digressions; a finished theme does not restart on return to the same media. Leaving that media context fades out, and opening another media with a theme crossfades.
 
 - **Library sidecar (read-only):** `theme.mp3` / `.flac` / `.m4a` / `.ogg` at the series root (next to season folders) or in the movie folder. For movies, same-basename audio is also accepted (for example `Movie Name (2020).mkv` + `Movie Name (2020).mp3`). Sidecars are never written by K7.
 - **Series auto-extract:** when **theme song generation** and **intro/outro detection** are enabled on the library, and no sidecar exists, K7 may extract a faded MP3 from an Intro segment into `Metadatas/medias/{serieId}/theme.mp3`. Movies are not extracted from video; sidecar only.

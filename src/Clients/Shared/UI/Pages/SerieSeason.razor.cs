@@ -67,6 +67,15 @@ public partial class SerieSeason : IAsyncDisposable
             return;
         }
 
+        await ThemeSongPlaybackHelper.TryStartAsync(
+            serie.Id,
+            serie.HasThemeSong,
+            k7ServerService,
+            UserPreferencesService,
+            AmbientThemeService,
+            AudioPlayerService,
+            DeviceStorageService);
+
         var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
         _backdropUrl = apiClient.GetAbsoluteUri(
             backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
@@ -293,6 +302,8 @@ public partial class SerieSeason : IAsyncDisposable
     {
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
+
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)

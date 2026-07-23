@@ -66,7 +66,7 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 Seekbar thumbnails only appear if the server generated them. Chapter markers appear when **Settings -> Video playback -> chapter markers** is on (server default under Admin -> Video playback) and either the file has embedded chapters (for example MKV, when library chapter extraction is enabled) or the episode has intro/outro segments in the library. When both exist in the same time range, the seekbar shows the file chapter and skips a duplicate intro/outro tick. The first play can extract missing chapters automatically.
 
-Theme songs play quietly in the background when you open a series or movie page (**Settings -> Experience -> General**: enable theme songs; optionally disable on this device). Playback stops when you leave the page, start watching, or open a trailer. Theme songs do not play while music is already playing, and they play once (no loop).
+Theme songs play quietly in the background when you open a series or movie page, and keep playing while you browse related pages (seasons, episodes, and cast person pages). If the theme finishes, it does not restart when you return to the same media; opening another media with a theme starts (or crossfades to) that theme. Playback fades out when you leave that media context, and also stops (short fade) when you start watching or open a trailer. Theme songs do not play while music is already playing, and they play once (no loop). Enable them under **Settings -> Experience -> General** (optional per-device disable).
 
 ### Touch (phone / tablet)
 

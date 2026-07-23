@@ -112,6 +112,15 @@ public partial class SerieEpisode : IAsyncDisposable
             return;
         }
 
+        await ThemeSongPlaybackHelper.TryStartAsync(
+            serie.Id,
+            serie.HasThemeSong,
+            k7ServerService,
+            UserPreferencesService,
+            AmbientThemeService,
+            AudioPlayerService,
+            DeviceStorageService);
+
         var seasonSummary = serie.Seasons?.FirstOrDefault(s => s.SeasonNumber == SeasonNumber);
         if (seasonSummary is null)
         {
@@ -200,6 +209,8 @@ public partial class SerieEpisode : IAsyncDisposable
 
         var videoMetadata = _indexedFile.FileMetadata as VideoFileMetadataDto;
         if (videoMetadata is null) return;
+
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         PlaybackProgressTracker.StartTracking(_episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),

@@ -19,4 +19,8 @@
     <ProjectReference Include="..\..\Shared\K7.Shared\K7.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="K7.Clients.ComponentTests" />
+  </ItemGroup>
+
 </Project>

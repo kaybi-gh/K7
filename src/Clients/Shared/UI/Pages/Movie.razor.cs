@@ -220,7 +220,7 @@ public partial class Movie : IAsyncDisposable
             return;
         }
 
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         // Remote file playback (federation)
         if (_selectedRemoteFile is not null)
@@ -443,7 +443,7 @@ public partial class Movie : IAsyncDisposable
     {
         if (_movie?.Trailers is not { Count: > 0 }) return;
 
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
         var trailer = _movie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _movie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>
@@ -602,7 +602,6 @@ public partial class Movie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)
