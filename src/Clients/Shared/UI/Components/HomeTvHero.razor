@@ -1,9 +1,9 @@
 @if (Model is not null)
 {
     <div class="home-tv-hero__backdrop-fixed">
-        <div class="home-tv-hero__backdrop @(UseSoftBackdrop ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
+        <div class="home-tv-hero__backdrop @(_layerSoft[0] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
              style="background-image: @FormatBackdropCss(_layerUrls[0])" />
-        <div class="home-tv-hero__backdrop @(UseSoftBackdrop ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
+        <div class="home-tv-hero__backdrop @(_layerSoft[1] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
              style="background-image: @FormatBackdropCss(_layerUrls[1])" />
         <div class="home-tv-hero__gradient"></div>
     </div>

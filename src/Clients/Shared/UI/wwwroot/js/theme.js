@@ -87,7 +87,18 @@ window.K7.clickElement = function (el) {
 };
 
 window.K7.preloadImage = function (url) {
-    if (!url) return;
-    var img = new Image();
-    img.src = url;
+    if (!url) return Promise.resolve();
+    return new Promise(function (resolve) {
+        var img = new Image();
+        var done = false;
+        var finish = function () {
+            if (done) return;
+            done = true;
+            resolve();
+        };
+        img.onload = finish;
+        img.onerror = finish;
+        img.src = url;
+        if (img.complete) finish();
+    });
 };
