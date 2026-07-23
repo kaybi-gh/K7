@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Collections.Commands.UploadCollectionCover;
+namespace K7.Server.Application.Features.Collections.Commands.UploadCollectionCover;
 
 public class UploadCollectionCoverCommandValidator : AbstractValidator<UploadCollectionCoverCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.BackgroundTasks.Commands.CancelBackgroundTask;
+namespace K7.Server.Application.Features.BackgroundTasks.Commands.CancelBackgroundTask;
 
 public class CancelBackgroundTaskCommandValidator : AbstractValidator<CancelBackgroundTaskCommand>
 {

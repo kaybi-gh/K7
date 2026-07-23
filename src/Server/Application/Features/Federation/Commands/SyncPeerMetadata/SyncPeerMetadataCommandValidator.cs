@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.SyncPeerMetadata;
+namespace K7.Server.Application.Features.Federation.Commands.SyncPeerMetadata;
 
 public class SyncPeerMetadataCommandValidator : AbstractValidator<SyncPeerMetadataCommand>
 {

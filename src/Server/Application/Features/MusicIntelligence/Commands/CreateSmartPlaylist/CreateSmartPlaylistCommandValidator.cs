@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.MusicIntelligence.Commands.CreateSmartPlaylist;
+namespace K7.Server.Application.Features.MusicIntelligence.Commands.CreateSmartPlaylist;
 
 public class CreateSmartPlaylistCommandValidator : AbstractValidator<CreateSmartPlaylistCommand>
 {

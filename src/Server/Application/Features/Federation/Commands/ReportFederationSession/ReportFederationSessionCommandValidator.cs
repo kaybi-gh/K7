@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.ReportFederationSession;
+namespace K7.Server.Application.Features.Federation.Commands.ReportFederationSession;
 
 public class ReportFederationSessionCommandValidator : AbstractValidator<ReportFederationSessionCommand>
 {

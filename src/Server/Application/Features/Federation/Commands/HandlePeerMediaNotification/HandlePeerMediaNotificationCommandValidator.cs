@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.HandlePeerMediaNotification;
+namespace K7.Server.Application.Features.Federation.Commands.HandlePeerMediaNotification;
 
 public class HandlePeerMediaNotificationCommandValidator : AbstractValidator<HandlePeerMediaNotificationCommand>
 {

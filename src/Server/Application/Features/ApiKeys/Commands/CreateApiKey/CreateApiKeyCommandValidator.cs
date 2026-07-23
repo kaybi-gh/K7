@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.ApiKeys.Commands.CreateApiKey;
+namespace K7.Server.Application.Features.ApiKeys.Commands.CreateApiKey;
 
 public class CreateApiKeyCommandValidator : AbstractValidator<CreateApiKeyCommand>
 {

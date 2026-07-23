@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.ToggleMediaExclusion;
+namespace K7.Server.Application.Features.Users.Commands.ToggleMediaExclusion;
 
 public class ToggleMediaExclusionCommandValidator : AbstractValidator<ToggleMediaExclusionCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UpdateUserCapabilities;
+namespace K7.Server.Application.Features.Users.Commands.UpdateUserCapabilities;
 
 public class UpdateUserCapabilitiesCommandValidator : AbstractValidator<UpdateUserCapabilitiesCommand>
 {

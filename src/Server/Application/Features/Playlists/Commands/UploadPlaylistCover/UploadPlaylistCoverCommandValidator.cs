@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Playlists.Commands.UploadPlaylistCover;
+namespace K7.Server.Application.Features.Playlists.Commands.UploadPlaylistCover;
 
 public class UploadPlaylistCoverCommandValidator : AbstractValidator<UploadPlaylistCoverCommand>
 {

@@ -127,29 +127,59 @@ export function disposeSentinel() {
     }
 }
 
-export function initGridKeyNav(gridElement, rowHeight) {
-    if (!(gridElement instanceof Element) || _gridKeyHandlers.has(gridElement)) return;
+const VIRTUAL_ROW_SELECTOR = [
+    '.k7-virtual-grid-row',
+    '.k7-virtual-list-item',
+    '.k7-virtual-list-placeholder',
+    'tr.k7-data-table-row',
+    'tr.k7-data-table-placeholder',
+    'tr.browse-view-table-row'
+].join(', ');
+
+const VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR = [
+    '.k7-virtual-grid-placeholder-focus',
+    '.k7-virtual-list-placeholder-focus',
+    'tr.k7-data-table-placeholder'
+].join(', ');
+
+function getGridColumnCount(scrollRoot, fallback) {
+    const row = scrollRoot.querySelector('.k7-virtual-grid-row');
+    if (!row) return fallback || 1;
+    const focusables = row.querySelectorAll('.focusable');
+    if (focusables.length > 0) return focusables.length;
+    return row.querySelectorAll(':scope > *').length || fallback || 1;
+}
+
+/**
+ * Keyboard scrubbing for virtualized grids/lists/tables:
+ * - keep focus on placeholder nodes while Virtualize loads
+ * - scroll the viewport ahead of ArrowUp/Down
+ * - recover focus only when Virtualize recycled the node (focus fell to body)
+ */
+export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
+    if (!(scrollRoot instanceof Element) || _gridKeyHandlers.has(scrollRoot)) return;
+
+    const getColumns = typeof options.getColumns === 'function'
+        ? options.getColumns
+        : () => 1;
+    const focusableSelector = options.focusableSelector || '.focusable';
 
     let _lastFocusedIndex = -1;
     let _colCount = 0;
     let _recovering = false;
 
-    function getCardIndex(el) {
-        const cards = Array.from(gridElement.querySelectorAll('.focusable'));
-        return cards.indexOf(el);
+    function getCards() {
+        return Array.from(scrollRoot.querySelectorAll(focusableSelector));
     }
 
-    function getColCount() {
-        const row = gridElement.querySelector('.k7-virtual-grid-row');
-        if (!row) return _colCount || 1;
-        const cards = row.querySelectorAll(':scope > *');
-        return cards.length || _colCount || 1;
+    function getCardIndex(el) {
+        return getCards().indexOf(el);
     }
 
     function recoverFocus() {
         if (_lastFocusedIndex < 0) return;
         _recovering = true;
-        const cards = Array.from(gridElement.querySelectorAll('.focusable'));
+        const cards = getCards();
         if (cards.length === 0) { _recovering = false; return; }
         const target = cards[Math.min(_lastFocusedIndex, cards.length - 1)];
         if (target) {
@@ -160,17 +190,19 @@ export function initGridKeyNav(gridElement, rowHeight) {
 
     const onFocusIn = (e) => {
         if (_recovering) return;
-        if (e.target && e.target.matches && e.target.matches('.focusable')) {
+        if (e.target && e.target.matches && e.target.matches(focusableSelector)) {
             _lastFocusedIndex = getCardIndex(e.target);
-            _colCount = getColCount();
+            _colCount = getColumns(_colCount) || 1;
         }
     };
 
-    const onFocusOut = (e) => {
+    const onFocusOut = () => {
         if (_recovering) return;
-        // When focus leaves the grid entirely (element recycled by Virtualize)
+        // Only recover when Virtualize recycled the focused node (focus fell to body).
+        // Do not pull focus back when the user intentionally leaves to chrome / jump index.
         setTimeout(() => {
-            if (!document.activeElement || document.activeElement === document.body) {
+            const active = document.activeElement;
+            if (!active || active === document.body) {
                 recoverFocus();
             }
         }, 0);
@@ -178,52 +210,91 @@ export function initGridKeyNav(gridElement, rowHeight) {
 
     const onKeyDown = (e) => {
         const focused = document.activeElement;
-        if (!focused || !gridElement.contains(focused)) return;
+        if (!focused || !scrollRoot.contains(focused)) return;
+
+        // Placeholders are Enter-inert (scrubbing only).
+        if ((e.key === 'Enter' || e.key === ' ')
+            && focused.matches(VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
+        // Ignore arrow scrubbing while focus is on header/chrome controls inside the scroll root.
+        if (!focused.matches(focusableSelector)) return;
 
         const isDown = e.key === 'ArrowDown';
         const isUp = e.key === 'ArrowUp';
         if (!isDown && !isUp) return;
 
-        const row = focused.closest('.k7-virtual-grid-row');
+        const row = focused.closest(VIRTUAL_ROW_SELECTOR);
         if (!row) return;
 
-        // Pre-compute the target index for recovery after scroll
+        const cols = _colCount || getColumns(_colCount) || 1;
         if (isDown) {
-            _lastFocusedIndex = getCardIndex(focused) + (_colCount || getColCount());
+            _lastFocusedIndex = getCardIndex(focused) + cols;
         } else {
-            _lastFocusedIndex = Math.max(0, getCardIndex(focused) - (_colCount || getColCount()));
+            _lastFocusedIndex = Math.max(0, getCardIndex(focused) - cols);
         }
 
         const rowRect = row.getBoundingClientRect();
-        const gridRect = gridElement.getBoundingClientRect();
+        const rootRect = scrollRoot.getBoundingClientRect();
 
         if (isDown) {
-            const bottomEdge = rowRect.bottom - gridRect.top + gridElement.scrollTop;
-            const targetScroll = bottomEdge + rowHeight - gridElement.clientHeight;
-            if (targetScroll > gridElement.scrollTop) {
-                gridElement.scrollTop = targetScroll;
+            const bottomEdge = rowRect.bottom - rootRect.top + scrollRoot.scrollTop;
+            const targetScroll = bottomEdge + itemHeight - scrollRoot.clientHeight;
+            if (targetScroll > scrollRoot.scrollTop) {
+                scrollRoot.scrollTop = targetScroll;
             }
         } else if (isUp) {
-            const topEdge = rowRect.top - gridRect.top + gridElement.scrollTop;
-            const targetScroll = topEdge - rowHeight;
-            if (targetScroll < gridElement.scrollTop) {
-                gridElement.scrollTop = Math.max(0, targetScroll);
+            const topEdge = rowRect.top - rootRect.top + scrollRoot.scrollTop;
+            const targetScroll = topEdge - itemHeight;
+            if (targetScroll < scrollRoot.scrollTop) {
+                scrollRoot.scrollTop = Math.max(0, targetScroll);
             }
         }
     };
 
-    gridElement.addEventListener('keydown', onKeyDown);
-    gridElement.addEventListener('focusin', onFocusIn);
-    gridElement.addEventListener('focusout', onFocusOut);
-    _gridKeyHandlers.set(gridElement, { onKeyDown, onFocusIn, onFocusOut });
+    scrollRoot.addEventListener('keydown', onKeyDown);
+    scrollRoot.addEventListener('focusin', onFocusIn);
+    scrollRoot.addEventListener('focusout', onFocusOut);
+    _gridKeyHandlers.set(scrollRoot, { onKeyDown, onFocusIn, onFocusOut });
+}
+
+export function initGridKeyNav(gridElement, rowHeight) {
+    initVirtualKeyNav(gridElement, rowHeight, {
+        getColumns: (fallback) => getGridColumnCount(gridElement, fallback)
+    });
+}
+
+export function initListKeyNav(listElement, itemHeight) {
+    initVirtualKeyNav(listElement, itemHeight);
+}
+
+export function initTableKeyNav(scrollElement, rowHeight) {
+    initVirtualKeyNav(scrollElement, rowHeight, {
+        focusableSelector: 'tbody .focusable'
+    });
+}
+
+export function disposeVirtualKeyNav(scrollRoot) {
+    const handlers = _gridKeyHandlers.get(scrollRoot);
+    if (handlers) {
+        scrollRoot.removeEventListener('keydown', handlers.onKeyDown);
+        scrollRoot.removeEventListener('focusin', handlers.onFocusIn);
+        scrollRoot.removeEventListener('focusout', handlers.onFocusOut);
+        _gridKeyHandlers.delete(scrollRoot);
+    }
 }
 
 export function disposeGridKeyNav(gridElement) {
-    const handlers = _gridKeyHandlers.get(gridElement);
-    if (handlers) {
-        gridElement.removeEventListener('keydown', handlers.onKeyDown);
-        gridElement.removeEventListener('focusin', handlers.onFocusIn);
-        gridElement.removeEventListener('focusout', handlers.onFocusOut);
-        _gridKeyHandlers.delete(gridElement);
-    }
+    disposeVirtualKeyNav(gridElement);
+}
+
+export function disposeListKeyNav(listElement) {
+    disposeVirtualKeyNav(listElement);
+}
+
+export function disposeTableKeyNav(scrollElement) {
+    disposeVirtualKeyNav(scrollElement);
 }

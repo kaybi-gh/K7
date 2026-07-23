@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.VerifyTwoFactorSetup;
+namespace K7.Server.Application.Features.Users.Commands.VerifyTwoFactorSetup;
 
 public class VerifyTwoFactorSetupCommandValidator : AbstractValidator<VerifyTwoFactorSetupCommand>
 {

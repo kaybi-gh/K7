@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.MusicIntelligence.Commands.TestMusicIntelligenceConnection;
+namespace K7.Server.Application.Features.MusicIntelligence.Commands.TestMusicIntelligenceConnection;
 
 public class TestMusicIntelligenceConnectionCommandValidator : AbstractValidator<TestMusicIntelligenceConnectionCommand>
 {

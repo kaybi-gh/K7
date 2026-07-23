@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.StreamSessions.Commands.GenerateEphemeralStreamToken;
+namespace K7.Server.Application.Features.StreamSessions.Commands.GenerateEphemeralStreamToken;
 
 public class GenerateEphemeralStreamTokenCommandValidator : AbstractValidator<GenerateEphemeralStreamTokenCommand>
 {

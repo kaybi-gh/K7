@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.LibraryGroups.Commands.DeleteLibraryGroup;
+namespace K7.Server.Application.Features.LibraryGroups.Commands.DeleteLibraryGroup;
 
 public class DeleteLibraryGroupCommandValidator : AbstractValidator<DeleteLibraryGroupCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
+namespace K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
 
 public class GenerateThumbnailsCommandValidator : AbstractValidator<GenerateThumbnailsCommand>
 {

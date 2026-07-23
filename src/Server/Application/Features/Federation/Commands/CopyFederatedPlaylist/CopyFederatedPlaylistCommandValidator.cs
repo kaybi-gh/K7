@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.CopyFederatedPlaylist;
+namespace K7.Server.Application.Features.Federation.Commands.CopyFederatedPlaylist;
 
 public class CopyFederatedPlaylistCommandValidator : AbstractValidator<CopyFederatedPlaylistCommand>
 {

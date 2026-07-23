@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.ImportUserPlaylist;
+namespace K7.Server.Application.Features.Users.Commands.ImportUserPlaylist;
 
 public class ImportUserPlaylistCommandValidator : AbstractValidator<ImportUserPlaylistCommand>
 {

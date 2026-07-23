@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.UpdateUserTrackSelectionPreferences;
+namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.UpdateUserTrackSelectionPreferences;
 
 public class UpdateUserTrackSelectionPreferencesCommandValidator : AbstractValidator<UpdateUserTrackSelectionPreferencesCommand>
 {

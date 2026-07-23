@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SmartPlaylists.Commands.DeleteSmartPlaylist;
+namespace K7.Server.Application.Features.SmartPlaylists.Commands.DeleteSmartPlaylist;
 
 public class DeleteSmartPlaylistCommandValidator : AbstractValidator<DeleteSmartPlaylistCommand>
 {

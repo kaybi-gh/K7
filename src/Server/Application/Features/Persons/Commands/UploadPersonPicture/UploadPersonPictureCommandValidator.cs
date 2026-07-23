@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Persons.Commands.UploadPersonPicture;
+namespace K7.Server.Application.Features.Persons.Commands.UploadPersonPicture;
 
 public class UploadPersonPictureCommandValidator : AbstractValidator<UploadPersonPictureCommand>
 {

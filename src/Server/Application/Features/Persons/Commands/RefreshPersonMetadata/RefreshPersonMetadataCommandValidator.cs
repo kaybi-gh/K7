@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
+namespace K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 
 public class RefreshPersonMetadataCommandValidator : AbstractValidator<RefreshPersonMetadataCommand>
 {

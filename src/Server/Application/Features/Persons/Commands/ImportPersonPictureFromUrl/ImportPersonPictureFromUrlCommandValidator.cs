@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Persons.Commands.ImportPersonPictureFromUrl;
+namespace K7.Server.Application.Features.Persons.Commands.ImportPersonPictureFromUrl;
 
 public class ImportPersonPictureFromUrlCommandValidator : AbstractValidator<ImportPersonPictureFromUrlCommand>
 {

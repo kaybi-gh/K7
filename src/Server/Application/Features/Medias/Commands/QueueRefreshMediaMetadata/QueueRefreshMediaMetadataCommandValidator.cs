@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
+namespace K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
 
 public class QueueRefreshMediaMetadataCommandValidator : AbstractValidator<QueueRefreshMediaMetadataCommand>
 {

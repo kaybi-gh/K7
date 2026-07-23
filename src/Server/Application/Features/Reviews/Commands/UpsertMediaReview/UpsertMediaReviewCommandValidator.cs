@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Reviews.Commands.UpsertMediaReview;
+namespace K7.Server.Application.Features.Reviews.Commands.UpsertMediaReview;
 
 public class UpsertMediaReviewCommandValidator : AbstractValidator<UpsertMediaReviewCommand>
 {

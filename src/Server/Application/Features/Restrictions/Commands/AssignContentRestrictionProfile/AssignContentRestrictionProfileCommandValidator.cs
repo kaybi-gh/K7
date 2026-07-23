@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Restrictions.Commands.AssignContentRestrictionProfile;
+namespace K7.Server.Application.Features.Restrictions.Commands.AssignContentRestrictionProfile;
 
 public class AssignContentRestrictionProfileCommandValidator : AbstractValidator<AssignContentRestrictionProfileCommand>
 {

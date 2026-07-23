@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.UpdateDefaultAudioPlaybackPolicySettings;
+namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.UpdateDefaultAudioPlaybackPolicySettings;
 
 public class UpdateDefaultAudioPlaybackPolicySettingsCommandValidator : AbstractValidator<UpdateDefaultAudioPlaybackPolicySettingsCommand>
 {

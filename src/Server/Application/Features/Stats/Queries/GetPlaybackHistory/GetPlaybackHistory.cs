@@ -1,5 +1,6 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -7,8 +8,6 @@ using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Navigation;
-
-using K7.Server.Application.Common.Models;
 
 namespace K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
 

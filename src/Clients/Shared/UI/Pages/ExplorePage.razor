@@ -2,37 +2,23 @@
 @layout ExploreLayout
 @using K7.Clients.Shared.Helpers
 @using K7.Clients.Shared.Interfaces
-@using K7.Clients.Shared.UI.Components.Explore
 @inject ILibraryService LibraryService
-@inject IDeviceService DeviceService
 @inject IStringLocalizer<ExplorePage> L
 @inject NavigationManager NavigationManager
-@inject ITvHubHostService TvHubHost
 
 <PageTitle>@PageTitleText</PageTitle>
 
-@if (_loading)
+@if (LibraryGroupId.HasValue)
+{
+    @* Group feed content is hosted by FeedHubPageHost (keep-alive). *@
+}
+else if (_loading)
 {
     <div class="explore-page page-scrollable">
         <div class="d-flex flex-col pa-16">
             <K7Spinner />
         </div>
     </div>
-}
-else if (LibraryGroupId.HasValue)
-{
-  @if (_activeGroup is null)
-  {
-      <div class="explore-page page-scrollable">
-          <K7EmptyState Title="@L["NoLibraryGroup"]" />
-      </div>
-  }
-  else if (!_isTv || !TvHubHost.ShouldDelegateRoute(NavigationManager.Uri))
-  {
-      <div class="@_libraryGroupPageClass" data-initial-focus="@_libraryGroupInitialFocus">
-          <ExploreLibraryGroupView Group="_activeGroup" IsTv="_isTv" />
-      </div>
-  }
 }
 else if (_libraryGroups.Count == 0)
 {
@@ -53,7 +39,8 @@ else
                                 Title="@group.Title"
                                 Description="@(group.Description ?? "")"
                                 Icon="@icon"
-                                GradientStart="@gs"                                IconColor="@ic"
+                                GradientStart="@gs"
+                                IconColor="@ic"
                                 ImageUrl="@imageUrl"
                                 DominantColor="@group.CoverDominantColor"
                                 CardColor="@group.CardColor"
@@ -65,7 +52,8 @@ else
                 <K7CategoryCard Title="@L["OtherUsers"]"
                                 Description="@L["OtherUsersDesc"]"
                                 Icon="users"
-                                GradientStart="rgba(60,40,80,0.85)"                                IconColor="rgba(120,80,160,0.6)"
+                                GradientStart="rgba(60,40,80,0.85)"
+                                IconColor="rgba(120,80,160,0.6)"
                                 Class="k7-category-card--lg"
                                 OnClick="@(() => NavigationManager.NavigateTo("/users"))" />
             }

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.ImportMediaPictureFromUrl;
+namespace K7.Server.Application.Features.Medias.Commands.ImportMediaPictureFromUrl;
 
 public class ImportMediaPictureFromUrlCommandValidator : AbstractValidator<ImportMediaPictureFromUrlCommand>
 {

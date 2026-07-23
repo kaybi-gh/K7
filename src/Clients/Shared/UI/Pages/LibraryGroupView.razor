@@ -109,6 +109,7 @@
         @if (vm is not null)
         {
             <MediaCard Model="vm"
+                       ElementId="@GetCardElementId(item)"
                        Variant="@GetVariant(item)"
                        Href="@GetItemHref(item)"
                        OverlayEnabled="true"
@@ -116,7 +117,8 @@
                        WatchedStatusEnabled="true"
                        WatchStateMenuEnabled="_canSetWatchState"
                        FooterVisible="true"
-                       PlaceholderIcon="@GetGridPlaceholderIcon(item)" />
+                       PlaceholderIcon="@GetGridPlaceholderIcon(item)"
+                       OnFocused="() => OnCardFocused(item)" />
         }
     </GridTemplate>
     <TableContent>
@@ -203,7 +205,7 @@
         @{
             var vm = GetCardViewModel(item);
         }
-        <LibraryListItem Item="item" Href="@GetItemHref(item)">
+        <LibraryListItem Item="item" Href="@GetItemHref(item)" ElementId="@GetCardElementId(item)" OnFocused="() => OnCardFocused(item)">
             <Actions>
                 @if (vm is not null)
                 {

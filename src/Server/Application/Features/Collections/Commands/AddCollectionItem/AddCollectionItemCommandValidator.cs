@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Collections.Commands.AddCollectionItem;
+namespace K7.Server.Application.Features.Collections.Commands.AddCollectionItem;
 
 public class AddCollectionItemCommandValidator : AbstractValidator<AddCollectionItemCommand>
 {

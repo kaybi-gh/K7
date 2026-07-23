@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.DeleteUser;
+namespace K7.Server.Application.Features.Users.Commands.DeleteUser;
 
 public class DeleteUserCommandValidator : AbstractValidator<DeleteUserCommand>
 {

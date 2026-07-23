@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Downloads.Commands.DeleteDownload;
+namespace K7.Server.Application.Features.Downloads.Commands.DeleteDownload;
 
 public class DeleteDownloadCommandValidator : AbstractValidator<DeleteDownloadCommand>
 {

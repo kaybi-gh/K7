@@ -134,13 +134,18 @@
 }
 
 .k7-data-table-placeholder {
-    pointer-events: none;
     cursor: default;
+    outline: none;
+}
+
+.k7-data-table-placeholder:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 .k7-data-table-placeholder td {
     padding: 8px 12px;
     vertical-align: middle;
+    pointer-events: none;
 }
 
 @media (max-width: 599.98px) {

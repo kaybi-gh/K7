@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
+namespace K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 
 public class CreateFileMetadatasCommandValidator : AbstractValidator<CreateFileMetadatasCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
+namespace K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
 
 public class DetectMediaSegmentsCommandValidator : AbstractValidator<DetectMediaSegmentsCommand>
 {

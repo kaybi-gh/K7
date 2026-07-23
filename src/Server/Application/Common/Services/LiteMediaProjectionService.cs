@@ -1,8 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
-using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
@@ -312,40 +312,84 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 MediaType.Serie => new LiteSerieDto { Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures, UserState = common.UserState, UserRating = common.UserRating },
                 MediaType.MusicTrack when trackById.TryGetValue(row.Id, out var track) => new LiteMusicTrackDto
                 {
-                    Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created,
-                    Pictures = GetPictures(picturesByMediaId, track.AlbumId) ?? common.Pictures, AlbumId = track.AlbumId, TrackNumber = track.TrackNumber,
-                    IndexedFileId = indexedFileByMediaId.GetValueOrDefault(row.Id)?.Id, RemoteIndexedFileId = remoteFileByMediaId.GetValueOrDefault(row.Id)?.Id,
+                    Id = common.Id,
+                    Title = common.Title,
+                    SortTitle = common.SortTitle,
+                    ReleaseDate = common.ReleaseDate,
+                    Created = common.Created,
+                    Pictures = GetPictures(picturesByMediaId, track.AlbumId) ?? common.Pictures,
+                    AlbumId = track.AlbumId,
+                    TrackNumber = track.TrackNumber,
+                    IndexedFileId = indexedFileByMediaId.GetValueOrDefault(row.Id)?.Id,
+                    RemoteIndexedFileId = remoteFileByMediaId.GetValueOrDefault(row.Id)?.Id,
                     Duration = indexedFileByMediaId.GetValueOrDefault(row.Id)?.Duration ?? remoteFileByMediaId.GetValueOrDefault(row.Id)?.Duration,
-                    AlbumTitle = track.AlbumTitle, ArtistName = track.ArtistName ?? track.AlbumArtistName, ArtistId = track.ArtistId ?? track.AlbumArtistId,
-                    Genre = track.Genre, LoudnessLufs = track.LoudnessLufs, FadeInDuration = track.FadeInDuration, FadeOutDuration = track.FadeOutDuration,
-                    ReplayGainTrackGain = track.ReplayGainTrackGain, ArtistCredits = creditsByTrackId.GetValueOrDefault(row.Id),
-                    UserState = common.UserState, UserRating = common.UserRating
+                    AlbumTitle = track.AlbumTitle,
+                    ArtistName = track.ArtistName ?? track.AlbumArtistName,
+                    ArtistId = track.ArtistId ?? track.AlbumArtistId,
+                    Genre = track.Genre,
+                    LoudnessLufs = track.LoudnessLufs,
+                    FadeInDuration = track.FadeInDuration,
+                    FadeOutDuration = track.FadeOutDuration,
+                    ReplayGainTrackGain = track.ReplayGainTrackGain,
+                    ArtistCredits = creditsByTrackId.GetValueOrDefault(row.Id),
+                    UserState = common.UserState,
+                    UserRating = common.UserRating
                 },
                 MediaType.SerieEpisode when episodeById.TryGetValue(row.Id, out var episode) => new LiteSerieEpisodeDto
                 {
-                    Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures,
-                    EpisodeNumber = episode.EpisodeNumber, SeasonNumber = episode.SeasonNumber, SerieSeasonCount = seasonCountsBySerieId.GetValueOrDefault(episode.SerieId),
+                    Id = common.Id,
+                    Title = common.Title,
+                    SortTitle = common.SortTitle,
+                    ReleaseDate = common.ReleaseDate,
+                    Created = common.Created,
+                    Pictures = common.Pictures,
+                    EpisodeNumber = episode.EpisodeNumber,
+                    SeasonNumber = episode.SeasonNumber,
+                    SerieSeasonCount = seasonCountsBySerieId.GetValueOrDefault(episode.SerieId),
                     Duration = videoFileByMediaId.GetValueOrDefault(row.Id)?.Duration ?? remoteFileByMediaId.GetValueOrDefault(row.Id)?.Duration,
-                    Overview = episode.Overview, SerieId = episode.SerieId, SerieTitle = episode.SerieTitle, SerieReleaseDate = episode.SerieReleaseDate,
+                    Overview = episode.Overview,
+                    SerieId = episode.SerieId,
+                    SerieTitle = episode.SerieTitle,
+                    SerieReleaseDate = episode.SerieReleaseDate,
                     StillImageId = pictures.FirstOrDefault(p => p.MediaId == row.Id && p.Type == MetadataPictureType.Still)?.Id,
-                    IndexedFileId = videoFileByMediaId.GetValueOrDefault(row.Id)?.Id, RemoteIndexedFileId = remoteFileByMediaId.GetValueOrDefault(row.Id)?.Id,
-                    SeriePictures = GetPictures(picturesByMediaId, episode.SerieId), SeasonPictures = GetPictures(picturesByMediaId, episode.SeasonId),
-                    UserState = common.UserState, UserRating = common.UserRating
+                    IndexedFileId = videoFileByMediaId.GetValueOrDefault(row.Id)?.Id,
+                    RemoteIndexedFileId = remoteFileByMediaId.GetValueOrDefault(row.Id)?.Id,
+                    SeriePictures = GetPictures(picturesByMediaId, episode.SerieId),
+                    SeasonPictures = GetPictures(picturesByMediaId, episode.SeasonId),
+                    UserState = common.UserState,
+                    UserRating = common.UserRating
                 },
                 MediaType.SerieSeason when seasonById.TryGetValue(row.Id, out var season) => new LiteSerieSeasonDto
                 {
-                    Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures,
-                    SerieId = season.SerieId, SerieTitle = season.SerieTitle, SeasonNumber = season.SeasonNumber, EpisodeCount = season.EpisodeCount,
+                    Id = common.Id,
+                    Title = common.Title,
+                    SortTitle = common.SortTitle,
+                    ReleaseDate = common.ReleaseDate,
+                    Created = common.Created,
+                    Pictures = common.Pictures,
+                    SerieId = season.SerieId,
+                    SerieTitle = season.SerieTitle,
+                    SeasonNumber = season.SeasonNumber,
+                    EpisodeCount = season.EpisodeCount,
                     Poster = common.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster),
-                    SeriePictures = GetPictures(picturesByMediaId, season.SerieId), UserState = common.UserState, UserRating = common.UserRating
+                    SeriePictures = GetPictures(picturesByMediaId, season.SerieId),
+                    UserState = common.UserState,
+                    UserRating = common.UserRating
                 },
                 MediaType.MusicArtist when artistById.TryGetValue(row.Id, out var artist) => new LiteMusicArtistDto
                 {
-                    Id = common.Id, Title = common.Title, SortTitle = common.SortTitle, ReleaseDate = common.ReleaseDate, Created = common.Created, Pictures = common.Pictures,
-                    ArtistType = artist.ArtistType, Country = artist.Country,
+                    Id = common.Id,
+                    Title = common.Title,
+                    SortTitle = common.SortTitle,
+                    ReleaseDate = common.ReleaseDate,
+                    Created = common.Created,
+                    Pictures = common.Pictures,
+                    ArtistType = artist.ArtistType,
+                    Country = artist.Country,
                     Albums = ToLiteAlbums(artistAlbumRows.Where(a => a.ArtistId == row.Id).Select(a => a.Id), baseById, picturesByMediaId, albumById),
                     GuestAppearanceAlbums = ToLiteAlbums(guestAlbumRows.Where(a => a.MusicArtistId == row.Id).Select(a => a.AlbumId), baseById, picturesByMediaId, albumById),
-                    UserState = common.UserState, UserRating = common.UserRating
+                    UserState = common.UserState,
+                    UserRating = common.UserRating
                 },
                 _ => throw new NotSupportedException($"Unknown media type: {row.Type}")
             };
@@ -377,15 +421,15 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
     private static MetadataPictureDto MapPicture(
         PictureRow picture,
         IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>> sizes) => new()
-    {
-        Id = picture.Id,
-        Type = picture.Type,
-        Uri = picture.IsLocal ? new Uri($"/api/metadata-pictures/{picture.Id}", UriKind.Relative) : null,
-        DominantColor = picture.DominantColor,
-        OriginalWidth = picture.OriginalWidth,
-        OriginalHeight = picture.OriginalHeight,
-        AvailableSizes = sizes.GetValueOrDefault(picture.Id) ?? []
-    };
+        {
+            Id = picture.Id,
+            Type = picture.Type,
+            Uri = picture.IsLocal ? new Uri($"/api/metadata-pictures/{picture.Id}", UriKind.Relative) : null,
+            DominantColor = picture.DominantColor,
+            OriginalWidth = picture.OriginalWidth,
+            OriginalHeight = picture.OriginalHeight,
+            AvailableSizes = sizes.GetValueOrDefault(picture.Id) ?? []
+        };
 
     private static IReadOnlyList<MetadataPictureDto>? GetPictures(
         IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureDto>> picturesByMediaId,

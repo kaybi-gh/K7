@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
+namespace K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
 
 public class VerifySharedProfilePinCommandValidator : AbstractValidator<VerifySharedProfilePinCommand>
 {

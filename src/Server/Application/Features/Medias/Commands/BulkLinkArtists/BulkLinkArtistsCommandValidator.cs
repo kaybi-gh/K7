@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.BulkLinkArtists;
+namespace K7.Server.Application.Features.Medias.Commands.BulkLinkArtists;
 
 public class BulkLinkArtistsCommandValidator : AbstractValidator<BulkLinkArtistsCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
+namespace K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
 
 public class DeleteBackgroundTaskCommandValidator : AbstractValidator<DeleteBackgroundTaskCommand>
 {

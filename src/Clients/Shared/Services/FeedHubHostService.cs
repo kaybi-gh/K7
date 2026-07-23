@@ -3,10 +3,11 @@ using K7.Clients.Shared.Models;
 
 namespace K7.Clients.Shared.Services;
 
-public sealed class TvHubHostService : ITvHubHostService
+public sealed class FeedHubHostService : IFeedHubHostService
 {
-    private readonly List<TvHubKey> _mountedKeys = [];
+    private readonly List<FeedHubKey> _mountedKeys = [];
     private readonly object _sync = new();
+    private int? _maxNonHomeKeys;
 
     public event Action? Changed;
 
@@ -14,9 +15,9 @@ public sealed class TvHubHostService : ITvHubHostService
 
     public bool IsHubRouteActive { get; private set; }
 
-    public TvHubKey? ActiveKey { get; private set; }
+    public FeedHubKey? ActiveKey { get; private set; }
 
-    public IReadOnlyList<TvHubKey> MountedKeys
+    public IReadOnlyList<FeedHubKey> MountedKeys
     {
         get
         {
@@ -47,9 +48,26 @@ public sealed class TvHubHostService : ITvHubHostService
         NotifyChanged();
     }
 
+    public void SetMountLimit(int? maxNonHomeKeys)
+    {
+        if (maxNonHomeKeys is < 0)
+            throw new ArgumentOutOfRangeException(nameof(maxNonHomeKeys));
+
+        if (_maxNonHomeKeys == maxNonHomeKeys)
+            return;
+
+        _maxNonHomeKeys = maxNonHomeKeys;
+
+        lock (_sync)
+        {
+            if (PruneNonHomeKeysUnlocked())
+                NotifyChanged();
+        }
+    }
+
     public bool ShouldDelegateRoute(string uri) => IsEnabled && TryParseHubRoute(uri, out _);
 
-    private bool TryParseHubRoute(string uri, out TvHubKey key)
+    private bool TryParseHubRoute(string uri, out FeedHubKey key)
     {
         key = default;
 
@@ -62,7 +80,7 @@ public sealed class TvHubHostService : ITvHubHostService
 
         if (path == "/")
         {
-            key = TvHubKey.Home;
+            key = FeedHubKey.Home;
             return true;
         }
 
@@ -72,7 +90,7 @@ public sealed class TvHubHostService : ITvHubHostService
             var idSegment = path[libraryPrefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             if (Guid.TryParse(idSegment, out var groupId))
             {
-                key = TvHubKey.ForLibraryGroup(groupId);
+                key = FeedHubKey.ForLibraryGroup(groupId);
                 return true;
             }
         }
@@ -84,7 +102,7 @@ public sealed class TvHubHostService : ITvHubHostService
         if (TryGetQueryValue(query, "library-group", out var groupValue)
             && Guid.TryParse(groupValue, out var exploreGroupId))
         {
-            key = TvHubKey.ForExploreGroup(exploreGroupId);
+            key = FeedHubKey.ForExploreGroup(exploreGroupId);
             return true;
         }
 
@@ -100,8 +118,8 @@ public sealed class TvHubHostService : ITvHubHostService
         {
             lock (_sync)
             {
-                if (!_mountedKeys.Contains(key))
-                    _mountedKeys.Add(key);
+                TouchMountedKeyUnlocked(key);
+                PruneNonHomeKeysUnlocked();
             }
 
             ActiveKey = key;
@@ -109,12 +127,45 @@ public sealed class TvHubHostService : ITvHubHostService
         }
         else
         {
-            ActiveKey = null;
+            // Keep ActiveKey so the last hub page stays laid out while parked
+            // (visibility hide). Clearing it would display:none-equivalent all pages
+            // and reset Embla / scroll state.
             IsHubRouteActive = false;
         }
 
         NotifyChanged();
     }
+
+    private void TouchMountedKeyUnlocked(FeedHubKey key)
+    {
+        var existing = _mountedKeys.IndexOf(key);
+        if (existing >= 0)
+            _mountedKeys.RemoveAt(existing);
+
+        _mountedKeys.Add(key);
+    }
+
+    private bool PruneNonHomeKeysUnlocked()
+    {
+        if (_maxNonHomeKeys is not { } limit)
+            return false;
+
+        var removed = false;
+        while (CountNonHomeUnlocked() > limit)
+        {
+            var evictIndex = _mountedKeys.FindIndex(k => k.Kind != FeedHubKind.Home);
+            if (evictIndex < 0)
+                break;
+
+            _mountedKeys.RemoveAt(evictIndex);
+            removed = true;
+        }
+
+        return removed;
+    }
+
+    private int CountNonHomeUnlocked() =>
+        _mountedKeys.Count(k => k.Kind != FeedHubKind.Home);
 
     private static bool TryGetQueryValue(string query, string key, out string? value)
     {

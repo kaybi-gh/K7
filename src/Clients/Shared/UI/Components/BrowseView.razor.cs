@@ -50,6 +50,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private K7VirtualGrid<TItem>? _gridComponentRef;
     private K7VirtualList<TItem>? _listComponentRef;
     private ElementReference _sentinelRef;
+    private ElementReference _tableScrollRef;
     private IJSObjectReference? _module;
     private DotNetObjectReference<BrowseView<TItem>>? _dotnetRef;
 
@@ -64,6 +65,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private bool _disposed;
     private bool _sentinelObserving;
     private bool _loadingMore;
+    private bool _tableKeyNavInitialized;
     private int? _totalItemCount;
     private List<BrowseViewTableRowContext<TItem>>? _tableRows;
 
@@ -105,6 +107,20 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _sentinelObserving = true;
             await StartObservingSentinel();
         }
+
+        if (!_disposed
+            && !_tableKeyNavInitialized
+            && _module is not null
+            && _currentMode is BrowseViewMode.Table
+            && TableContent is null
+            && TableHeaderContent is not null
+            && TableRowTemplate is not null
+            && !IsEmpty
+            && !Loading)
+        {
+            await _module.InvokeVoidAsync("initTableKeyNav", _tableScrollRef, 48f);
+            _tableKeyNavInitialized = true;
+        }
     }
 
     protected override void OnParametersSet()
@@ -134,6 +150,20 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private async Task SetViewModeAsync(BrowseViewMode mode)
     {
         if (mode == _currentMode) return;
+
+        if (_tableKeyNavInitialized && _module is not null && _currentMode is BrowseViewMode.Table)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("disposeTableKeyNav", _tableScrollRef);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+
+            _tableKeyNavInitialized = false;
+        }
+
         _currentMode = mode;
         if (ViewModeChanged.HasDelegate)
             await ViewModeChanged.InvokeAsync(mode);
@@ -303,6 +333,11 @@ public partial class BrowseView<TItem> : IAsyncDisposable
                 if (_dotnetRef is not null)
                 {
                     await _module.InvokeVoidAsync("disposeViewport", _dotnetRef);
+                }
+
+                if (_tableKeyNavInitialized)
+                {
+                    await _module.InvokeVoidAsync("disposeTableKeyNav", _tableScrollRef);
                 }
 
                 await _module.InvokeVoidAsync("disposeSentinel");

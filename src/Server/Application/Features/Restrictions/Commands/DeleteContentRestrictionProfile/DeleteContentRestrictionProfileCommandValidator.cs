@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Restrictions.Commands.DeleteContentRestrictionProfile;
+namespace K7.Server.Application.Features.Restrictions.Commands.DeleteContentRestrictionProfile;
 
 public class DeleteContentRestrictionProfileCommandValidator : AbstractValidator<DeleteContentRestrictionProfileCommand>
 {

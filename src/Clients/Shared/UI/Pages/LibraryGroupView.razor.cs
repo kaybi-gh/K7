@@ -16,6 +16,7 @@ using K7.Shared.Dtos.Rules;
 using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.JSInterop;
 using System.Text.Json;
 
 namespace K7.Clients.Shared.UI.Pages;
@@ -33,6 +34,9 @@ public partial class LibraryGroupView : IDisposable
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
+    [Inject] private IHubFocusNavigationState HubFocus { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
@@ -50,6 +54,7 @@ public partial class LibraryGroupView : IDisposable
     private bool _canExclude;
     private bool _isAdmin;
     private bool _isTv;
+    private bool _hubPageActive;
     private int _overscanCount = DefaultOverscanCount;
     private int _totalCount;
     private bool _totalCountKnown;
@@ -118,7 +123,15 @@ public partial class LibraryGroupView : IDisposable
 
     private string FilterStorageKey => $"library-group.{Id}";
 
-    protected override void OnInitialized() => ContextStore.Changed += OnContextStoreChanged;
+    private FeedHubKey? PageKey =>
+        Guid.TryParse(Id, out var groupId) ? FeedHubKey.ForLibraryGroup(groupId) : null;
+
+    protected override void OnInitialized()
+    {
+        ContextStore.Changed += OnContextStoreChanged;
+        FeedHub.Changed += OnFeedHubChanged;
+        _hubPageActive = IsHubPageActive();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -782,7 +795,54 @@ public partial class LibraryGroupView : IDisposable
 
     private void NavigateToItem(LiteMediaDto item)
     {
+        OnCardFocused(item);
         Navigation.NavigateTo(GetItemHref(item));
+    }
+
+    private string GetCardElementId(LiteMediaDto item) => $"library-card-{Id}-{item.Id}";
+
+    private void OnCardFocused(LiteMediaDto item)
+    {
+        if (PageKey is { } key)
+            HubFocus.Save(key, item.Id.ToString());
+    }
+
+    private bool IsHubPageActive() =>
+        PageKey is { } key
+        && FeedHub.IsHubRouteActive
+        && FeedHub.ActiveKey == key;
+
+    private void OnFeedHubChanged()
+    {
+        var active = IsHubPageActive();
+        var becameActive = active && !_hubPageActive;
+        _hubPageActive = active;
+
+        if (!becameActive)
+            return;
+
+        InvokeAsync(RestoreLastFocusedCardAsync).FireAndForget();
+    }
+
+    private async Task RestoreLastFocusedCardAsync()
+    {
+        if (PageKey is not { } key)
+            return;
+
+        var mediaId = HubFocus.GetMediaId(key);
+        if (string.IsNullOrEmpty(mediaId))
+            return;
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("K7.focusById", $"library-card-{Id}-{mediaId}", true);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     private void OnColumnPickerRequested()
@@ -987,6 +1047,7 @@ public partial class LibraryGroupView : IDisposable
     public void Dispose()
     {
         ContextStore.Changed -= OnContextStoreChanged;
+        FeedHub.Changed -= OnFeedHubChanged;
         _picturesRefreshRunner?.Dispose();
     }
 }

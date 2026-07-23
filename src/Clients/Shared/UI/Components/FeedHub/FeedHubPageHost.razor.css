@@ -1,0 +1,51 @@
+/* Keep mounted hub pages laid out while parked.
+   Avoid display:none / height:0 (zeros Embla). Avoid leaving a
+   visibility:visible child under a hidden host (children can still paint). */
+
+.feed-hub-host {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.feed-hub-host--active {
+    position: relative;
+    flex: 1;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+}
+
+.feed-hub-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Carousel loop-back (and similar) set visibility:visible on themselves; force
+   them hidden while the hub page is parked so they cannot paint or steal focus. */
+.feed-hub-page:not(.feed-hub-page--active),
+.feed-hub-page:not(.feed-hub-page--active) * {
+    visibility: hidden !important;
+}
+
+.feed-hub-page--active {
+    position: relative;
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 1;
+}

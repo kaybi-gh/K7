@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.VideoPlayerSettings.Commands.DeleteUserVideoPlayerSettings;
+namespace K7.Server.Application.Features.VideoPlayerSettings.Commands.DeleteUserVideoPlayerSettings;
 
 public class DeleteUserVideoPlayerSettingsCommandValidator : AbstractValidator<DeleteUserVideoPlayerSettingsCommand>
 {

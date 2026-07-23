@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.UploadMediaPicture;
+namespace K7.Server.Application.Features.Medias.Commands.UploadMediaPicture;
 
 public class UploadMediaPictureCommandValidator : AbstractValidator<UploadMediaPictureCommand>
 {

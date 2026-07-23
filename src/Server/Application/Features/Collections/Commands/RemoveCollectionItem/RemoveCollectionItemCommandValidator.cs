@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionItem;
+namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionItem;
 
 public class RemoveCollectionItemCommandValidator : AbstractValidator<RemoveCollectionItemCommand>
 {

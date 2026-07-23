@@ -1,0 +1,33 @@
+@implements IDisposable
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.UI.Pages
+@inject IFeedHubHostService FeedHub
+@inject NavigationManager Navigation
+
+@if (FeedHub.IsEnabled)
+{
+    <div class="feed-hub-host @(FeedHub.IsHubRouteActive ? "feed-hub-host--active" : null)">
+        @foreach (var key in FeedHub.MountedKeys)
+        {
+            var isActive = FeedHub.IsHubRouteActive && FeedHub.ActiveKey == key;
+            <div @key="key"
+                 @attributes="GetInactivePageAttributes(isActive)"
+                 class="feed-hub-page @(isActive ? "feed-hub-page--active" : null)"
+                 aria-hidden="@(!isActive ? "true" : "false")">
+                @switch (key.Kind)
+                {
+                    case FeedHubKind.Home:
+                        <HomeView />
+                        break;
+                    case FeedHubKind.LibraryGroup when key.GroupId is { } libraryGroupId:
+                        <LibraryGroupView Id="@libraryGroupId.ToString()" />
+                        break;
+                    case FeedHubKind.ExploreGroup when key.GroupId is { } exploreGroupId:
+                        <ExploreFeedHubView GroupId="exploreGroupId" />
+                        break;
+                }
+            </div>
+        }
+    </div>
+}

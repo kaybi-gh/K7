@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Playlists.Commands.AddPlaylistItem;
+namespace K7.Server.Application.Features.Playlists.Commands.AddPlaylistItem;
 
 public class AddPlaylistItemCommandValidator : AbstractValidator<AddPlaylistItemCommand>
 {

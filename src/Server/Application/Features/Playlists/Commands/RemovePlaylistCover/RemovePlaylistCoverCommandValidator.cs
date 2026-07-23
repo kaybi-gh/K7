@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Playlists.Commands.RemovePlaylistCover;
+namespace K7.Server.Application.Features.Playlists.Commands.RemovePlaylistCover;
 
 public class RemovePlaylistCoverCommandValidator : AbstractValidator<RemovePlaylistCoverCommand>
 {

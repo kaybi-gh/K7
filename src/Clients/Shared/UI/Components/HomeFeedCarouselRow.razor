@@ -16,8 +16,9 @@ else if (_items.Count > 0)
     <Carousel Title="@Title">
         @foreach (var item in _items)
         {
-            <CarouselItem @key="item.Id">
+            <CarouselItem @key="item.Id" ItemId="@GetCardElementId(item.Id)">
                 <MediaCard Model="@item"
+                           ElementId="@GetCardElementId(item.Id)"
                            Variant="@GetVariant(item)"
                            Href="@GetHref(item)"
                            OverlayEnabled="true"
@@ -30,7 +31,7 @@ else if (_items.Count > 0)
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
                            OnExcludeForOthers="() => ExcludeForOthers(item)"
                            OnWatchStateChanged="RefreshAfterWatchStateChangeAsync"
-                           OnFocused="() => TvFocus?.OnItemFocused(item)" />
+                           OnFocused="() => OnCardFocused(item)" />
             </CarouselItem>
         }
     </Carousel>

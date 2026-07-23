@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 
 public class CreateBackgroundTaskCommandValidator : AbstractValidator<CreateBackgroundTaskCommand>
 {

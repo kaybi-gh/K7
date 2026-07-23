@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryPaths;
+namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryPaths;
 
 public class IndexLibraryPathsCommandValidator : AbstractValidator<IndexLibraryPathsCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UpdateSelfLibraryExclusions;
+namespace K7.Server.Application.Features.Users.Commands.UpdateSelfLibraryExclusions;
 
 public class UpdateSelfLibraryExclusionsCommandValidator : AbstractValidator<UpdateSelfLibraryExclusionsCommand>
 {

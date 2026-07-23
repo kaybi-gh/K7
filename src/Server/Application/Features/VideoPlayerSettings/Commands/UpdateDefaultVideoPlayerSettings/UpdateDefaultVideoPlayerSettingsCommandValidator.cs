@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.VideoPlayerSettings.Commands.UpdateDefaultVideoPlayerSettings;
+namespace K7.Server.Application.Features.VideoPlayerSettings.Commands.UpdateDefaultVideoPlayerSettings;
 
 public class UpdateDefaultVideoPlayerSettingsCommandValidator : AbstractValidator<UpdateDefaultVideoPlayerSettingsCommand>
 {

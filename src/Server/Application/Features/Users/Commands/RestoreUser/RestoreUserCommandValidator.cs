@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.RestoreUser;
+namespace K7.Server.Application.Features.Users.Commands.RestoreUser;
 
 public class RestoreUserCommandValidator : AbstractValidator<RestoreUserCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.DiscoverPeerLibraries;
+namespace K7.Server.Application.Features.Federation.Commands.DiscoverPeerLibraries;
 
 public class DiscoverPeerLibrariesCommandValidator : AbstractValidator<DiscoverPeerLibrariesCommand>
 {

@@ -18,7 +18,7 @@
 }
 else
 {
-    <div class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocused">
+    <div id="@ElementId" class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocused">
         <div class="media-card-container"
              @ref="_longPressContainerRef"
              data-longpress="@(LongPressEnabled ? "true" : null)"
@@ -33,6 +33,8 @@ else
             {
             <a class="media-card-link focusable"
                href="@Href"
+               @onpointerdown="OnLinkPointerDown"
+               @onpointermove="OnLinkPointerMove"
                @onclick="OnLinkClick"
                @onclick:preventDefault="@ShouldPreventLinkActivation"
                @onkeydown="OnKeyDown"

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SyncPlay.Commands.UpdateSyncPlayPreferences;
+namespace K7.Server.Application.Features.SyncPlay.Commands.UpdateSyncPlayPreferences;
 
 public class UpdateSyncPlayPreferencesCommandValidator : AbstractValidator<UpdateSyncPlayPreferencesCommand>
 {

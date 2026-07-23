@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Playlists.Commands.RemovePlaylistItem;
+namespace K7.Server.Application.Features.Playlists.Commands.RemovePlaylistItem;
 
 public class RemovePlaylistItemCommandValidator : AbstractValidator<RemovePlaylistItemCommand>
 {

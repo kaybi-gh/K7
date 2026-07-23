@@ -110,7 +110,7 @@
                 }
                 else if (TableHeaderContent is not null && TableRowTemplate is not null)
                 {
-                    <div class="browse-view-table">
+                    <div class="browse-view-table" @ref="_tableScrollRef">
                         <table class="browse-view-table-el">
                             @if (TableColgroupContent is not null)
                             {
@@ -126,7 +126,7 @@
                             <tbody>
                                 <Virtualize TItem="BrowseViewTableRowContext<TItem>" Items="_tableRows" Context="row" ItemSize="48" OverscanCount="OverscanCount"
                                             SpacerElement="tr">
-                                    <tr class="browse-view-table-row focusable @(row.IsAlternate ? "browse-view-table-row--alt" : "")">
+                                    <tr class="browse-view-table-row focusable @(row.IsAlternate ? "browse-view-table-row--alt" : "")" tabindex="0">
                                         @TableRowTemplate(row)
                                     </tr>
                                 </Virtualize>

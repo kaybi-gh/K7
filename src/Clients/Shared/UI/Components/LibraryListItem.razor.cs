@@ -12,6 +12,8 @@ public partial class LibraryListItem
 
     [Parameter, EditorRequired] public LiteMediaDto Item { get; set; } = default!;
     [Parameter] public string? Href { get; set; }
+    [Parameter] public string? ElementId { get; set; }
+    [Parameter] public EventCallback OnFocused { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
 
     private LiteMediaThumbnailHelper.ThumbShape ThumbShape => LiteMediaThumbnailHelper.GetThumbShape(Item);

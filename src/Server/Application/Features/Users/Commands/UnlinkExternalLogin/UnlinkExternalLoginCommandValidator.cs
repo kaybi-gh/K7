@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UnlinkExternalLogin;
+namespace K7.Server.Application.Features.Users.Commands.UnlinkExternalLogin;
 
 public class UnlinkExternalLoginCommandValidator : AbstractValidator<UnlinkExternalLoginCommand>
 {

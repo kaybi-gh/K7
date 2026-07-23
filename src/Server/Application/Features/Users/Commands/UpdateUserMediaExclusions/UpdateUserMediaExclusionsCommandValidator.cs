@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UpdateUserMediaExclusions;
+namespace K7.Server.Application.Features.Users.Commands.UpdateUserMediaExclusions;
 
 public class UpdateUserMediaExclusionsCommandValidator : AbstractValidator<UpdateUserMediaExclusionsCommand>
 {

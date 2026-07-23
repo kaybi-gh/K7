@@ -16,6 +16,31 @@ export function init(rootElement) {
 
     rootElement.__embla = embla;
 
+    // Embla 8 auto click-guard is unreliable with Blazor <a href> handlers.
+    // Block the click in capture when the pointer session scrolled the carousel.
+    var pointerActive = false;
+    var suppressClick = false;
+    embla.on('pointerDown', function () {
+        pointerActive = true;
+        suppressClick = false;
+    });
+    embla.on('scroll', function () {
+        if (pointerActive)
+            suppressClick = true;
+    });
+    embla.on('pointerUp', function () {
+        pointerActive = false;
+    });
+    viewportNode.addEventListener('click', function (e) {
+        if (!suppressClick)
+            return;
+
+        suppressClick = false;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    }, true);
+
     var prevBtn = rootElement.querySelector('[data-carousel-prev]');
     var nextBtn = rootElement.querySelector('[data-carousel-next]');
     var loopBackBtn = rootElement.querySelector('[data-carousel-loop-back]');

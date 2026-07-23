@@ -1,8 +1,3 @@
 @page "/"
-@inject ITvHubHostService TvHubHost
-@inject NavigationManager Navigation
 
-@if (!TvHubHost.ShouldDelegateRoute(Navigation.Uri))
-{
-    <HomeView />
-}
+@* Content is hosted by FeedHubPageHost (keep-alive across media navigation). *@

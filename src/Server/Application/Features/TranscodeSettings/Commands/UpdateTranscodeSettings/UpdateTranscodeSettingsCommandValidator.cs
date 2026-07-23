@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.TranscodeSettings.Commands.UpdateTranscodeSettings;
+namespace K7.Server.Application.Features.TranscodeSettings.Commands.UpdateTranscodeSettings;
 
 public class UpdateTranscodeSettingsCommandValidator : AbstractValidator<UpdateTranscodeSettingsCommand>
 {

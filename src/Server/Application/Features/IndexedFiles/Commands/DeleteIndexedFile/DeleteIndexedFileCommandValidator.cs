@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
+namespace K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 
 public class DeleteIndexedFileCommandValidator : AbstractValidator<DeleteIndexedFileCommand>
 {

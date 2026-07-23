@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Devices.Commands.DeleteDevice;
+namespace K7.Server.Application.Features.Devices.Commands.DeleteDevice;
 
 public class DeleteDeviceCommandValidator : AbstractValidator<DeleteDeviceCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UpdateUserPin;
+namespace K7.Server.Application.Features.Users.Commands.UpdateUserPin;
 
 public class UpdateUserPinCommandValidator : AbstractValidator<UpdateUserPinCommand>
 {

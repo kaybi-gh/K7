@@ -92,8 +92,9 @@ builder.Services.AddSingleton<IDownloadManager, MockDownloadManager>();
 // Concrete services whose dependencies are satisfied by the mocks above
 builder.Services.AddSingleton<MediaCacheStore>();
 builder.Services.AddSingleton<IHomeNavigationState, HomeNavigationState>();
+builder.Services.AddSingleton<IHubFocusNavigationState, HubFocusNavigationState>();
 builder.Services.AddSingleton<IHomeFeedStore, HomeFeedStore>();
-builder.Services.AddSingleton<ITvHubHostService, TvHubHostService>();
+builder.Services.AddSingleton<IFeedHubHostService, FeedHubHostService>();
 builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
 builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
 builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();

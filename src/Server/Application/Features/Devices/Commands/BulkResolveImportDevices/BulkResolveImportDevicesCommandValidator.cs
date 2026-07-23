@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Devices.Commands.BulkResolveImportDevices;
+namespace K7.Server.Application.Features.Devices.Commands.BulkResolveImportDevices;
 
 public class BulkResolveImportDevicesCommandValidator : AbstractValidator<BulkResolveImportDevicesCommand>
 {

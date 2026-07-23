@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.GenerateEpisodeStillFromSource;
+namespace K7.Server.Application.Features.Medias.Commands.GenerateEpisodeStillFromSource;
 
 public class GenerateEpisodeStillFromSourceCommandValidator : AbstractValidator<GenerateEpisodeStillFromSourceCommand>
 {

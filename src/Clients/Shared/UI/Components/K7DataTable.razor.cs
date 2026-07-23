@@ -12,6 +12,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class K7DataTable<TItem> : IAsyncDisposable
 {
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private ILogger<K7DataTable<TItem>> Logger { get; set; } = default!;
     [Parameter] public IList<TItem>? Items { get; set; }
     [Parameter] public Func<K7DataTableState<TItem>, CancellationToken, Task<K7DataTableResult<TItem>>>? ServerData { get; set; }
@@ -39,7 +40,11 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private bool _columnPickerOpen;
     private bool _columnPickerLayerPushed;
     private ElementReference _columnPickerDropdown;
+    private ElementReference _scrollRef;
     private DotNetObjectReference<LayerCloseCallback>? _columnPickerCloseRef;
+    private IJSObjectReference? _browseViewModule;
+    private bool _keyNavInitialized;
+    private bool _disposed;
     private bool _needsRender = true;
     private bool _pendingVirtualizeRefresh;
     private string? _prevSortKey;
@@ -97,6 +102,14 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         {
             _pendingVirtualizeRefresh = false;
             await _virtualizeRef.RefreshDataAsync();
+        }
+
+        if (!_disposed && !_keyNavInitialized && HasContent())
+        {
+            _browseViewModule ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+            await _browseViewModule.InvokeVoidAsync("initTableKeyNav", _scrollRef, RowHeight);
+            _keyNavInitialized = true;
         }
 
         if (!_columnPickerOpen || ShowToolbar || _columnPickerLayerPushed)
@@ -178,13 +191,32 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+
         if (_columnPickerOpen && !ShowToolbar)
         {
             await CloseColumnPickerLayerAsync();
         }
 
         _columnPickerCloseRef?.Dispose();
+
+        if (_browseViewModule is not null)
+        {
+            try
+            {
+                if (_keyNavInitialized)
+                    await _browseViewModule.InvokeVoidAsync("disposeTableKeyNav", _scrollRef);
+
+                await _browseViewModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
     }
+
+    private bool HasContent() =>
+        Items is { Count: > 0 } || ServerData is not null;
 
     internal void AddColumn(K7DataColumn<TItem> column)
     {

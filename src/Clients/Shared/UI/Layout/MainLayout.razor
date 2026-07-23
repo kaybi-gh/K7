@@ -12,8 +12,9 @@
 @inject K7.Clients.Shared.Services.SyncPlayPlaybackHandler SyncPlayHandler
 @inject IK7ServerService K7ServerService
 @inject IServerInfoService ServerInfoService
+@using K7.Clients.Shared.UI.Components.FeedHub
 @inject IStringLocalizer<MainLayout> L
-@using K7.Clients.Shared.UI.Components.TvHub
+
 
 <div class="app-shell">
     @if (_showOverlay)
@@ -35,8 +36,8 @@
         <FullScreenMusicPlayer />
         <SyncPlayListener />
         <div class="page-viewport">
-            <TvHubPageHost />
-            <div class="page-route @(TvHubHost.IsEnabled && TvHubHost.IsHubRouteActive ? "page-route--hub-delegated" : null)">
+            <FeedHubPageHost />
+            <div class="page-route @(FeedHub.IsEnabled && FeedHub.IsHubRouteActive ? "page-route--hub-delegated" : null)">
                 <K7ErrorBoundary @ref="_errorBoundary">
                     <ChildContent>
                         @Body

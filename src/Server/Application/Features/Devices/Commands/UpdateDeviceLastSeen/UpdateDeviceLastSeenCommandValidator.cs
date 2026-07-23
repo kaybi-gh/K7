@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
+namespace K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
 
 public class UpdateDeviceLastSeenCommandValidator : AbstractValidator<UpdateDeviceLastSeenCommand>
 {

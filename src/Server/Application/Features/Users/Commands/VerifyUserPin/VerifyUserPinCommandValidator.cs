@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.VerifyUserPin;
+namespace K7.Server.Application.Features.Users.Commands.VerifyUserPin;
 
 public class VerifyUserPinCommandValidator : AbstractValidator<VerifyUserPinCommand>
 {

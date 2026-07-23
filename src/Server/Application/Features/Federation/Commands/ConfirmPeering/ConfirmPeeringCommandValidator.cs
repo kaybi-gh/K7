@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.ConfirmPeering;
+namespace K7.Server.Application.Features.Federation.Commands.ConfirmPeering;
 
 public class ConfirmPeeringCommandValidator : AbstractValidator<ConfirmPeeringCommand>
 {

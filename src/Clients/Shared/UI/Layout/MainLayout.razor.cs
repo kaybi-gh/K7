@@ -21,7 +21,7 @@ public partial class MainLayout : IDisposable
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IConnectivityService Connectivity { get; set; } = default!;
-    [Inject] private ITvHubHostService TvHubHost { get; set; } = default!;
+    [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
     [Inject] private ILogger<MainLayout> Logger { get; set; } = default!;
     [Inject] private SoftKeyboardJsBridge SoftKeyboardBridge { get; set; } = default!;
     [Inject] private IWindowsStreamFetchJsBridge WindowsStreamFetchBridge { get; set; } = default!;
@@ -97,12 +97,18 @@ public partial class MainLayout : IDisposable
             Logger.LogError(ex, "Hub startup failed");
         }
 
-        var isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-        TvHubHost.SetEnabled(isTv);
-        TvHubHost.Changed += OnTvHubHostChanged;
+        var hubDeviceType = await DeviceService.GetDeviceTypeAsync();
+        FeedHub.SetEnabled(true);
+        // Bound RAM on phones/tablets: keep Home forever, at most 3 Explore/library-group pages.
+        if (hubDeviceType is DeviceType.Phone or DeviceType.Tablet)
+            FeedHub.SetMountLimit(3);
+        else
+            FeedHub.SetMountLimit(null);
+
+        FeedHub.Changed += OnFeedHubChanged;
     }
 
-    private void OnTvHubHostChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnFeedHubChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -198,7 +204,7 @@ public partial class MainLayout : IDisposable
     {
         ThemeService.ThemeOnChange -= OnThemeChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
-        TvHubHost.Changed -= OnTvHubHostChanged;
+        FeedHub.Changed -= OnFeedHubChanged;
         _overlayTimer?.Dispose();
         _selfRef?.Dispose();
         SoftKeyboardBridge.Dispose();

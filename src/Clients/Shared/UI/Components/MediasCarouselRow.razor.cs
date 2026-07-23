@@ -35,6 +35,7 @@ public partial class MediasCarouselRow : IDisposable
     [Parameter] public bool ProgressEnabled { get; set; }
 
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
+    [CascadingParameter] private ExploreFocusNavigationContext? ExploreFocus { get; set; }
 
     private List<LiteMediaDto> _items = [];
     private List<CarouselCardItem> _cardItems = [];
@@ -140,6 +141,15 @@ public partial class MediasCarouselRow : IDisposable
         LiteSerieEpisodeDto ep => $"/series/{ep.SerieId}/seasons/{ep.SeasonNumber}#ep-{ep.EpisodeNumber}",
         _ => $"/movies/{item.Id}"
     };
+
+    private string? GetCardElementId(Guid mediaId) =>
+        ExploreFocus?.GetCardElementId(mediaId.ToString());
+
+    private void OnCardFocused(MediaCardViewModel item)
+    {
+        ExploreFocus?.SaveMediaId(item.Id);
+        TvFocus?.OnItemFocused(item);
+    }
 
     private async Task ExcludeForSelf(MediaCardViewModel item)
     {

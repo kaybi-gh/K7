@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.ServerSettings.Commands.UpdateServerFeatureFlags;
+namespace K7.Server.Application.Features.ServerSettings.Commands.UpdateServerFeatureFlags;
 
 public class UpdateServerFeatureFlagsCommandValidator : AbstractValidator<UpdateServerFeatureFlagsCommand>
 {

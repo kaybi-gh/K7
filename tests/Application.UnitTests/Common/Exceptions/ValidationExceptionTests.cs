@@ -1,4 +1,4 @@
-﻿using FluentValidation.Results;
+using FluentValidation.Results;
 using K7.Server.Application.Common.Exceptions;
 
 namespace K7.Server.Application.UnitTests.Common.Exceptions;

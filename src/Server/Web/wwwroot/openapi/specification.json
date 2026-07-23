@@ -12905,6 +12905,7 @@
           "missingHlsSegmentsCount",
           "missingChaptersCount",
           "missingThemeSongCount",
+          "missingIntroOutroCount",
           "missingAudioAnalysisCount",
           "inaccessiblePathCount",
           "pendingBackgroundTaskCount",
@@ -13019,6 +13020,14 @@
             "format": "int32"
           },
           "missingThemeSongCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingIntroOutroCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

@@ -33,7 +33,12 @@
                 </div>
             </ItemContent>
             <Placeholder>
-                <div class="k7-virtual-list-placeholder" style="@PlaceholderStyle" aria-hidden="true"></div>
+                <div class="k7-virtual-list-placeholder" style="@PlaceholderStyle">
+                    <div class="k7-virtual-list-placeholder-focus focusable"
+                         tabindex="0"
+                         role="presentation"
+                         aria-hidden="true"></div>
+                </div>
             </Placeholder>
         </Virtualize>
     }

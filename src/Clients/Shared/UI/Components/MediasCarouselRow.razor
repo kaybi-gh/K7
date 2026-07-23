@@ -18,8 +18,9 @@ else if (_items.Count > 0)
     <Carousel Title="@Title">
         @foreach (var item in _cardItems)
         {
-            <CarouselItem @key="item.Id">
+            <CarouselItem @key="item.Id" ItemId="@GetCardElementId(item.Id)">
                 <MediaCard Model="@item.Model"
+                           ElementId="@GetCardElementId(item.Id)"
                            Variant="@item.Variant"
                            Href="@item.Href"
                            OverlayEnabled="true"
@@ -31,7 +32,7 @@ else if (_items.Count > 0)
                            IsAdmin="_isAdmin"
                            OnExcludeForSelf="() => ExcludeForSelf(item.Model)"
                            OnExcludeForOthers="() => ExcludeForOthers(item.Model)"
-                           OnFocused="() => TvFocus?.OnItemFocused(item.Model)" />
+                           OnFocused="() => OnCardFocused(item.Model)" />
             </CarouselItem>
         }
     </Carousel>

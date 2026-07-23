@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.ReceivePeerRequest;
+namespace K7.Server.Application.Features.Federation.Commands.ReceivePeerRequest;
 
 public class ReceivePeerRequestCommandValidator : AbstractValidator<ReceivePeerRequestCommand>
 {

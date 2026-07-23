@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.CreateVirtualUser;
+namespace K7.Server.Application.Features.Federation.Commands.CreateVirtualUser;
 
 public class CreateVirtualUserCommandValidator : AbstractValidator<CreateVirtualUserCommand>
 {

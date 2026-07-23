@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.LibraryGroups.Commands.UpdateLibraryGroup;
+namespace K7.Server.Application.Features.LibraryGroups.Commands.UpdateLibraryGroup;
 
 public class UpdateLibraryGroupCommandValidator : AbstractValidator<UpdateLibraryGroupCommand>
 {

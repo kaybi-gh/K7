@@ -261,6 +261,13 @@ var SpatialNav = (function () {
 
     // Focusable Discovery
 
+    function isInsideInactiveFeedHub(el) {
+        if (!el || !el.closest) return false;
+        if (el.closest('[inert]')) return true;
+        var page = el.closest('.feed-hub-page');
+        return !!(page && !page.classList.contains('feed-hub-page--active'));
+    }
+
     function isVisibleInCarouselViewport(el) {
         var viewport = el.closest('[data-carousel-viewport]');
         if (!viewport) return true;
@@ -271,6 +278,7 @@ var SpatialNav = (function () {
     }
 
     function isElementVisible(el) {
+        if (isInsideInactiveFeedHub(el)) return false;
         var style = window.getComputedStyle(el);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
         if (el.offsetParent !== null) return true;
@@ -281,7 +289,10 @@ var SpatialNav = (function () {
     function getFocusables(container) {
         return Array.from(container.querySelectorAll(FOCUSABLE)).filter(function (el) {
             if (isInClosedSidebarNavGroup(el)) return false;
-            if (el.closest('[data-carousel-item]')) return isVisibleInCarouselViewport(el);
+            if (isInsideInactiveFeedHub(el)) return false;
+            if (el.closest('[data-carousel-item]')) {
+                return isElementVisible(el) && isVisibleInCarouselViewport(el);
+            }
             return isElementVisible(el);
         });
     }
@@ -1897,6 +1908,7 @@ var SpatialNav = (function () {
             // Global filter: when a layer is open, restrict navigation to it.
             SpatialNavigation.set({
                 navigableFilter: function (el) {
+                    if (isInsideInactiveFeedHub(el)) return false;
                     if (window.getComputedStyle(el).visibility === 'hidden') return false;
                     if (isInClosedSidebarNavGroup(el)) return false;
                     var layer = peekLayer();
@@ -3021,11 +3033,11 @@ K7.scrollToTop = function (element) {
     if (element) element.scrollTop = 0;
 };
 
-K7.focusById = function (id) {
+K7.focusById = function (id, preventScroll) {
     var el = document.getElementById(id);
     if (!el) return;
     var target = el.querySelector('.focusable') || el;
-    target.focus({ preventScroll: false });
+    target.focus({ preventScroll: !!preventScroll });
 };
 
 K7.RatingStars = {

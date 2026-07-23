@@ -64,7 +64,7 @@
         </div>
     }
 
-    <div class="k7-data-table-scroll" style="@ScrollContainerStyle">
+    <div class="k7-data-table-scroll" style="@ScrollContainerStyle" @ref="_scrollRef">
         <table class="k7-data-table-el" role="grid">
             <thead>
                 <tr>
@@ -99,7 +99,7 @@
                 {
                     <Virtualize TItem="IndexedRow" Items="_indexedItems" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
-                        <tr @key="row.Item" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                        <tr @key="row.Index" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                             @onclick="() => OnRowClicked(row.Item)"
                             @onkeydown="e => OnRowKeyDown(e, row.Item)">
                             @foreach (var col in _visibleColumns)
@@ -117,7 +117,7 @@
                     <Virtualize TItem="IndexedRow" ItemsProvider="ProvideItemsAsync" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr @key="row.Item" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                            <tr @key="row.Index" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                                 @onclick="() => OnRowClicked(row.Item)"
                                 @onkeydown="e => OnRowKeyDown(e, row.Item)">
                                 @foreach (var col in _visibleColumns)
@@ -130,7 +130,7 @@
                             </tr>
                         </ItemContent>
                         <Placeholder>
-                            <tr class="k7-data-table-placeholder" style="@RowStyle" aria-hidden="true">
+                            <tr class="k7-data-table-placeholder focusable" style="@RowStyle" tabindex="0" role="row" aria-hidden="true">
                                 @foreach (var col in _visibleColumns)
                                 {
                                     <td @key="col" data-mobile-hide="@(!col.VisibleOnMobile)"></td>

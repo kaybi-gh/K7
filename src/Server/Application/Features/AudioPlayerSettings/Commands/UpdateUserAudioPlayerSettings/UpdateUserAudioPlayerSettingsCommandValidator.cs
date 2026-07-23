@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.AudioPlayerSettings.Commands.UpdateUserAudioPlayerSettings;
+namespace K7.Server.Application.Features.AudioPlayerSettings.Commands.UpdateUserAudioPlayerSettings;
 
 public class UpdateUserAudioPlayerSettingsCommandValidator : AbstractValidator<UpdateUserAudioPlayerSettingsCommand>
 {

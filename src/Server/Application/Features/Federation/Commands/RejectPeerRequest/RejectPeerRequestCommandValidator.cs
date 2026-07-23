@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.RejectPeerRequest;
+namespace K7.Server.Application.Features.Federation.Commands.RejectPeerRequest;
 
 public class RejectPeerRequestCommandValidator : AbstractValidator<RejectPeerRequestCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
+namespace K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 
 public class AnalyzeMusicTrackAudioCommandValidator : AbstractValidator<AnalyzeMusicTrackAudioCommand>
 {

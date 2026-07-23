@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Notifications.Commands.TestNotificationRule;
+namespace K7.Server.Application.Features.Notifications.Commands.TestNotificationRule;
 
 public class TestNotificationRuleCommandValidator : AbstractValidator<TestNotificationRuleCommand>
 {

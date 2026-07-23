@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
+namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 
 public class ComputeHlsSegmentsCommandValidator : AbstractValidator<ComputeHlsSegmentsCommand>
 {

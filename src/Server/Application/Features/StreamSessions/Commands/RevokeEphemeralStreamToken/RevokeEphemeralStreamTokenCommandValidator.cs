@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.StreamSessions.Commands.RevokeEphemeralStreamToken;
+namespace K7.Server.Application.Features.StreamSessions.Commands.RevokeEphemeralStreamToken;
 
 public class RevokeEphemeralStreamTokenCommandValidator : AbstractValidator<RevokeEphemeralStreamTokenCommand>
 {

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.CreateRemoteStreamSession;
+namespace K7.Server.Application.Features.Federation.Commands.CreateRemoteStreamSession;
 
 public class CreateRemoteStreamSessionCommandValidator : AbstractValidator<CreateRemoteStreamSessionCommand>
 {

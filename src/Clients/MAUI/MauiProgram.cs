@@ -147,8 +147,9 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));
         builder.Services.AddSingleton<IHomeNavigationState, HomeNavigationState>();
+        builder.Services.AddSingleton<IHubFocusNavigationState, HubFocusNavigationState>();
         builder.Services.AddSingleton<IHomeFeedStore, HomeFeedStore>();
-        builder.Services.AddSingleton<ITvHubHostService, TvHubHostService>();
+        builder.Services.AddSingleton<IFeedHubHostService, FeedHubHostService>();
         builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
         builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
         builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();

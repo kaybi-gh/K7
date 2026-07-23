@@ -17,26 +17,13 @@ public partial class ExplorePage
     private LibraryGroupDto? _activeGroup;
     private bool _loading = true;
     private bool _showSocialDirectory;
-    private bool _isTv;
     private Guid? _loadedGroupId;
 
     private string PageTitleText => _activeGroup is not null
         ? $"{_activeGroup.Title} - {L["PageTitle"]}"
         : L["PageTitle"];
 
-    private string _libraryGroupPageClass => _isTv
-        ? "tv-feed-page"
-        : "explore-group-page page-scrollable";
-
-    private string? _libraryGroupInitialFocus => _isTv
-        ? "[data-carousel-item] a, [data-carousel-item] button"
-        : null;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-        await LoadAsync();
-    }
+    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     protected override async Task OnParametersSetAsync()
     {

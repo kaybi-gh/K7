@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.MusicIntelligence.Commands.UpdateMusicIntelligenceSettings;
+namespace K7.Server.Application.Features.MusicIntelligence.Commands.UpdateMusicIntelligenceSettings;
 
 public class UpdateMusicIntelligenceSettingsCommandValidator : AbstractValidator<UpdateMusicIntelligenceSettingsCommand>
 {

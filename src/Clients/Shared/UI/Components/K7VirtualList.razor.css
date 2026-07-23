@@ -25,9 +25,22 @@
 }
 
 .k7-virtual-list-placeholder {
-    pointer-events: none;
+    position: relative;
     background: transparent;
     border-radius: var(--radius-sm);
+}
+
+.k7-virtual-list-placeholder-focus {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    outline: none;
+}
+
+.k7-virtual-list-placeholder-focus:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 @media (max-width: 599.98px) {

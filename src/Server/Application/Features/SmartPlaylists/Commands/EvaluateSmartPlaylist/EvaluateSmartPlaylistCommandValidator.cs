@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SmartPlaylists.Commands.EvaluateSmartPlaylist;
+namespace K7.Server.Application.Features.SmartPlaylists.Commands.EvaluateSmartPlaylist;
 
 public class EvaluateSmartPlaylistCommandValidator : AbstractValidator<EvaluateSmartPlaylistCommand>
 {

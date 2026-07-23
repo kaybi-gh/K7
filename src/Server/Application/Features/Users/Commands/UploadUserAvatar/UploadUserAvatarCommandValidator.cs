@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Users.Commands.UploadUserAvatar;
+namespace K7.Server.Application.Features.Users.Commands.UploadUserAvatar;
 
 public class UploadUserAvatarCommandValidator : AbstractValidator<UploadUserAvatarCommand>
 {

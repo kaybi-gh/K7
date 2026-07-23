@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.DeleteDefaultAudioPlaybackPolicySettings;
+namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.DeleteDefaultAudioPlaybackPolicySettings;
 
 public class DeleteDefaultAudioPlaybackPolicySettingsCommandValidator : AbstractValidator<DeleteDefaultAudioPlaybackPolicySettingsCommand>
 {

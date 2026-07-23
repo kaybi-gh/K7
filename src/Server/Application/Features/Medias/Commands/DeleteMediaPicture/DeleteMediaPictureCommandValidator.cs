@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.DeleteMediaPicture;
+namespace K7.Server.Application.Features.Medias.Commands.DeleteMediaPicture;
 
 public class DeleteMediaPictureCommandValidator : AbstractValidator<DeleteMediaPictureCommand>
 {

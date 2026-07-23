@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfilePreferences;
+namespace K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfilePreferences;
 
 public class UpdateSharedProfilePreferencesCommandValidator : AbstractValidator<UpdateSharedProfilePreferencesCommand>
 {

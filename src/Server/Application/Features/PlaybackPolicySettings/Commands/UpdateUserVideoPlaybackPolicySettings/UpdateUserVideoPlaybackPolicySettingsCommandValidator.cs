@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.UpdateUserVideoPlaybackPolicySettings;
+namespace K7.Server.Application.Features.PlaybackPolicySettings.Commands.UpdateUserVideoPlaybackPolicySettings;
 
 public class UpdateUserVideoPlaybackPolicySettingsCommandValidator : AbstractValidator<UpdateUserVideoPlaybackPolicySettingsCommand>
 {

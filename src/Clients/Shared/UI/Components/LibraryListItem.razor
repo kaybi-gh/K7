@@ -2,7 +2,7 @@
 @using K7.Shared.Dtos.Entities.Medias
 
 <LibraryBrowseListRow Actions="Actions">
-    <a href="@Href" class="@RootClass">
+    <a id="@ElementId" href="@Href" class="@RootClass" @onfocusin="OnFocused">
         @ThumbnailContent
         <div class="library-list-item-info">
             <p class="library-list-item-title">@PrimaryTitle</p>

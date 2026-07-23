@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.IndexedFiles.Commands.ReidentifyIndexedFile;
+namespace K7.Server.Application.Features.IndexedFiles.Commands.ReidentifyIndexedFile;
 
 public class ReidentifyIndexedFileCommandValidator : AbstractValidator<ReidentifyIndexedFileCommand>
 {

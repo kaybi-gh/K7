@@ -79,9 +79,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     display: none;
 }
 
-.page-viewport > .tv-hub-host--active {
+.page-viewport > .feed-hub-host--active {
     flex: 1;
     min-height: 0;
+    position: relative;
 }
 
 

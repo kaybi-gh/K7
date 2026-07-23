@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Diagnostics.Commands.FixDiagnosticItems;
+namespace K7.Server.Application.Features.Diagnostics.Commands.FixDiagnosticItems;
 
 public class FixDiagnosticItemsCommandValidator : AbstractValidator<FixDiagnosticItemsCommand>
 {

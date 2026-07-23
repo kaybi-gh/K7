@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.TestPeer;
+namespace K7.Server.Application.Features.Federation.Commands.TestPeer;
 
 public class TestPeerCommandValidator : AbstractValidator<TestPeerCommand>
 {

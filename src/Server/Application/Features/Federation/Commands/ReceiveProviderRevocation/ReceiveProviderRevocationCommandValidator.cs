@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Federation.Commands.ReceiveProviderRevocation;
+namespace K7.Server.Application.Features.Federation.Commands.ReceiveProviderRevocation;
 
 public class ReceiveProviderRevocationCommandValidator : AbstractValidator<ReceiveProviderRevocationCommand>
 {

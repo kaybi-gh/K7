@@ -1,11 +1,6 @@
 @page "/library-groups/{id}"
-@inject ITvHubHostService TvHubHost
-@inject NavigationManager Navigation
 
-@if (!TvHubHost.ShouldDelegateRoute(Navigation.Uri))
-{
-    <LibraryGroupView Id="@Id" />
-}
+@* Content is hosted by FeedHubPageHost (keep-alive across media navigation). *@
 
 @code {
     [Parameter] public required string Id { get; set; }

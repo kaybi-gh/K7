@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Persons.Commands.QueueRefreshPersonMetadata;
+namespace K7.Server.Application.Features.Persons.Commands.QueueRefreshPersonMetadata;
 
 public class QueueRefreshPersonMetadataCommandValidator : AbstractValidator<QueueRefreshPersonMetadataCommand>
 {

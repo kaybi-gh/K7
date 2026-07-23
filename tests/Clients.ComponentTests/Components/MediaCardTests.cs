@@ -76,6 +76,27 @@ public class MediaCardTests
     }
 
     [Test]
+    public async Task OnLinkClick_ShouldInvokeOnFocused_WhenNavigating()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel();
+        var focused = false;
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.Href, "/movies/1")
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.OnFocused, EventCallback.Factory.Create(this, () => focused = true)));
+
+        // Act
+        await cut.Find(".media-card-link").ClickAsync(new MouseEventArgs());
+
+        // Assert
+        focused.Should().BeTrue();
+    }
+
+    [Test]
     public async Task OnKeyUp_ShouldNotNavigate_WhenStrayKeyUpArrivesAfterKeyboardLongPressMenuCloses()
     {
         // Arrange

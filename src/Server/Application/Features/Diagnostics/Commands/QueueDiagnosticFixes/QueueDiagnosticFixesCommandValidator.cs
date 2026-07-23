@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Diagnostics.Commands.QueueDiagnosticFixes;
+namespace K7.Server.Application.Features.Diagnostics.Commands.QueueDiagnosticFixes;
 
 public class QueueDiagnosticFixesCommandValidator : AbstractValidator<QueueDiagnosticFixesCommand>
 {

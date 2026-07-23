@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
+namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
 
 public class IndexLibraryFilesCommandValidator : AbstractValidator<IndexLibraryFilesCommand>
 {

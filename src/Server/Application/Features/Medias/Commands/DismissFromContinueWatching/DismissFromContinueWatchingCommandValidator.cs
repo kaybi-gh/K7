@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.DismissFromContinueWatching;
+namespace K7.Server.Application.Features.Medias.Commands.DismissFromContinueWatching;
 
 public class DismissFromContinueWatchingCommandValidator : AbstractValidator<DismissFromContinueWatchingCommand>
 {

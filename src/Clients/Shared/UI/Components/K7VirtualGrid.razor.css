@@ -10,14 +10,25 @@
     gap: var(--grid-gap);
 }
 
-.k7-virtual-grid-row--placeholder {
-    pointer-events: none;
-}
-
 .k7-virtual-grid-placeholder-cell {
     min-height: 0;
     border-radius: var(--radius-sm);
     background: var(--color-surface);
+    position: relative;
+    aspect-ratio: 2 / 3;
+}
+
+.k7-virtual-grid-placeholder-focus {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    outline: none;
+}
+
+.k7-virtual-grid-placeholder-focus:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 @media (max-width: 599.98px) {

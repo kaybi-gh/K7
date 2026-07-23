@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class K7VirtualList<TItem>
+public partial class K7VirtualList<TItem> : IAsyncDisposable
 {
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
@@ -18,8 +18,11 @@ public partial class K7VirtualList<TItem>
 
     private ElementReference _listRef;
     private Virtualize<IndexedListItem>? _virtualizeRef;
+    private IJSObjectReference? _module;
     private readonly Dictionary<string, ItemsProviderResult<TItem>> _itemsCache = new();
     private List<IndexedListItem>? _indexedItems;
+    private bool _keyNavInitialized;
+    private bool _disposed;
 
     private string PlaceholderStyle =>
         FormattableString.Invariant($"height: {ItemHeight}px; min-height: {ItemHeight}px");
@@ -29,6 +32,18 @@ public partial class K7VirtualList<TItem>
         _indexedItems = Items?
             .Select((item, index) => new IndexedListItem(item, index))
             .ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed || _keyNavInitialized || !HasContent())
+            return;
+
+        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+
+        await _module.InvokeVoidAsync("initListKeyNav", _listRef, ItemHeight);
+        _keyNavInitialized = true;
     }
 
     private async ValueTask<ItemsProviderResult<IndexedListItem>> ProvideIndexedItemsAsync(ItemsProviderRequest request)
@@ -92,10 +107,33 @@ public partial class K7VirtualList<TItem>
     public async Task ScrollToItemIndex(int itemIndex)
     {
         var scrollTop = itemIndex * ItemHeight;
-        var module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+        var module = _module ?? await JSRuntime.InvokeAsync<IJSObjectReference>(
             "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
         await module.InvokeVoidAsync("scrollTo", _listRef, scrollTop);
-        await module.DisposeAsync();
+        if (_module is null)
+            await module.DisposeAsync();
+    }
+
+    private bool HasContent() =>
+        Items is { Count: > 0 } || ItemsProvider is not null;
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+
+        if (_module is not null)
+        {
+            try
+            {
+                if (_keyNavInitialized)
+                    await _module.InvokeVoidAsync("disposeListKeyNav", _listRef);
+
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
     }
 
     private sealed record IndexedListItem(TItem Item, int Index)

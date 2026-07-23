@@ -24,6 +24,8 @@ public partial class HomeView : IAsyncDisposable
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
+    [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
+
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
@@ -33,6 +35,8 @@ public partial class HomeView : IAsyncDisposable
     private bool _emptyFeedRetried;
     private bool _homeRestoreLoadFailed;
     private IJSObjectReference? _homeRestoreModule;
+    private bool _hubHomeActive;
+    private bool _feedUpdatePending;
 
     private bool isLoading => FeedStore.IsLoading;
 
@@ -65,6 +69,8 @@ public partial class HomeView : IAsyncDisposable
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         FeedStore.Changed += OnFeedStoreChanged;
+        FeedHub.Changed += OnFeedHubChanged;
+        _hubHomeActive = IsHubHomeActive();
         await FeedStore.EnsureLoadedAsync();
 
         if (_isTv)
@@ -73,6 +79,58 @@ public partial class HomeView : IAsyncDisposable
                 _focusedItem = resolved.Item;
             else
                 _focusedItem = GetVisibleRows().Select(r => r.Items.FirstOrDefault()).FirstOrDefault(i => i is not null);
+        }
+    }
+
+    private bool IsHubHomeActive() =>
+        !FeedHub.IsEnabled
+        || (FeedHub.IsHubRouteActive && FeedHub.ActiveKey == FeedHubKey.Home);
+
+    private void OnFeedHubChanged()
+    {
+        var homeActive = IsHubHomeActive();
+        var becameActive = homeActive && !_hubHomeActive;
+        _hubHomeActive = homeActive;
+
+        if (!becameActive)
+            return;
+
+        InvokeAsync(OnHubHomeBecameActiveAsync).FireAndForget();
+    }
+
+    private async Task OnHubHomeBecameActiveAsync()
+    {
+        if (_feedUpdatePending)
+        {
+            _feedUpdatePending = false;
+            StateHasChanged();
+            await Task.Yield();
+        }
+
+        await RestoreLastFocusedCardAsync();
+    }
+
+    private async Task RestoreLastFocusedCardAsync()
+    {
+        if (NavigationState.SavedFocus is not { } saved || ResolveSavedFocus(saved) is not { } resolved)
+            return;
+
+        if (_isTv)
+        {
+            _focusedItem = resolved.Item;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        try
+        {
+            // preventScroll: keep Embla / page scroll exactly as parked by FeedHub.
+            await JSRuntime.InvokeVoidAsync("K7.focusById", GetHomeCardId(resolved.MediaId), true);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
         }
     }
 
@@ -94,6 +152,13 @@ public partial class HomeView : IAsyncDisposable
         if (isLoading || _isOffline || _focusRestored)
             return;
 
+        // Non-TV: FeedHub keep-alive preserves DOM (page + Embla). Do not call restore JS.
+        if (!_isTv)
+        {
+            _focusRestored = true;
+            return;
+        }
+
         if (_homeRestoreModule is null && !_homeRestoreLoadFailed)
         {
             try
@@ -112,27 +177,24 @@ public partial class HomeView : IAsyncDisposable
         if (_homeRestoreModule is null)
             return;
 
-        if (NavigationState.SavedFocus is { } saved)
+        if (NavigationState.SavedFocus is { } savedFocus)
         {
-            var resolved = ResolveSavedFocus(saved);
-            if (resolved is not null)
+            var resolvedFocus = ResolveSavedFocus(savedFocus);
+            if (resolvedFocus is not null)
             {
                 try
                 {
-                    await _homeRestoreModule.InvokeVoidAsync("scrollToCard", resolved.MediaId);
+                    await _homeRestoreModule.InvokeAsync<bool>("scrollToCard", resolvedFocus.MediaId);
 
-                    if (_isTv)
+                    try
                     {
-                        try
-                        {
-                            await JSRuntime.InvokeVoidAsync("K7.focusById", $"home-card-{resolved.MediaId}");
-                        }
-                        catch (JSException)
-                        {
-                        }
-
-                        _focusedItem = resolved.Item;
+                        await JSRuntime.InvokeVoidAsync("K7.focusById", $"home-card-{resolvedFocus.MediaId}", true);
                     }
+                    catch (JSException)
+                    {
+                    }
+
+                    _focusedItem = resolvedFocus.Item;
                 }
                 catch (JSException)
                 {
@@ -146,12 +208,6 @@ public partial class HomeView : IAsyncDisposable
             }
         }
 
-        if (!_isTv)
-        {
-            _focusRestored = true;
-            return;
-        }
-
         try
         {
             await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
@@ -162,7 +218,25 @@ public partial class HomeView : IAsyncDisposable
         }
     }
 
-    private void OnFeedStoreChanged() => InvokeAsync(StateHasChanged).FireAndForget();
+    private void OnFeedStoreChanged()
+    {
+        // While Home is parked (or another hub page is showing), buffer store updates.
+        // Flushing while hidden would rebuild carousels and reset Embla; applying on return
+        // keeps scroll identical when nothing changed, and shows new media when something did.
+        if (FeedHub.IsEnabled && !FeedHub.IsHubRouteActive)
+        {
+            _feedUpdatePending = true;
+            return;
+        }
+
+        if (FeedHub.IsEnabled && FeedHub.ActiveKey is { } active && active != FeedHubKey.Home)
+        {
+            _feedUpdatePending = true;
+            return;
+        }
+
+        InvokeAsync(StateHasChanged).FireAndForget();
+    }
 
     private IEnumerable<HomeFeedRow> GetVisibleRows() =>
         _rows.Where(r => r.Items.Count > 0 && (!r.Config.ContinueWatching || _canTrackProgress));
@@ -301,6 +375,7 @@ public partial class HomeView : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         FeedStore.Changed -= OnFeedStoreChanged;
+        FeedHub.Changed -= OnFeedHubChanged;
 
         if (_homeRestoreModule is not null)
         {

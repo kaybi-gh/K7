@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.DeleteDefaultTrackSelectionPreferences;
+namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.DeleteDefaultTrackSelectionPreferences;
 
 public class DeleteDefaultTrackSelectionPreferencesCommandValidator : AbstractValidator<DeleteDefaultTrackSelectionPreferencesCommand>
 {

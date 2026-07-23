@@ -34,6 +34,7 @@ public partial class MediaCard : IDisposable
     [Parameter] public EventCallback OnDismissFromContinueWatching { get; set; }
     [Parameter] public EventCallback OnWatchStateChanged { get; set; }
     [Parameter] public EventCallback OnFocused { get; set; }
+    [Parameter] public string? ElementId { get; set; }
     [Parameter] public RenderFragment? CoverContent { get; set; }
     [Parameter] public string? PlaceholderIcon { get; set; }
 
@@ -45,6 +46,7 @@ public partial class MediaCard : IDisposable
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
+    private const double DragCancelClickThresholdSquared = 100; // 10px
 
     private readonly Guid _menuOwnerId = Guid.NewGuid();
     private bool _menuOpen;
@@ -52,6 +54,7 @@ public partial class MediaCard : IDisposable
     private bool _keyHeldDown;
     private bool _menuOpenedViaKeyboard;
     private bool _preventNextClick;
+    private bool _dragSuppressClick;
     private bool _watchStateMenuVisible;
     private bool _showRating;
     private bool _showReview;
@@ -61,6 +64,8 @@ public partial class MediaCard : IDisposable
     private CancellationTokenSource? _longPressCts;
     private double _touchStartX;
     private double _touchStartY;
+    private double _pointerStartX;
+    private double _pointerStartY;
     private ElementReference _longPressContainerRef;
     private DotNetObjectReference<MediaCard>? _longPressDotNetRef;
     private bool _longPressRegistered;
@@ -226,6 +231,9 @@ public partial class MediaCard : IDisposable
             }
         }
 
+        // Persist focus/scroll restore target even when activation goes through the menu.
+        _ = NotifyFocusedAsync();
+
         ContextMenuService.Open(new MediaCardContextMenuRequest
         {
             OwnerId = _menuOwnerId,
@@ -287,7 +295,7 @@ public partial class MediaCard : IDisposable
         WaitForLongPressAsync(_longPressCts.Token, fromKeyboard: true).FireAndForget(Logger);
     }
 
-    private void OnKeyUp(KeyboardEventArgs e)
+    private async Task OnKeyUp(KeyboardEventArgs e)
     {
         if (!LongPressEnabled || !IsEnterKey(e))
             return;
@@ -304,7 +312,10 @@ public partial class MediaCard : IDisposable
         }
 
         if (wasShortPress && !string.IsNullOrEmpty(Href))
+        {
+            await NotifyFocusedAsync();
             NavigationManager.NavigateTo(Href);
+        }
     }
 
     private void OnTouchStart(TouchEventArgs e)
@@ -386,13 +397,53 @@ public partial class MediaCard : IDisposable
     }
 
     private bool ShouldPreventLinkActivation =>
-        _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen;
+        _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen || _dragSuppressClick;
 
-    private void OnLinkClick(MouseEventArgs e)
+    private void OnLinkPointerDown(PointerEventArgs e)
     {
-        if (ShouldPreventLinkActivation)
-            _preventNextClick = true;
+        if (e.Button != 0)
+            return;
+
+        _dragSuppressClick = false;
+        _pointerStartX = e.ClientX;
+        _pointerStartY = e.ClientY;
     }
+
+    private void OnLinkPointerMove(PointerEventArgs e)
+    {
+        if (_dragSuppressClick)
+            return;
+
+        var dx = e.ClientX - _pointerStartX;
+        var dy = e.ClientY - _pointerStartY;
+        if (dx * dx + dy * dy <= DragCancelClickThresholdSquared)
+            return;
+
+        _dragSuppressClick = true;
+        // Refresh @onclick:preventDefault before the click event is dispatched.
+        StateHasChanged();
+    }
+
+    private async Task OnLinkClick(MouseEventArgs e)
+    {
+        var suppress = ShouldPreventLinkActivation;
+        _dragSuppressClick = false;
+
+        if (suppress)
+        {
+            // Keep _preventNextClick for long-press / menu flows; drag only needed this click.
+            if (_longPressTriggered || _menuOpen || _keyHeldDown)
+                _preventNextClick = true;
+            return;
+        }
+
+        // Touch / mouse often activate the link without a prior focusin.
+        // Notify parents before navigation so scroll/focus restore can save position.
+        await NotifyFocusedAsync();
+    }
+
+    private Task NotifyFocusedAsync() =>
+        OnFocused.HasDelegate ? OnFocused.InvokeAsync() : Task.CompletedTask;
 
     public void Dispose()
     {

@@ -32,6 +32,7 @@ public partial class HomeFeedCarouselRow : IDisposable
     [Parameter] public bool ProgressEnabled { get; set; }
 
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
+    [CascadingParameter] private ExploreFocusNavigationContext? ExploreFocus { get; set; }
 
     private List<MediaCardViewModel> _items = [];
     private bool _loading = true;
@@ -125,6 +126,15 @@ public partial class HomeFeedCarouselRow : IDisposable
         MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
         _ => $"/movies/{item.Id}"
     };
+
+    private string? GetCardElementId(string mediaId) =>
+        ExploreFocus?.GetCardElementId(mediaId);
+
+    private void OnCardFocused(MediaCardViewModel item)
+    {
+        ExploreFocus?.SaveMediaId(item.Id);
+        TvFocus?.OnItemFocused(item);
+    }
 
     private async Task ExcludeForSelf(MediaCardViewModel item)
     {

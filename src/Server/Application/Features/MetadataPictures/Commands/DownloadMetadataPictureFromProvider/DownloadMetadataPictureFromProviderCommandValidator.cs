@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
+namespace K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
 
 public class DownloadMetadataPictureFromProviderCommandValidator : AbstractValidator<DownloadMetadataPictureFromProviderCommand>
 {

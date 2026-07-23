@@ -1,5 +1,6 @@
 @using K7.Clients.Shared.UI.Components.Explore
 @using K7.Clients.Shared.UI.Pages
+@implements IDisposable
 @inject IExploreGroupStore ExploreGroupStore
 @inject IStringLocalizer<ExplorePage> L
 
@@ -19,7 +20,9 @@ else if (_group is null)
 }
 else
 {
-    <div class="tv-feed-page" data-initial-focus="[data-carousel-item] a, [data-carousel-item] button">
-        <ExploreLibraryGroupView Group="_group" IsTv="true" />
+    <div class="@_pageClass" data-initial-focus="@_initialFocus">
+        <CascadingValue Value="_focusNavigation" IsFixed="true">
+            <ExploreLibraryGroupView Group="_group" IsTv="_isTv" />
+        </CascadingValue>
     </div>
 }

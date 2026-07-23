@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Downloads.Commands.TranscodeDownload;
+namespace K7.Server.Application.Features.Downloads.Commands.TranscodeDownload;
 
 public class TranscodeDownloadCommandValidator : AbstractValidator<TranscodeDownloadCommand>
 {

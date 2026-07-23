@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Medias.Commands.ReidentifyMedia;
+namespace K7.Server.Application.Features.Medias.Commands.ReidentifyMedia;
 
 public class ReidentifyMediaCommandValidator : AbstractValidator<ReidentifyMediaCommand>
 {

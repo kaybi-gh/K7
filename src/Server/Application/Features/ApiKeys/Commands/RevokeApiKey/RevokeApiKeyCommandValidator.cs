@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.ApiKeys.Commands.RevokeApiKey;
+namespace K7.Server.Application.Features.ApiKeys.Commands.RevokeApiKey;
 
 public class RevokeApiKeyCommandValidator : AbstractValidator<RevokeApiKeyCommand>
 {

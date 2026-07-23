@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionCover;
+namespace K7.Server.Application.Features.Collections.Commands.RemoveCollectionCover;
 
 public class RemoveCollectionCoverCommandValidator : AbstractValidator<RemoveCollectionCoverCommand>
 {

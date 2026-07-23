@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Application.Features.SharedProfiles.Commands.LeaveSharedProfile;
+namespace K7.Server.Application.Features.SharedProfiles.Commands.LeaveSharedProfile;
 
 public class LeaveSharedProfileCommandValidator : AbstractValidator<LeaveSharedProfileCommand>
 {
