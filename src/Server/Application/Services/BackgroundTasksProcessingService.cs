@@ -300,22 +300,32 @@ public class BackgroundTasksProcessingService : BackgroundService
                 query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
             }
 
-            var taskId = await query
+            var candidate = await query
                 .OrderByDescending(t => t.Priority)
                 .ThenBy(t => t.Created)
-                .Select(t => t.Id)
+                .Select(t => new { t.Id, t.ConcurrencyGroup })
                 .FirstOrDefaultAsync(stoppingToken);
 
-            if (taskId == default)
+            if (candidate is null)
             {
                 return;
             }
+
+            var groupLimit = candidate.ConcurrencyGroup is null
+                ? DefaultConcurrencyLimit
+                : limits.GetValueOrDefault(candidate.ConcurrencyGroup, DefaultConcurrencyLimit);
+            if (!BackgroundTaskConcurrencyGate.TryAcquire(_activeCountByGroup, candidate.ConcurrencyGroup, groupLimit))
+            {
+                return;
+            }
+
+            var acquiredGroup = candidate.ConcurrencyGroup;
 
             // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
             // This prevents duplicate execution when multiple workers race on the same task.
             var claimTime = DateTimeOffset.UtcNow;
             var claimed = await context.BackgroundTasks
-                .Where(t => t.Id == taskId
+                .Where(t => t.Id == candidate.Id
                     && (t.Status == BackgroundTaskStatus.Pending
                         || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= claimTime))))
                 .ExecuteUpdateAsync(s => s
@@ -327,20 +337,19 @@ public class BackgroundTasksProcessingService : BackgroundService
 
             if (claimed == 0)
             {
-                return; // Another worker claimed this task first.
+                BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
+                _taskQueue.Enqueue(Guid.Empty);
+                return;
             }
 
             await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
 
-            var task = await context.BackgroundTasks.FindAsync([taskId], stoppingToken);
+            var task = await context.BackgroundTasks.FindAsync([candidate.Id], stoppingToken);
             if (task is null)
             {
+                BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
+                _taskQueue.Enqueue(Guid.Empty);
                 return;
-            }
-
-            if (task.ConcurrencyGroup is not null)
-            {
-                _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 1, (_, count) => count + 1);
             }
 
             var sw = Stopwatch.StartNew();
@@ -441,9 +450,9 @@ public class BackgroundTasksProcessingService : BackgroundService
             }
             finally
             {
-                if (task.ConcurrencyGroup is not null)
+                if (acquiredGroup is not null)
                 {
-                    _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 0, (_, count) => Math.Max(0, count - 1));
+                    BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
                     _taskQueue.Enqueue(Guid.Empty);
                 }
             }
