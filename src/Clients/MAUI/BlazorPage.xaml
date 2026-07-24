@@ -21,10 +21,18 @@
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True" ZIndex="1"/>
 
-        <!-- Native MediaElement (audio - hidden, background-capable) -->
+        <!-- Native MediaElement (audio - Android/iOS/MacCatalyst). Windows uses WebView audioplayer.js. -->
         <toolkit:MediaElement x:Name="NativeAudioPlayer"
                               IsVisible="False"
                               ShouldAutoPlay="True"
+                              ShouldShowPlaybackControls="False"
+                              InputTransparent="True"
+                              WidthRequest="0" HeightRequest="0" />
+
+        <!-- Secondary audio element for overlapping crossfade / gapless prebuffer (MacCatalyst) -->
+        <toolkit:MediaElement x:Name="NativeAudioCrossfadePlayer"
+                              IsVisible="False"
+                              ShouldAutoPlay="False"
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True"
                               WidthRequest="0" HeightRequest="0" />

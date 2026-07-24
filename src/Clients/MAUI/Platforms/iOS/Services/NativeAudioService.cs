@@ -2,6 +2,7 @@ using AVFoundation;
 using CoreMedia;
 using Foundation;
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -10,20 +11,25 @@ using K7.Shared.Interfaces;
 namespace K7.Clients.MAUI.Platforms.iOS.Services;
 
 /// <summary>
-/// iOS audio playback service using AVPlayer.
-/// Bridges IAudioPlayerService transport events to the native AVPlayer
-/// and reports playback state back.
+/// iOS audio playback service using dual AVPlayers for true overlapping crossfade.
+/// Bridges IAudioPlayerService transport events and reports playback state back.
 /// </summary>
 public class NativeAudioService : NSObject, IDisposable
 {
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly IK7ServerService _k7ServerService;
+    private readonly IosAudioEqualizer _equalizer = new();
     private AVPlayer? _player;
+    private AVPlayer? _crossfadePlayer;
     private NSObject? _timeObserver;
     private NSObject? _endObserver;
     private AVPlayerItem? _observedItem;
     private volatile bool _updatingFromPlayer;
     private CancellationTokenSource? _fadeCts;
+    private bool _crossfadeInProgress;
+    private string? _gaplessPrebufferedUrl;
+    private float _loudnessLinearGain = 1f;
+    private float _userVolume = 1f;
 
     public NativeAudioService(IAudioPlayerService audioPlayerService, IK7ServerService k7ServerService)
     {
@@ -37,6 +43,8 @@ public class NativeAudioService : NSObject, IDisposable
         ConfigureAudioSession();
 
         _player = new AVPlayer { ActionAtItemEnd = AVPlayerActionAtItemEnd.None };
+        _crossfadePlayer = new AVPlayer { ActionAtItemEnd = AVPlayerActionAtItemEnd.None };
+        _userVolume = (float)_audioPlayerService.Volume;
 
         _audioPlayerService.SourceChanged += OnSourceChanged;
         _audioPlayerService.PlayRequested += OnPlayRequested;
@@ -48,9 +56,19 @@ public class NativeAudioService : NSObject, IDisposable
         _audioPlayerService.UnmuteRequested += OnUnmuteRequested;
         _audioPlayerService.FadeOutRequested += OnFadeOutRequested;
         _audioPlayerService.FadeResetRequested += OnFadeResetRequested;
+        _audioPlayerService.CrossfadeRequested += OnCrossfadeRequested;
+        _audioPlayerService.GaplessPrebufferRequested += OnGaplessPrebufferRequested;
+        _audioPlayerService.LoudnessSettingsChanged += OnLoudnessSettingsChanged;
+        _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
+        _audioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
 
+        RefreshLoudnessGain();
+        _equalizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
         StartPositionObserver();
     }
+
+    private void OnEqSettingsChanged()
+        => _equalizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
 
     private static void ConfigureAudioSession()
     {
@@ -59,27 +77,212 @@ public class NativeAudioService : NSObject, IDisposable
         session.SetActive(true);
     }
 
+    private float PeakVolume => _userVolume * _loudnessLinearGain;
+
+    private void OnLoudnessSettingsChanged() => RefreshLoudnessGain(applyToPlayer: true);
+
+    private void OnCurrentTrackChanged(AudioQueueItem? _) => RefreshLoudnessGain(applyToPlayer: !_crossfadeInProgress);
+
+    private void RefreshLoudnessGain(bool applyToPlayer = false)
+    {
+        var track = _audioPlayerService.CurrentTrack;
+        var linear = LoudnessGainHelper.ComputeLinearGain(
+            _audioPlayerService.LoudnessEnabled,
+            _audioPlayerService.LoudnessTargetLufs,
+            _audioPlayerService.LoudnessPreampDb,
+            track?.LoudnessLufs,
+            track?.ReplayGainTrackGain);
+        _loudnessLinearGain = (float)LoudnessGainHelper.ApplySoftLimiter(linear, _audioPlayerService.LimiterEnabled);
+
+        if (applyToPlayer && !_crossfadeInProgress && _player is not null)
+            MainThread.BeginInvokeOnMainThread(() => _player.Volume = PeakVolume);
+    }
+
     private void OnSourceChanged(PlayerSource source)
     {
         if (_player is null || string.IsNullOrEmpty(source.Url)) return;
+        if (_crossfadeInProgress) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            if (_crossfadePlayer is not null
+                && string.Equals(_gaplessPrebufferedUrl, source.Url, StringComparison.Ordinal)
+                && _crossfadePlayer.CurrentItem is not null)
+            {
+                _ = PromoteGaplessAsync(source);
+                return;
+            }
+
+            ApplySource(_player, source, PeakVolume, observe: true);
+            _gaplessPrebufferedUrl = null;
+        });
+    }
+
+    private void ApplySource(AVPlayer player, PlayerSource source, float startVolume, bool observe)
+    {
+        if (string.IsNullOrEmpty(source.Url)) return;
+
+        if (observe)
+        {
             RemoveEndObserver();
             RemoveItemStatusObserver();
+        }
 
-            var url = CreateAuthenticatedUrl(source.Url);
-            var playerItem = new AVPlayerItem(AVAsset.FromUrl(url));
-            _player.ReplaceCurrentItemWithPlayerItem(playerItem);
-            _player.Play();
+        var url = CreateAuthenticatedUrl(source.Url);
+        var playerItem = new AVPlayerItem(AVAsset.FromUrl(url));
+        player.Volume = startVolume;
+        player.ReplaceCurrentItemWithPlayerItem(playerItem);
+        player.Play();
+        _equalizer.AttachToPlayerItem(playerItem);
 
+        if (observe)
+        {
             _updatingFromPlayer = true;
             _audioPlayerService.PlaybackState = PlaybackState.Buffering;
             _updatingFromPlayer = false;
-
             ObserveItemStatus(playerItem);
             AddEndObserver();
+        }
+    }
+
+    private async Task OnGaplessPrebufferRequested(PlayerSource source)
+    {
+        if (_crossfadePlayer is null || string.IsNullOrEmpty(source.Url)) return;
+
+        _gaplessPrebufferedUrl = source.Url;
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            var url = CreateAuthenticatedUrl(source.Url);
+            var item = new AVPlayerItem(AVAsset.FromUrl(url));
+            _crossfadePlayer.Volume = 0f;
+            _crossfadePlayer.ReplaceCurrentItemWithPlayerItem(item);
+            _equalizer.AttachToPlayerItem(item);
+            _crossfadePlayer.Pause();
         });
+    }
+
+    private async Task PromoteGaplessAsync(PlayerSource source)
+    {
+        if (_player is null || _crossfadePlayer is null) return;
+
+        var peak = PeakVolume;
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            _crossfadePlayer.Volume = peak;
+            _crossfadePlayer.Play();
+        });
+
+        await MainThread.InvokeOnMainThreadAsync(() => ApplySource(_player, source, 0f, observe: true));
+        await WaitUntilItemReadyAsync(_player, CancellationToken.None);
+
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            _player.Volume = peak;
+            _player.Play();
+            _crossfadePlayer.Pause();
+            _crossfadePlayer.ReplaceCurrentItemWithPlayerItem(null);
+            _crossfadePlayer.Volume = 0f;
+            _gaplessPrebufferedUrl = null;
+        });
+    }
+
+    private async Task OnCrossfadeRequested(PlayerSource source, double durationSeconds)
+    {
+        if (_player is null || _crossfadePlayer is null || string.IsNullOrEmpty(source.Url)) return;
+
+        _crossfadeInProgress = true;
+        _fadeCts?.Cancel();
+        _fadeCts?.Dispose();
+        _fadeCts = new CancellationTokenSource();
+        var ct = _fadeCts.Token;
+        var peak = PeakVolume;
+
+        try
+        {
+            var alreadyPrepared = string.Equals(_gaplessPrebufferedUrl, source.Url, StringComparison.Ordinal);
+            if (!alreadyPrepared)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    var url = CreateAuthenticatedUrl(source.Url);
+                    var item = new AVPlayerItem(AVAsset.FromUrl(url));
+                    _crossfadePlayer.Volume = 0f;
+                    _crossfadePlayer.ReplaceCurrentItemWithPlayerItem(item);
+                    _equalizer.AttachToPlayerItem(item);
+                });
+                await WaitUntilItemReadyAsync(_crossfadePlayer, ct);
+            }
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                _crossfadePlayer.Volume = 0f;
+                _crossfadePlayer.Play();
+            });
+
+            await EqualPowerCrossfadeAsync(_player, _crossfadePlayer, Math.Max(0.25, durationSeconds), peak, ct);
+
+            var handoffSeconds = _crossfadePlayer.CurrentTime.Seconds;
+            await MainThread.InvokeOnMainThreadAsync(() => ApplySource(_player, source, 0f, observe: true));
+            if (handoffSeconds > 0)
+                await MainThread.InvokeOnMainThreadAsync(() => _player.Seek(CMTime.FromSeconds(handoffSeconds, 1)));
+
+            await WaitUntilItemReadyAsync(_player, ct);
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                _player.Volume = peak;
+                _player.Play();
+                _crossfadePlayer.Pause();
+                _crossfadePlayer.ReplaceCurrentItemWithPlayerItem(null);
+                _crossfadePlayer.Volume = 0f;
+            });
+
+            _gaplessPrebufferedUrl = null;
+        }
+        catch (System.OperationCanceledException)
+        {
+        }
+        finally
+        {
+            _crossfadeInProgress = false;
+            _audioPlayerService.NotifyCrossfadeCompleted();
+        }
+    }
+
+    private static async Task WaitUntilItemReadyAsync(AVPlayer player, CancellationToken ct)
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (player.CurrentItem?.Status == AVPlayerItemStatus.ReadyToPlay)
+                return;
+            await Task.Delay(50, ct);
+        }
+    }
+
+    private async Task EqualPowerCrossfadeAsync(
+        AVPlayer outgoing,
+        AVPlayer incoming,
+        double durationSeconds,
+        float peakVolume,
+        CancellationToken ct)
+    {
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        for (var i = 1; i <= steps; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var ratio = i / (float)steps;
+            var fadeOut = (float)(Math.Cos(ratio * Math.PI / 2.0) * peakVolume);
+            var fadeIn = (float)(Math.Sin(ratio * Math.PI / 2.0) * peakVolume);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                outgoing.Volume = fadeOut;
+                incoming.Volume = fadeIn;
+            });
+            await Task.Delay(stepMs, ct);
+        }
     }
 
     private void ObserveItemStatus(AVPlayerItem item)
@@ -155,8 +358,6 @@ public class NativeAudioService : NSObject, IDisposable
         var interval = CMTime.FromSeconds(0.5, 1);
         _timeObserver = _player.AddPeriodicTimeObserver(interval, null, time =>
         {
-            if (_audioPlayerService is null) return;
-
             _updatingFromPlayer = true;
             _audioPlayerService.CurrentTime = time.Seconds;
 
@@ -209,8 +410,9 @@ public class NativeAudioService : NSObject, IDisposable
 
     private Task OnVolumeChanged(double volume)
     {
-        if (_player is not null)
-            _player.Volume = (float)volume;
+        _userVolume = (float)volume;
+        if (_player is not null && !_crossfadeInProgress)
+            _player.Volume = PeakVolume;
         return Task.CompletedTask;
     }
 
@@ -220,26 +422,33 @@ public class NativeAudioService : NSObject, IDisposable
         _fadeCts?.Dispose();
         _fadeCts = new CancellationTokenSource();
         var ct = _fadeCts.Token;
-
-        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
-        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+        var startVolume = _player?.Volume ?? PeakVolume;
 
         try
         {
-            for (var i = 1; i <= steps; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-                var volume = 1f - (i / (float)steps);
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    if (_player is not null)
-                        _player.Volume = volume;
-                });
-                await Task.Delay(stepMs, ct);
-            }
+            await FadePlayerVolumeAsync(startVolume, 0f, Math.Max(0.25, durationSeconds), ct);
         }
         catch (System.OperationCanceledException)
         {
+        }
+    }
+
+    private async Task FadePlayerVolumeAsync(float from, float to, double durationSeconds, CancellationToken ct)
+    {
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        for (var i = 1; i <= steps; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var t = i / (float)steps;
+            var volume = from + ((to - from) * t);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (_player is not null)
+                    _player.Volume = volume;
+            });
+            await Task.Delay(stepMs, ct);
         }
     }
 
@@ -249,7 +458,7 @@ public class NativeAudioService : NSObject, IDisposable
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (_player is not null)
-                _player.Volume = (float)_audioPlayerService.Volume;
+                _player.Volume = PeakVolume;
         });
         return Task.CompletedTask;
     }
@@ -258,6 +467,8 @@ public class NativeAudioService : NSObject, IDisposable
     {
         if (_player is not null)
             _player.Muted = true;
+        if (_crossfadePlayer is not null)
+            _crossfadePlayer.Muted = true;
         return Task.CompletedTask;
     }
 
@@ -265,13 +476,14 @@ public class NativeAudioService : NSObject, IDisposable
     {
         if (_player is not null)
             _player.Muted = false;
+        if (_crossfadePlayer is not null)
+            _crossfadePlayer.Muted = false;
         return Task.CompletedTask;
     }
 
     private NSUrl CreateAuthenticatedUrl(string url)
     {
-        // AVPlayer handles auth via HTTP headers on AVURLAsset, but for simplicity
-        // use the URL directly since the streaming endpoint uses token-based auth in query params
+        // Streaming endpoint uses token-based auth in query params.
         return new NSUrl(url);
     }
 
@@ -287,6 +499,11 @@ public class NativeAudioService : NSObject, IDisposable
         _audioPlayerService.UnmuteRequested -= OnUnmuteRequested;
         _audioPlayerService.FadeOutRequested -= OnFadeOutRequested;
         _audioPlayerService.FadeResetRequested -= OnFadeResetRequested;
+        _audioPlayerService.CrossfadeRequested -= OnCrossfadeRequested;
+        _audioPlayerService.GaplessPrebufferRequested -= OnGaplessPrebufferRequested;
+        _audioPlayerService.LoudnessSettingsChanged -= OnLoudnessSettingsChanged;
+        _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
+        _audioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
 
         _fadeCts?.Cancel();
         _fadeCts?.Dispose();
@@ -301,6 +518,9 @@ public class NativeAudioService : NSObject, IDisposable
             _timeObserver = null;
         }
 
+        _equalizer.Dispose();
+        _crossfadePlayer?.Dispose();
+        _crossfadePlayer = null;
         _player?.Dispose();
         _player = null;
     }

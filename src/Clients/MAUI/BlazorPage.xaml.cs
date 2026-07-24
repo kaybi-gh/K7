@@ -23,7 +23,24 @@ public partial class BlazorPage : ContentPage
         : DownloadsBasePath + Path.DirectorySeparatorChar;
 
     private bool _eventsDetached;
+#if !ANDROID && !IOS && !WINDOWS
     private CancellationTokenSource? _audioFadeCts;
+    private bool _audioCrossfadeInProgress;
+    private string? _audioGaplessPrebufferedUrl;
+    private double _audioLoudnessLinearGain = 1.0;
+    /// <summary>
+    /// When true, NativeAudioCrossfadePlayer is the active output (after a crossfade promote).
+    /// Matches Web audioplayer.js element swap so we never reload the incoming track from 0.
+    /// </summary>
+    private bool _audioRolesSwapped;
+    private bool _audioSuppressMediaFailed;
+
+    private MediaElement ActiveAudioPlayer =>
+        _audioRolesSwapped ? NativeAudioCrossfadePlayer : NativeAudioPlayer;
+
+    private MediaElement IdleAudioPlayer =>
+        _audioRolesSwapped ? NativeAudioPlayer : NativeAudioCrossfadePlayer;
+#endif
 #if !WINDOWS
     // MediaFailed can flap on Source swaps; report once per distinct failure within the window.
     private DateTime _lastMediaFailedReportUtc = DateTime.MinValue;
@@ -653,7 +670,9 @@ public partial class BlazorPage : ContentPage
     {
         base.OnDisappearing();
         NativePlayer.Stop();
+#if !WINDOWS
         NativeAudioPlayer.Stop();
+#endif
         DetachEventHandlers();
     }
 
@@ -667,18 +686,19 @@ public partial class BlazorPage : ContentPage
 
     private void InitializeAudioPlayer()
     {
-#if ANDROID || IOS
-        // On Android/iOS, native services (K7MediaLibraryService / NativeAudioService)
-        // handle audio playback directly. Skip MediaElement wiring.
+        _audioPlayerService.PlayerUxSettingsChanged += HandleAudioPlayerUxSettingsChanged;
+        _audioPlayerService.PlaybackStateChanged += HandleAudioPlaybackKeepScreenChanged;
+        ApplyKeepScreenOnFromAudio();
+
+#if ANDROID || IOS || WINDOWS
+        // Android/iOS: native services handle audio.
+        // Windows: WebView2 audioplayer.js (same path as browser) handles audio.
         return;
 #else
-        NativeAudioPlayer.Volume = _audioPlayerService.Volume;
-        NativeAudioPlayer.ShouldMute = _audioPlayerService.IsMuted;
-
-        NativeAudioPlayer.PositionChanged += AudioPlayer_PositionChanged;
-        NativeAudioPlayer.MediaEnded += AudioPlayer_MediaEnded;
-        NativeAudioPlayer.MediaFailed += AudioPlayer_MediaFailed;
-        NativeAudioPlayer.PropertyChanged += NativeAudioPlayer_PropertyChanged;
+        WireNativeAudioElement(NativeAudioPlayer);
+        WireNativeAudioElement(NativeAudioCrossfadePlayer);
+        ActiveAudioPlayer.Volume = _audioPlayerService.Volume;
+        ActiveAudioPlayer.ShouldMute = _audioPlayerService.IsMuted;
 
         _audioPlayerService.CurrentTrackChanged += OnAudioCurrentTrackChanged;
         _audioPlayerService.SourceChanged += OnAudioSourceChanged;
@@ -691,50 +711,261 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.VolumeChangeRequested += HandleAudioVolumeChangeRequested;
         _audioPlayerService.FadeOutRequested += HandleAudioFadeOutRequested;
         _audioPlayerService.FadeResetRequested += HandleAudioFadeResetRequested;
+        _audioPlayerService.CrossfadeRequested += HandleAudioCrossfadeRequested;
+        _audioPlayerService.GaplessPrebufferRequested += HandleAudioGaplessPrebufferRequested;
+        _audioPlayerService.LoudnessSettingsChanged += HandleAudioLoudnessSettingsChanged;
+        RefreshAudioLoudnessGain();
 #endif
+    }
+
+#if !ANDROID && !IOS && !WINDOWS
+    private void WireNativeAudioElement(MediaElement player)
+    {
+        player.PositionChanged += AudioPlayer_PositionChanged;
+        player.MediaEnded += AudioPlayer_MediaEnded;
+        player.MediaFailed += AudioPlayer_MediaFailed;
+        player.PropertyChanged += NativeAudioPlayer_PropertyChanged;
+    }
+
+    private void UnwireNativeAudioElement(MediaElement player)
+    {
+        player.PositionChanged -= AudioPlayer_PositionChanged;
+        player.MediaEnded -= AudioPlayer_MediaEnded;
+        player.MediaFailed -= AudioPlayer_MediaFailed;
+        player.PropertyChanged -= NativeAudioPlayer_PropertyChanged;
+    }
+#endif
+
+    private void HandleAudioPlayerUxSettingsChanged() => ApplyKeepScreenOnFromAudio();
+
+    private void HandleAudioPlaybackKeepScreenChanged(Server.Domain.Enums.PlaybackState _) => ApplyKeepScreenOnFromAudio();
+
+    private void ApplyKeepScreenOnFromAudio()
+    {
+        // Video path may also set KeepScreenOn; OR the music preference while playing.
+        var musicWantsScreen = _audioPlayerService.KeepScreenOn
+            && _audioPlayerService.PlaybackState is Server.Domain.Enums.PlaybackState.Playing
+                or Server.Domain.Enums.PlaybackState.Buffering;
+        if (musicWantsScreen)
+            DeviceDisplay.Current.KeepScreenOn = true;
+        else if (!_playerService.IsVisible)
+            DeviceDisplay.Current.KeepScreenOn = false;
+    }
+
+#if !ANDROID && !IOS && !WINDOWS
+    private double AudioPeakVolume => _audioPlayerService.Volume * _audioLoudnessLinearGain;
+
+    private void HandleAudioLoudnessSettingsChanged() => RefreshAudioLoudnessGain(applyToPlayer: true);
+
+    private void RefreshAudioLoudnessGain(bool applyToPlayer = false)
+    {
+        var track = _audioPlayerService.CurrentTrack;
+        var linear = LoudnessGainHelper.ComputeLinearGain(
+            _audioPlayerService.LoudnessEnabled,
+            _audioPlayerService.LoudnessTargetLufs,
+            _audioPlayerService.LoudnessPreampDb,
+            track?.LoudnessLufs,
+            track?.ReplayGainTrackGain);
+        _audioLoudnessLinearGain = LoudnessGainHelper.ApplySoftLimiter(linear, _audioPlayerService.LimiterEnabled);
+
+        if (applyToPlayer && !_audioCrossfadeInProgress)
+            MainThread.BeginInvokeOnMainThread(() => ActiveAudioPlayer.Volume = AudioPeakVolume);
+    }
+
+    private Task HandleAudioGaplessPrebufferRequested(PlayerSource source)
+    {
+        if (string.IsNullOrEmpty(source.Url)) return Task.CompletedTask;
+
+        _audioGaplessPrebufferedUrl = source.Url;
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            IdleAudioPlayer.Volume = 0;
+            IdleAudioPlayer.Source = CreateMediaSourceWithAuth(source.Url);
+        });
+        return Task.CompletedTask;
     }
 
     private Task HandleAudioPlayRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Play);
+        MainThread.BeginInvokeOnMainThread(ActiveAudioPlayer.Play);
         return Task.CompletedTask;
     }
 
     private Task HandleAudioPauseRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Pause);
+        MainThread.BeginInvokeOnMainThread(ActiveAudioPlayer.Pause);
         return Task.CompletedTask;
     }
 
     private Task HandleAudioStopRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Stop);
+        MainThread.BeginInvokeOnMainThread(ActiveAudioPlayer.Stop);
         return Task.CompletedTask;
     }
 
     private Task HandleAudioSeekRequested(double position) =>
         SeekMediaElementAsync(
-            NativeAudioPlayer,
+            ActiveAudioPlayer,
             TimeSpan.FromSeconds(position),
             () => _audioPlayerService.PlaybackState,
             t => _audioPlayerService.CurrentTime = t);
 
     private Task HandleAudioMuteRequested()
     {
-        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = true);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            NativeAudioPlayer.ShouldMute = true;
+            NativeAudioCrossfadePlayer.ShouldMute = true;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleAudioUnmuteRequested()
     {
-        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = false);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            NativeAudioPlayer.ShouldMute = false;
+            NativeAudioCrossfadePlayer.ShouldMute = false;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleAudioVolumeChangeRequested(double volume)
     {
-        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = volume);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!_audioCrossfadeInProgress)
+                ActiveAudioPlayer.Volume = volume * _audioLoudnessLinearGain;
+        });
         return Task.CompletedTask;
+    }
+
+    private async Task HandleAudioCrossfadeRequested(PlayerSource source, double durationSeconds)
+    {
+        if (string.IsNullOrEmpty(source.Url)) return;
+
+        _audioCrossfadeInProgress = true;
+        _audioFadeCts?.Cancel();
+        _audioFadeCts?.Dispose();
+        _audioFadeCts = new CancellationTokenSource();
+        var ct = _audioFadeCts.Token;
+        var peak = AudioPeakVolume;
+        var outgoing = ActiveAudioPlayer;
+        var incoming = IdleAudioPlayer;
+        var promoted = false;
+
+        // Service already switched CurrentTrack; drive UI from the incoming player (not outgoing leftover time).
+        _audioPlayerService.CurrentTime = 0;
+        if (_audioPlayerService.CurrentTrack?.Duration is { } trackDuration and > 0)
+            _audioPlayerService.Duration = trackDuration;
+
+        try
+        {
+            var alreadyPrepared = string.Equals(_audioGaplessPrebufferedUrl, source.Url, StringComparison.Ordinal);
+            if (!alreadyPrepared)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    incoming.Volume = 0;
+                    incoming.Source = CreateMediaSourceWithAuth(source.Url);
+                });
+                await WaitMediaElementReadyAsync(incoming, ct);
+            }
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                incoming.Volume = 0;
+                incoming.Play();
+            });
+
+            await EqualPowerNativeCrossfadeAsync(outgoing, incoming, Math.Max(0.25, durationSeconds), peak, ct);
+
+            // Promote incoming in place (Web-style swap). Do not reload Source or we restart from 0.
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                _audioRolesSwapped = !_audioRolesSwapped;
+                ActiveAudioPlayer.Volume = peak;
+                IdleAudioPlayer.Stop();
+                IdleAudioPlayer.Source = null;
+                IdleAudioPlayer.Volume = 0;
+                _audioPlayerService.CurrentTime = ActiveAudioPlayer.Position.TotalSeconds;
+                var duration = ActiveAudioPlayer.Duration.TotalSeconds;
+                if (duration > 0)
+                    _audioPlayerService.Duration = duration;
+            });
+
+            promoted = true;
+            _audioGaplessPrebufferedUrl = null;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[K7-Audio] Crossfade failed: {ex.Message}");
+        }
+        finally
+        {
+            if (!promoted)
+            {
+                // Restore audible output on the still-active player after a cancelled/failed fade.
+                try
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        ActiveAudioPlayer.Volume = peak;
+                        IdleAudioPlayer.Volume = 0;
+                        try { IdleAudioPlayer.Stop(); } catch { /* best effort */ }
+                        try { IdleAudioPlayer.Source = null; } catch { /* best effort */ }
+                    });
+                }
+                catch
+                {
+                    // ignore
+                }
+
+                _audioGaplessPrebufferedUrl = null;
+            }
+
+            _audioCrossfadeInProgress = false;
+            _audioPlayerService.NotifyCrossfadeCompleted();
+        }
+    }
+
+    private static async Task WaitMediaElementReadyAsync(MediaElement player, CancellationToken ct)
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (player.CurrentState is MediaElementState.Playing or MediaElementState.Paused or MediaElementState.Buffering)
+                return;
+            await Task.Delay(50, ct);
+        }
+    }
+
+    private async Task EqualPowerNativeCrossfadeAsync(
+        MediaElement outgoing,
+        MediaElement incoming,
+        double durationSeconds,
+        double peakVolume,
+        CancellationToken ct)
+    {
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        for (var i = 1; i <= steps; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var ratio = i / (double)steps;
+            var fadeOut = Math.Cos(ratio * Math.PI / 2.0) * peakVolume;
+            var fadeIn = Math.Sin(ratio * Math.PI / 2.0) * peakVolume;
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                outgoing.Volume = fadeOut;
+                incoming.Volume = fadeIn;
+            });
+            await Task.Delay(stepMs, ct);
+        }
     }
 
     private async Task HandleAudioFadeOutRequested(double durationSeconds)
@@ -743,44 +974,63 @@ public partial class BlazorPage : ContentPage
         _audioFadeCts?.Dispose();
         _audioFadeCts = new CancellationTokenSource();
         var ct = _audioFadeCts.Token;
-        var startVolume = NativeAudioPlayer.Volume;
-        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
-        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+        var startVolume = ActiveAudioPlayer.Volume;
 
         try
         {
-            for (var i = 1; i <= steps; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-                var volume = startVolume * (1.0 - (i / (double)steps));
-                await MainThread.InvokeOnMainThreadAsync(() => NativeAudioPlayer.Volume = volume);
-                await Task.Delay(stepMs, ct);
-            }
+            await FadeNativeAudioVolumeAsync(startVolume, 0, Math.Max(0.25, durationSeconds), ct);
         }
         catch (OperationCanceledException)
         {
         }
     }
 
+    private async Task FadeNativeAudioVolumeAsync(double from, double to, double durationSeconds, CancellationToken ct)
+    {
+        var steps = Math.Max(1, (int)Math.Ceiling(durationSeconds * 20));
+        var stepMs = Math.Max(1, (int)(durationSeconds * 1000 / steps));
+
+        for (var i = 1; i <= steps; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var t = i / (double)steps;
+            var volume = from + ((to - from) * t);
+            await MainThread.InvokeOnMainThreadAsync(() => ActiveAudioPlayer.Volume = volume);
+            await Task.Delay(stepMs, ct);
+        }
+    }
+
     private Task HandleAudioFadeResetRequested()
     {
         _audioFadeCts?.Cancel();
-        MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = _audioPlayerService.Volume);
+        MainThread.BeginInvokeOnMainThread(() => ActiveAudioPlayer.Volume = AudioPeakVolume);
         return Task.CompletedTask;
     }
 
     private void NativeAudioPlayer_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (sender is not MediaElement element)
+            return;
+
+        var trackTimeFrom = _audioCrossfadeInProgress ? IdleAudioPlayer : ActiveAudioPlayer;
+        if (!ReferenceEquals(element, trackTimeFrom))
+            return;
+
         if (e.PropertyName == nameof(MediaElement.Duration))
         {
-            var duration = NativeAudioPlayer.Duration.TotalSeconds;
+            var duration = element.Duration.TotalSeconds;
             if (duration > 0 && duration != _audioPlayerService.Duration)
                 _audioPlayerService.Duration = duration;
         }
 
         if (e.PropertyName == nameof(MediaElement.CurrentState))
         {
-            _audioPlayerService.PlaybackState = NativeAudioPlayer.CurrentState switch
+            // During crossfade the outgoing player may go Idle/Stopped; keep UI on Playing.
+            if (_audioCrossfadeInProgress && ReferenceEquals(element, ActiveAudioPlayer)
+                && element.CurrentState is MediaElementState.Stopped or MediaElementState.Paused)
+                return;
+
+            _audioPlayerService.PlaybackState = element.CurrentState switch
             {
                 MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
                 MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
@@ -791,6 +1041,7 @@ public partial class BlazorPage : ContentPage
             };
         }
     }
+#endif
 
     private void DetachEventHandlers()
     {
@@ -809,6 +1060,8 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged -= OnSourceChanged;
         _playerService.IsVisibleChanged -= OnIsVisibleChanged;
+        _audioPlayerService.PlayerUxSettingsChanged -= HandleAudioPlayerUxSettingsChanged;
+        _audioPlayerService.PlaybackStateChanged -= HandleAudioPlaybackKeepScreenChanged;
 #if !WINDOWS
         _playerService.PlayRequested -= HandleVideoPlayRequested;
         _playerService.PauseRequested -= HandleVideoPauseRequested;
@@ -821,11 +1074,9 @@ public partial class BlazorPage : ContentPage
         _playerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChanged;
 #endif
 
-#if !ANDROID && !IOS
-        NativeAudioPlayer.PositionChanged -= AudioPlayer_PositionChanged;
-        NativeAudioPlayer.MediaEnded -= AudioPlayer_MediaEnded;
-        NativeAudioPlayer.MediaFailed -= AudioPlayer_MediaFailed;
-        NativeAudioPlayer.PropertyChanged -= NativeAudioPlayer_PropertyChanged;
+#if !ANDROID && !IOS && !WINDOWS
+        UnwireNativeAudioElement(NativeAudioPlayer);
+        UnwireNativeAudioElement(NativeAudioCrossfadePlayer);
 
         _audioPlayerService.CurrentTrackChanged -= OnAudioCurrentTrackChanged;
         _audioPlayerService.SourceChanged -= OnAudioSourceChanged;
@@ -838,6 +1089,9 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.VolumeChangeRequested -= HandleAudioVolumeChangeRequested;
         _audioPlayerService.FadeOutRequested -= HandleAudioFadeOutRequested;
         _audioPlayerService.FadeResetRequested -= HandleAudioFadeResetRequested;
+        _audioPlayerService.CrossfadeRequested -= HandleAudioCrossfadeRequested;
+        _audioPlayerService.GaplessPrebufferRequested -= HandleAudioGaplessPrebufferRequested;
+        _audioPlayerService.LoudnessSettingsChanged -= HandleAudioLoudnessSettingsChanged;
         _audioFadeCts?.Cancel();
         _audioFadeCts?.Dispose();
         _audioFadeCts = null;
@@ -848,29 +1102,136 @@ public partial class BlazorPage : ContentPage
 
     partial void DetachPlayerPlatform();
 
+#if !ANDROID && !IOS && !WINDOWS
     private void OnAudioCurrentTrackChanged(AudioQueueItem? track)
     {
+        RefreshAudioLoudnessGain(applyToPlayer: !_audioCrossfadeInProgress);
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (track is null) return;
 
-            NativeAudioPlayer.MetadataTitle = track.Title;
-            NativeAudioPlayer.MetadataArtist = track.Artist ?? "";
-            NativeAudioPlayer.MetadataArtworkUrl = _k7ServerService.GetAbsoluteUri(track.CoverUrl)?.AbsoluteUri ?? "";
+            ActiveAudioPlayer.MetadataTitle = track.Title;
+            ActiveAudioPlayer.MetadataArtist = track.Artist ?? "";
+            ActiveAudioPlayer.MetadataArtworkUrl = _k7ServerService.GetAbsoluteUri(track.CoverUrl)?.AbsoluteUri ?? "";
         });
     }
 
     private void OnAudioSourceChanged(PlayerSource source)
     {
+        if (_audioCrossfadeInProgress) return;
+
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (!string.IsNullOrEmpty(source.Url))
+            if (string.IsNullOrEmpty(source.Url)) return;
+
+            if (string.Equals(_audioGaplessPrebufferedUrl, source.Url, StringComparison.Ordinal)
+                && IdleAudioPlayer.Source is not null)
             {
-                NativeAudioPlayer.Source = CreateMediaSourceWithAuth(source.Url);
-                NativeAudioPlayer.Play();
+                var peak = AudioPeakVolume;
+                IdleAudioPlayer.Volume = peak;
+                IdleAudioPlayer.Play();
+                ActiveAudioPlayer.Volume = 0;
+                _ = PromoteWindowsGaplessAsync(peak);
+                return;
+            }
+
+            ActiveAudioPlayer.Source = CreateMediaSourceWithAuth(source.Url);
+            ActiveAudioPlayer.Volume = AudioPeakVolume;
+            ActiveAudioPlayer.Play();
+            _audioGaplessPrebufferedUrl = null;
+        });
+    }
+
+    private async Task PromoteWindowsGaplessAsync(double peak)
+    {
+        try
+        {
+            // Incoming already playing on Idle - promote via role swap (no reload from 0).
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                _audioRolesSwapped = !_audioRolesSwapped;
+                ActiveAudioPlayer.Volume = peak;
+                IdleAudioPlayer.Stop();
+                IdleAudioPlayer.Source = null;
+                IdleAudioPlayer.Volume = 0;
+                _audioGaplessPrebufferedUrl = null;
+                _audioPlayerService.CurrentTime = ActiveAudioPlayer.Position.TotalSeconds;
+            });
+        }
+        catch
+        {
+            // Best-effort gapless handoff.
+        }
+    }
+
+    private void AudioPlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
+    {
+        if (sender is not MediaElement element)
+            return;
+
+        // During crossfade, UI follows the incoming track (Idle before promote).
+        var source = _audioCrossfadeInProgress ? IdleAudioPlayer : ActiveAudioPlayer;
+        if (!ReferenceEquals(element, source))
+            return;
+
+        _audioPlayerService.CurrentTime = e.Position.TotalSeconds;
+    }
+
+    private void AudioPlayer_MediaEnded(object? sender, EventArgs e)
+    {
+        if (sender is not MediaElement element)
+            return;
+        if (_audioCrossfadeInProgress)
+            return;
+        if (!ReferenceEquals(element, ActiveAudioPlayer))
+            return;
+
+        _audioPlayerService.OnTrackEndedAsync().FireAndForget();
+    }
+
+    private void AudioPlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[K7-Audio] Playback failed: {e.ErrorMessage}");
+
+        if (_audioSuppressMediaFailed)
+            return;
+
+        // Idle/crossfade failures should not tear down the audible player.
+        if (sender is MediaElement failed
+            && !ReferenceEquals(failed, ActiveAudioPlayer)
+            && !_audioCrossfadeInProgress)
+        {
+            _audioGaplessPrebufferedUrl = null;
+            return;
+        }
+
+        // Do not auto-reload here: clearing Source and calling LoadAndPlay again
+        // re-enters MediaFailed (Source=null / SourceNotSupported) and dances the UI forever.
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _audioSuppressMediaFailed = true;
+            try
+            {
+                _audioFadeCts?.Cancel();
+                _audioCrossfadeInProgress = false;
+                _audioGaplessPrebufferedUrl = null;
+                _audioRolesSwapped = false;
+                _audioPlayerService.NotifyCrossfadeCompleted();
+
+                try { ActiveAudioPlayer.Stop(); } catch { /* best effort */ }
+                try { IdleAudioPlayer.Stop(); } catch { /* best effort */ }
+                ActiveAudioPlayer.Volume = AudioPeakVolume;
+                IdleAudioPlayer.Volume = 0;
+
+                _audioPlayerService.PlaybackState = Server.Domain.Enums.PlaybackState.Idle;
+            }
+            finally
+            {
+                _audioSuppressMediaFailed = false;
             }
         });
     }
+#endif
 
     private MediaSource CreateMediaSourceWithAuth(string url)
     {
@@ -888,18 +1249,6 @@ public partial class BlazorPage : ContentPage
         }
 
         return MediaSource.FromUri(url);
-    }
-
-    private void AudioPlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
-    {
-        _audioPlayerService.CurrentTime = e.Position.TotalSeconds;
-    }
-
-    private void AudioPlayer_MediaEnded(object? sender, EventArgs e) => _audioPlayerService.OnTrackEndedAsync().FireAndForget();
-
-    private void AudioPlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
-    {
-        System.Diagnostics.Debug.WriteLine($"[K7-Audio] Playback failed: {e.ErrorMessage}");
     }
 
 #if ANDROID || IOS
@@ -958,7 +1307,7 @@ public partial class BlazorPage : ContentPage
                     await mediaElement.SeekTo(TimeSpan.Zero);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
 
