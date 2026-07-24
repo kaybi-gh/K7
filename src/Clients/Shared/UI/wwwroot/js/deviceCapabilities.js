@@ -10,8 +10,10 @@ window.getSupportedAudioCodecsAsync = async function () {
         aacHE: 'audio/mp4; codecs="mp4a.40.5"',
         opus: 'audio/ogg; codecs="opus"',
         vorbis: 'audio/ogg; codecs="vorbis"',
-        flac: 'audio/x-flac',
+        flac: 'audio/flac',
         alac: 'audio/mp4; codecs="alac"',
+        // Server AudioMediaFormat for wav uses Codec = "pcm".
+        pcm: 'audio/wav',
         m4a: 'audio/mp4',
         oggAudio: 'audio/ogg',
         wav: 'audio/wav'
@@ -40,8 +42,11 @@ window.getSupportedContainersAsync = async function () {
         mp3: 'audio/mpeg',
         flac: 'audio/flac',
         aac: 'audio/aac',
-        ogg_audio: 'audio/ogg',
-        wav: 'audio/wav'
+        // Must match server MediaFormats container ids (ogg, not ogg_audio).
+        ogg: 'audio/ogg',
+        wav: 'audio/wav',
+        m4a: 'audio/mp4',
+        mp4: 'audio/mp4'
     };
 
     const supported = Object.entries(videoContainersToTest)

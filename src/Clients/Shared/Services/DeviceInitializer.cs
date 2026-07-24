@@ -1,9 +1,11 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
+using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Clients.Shared.Services;
+
 public static class DeviceInitializer
 {
     public static async Task InitializeDeviceAsync(IServiceProvider services, string? userId = null)
@@ -37,14 +39,24 @@ public static class DeviceInitializer
                     {
                         deviceStorageService.Remove(PreferenceKeys.DEVICE_ID);
                         deviceStorageService.Remove(PreferenceKeys.DEVICE_ATTACHED_USER_ID);
-                        await CreateNewDeviceAsync(services, deviceStorageService);
+                        existingDeviceId = await CreateNewDeviceAsync(services, deviceStorageService);
+                        if (!Guid.TryParse(existingDeviceId, out parsedId))
+                            return;
                     }
                 }
+
+                // Refresh codec capabilities each login so Windows MAUI (WebView2) stays aligned
+                // with Chromium direct-play instead of stale MediaElement / empty format lists.
+                await RefreshDeviceCapabilitiesAsync(services, parsedId);
             }
         }
         catch (HttpRequestException)
         {
             // Not authenticated yet - device will be initialized after login
+        }
+        catch (InvalidOperationException)
+        {
+            // WebView JS runtime not ready yet on Windows - capabilities refresh retries next launch.
         }
     }
 
@@ -57,5 +69,28 @@ public static class DeviceInitializer
         var deviceIdStr = deviceId.ToString();
         deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceIdStr);
         return deviceIdStr;
+    }
+
+    private static async Task RefreshDeviceCapabilitiesAsync(IServiceProvider services, Guid deviceId)
+    {
+        var deviceService = services.GetRequiredService<IDeviceService>();
+        var deviceApiService = services.GetRequiredService<IDeviceApiService>();
+        var createRequest = await deviceService.GenerateCreateDeviceRequestAsync();
+
+        var updateRequest = new UpdateDeviceRequest
+        {
+            DeviceName = createRequest.DeviceName,
+            ClientType = createRequest.ClientType,
+            DeviceType = createRequest.DeviceType,
+            OperatingSystem = createRequest.OperatingSystem,
+            OperatingSystemVersion = createRequest.OperatingSystemVersion,
+            DisplayHeight = createRequest.DisplayHeight,
+            DisplayWidth = createRequest.DisplayWidth,
+            NativeDeviceDetails = createRequest.NativeDeviceDetails,
+            WebDeviceDetails = createRequest.WebDeviceDetails,
+            PlaybackCapabilities = createRequest.PlaybackCapabilities
+        };
+
+        await deviceApiService.UpdateDeviceAsync(deviceId, updateRequest);
     }
 }

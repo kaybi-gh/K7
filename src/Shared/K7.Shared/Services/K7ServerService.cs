@@ -56,6 +56,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result!.Id;
     }
 
+    public async Task UpdateDeviceAsync(Guid deviceId, UpdateDeviceRequest request, CancellationToken cancellationToken = default)
+    {
+        var responseMessage = await HttpClient.PutAsJsonAsync($"api/devices/{deviceId}", request, _serializerOptions, cancellationToken);
+        responseMessage.EnsureSuccessStatusCode();
+    }
+
     public async Task AttachCurrentUserToDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
         var responseMessage = await HttpClient.PostAsync($"/api/devices/{deviceId}/attach-user", null, cancellationToken);
