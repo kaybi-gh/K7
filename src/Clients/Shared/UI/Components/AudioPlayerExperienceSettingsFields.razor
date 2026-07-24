@@ -75,10 +75,17 @@
                   FormatValue="FormatCrossfadeDuration"
                   Value="Settings.CrossfadeDuration"
                   ValueChanged="v => OnChanged(s => s.CrossfadeDuration = v)" />
-        <K7Switch Label="@L["AdaptiveCrossfade"]" Value="Settings.AdaptiveCrossfade" ValueChanged="v => OnChanged(s => s.AdaptiveCrossfade = v)" />
-        @if (Settings.AdaptiveCrossfade)
+        @if (Settings.CrossfadeDuration <= 0)
         {
-            <span class="text-caption video-playback-hint">@L["AdaptiveCrossfadeHint"]</span>
+            <span class="text-caption video-playback-hint">@L["CrossfadeGaplessHint"]</span>
+        }
+        else
+        {
+            <K7Switch Label="@L["AdaptiveCrossfade"]" Value="Settings.AdaptiveCrossfade" ValueChanged="v => OnChanged(s => s.AdaptiveCrossfade = v)" />
+            @if (Settings.AdaptiveCrossfade)
+            {
+                <span class="text-caption video-playback-hint">@L["AdaptiveCrossfadeHint"]</span>
+            }
         }
     </section>
 

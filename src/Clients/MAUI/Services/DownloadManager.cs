@@ -21,10 +21,13 @@ public class DownloadManager : IDownloadManager
     private readonly ILogger<DownloadManager> _logger;
 
     private readonly List<DownloadQueueItem> _queue = [];
-    private readonly SemaphoreSlim _audioSemaphore = new(2, 2);
+    private readonly SemaphoreSlim _audioSemaphore = new(1, 1);
     private readonly SemaphoreSlim _videoSemaphore = new(1, 1);
     private CancellationTokenSource _globalCts = new();
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _downloadCts = new();
+    private readonly object _cachePauseGate = new();
+    private bool _musicCacheDownloadsPaused;
+    private TaskCompletionSource _musicCacheResumeTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public event Action<DownloadProgressInfo>? ProgressChanged;
     public event Action<DownloadCompletedInfo>? DownloadCompleted;
@@ -48,6 +51,48 @@ public class DownloadManager : IDownloadManager
         _deviceStorageService = deviceStorageService;
         _deviceService = deviceService;
         _logger = logger;
+        // Start unpaused so WaitIfMusicCachePausedAsync does not block forever before first Set.
+        _musicCacheResumeTcs.TrySetResult();
+    }
+
+    public void SetMusicCacheDownloadsPaused(bool paused)
+    {
+        lock (_cachePauseGate)
+        {
+            if (_musicCacheDownloadsPaused == paused)
+                return;
+
+            _musicCacheDownloadsPaused = paused;
+            if (paused)
+            {
+                _musicCacheResumeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            else
+            {
+                _musicCacheResumeTcs.TrySetResult();
+            }
+        }
+
+        _logger.LogDebug("Music cache downloads paused={Paused}", paused);
+    }
+
+    private async Task WaitIfMusicCachePausedAsync(DownloadRequest request, CancellationToken cancellationToken)
+    {
+        if (!request.IsCacheItem)
+            return;
+
+        while (true)
+        {
+            Task waitTask;
+            lock (_cachePauseGate)
+            {
+                if (!_musicCacheDownloadsPaused)
+                    return;
+                waitTask = _musicCacheResumeTcs.Task;
+            }
+
+            await waitTask.WaitAsync(cancellationToken);
+        }
     }
 
     public async Task EnqueueAsync(DownloadRequest request, CancellationToken cancellationToken = default)
@@ -137,7 +182,9 @@ public class DownloadManager : IDownloadManager
         try
         {
             _logger.LogInformation("Download {DownloadId} waiting for semaphore (video={IsVideo})", item.DownloadId, isVideo);
+            await WaitIfMusicCachePausedAsync(item.Request, cancellationToken);
             await semaphore.WaitAsync(cancellationToken);
+            await WaitIfMusicCachePausedAsync(item.Request, cancellationToken);
 
             // Step 1: Prepare download on server
             UpdateStatus(item, DownloadItemStatus.Preparing);

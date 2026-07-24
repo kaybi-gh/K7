@@ -38,8 +38,10 @@
   <data name="Crossfade" xml:space="preserve"><value>Fondu enchaîné</value></data>
   <data name="CrossfadeDuration" xml:space="preserve"><value>Durée</value></data>
   <data name="CrossfadeDisabled" xml:space="preserve"><value>Désactivé</value></data>
-  <data name="AdaptiveCrossfade" xml:space="preserve"><value>Fondu adaptatif (utilise le BPM, la tonalité, l'énergie)</value></data>
-  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>La durée du fondu sera calculée automatiquement en fonction de l'analyse des morceaux.</value></data>
+  <data name="CrossfadeGapless" xml:space="preserve"><value>Gapless</value></data>
+  <data name="CrossfadeGaplessHint" xml:space="preserve"><value>Enchaînement sans fondu : la piste suivante est préchargée puis démarrée à la fin.</value></data>
+  <data name="AdaptiveCrossfade" xml:space="preserve"><value>Fondu adaptatif (utilise le waveform)</value></data>
+  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>La durée du fondu est ajustée selon le silence de fin/début détecté sur le waveform (ou MixRamp si disponible).</value></data>
   <data name="CrossfadeAdaptiveAuto" xml:space="preserve"><value>Automatique (adaptatif)</value></data>
   <data name="Autoplay" xml:space="preserve"><value>Lecture automatique</value></data>
   <data name="AutoplayDescription" xml:space="preserve"><value>Lire des morceaux similaires à la fin de la file d'attente</value></data>

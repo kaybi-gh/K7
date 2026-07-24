@@ -69,8 +69,6 @@ public partial class AudioPlayerExperienceSettingsFields
         if (value > 0)
             return $"{value:F0}s";
 
-        return Settings?.AdaptiveCrossfade == true
-            ? L["CrossfadeAdaptiveAuto"]
-            : L["CrossfadeDisabled"];
+        return L["CrossfadeGapless"];
     }
 }

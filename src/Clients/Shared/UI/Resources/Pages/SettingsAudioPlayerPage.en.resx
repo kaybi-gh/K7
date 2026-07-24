@@ -38,8 +38,10 @@
   <data name="Crossfade" xml:space="preserve"><value>Crossfade</value></data>
   <data name="CrossfadeDuration" xml:space="preserve"><value>Duration</value></data>
   <data name="CrossfadeDisabled" xml:space="preserve"><value>Disabled</value></data>
-  <data name="AdaptiveCrossfade" xml:space="preserve"><value>Adaptive crossfade (uses BPM, key, energy)</value></data>
-  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>Crossfade duration will be automatically calculated based on track analysis.</value></data>
+  <data name="CrossfadeGapless" xml:space="preserve"><value>Gapless</value></data>
+  <data name="CrossfadeGaplessHint" xml:space="preserve"><value>No crossfade: the next track is prebuffered and started at the end.</value></data>
+  <data name="AdaptiveCrossfade" xml:space="preserve"><value>Adaptive crossfade (uses waveform)</value></data>
+  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>Crossfade duration is adjusted from leading/trailing silence on the waveform (or MixRamp when available).</value></data>
   <data name="CrossfadeAdaptiveAuto" xml:space="preserve"><value>Automatic (adaptive)</value></data>
   <data name="Autoplay" xml:space="preserve"><value>Autoplay</value></data>
   <data name="AutoplayDescription" xml:space="preserve"><value>Play similar tracks when queue ends</value></data>

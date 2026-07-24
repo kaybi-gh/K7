@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using K7.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,9 @@ namespace K7.Clients.MAUI.Services;
 
 public class MusicCacheService : IMusicCacheService
 {
+    private const double LookaheadRemainingSeconds = 45;
+    private const double LookaheadProgressThreshold = 0.8;
+
     private readonly IDownloadManager _downloadManager;
     private readonly IOfflineMediaStore _offlineStore;
     private readonly IServiceProvider _serviceProvider;
@@ -64,7 +68,10 @@ public class MusicCacheService : IMusicCacheService
                 {
                     _audioPlayerService.QueueChanged += OnQueueChanged;
                     _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
+                    _audioPlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+                    _audioPlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
                     _subscribed = true;
+                    SyncCachePauseFromPlaybackState(_audioPlayerService.PlaybackState);
                 }
             }
 
@@ -73,6 +80,8 @@ public class MusicCacheService : IMusicCacheService
     }
 
     private bool _initialLookaheadDone;
+    private int _lookaheadGeneration;
+    private bool _lookaheadStartedForCurrentTrack;
 
     public async Task<string?> GetCachedTrackPathAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
     {
@@ -81,7 +90,7 @@ public class MusicCacheService : IMusicCacheService
         if (!_initialLookaheadDone)
         {
             _initialLookaheadDone = true;
-            _ = CacheLookaheadAsync();
+            // Do not prefetch at cold start while a stream may be opening.
         }
 
         var item = await _offlineStore.GetByIndexedFileIdAsync(indexedFileId, cancellationToken);
@@ -93,9 +102,71 @@ public class MusicCacheService : IMusicCacheService
         await _offlineStore.RemoveAllCacheItemsAsync(cancellationToken);
     }
 
-    private void OnQueueChanged() => CacheLookaheadAsync().FireAndForget(_logger);
+    private void OnQueueChanged()
+    {
+        _lookaheadStartedForCurrentTrack = false;
+        ConsiderLateLookahead();
+    }
 
-    private void OnCurrentTrackChanged(AudioQueueItem? _) => CacheLookaheadAsync().FireAndForget(_logger);
+    private void OnCurrentTrackChanged(AudioQueueItem? _)
+    {
+        _lookaheadStartedForCurrentTrack = false;
+        SyncCachePauseFromPlaybackState(AudioPlayerService.PlaybackState);
+    }
+
+    private void OnCurrentTimeChanged(double _) => ConsiderLateLookahead();
+
+    private void OnPlaybackStateChanged(PlaybackState state)
+    {
+        SyncCachePauseFromPlaybackState(state);
+        if (state is PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended)
+            ConsiderLateLookahead();
+    }
+
+    private void SyncCachePauseFromPlaybackState(PlaybackState state)
+    {
+        // Pause background cache downloads while actively streaming to avoid competing with playback I/O.
+        var pause = state is PlaybackState.Playing or PlaybackState.Buffering;
+        _downloadManager.SetMusicCacheDownloadsPaused(pause);
+    }
+
+    private void ConsiderLateLookahead()
+    {
+        if (_lookaheadStartedForCurrentTrack)
+            return;
+
+        var audio = AudioPlayerService;
+        var duration = audio.Duration;
+        var currentTime = audio.CurrentTime;
+        if (duration <= 0 || currentTime <= 0)
+            return;
+
+        var remaining = duration - currentTime;
+        var progress = currentTime / duration;
+        if (remaining > LookaheadRemainingSeconds && progress < LookaheadProgressThreshold)
+            return;
+
+        _lookaheadStartedForCurrentTrack = true;
+        ScheduleCacheLookaheadAsync().FireAndForget(_logger);
+    }
+
+    private async Task ScheduleCacheLookaheadAsync()
+    {
+        var generation = Interlocked.Increment(ref _lookaheadGeneration);
+        try
+        {
+            // Brief settle after we enter the late-track window.
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            if (generation != _lookaheadGeneration)
+                return;
+
+            await CacheLookaheadAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Music cache lookahead scheduling failed");
+        }
+    }
 
     private async Task CacheLookaheadAsync()
     {
@@ -113,7 +184,6 @@ public class MusicCacheService : IMusicCacheService
 
             if (queue.Count == 0 || currentIndex < 0) return;
 
-            // Check cache size limit
             var storageInfo = await _offlineStore.GetStorageInfoAsync();
             if (storageInfo.CacheBytes >= MaxCacheSizeBytes)
             {
@@ -121,7 +191,6 @@ public class MusicCacheService : IMusicCacheService
                 return;
             }
 
-            // Cache the next N tracks
             for (var i = 1; i <= effectiveLookahead && currentIndex + i < queue.Count; i++)
             {
                 var nextItem = queue[currentIndex + i];
@@ -136,7 +205,7 @@ public class MusicCacheService : IMusicCacheService
                     Artist = nextItem.Artist,
                     AlbumTitle = nextItem.AlbumTitle,
                     CoverUrl = nextItem.CoverUrl,
-                    MediaType = Server.Domain.Enums.MediaType.MusicTrack,
+                    MediaType = MediaType.MusicTrack,
                     IsCacheItem = true
                 });
             }
@@ -155,7 +224,6 @@ public class MusicCacheService : IMusicCacheService
             return mobileLookahead;
         }
 
-        // WiFi or other network type
         var wifiLookahead = _deviceStorageService.Get(PreferenceKeys.CACHE_LOOKAHEAD_WIFI);
         return wifiLookahead > 0 ? wifiLookahead : LookaheadCount;
     }

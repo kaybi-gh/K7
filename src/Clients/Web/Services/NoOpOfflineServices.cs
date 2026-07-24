@@ -16,6 +16,7 @@ public class NoOpDownloadManager : IDownloadManager
     public Task EnqueueAsync(DownloadRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelAsync(Guid downloadId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelAllAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public void SetMusicCacheDownloadsPaused(bool paused) { }
 }
 
 public class NoOpOfflineMediaStore : IOfflineMediaStore

@@ -11,6 +11,12 @@ public interface IDownloadManager
     Task EnqueueAsync(DownloadRequest request, CancellationToken cancellationToken = default);
     Task CancelAsync(Guid downloadId, CancellationToken cancellationToken = default);
     Task CancelAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// When true, background music-cache downloads wait so they do not starve active streaming.
+    /// Explicit user downloads (IsCacheItem=false) are unaffected.
+    /// </summary>
+    void SetMusicCacheDownloadsPaused(bool paused);
 }
 
 public record DownloadRequest
