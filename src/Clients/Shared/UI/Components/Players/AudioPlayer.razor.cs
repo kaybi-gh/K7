@@ -15,9 +15,12 @@ public partial class AudioPlayer : IAsyncDisposable
     private Guid? _lastMediaSessionTrackId;
     private double _lastPositionUpdate;
 
+    private static bool UsesWebAudioPlayer() =>
+        System.OperatingSystem.IsBrowser() || WindowsAudioPlayback.UsesWebAudioPlayer;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_disposed || !System.OperatingSystem.IsBrowser()) return;
+        if (_disposed || !UsesWebAudioPlayer()) return;
 
         if (AudioPlayerService.IsVisible && !_isInitialized)
         {
@@ -48,7 +51,7 @@ public partial class AudioPlayer : IAsyncDisposable
 
     protected override void OnInitialized()
     {
-        if (_disposed || !System.OperatingSystem.IsBrowser()) return;
+        if (_disposed || !UsesWebAudioPlayer()) return;
 
         AudioPlayerService.PlayRequested += PlayAsync;
         AudioPlayerService.PauseRequested += PauseAsync;
@@ -76,7 +79,7 @@ public partial class AudioPlayer : IAsyncDisposable
 
         _disposed = true;
 
-        if (!System.OperatingSystem.IsBrowser()) return;
+        if (!UsesWebAudioPlayer()) return;
 
         AudioPlayerService.PlayRequested -= PlayAsync;
         AudioPlayerService.PauseRequested -= PauseAsync;
@@ -132,7 +135,8 @@ public partial class AudioPlayer : IAsyncDisposable
     [JSInvokable]
     public void OnVolumeChanged(double volume, bool muted)
     {
-        AudioPlayerService.Volume = volume;
+        // HTMLAudioElement.volume stays at 1.0 when Web Audio gain drives the user level.
+        // Only sync mute from the element; SetVolume owns the persisted Volume value.
         AudioPlayerService.IsMuted = muted;
     }
 
@@ -149,6 +153,12 @@ public partial class AudioPlayer : IAsyncDisposable
     }
 
     [JSInvokable]
+    public void OnPlaybackFailed()
+    {
+        AudioPlayerService.ForceIdle();
+    }
+
+    [JSInvokable]
     public async Task OnTrackEnded()
     {
         await AudioPlayerService.OnTrackEndedAsync();
@@ -161,6 +171,12 @@ public partial class AudioPlayer : IAsyncDisposable
     }
 
     [JSInvokable]
+    public void OnCrossfadeCompleted()
+    {
+        AudioPlayerService.NotifyCrossfadeCompleted();
+    }
+
+    [JSInvokable]
     public async Task OnGaplessPrebufferNeeded()
     {
         await AudioPlayerService.OnGaplessPrebufferNeededAsync();
@@ -169,13 +185,13 @@ public partial class AudioPlayer : IAsyncDisposable
     private async Task OnGaplessPrebufferRequested(PlayerSource source)
     {
         if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
-        await JSRuntime.InvokeVoidAsync("audioGaplessPrebuffer", source.Url, source.MimeType);
+        await JSRuntime.InvokeVoidAsync("audioGaplessPrebuffer", ResolvePlaybackUrl(source.Url), source.MimeType);
     }
 
     private async Task OnCrossfadeRequested(PlayerSource source, double duration)
     {
         if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
-        await JSRuntime.InvokeVoidAsync("audioStartCrossfade", source.Url, source.MimeType, duration);
+        await JSRuntime.InvokeVoidAsync("audioStartCrossfade", ResolvePlaybackUrl(source.Url), source.MimeType, duration);
     }
 
     private async Task PlayAsync()
@@ -244,7 +260,7 @@ public partial class AudioPlayer : IAsyncDisposable
         // Push per-track loudness data for normalization
         await PushTrackLoudnessAsync();
 
-        await JSRuntime.InvokeVoidAsync("audioChangeSource", source.Url, source.MimeType);
+        await JSRuntime.InvokeVoidAsync("audioChangeSource", ResolvePlaybackUrl(source.Url), source.MimeType);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -429,5 +445,27 @@ public partial class AudioPlayer : IAsyncDisposable
             await JSRuntime.InvokeVoidAsync("audioResetFadeGain");
         }
         catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>
+    /// Maps offline / music-cache filesystem paths to the WebView virtual host (k7-local-files).
+    /// </summary>
+    private string ResolvePlaybackUrl(string url)
+    {
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || url.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        var localPath = url;
+        if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
+            && Uri.TryCreate(url, UriKind.Absolute, out var fileUri))
+        {
+            localPath = fileUri.LocalPath;
+        }
+
+        return DeviceService.GetLocalFileUrl(localPath) ?? url;
     }
 }

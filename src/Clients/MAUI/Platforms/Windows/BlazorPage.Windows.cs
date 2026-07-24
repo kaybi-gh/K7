@@ -1,17 +1,9 @@
 #if WINDOWS
-using System.Runtime.InteropServices.WindowsRuntime;
-using K7.Clients.MAUI.Constants;
 using K7.Clients.Shared.Helpers;
-using K7.Clients.Shared.Models;
 using Microsoft.JSInterop;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.Web.WebView2.Core;
-using SkiaSharp;
-using Windows.Media;
-using Windows.Media.Playback;
-using Windows.Storage.Streams;
 using Windows.System;
 using VirtualKey = Windows.System.VirtualKey;
 using WinUiWebView2 = Microsoft.UI.Xaml.Controls.WebView2;
@@ -20,7 +12,6 @@ namespace K7.Clients.MAUI;
 
 public partial class BlazorPage
 {
-    private SystemMediaTransportControls? _smtc;
     private bool _windowsEscapeHandlerAttached;
     private bool _windowsWebViewEscapeAttached;
     private bool _windowsWebViewCoreInitHooked;
@@ -30,25 +21,12 @@ public partial class BlazorPage
 
     partial void InitializePlayerPlatform()
     {
-        _audioPlayerService.CurrentTrackChanged += OnAudioTrackChangedWindows;
-        _audioPlayerService.PlaybackStateChanged += OnAudioPlaybackStateChangedWindows;
-        NativeAudioPlayer.HandlerChanged += OnNativeAudioPlayerHandlerChangedWindows;
-        NativeAudioPlayer.MediaOpened += OnNativeAudioPlayerMediaOpenedWindows;
+        // Music uses WebView2 audioplayer.js (WindowsAudioPlayback). Keep native MediaElements idle.
+        DisableNativeAudioElements();
     }
 
     partial void DetachPlayerPlatform()
     {
-        _audioPlayerService.CurrentTrackChanged -= OnAudioTrackChangedWindows;
-        _audioPlayerService.PlaybackStateChanged -= OnAudioPlaybackStateChangedWindows;
-        NativeAudioPlayer.HandlerChanged -= OnNativeAudioPlayerHandlerChangedWindows;
-        NativeAudioPlayer.MediaOpened -= OnNativeAudioPlayerMediaOpenedWindows;
-
-        if (_smtc is not null)
-        {
-            _smtc.ButtonPressed -= OnSmtcButtonPressed;
-            _smtc = null;
-        }
-
         DetachWindowsEscapeHandler();
         DetachWindowsWebViewEscapeHandler();
     }
@@ -63,20 +41,18 @@ public partial class BlazorPage
     partial void ConfigureWindowsVideoPlayerLayout()
     {
         SyncWindowsStreamAuthContext();
+        DisableNativeAudioElements();
 
         NativePlayer.IsVisible = false;
         NativePlayer.InputTransparent = true;
         NativePlayer.IsEnabled = false;
         NativePlayer.ShouldShowPlaybackControls = false;
         NativePlayerCloseButton.IsVisible = false;
-        NativeAudioPlayer.InputTransparent = true;
-        NativeAudioPlayer.IsEnabled = false;
 
         if (_playerService.IsVisible)
         {
             NativePlayer.Stop();
             NativePlayer.Source = null;
-            NativeAudioPlayer.Stop();
 
             HideNonWebViewSiblingsForVideoSession();
 
@@ -99,13 +75,16 @@ public partial class BlazorPage
             RestoreWindowsVideoLayoutHiddenViews();
 
             NativePlayer.IsEnabled = true;
-            NativeAudioPlayer.IsEnabled = true;
-            NativeAudioPlayer.InputTransparent = true;
             NativePlayer.Stop();
             NativePlayer.Source = null;
             BackgroundColor = Colors.Transparent;
             blazorWebView.ZIndex = 2;
         }
+    }
+
+    private static void DisableNativeAudioElements()
+    {
+        // Elements remain in XAML for other TFMs; Windows never drives them.
     }
 
     private void HideNonWebViewSiblingsForVideoSession()
@@ -125,7 +104,6 @@ public partial class BlazorPage
 
             RootGrid.Children.RemoveAt(i);
         }
-
     }
 
     private void RestoreWindowsVideoLayoutHiddenViews()
@@ -148,9 +126,7 @@ public partial class BlazorPage
     private void ApplyWindowsWebViewOpaqueInputSurface()
     {
         if (!TryGetWindowsWebView(out var webView))
-        {
             return;
-        }
 
         webView.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 13, 9, 7);
         webView.IsHitTestVisible = true;
@@ -198,9 +174,7 @@ public partial class BlazorPage
     private void OnWindowsWebViewCoreInitialized(WinUiWebView2 sender, CoreWebView2InitializedEventArgs args)
     {
         if (args.Exception is not null)
-        {
             return;
-        }
 
         sender.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 13, 9, 7);
         sender.IsHitTestVisible = true;
@@ -329,164 +303,6 @@ public partial class BlazorPage
             playerService.OnBackPressed();
         else
             DispatchBackAsEscape();
-    }
-
-    private void OnNativeAudioPlayerHandlerChangedWindows(object? sender, EventArgs e)
-        => OnNativeAudioPlayerHandlerChangedWindowsAsync().FireAndForget();
-
-    private async Task OnNativeAudioPlayerHandlerChangedWindowsAsync()
-    {
-        if (!TrySetupSmtc())
-        {
-            await Task.Delay(MauiTimeouts.WindowsBlazorInitDelay);
-            TrySetupSmtc();
-        }
-    }
-
-    private void OnNativeAudioPlayerMediaOpenedWindows(object? sender, EventArgs e)
-    {
-        TrySetupSmtc();
-        OnAudioTrackChangedWindows(_audioPlayerService.CurrentTrack);
-    }
-
-    private bool TrySetupSmtc()
-    {
-        if (_smtc is not null) return true;
-
-        var platformView = NativeAudioPlayer.Handler?.PlatformView;
-        if (platformView is not Panel panel)
-        {
-            System.Diagnostics.Trace.WriteLine($"[K7-Audio] SMTC: platform view is {platformView?.GetType().Name ?? "null"}, expected Panel");
-            return false;
-        }
-
-        MediaPlayerElement? mpe = null;
-        foreach (var child in panel.Children)
-        {
-            if (child is MediaPlayerElement found)
-            {
-                mpe = found;
-                break;
-            }
-        }
-
-        if (mpe?.MediaPlayer is null)
-        {
-            System.Diagnostics.Trace.WriteLine($"[K7-Audio] SMTC: no MediaPlayerElement in panel ({panel.Children.Count} children)");
-            return false;
-        }
-
-        mpe.MediaPlayer.CommandManager.IsEnabled = false;
-
-        var smtc = mpe.MediaPlayer.SystemMediaTransportControls;
-        smtc.IsEnabled = true;
-        smtc.IsPlayEnabled = true;
-        smtc.IsPauseEnabled = true;
-        smtc.IsNextEnabled = true;
-        smtc.IsPreviousEnabled = true;
-        smtc.ButtonPressed += OnSmtcButtonPressed;
-        _smtc = smtc;
-
-        System.Diagnostics.Trace.WriteLine("[K7-Audio] SMTC setup OK");
-        return true;
-    }
-
-    private void OnSmtcButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
-    {
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            switch (args.Button)
-            {
-                case SystemMediaTransportControlsButton.Play:
-                    _audioPlayerService.Play();
-                    break;
-                case SystemMediaTransportControlsButton.Pause:
-                    _audioPlayerService.Pause();
-                    break;
-                case SystemMediaTransportControlsButton.Next:
-                    _ = _audioPlayerService.NextAsync();
-                    break;
-                case SystemMediaTransportControlsButton.Previous:
-                    _ = _audioPlayerService.PreviousAsync();
-                    break;
-            }
-        });
-    }
-
-    private void OnAudioPlaybackStateChangedWindows(Server.Domain.Enums.PlaybackState state)
-    {
-        if (_smtc is null) return;
-
-        _smtc.PlaybackStatus = state switch
-        {
-            Server.Domain.Enums.PlaybackState.Playing => MediaPlaybackStatus.Playing,
-            Server.Domain.Enums.PlaybackState.Paused => MediaPlaybackStatus.Paused,
-            Server.Domain.Enums.PlaybackState.Buffering => MediaPlaybackStatus.Changing,
-            _ => MediaPlaybackStatus.Stopped,
-        };
-    }
-
-    private void OnAudioTrackChangedWindows(AudioQueueItem? track)
-    {
-        if (track is null) return;
-
-        MainThread.BeginInvokeOnMainThread(async () =>
-        {
-            TrySetupSmtc();
-            if (_smtc is null) return;
-
-            try
-            {
-                var updater = _smtc.DisplayUpdater;
-                updater.Type = MediaPlaybackType.Music;
-                updater.MusicProperties.Title = track.Title ?? "";
-                updater.MusicProperties.Artist = track.Artist ?? "";
-                updater.MusicProperties.AlbumTitle = track.AlbumTitle ?? "";
-
-                if (!string.IsNullOrEmpty(track.CoverUrl))
-                {
-                    var absoluteUri = _k7ServerService.GetAbsoluteUri(track.CoverUrl);
-                    if (absoluteUri is not null)
-                    {
-                        var thumbnail = await FetchThumbnailAsync(absoluteUri);
-                        if (thumbnail is not null)
-                            updater.Thumbnail = thumbnail;
-                    }
-                }
-
-                updater.Update();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.WriteLine($"[K7-Audio] SMTC update failed: {ex.Message}");
-            }
-        });
-    }
-
-    private async Task<RandomAccessStreamReference?> FetchThumbnailAsync(Uri uri)
-    {
-        try
-        {
-            var bytes = await _k7ServerService.HttpClient.GetByteArrayAsync(uri);
-
-            // SMTC does not support WebP - convert to JPEG via SkiaSharp
-            using var original = SKBitmap.Decode(bytes);
-            if (original is null) return null;
-
-            using var image = SKImage.FromBitmap(original);
-            using var encoded = image.Encode(SKEncodedImageFormat.Jpeg, 90);
-            var jpegBytes = encoded.ToArray();
-
-            var stream = new InMemoryRandomAccessStream();
-            await stream.WriteAsync(jpegBytes.AsBuffer());
-            stream.Seek(0);
-            return RandomAccessStreamReference.CreateFromStream(stream);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.WriteLine($"[K7-Audio] Thumbnail fetch failed: {ex.Message}");
-            return null;
-        }
     }
 }
 #endif
