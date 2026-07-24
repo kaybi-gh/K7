@@ -18,12 +18,9 @@
          data-sn-layer="overlay"
          data-sn-layer-close="self"
          @onclick="Close">
-        @if (!string.IsNullOrEmpty(DisplayCoverUrl))
-        {
-            <div class="fullscreen-player-bg"
-                 style="background-image: url('@DisplayCoverUrl')">
-            </div>
-        }
+        <div class="fullscreen-player-bg"
+             style="@(string.IsNullOrEmpty(DisplayCoverUrl) ? null : $"background-image: url('{DisplayCoverUrl}')")">
+        </div>
 
         <div class="fullscreen-player-content" @onclick:stopPropagation="true">
             @if (IsSyncPlayMode && SyncPlay.ShowReactions)
@@ -132,13 +129,13 @@
                             <span class="fullscreen-player-artist">@DisplayArtist</span>
                             @if (!string.IsNullOrEmpty(DisplayAlbumTitle))
                             {
-                                <span class="fullscreen-player-album">@DisplayAlbumTitle@if (!IsRemoteMode && _trackDetails?.ReleaseDate is { } date) { <text> (@date.Year)</text> }</span>
+                                <span class="fullscreen-player-album">@DisplayAlbumTitle@if (DisplayReleaseDate is { } date) { <text> (@date.Year)</text> }</span>
                             }
-                            @if (!IsRemoteMode)
+                            @if (!IsRemoteMode && _uiMediaId is Guid mediaId)
                             {
                                 <RatingStars
-                                    MediaId="Audio.CurrentTrack.MediaId"
-                                    Value="Audio.CurrentTrack.UserRating"
+                                    MediaId="mediaId"
+                                    Value="_uiUserRating"
                                     ValueChanged="OnRatingChanged"
                                     Size="md" />
                             }

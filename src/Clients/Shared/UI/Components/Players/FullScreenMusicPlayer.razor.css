@@ -7,11 +7,13 @@
     justify-content: center;
     background: var(--player-overlay-bg, rgba(0, 0, 0, 0.95));
     --dominant-color: 128,128,128;
+    --player-accent: var(--color-accent);
 }
 
 .fullscreen-player-bg {
     position: absolute;
     inset: 0;
+    background-color: #0a0a0a;
     background-size: cover;
     background-position: center;
     filter: blur(60px) brightness(0.3) saturate(1.4);
@@ -101,11 +103,13 @@
 
 .artwork-canvas-wrap {
     position: relative;
-    width: min(360px, 100%);
+    /* Default matches phone/tablet max so resizing into those breakpoints does not jump */
+    width: min(280px, 100%);
     aspect-ratio: 1 / 1;
     flex-shrink: 0;
     border-radius: 8px;
     box-shadow: var(--media-artwork-shadow, 0 8px 32px rgba(0, 0, 0, 0.5));
+    overflow: hidden;
 }
 
 .visualizer-canvas {
@@ -128,6 +132,12 @@
     width: 100%;
     height: 100%;
     border-radius: inherit;
+}
+
+::deep .artwork-image .k7-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .artwork-placeholder {
@@ -196,21 +206,24 @@
     border-radius: var(--radius-sm);
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
-    transition: filter 0.15s;
+    transform: scaleY(var(--waveform-scale, 1));
+    transform-origin: center;
+    transition: filter 0.15s, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+    opacity: var(--waveform-opacity, 1);
 }
 
 .waveform-container:hover,
 .waveform-container:focus-visible {
-    filter: drop-shadow(0 0 4px var(--color-accent)) drop-shadow(0 0 1px var(--color-accent));
+    filter: drop-shadow(0 0 4px var(--player-accent)) drop-shadow(0 0 1px var(--player-accent));
 }
 
 .waveform-container:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--player-accent);
     outline-offset: 4px;
 }
 
 .waveform-container.scrubbing {
-    filter: drop-shadow(0 0 4px var(--color-accent)) drop-shadow(0 0 1px var(--color-accent));
+    filter: drop-shadow(0 0 4px var(--player-accent)) drop-shadow(0 0 1px var(--player-accent));
 }
 
 .waveform-bg {
@@ -224,7 +237,7 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: var(--color-accent);
+    background: var(--player-accent);
     transition: width 0.1s linear;
 }
 
@@ -261,7 +274,7 @@
 }
 
 .seek-bar:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--player-accent);
     outline-offset: 2px;
 }
 
@@ -281,7 +294,7 @@
 }
 
 .seek-current {
-    background: var(--color-accent);
+    background: var(--player-accent);
 }
 
 .seek-thumb {
@@ -290,7 +303,7 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: var(--player-accent);
     transform: translate(-50%, -50%);
     pointer-events: none;
     opacity: 0;
@@ -324,6 +337,10 @@
 .fullscreen-fab-wrap {
     display: flex;
     align-items: center;
+}
+
+.fullscreen-fab-wrap ::deep .k7-fab {
+    background: var(--player-accent);
 }
 
 ::deep .fullscreen-fab-wrap.buffering .k7-icon {
@@ -376,7 +393,7 @@
 }
 
 ::deep .queue-tabs .k7-tab--active {
-    color: var(--color-accent);
+    color: var(--player-accent);
 }
 
 .queue-empty {
@@ -420,7 +437,7 @@
 }
 
 .queue-item:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--player-accent);
     outline-offset: -2px;
 }
 
@@ -472,7 +489,7 @@
 }
 
 .queue-item-current .queue-item-title {
-    color: var(--color-accent);
+    color: var(--player-accent);
 }
 
 .queue-item-artist {
@@ -509,6 +526,7 @@
     opacity: 1;
 }
 
+/* Phone: cover under header, details stacked (controls follow content - not pinned to bottom). */
 @media (max-width: 599.98px) {
     .fullscreen-player-content {
         padding: calc(12px + var(--k7-safe-top)) 16px calc(12px + var(--k7-safe-bottom));
@@ -519,6 +537,7 @@
         flex: 1;
         justify-content: flex-start;
         gap: var(--space-6);
+        min-height: 0;
     }
 
     .fullscreen-player-artwork {
@@ -577,6 +596,10 @@
         border-radius: var(--radius-sm);
     }
 
+    .waveform-container {
+        height: 32px;
+    }
+
     .seek-times {
         position: static;
         display: flex;
@@ -589,10 +612,12 @@
     }
 
     .artwork-canvas-wrap {
+        /* Max 280px = tablet cover size (no jump at 600px) */
         width: min(280px, 70vw);
     }
 }
 
+/* Tablet: same cover size as phone max; desktop min picks up from here. */
 @media (min-width: 600px) and (max-width: 768px) {
     .fullscreen-player-content {
         padding: calc(12px + var(--k7-safe-top)) 16px calc(12px + var(--k7-safe-bottom));
@@ -650,6 +675,10 @@
         border-radius: var(--radius-sm);
     }
 
+    .waveform-container {
+        height: 32px;
+    }
+
     .seek-times {
         position: absolute;
         inset: 0;
@@ -661,31 +690,43 @@
     }
 
     .artwork-canvas-wrap {
-        width: min(280px, 100%);
+        /* Same as phone max / desktop min */
+        width: 280px;
+        max-width: 100%;
     }
 }
 
 @media (min-width: 769px) {
+    .fullscreen-player-content {
+        overflow: hidden;
+    }
+
     .fullscreen-player-view {
         flex-direction: row;
         align-items: center;
+        justify-content: center;
         gap: 48px;
+        width: 100%;
         max-width: 1000px;
+        margin-inline: auto;
     }
 
+    /* Min 280px = tablet cover; max 400px. Definite width required (absolute children). */
     .fullscreen-player-artwork {
         flex: 0 0 auto;
-        width: auto;
+        width: clamp(280px, 38%, 400px);
         max-width: 400px;
+        padding: 0;
     }
 
     .artwork-canvas-wrap {
-        width: min(400px, 100%);
+        width: 100%;
     }
 
     .fullscreen-player-details {
         flex: 1;
         min-width: 0;
+        align-items: stretch;
         justify-content: center;
         gap: var(--space-5);
     }
@@ -702,6 +743,11 @@
 
     .fullscreen-player-volume {
         max-width: 100%;
+        display: flex;
+    }
+
+    .fullscreen-player-controls {
+        padding-top: 0;
     }
 }
 

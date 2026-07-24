@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -8,6 +9,7 @@ using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
@@ -47,6 +49,17 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private float[]? _waveformPeaks;
     private string? _waveformMaskStyle;
     private string? _prevWaveformState;
+    private double _waveformScale = 1;
+    private double _waveformOpacity = 1;
+    private string? _uiTitle;
+    private string? _uiArtist;
+    private string? _uiAlbumTitle;
+    private string? _uiCoverUrl;
+    private string? _uiDominantColor;
+    private DateOnly? _uiReleaseDate;
+    private Guid? _uiMediaId;
+    private int? _uiUserRating;
+    private bool _uiCommitted;
     private Guid? _detailsLoadedForMediaId;
     private DotNetObjectReference<FullScreenMusicPlayer>? _dotNetRef;
     private bool _menuOpen;
@@ -78,17 +91,86 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private bool IsRemoteMode => RemoteControl.IsControlling && RemoteControl.IsAudio;
     private bool IsSyncPlayMode => SyncPlay.IsInGroup;
 
-    private string? DisplayTitle => IsRemoteMode ? RemoteControl.Title : Audio.CurrentTrack?.Title;
-    private string? DisplayArtist => IsRemoteMode ? RemoteControl.Artist : Audio.CurrentTrack?.Artist;
-    private string? DisplayAlbumTitle => IsRemoteMode ? RemoteControl.AlbumTitle : Audio.CurrentTrack?.AlbumTitle;
-    private string? DisplayCoverUrl => IsRemoteMode ? RemoteControl.CoverUrl : Audio.CurrentTrack?.CoverUrl;
+    private string? DisplayTitle => IsRemoteMode
+        ? RemoteControl.Title
+        : _uiCommitted ? _uiTitle : Audio.CurrentTrack?.Title;
+    private string? DisplayArtist => IsRemoteMode
+        ? RemoteControl.Artist
+        : _uiCommitted ? _uiArtist : Audio.CurrentTrack?.Artist;
+    private string? DisplayAlbumTitle => IsRemoteMode
+        ? RemoteControl.AlbumTitle
+        : _uiCommitted ? _uiAlbumTitle : Audio.CurrentTrack?.AlbumTitle;
+    private string? DisplayCoverUrl => ToFullscreenCoverUrl(
+        IsRemoteMode
+            ? RemoteControl.CoverUrl
+            : _uiCommitted ? _uiCoverUrl : Audio.CurrentTrack?.CoverUrl);
+    private DateOnly? DisplayReleaseDate => IsRemoteMode ? null : _uiReleaseDate;
     private double DisplayPosition => IsRemoteMode ? RemoteControl.Position : Audio.CurrentTime;
     private double DisplayDuration => IsRemoteMode ? RemoteControl.Duration : Audio.Duration;
     private double DisplayVolume => IsRemoteMode ? RemoteControl.Volume : Audio.Volume;
 
-    private string? DominantColorStyle => Audio.CurrentTrack?.CoverDominantColor is { } color && !IsRemoteMode
-        ? $"--dominant-color: {color};"
-        : null;
+    private string? DominantColorStyle
+    {
+        get
+        {
+            if (IsRemoteMode)
+                return null;
+
+            var raw = _uiCommitted ? _uiDominantColor : Audio.CurrentTrack?.CoverDominantColor;
+            if (raw is null)
+                return null;
+
+            if (DominantColorCss.TryParseRgbComponents(raw, out var r, out var g, out var b))
+                return $"--dominant-color: {r},{g},{b}; --player-accent: rgb({r}, {g}, {b});";
+
+            var accent = DominantColorCss.ToVariableStyle("--player-accent", raw);
+            return string.IsNullOrEmpty(accent) ? null : accent;
+        }
+    }
+
+    private void CommitUiFromCurrentTrack(MusicTrackDto? details)
+    {
+        var track = Audio.CurrentTrack;
+        _uiTitle = track?.Title;
+        _uiArtist = track?.Artist;
+        _uiAlbumTitle = track?.AlbumTitle;
+        _uiCoverUrl = track?.CoverUrl;
+        _uiDominantColor = details?.Pictures?
+                .FirstOrDefault(p => p.Type == MetadataPictureType.Cover)?.DominantColor
+            ?? details?.Pictures?
+                .FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor
+            ?? track?.CoverDominantColor;
+        _uiMediaId = track?.MediaId;
+        _uiUserRating = track?.UserRating;
+        _uiReleaseDate = details?.ReleaseDate;
+        _uiCommitted = true;
+    }
+
+    /// <summary>
+    /// Queue covers use Small (~200px). Fullscreen needs Medium (same as album detail).
+    /// </summary>
+    private static string? ToFullscreenCoverUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return null;
+
+        var queryIdx = url.IndexOf('?', StringComparison.Ordinal);
+        if (queryIdx < 0)
+        {
+            return url.Contains("/metadata-pictures/", StringComparison.OrdinalIgnoreCase)
+                ? $"{url}?size={MetadataPictureSize.Medium}"
+                : url;
+        }
+
+        var path = url[..queryIdx];
+        var query = url[(queryIdx + 1)..];
+        var parts = query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !p.StartsWith("size=", StringComparison.OrdinalIgnoreCase))
+            .Append($"size={MetadataPictureSize.Medium}")
+            .ToArray();
+
+        return $"{path}?{string.Join('&', parts)}";
+    }
 
     private string PlayPauseIcon => IsRemoteMode
         ? RemoteControl.PlaybackState == RemotePlaybackState.Playing ? Phosphor.Pause : Phosphor.Play
@@ -141,7 +223,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _isTv = deviceType == DeviceType.TV;
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
-        _visualizerAvailable = DeviceService.GetClientType() == ClientType.Web && !_isTv;
+        _visualizerAvailable = !_isTv;
 
         try
         {
@@ -280,14 +362,14 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         var mediaId = Audio.CurrentTrack?.MediaId;
         if (mediaId is null || mediaId == _detailsLoadedForMediaId) return;
 
-        _detailsLoadedForMediaId = mediaId;
-        _lyricsLrc = null;
-        _lyrics = null;
-        _trackDetails = null;
-        _audioMetadata = null;
-        _fileSize = 0;
-
+        // Fetch first, then swap fields in one go so concurrent renders (seek ticks, etc.)
+        // do not flash empty lyrics / info / year mid-transition.
         var media = await Server.GetMediaAsync(mediaId.Value);
+        if (Audio.CurrentTrack?.MediaId != mediaId)
+            return;
+
+        _detailsLoadedForMediaId = mediaId;
+
         if (media is MusicTrackDto track)
         {
             _trackDetails = track;
@@ -302,11 +384,21 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
                 _fileSize = indexedFile.Size;
                 _audioMetadata = indexedFile.FileMetadata as AudioFileMetadataDto;
             }
+            else
+            {
+                _fileSize = 0;
+                _audioMetadata = null;
+            }
         }
         else
         {
+            _trackDetails = null;
+            _lyricsLrc = null;
+            _lyrics = null;
             _waveformPeaks = null;
             _waveformMaskStyle = null;
+            _audioMetadata = null;
+            _fileSize = 0;
         }
     }
 
@@ -375,7 +467,43 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         sb.Append("</svg>");
 
         var encoded = Uri.EscapeDataString(sb.ToString());
-        _waveformMaskStyle = $"-webkit-mask-image: url(\"data:image/svg+xml,{encoded}\"); mask-image: url(\"data:image/svg+xml,{encoded}\"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%;";
+        _waveformMaskStyle = $"-webkit-mask-image: url(\"data:image/svg+xml,{encoded}\"); mask-image: url(\"data:image/svg+xml,{encoded}\"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; --waveform-scale: {_waveformScale.ToString(CultureInfo.InvariantCulture)}; --waveform-opacity: {_waveformOpacity.ToString(CultureInfo.InvariantCulture)};";
+    }
+
+    private async Task MorphWaveformAsync(Func<Task> rebuildAsync)
+    {
+        // Flatten current waveform first; keep committed track chrome until rebuild finishes
+        // so title / album / year / cover swap in one paint with the new waveform.
+        _waveformScale = 0.04;
+        _waveformOpacity = 0.35;
+        if (_waveformMaskStyle is not null)
+            BuildWaveformMask();
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(420);
+
+        await rebuildAsync();
+
+        _waveformScale = 0.04;
+        _waveformOpacity = 0.35;
+        if (_waveformMaskStyle is not null)
+            BuildWaveformMask();
+        await InvokeAsync(StateHasChanged);
+        // Let the browser paint the new flat mask before growing.
+        await Task.Delay(48);
+
+        _waveformScale = 1;
+        _waveformOpacity = 1;
+        if (_waveformMaskStyle is not null)
+            BuildWaveformMask();
+
+        if (_visualizerEnabled && _waveformPeaks is not null)
+        {
+            try { await JS.InvokeVoidAsync("K7.Visualizer.setPeaks", _waveformPeaks); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private static float[] SmoothPeaks(float[] raw)
@@ -506,6 +634,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     {
         if (Audio.CurrentTrack is { } track)
             track.UserRating = value;
+        _uiUserRating = value;
     }
 
     private async Task PlayFromQueue(int index)
@@ -639,15 +768,35 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void OnStateChanged(PlaybackState _) => InvokeAsync(StateHasChanged);
     private void OnDurationChanged(double _) => InvokeAsync(StateHasChanged);
-    private void OnTimeChanged(double _) => InvokeAsync(StateHasChanged);
+    private void OnTimeChanged(double _) => InvokeAsync(async () =>
+    {
+        if (_visualizerEnabled)
+        {
+            try { await JS.InvokeVoidAsync("K7.Visualizer.setProgress", DisplayPercent / 100.0); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+
+        StateHasChanged();
+    });
     private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(async () =>
     {
         _detailsLoadedForMediaId = null;
         _similarLoadedForTrackId = null;
         _suggestionsLoadedForTrackId = null;
         if (Audio.IsFullScreenVisible)
-            await LoadTrackDetailsAsync();
-        StateHasChanged();
+        {
+            await MorphWaveformAsync(async () =>
+            {
+                await LoadTrackDetailsAsync();
+                CommitUiFromCurrentTrack(_trackDetails);
+            });
+        }
+        else
+        {
+            CommitUiFromCurrentTrack(null);
+            StateHasChanged();
+        }
     });
     private void OnQueueChanged() => InvokeAsync(StateHasChanged);
     private void OnRadioChanged() => InvokeAsync(StateHasChanged);
@@ -671,7 +820,11 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private void OnFullScreenVisibilityChanged() => InvokeAsync(async () =>
     {
         if (Audio.IsFullScreenVisible)
+        {
             await LoadTrackDetailsAsync();
+            CommitUiFromCurrentTrack(_trackDetails);
+        }
+
         StateHasChanged();
     });
 
@@ -780,7 +933,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             if (_visualizerEnabled)
             {
                 await Task.Yield();
-                await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas);
+                await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas, _waveformPeaks);
             }
             else
             {
