@@ -34,8 +34,46 @@ let audioState = {
     eqEnabled: false,
     eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     // Seek suppression
-    lastSeekTime: 0
+    lastSeekTime: 0,
+    // blob: URLs from Windows stream bridge (revoke on dispose / replace)
+    objectUrls: [],
+    // User pause while a dual-stream crossfade is armed/running
+    playbackPaused: false,
+    crossfadeFade: null,
+    _resumeWaiters: []
 };
+
+function trackObjectUrl(url) {
+    if (url && url.indexOf('blob:') === 0)
+        audioState.objectUrls.push(url);
+}
+
+function revokeObjectUrls(exceptUrl) {
+    const kept = [];
+    for (const url of audioState.objectUrls) {
+        if (exceptUrl && url === exceptUrl) {
+            kept.push(url);
+            continue;
+        }
+        try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    }
+    audioState.objectUrls = kept;
+}
+
+async function resolvePlayableSrc(src, mimeType) {
+    if (window.K7 && typeof K7.resolveAudioPlayableUrl === 'function') {
+        try {
+            const resolved = await K7.resolveAudioPlayableUrl(src, mimeType);
+            if (resolved && resolved !== src)
+                trackObjectUrl(resolved);
+            return resolved || src;
+        } catch (e) {
+            console.error('resolveAudioPlayableUrl failed', e);
+            throw e;
+        }
+    }
+    return src;
+}
 
 function notifyPlaybackState(dotNetRef, state) {
     if (audioState.stateDebounceTimer) {
@@ -86,11 +124,12 @@ window.K7.unlockAudio = function () {
     if (audioState.audioContext && audioState.audioContext.state === 'suspended') {
         audioState.audioContext.resume();
     }
-    // Prime the audio element with a silent play+pause so future play() calls succeed
+    // Prime the audio element with a silent play+pause so future play() calls succeed.
+    // Keep the silent data URI (do not clear src) to avoid MEDIA_ELEMENT_ERROR: Empty src.
     var el = audioState.element;
     if (el && el.paused && !el.src) {
         el.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
-        el.play().then(function () { el.pause(); el.src = ''; }).catch(function () { el.src = ''; });
+        el.play().then(function () { el.pause(); }).catch(function () { /* ignore autoplay block */ });
     }
 };
 
@@ -379,24 +418,32 @@ window.initAudioPlayer = function (dotNetRef) {
     el.addEventListener('timeupdate', () => {
         // Ignore if this element is no longer the active one
         if (initGen !== audioState.generation) return;
-        if (audioState.crossfadeActive) return;
-        dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
-            .catch(e => console.error('OnTimeUpdated failed', e));
+
+        if (!audioState.crossfadeActive) {
+            dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
+                .catch(e => console.error('OnTimeUpdated failed', e));
+        }
+
+        if (audioState.crossfadeActive || audioState.crossfadePending)
+            return;
 
         // Pre-end crossfade detection
         if (audioState.crossfadeDuration > 0
-            && !audioState.crossfadePending
             && !audioState.crossfadeTimer
             && (Date.now() - audioState.lastSeekTime) > 1500
             && isFinite(el.duration)
             && el.duration > 0) {
             const remaining = el.duration - el.currentTime;
-            if (remaining <= audioState.crossfadeDuration && remaining > 0) {
+            const armWindow = audioState.crossfadeDuration + (audioState.gaplessNextElement ? 2 : 0);
+            if (remaining <= armWindow && remaining > 0) {
                 audioState.crossfadePending = true;
                 dotNetRef.invokeMethodAsync('OnCrossfadeNeeded')
                     .catch(e => console.error('OnCrossfadeNeeded failed', e));
             }
         }
+
+        // Early prepare of next track (gapless + crossfade)
+        maybeRequestGaplessPrebuffer(el, dotNetRef);
     });
 
     el.addEventListener('durationchange', () => {
@@ -452,17 +499,32 @@ window.initAudioPlayer = function (dotNetRef) {
 
     el.addEventListener('error', () => {
         if (initGen !== audioState.generation) return;
+        // unlockAudio / dispose may clear or leave an empty src; ignore those.
+        if (!el.currentSrc && !el.src)
+            return;
         const code = el.error ? el.error.code : -1;
         const msg = el.error ? el.error.message : 'unknown';
         console.error('Audio error', code, msg);
     });
 };
 
-window.disposeAudioPlayer = function () {
+function cancelCrossfadeFade() {
+    pauseCrossfadeFade();
+    const fade = audioState.crossfadeFade;
+    if (fade) {
+        audioState.crossfadeFade = null;
+        try { fade.resolve(false); } catch { /* ignore */ }
+    }
     if (audioState.crossfadeTimer) {
         clearInterval(audioState.crossfadeTimer);
         audioState.crossfadeTimer = null;
     }
+}
+
+window.disposeAudioPlayer = function () {
+    cancelCrossfadeFade();
+    audioState.playbackPaused = false;
+    audioState._resumeWaiters = [];
     if (audioState.crossfadeSourceNode) {
         audioState.crossfadeSourceNode.disconnect();
         audioState.crossfadeSourceNode = null;
@@ -492,28 +554,59 @@ window.disposeAudioPlayer = function () {
     audioState.analyserNode = null;
     audioState.eqFilters = [];
     audioState.crossfadeActive = false;
+    audioState.crossfadePending = false;
     audioState.dotNetRef = null;
+    revokeObjectUrls();
 };
 
 window.audioPlay = function () {
-    const el = audioState.element;
-    if (!el) return;
+    audioState.playbackPaused = false;
+    const waiters = audioState._resumeWaiters;
+    audioState._resumeWaiters = [];
+    for (const resolve of waiters)
+        resolve();
+
     resumeAudioContext();
-    const promise = el.play();
-    if (promise) {
-        promise.catch(e => console.warn('Audio play prevented', e));
+    const el = audioState.element;
+    if (el) {
+        const promise = el.play();
+        if (promise)
+            promise.catch(e => console.warn('Audio play prevented', e));
+    }
+
+    const nextEl = audioState.crossfadeElement;
+    if (nextEl && audioState.crossfadeActive) {
+        nextEl.play().catch(e => console.warn('Crossfade play prevented', e));
+        resumeCrossfadeFade();
     }
 };
 
 window.audioPause = function () {
+    audioState.playbackPaused = true;
     audioState.element?.pause();
+    audioState.crossfadeElement?.pause();
+    pauseCrossfadeFade();
 };
 
 window.audioStop = function () {
+    audioState.playbackPaused = true;
+    cancelCrossfadeFade();
     const el = audioState.element;
-    if (!el) return;
-    el.pause();
-    el.currentTime = 0;
+    if (el) {
+        el.pause();
+        el.currentTime = 0;
+    }
+    if (audioState.crossfadeElement) {
+        try {
+            audioState.crossfadeElement.pause();
+            audioState.crossfadeElement.src = '';
+        } catch { /* ignore */ }
+        audioState.crossfadeElement = null;
+    }
+    audioState.crossfadeActive = false;
+    audioState.crossfadePending = false;
+    if (audioState.fadeGainNode)
+        audioState.fadeGainNode.gain.value = 1.0;
 };
 
 window.audioSeek = function (seconds) {
@@ -539,15 +632,27 @@ window.audioSetMuted = function (muted) {
     if (audioState.element) {
         audioState.element.muted = muted;
     }
+    if (audioState.crossfadeElement) {
+        audioState.crossfadeElement.muted = muted;
+    }
 };
 
-window.audioChangeSource = function (src, mimeType) {
+window.audioChangeSource = async function (src, mimeType) {
     const el = audioState.element;
     if (!el) return;
 
     resumeAudioContext();
+    cancelCrossfadeFade();
     audioState.crossfadePending = false;
     audioState.crossfadeActive = false;
+
+    if (audioState.crossfadeElement) {
+        try {
+            audioState.crossfadeElement.pause();
+            audioState.crossfadeElement.src = '';
+        } catch { /* ignore */ }
+        audioState.crossfadeElement = null;
+    }
 
     // Check if we have a prebuffered gapless element for this source
     if (audioState.gaplessPrebuffered
@@ -570,8 +675,23 @@ window.audioChangeSource = function (src, mimeType) {
         audioState.fadeGainNode.gain.value = 1.0;
     }
 
-    el.src = src;
+    let playableSrc;
+    try {
+        playableSrc = await resolvePlayableSrc(src, mimeType);
+    } catch (e) {
+        console.error('Audio source resolve failed', e);
+        if (audioState.dotNetRef) {
+            audioState.dotNetRef.invokeMethodAsync('OnPlaybackFailed')
+                .catch(err => console.error('OnPlaybackFailed failed', err));
+        }
+        return;
+    }
+
+    const previousSrc = el.currentSrc || el.src;
+    el.src = playableSrc;
     el.load();
+    if (previousSrc && previousSrc !== playableSrc)
+        revokeObjectUrls(playableSrc);
 
     el.addEventListener('canplay', function () {
         el.play().catch(() => {});
@@ -582,27 +702,304 @@ window.audioSetCrossfadeDuration = function (seconds) {
     audioState.crossfadeDuration = seconds;
 };
 
-window.audioGaplessPrebuffer = function (src, mimeType) {
+window.audioGaplessPrebuffer = async function (src, mimeType) {
     // Discard any previous prebuffer
     if (audioState.gaplessNextElement) {
+        audioState.gaplessNextElement.pause();
         audioState.gaplessNextElement.src = '';
         audioState.gaplessNextElement = null;
         audioState.gaplessNextSource = null;
     }
     audioState.gaplessPrebuffered = false;
 
+    let playableSrc;
+    try {
+        playableSrc = await resolvePlayableSrc(src, mimeType);
+    } catch (e) {
+        console.error('Gapless prebuffer resolve failed', e);
+        return;
+    }
+
     const nextEl = new Audio();
     nextEl.preload = 'auto';
     nextEl.crossOrigin = 'anonymous';
-    nextEl.src = src;
+    nextEl.src = playableSrc;
     nextEl.load();
     audioState.gaplessNextElement = nextEl;
-    audioState.gaplessNextSource = { src, mimeType };
+    // Keep the logical src for matching SourceChanged against the original stream URL.
+    audioState.gaplessNextSource = { src, mimeType, playableSrc };
 
+    nextEl.addEventListener('canplay', () => {
+        audioState.gaplessPrebuffered = true;
+    }, { once: true });
     nextEl.addEventListener('canplaythrough', () => {
         audioState.gaplessPrebuffered = true;
     }, { once: true });
 };
+
+function waitUntilRemaining(el, targetRemaining, timeoutMs) {
+    return new Promise((resolve) => {
+        const start = performance.now();
+        const tick = async () => {
+            if (audioState.playbackPaused) {
+                await waitUntilNotPaused();
+            }
+            if (!el || !isFinite(el.duration) || el.duration <= 0) {
+                resolve(0);
+                return;
+            }
+            const remaining = el.duration - el.currentTime;
+            if (remaining <= targetRemaining + 0.05 || performance.now() - start >= timeoutMs) {
+                resolve(Math.max(0, remaining));
+                return;
+            }
+            setTimeout(tick, 40);
+        };
+        tick();
+    });
+}
+
+function waitUntilNotPaused() {
+    if (!audioState.playbackPaused)
+        return Promise.resolve();
+    return new Promise((resolve) => {
+        audioState._resumeWaiters.push(resolve);
+    });
+}
+
+function pauseCrossfadeFade() {
+    const fade = audioState.crossfadeFade;
+    if (!fade || fade.paused)
+        return;
+
+    fade.paused = true;
+    if (typeof fade.segmentStartPerf === 'number') {
+        fade.elapsedMs = Math.min(
+            fade.durationMs,
+            fade.elapsedMs + (performance.now() - fade.segmentStartPerf));
+        fade.segmentStartPerf = null;
+    }
+
+    if (audioState.crossfadeTimer) {
+        clearInterval(audioState.crossfadeTimer);
+        audioState.crossfadeTimer = null;
+    }
+
+    const ctx = audioState.audioContext;
+    const fadeGain = fade.fadeGain;
+    if (ctx && fadeGain) {
+        const now = ctx.currentTime;
+        const ratio = fade.durationMs > 0 ? fade.elapsedMs / fade.durationMs : 1;
+        fadeGain.gain.cancelScheduledValues(now);
+        fadeGain.gain.setValueAtTime(Math.cos(ratio * Math.PI / 2), now);
+    }
+
+    const nextEl = fade.nextEl;
+    if (nextEl) {
+        const ratio = fade.durationMs > 0 ? fade.elapsedMs / fade.durationMs : 1;
+        nextEl.volume = Math.max(0, Math.min(1, Math.sin(ratio * Math.PI / 2) * fade.masterVolumeFn()));
+    }
+}
+
+function resumeCrossfadeFade() {
+    const fade = audioState.crossfadeFade;
+    if (!fade || !fade.paused)
+        return;
+
+    fade.paused = false;
+    const remainingMs = Math.max(0, fade.durationMs - fade.elapsedMs);
+    if (remainingMs <= 16) {
+        finishCrossfadeFade(fade);
+        return;
+    }
+
+    runCrossfadeFadeSegment(fade, remainingMs);
+}
+
+function finishCrossfadeFade(fade) {
+    if (audioState.crossfadeTimer) {
+        clearInterval(audioState.crossfadeTimer);
+        audioState.crossfadeTimer = null;
+    }
+
+    const nextEl = fade.nextEl;
+    const fadeGain = fade.fadeGain;
+    if (nextEl)
+        nextEl.volume = Math.max(0, Math.min(1, fade.masterVolumeFn()));
+    if (fadeGain)
+        fadeGain.gain.value = 0;
+
+    audioState.crossfadeFade = null;
+    fade.resolve(true);
+}
+
+function runCrossfadeFadeSegment(fade, remainingMs) {
+    const ctx = audioState.audioContext;
+    const fadeGain = fade.fadeGain;
+    const startRatio = fade.durationMs > 0 ? fade.elapsedMs / fade.durationMs : 0;
+    fade.segmentStartPerf = performance.now();
+
+    if (ctx && fadeGain) {
+        const now = ctx.currentTime;
+        fadeGain.gain.cancelScheduledValues(now);
+        fadeGain.gain.setValueAtTime(Math.cos(startRatio * Math.PI / 2), now);
+        const points = Math.max(10, Math.round((remainingMs / 1000) * 40));
+        for (let i = 1; i <= points; i++) {
+            const localRatio = i / points;
+            const globalRatio = startRatio + localRatio * (1 - startRatio);
+            fadeGain.gain.setValueAtTime(
+                Math.cos(globalRatio * Math.PI / 2),
+                now + localRatio * (remainingMs / 1000));
+        }
+    }
+
+    if (audioState.crossfadeTimer) {
+        clearInterval(audioState.crossfadeTimer);
+        audioState.crossfadeTimer = null;
+    }
+
+    audioState.crossfadeTimer = setInterval(() => {
+        if (fade.paused)
+            return;
+
+        const segmentElapsed = performance.now() - fade.segmentStartPerf;
+        const elapsedMs = Math.min(fade.durationMs, fade.elapsedMs + segmentElapsed);
+        const ratio = fade.durationMs > 0 ? elapsedMs / fade.durationMs : 1;
+
+        if (!ctx || !fadeGain) {
+            if (audioState.element)
+                audioState.element.volume = Math.cos(ratio * Math.PI / 2) * fade.masterVolumeFn();
+        }
+
+        fade.nextEl.volume = Math.max(0, Math.min(1, Math.sin(ratio * Math.PI / 2) * fade.masterVolumeFn()));
+
+        if (ratio >= 1)
+            finishCrossfadeFade(fade);
+    }, 25);
+}
+
+function scheduleEqualPowerFade(fadeGain, nextEl, effectiveDuration, masterVolumeFn) {
+    return new Promise((resolve) => {
+        if (audioState.crossfadeTimer) {
+            clearInterval(audioState.crossfadeTimer);
+            audioState.crossfadeTimer = null;
+        }
+
+        const fade = {
+            nextEl,
+            fadeGain,
+            masterVolumeFn,
+            durationMs: Math.max(50, effectiveDuration * 1000),
+            elapsedMs: 0,
+            segmentStartPerf: null,
+            paused: false,
+            resolve
+        };
+        audioState.crossfadeFade = fade;
+
+        if (audioState.playbackPaused) {
+            fade.paused = true;
+            const ctx = audioState.audioContext;
+            if (ctx && fadeGain) {
+                const now = ctx.currentTime;
+                fadeGain.gain.cancelScheduledValues(now);
+                fadeGain.gain.setValueAtTime(1, now);
+            }
+            nextEl.volume = 0;
+            return;
+        }
+
+        runCrossfadeFadeSegment(fade, fade.durationMs);
+    });
+}
+
+function waitForCanPlay(el, timeoutMs) {
+    return new Promise((resolve) => {
+        if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+            resolve(true);
+            return;
+        }
+
+        let settled = false;
+        const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            el.removeEventListener('canplay', onReady);
+            el.removeEventListener('canplaythrough', onReady);
+            el.removeEventListener('error', onError);
+            resolve(ok);
+        };
+        const onReady = () => finish(true);
+        const onError = () => finish(false);
+        const timer = setTimeout(() => {
+            finish(el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
+        }, timeoutMs);
+
+        el.addEventListener('canplay', onReady);
+        el.addEventListener('canplaythrough', onReady);
+        el.addEventListener('error', onError);
+    });
+}
+
+function waitForMediaPlaying(el, timeoutMs) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            el.removeEventListener('playing', onPlaying);
+            el.removeEventListener('canplay', onCanPlay);
+            el.removeEventListener('error', onError);
+            resolve(ok);
+        };
+        const onPlaying = () => finish(true);
+        const onCanPlay = () => {
+            if (!el.paused && el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA)
+                finish(true);
+        };
+        const onError = () => finish(false);
+        const timer = setTimeout(() => {
+            finish(!el.paused && el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
+        }, timeoutMs);
+
+        el.addEventListener('playing', onPlaying);
+        el.addEventListener('canplay', onCanPlay);
+        el.addEventListener('error', onError);
+
+        if (!el.paused && el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA)
+            finish(true);
+    });
+}
+
+function takePrebufferedElement(nextSrc) {
+    const prep = audioState.gaplessNextSource;
+    const el = audioState.gaplessNextElement;
+    if (!el || !prep || prep.src !== nextSrc)
+        return null;
+
+    audioState.gaplessNextElement = null;
+    audioState.gaplessNextSource = null;
+    audioState.gaplessPrebuffered = false;
+    return { el, playableSrc: prep.playableSrc };
+}
+
+function maybeRequestGaplessPrebuffer(el, dotNetRef) {
+    if (!dotNetRef) return;
+    if (audioState.gaplessPrebuffered || audioState.gaplessNextElement) return;
+    if (audioState.crossfadePending || audioState.crossfadeActive) return;
+    if (!isFinite(el.duration) || el.duration <= 0) return;
+
+    const remaining = el.duration - el.currentTime;
+    const prepareWindow = audioState.crossfadeDuration > 0
+        ? audioState.crossfadeDuration + 10
+        : 10;
+    if (remaining > 0 && remaining <= prepareWindow) {
+        dotNetRef.invokeMethodAsync('OnGaplessPrebufferNeeded')
+            .catch(e => console.error('OnGaplessPrebufferNeeded failed', e));
+    }
+}
 
 window.audioGaplessSwitch = function () {
     // Instantly switch to the prebuffered element (no overlap)
@@ -649,143 +1046,215 @@ window.audioGaplessSwitch = function () {
     return true;
 };
 
-window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
+window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration) {
     const duration = fadeDuration !== undefined && fadeDuration > 0 ? fadeDuration : audioState.crossfadeDuration;
     if (duration <= 0 || !audioState.element) {
         // No crossfade - just change source directly
-        audioChangeSource(nextSrc, nextMimeType);
+        try {
+            await audioChangeSource(nextSrc, nextMimeType);
+        } finally {
+            if (audioState.dotNetRef) {
+                audioState.dotNetRef.invokeMethodAsync('OnCrossfadeCompleted')
+                    .catch(e => console.error('OnCrossfadeCompleted failed', e));
+            }
+        }
         return;
+    }
+
+    if (audioState.crossfadeTimer) {
+        clearInterval(audioState.crossfadeTimer);
+        audioState.crossfadeTimer = null;
+    }
+
+    // Prefer an element already resolved/buffered by the early prepare path.
+    let nextEl = null;
+    let playableSrc = null;
+    const prebuffered = takePrebufferedElement(nextSrc);
+    if (prebuffered) {
+        nextEl = prebuffered.el;
+        playableSrc = prebuffered.playableSrc;
+    } else {
+        try {
+            playableSrc = await resolvePlayableSrc(nextSrc, nextMimeType);
+        } catch (e) {
+            console.error('Crossfade resolve failed', e);
+            try {
+                await audioChangeSource(nextSrc, nextMimeType);
+            } finally {
+                if (audioState.dotNetRef) {
+                    audioState.dotNetRef.invokeMethodAsync('OnCrossfadeCompleted')
+                        .catch(err => console.error('OnCrossfadeCompleted failed', err));
+                }
+            }
+            return;
+        }
+
+        nextEl = new Audio();
+        nextEl.preload = 'auto';
+        nextEl.crossOrigin = 'anonymous';
+        nextEl.src = playableSrc;
     }
 
     resumeAudioContext();
     const ctx = audioState.audioContext;
     const currentEl = audioState.element;
     const dotNetRef = audioState.dotNetRef;
+    const masterVolume = () => (audioState.gainNode ? audioState.gainNode.gain.value : 1);
 
-    // Mark crossfade active so old element's timeupdate is ignored
+    // Suppress outgoing timeupdates while we arm the incoming track.
     audioState.crossfadeActive = true;
-
-    // Create next audio element with its own Web Audio pipeline
-    const nextEl = new Audio();
-    nextEl.preload = 'auto';
-    nextEl.crossOrigin = 'anonymous';
-    nextEl.src = nextSrc;
-
     audioState.crossfadeElement = nextEl;
+    audioState.crossfadeSourceNode = null;
 
-    // Create a temporary gain for the next element during crossfade
-    let nextSource = null;
-    let nextGain = null;
-    if (ctx) {
-        nextSource = ctx.createMediaElementSource(nextEl);
-        nextGain = ctx.createGain();
-        nextGain.gain.value = 0;
-        // Connect next through the same chain: nextSource -> nextGain -> loudness -> (rest of chain)
-        nextSource.connect(nextGain);
-        nextGain.connect(audioState.loudnessGainNode);
-        audioState.crossfadeSourceNode = nextSource;
-    }
+    // IMPORTANT: do NOT createMediaElementSource on the incoming element during the fade.
+    // Dual MediaElementSource into one AudioContext is unreliable in Chromium/WebView2
+    // (outgoing fades, incoming stays silent). Play the next track through the element
+    // output (OS mixer) so both streams are actually audible, then promote into the
+    // Web Audio graph when the fade completes.
+    nextEl.volume = 0;
+    nextEl.muted = !!(currentEl && currentEl.muted);
 
-    const stepMs = 50;
-    const steps = (duration * 1000) / stepMs;
-    let step = 0;
+    const abortToHardCut = async (reason) => {
+        console.warn(reason);
+        cancelCrossfadeFade();
+        try {
+            nextEl.pause();
+            nextEl.src = '';
+        } catch { /* ignore */ }
+        audioState.crossfadeElement = null;
+        audioState.crossfadeSourceNode = null;
+        try {
+            await audioChangeSource(nextSrc, nextMimeType);
+        } finally {
+            audioState.crossfadeActive = false;
+            audioState.crossfadePending = false;
+            if (audioState.dotNetRef) {
+                audioState.dotNetRef.invokeMethodAsync('OnCrossfadeCompleted')
+                    .catch(err => console.error('OnCrossfadeCompleted failed', err));
+            }
+        }
+    };
 
-    // Report new track's time updates during crossfade
-    const crossfadeTimeHandler = () => {
-        if (dotNetRef) {
-            dotNetRef.invokeMethodAsync('OnTimeUpdated', nextEl.currentTime)
+    // Keep reporting the OUTGOING clock during the blend (UI stays on track A).
+    // Incoming element time is ignored until promote + OnCrossfadeCompleted.
+    const outgoingTimeHandler = () => {
+        if (dotNetRef && !currentEl.paused) {
+            dotNetRef.invokeMethodAsync('OnTimeUpdated', currentEl.currentTime)
                 .catch(e => console.error('OnTimeUpdated failed', e));
         }
     };
-    const crossfadeDurationHandler = () => {
-        if (isFinite(nextEl.duration) && dotNetRef) {
-            dotNetRef.invokeMethodAsync('OnDurationChanged', nextEl.duration)
-                .catch(e => console.error('OnDurationChanged failed', e));
-        }
-    };
-    nextEl.addEventListener('timeupdate', crossfadeTimeHandler);
-    nextEl.addEventListener('durationchange', crossfadeDurationHandler);
+    currentEl.addEventListener('timeupdate', outgoingTimeHandler);
 
-    // Notify .NET of new duration immediately once available
-    if (isFinite(nextEl.duration) && dotNetRef) {
-        dotNetRef.invokeMethodAsync('OnDurationChanged', nextEl.duration)
-            .catch(() => {});
+    const canPlay = await waitForCanPlay(nextEl, 20000);
+    if (!canPlay) {
+        await abortToHardCut('Crossfade next track failed to buffer; falling back to hard cut');
+        return;
     }
-    // Reset time to 0 for the new track
+
+    await waitUntilNotPaused();
+
+    try {
+        if (nextEl.currentTime > 0.05)
+            nextEl.currentTime = 0;
+        if (!audioState.playbackPaused)
+            await nextEl.play();
+    } catch (e) {
+        console.warn('Crossfade next play prevented', e);
+    }
+
+    if (!audioState.playbackPaused) {
+        const ready = await waitForMediaPlaying(nextEl, 5000);
+        if (!ready || nextEl.paused) {
+            await abortToHardCut('Crossfade next track not playing; falling back to hard cut');
+            return;
+        }
+    }
+
+    await waitUntilNotPaused();
+
+    // If we armed early, wait until the real overlap window so the fade lasts
+    // the full configured duration instead of a rushed 1-2s cut.
+    const remainingAtReady = await waitUntilRemaining(currentEl, duration, 30000);
+    await waitUntilNotPaused();
+
+    let effectiveDuration = duration;
+    if (remainingAtReady > 0)
+        effectiveDuration = Math.min(duration, Math.max(0.8, remainingAtReady));
+
+    // Align the incoming intro with the start of the audible blend.
+    try {
+        nextEl.volume = 0;
+        if (nextEl.currentTime > 0.02)
+            nextEl.currentTime = 0;
+        if (!audioState.playbackPaused && nextEl.paused)
+            await nextEl.play();
+    } catch (e) {
+        console.warn('Crossfade realign failed', e);
+    }
+
+    await waitUntilNotPaused();
+    const fadeCompleted = await scheduleEqualPowerFade(
+        audioState.fadeGainNode, nextEl, effectiveDuration, masterVolume);
+    if (!fadeCompleted) {
+        // Cancelled by pause/stop/source change; cleanup already done by caller.
+        return;
+    }
+
+    currentEl.removeEventListener('timeupdate', outgoingTimeHandler);
+    audioState.crossfadePending = false;
+    audioState.crossfadeActive = false;
+
+    // Increment generation BEFORE pausing old element to prevent stale pause event
+    audioState.generation++;
+
+    if (audioState.sourceNode) {
+        audioState.sourceNode.disconnect();
+    }
+    if (audioState.fadeGainNode) {
+        audioState.fadeGainNode.disconnect();
+    }
+    currentEl.pause();
+    currentEl.src = '';
+
+    // Promote incoming into the shared Web Audio graph (EQ / loudness / master).
+    let nextSource = null;
+    if (ctx) {
+        try {
+            nextSource = ctx.createMediaElementSource(nextEl);
+            const newFadeGain = ctx.createGain();
+            newFadeGain.gain.value = 1.0;
+            nextSource.connect(newFadeGain);
+            newFadeGain.connect(audioState.loudnessGainNode);
+            audioState.fadeGainNode = newFadeGain;
+            // Element volume must stay at 1 once routed through Web Audio master gain.
+            nextEl.volume = 1.0;
+        } catch (e) {
+            console.error('Crossfade promote into Web Audio failed', e);
+            nextEl.volume = masterVolume();
+        }
+    } else {
+        nextEl.volume = masterVolume();
+    }
+
+    audioState.element = nextEl;
+    audioState.sourceNode = nextSource;
+    audioState.crossfadeElement = null;
+    audioState.crossfadeSourceNode = null;
+
+    attachEventsToElement(nextEl, audioState.dotNetRef);
+
+    if (!nextEl.paused && audioState.dotNetRef) {
+        notifyPlaybackState(audioState.dotNetRef, 'playing');
+    }
+
     if (dotNetRef) {
-        dotNetRef.invokeMethodAsync('OnTimeUpdated', 0).catch(() => {});
+        if (isFinite(nextEl.duration)) {
+            dotNetRef.invokeMethodAsync('OnDurationChanged', nextEl.duration).catch(() => {});
+        }
+        dotNetRef.invokeMethodAsync('OnTimeUpdated', nextEl.currentTime || 0).catch(() => {});
+        dotNetRef.invokeMethodAsync('OnCrossfadeCompleted')
+            .catch(e => console.error('OnCrossfadeCompleted failed', e));
     }
-
-    // Use an equal-power crossfade curve for smoother transitions
-    nextEl.play().catch(e => console.warn('Crossfade next play prevented', e));
-
-    audioState.crossfadeTimer = setInterval(() => {
-        step++;
-        const ratio = step / steps;
-
-        // Equal-power fade: cos/sin curves
-        const fadeOut = Math.cos(ratio * Math.PI / 2);
-        const fadeIn = Math.sin(ratio * Math.PI / 2);
-
-        // Fade out current via Web Audio GainNode (not element.volume)
-        if (audioState.fadeGainNode) {
-            audioState.fadeGainNode.gain.value = fadeOut;
-        }
-
-        if (nextGain) {
-            nextGain.gain.value = fadeIn;
-        }
-
-        if (step >= steps) {
-            clearInterval(audioState.crossfadeTimer);
-            audioState.crossfadeTimer = null;
-            audioState.crossfadePending = false;
-            audioState.crossfadeActive = false;
-
-            // Increment generation BEFORE pausing old element to prevent stale pause event
-            audioState.generation++;
-
-            // Disconnect old source
-            if (audioState.sourceNode) {
-                audioState.sourceNode.disconnect();
-            }
-            if (audioState.fadeGainNode) {
-                audioState.fadeGainNode.disconnect();
-            }
-            currentEl.pause();
-            currentEl.src = '';
-
-            // Remove temporary event listeners from next element
-            nextEl.removeEventListener('timeupdate', crossfadeTimeHandler);
-            nextEl.removeEventListener('durationchange', crossfadeDurationHandler);
-
-            // Promote next element: create new fadeGain and reconnect
-            if (ctx && nextSource) {
-                if (nextGain) {
-                    nextGain.disconnect();
-                    nextSource.disconnect();
-                }
-                const newFadeGain = ctx.createGain();
-                newFadeGain.gain.value = 1.0;
-                nextSource.connect(newFadeGain);
-                newFadeGain.connect(audioState.loudnessGainNode);
-                audioState.fadeGainNode = newFadeGain;
-            }
-
-            // Swap state
-            audioState.element = nextEl;
-            audioState.sourceNode = nextSource;
-            audioState.crossfadeElement = null;
-            audioState.crossfadeSourceNode = null;
-
-            // Re-attach DOM events to new element
-            attachEventsToElement(nextEl, audioState.dotNetRef);
-
-            if (!nextEl.paused && audioState.dotNetRef) {
-                notifyPlaybackState(audioState.dotNetRef, 'playing');
-            }
-        }
-    }, stepMs);
 };
 
 function attachEventsToElement(el, dotNetRef) {
@@ -796,38 +1265,34 @@ function attachEventsToElement(el, dotNetRef) {
     el.addEventListener('timeupdate', () => {
         // Ignore if this listener belongs to a stale generation
         if (gen !== audioState.generation) return;
-        if (audioState.crossfadeActive) return;
-        dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
-            .catch(e => console.error('OnTimeUpdated failed', e));
+
+        // Keep the outgoing clock flowing during arm/blend (UI stays on track A).
+        if (!audioState.crossfadeActive) {
+            dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
+                .catch(e => console.error('OnTimeUpdated failed', e));
+        }
+
+        if (audioState.crossfadeActive || audioState.crossfadePending)
+            return;
 
         // Pre-end crossfade detection
         if (audioState.crossfadeDuration > 0
-            && !audioState.crossfadePending
             && !audioState.crossfadeTimer
             && (Date.now() - audioState.lastSeekTime) > 1500
             && isFinite(el.duration)
             && el.duration > 0) {
             const remaining = el.duration - el.currentTime;
-            if (remaining <= audioState.crossfadeDuration && remaining > 0) {
+            // Match C#: arm a bit early once prepared so the fade can last full duration.
+            const armWindow = audioState.crossfadeDuration + (audioState.gaplessNextElement ? 2 : 0);
+            if (remaining <= armWindow && remaining > 0) {
                 audioState.crossfadePending = true;
                 dotNetRef.invokeMethodAsync('OnCrossfadeNeeded')
                     .catch(e => console.error('OnCrossfadeNeeded failed', e));
             }
         }
 
-        // Gapless prebuffer: when crossfade is 0, prebuffer next track ~10s before end
-        if (audioState.crossfadeDuration === 0
-            && !audioState.gaplessPrebuffered
-            && !audioState.gaplessNextElement
-            && !audioState.crossfadePending
-            && isFinite(el.duration)
-            && el.duration > 0) {
-            const remaining = el.duration - el.currentTime;
-            if (remaining <= 10 && remaining > 0) {
-                dotNetRef.invokeMethodAsync('OnGaplessPrebufferNeeded')
-                    .catch(e => console.error('OnGaplessPrebufferNeeded failed', e));
-            }
-        }
+        // Early prepare of next track (gapless + crossfade)
+        maybeRequestGaplessPrebuffer(el, dotNetRef);
     });
 
     el.addEventListener('durationchange', () => {
@@ -928,6 +1393,9 @@ window.K7.Visualizer = {
         this._canvas = null;
         this._ctx = null;
     },
+
+    setPeaks: function () { },
+    setProgress: function () { },
 
     _loop: function () {
         try {
