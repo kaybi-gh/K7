@@ -340,4 +340,154 @@
     K7.onVideoJsPlayerCreated = function () {
         ensureWindowsStreamBridge();
     };
+
+    function isHlsAudioUrl(url, mimeType) {
+        if (mimeType && mimeType.toLowerCase().indexOf('mpegurl') !== -1)
+            return true;
+        if (!url)
+            return false;
+        return url.indexOf('.m3u8') !== -1 || url.indexOf('/hls-stream/') !== -1;
+    }
+
+    function decodePlaylistBody(rawBody) {
+        if (typeof rawBody === 'string')
+            return rawBody;
+
+        const bytes = bridgeRawBodyToBytes(rawBody);
+        if (bytes === null && typeof rawBody === 'string')
+            return rawBody;
+
+        if (!bytes || bytes.length === 0)
+            return '';
+
+        return new TextDecoder('utf-8').decode(bytes);
+    }
+
+    function resolvePlaylistUri(baseUrl, maybeRelative) {
+        try {
+            return new URL(maybeRelative, baseUrl).href;
+        } catch {
+            return maybeRelative;
+        }
+    }
+
+    function selectMediaPlaylistUrl(masterText, masterUrl) {
+        // Prefer an AUDIO media group URI when present.
+        var mediaMatch = masterText.match(/#EXT-X-MEDIA:[^\n]*TYPE=AUDIO[^\n]*URI="([^"]+)"/i);
+        if (mediaMatch && mediaMatch[1])
+            return resolvePlaylistUri(masterUrl, mediaMatch[1]);
+
+        // Otherwise first variant playlist line after STREAM-INF.
+        var lines = masterText.split(/\r?\n/);
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].indexOf('#EXT-X-STREAM-INF') === 0) {
+                for (var j = i + 1; j < lines.length; j++) {
+                    var line = lines[j].trim();
+                    if (!line || line.charAt(0) === '#')
+                        continue;
+                    return resolvePlaylistUri(masterUrl, line);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function parseMediaPlaylist(text, playlistUrl) {
+        var initUrl = null;
+        var mapMatch = text.match(/#EXT-X-MAP:[^\n]*URI="([^"]+)"/i);
+        if (mapMatch && mapMatch[1])
+            initUrl = resolvePlaylistUri(playlistUrl, mapMatch[1]);
+
+        var segments = [];
+        var lines = text.split(/\r?\n/);
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line || line.charAt(0) === '#')
+                continue;
+            segments.push(resolvePlaylistUri(playlistUrl, line));
+        }
+
+        return { initUrl: initUrl, segments: segments };
+    }
+
+    async function fetchStreamResult(url) {
+        const result = await K7._windowsStreamFetchRef.invokeMethodAsync('FetchStreamAsync', url, null);
+        if (!result || result.statusCode < 200 || result.statusCode >= 300)
+            throw new Error('Audio stream fetch failed: ' + (result ? result.statusCode : 'null') + ' for ' + url);
+        return result;
+    }
+
+    async function fetchStreamBytes(url) {
+        const result = await fetchStreamResult(url);
+        const bytes = bridgeRawBodyToBytes(result.body);
+        if (!bytes || bytes.length === 0)
+            throw new Error('Audio stream segment empty: ' + url);
+        return bytes;
+    }
+
+    async function materializeHlsAudioBlob(playlistUrl, firstResult) {
+        var text = decodePlaylistBody(firstResult ? firstResult.body : null);
+        if (!text && playlistUrl) {
+            const refreshed = await fetchStreamResult(playlistUrl);
+            text = decodePlaylistBody(refreshed.body);
+        }
+
+        if (!text || text.indexOf('#EXTM3U') !== 0)
+            throw new Error('Invalid HLS audio playlist');
+
+        var mediaPlaylistUrl = playlistUrl;
+        if (text.indexOf('#EXT-X-STREAM-INF') !== -1 || text.indexOf('#EXT-X-MEDIA:') !== -1) {
+            mediaPlaylistUrl = selectMediaPlaylistUrl(text, playlistUrl);
+            if (!mediaPlaylistUrl)
+                throw new Error('HLS master playlist has no audio variant');
+            const mediaResult = await fetchStreamResult(mediaPlaylistUrl);
+            text = decodePlaylistBody(mediaResult.body);
+        }
+
+        var parsed = parseMediaPlaylist(text, mediaPlaylistUrl);
+        if ((!parsed.segments || parsed.segments.length === 0) && !parsed.initUrl)
+            throw new Error('HLS audio playlist has no segments');
+
+        var parts = [];
+        if (parsed.initUrl)
+            parts.push(await fetchStreamBytes(parsed.initUrl));
+
+        for (var s = 0; s < parsed.segments.length; s++)
+            parts.push(await fetchStreamBytes(parsed.segments[s]));
+
+        return URL.createObjectURL(new Blob(parts, { type: 'audio/mp4' }));
+    }
+
+    // HTML5 audio + Web Audio need a same-origin (blob) URL: WebView2 origin is not
+    // in server CORS, and crossOrigin=anonymous otherwise blocks canplay forever.
+    // HLS music (m3u8) is materialized to a single fMP4 blob via authenticated HttpClient.
+    K7.resolveAudioPlayableUrl = async function (url, mimeType) {
+        if (!url || !isK7StreamResource(url))
+            return url;
+
+        for (var i = 0; i < 50 && !K7._windowsStreamFetchRef; i++)
+            await new Promise(function (resolve) { setTimeout(resolve, 100); });
+
+        if (!K7._windowsStreamFetchRef)
+            throw new Error('Windows stream fetch bridge not ready');
+
+        const result = await fetchStreamResult(url);
+        const contentType = (result.contentType || '').toLowerCase();
+        const bodyText = typeof result.body === 'string' ? result.body : '';
+        const treatAsHls = isHlsAudioUrl(url, mimeType)
+            || contentType.indexOf('mpegurl') !== -1
+            || bodyText.indexOf('#EXTM3U') === 0;
+
+        if (treatAsHls)
+            return await materializeHlsAudioBlob(url, result);
+
+        const bytes = bridgeRawBodyToBytes(result.body);
+        if (!bytes || bytes.length === 0)
+            throw new Error('Audio stream fetch returned empty body');
+
+        const type = mimeType || result.contentType || 'audio/mpeg';
+        const blob = new Blob([bytes], { type: type });
+        return URL.createObjectURL(blob);
+    };
 })();
