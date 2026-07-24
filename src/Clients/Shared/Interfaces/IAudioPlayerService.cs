@@ -56,6 +56,7 @@ public interface IAudioPlayerService
     void Play();
     void Pause();
     void Stop();
+    void ForceIdle();
     void Seek(double time);
     void Mute();
     void Unmute();
@@ -89,6 +90,7 @@ public interface IAudioPlayerService
     void ToggleAdaptiveCrossfade();
     void SetCrossfadeDuration(double seconds);
     Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default);
+    void NotifyCrossfadeCompleted();
     Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default);
 
     // Loudness normalization
@@ -133,6 +135,12 @@ public interface IAudioPlayerService
 
     // Called by the component when the current track finishes playing
     Task OnTrackEndedAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reset crossfade/gapless flags and reload the current track after a native MediaFailed
+    /// (e.g. SourceNotSupported) so playback can recover without restarting the app.
+    /// </summary>
+    Task RecoverAfterNativePlaybackFailureAsync(CancellationToken cancellationToken = default);
 
     // Sleep timer: finish the current track (with fade), then pause
     bool StopAfterCurrentTrack { get; }

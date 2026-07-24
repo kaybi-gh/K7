@@ -36,6 +36,7 @@ public static class MusicTrackQueueMapper
             track.FadeInDuration,
             track.FadeOutDuration,
             track.ReplayGainTrackGain,
+            track.WaveformPeaks,
             untitledLabel);
     }
 
@@ -65,6 +66,7 @@ public static class MusicTrackQueueMapper
             track.FadeInDuration,
             track.FadeOutDuration,
             track.ReplayGainTrackGain,
+            waveformPeaks: null,
             untitledLabel);
     }
 
@@ -93,6 +95,7 @@ public static class MusicTrackQueueMapper
         double? fadeInDuration,
         double? fadeOutDuration,
         double? replayGainTrackGain,
+        float[]? waveformPeaks,
         string? untitledLabel) => new()
     {
         IndexedFileId = indexedFileId,
@@ -108,6 +111,7 @@ public static class MusicTrackQueueMapper
         LoudnessLufs = loudnessLufs,
         FadeInDuration = fadeInDuration,
         FadeOutDuration = fadeOutDuration,
-        ReplayGainTrackGain = replayGainTrackGain
+        ReplayGainTrackGain = replayGainTrackGain,
+        WaveformPeaks = waveformPeaks
     };
 }

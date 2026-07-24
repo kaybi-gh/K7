@@ -236,6 +236,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         CurrentTimeChanged?.Invoke(0);
     }
 
+    public void ForceIdle() => Stop();
+
     private void StartProgressTimer()
     {
         lock (_timerLock)
@@ -349,6 +351,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public void ToggleAdaptiveCrossfade() { }
     public void SetCrossfadeDuration(double seconds) { }
     public Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public void NotifyCrossfadeCompleted() { }
 
     // Loudness normalization
     public event Action? LoudnessSettingsChanged;
@@ -402,6 +405,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         Stop();
         return Task.CompletedTask;
     }
+
+    public Task RecoverAfterNativePlaybackFailureAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     private void SetCurrentTrack(AudioQueueItem track)
     {
@@ -548,6 +553,7 @@ public sealed class MockStreamingService : IStreamingService
 public sealed class MockDeviceApiService : IDeviceApiService
 {
     public Task<Guid> CreateDeviceAsync(CreateDeviceRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task UpdateDeviceAsync(Guid deviceId, UpdateDeviceRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task AttachCurrentUserToDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<PaginatedListDto<DeviceDto>?> GetDevicesAsync(GetDevicesQuery? query = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<DeviceDto>?>(null);
     public Task DeleteDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -1132,6 +1138,7 @@ public sealed class MockDownloadManager : IDownloadManager
     public Task EnqueueAsync(DownloadRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelAsync(Guid downloadId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelAllAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public void SetMusicCacheDownloadsPaused(bool paused) { }
 }
 
 public sealed class MockMusicIntelligenceClientService : IMusicIntelligenceClientService

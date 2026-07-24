@@ -57,6 +57,18 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
     }
 
+    /// <summary>
+    /// Sets Idle even when currently Buffering (load/auth failures must not spin forever).
+    /// </summary>
+    public void ForceIdle()
+    {
+        if (_playbackState == PlaybackState.Idle)
+            return;
+
+        _playbackState = PlaybackState.Idle;
+        PlaybackStateChanged?.Invoke(_playbackState);
+    }
+
     private double _duration;
     public double Duration
     {
@@ -70,10 +82,17 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         get => _currentTime;
         set
         {
+            // After the UI has flipped to the incoming track, ignore late ticks from the
+            // outgoing element. While UI is deferred, keep reporting the outgoing clock.
+            if (_crossfadeTriggered && !_crossfadeUiDeferred && value > 1)
+                return;
+
             if (_currentTime == value) return;
             _currentTime = value;
             CurrentTimeChanged?.Invoke(value);
             ConsiderStopAfterTrackFade();
+            ConsiderCrossfade();
+            ConsiderGaplessPrebuffer();
         }
     }
 
@@ -128,12 +147,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private double _crossfadeDuration = deviceStorageService.Get(PreferenceKeys.PLAYER_CROSSFADE_DURATION, 6.0);
     public double CrossfadeDuration => _crossfadeDuration;
 
-    /// <summary>The duration JS uses to detect when to trigger crossfade. Non-zero when adaptive is on even if user slider is at 0.</summary>
-    public double CrossfadeTriggerWindow => _crossfadeDuration > 0
-        ? _crossfadeDuration
-        : _adaptiveCrossfade ? 8.0 : 0;
+    /// <summary>
+    /// Window used to trigger crossfade/gapless. Duration 0 always means gapless
+    /// (adaptive only adjusts duration when the slider is greater than 0).
+    /// </summary>
+    public double CrossfadeTriggerWindow => _crossfadeDuration > 0 ? _crossfadeDuration : 0;
 
     private bool _crossfadeTriggered;
+    private bool _crossfadeUiDeferred;
 
     // Loudness normalization state
     public event Action? LoudnessSettingsChanged;
@@ -185,14 +206,32 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public void Play() => PlayRequested?.Invoke();
     public void Pause() => PauseRequested?.Invoke();
     public void Seek(double time) => SeekRequested?.Invoke(time);
-    public void Mute() => MuteRequested?.Invoke();
-    public void Unmute() => UnmuteRequested?.Invoke();
-    public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
+
+    public void Mute()
+    {
+        IsMuted = true;
+        MuteRequested?.Invoke();
+    }
+
+    public void Unmute()
+    {
+        IsMuted = false;
+        UnmuteRequested?.Invoke();
+    }
+
+    public void SetVolume(double volume)
+    {
+        // Persist / update Volume here. Native and Web handlers only apply output level;
+        // without this, MAUI Windows keeps the default 1.0 and resets on each SourceChanged.
+        var clamped = Math.Clamp(volume, 0.0, 1.0);
+        Volume = clamped;
+        VolumeChangeRequested?.Invoke(clamped);
+    }
 
     public void Stop()
     {
         StopRequested?.Invoke();
-        PlaybackState = PlaybackState.Idle;
+        ForceIdle();
     }
 
     // Visibility
@@ -540,35 +579,159 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (_crossfadeTriggered || _queue.Count == 0) return;
         if (_repeat == RepeatMode.One) return;
 
+        _crossfadeTriggered = true;
+
         var nextIndex = GetNextIndex();
-        if (nextIndex is null) return;
+        if (nextIndex is null)
+        {
+            _crossfadeTriggered = false;
+            return;
+        }
 
         var nextTrack = _queue[nextIndex.Value];
 
-        var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
-        if (session?.Source is null) return;
-
-        var source = new PlayerSource
+        // Reuse the early-prepared source when possible so JS can keep the already
+        // buffered <audio> element (fresh stream sessions get new URLs).
+        PlayerSource? source = null;
+        if (_preparedNextSource is not null
+            && _preparedNextIndexedFileId == nextTrack.IndexedFileId
+            && !string.IsNullOrEmpty(_preparedNextSource.Url))
         {
-            Url = session.Source.Uri.OriginalString,
-            MimeType = session.Source.MimeType
-        };
-
-        var duration = _crossfadeDuration;
-        if (_adaptiveCrossfade && CurrentTrack is not null)
+            source = _preparedNextSource;
+        }
+        else if (!string.IsNullOrEmpty(nextTrack.LocalPath))
         {
-            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
-            duration = HarmonicMixHelper.ComputeCrossfadeDuration(CurrentTrack, nextTrack, baseDuration);
+            source = new PlayerSource
+            {
+                Url = nextTrack.LocalPath,
+                MimeType = "audio/mpeg",
+                IndexedFileId = nextTrack.IndexedFileId
+            };
+        }
+        else
+        {
+            var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
+            if (session?.Source is null)
+            {
+                _crossfadeTriggered = false;
+                return;
+            }
+
+            source = new PlayerSource
+            {
+                Url = session.Source.Uri.OriginalString,
+                MimeType = session.Source.MimeType,
+                IndexedFileId = nextTrack.IndexedFileId
+            };
         }
 
-        _crossfadeTriggered = true;
+        ClearPreparedNextSource();
+
+        var duration = _crossfadeDuration;
+        // Capture outgoing track before advancing the index (adaptive mix uses both).
+        var outgoingTrack = CurrentTrack;
+        if (_adaptiveCrossfade && outgoingTrack is not null)
+        {
+            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
+            duration = HarmonicMixHelper.ComputeCrossfadeDuration(outgoingTrack, nextTrack, baseDuration);
+        }
+
+        if (duration <= 0)
+        {
+            _crossfadeTriggered = false;
+            return;
+        }
+
         PushCurrentToPlayHistory();
         _currentIndex = nextIndex.Value;
-        CurrentTrackChanged?.Invoke(CurrentTrack);
+        // Keep seek bar / title / waveform on the outgoing track during the blend.
+        // Flipping UI at arm-time feels like an early cut even when audio overlaps.
+        _crossfadeUiDeferred = true;
         CrossfadeRequested?.Invoke(source, duration);
     }
 
+    public void NotifyCrossfadeCompleted()
+    {
+        _crossfadeTriggered = false;
+        if (!_crossfadeUiDeferred)
+            return;
+
+        _crossfadeUiDeferred = false;
+        var track = CurrentTrack;
+        if (Duration <= 0)
+            Duration = track?.Duration ?? 0;
+        // CurrentTime is already the incoming clock from JS; do not snap to 0 here.
+        CurrentTrackChanged?.Invoke(track);
+    }
+
+    private void ConsiderCrossfade()
+    {
+        if (_crossfadeTriggered || _stopAfterCurrentTrack || CrossfadeTriggerWindow <= 0)
+            return;
+        if (_playbackState != PlaybackState.Playing || _currentTime <= 0)
+            return;
+
+        // Prefer track metadata duration so a transient MediaElement Duration glitch
+        // cannot fire a mid-track equal-power fade (sounds like unexplained cutouts).
+        var duration = GetReliableDurationSeconds();
+        if (duration <= 0)
+            return;
+
+        var remaining = duration - _currentTime;
+        // Arm a bit early once the next track is prebuffered so JS can start it
+        // silently and still run a full-duration equal-power blend.
+        var armWindow = CrossfadeTriggerWindow;
+        if (_preparedNextSource is not null)
+            armWindow += 2;
+        if (remaining > 0 && remaining <= armWindow)
+            _ = OnCrossfadeNeededAsync();
+    }
+
+    private void ConsiderGaplessPrebuffer()
+    {
+        if (_gaplessPrebufferTriggered || _crossfadeTriggered || _stopAfterCurrentTrack)
+            return;
+        if (_playbackState != PlaybackState.Playing || _currentTime <= 0)
+            return;
+
+        var duration = GetReliableDurationSeconds();
+        if (duration <= 0)
+            return;
+
+        var remaining = duration - _currentTime;
+        // Prepare the next track early for gapless and crossfade so the incoming
+        // stream is already decoding when the equal-power ramp starts.
+        var prepareWindow = CrossfadeTriggerWindow > 0
+            ? CrossfadeTriggerWindow + 10
+            : 10;
+        if (remaining > 0 && remaining <= prepareWindow)
+            _ = OnGaplessPrebufferNeededAsync();
+    }
+
+    private double GetReliableDurationSeconds()
+    {
+        var trackDuration = CurrentTrack?.Duration ?? 0;
+        if (trackDuration > 0 && _duration > 0)
+        {
+            // If native duration is wildly shorter than metadata, trust metadata
+            // (avoids early crossfade / false "end of track" fades).
+            if (_duration < trackDuration * 0.5)
+                return trackDuration;
+            return Math.Max(_duration, trackDuration * 0.95);
+        }
+
+        return trackDuration > 0 ? trackDuration : _duration;
+    }
+
     private bool _gaplessPrebufferTriggered;
+    private PlayerSource? _preparedNextSource;
+    private Guid? _preparedNextIndexedFileId;
+
+    private void ClearPreparedNextSource()
+    {
+        _preparedNextSource = null;
+        _preparedNextIndexedFileId = null;
+    }
 
     public async Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default)
     {
@@ -584,16 +747,28 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         PlayerSource source;
         if (!string.IsNullOrEmpty(nextTrack.LocalPath))
         {
-            source = new PlayerSource { Url = nextTrack.LocalPath, MimeType = "audio/mpeg" };
+            source = new PlayerSource
+            {
+                Url = nextTrack.LocalPath,
+                MimeType = "audio/mpeg",
+                IndexedFileId = nextTrack.IndexedFileId
+            };
         }
         else
         {
             var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
             if (session?.Source is null) return;
-            source = new PlayerSource { Url = session.Source.Uri.OriginalString, MimeType = session.Source.MimeType };
+            source = new PlayerSource
+            {
+                Url = session.Source.Uri.OriginalString,
+                MimeType = session.Source.MimeType,
+                IndexedFileId = nextTrack.IndexedFileId
+            };
         }
 
         _gaplessPrebufferTriggered = true;
+        _preparedNextSource = source;
+        _preparedNextIndexedFileId = nextTrack.IndexedFileId;
         GaplessPrebufferRequested?.Invoke(source);
     }
 
@@ -615,11 +790,31 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         if (_crossfadeTriggered)
         {
-            _crossfadeTriggered = false;
+            // Finish deferred UI handoff even if the audible blend never completed.
+            NotifyCrossfadeCompleted();
+            // OnCrossfadeNeeded already advanced CurrentIndex. If the handoff never
+            // reached a playable state (slow HLS resolve, failed promote), recover.
+            if (PlaybackState is not (PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused))
+                await LoadAndPlayCurrentAsync(cancellationToken);
             return;
         }
 
         await NextAsync(cancellationToken);
+    }
+
+    public async Task RecoverAfterNativePlaybackFailureAsync(CancellationToken cancellationToken = default)
+    {
+        _crossfadeTriggered = false;
+        _gaplessPrebufferTriggered = false;
+
+        if (CurrentTrack is null)
+        {
+            PlaybackState = PlaybackState.Idle;
+            return;
+        }
+
+        // Fresh stream session + SourceChanged so native players leave a broken Source behind.
+        await LoadAndPlayCurrentAsync(cancellationToken);
     }
 
     private bool _stopAfterCurrentTrack;
@@ -644,10 +839,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private void ConsiderStopAfterTrackFade()
     {
-        if (!_stopAfterCurrentTrack || _sleepFadeStarted || _duration <= 0)
+        if (!_stopAfterCurrentTrack || _sleepFadeStarted)
             return;
 
-        var remaining = _duration - _currentTime;
+        var duration = GetReliableDurationSeconds();
+        if (duration <= 0)
+            return;
+
+        var remaining = duration - _currentTime;
         if (remaining <= 0 || remaining > SleepFadeSeconds)
             return;
 
@@ -714,14 +913,16 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (track is null) return;
 
         _crossfadeTriggered = false;
+        _crossfadeUiDeferred = false;
         _gaplessPrebufferTriggered = false;
+        ClearPreparedNextSource();
         PlaybackState = PlaybackState.Buffering;
-        CurrentTrackChanged?.Invoke(track);
 
-        // Reset state
+        // Reset before CurrentTrackChanged so the waveform UI paints 0:00 immediately.
         CurrentTime = 0;
-        Duration = 0;
+        Duration = track.Duration ?? 0;
         BufferedTime = 0;
+        CurrentTrackChanged?.Invoke(track);
 
         await ShowAsync();
 
@@ -746,7 +947,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
                 if (session?.Source is null)
                 {
-                    PlaybackState = PlaybackState.Idle;
+                    ForceIdle();
                     return;
                 }
 
@@ -760,7 +961,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             catch (HttpRequestException)
             {
                 // Auth refresh races / transient network should not crash the UI via ErrorBoundary.
-                PlaybackState = PlaybackState.Idle;
+                ForceIdle();
                 return;
             }
         }

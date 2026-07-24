@@ -27,6 +27,7 @@ public class AudioQueueItem
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
     public double? Energy { get; init; }
+    public float[]? WaveformPeaks { get; init; }
 
     // Sweet fades (MixRamp-style transition data)
     public double? FadeInDuration { get; init; }
