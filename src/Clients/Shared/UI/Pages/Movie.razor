@@ -75,13 +75,14 @@ else
 {
     @if (_movie != null)
     {
-        <div @ref="_tvScrollRoot"
-             class="movie-page"
-             style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)"
-             data-tv-scroll="@(HasTvBelowContent ? string.Empty : null)">
+        <div class="movie-page"
+             style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
         <MediaPageBackdrop ImageUrl="@_backdropUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_tvScrollRoot" />
+        <div @ref="_tvScrollRoot"
+             class="movie-page-scroll media-page-scroll"
+             data-tv-scroll="@(HasTvBelowContent ? string.Empty : null)">
         <div class="movie-main media-hero-main" data-tv-scroll-zone="main">
         <K7BackButton />
         <div class="media-hero movie-hero">
@@ -266,6 +267,7 @@ else
         </div>
         </MediaPageContent>
         }
+        </div>
         </div>
     }
 }

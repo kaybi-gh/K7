@@ -24,10 +24,8 @@
 }
 else if (_person is not null)
 {
-    <div @ref="_tvScrollRoot"
-         class="person-page"
-         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)"
-         data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
+    <div class="person-page"
+         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)">
         <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
                            SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
                            SecondaryImageKey="@ActiveBackdropUrl"
@@ -35,6 +33,9 @@ else if (_person is not null)
                            Class="media-page-backdrop--soft-still"
                            SoftStillBlurEnabled="true" />
 
+        <div @ref="_tvScrollRoot"
+             class="person-page-scroll media-page-scroll"
+             data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
         <div class="person-main media-hero-main" data-tv-scroll-zone="main">
             @if (string.IsNullOrEmpty(_person.Biography))
             {
@@ -193,5 +194,6 @@ else if (_person is not null)
             </div>
             </MediaPageContent>
         }
+        </div>
     </div>
 }

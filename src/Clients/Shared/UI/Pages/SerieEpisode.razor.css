@@ -5,8 +5,7 @@
     flex: 1;
     min-height: 0;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .episode-main {
@@ -20,17 +19,11 @@
     overflow: hidden;
 }
 
-.episode-page[data-tv-scroll] {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.episode-page[data-tv-scroll] .episode-main {
+.episode-page-scroll[data-tv-scroll] .episode-main {
     min-height: 100%;
 }
 
-.episode-page[data-tv-scroll] .episode-page-content {
+.episode-page-scroll[data-tv-scroll] .episode-page-content {
     padding-bottom: 64px;
 }
 
@@ -40,8 +33,8 @@
     gap: var(--space-6);
 }
 
-.episode-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
-.episode-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+.episode-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.episode-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
     scroll-margin-bottom: 64px;
 }
 

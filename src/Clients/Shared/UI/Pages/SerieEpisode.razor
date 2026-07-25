@@ -39,10 +39,8 @@
 }
 else if (_episode is not null)
 {
-    <div @ref="_tvScrollRoot"
-         class="episode-page"
-         style="@DominantColorStyle"
-         data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
+    <div class="episode-page"
+         style="@DominantColorStyle">
         @if (_stillUrl is not null)
         {
             <MediaPageBackdrop ImageUrl="@_stillUrl"
@@ -54,6 +52,9 @@ else if (_episode is not null)
                                SoftStillSourceHeight="_stillSourceHeight" />
         }
 
+        <div @ref="_tvScrollRoot"
+             class="episode-page-scroll media-page-scroll"
+             data-tv-scroll="@(HasBelowContent ? string.Empty : null)">
         <div class="episode-main media-hero-main" data-tv-scroll-zone="main">
             <K7BackButton Class="episode-back-btn" />
 
@@ -231,5 +232,6 @@ else if (_episode is not null)
         <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" />
         </div>
         </MediaPageContent>
+        </div>
     </div>
 }

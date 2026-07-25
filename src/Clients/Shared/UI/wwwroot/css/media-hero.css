@@ -1,5 +1,19 @@
 /* Shared hero layout for media detail pages (mobile-first split at 50vh). */
 
+/* Shell holds MediaPageBackdrop; scroll child owns overflow so a transparent
+   scrollbar sits on the backdrop (including its scrims) instead of a --color-bg strip. */
+.media-page-scroll {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .media-hero {
     position: relative;
     display: flex;
@@ -37,7 +51,8 @@
     .movie-page,
     .serie-page,
     .person-page,
-    .episode-page {
+    .episode-page,
+    .season-tv {
         --media-backdrop-height: 50vh;
         --media-backdrop-height: 50dvh;
         --media-wash-tint: var(--media-dominant-color, var(--color-accent));
@@ -130,10 +145,14 @@
     .movie-page,
     .serie-page,
     .person-page,
-    .episode-page {
+    .episode-page,
+    .season-tv {
         flex: 1;
         min-height: 0;
         height: 100%;
+        --media-wash-tint: var(--media-dominant-color, var(--color-accent));
+        --media-wash-color: color-mix(in srgb, var(--media-wash-tint) 24%, var(--color-bg));
+        background: var(--media-wash-color);
     }
 
     .media-hero-main {

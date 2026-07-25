@@ -185,9 +185,14 @@
     --carousel-margin-start: 40px;
 }
 
-.season-tv--scrollable {
-    overflow-y: auto;
-    overflow-x: hidden;
+.season-tv-scroll {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .season-tv-main {
@@ -198,12 +203,12 @@
     z-index: 1;
 }
 
-.season-tv--scrollable .season-tv-main {
+.season-tv-scroll.media-page-scroll .season-tv-main {
     min-height: 100%;
     height: 100%;
 }
 
-.season-tv:not(.season-tv--scrollable) .season-tv-main {
+.season-tv-scroll:not(.media-page-scroll) .season-tv-main {
     flex: 1;
     min-height: 0;
 }

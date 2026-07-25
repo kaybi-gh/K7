@@ -31,13 +31,17 @@
 }
 else if (_season is not null && _isTv)
 {
-    <div @ref="_seasonTvRoot" class="season-tv @(HasDisplayableCast ? "season-tv--scrollable" : "")" data-tv-scroll>
+    <div class="season-tv"
+         style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
         <MediaPageBackdrop ImageUrl="@(_previousStillUrl ?? _backdropUrl)"
                            SecondaryImageUrl="@(_focusedStillUrl ?? _backdropUrl)"
                            SecondaryImageKey="@_focusedStillUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_seasonTvRoot" />
 
+        <div @ref="_seasonTvRoot"
+             class="season-tv-scroll @(HasDisplayableCast ? "media-page-scroll" : "")"
+             data-tv-scroll>
         <div class="season-tv-main" data-tv-scroll-zone="main">
             <div class="tv-hero">
                 <div class="tv-back-button">
@@ -135,6 +139,7 @@ else if (_season is not null && _isTv)
                 </Carousel>
             </div>
         }
+        </div>
     </div>
 }
 else if (_season is not null)

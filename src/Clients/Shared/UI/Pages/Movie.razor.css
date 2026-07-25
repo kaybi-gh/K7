@@ -134,8 +134,7 @@
     flex: 1;
     min-height: 0;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .movie-main {
@@ -227,23 +226,17 @@
     gap: 4px;
 }
 
-.movie-page[data-tv-scroll] {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.movie-page[data-tv-scroll] .movie-main {
+.movie-page-scroll[data-tv-scroll] .movie-main {
     min-height: 100%;
 }
 
-.movie-page[data-tv-scroll] .movie-page-content {
+.movie-page-scroll[data-tv-scroll] .movie-page-content {
     padding-bottom: 64px;
 }
 
 /* Detail similar rows: footer text sits below the poster link focus target. */
-.movie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
-.movie-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+.movie-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.movie-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
     scroll-margin-bottom: 64px;
 }
 

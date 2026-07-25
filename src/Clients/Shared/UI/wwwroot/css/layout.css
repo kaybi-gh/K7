@@ -123,10 +123,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     .app-main:has(.music-mini-player) .artist-detail-page::after,
     .app-main:has(.music-mini-player) .album-tracklist::after,
     .app-main:has(.music-mini-player) .season-detail-page::after,
-    .app-main:has(.music-mini-player) .movie-page::after,
-    .app-main:has(.music-mini-player) .serie-page::after,
-    .app-main:has(.music-mini-player) .person-page::after,
-    .app-main:has(.music-mini-player) .episode-page::after {
+    .app-main:has(.music-mini-player) .movie-page-scroll::after,
+    .app-main:has(.music-mini-player) .serie-page-scroll::after,
+    .app-main:has(.music-mini-player) .person-page-scroll::after,
+    .app-main:has(.music-mini-player) .episode-page-scroll::after {
         content: "";
         display: block;
         flex-shrink: 0;

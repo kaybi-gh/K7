@@ -13,8 +13,7 @@
     flex: 1;
     min-height: 0;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     transition: --media-dominant-color 1.2s var(--ease-out);
 }
 
@@ -327,23 +326,17 @@
     }
 }
 
-.person-page[data-tv-scroll] {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.person-page[data-tv-scroll] .person-main {
+.person-page-scroll[data-tv-scroll] .person-main {
     min-height: 100%;
 }
 
-.person-page[data-tv-scroll] .person-page-content {
+.person-page-scroll[data-tv-scroll] .person-page-content {
     padding-bottom: 64px;
 }
 
 /* Detail rows: footer text sits below the poster link focus target. */
-.person-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
-.person-page[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
+.person-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,
+.person-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card-link {
     scroll-margin-bottom: 64px;
 }
 
