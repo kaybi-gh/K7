@@ -131,8 +131,12 @@ public class K7MediaLibraryService : MediaLibraryService,
         var pendingIntent = PendingIntent.GetActivity(
             this, 0, launchIntent, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent)!;
 
+        // Android Auto resets browse/queue scroll on every playback-state push.
+        // Disable Media3 periodic position updates so the queue stays scrollable
+        // (workaround for AA companion bug; see androidx/media#2192).
         _session = new MediaLibrarySession.Builder(this, _forwardingPlayer, this)!
             .SetSessionActivity(pendingIntent)!
+            .SetPeriodicPositionUpdateEnabledBuilder(false)!
             .Build()!;
 
         _videoSession = new MediaSession.Builder(this, _videoSessionPlayer)!
