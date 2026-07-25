@@ -75,6 +75,28 @@ h6:focus:not(:focus-visible) {
     color: var(--color-accent-fg);
 }
 
+/* Hide the default mobile tap flash (blue/grey rectangle on buttons/links). */
+html {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Native-app feel: no text selection / iOS callout in the MAUI WebView.
+   Web WASM keeps browser selection. Form controls stay selectable. */
+html.platform-maui {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+html.platform-maui input,
+html.platform-maui textarea,
+html.platform-maui select,
+html.platform-maui [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
 /* Edit mode indicator for spatial navigation */
 input[data-sn-editing="true"],
 textarea[data-sn-editing="true"] {

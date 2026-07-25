@@ -10,6 +10,8 @@
             var isTv = ua.indexOf('K7TV/') !== -1;
             var dpr = window.devicePixelRatio || 1;
             var rewrote = false;
+            // MAUI WebView only - Web WASM never loads this index.html.
+            document.documentElement.classList.add('platform-maui');
             if (isTv) {
                 document.documentElement.classList.add('platform-tv');
                 // Compensate for the TV's high pixel density: rendering at
