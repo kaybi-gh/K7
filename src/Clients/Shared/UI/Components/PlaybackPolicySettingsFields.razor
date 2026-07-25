@@ -41,20 +41,6 @@
             @L["MusicResumeSectionHint"]
         </K7Alert>
 
-        <K7Slider TValue="int" Min="0" Max="50" Step="1" Immediate="true"
-                  Label="@L["MinResumePercent"]"
-                  Hint="@L["MusicMinResumePercentHint"]"
-                  FormatValue="FormatPercent"
-                  Value="AudioPolicy.MinResumePercent"
-                  ValueChanged="v => OnAudioChanged(p => p with { MinResumePercent = v })" />
-
-        <K7Slider TValue="int" Min="0" Max="300" Step="10" Immediate="true"
-                  Label="@L["MinResumeDurationSeconds"]"
-                  Hint="@L["MusicMinResumeDurationHint"]"
-                  FormatValue="FormatSeconds"
-                  Value="AudioPolicy.MinResumeDurationSeconds"
-                  ValueChanged="v => OnAudioChanged(p => p with { MinResumeDurationSeconds = v })" />
-
         <K7Slider TValue="int" Min="10" Max="100" Step="5" Immediate="true"
                   Label="@L["MusicCompletedThresholdPercent"]"
                   Hint="@L["MusicCompletedThresholdHint"]"

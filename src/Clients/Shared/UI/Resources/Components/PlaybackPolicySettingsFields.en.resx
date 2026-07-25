@@ -46,13 +46,7 @@
     <value>Music tracking</value>
   </data>
   <data name="MusicResumeSectionHint" xml:space="preserve">
-    <value>Defines when a track is considered played and how resume behaves.</value>
-  </data>
-  <data name="MusicMinResumePercentHint" xml:space="preserve">
-    <value>Below this threshold, playback resumes from the start.</value>
-  </data>
-  <data name="MusicMinResumeDurationHint" xml:space="preserve">
-    <value>Tracks shorter than this duration always resume from the start.</value>
+    <value>Defines when a track is considered played.</value>
   </data>
   <data name="MusicCompletedThresholdPercent" xml:space="preserve">
     <value>Minimum playback completion threshold (%)</value>

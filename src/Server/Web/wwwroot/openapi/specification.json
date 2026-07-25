@@ -10414,22 +10414,6 @@
       "AudioPlaybackPolicySettingsDto": {
         "type": "object",
         "properties": {
-          "minResumePercent": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "minResumeDurationSeconds": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
           "completedThresholdPercent": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [

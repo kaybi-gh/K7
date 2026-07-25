@@ -46,13 +46,7 @@
     <value>Suivi musical</value>
   </data>
   <data name="MusicResumeSectionHint" xml:space="preserve">
-    <value>Définit quand une piste est considérée comme écoutée et comment la reprise est gérée.</value>
-  </data>
-  <data name="MusicMinResumePercentHint" xml:space="preserve">
-    <value>En dessous de ce seuil, la lecture reprend depuis le début.</value>
-  </data>
-  <data name="MusicMinResumeDurationHint" xml:space="preserve">
-    <value>Les pistes plus courtes que cette durée reprennent toujours depuis le début.</value>
+    <value>Définit quand une piste est considérée comme écoutée.</value>
   </data>
   <data name="MusicCompletedThresholdPercent" xml:space="preserve">
     <value>Seuil minimum de complétion de lecture (%)</value>
