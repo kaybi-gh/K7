@@ -245,6 +245,44 @@ public class K7SearchSelectTests
     }
 
     [Test]
+    public async Task EnterOnHint_ShouldCloseDropdownBeforeSlowCommitCompletes()
+    {
+        var commitStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCommit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ctx = new BunitContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7SearchSelect>(p => p
+            .Add(x => x.DebounceInterval, 50)
+            .Add(x => x.MinSearchLength, 2)
+            .Add(x => x.CommitOnSelectOnly, true)
+            .Add(x => x.OnDebouncedCommit, EventCallback.Factory.Create<string?>(this, async _ =>
+            {
+                commitStarted.TrySetResult();
+                await releaseCommit.Task;
+            }))
+            .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
+
+        var input = cut.Find("input");
+        await BeginEditingAsync(input);
+        await input.InputAsync("ac");
+        cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
+
+        var enterTask = cut.InvokeAsync(() => input.KeyDownAsync("Enter"));
+        await commitStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        // Dropdown must already be closed while the parent commit is still awaited.
+        cut.WaitForAssertion(() =>
+        {
+            cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
+            cut.Find(".k7-search-select").ClassList.Should().NotContain("k7-search-select--open");
+        });
+
+        releaseCommit.TrySetResult();
+        await enterTask;
+    }
+
+    [Test]
     public async Task AfterSpatialEditEnded_Escape_ShouldCloseDropdownWithoutCommit()
     {
         var commitCount = 0;

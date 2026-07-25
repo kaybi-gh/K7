@@ -130,12 +130,24 @@ public sealed class FeedHubHostService : IFeedHubHostService
 
     private void ApplyLocation(string uri)
     {
+        var previousActive = ActiveKey;
+        var previousHubActive = IsHubRouteActive;
+        var mountChanged = false;
+
         if (TryParseHubRoute(uri, out var key))
         {
             lock (_sync)
             {
-                TouchMountedKeyUnlocked(key);
-                PruneNonHomeKeysUnlocked();
+                // Same hub page with only query changes (e.g. library-group filters)
+                // must not reshuffle mounts or notify - that re-runs keep-alive page init.
+                var existing = _mountedKeys.IndexOf(key);
+                if (existing < 0 || existing != _mountedKeys.Count - 1)
+                {
+                    TouchMountedKeyUnlocked(key);
+                    mountChanged = true;
+                }
+
+                mountChanged |= PruneNonHomeKeysUnlocked();
             }
 
             ActiveKey = key;
@@ -149,7 +161,8 @@ public sealed class FeedHubHostService : IFeedHubHostService
             IsHubRouteActive = false;
         }
 
-        NotifyChanged();
+        if (ActiveKey != previousActive || IsHubRouteActive != previousHubActive || mountChanged)
+            NotifyChanged();
     }
 
     private void TouchMountedKeyUnlocked(FeedHubKey key)

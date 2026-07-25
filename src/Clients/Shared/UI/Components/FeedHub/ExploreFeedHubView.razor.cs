@@ -21,6 +21,7 @@ public partial class ExploreFeedHubView : IDisposable
     private bool _loading = true;
     private bool _isTv;
     private bool _hubPageActive;
+    private Guid? _initializedGroupId;
     private LibraryGroupDto? _group;
     private ExploreFocusNavigationContext? _focusNavigation;
 
@@ -36,6 +37,10 @@ public partial class ExploreFeedHubView : IDisposable
 
     protected override async Task OnParametersSetAsync()
     {
+        if (_initializedGroupId == GroupId)
+            return;
+
+        _initializedGroupId = GroupId;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         _loading = true;
         var snapshot = await ExploreGroupStore.EnsureGroupAsync(GroupId);

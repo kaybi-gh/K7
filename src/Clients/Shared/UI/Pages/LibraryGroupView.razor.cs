@@ -95,6 +95,7 @@ public partial class LibraryGroupView : IDisposable
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
     private string _tableScopeKey = "initial";
     private DebouncedActionRunner? _picturesRefreshRunner;
+    private string? _initializedId;
 
     private Dictionary<string, object> CreateSmartPlaylistButtonAttributes => new()
     {
@@ -135,6 +136,11 @@ public partial class LibraryGroupView : IDisposable
 
     protected override async Task OnParametersSetAsync()
     {
+        // FeedHub keep-alive re-renders this view on location/query sync. Only re-init when Id changes.
+        if (_initializedId == Id)
+            return;
+
+        _initializedId = Id;
         _loading = true;
         _selectedMediaType = default;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;

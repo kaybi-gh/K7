@@ -88,4 +88,24 @@ public class FeedHubHostServiceTests
         sut.ActiveKey.Should().Be(FeedHubKey.Home);
         sut.MountedKeys.Should().ContainSingle().Which.Should().Be(FeedHubKey.Home);
     }
+
+    [Test]
+    public void UpdateLocation_ShouldNotNotify_WhenOnlyQueryChangesOnSameHubPage()
+    {
+        var sut = new FeedHubHostService();
+        sut.SetEnabled(true);
+
+        var groupId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        sut.UpdateLocation($"https://k7.local/library-groups/{groupId}");
+
+        var notifyCount = 0;
+        sut.Changed += () => notifyCount++;
+
+        sut.UpdateLocation($"https://k7.local/library-groups/{groupId}?filter=abc");
+        sut.UpdateLocation($"https://k7.local/library-groups/{groupId}?filter=abc&sort=title");
+
+        notifyCount.Should().Be(0);
+        sut.ActiveKey.Should().Be(FeedHubKey.ForLibraryGroup(groupId));
+        sut.IsHubRouteActive.Should().BeTrue();
+    }
 }

@@ -120,11 +120,18 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         if (_disposed)
             return;
 
+        // Cancel in-flight suggestion search so a late response cannot reopen the dropdown.
+        _searchCts?.Cancel();
+        _loading = false;
+
         Value = suggestion;
         await ValueChanged.InvokeAsync(suggestion);
+
+        // Close the dropdown before the (often slow) parent filter refresh so Enter/click feel instant.
+        await EndEditingAsync();
+
         if (OnDebouncedCommit.HasDelegate)
             await OnDebouncedCommit.InvokeAsync(suggestion);
-        await EndEditingAsync();
     }
 
     private async Task OnInputKeyDown(KeyboardEventArgs e)
