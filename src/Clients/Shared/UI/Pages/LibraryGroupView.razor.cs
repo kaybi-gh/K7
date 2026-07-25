@@ -668,10 +668,7 @@ public partial class LibraryGroupView : IDisposable
         if (queueItems.Count == 0)
             return;
 
-        if (!Audio.Shuffle)
-            Audio.ToggleShuffle();
-
-        await Audio.PlayTracksAsync(queueItems, 0);
+        await Audio.PlayShuffledAsync(queueItems);
     }
 
     private async Task<List<LiteMusicTrackDto>> GetPlayableTracksAsync(CancellationToken cancellationToken = default)

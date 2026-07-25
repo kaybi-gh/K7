@@ -277,10 +277,7 @@ public partial class MusicArtistDetail : IDisposable
     {
         var queueItems = BuildQueueItems();
         if (queueItems.Count > 0)
-        {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(queueItems, 0);
-        }
+            await Audio.PlayShuffledAsync(queueItems);
     }
 
     private Task OpenBiographyDialogAsync()

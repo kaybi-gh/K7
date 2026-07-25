@@ -185,10 +185,7 @@ public partial class MusicAlbumDetail : IDisposable
     {
         var queueItems = BuildQueueItems();
         if (queueItems.Count > 0)
-        {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(queueItems, 0);
-        }
+            await Audio.PlayShuffledAsync(queueItems);
     }
 
     private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<TrackViewModel> args)

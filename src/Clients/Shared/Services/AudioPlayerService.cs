@@ -313,6 +313,24 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         await LoadQueueAsync(tracks, startIndex, cancellationToken);
     }
 
+    public async Task PlayShuffledAsync(IEnumerable<AudioQueueItem> tracks, Guid? playlistId = null, CancellationToken cancellationToken = default)
+    {
+        var list = tracks as IList<AudioQueueItem> ?? tracks.ToList();
+        if (list.Count == 0)
+            return;
+
+        if (!_shuffle)
+        {
+            _shuffle = true;
+            ShuffleChanged?.Invoke(_shuffle);
+        }
+
+        var startIndex = Rng.Next(list.Count);
+        ClearRadioContext();
+        SetPlaylistContext(playlistId);
+        await LoadQueueAsync(list, startIndex, cancellationToken);
+    }
+
     public async Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default)
     {
         ClearPlaylistContext();

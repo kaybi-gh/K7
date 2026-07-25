@@ -308,6 +308,15 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task PlayShuffledAsync(IEnumerable<AudioQueueItem> tracks, Guid? playlistId = null, CancellationToken cancellationToken = default)
+    {
+        var list = tracks as IList<AudioQueueItem> ?? tracks.ToList();
+        if (list.Count == 0)
+            return Task.CompletedTask;
+
+        return PlayTracksAsync(list, Random.Shared.Next(list.Count), playlistId, cancellationToken);
+    }
+
     public Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default)
     {
         ActiveRadioTitle = radioTitle;

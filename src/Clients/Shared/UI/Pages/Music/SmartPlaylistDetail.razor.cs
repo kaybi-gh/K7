@@ -96,9 +96,8 @@ public partial class SmartPlaylistDetail
         var queue = BuildQueueItems();
         if (queue.Count > 0)
         {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
             await RecordPlaybackAsync();
-            await Audio.PlayTracksAsync(queue, 0, Guid.Parse(Id));
+            await Audio.PlayShuffledAsync(queue, Guid.Parse(Id));
         }
     }
 

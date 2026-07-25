@@ -104,7 +104,7 @@ public partial class TrackContextMenu
             if (!Audio.Shuffle)
                 Audio.ToggleShuffle();
 
-            await Audio.PlayRadioAsync(tracks, string.Format(L["RadioGenreSnackbar"], Track.Genre));
+            await Audio.PlayRadioAsync(tracks, string.Format(L["RadioGenreSnackbar"], Track.Genre), Random.Shared.Next(tracks.Count));
         }
     }
 

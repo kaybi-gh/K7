@@ -65,6 +65,8 @@ public interface IAudioPlayerService
     // Queue management
     Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default);
     Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, Guid? playlistId = null, CancellationToken cancellationToken = default);
+    /// <summary>Enable shuffle and start playback on a random track.</summary>
+    Task PlayShuffledAsync(IEnumerable<AudioQueueItem> tracks, Guid? playlistId = null, CancellationToken cancellationToken = default);
     Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default);
     void AddToQueue(AudioQueueItem track);
     void AddToQueueNext(AudioQueueItem track);

@@ -227,9 +227,8 @@ public partial class PlaylistDetail
         var queue = BuildQueueItems();
         if (queue.Count > 0)
         {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
             await RecordPlaybackAsync();
-            await Audio.PlayTracksAsync(queue, 0, PlaylistId);
+            await Audio.PlayShuffledAsync(queue, PlaylistId);
         }
     }
 
