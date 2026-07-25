@@ -155,6 +155,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private bool _crossfadeTriggered;
     private bool _crossfadeUiDeferred;
+    /// <summary>
+    /// Adaptive/gapless decided not to crossfade this track pair. Prevents re-arming
+    /// on every timeupdate (which would drain shuffle via GetNextIndex).
+    /// </summary>
+    private bool _crossfadeDeclined;
 
     // Loudness normalization state
     public event Action? LoudnessSettingsChanged;
@@ -594,19 +599,33 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public async Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default)
     {
         if (_stopAfterCurrentTrack) return;
-        if (_crossfadeTriggered || _queue.Count == 0) return;
+        if (_crossfadeTriggered || _crossfadeDeclined || _queue.Count == 0) return;
         if (_repeat == RepeatMode.One) return;
 
-        _crossfadeTriggered = true;
-
-        var nextIndex = GetNextIndex();
+        // Peek only - GetNextIndex mutates shuffle position and must not run until
+        // we commit to a real crossfade (same-album adaptive returns 0 for gapless).
+        var nextIndex = PeekNextIndex();
         if (nextIndex is null)
+            return;
+
+        var nextTrack = _queue[nextIndex.Value];
+
+        var duration = _crossfadeDuration;
+        var outgoingTrack = CurrentTrack;
+        if (_adaptiveCrossfade && outgoingTrack is not null)
         {
-            _crossfadeTriggered = false;
+            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
+            duration = HarmonicMixHelper.ComputeCrossfadeDuration(outgoingTrack, nextTrack, baseDuration);
+        }
+
+        if (duration <= 0)
+        {
+            // Gapless / same album: let OnTrackEnded advance the queue normally.
+            _crossfadeDeclined = true;
             return;
         }
 
-        var nextTrack = _queue[nextIndex.Value];
+        _crossfadeTriggered = true;
 
         // Reuse the early-prepared source when possible so JS can keep the already
         // buffered <audio> element (fresh stream sessions get new URLs).
@@ -645,23 +664,16 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         ClearPreparedNextSource();
 
-        var duration = _crossfadeDuration;
-        // Capture outgoing track before advancing the index (adaptive mix uses both).
-        var outgoingTrack = CurrentTrack;
-        if (_adaptiveCrossfade && outgoingTrack is not null)
-        {
-            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
-            duration = HarmonicMixHelper.ComputeCrossfadeDuration(outgoingTrack, nextTrack, baseDuration);
-        }
-
-        if (duration <= 0)
+        // Commit queue advance only after the next source is ready.
+        var committedIndex = GetNextIndex();
+        if (committedIndex is null || committedIndex.Value != nextIndex.Value)
         {
             _crossfadeTriggered = false;
             return;
         }
 
         PushCurrentToPlayHistory();
-        _currentIndex = nextIndex.Value;
+        _currentIndex = committedIndex.Value;
         // Keep seek bar / title / waveform on the outgoing track during the blend.
         // Flipping UI at arm-time feels like an early cut even when audio overlaps.
         _crossfadeUiDeferred = true;
@@ -684,7 +696,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private void ConsiderCrossfade()
     {
-        if (_crossfadeTriggered || _stopAfterCurrentTrack || CrossfadeTriggerWindow <= 0)
+        if (_crossfadeTriggered || _crossfadeDeclined || _stopAfterCurrentTrack || CrossfadeTriggerWindow <= 0)
             return;
         if (_playbackState != PlaybackState.Playing || _currentTime <= 0)
             return;
@@ -823,6 +835,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public async Task RecoverAfterNativePlaybackFailureAsync(CancellationToken cancellationToken = default)
     {
         _crossfadeTriggered = false;
+        _crossfadeDeclined = false;
         _gaplessPrebufferTriggered = false;
 
         if (CurrentTrack is null)
@@ -932,6 +945,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         _crossfadeTriggered = false;
         _crossfadeUiDeferred = false;
+        _crossfadeDeclined = false;
         _gaplessPrebufferTriggered = false;
         ClearPreparedNextSource();
         PlaybackState = PlaybackState.Buffering;
