@@ -20,6 +20,11 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> SERVER_INFO = new("ServerInfo");
     public static readonly PreferenceKey<string> LOCAL_USERS = new("LocalUsers");
     public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
+    /// <summary>
+    /// Identity user id unlocked for solo-device auto-login (PIN entered or no PIN).
+    /// Solo mode must not restore a PIN-protected profile until this matches.
+    /// </summary>
+    public static readonly PreferenceKey<string> SINGLE_USER_UNLOCKED_USER_ID = new("SingleUserUnlockedUserId");
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
     public static readonly PreferenceKey<string> ACTIVE_SHARED_PROFILE_ID = new("ActiveSharedProfileId");
     public static readonly PreferenceKey<string> LAST_ACTIVE_SHARED_PROFILE_ID = new("LastActiveSharedProfileId");

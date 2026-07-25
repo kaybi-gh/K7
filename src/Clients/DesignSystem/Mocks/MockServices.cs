@@ -142,8 +142,12 @@ public sealed class MockLocalUserService : ILocalUserService
     public void UpdateRefreshToken(string identityUserId, string refreshToken) { }
     public void Remove(string identityUserId) { }
     public void SetLastActiveId(string identityUserId) { }
+    public void ClearLastActiveId() { }
     public void SetPin(string identityUserId, string? pin) { }
     public bool VerifyPin(string identityUserId, string pin) => false;
+    public void MarkSingleUserUnlocked(string identityUserId) { }
+    public void ClearSingleUserUnlocked() { }
+    public bool IsSingleUserUnlocked(string identityUserId) => false;
 }
 
 public sealed class MockMediaPlayerService : IMediaPlayerService

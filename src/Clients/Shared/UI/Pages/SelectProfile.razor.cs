@@ -66,6 +66,25 @@ public partial class SelectProfile
         _deviceType = await DeviceService.GetDeviceTypeAsync();
         _isTv = _deviceType == DeviceType.TV;
 
+        // Cold start can reach select-profile even when single-user mode is on (e.g. last-active
+        // was never written, or session restore ran before SecureStorage was ready). Retry once
+        // here - but only when still anonymous so "Switch user" keeps working.
+        // PIN-protected profiles require a prior unlock (PIN entered) before auto-auth.
+        if (_singleUserMode && _users.Count > 0)
+        {
+            var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                var autoUser = ResolveSoloAutoUser();
+                if (autoUser is not null)
+                {
+                    K7.Clients.Shared.Services.AppReadySignal.Signal();
+                    await AuthenticateUserAsync(autoUser);
+                    return;
+                }
+            }
+        }
+
         if (Connectivity.IsOnline)
         {
             try
@@ -348,6 +367,7 @@ public partial class SelectProfile
             if (success)
             {
                 LocalUserService.SetLastActiveId(user.IdentityUserId);
+                MarkSoloUnlockedIfNeeded(user);
                 RecordUserSelection(user.IdentityUserId);
                 Navigation.NavigateTo("/");
             }
@@ -364,6 +384,7 @@ public partial class SelectProfile
             CancelOfflineTimer();
             AuthService.SignInOffline(user);
             LocalUserService.SetLastActiveId(user.IdentityUserId);
+            MarkSoloUnlockedIfNeeded(user);
             RecordUserSelection(user.IdentityUserId);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
@@ -373,6 +394,7 @@ public partial class SelectProfile
             CancelOfflineTimer();
             AuthService.SignInOffline(user);
             LocalUserService.SetLastActiveId(user.IdentityUserId);
+            MarkSoloUnlockedIfNeeded(user);
             RecordUserSelection(user.IdentityUserId);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
@@ -422,6 +444,7 @@ public partial class SelectProfile
         CancelOfflineTimer();
         AuthService.SignInOffline(_pendingUser);
         LocalUserService.SetLastActiveId(_pendingUser.IdentityUserId);
+        MarkSoloUnlockedIfNeeded(_pendingUser);
         Navigation.NavigateTo("/");
         return Task.CompletedTask;
     }
@@ -506,6 +529,12 @@ public partial class SelectProfile
             if (authState.User.Identity?.IsAuthenticated == true)
             {
                 Navigation.NavigateTo("/");
+                if (LocalUserService.IsSingleUserMode)
+                {
+                    var last = LocalUserService.GetLastActive();
+                    if (last is not null)
+                        LocalUserService.MarkSingleUserUnlocked(last.IdentityUserId);
+                }
             }
             else
             {
@@ -526,6 +555,39 @@ public partial class SelectProfile
     {
         _singleUserMode = value;
         LocalUserService.IsSingleUserMode = value;
+
+        if (!value)
+        {
+            // Drop solo restore state so a later re-enable cannot skip PIN / profile pick
+            // without successfully entering a user again while solo is on.
+            LocalUserService.ClearSingleUserUnlocked();
+            LocalUserService.ClearLastActiveId();
+            return;
+        }
+
+        // Checking the box alone does not arm auto-login. That happens only after a
+        // successful profile entry (PIN if any) while solo mode is enabled.
+    }
+
+    /// <summary>
+    /// Solo auto-login only after checkbox + successful entry (LastActive and unlock).
+    /// </summary>
+    private LocalUser? ResolveSoloAutoUser()
+    {
+        var candidate = LocalUserService.GetLastActive();
+        if (candidate is null)
+            return null;
+
+        if (!LocalUserService.IsSingleUserUnlocked(candidate.IdentityUserId))
+            return null;
+
+        return candidate;
+    }
+
+    private void MarkSoloUnlockedIfNeeded(LocalUser user)
+    {
+        if (LocalUserService.IsSingleUserMode)
+            LocalUserService.MarkSingleUserUnlocked(user.IdentityUserId);
     }
 
     private static string GetInitial(LocalUser user)

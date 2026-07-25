@@ -30,8 +30,17 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly K7HubClient? _hubClient;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
-    private bool _initialized;
+    private int _initialized; // 0 = not started, 1 = started
     private Task? _restoreTask;
+    private readonly object _initLock = new();
+    private static readonly AsyncLocal<bool> RestoreOnCallStack = new();
+
+    /// <summary>
+    /// True while cold-start restore is running on this async flow. The auth HTTP handler
+    /// must not await <see cref="GetAuthenticationStateAsync"/> in that case or it deadlocks
+    /// on nested calls like /api/users/me during token enrichment.
+    /// </summary>
+    internal bool IsSessionRestoreInProgress => RestoreOnCallStack.Value;
 
     public CustomAuthenticationStateProvider(
         OpenIddictClientService openIddictClientService,
@@ -57,10 +66,16 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        if (!_initialized)
+        if (Volatile.Read(ref _initialized) == 0)
         {
-            _initialized = true;
-            _restoreTask = TryRestoreSessionAsync();
+            lock (_initLock)
+            {
+                if (_initialized == 0)
+                {
+                    _restoreTask = TryRestoreSessionAsync();
+                    Volatile.Write(ref _initialized, 1);
+                }
+            }
         }
 
         if (_restoreTask is not null)
@@ -269,10 +284,23 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     private async Task TryRestoreSessionAsync()
     {
+        RestoreOnCallStack.Value = true;
+        try
+        {
+            await TryRestoreSessionCoreAsync();
+        }
+        finally
+        {
+            RestoreOnCallStack.Value = false;
+        }
+    }
+
+    private async Task TryRestoreSessionCoreAsync()
+    {
         if (!_localUserService.IsSingleUserMode)
             return;
 
-        var lastUser = _localUserService.GetLastActive();
+        var lastUser = ResolveSingleUserModeRestoreTarget();
         if (lastUser is null)
             return;
 
@@ -289,16 +317,46 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
         catch (HttpRequestException)
         {
-            SignInOffline(lastUser);
+            FallbackAfterRestoreFailure(lastUser);
         }
         catch (TaskCanceledException)
         {
-            SignInOffline(lastUser);
+            FallbackAfterRestoreFailure(lastUser);
         }
         catch
         {
-            ClearStoredTokens();
+            FallbackAfterRestoreFailure(lastUser);
         }
+    }
+
+    /// <summary>
+    /// If refresh already produced an online principal + access token, keep it. Only fall
+    /// back to offline when restore never managed to sign in.
+    /// </summary>
+    private void FallbackAfterRestoreFailure(LocalUser lastUser)
+    {
+        if (_currentUser.Identity?.IsAuthenticated == true
+            && !string.IsNullOrEmpty(_deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN)))
+            return;
+
+        ClearStoredTokens();
+        SignInOffline(lastUser);
+    }
+
+    /// <summary>
+    /// Solo restore only when the preference is on and a profile was successfully entered
+    /// while solo was enabled (LastActive + unlock). Checking the box alone is not enough.
+    /// </summary>
+    private LocalUser? ResolveSingleUserModeRestoreTarget()
+    {
+        var lastUser = _localUserService.GetLastActive();
+        if (lastUser is null)
+            return null;
+
+        if (!_localUserService.IsSingleUserUnlocked(lastUser.IdentityUserId))
+            return null;
+
+        return lastUser;
     }
 
     private async Task RestoreUserInBackgroundAsync(LocalUser localUser)
@@ -314,8 +372,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
         else
         {
-            _localUserService.Remove(localUser.IdentityUserId);
+            // Do not delete the local profile on a failed cold-start refresh - single-user
+            // mode should still land in an offline session so the user is not stuck on
+            // select-profile after a transient token/server error.
             ClearStoredTokens();
+            SignInOffline(localUser);
+            await RestoreSharedProfileAsync();
         }
     }
 

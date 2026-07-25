@@ -17,6 +17,7 @@ public static class PreferenceKeyCatalog
         PreferenceKeys.SERVER_INFO.Name,
         PreferenceKeys.LOCAL_USERS.Name,
         PreferenceKeys.SINGLE_USER_MODE.Name,
+        PreferenceKeys.SINGLE_USER_UNLOCKED_USER_ID.Name,
         PreferenceKeys.LAST_ACTIVE_USER_ID.Name,
         PreferenceKeys.ACTIVE_SHARED_PROFILE_ID.Name,
         PreferenceKeys.LAST_ACTIVE_SHARED_PROFILE_ID.Name,

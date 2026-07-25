@@ -86,15 +86,51 @@ public class DeviceStorageService : IDeviceStorageService
     // SecureStorage APIs are async. Calling GetAwaiter().GetResult() on the UI /
     // Blazor sync context deadlocks on Windows (PasswordVault completion posts back
     // to that same context). Run on the thread pool to avoid capturing it.
+    // Retry transient platform failures that can occur during cold start.
     private static string? GetSecureString(string key) =>
-        Task.Run(async () => await SecureStorage.Default.GetAsync(key).ConfigureAwait(false))
+        Task.Run(async () =>
+            {
+                Exception? lastError = null;
+                for (var attempt = 0; attempt < 3; attempt++)
+                {
+                    try
+                    {
+                        return await SecureStorage.Default.GetAsync(key).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        await Task.Delay(50 * (attempt + 1)).ConfigureAwait(false);
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"K7 SecureStorage Get failed for '{key}': {lastError}");
+                return null;
+            })
             .GetAwaiter()
             .GetResult();
 
     private static void SetSecureString(string key, string value) =>
         Task.Run(async () =>
             {
-                await SecureStorage.Default.SetAsync(key, value).ConfigureAwait(false);
+                Exception? lastError = null;
+                for (var attempt = 0; attempt < 3; attempt++)
+                {
+                    try
+                    {
+                        await SecureStorage.Default.SetAsync(key, value).ConfigureAwait(false);
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        await Task.Delay(50 * (attempt + 1)).ConfigureAwait(false);
+                    }
+                }
+
+                throw lastError
+                      ?? new InvalidOperationException($"SecureStorage Set failed for '{key}'.");
             })
             .GetAwaiter()
             .GetResult();

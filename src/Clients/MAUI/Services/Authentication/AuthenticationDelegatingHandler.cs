@@ -22,8 +22,13 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         // Wait for startup session restore before attaching stored tokens. Without this,
         // an expired access token can be sent while restore is refreshing, causing a
         // concurrent /connect/token call and OpenIddict refresh-token replay revocation.
+        // Skip the wait when restore itself is issuing API calls (/api/users/me, shared
+        // profiles) or we deadlock: restore -> HTTP -> await restore.
         var authProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
-        await authProvider.GetAuthenticationStateAsync();
+        var restoring = authProvider is CustomAuthenticationStateProvider custom
+            && custom.IsSessionRestoreInProgress;
+        if (!restoring)
+            await authProvider.GetAuthenticationStateAsync();
 
         // Buffer the body so a 401 retry can resend POSTs (JsonContent is one-shot otherwise).
         if (request.Content is not null)

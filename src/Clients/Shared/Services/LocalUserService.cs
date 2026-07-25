@@ -85,10 +85,16 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         var lastId = storage.Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
         if (lastId == identityUserId)
             storage.Remove(PreferenceKeys.LAST_ACTIVE_USER_ID);
+
+        if (IsSingleUserUnlocked(identityUserId))
+            ClearSingleUserUnlocked();
     }
 
     public void SetLastActiveId(string identityUserId) =>
         storage.Set(PreferenceKeys.LAST_ACTIVE_USER_ID, identityUserId);
+
+    public void ClearLastActiveId() =>
+        storage.Remove(PreferenceKeys.LAST_ACTIVE_USER_ID);
 
     public void SetPin(string identityUserId, string? pin)
     {
@@ -115,6 +121,26 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
     {
         get => storage.Get(PreferenceKeys.SINGLE_USER_MODE);
         set => storage.Set(PreferenceKeys.SINGLE_USER_MODE, value);
+    }
+
+    public void MarkSingleUserUnlocked(string identityUserId)
+    {
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        storage.Set(PreferenceKeys.SINGLE_USER_UNLOCKED_USER_ID, identityUserId);
+    }
+
+    public void ClearSingleUserUnlocked() =>
+        storage.Remove(PreferenceKeys.SINGLE_USER_UNLOCKED_USER_ID);
+
+    public bool IsSingleUserUnlocked(string identityUserId)
+    {
+        if (string.IsNullOrEmpty(identityUserId))
+            return false;
+
+        var unlockedId = storage.Get(PreferenceKeys.SINGLE_USER_UNLOCKED_USER_ID);
+        return string.Equals(unlockedId, identityUserId, StringComparison.Ordinal);
     }
 
     private void Persist(List<LocalUser> users)
