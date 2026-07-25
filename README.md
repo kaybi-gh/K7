@@ -110,6 +110,7 @@ K7 would not exist without the work of many projects and communities, including:
 - [Wikimedia Commons](https://commons.wikimedia.org), [Wikidata](https://www.wikidata.org), and [Wikipedia](https://www.wikipedia.org) - artist images and person metadata
 - [Chromaprint / AcoustID](https://acoustid.org/chromaprint) - audio fingerprinting
 - [TagLibSharp](https://github.com/mono/taglib-sharp) - reading and writing media tags
+- [Phosphor Icons](https://phosphoricons.com) - UI icons
 
 See the in-app About page for a fuller list of credits.
 

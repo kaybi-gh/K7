@@ -38,6 +38,7 @@
   <data name="CreditMediatR" xml:space="preserve"><value>Mediation et CQRS</value></data>
   <data name="CreditEfCore" xml:space="preserve"><value>Acces aux données</value></data>
   <data name="CreditSignalR" xml:space="preserve"><value>Communication temps reel</value></data>
+  <data name="CreditPhosphor" xml:space="preserve"><value>Icones d'interface</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>Ce produit utilise l'API TMDB mais n'est ni approuve ni certifie par TMDB.</value></data>
   <data name="TvdbDisclaimer" xml:space="preserve"><value>Les informations et images TV sont fournies par TheTVDB.com, sans approbation ni certification de TheTVDB.com ou de ses affiliés.</value></data>
   <data name="LoadingCodecs" xml:space="preserve"><value>Chargement...</value></data>

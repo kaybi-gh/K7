@@ -66,6 +66,17 @@
     border-radius: 4px;
 }
 
+::deep .about-credit-logo--icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    font-size: 32px;
+    line-height: 1;
+}
+
 .about-credit-logo--tvdb {
     width: auto;
     max-width: 72px;
