@@ -143,7 +143,6 @@
 
 .episode-actions-play {
     border-radius: var(--radius-md);
-    font-weight: 800;
     padding: 10px 32px;
     letter-spacing: 0.5px;
 }
