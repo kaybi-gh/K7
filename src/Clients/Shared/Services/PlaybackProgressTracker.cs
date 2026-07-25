@@ -136,6 +136,7 @@ public class PlaybackProgressTracker : IDisposable
                 StartTimer();
                 break;
             case PlaybackState.Idle:
+            case PlaybackState.Ended:
                 StopTimer();
                 _ = ReportProgressAsync();
                 break;
@@ -168,7 +169,7 @@ public class PlaybackProgressTracker : IDisposable
         try
         {
             if (duration <= 0) return;
-            if (Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
+            if (!isTerminal && Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
 
             _lastReportedPosition = position;
 

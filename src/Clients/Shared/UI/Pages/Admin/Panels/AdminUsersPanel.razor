@@ -63,7 +63,7 @@
                             </div>
                         </CellTemplate>
                     </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderRole"]" Hideable="false">
+                    <K7DataColumn TItem="UserDto" Title="@L["HeaderRole"]" Hideable="false" Width="180px">
                         <CellTemplate>
                             @if (context.IsGuest)
                             {
@@ -85,25 +85,30 @@
                                       ValueChanged="@(v => OnToggleActive(context, v))" />
                         </CellTemplate>
                     </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" VisibleOnMobile="false" />
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="100px" Hideable="false">
+                    <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Width="160px" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" VisibleOnMobile="false" />
+                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="56px" Hideable="false">
                         <CellTemplate>
-                            <div class="d-flex">
-                                @if (!context.IsGuest)
-                                {
-                                    <K7IconButton Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(context))" AriaLabel="@L["AriaCapabilities"]" />
-                                }
-                                <K7IconButton Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))" AriaLabel="@L["AriaLibraries"]" />
-                                <K7IconButton Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))" AriaLabel="@L["AriaHiddenMedia"]" />
-                                <K7IconButton Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))" AriaLabel="@L["AriaRestrictionProfile"]" />
-                                <K7IconButton Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(context))" AriaLabel="@L["AriaPlaybackHistory"]" />
-                                @if (!context.IsGuest && context.Id != _currentUserId)
-                                {
-                                    <K7IconButton Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))" AriaLabel="@L["AriaResetPassword"]" />
-                                    <K7IconButton Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(context))" AriaLabel="@L["AriaMerge"]" />
-                                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
-                                }
-                            </div>
+                            <K7Menu Title="@L["HeaderActions"]">
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["HeaderActions"]" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    @if (!context.IsGuest)
+                                    {
+                                        <K7MenuItem Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(context))">@L["AriaCapabilities"]</K7MenuItem>
+                                    }
+                                    <K7MenuItem Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))">@L["AriaLibraries"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))">@L["AriaHiddenMedia"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))">@L["AriaRestrictionProfile"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(context))">@L["AriaPlaybackHistory"]</K7MenuItem>
+                                    @if (!context.IsGuest && context.Id != _currentUserId)
+                                    {
+                                        <K7MenuItem Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))">@L["AriaResetPassword"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(context))">@L["AriaMerge"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))">@L["AriaDelete"]</K7MenuItem>
+                                    }
+                                </ChildContent>
+                            </K7Menu>
                         </CellTemplate>
                     </K7DataColumn>
                 </K7DataTable>

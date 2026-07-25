@@ -77,7 +77,7 @@ public class UpdatePlaybackProgressCommandHandler(
 
         var timeNow = DateTime.UtcNow;
 
-        if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
+        if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused or PlaybackState.Ended)
             await TryHydrateStreamDecisionAsync(request.SessionId, cancellationToken);
 
         var existingSession = await _context.MediaPlaybackSessions
@@ -115,8 +115,12 @@ public class UpdatePlaybackProgressCommandHandler(
             }
         }
 
-        session.PositionSeconds = request.Position;
-        session.DurationSeconds = request.Duration;
+        session.PositionSeconds = request.State is PlaybackState.Ended or PlaybackState.Idle
+            ? Math.Max(session.PositionSeconds, request.Position)
+            : request.Position;
+        session.DurationSeconds = request.Duration > 0
+            ? request.Duration
+            : session.DurationSeconds;
 
         SharedProfilePlaybackContext? viewingGroup = null;
         var requestedSharedProfileId = request.SharedProfileId ?? await _currentUser.GetSharedProfileIdAsync(cancellationToken);
@@ -149,7 +153,9 @@ public class UpdatePlaybackProgressCommandHandler(
 
         var hostResult = viewingGroup is null
             ? await _userMediaStateUpdater.ApplyAsync(
-                userId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken)
+                userId, media, request.MediaId, session.PositionSeconds,
+                session.DurationSeconds > 0 ? session.DurationSeconds : request.Duration,
+                timeNow, cancellationToken)
             : null;
 
         var sharedResult = viewingGroup is not null
@@ -157,8 +163,8 @@ public class UpdatePlaybackProgressCommandHandler(
                 viewingGroup.SharedProfileId,
                 media,
                 request.MediaId,
-                request.Position,
-                request.Duration,
+                session.PositionSeconds,
+                session.DurationSeconds > 0 ? session.DurationSeconds : request.Duration,
                 timeNow,
                 cancellationToken)
             : null;
@@ -168,12 +174,25 @@ public class UpdatePlaybackProgressCommandHandler(
             userId, activeSharedProfileId, cancellationToken);
         var audioPolicy = await _playbackPolicySettingsProvider.GetEffectiveAudioPolicyAsync(
             userId, activeSharedProfileId, cancellationToken);
-        var progress = request.Duration > 0 ? request.Position / request.Duration : 0;
+        var progressDuration = session.DurationSeconds > 0 ? session.DurationSeconds : request.Duration;
+        var progressPosition = Math.Max(session.PositionSeconds, request.Position);
+        var progress = progressDuration > 0 ? progressPosition / progressDuration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
         var completed = isMusic
             ? progress >= audioPolicy.CompletedThresholdPercent / 100.0
-              || request.Position >= audioPolicy.CompletedMinDurationSeconds
+              || progressPosition >= audioPolicy.CompletedMinDurationSeconds
             : progress >= videoPolicy.CompletedThresholdPercent / 100.0;
+
+        if (!completed && (hostResult?.WasNewlyCompleted == true || sharedResult?.WasNewlyCompleted == true))
+            completed = true;
+
+        if (!completed && progressDuration > 0 && session.WatchedDurationSeconds > 0)
+        {
+            var watchedRatio = session.WatchedDurationSeconds / progressDuration;
+            var threshold = (isMusic ? audioPolicy.CompletedThresholdPercent : videoPolicy.CompletedThresholdPercent) / 100.0;
+            if (watchedRatio >= threshold)
+                completed = true;
+        }
 
         if (completed && session.CompletedAt is null)
         {
@@ -252,8 +271,12 @@ public class UpdatePlaybackProgressCommandHandler(
             ApplyExistingSessionProgress(session, request, timeNow);
             await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
 
-            session.PositionSeconds = request.Position;
-            session.DurationSeconds = request.Duration;
+            session.PositionSeconds = request.State is PlaybackState.Ended or PlaybackState.Idle
+                ? Math.Max(session.PositionSeconds, request.Position)
+                : request.Position;
+            session.DurationSeconds = request.Duration > 0
+                ? request.Duration
+                : session.DurationSeconds;
 
             if (completed && session.CompletedAt is null)
             {

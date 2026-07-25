@@ -3,6 +3,24 @@
     max-width: 260px;
 }
 
+.history-page .data-page-body ::deep .k7-data-table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.history-page .data-page-body ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: max-content;
+    width: 100%;
+}
+
+.history-page .data-page-body ::deep .k7-data-table-el th,
+.history-page .data-page-body ::deep .k7-data-table-el td {
+    white-space: nowrap;
+}
+
 .history-date-cell {
     display: flex;
     flex-direction: column;

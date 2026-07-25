@@ -6,7 +6,7 @@
 @inject IStringLocalizer<AdminPlaybackHistoryPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="full-bleed-page">
+<div class="full-bleed-page history-page">
     <div class="data-page-toolbar">
         <h5 class="data-page-toolbar__title">@L["Title"]</h5>
 
@@ -60,18 +60,21 @@
                     }
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Hideable="false">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Width="220px" Hideable="false">
                 <CellTemplate>
                     <LibraryTableMediaTitle ImageUrl="@context.ImageUrl"
                                             MediaType="@context.MediaType"
                                             Title="@(context.MediaTitle ?? "-")"
                                             Href="@context.MediaUrl"
                                             LinkClass="history-title"
-                                            StopPropagation="true">
-                        <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
-                            @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
-                        </span>
-                    </LibraryTableMediaTitle>
+                                            StopPropagation="true" />
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="110px" Hideable="false">
+                <CellTemplate>
+                    <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
+                        @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
+                    </span>
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Width="110px" VisibleOnMobile="false">

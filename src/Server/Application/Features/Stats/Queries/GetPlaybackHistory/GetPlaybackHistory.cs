@@ -102,7 +102,8 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 StoppedAt = g.Max(s => s.StoppedAt),
                 TotalWatchedSeconds = g.Sum(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds),
                 SegmentCount = g.Count(),
-                IsCompleted = g.Any(s => s.CompletedAt != null),
+                IsCompleted = g.Any(s => s.CompletedAt != null)
+                    || g.Any(s => s.DurationSeconds > 0 && s.PositionSeconds / s.DurationSeconds >= 0.9),
                 MediaId = g.First().MediaId,
                 DeviceId = g.First().DeviceId,
                 UserId = g.First().UserId,
@@ -192,7 +193,12 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
 
             detailsByRef = details
                 .GroupBy(d => d.MediaPlaybackSession.ReferenceId)
-                .ToDictionary(g => g.Key, g => g.FirstOrDefault());
+                .ToDictionary(
+                    g => g.Key,
+                    g => g
+                        .OrderByDescending(d => d.VideoDecision is not null || d.IsTranscode is not null)
+                        .ThenByDescending(d => d.MediaPlaybackSession.LastUpdateAt ?? d.MediaPlaybackSession.StartedAt)
+                        .FirstOrDefault());
         }
 
         var items = pagedGroups.Select(g =>
