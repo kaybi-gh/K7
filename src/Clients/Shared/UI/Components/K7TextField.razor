@@ -9,6 +9,7 @@
     @if (Lines > 1)
     {
         <textarea id="@_id"
+                  @ref="_inputRef"
                   class="k7-textarea focusable @(_hasError ? "k7-input--error" : "")"
                   placeholder="@Placeholder"
                   disabled="@Disabled"
@@ -20,7 +21,7 @@
                   @attributes="UserAttributes"
                   @oninput="OnInput"
                   @onchange="OnChange"
-                  @onfocus="OnFocus"
+                  @onfocus="HandleFocusAsync"
                   @onfocusout="OnFocusOut"
                   @onkeydown="OnKeyDown"
                   @onkeyup="OnKeyUp"
@@ -30,6 +31,7 @@
     {
         <div class="k7-input-wrap">
             <input id="@_id"
+                   @ref="_inputRef"
                    class="k7-input focusable @(_hasError ? "k7-input--error" : "") @(!string.IsNullOrEmpty(AdornmentIcon) ? "k7-input--has-adornment" : "")"
                    type="@Type"
                    placeholder="@Placeholder"
@@ -41,7 +43,7 @@
                    @attributes="UserAttributes"
                    @oninput="OnInput"
                    @onchange="OnChange"
-                   @onfocus="OnFocus"
+                   @onfocus="HandleFocusAsync"
                    @onfocusout="OnFocusOut"
                    @onkeydown="OnKeyDown"
                    @onkeyup="OnKeyUp"

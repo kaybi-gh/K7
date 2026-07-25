@@ -1855,6 +1855,23 @@ var SpatialNav = (function () {
         applyDomFocus(el);
     }
 
+    // Enter edit mode on an activatable control (removes readonly, pauses SN).
+    // Used for programmatic autofocus where FocusAsync alone leaves the field locked.
+    function startEditingElement(el) {
+        if (!el) return;
+        if (isActivatable(el)) {
+            if (isEditing(el)) {
+                if (isTextInput(el)) el.focus({ preventScroll: true });
+                return;
+            }
+            startEditing(el);
+            if (window.SpatialNavigation) SpatialNavigation.pause();
+            el.dispatchEvent(new CustomEvent('sn:editstart', { bubbles: false }));
+            return;
+        }
+        applyDomFocus(el);
+    }
+
     function onPageNavigated() {
         resetPageFocusSettled();
         setTimeout(ensurePageFocus, 150);
@@ -2181,6 +2198,7 @@ var SpatialNav = (function () {
         attachLayerCallback: attachLayerCallback,
         focusFirst: focusFirst,
         focusElement: focusElement,
+        startEditing: startEditingElement,
         refresh: refresh,
         addSection: addSection,
         removeSection: removeSection,

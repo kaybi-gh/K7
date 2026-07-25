@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
 public partial class K7TextField<TValue> : IDisposable
 {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
     [Parameter] public TValue? Value { get; set; }
     [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
     [Parameter] public string Label { get; set; } = "";
@@ -35,11 +38,13 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter] public bool DisableSpatialActivatable { get; set; }
     [Parameter] public bool ForceSpatialActivatable { get; set; }
+    [Parameter] public bool Autofocus { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? UserAttributes { get; set; }
 
     private readonly string _id = $"k7tf-{Guid.NewGuid():N}";
+    private ElementReference _inputRef;
     private bool _hasError;
     private string _errorText = "";
     private Timer? _debounceTimer;
@@ -48,11 +53,43 @@ public partial class K7TextField<TValue> : IDisposable
     private string? SpatialActivatable =>
         !Disabled && (!ReadOnly || ForceSpatialActivatable) && !DisableSpatialActivatable ? "" : null;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Autofocus && !Disabled)
+            await EnsureEditModeAsync();
+    }
+
+    private async Task HandleFocusAsync(FocusEventArgs e)
+    {
+        // Activatable inputs can be refocused by spatial-nav without edit mode
+        // (readonly). Autofocus means the user should always be able to type.
+        if (Autofocus && !Disabled)
+            await EnsureEditModeAsync();
+
+        if (OnFocus.HasDelegate)
+            await OnFocus.InvokeAsync(e);
+    }
+
+    private async Task EnsureEditModeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("SpatialNav.startEditing", _inputRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+            try { await _inputRef.FocusAsync(); }
+            catch (InvalidOperationException) { }
+        }
+    }
+
     private async Task OnInput(ChangeEventArgs e)
     {
         var val = Convert(e.Value?.ToString());
         if (DebounceInterval > 0 && OnDebounceIntervalElapsed.HasDelegate)
         {
+            // Keep @bind-Value in sync so parent re-renders do not wipe keystrokes.
+            await ValueChanged.InvokeAsync(val);
             _debounceTimer?.Dispose();
             _debounceTimer = new Timer(async _ =>
             {
