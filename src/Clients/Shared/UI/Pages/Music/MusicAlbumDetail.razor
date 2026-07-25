@@ -86,7 +86,7 @@
                 @if (_album.Genres?.Any() == true)
                 {
                     <div class="album-genres">
-                        @foreach (var genre in _album.Genres)
+                        @foreach (var genre in _album.Genres.Take(2))
                         {
                             var g = genre;
                             <K7Chip Variant="text" Size="sm" OnClick="() => NavigateToGenre(g)">@genre</K7Chip>
@@ -109,22 +109,18 @@
                                    OnClick="ShuffleAll">
                             @S["Shuffle"]
                         </K7Button>
-                        <DownloadAllButton Items="GetDownloadRequests()" />
+                        <DownloadAllButton Items="GetDownloadRequests()" Label="@_album.Title" />
                         @if (_canRate)
                         {
                             <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
                         }
-                        @if (_canRate || _artists.Count > 0 || _isAdmin)
+                        @if (_artists.Count > 0 || _isAdmin)
                         {
                             <K7Menu Title="@L["MoreActions"]">
                                 <ActivatorContent>
                                     <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
                                 </ActivatorContent>
                                 <ChildContent>
-                                    @if (_canRate)
-                                    {
-                                        <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@ReviewDialogL["Title"]</K7MenuItem>
-                                    }
                                     @if (_artists.Count > 0)
                                     {
                                         <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>

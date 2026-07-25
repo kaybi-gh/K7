@@ -106,14 +106,19 @@
 
 .album-genres {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     margin-top: 8px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .album-actions {
     display: flex;
     gap: 8px;
     margin-top: 16px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .album-actions-primary {
@@ -121,6 +126,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .album-actions-secondary {
@@ -133,7 +140,7 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 0 40px max(var(--space-8), var(--k7-safe-bottom, 0px));
+    padding: 0 40px var(--space-4);
 }
 
 .disc-header {
@@ -202,7 +209,7 @@
     margin-top: 8px;
 }
 
-.album-reviews {
+.album-reviews:has(.media-reviews-section) {
     margin-top: var(--space-12);
     padding-top: var(--space-8);
 }
@@ -295,13 +302,21 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: center;
+        align-items: center;
         gap: 8px;
-        width: auto;
+        width: 100%;
+        min-width: 0;
     }
 
     .album-actions-primary ::deep .k7-btn--lg {
         font-size: var(--text-sm);
-        padding: 8px 16px;
+        padding: 8px 12px;
+        min-width: 0;
+    }
+
+    .album-actions-primary ::deep .k7-btn {
+        flex: 0 1 auto;
+        white-space: nowrap;
     }
 
     ::deep .album-detail-cover,
@@ -311,7 +326,11 @@
     }
 
     .album-tracklist {
-        padding: 0 16px max(var(--space-6), var(--k7-safe-bottom, 0px));
+        padding: 0 16px var(--space-4);
+    }
+
+    .app-main:has(.music-mini-player) .album-tracklist {
+        padding-bottom: 0;
     }
 
     ::deep thead {

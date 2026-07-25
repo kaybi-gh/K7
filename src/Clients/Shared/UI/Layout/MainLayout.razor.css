@@ -18,6 +18,7 @@
     .mini-player-dock {
         left: var(--space-3);
         right: var(--space-3);
-        bottom: calc(var(--nav-height) + var(--k7-safe-bottom) + var(--space-1));
+        bottom: calc(var(--nav-height) + var(--k7-safe-bottom) + var(--space-2));
+        padding: 0;
     }
 }

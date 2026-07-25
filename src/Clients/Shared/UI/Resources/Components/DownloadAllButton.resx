@@ -19,6 +19,18 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="DownloadAll" xml:space="preserve"><value>Download all</value></data>
-  <data name="DownloadAllQueued" xml:space="preserve"><value>{0} items queued for download</value></data>
+  <data name="DownloadAll" xml:space="preserve"><value>Tout telecharger</value></data>
+  <data name="DownloadAllQueued" xml:space="preserve"><value>{0} elements ajoutes a la file de telechargement</value></data>
+  <data name="Downloaded" xml:space="preserve"><value>Telecharge</value></data>
+  <data name="Downloading" xml:space="preserve"><value>Telechargement en cours</value></data>
+  <data name="DownloadsRemoved" xml:space="preserve"><value>Telechargements supprimes</value></data>
+  <data name="DefaultLabel" xml:space="preserve"><value>cette selection</value></data>
+  <data name="ConfirmDownloadTitle" xml:space="preserve"><value>Telecharger</value></data>
+  <data name="ConfirmDownloadMessage" xml:space="preserve"><value>Telecharger &#171;{0}&#187; en entier ({1} pistes) ?</value></data>
+  <data name="ConfirmRemoveTitle" xml:space="preserve"><value>Supprimer les telechargements</value></data>
+  <data name="ConfirmRemoveMessage" xml:space="preserve"><value>Supprimer les {1} telechargements de &#171;{0}&#187; ?</value></data>
+  <data name="ConfirmCancelTitle" xml:space="preserve"><value>Annuler le telechargement</value></data>
+  <data name="ConfirmCancelMessage" xml:space="preserve"><value>Annuler le telechargement de &#171;{0}&#187; ({1} elements) ?</value></data>
+  <data name="CancelDownload" xml:space="preserve"><value>Annuler le telechargement</value></data>
+  <data name="DownloadsCancelled" xml:space="preserve"><value>Telechargement annule</value></data>
 </root>

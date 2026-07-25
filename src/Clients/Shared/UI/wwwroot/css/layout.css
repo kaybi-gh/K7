@@ -98,8 +98,44 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
         padding-bottom: calc(var(--nav-height) + var(--k7-safe-bottom));
     }
 
+    /*
+     * Floating mini player: keep the content viewport full-height behind the card
+     * (no empty band above the player). Scroll surfaces get an end spacer so the
+     * last items can still clear the card when scrolled to the end.
+     */
     .app-main:has(.music-mini-player) {
-        padding-bottom: calc(var(--nav-height) + var(--k7-safe-bottom) + 68px);
+        --k7-mini-player-clearance: calc(var(--mini-player-height) + var(--space-2));
+        padding-bottom: calc(var(--nav-height) + var(--k7-safe-bottom) + var(--k7-mini-player-clearance));
+    }
+
+    .app-main:has(.music-mini-player) .page-viewport {
+        margin-bottom: calc(-1 * var(--k7-mini-player-clearance));
+    }
+
+    .app-main:has(.music-mini-player) .page-scrollable:not(:has(.k7-virtual-grid)):not(:has(.k7-virtual-list)):not(:has(.k7-data-table-scroll)):not(:has(.browse-view-table)):not(:has(.browse-view-list)):not(:has(.browse-view-simple-grid))::after,
+    .app-main:has(.music-mini-player) .page-content:not(:has(> .full-bleed-page)):not(:has(> .admin-data-page))::after,
+    .app-main:has(.music-mini-player) .k7-virtual-grid::after,
+    .app-main:has(.music-mini-player) .k7-virtual-list::after,
+    .app-main:has(.music-mini-player) .k7-data-table-scroll::after,
+    .app-main:has(.music-mini-player) .browse-view-table::after,
+    .app-main:has(.music-mini-player) .browse-view-list::after,
+    .app-main:has(.music-mini-player) .browse-view-simple-grid::after,
+    .app-main:has(.music-mini-player) .artist-detail-page::after,
+    .app-main:has(.music-mini-player) .album-tracklist::after,
+    .app-main:has(.music-mini-player) .season-detail-page::after,
+    .app-main:has(.music-mini-player) .movie-page::after,
+    .app-main:has(.music-mini-player) .serie-page::after,
+    .app-main:has(.music-mini-player) .person-page::after,
+    .app-main:has(.music-mini-player) .episode-page::after {
+        content: "";
+        display: block;
+        flex-shrink: 0;
+        height: var(--k7-mini-player-clearance);
+        pointer-events: none;
+    }
+
+    .app-main:has(.music-mini-player) .k7-settings-action-bar {
+        bottom: var(--k7-mini-player-clearance);
     }
 }
 

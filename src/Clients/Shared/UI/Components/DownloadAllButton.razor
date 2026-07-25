@@ -2,16 +2,28 @@
 @using K7.Server.Domain.Enums
 @inject IDeviceService DeviceService
 @inject IDownloadManager DownloadManager
+@inject IOfflineMediaStore OfflineStore
+@inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
 @inject IStringLocalizer<DownloadAllButton> L
+@inject IStringLocalizer<SharedResource> S
 
 @if (DeviceService.GetClientType() != ClientType.Web && Items.Count > 0)
 {
-    <K7Button Variant="@Variant"
-               StartIcon="@Phosphor.DownloadSimple"
-               OnClick="DownloadAllAsync"
-               Disabled="_isEnqueuing"
-               Size="@Size">
-        @L["DownloadAll"]
-    </K7Button>
+    @if (_isDownloading)
+    {
+        <K7IconButton Class="k7-download-btn k7-download-btn--active"
+                       AriaLabel="@L["CancelDownload"]"
+                       OnClick="CancelDownloadsAsync">
+            <K7Icon Icon="@Phosphor.CircleNotch" Class="k7-spin" />
+        </K7IconButton>
+    }
+    else
+    {
+        <K7IconButton Icon="@Phosphor.DownloadSimple"
+                       Class="@($"k7-download-btn{(_allDownloaded ? " k7-download-btn--done" : "")}")"
+                       AriaLabel="@(_allDownloaded ? L["Downloaded"] : L["DownloadAll"])"
+                       Disabled="_isEnqueuing"
+                       OnClick="OnClickAsync" />
+    }
 }

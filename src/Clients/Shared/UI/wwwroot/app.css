@@ -51,6 +51,8 @@ html, body, #app {
 ::-webkit-scrollbar-track      { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb      { background: var(--scrollbar-thumb); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover{ background: var(--color-text-disabled); }
+/* Both-axis scrollers otherwise leave a bright system corner (e.g. admin tables). */
+::-webkit-scrollbar-corner     { background: transparent; }
 
 /* Focus ring - keyboard/D-pad */
 :focus-visible {

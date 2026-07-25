@@ -191,7 +191,8 @@ else if (_season is not null)
                         }
 
                         <div class="season-actions">
-                        <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
+                        <DownloadAllButton Items="GetDownloadRequests()"
+                                           Label="@($"{_season.SerieTitle} - {(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))}")" />
 
                         <AuthorizeView Roles="User,Administrator">
                             <K7Menu>

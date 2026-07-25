@@ -21,4 +21,16 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="DownloadAll" xml:space="preserve"><value>Download all</value></data>
   <data name="DownloadAllQueued" xml:space="preserve"><value>{0} items queued for download</value></data>
+  <data name="Downloaded" xml:space="preserve"><value>Downloaded</value></data>
+  <data name="Downloading" xml:space="preserve"><value>Downloading</value></data>
+  <data name="DownloadsRemoved" xml:space="preserve"><value>Downloads removed</value></data>
+  <data name="DefaultLabel" xml:space="preserve"><value>this selection</value></data>
+  <data name="ConfirmDownloadTitle" xml:space="preserve"><value>Download</value></data>
+  <data name="ConfirmDownloadMessage" xml:space="preserve"><value>Download all of &quot;{0}&quot; ({1} tracks)?</value></data>
+  <data name="ConfirmRemoveTitle" xml:space="preserve"><value>Remove downloads</value></data>
+  <data name="ConfirmRemoveMessage" xml:space="preserve"><value>Remove the {1} downloads for &quot;{0}&quot;?</value></data>
+  <data name="ConfirmCancelTitle" xml:space="preserve"><value>Cancel download</value></data>
+  <data name="ConfirmCancelMessage" xml:space="preserve"><value>Cancel downloading &quot;{0}&quot; ({1} items)?</value></data>
+  <data name="CancelDownload" xml:space="preserve"><value>Cancel download</value></data>
+  <data name="DownloadsCancelled" xml:space="preserve"><value>Download cancelled</value></data>
 </root>

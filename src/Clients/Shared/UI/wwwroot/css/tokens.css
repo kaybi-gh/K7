@@ -78,6 +78,8 @@
     --sidebar-width-mini:  56px;
     --sidebar-width-open:  240px;
     --mini-player-height:  60px;
+    /* Extra bottom inset when the floating mobile MiniMusicPlayer is visible (set by layout). */
+    --k7-mini-player-clearance: 0px;
     --mobile-footer-height:60px;
     --appbar-height:       56px;
 

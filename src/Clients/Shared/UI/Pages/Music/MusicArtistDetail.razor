@@ -71,7 +71,7 @@
                             </K7Button>
                             @if (_tracks.Count > 0)
                             {
-                                <DownloadAllButton Items="GetDownloadRequests()" />
+                                <DownloadAllButton Items="GetDownloadRequests()" Label="@_artist.Title" />
                             }
                         }
                         <AuthorizeView Roles="Administrator">
