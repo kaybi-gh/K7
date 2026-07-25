@@ -111,8 +111,24 @@ window.K7.shareOrCopy = async function (text) {
     }
     return false;
 };
-window.K7.scrollIntoViewSmooth = function (el) {
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+window.K7.scrollIntoViewSmooth = function (el, container) {
+    if (!el) return;
+    // Prefer scrolling only the lyrics container so nested overflow parents
+    // (fullscreen shell) do not move and create a double-scrollbar fight.
+    if (container) {
+        var cRect = container.getBoundingClientRect();
+        var eRect = el.getBoundingClientRect();
+        var offset = (eRect.top + eRect.height / 2) - (cRect.top + cRect.height / 2);
+        container.scrollBy({ top: offset, behavior: 'smooth' });
+        return;
+    }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+window.K7.focusIfContained = function (el, container) {
+    if (!el || !container) return;
+    var active = document.activeElement;
+    if (active && container.contains(active))
+        el.focus({ preventScroll: true });
 };
 window.K7.scrollToElement = function (id) {
     var el = document.getElementById(id);

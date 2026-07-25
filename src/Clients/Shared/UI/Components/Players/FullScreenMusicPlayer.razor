@@ -221,10 +221,12 @@
             }
             else if (_view == FullScreenView.Lyrics)
             {
-                <SyncedLyricsDisplay LyricsLrc="@_lyricsLrc"
-                                     PlainTextLyrics="@_lyrics"
-                                     CurrentTime="Audio.CurrentTime"
-                                     SeekRequested="OnLyricsSeek" />
+                <div class="fullscreen-player-lyrics">
+                    <SyncedLyricsDisplay LyricsLrc="@_lyricsLrc"
+                                         PlainTextLyrics="@_lyrics"
+                                         CurrentTime="Audio.CurrentTime"
+                                         SeekRequested="OnLyricsSeek" />
+                </div>
             }
             else if (_view == FullScreenView.Queue)
             {

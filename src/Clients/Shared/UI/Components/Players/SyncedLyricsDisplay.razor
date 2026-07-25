@@ -1,8 +1,12 @@
 @using K7.Shared
+@implements IDisposable
 
 @if (_lines.Count > 0)
 {
-    <div class="synced-lyrics">
+    <div class="synced-lyrics"
+         @ref="_scrollContainer"
+         @onscroll="OnUserScroll"
+         @onwheel="OnUserScroll">
         @for (var i = 0; i < _lines.Count; i++)
         {
             var idx = i;
@@ -13,6 +17,7 @@
                  tabindex="0" role="button"
                  @ref="_lineRefs[idx]"
                  @onclick="() => OnLineClick(idx)"
+                 @onfocus="() => OnLineFocus(idx)"
                  @onkeydown="(e) => OnLineKeyDown(e, idx)">
                 @if (string.IsNullOrEmpty(_lines[idx].Text))
                 {

@@ -361,6 +361,15 @@
     flex: 1;
 }
 
+.fullscreen-player-lyrics {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .fullscreen-player-queue {
     display: flex;
     flex-direction: column;
