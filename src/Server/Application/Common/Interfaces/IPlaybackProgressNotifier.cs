@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+
 namespace K7.Server.Application.Common.Interfaces;
 
 /// <summary>
@@ -5,5 +7,11 @@ namespace K7.Server.Application.Common.Interfaces;
 /// </summary>
 public interface IPlaybackProgressNotifier
 {
-    Task NotifyProgressUpdatedAsync(string identityUserId, Guid mediaId, double progressPercentage, bool isCompleted, CancellationToken cancellationToken = default);
+    Task NotifyProgressUpdatedAsync(
+        string identityUserId,
+        Guid mediaId,
+        double progressPercentage,
+        bool isCompleted,
+        MediaType mediaType,
+        CancellationToken cancellationToken = default);
 }

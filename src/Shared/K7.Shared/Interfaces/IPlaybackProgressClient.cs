@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+
 namespace K7.Shared.Interfaces;
 
 /// <summary>
@@ -5,5 +7,5 @@ namespace K7.Shared.Interfaces;
 /// </summary>
 public interface IPlaybackProgressClient
 {
-    Task ReceivePlaybackProgress(Guid mediaId, double progressPercentage, bool isCompleted);
+    Task ReceivePlaybackProgress(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType);
 }

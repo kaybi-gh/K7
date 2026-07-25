@@ -230,9 +230,11 @@ public partial class WatchStats : IDisposable
         SyncFiltersToQuery();
     }
 
-    private void OnProgressUpdated(Guid mediaId, double progress, bool isCompleted)
+    private void OnProgressUpdated(Guid mediaId, double progress, bool isCompleted, MediaType mediaType)
     {
         if (!isCompleted) return;
+        if (mediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist)
+            return;
 
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(async _ =>

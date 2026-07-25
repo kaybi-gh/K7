@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Notifications;
@@ -29,7 +30,7 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
     public string? ConnectedUserId { get; private set; }
 
     public event Action<HubConnectionState>? ConnectionStateChanged;
-    public event Action<Guid, double, bool>? ProgressUpdated;
+    public event Action<Guid, double, bool, MediaType>? ProgressUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid>? MediaMetadataRefreshed;
@@ -121,9 +122,9 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
                 return Task.CompletedTask;
             };
 
-            _hubConnection.On<Guid, double, bool>("ReceivePlaybackProgress", (mediaId, progress, isCompleted) =>
+            _hubConnection.On<Guid, double, bool, MediaType>("ReceivePlaybackProgress", (mediaId, progress, isCompleted, mediaType) =>
             {
-                ProgressUpdated?.Invoke(mediaId, progress, isCompleted);
+                ProgressUpdated?.Invoke(mediaId, progress, isCompleted, mediaType);
             });
 
             _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>

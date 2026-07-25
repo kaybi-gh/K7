@@ -22,11 +22,14 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private readonly List<HomeFeedRow> _rows = [];
     private readonly object _sync = new();
     private CancellationTokenSource? _picturesRefreshCts;
+    private CancellationTokenSource? _continueWatchingRefreshCts;
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
     private bool _isLoaded;
     private bool _isTv;
     private bool _hubHandlersRegistered;
+
+    private static readonly TimeSpan ContinueWatchingRefreshDelay = TimeSpan.FromSeconds(1.5);
 
     public event Action? Changed;
 
@@ -133,6 +136,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         UnregisterHubHandlers();
         _picturesRefreshCts?.Cancel();
         _picturesRefreshCts?.Dispose();
+        _continueWatchingRefreshCts?.Cancel();
+        _continueWatchingRefreshCts?.Dispose();
     }
 
     private void OnConnectivityChanged(bool isOnline)
@@ -278,9 +283,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _cacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
     }
 
-    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted)
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
     {
         if (!_isLoaded || IsLoading || IsOffline)
+            return;
+
+        // Music is never Keep Watching material; skip feed churn from audio progress ticks.
+        if (mediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist)
             return;
 
         var id = mediaId.ToString();
@@ -292,11 +301,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             {
                 for (var i = 0; i < row.Items.Count; i++)
                 {
-                    if (row.Items[i].Id == id)
-                    {
-                        row.Items[i] = row.Items[i] with { Progress = progressPercentage, Watched = isCompleted };
-                        changed = true;
-                    }
+                    if (row.Items[i].Id != id)
+                        continue;
+
+                    // Mutate in place so Blazor keeps the same card instance (@key) and posters do not blink.
+                    row.Items[i].Progress = progressPercentage;
+                    row.Items[i].Watched = isCompleted;
+                    changed = true;
                 }
             }
         }
@@ -304,13 +315,37 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (changed)
             NotifyChanged();
 
-        // Always refresh Continue Watching membership. Patching progress on another home row
-        // (e.g. Recently Added) must not skip adding/removing the item from Keep Watching.
+        // Membership may still change (enter/leave Keep Watching). Debounce so progress ticks
+        // only patch bars; a quiet period triggers one soft membership sync.
         if (!GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
             return;
 
-        InvalidateCache();
-        _ = RefreshContinueWatchingRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
+        ScheduleContinueWatchingRefresh(isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay);
+    }
+
+    private void ScheduleContinueWatchingRefresh(TimeSpan delay)
+    {
+        _continueWatchingRefreshCts?.Cancel();
+        _continueWatchingRefreshCts?.Dispose();
+        _continueWatchingRefreshCts = new CancellationTokenSource();
+        var token = _continueWatchingRefreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay, token);
+
+                InvalidateCache();
+                await RefreshContinueWatchingRowsAsync();
+                if (!token.IsCancellationRequested)
+                    NotifyChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, token);
     }
 
     private void OnMediaMetadataRefreshed(Guid mediaId) =>
@@ -425,8 +460,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         lock (_sync)
         {
-            row.Items.Clear();
-            row.Items.AddRange(items);
+            ApplyRowItems(row.Items, items);
         }
     }
 
@@ -473,11 +507,47 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             if (generation != _catalogRefreshGeneration)
                 return;
 
-            target.Clear();
-            target.AddRange(items);
+            ApplyRowItems(target, items);
         }
 
         NotifyChanged();
+    }
+
+    /// <summary>
+    /// Reuses existing card view-models by id so UI keys stay stable and images do not reload.
+    /// </summary>
+    private static void ApplyRowItems(List<MediaCardViewModel> target, List<MediaCardViewModel> items)
+    {
+        if (target.Count == items.Count
+            && target.Zip(items, (existing, next) => existing.Id == next.Id).All(same => same))
+        {
+            for (var i = 0; i < target.Count; i++)
+            {
+                target[i].Progress = items[i].Progress;
+                target[i].Watched = items[i].Watched;
+            }
+
+            return;
+        }
+
+        var existingById = target.ToDictionary(x => x.Id);
+        var merged = new List<MediaCardViewModel>(items.Count);
+        foreach (var item in items)
+        {
+            if (existingById.TryGetValue(item.Id, out var existing))
+            {
+                existing.Progress = item.Progress;
+                existing.Watched = item.Watched;
+                merged.Add(existing);
+            }
+            else
+            {
+                merged.Add(item);
+            }
+        }
+
+        target.Clear();
+        target.AddRange(merged);
     }
 
     private async Task<List<MediaCardViewModel>?> FetchRowAsync(GetHomeFeedQuery query)

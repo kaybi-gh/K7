@@ -58,7 +58,7 @@ public class SetMediaWatchStateCommandHandler(
             .Where(s => s.UserId == userId && targetMediaIds.Contains(s.MediaId))
             .ToDictionaryAsync(s => s.MediaId, cancellationToken);
 
-        var notifications = new List<(Guid MediaId, double Progress, bool IsCompleted)>();
+        var notifications = new List<(Guid MediaId, double Progress, bool IsCompleted, MediaType MediaType)>();
         Guid? episodeToEnqueue = null;
 
         foreach (var mediaId in targetMediaIds)
@@ -78,6 +78,7 @@ public class SetMediaWatchStateCommandHandler(
             }
 
             var wasCompleted = state.IsCompleted;
+            var notifyType = mediaId == request.MediaId ? media.Type : MediaType.SerieEpisode;
 
             if (request.Watched)
             {
@@ -87,7 +88,7 @@ public class SetMediaWatchStateCommandHandler(
                     state.ProgressPercentage = 100;
                     state.LastPlaybackPosition = 0;
                     state.LastInteractedAt = timeNow;
-                    notifications.Add((mediaId, 100, true));
+                    notifications.Add((mediaId, 100, true, notifyType));
 
                     if (request.Scope == WatchStateScope.Item
                         && mediaId == request.MediaId
@@ -103,7 +104,7 @@ public class SetMediaWatchStateCommandHandler(
                 state.ProgressPercentage = 0;
                 state.LastPlaybackPosition = 0;
                 state.LastInteractedAt = timeNow;
-                notifications.Add((mediaId, 0, false));
+                notifications.Add((mediaId, 0, false, notifyType));
             }
         }
 
@@ -129,13 +130,14 @@ public class SetMediaWatchStateCommandHandler(
         var identityUserId = currentUser.IdentityId;
         if (!string.IsNullOrEmpty(identityUserId))
         {
-            foreach (var (mediaId, progress, isCompleted) in notifications)
+            foreach (var (mediaId, progress, isCompleted, mediaType) in notifications)
             {
                 await progressNotifier.NotifyProgressUpdatedAsync(
                     identityUserId,
                     mediaId,
                     progress,
                     isCompleted,
+                    mediaType,
                     cancellationToken);
             }
         }

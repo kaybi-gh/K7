@@ -367,6 +367,7 @@ public class UpdatePlaybackProgressCommandHandler(
                 request.MediaId,
                 result.ProgressPercentage,
                 result.IsCompleted,
+                media.Type,
                 cancellationToken);
         }
     }
