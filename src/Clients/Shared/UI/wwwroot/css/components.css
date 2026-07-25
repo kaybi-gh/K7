@@ -264,6 +264,26 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   box-shadow: var(--shadow-md);
 }
 
+/* ── Avatar group (stacked) ──────────────────────────────────────────────────── */
+.k7-avatar-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+.k7-avatar-group > .k7-avatar {
+  margin-inline: calc(var(--space-1) * -1);
+  border: 2px solid var(--color-surface);
+}
+.k7-avatar-group > .k7-avatar:first-child {
+  margin-inline-start: 0;
+}
+.k7-avatar-group--sm > .k7-avatar {
+  margin-inline: calc(var(--space-1) * -1.5);
+}
+
 /* ── Divider ─────────────────────────────────────────────────────────────────── */
 .k7-divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-2) 0; }
 .k7-divider--vertical { border-top: none; border-left: 1px solid var(--color-border); margin: 0 var(--space-2); height: auto; align-self: stretch; }

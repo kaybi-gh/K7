@@ -27,6 +27,7 @@ public partial class AppNav : IDisposable
     private Guid? _userId;
     private string _avatarInitial = "?";
     private string? _viewingGroupLabel;
+    private IReadOnlyList<K7AvatarGroupItem>? _sharedAvatarMembers;
     private bool _chatOpen;
     private readonly Dictionary<Guid, string> _knownParticipants = [];
 
@@ -56,7 +57,7 @@ public partial class AppNav : IDisposable
         SyncPlay.ErrorReceived += OnSyncPlayErrorReceived;
         SharedProfileSession?.ActiveGroupChanged += OnSharedProfileChanged;
         UpdateBadge(HubClient.State);
-        UpdateSharedProfileLabel();
+        UpdateSharedProfileState();
         UpdateActiveNav();
         await AuthenticationStateProvider.GetAuthenticationStateAsync();
         await LoadAvatarAsync();
@@ -344,18 +345,33 @@ public partial class AppNav : IDisposable
 
     private void OnSharedProfileChanged() => InvokeAsync(() =>
     {
-        UpdateSharedProfileLabel();
+        UpdateSharedProfileState();
         StateHasChanged();
     });
 
-    private void UpdateSharedProfileLabel()
+    private void UpdateSharedProfileState()
     {
+        var activeGroup = SharedProfileSession?.ActiveGroup;
+        _sharedAvatarMembers = activeGroup is { Members.Count: > 0 }
+            ? activeGroup.Members
+                .Select(m => new K7AvatarGroupItem
+                {
+                    UserId = m.UserId,
+                    Image = m.AvatarUrl,
+                    Letter = GetMemberInitial(m.DisplayName)
+                })
+                .ToList()
+            : null;
+
         if (DeviceService.GetClientType() == K7.Server.Domain.Enums.ClientType.Web)
         {
             _viewingGroupLabel = null;
             return;
         }
 
-        _viewingGroupLabel = SharedProfileSession?.ActiveGroup?.Name;
+        _viewingGroupLabel = activeGroup?.Name;
     }
+
+    private static string GetMemberInitial(string? displayName) =>
+        string.IsNullOrEmpty(displayName) ? "?" : displayName[..1].ToUpperInvariant();
 }

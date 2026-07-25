@@ -52,9 +52,18 @@
                 <Authorized>
                     <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
                             type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                        <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
-                            <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
-                        </K7Avatar>
+                        @if (_sharedAvatarMembers is { Count: > 0 })
+                        {
+                            <K7AvatarGroup Size="sm" Members="_sharedAvatarMembers">
+                                <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                            </K7AvatarGroup>
+                        }
+                        else
+                        {
+                            <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
+                                <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                            </K7Avatar>
+                        }
                     </button>
                 </Authorized>
                 <NotAuthorized>
@@ -77,9 +86,18 @@
              data-sn-layer-close=".app-nav-backdrop">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
-                    <K7Avatar Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
-                        <span class="connection-badge connection-badge--@_badgeClass"></span>
-                    </K7Avatar>
+                    @if (_sharedAvatarMembers is { Count: > 0 })
+                    {
+                        <K7AvatarGroup Members="_sharedAvatarMembers">
+                            <span class="connection-badge connection-badge--@_badgeClass"></span>
+                        </K7AvatarGroup>
+                    }
+                    else
+                    {
+                        <K7Avatar Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
+                            <span class="connection-badge connection-badge--@_badgeClass"></span>
+                        </K7Avatar>
+                    }
                     <div class="app-nav-popover-user-info">
                         <span class="app-nav-popover-username">@context.User.Identity?.Name</span>
                         @if (!string.IsNullOrEmpty(_viewingGroupLabel))

@@ -601,4 +601,12 @@ public partial class SelectProfile
         var name = member.DisplayName;
         return string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
     }
+
+    private static K7AvatarGroupItem ToAvatarGroupItem(SharedProfileMemberDto member) =>
+        new()
+        {
+            UserId = member.UserId,
+            Image = member.AvatarUrl,
+            Letter = GetMemberInitial(member)
+        };
 }

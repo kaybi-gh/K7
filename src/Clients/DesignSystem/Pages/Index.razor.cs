@@ -11,7 +11,7 @@ public partial class Index
     {
         var demoed = new HashSet<string>(StringComparer.Ordinal)
         {
-            "K7Alert", "K7Button", "K7Chip", "K7Icon", "K7Avatar", "K7Divider", "K7EmptyState",
+            "K7Alert", "K7Button", "K7Chip", "K7Icon", "K7Avatar", "K7AvatarGroup", "K7Divider", "K7EmptyState",
             "K7ProgressBar", "K7Skeleton", "K7Spinner", "K7FabButton", "K7IconButton",
             "K7IconToggleButton", "K7Paper", "K7Image", "K7TextField", "K7Select", "K7DateRangePicker",
             "K7Slider", "K7Switch", "K7CheckboxList", "K7ExpansionPanel", "K7Table", "K7Menu",

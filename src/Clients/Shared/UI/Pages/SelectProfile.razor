@@ -54,12 +54,8 @@
                                 @attributes="GetInitialFocusAttributes(group.Id == _initialFocusGroupId)"
                                 @onclick="() => SelectGroupAsync(group)">
                             <div class="select-profile-group-avatars">
-                                @foreach (var member in group.Members.Take(3))
-                                {
-                                    <K7Avatar Size="md" Image="@member.AvatarUrl"
-                                              Letter="@GetMemberInitial(member)"
-                                              UserId="@member.UserId" />
-                                }
+                                <K7AvatarGroup Size="md"
+                                               Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
                             </div>
                             <div class="select-profile-name">
                                 <span>@group.Name</span>

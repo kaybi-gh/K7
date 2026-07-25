@@ -1,0 +1,12 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<span class="k7-avatar-group @(string.IsNullOrEmpty(Size) ? "" : $"k7-avatar-group--{Size}") @Class">
+    @foreach (var member in VisibleMembers)
+    {
+        <K7Avatar Size="@Size"
+                  Image="@(member.Image ?? "")"
+                  Letter="@(member.Letter ?? "")"
+                  UserId="@member.UserId" />
+    }
+    @ChildContent
+</span>

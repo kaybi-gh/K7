@@ -193,9 +193,12 @@
     outline: none;
 }
 
-.app-nav-avatar-btn:hover ::deep .k7-avatar,
-.app-nav-avatar-btn:focus-visible ::deep .k7-avatar,
-.app-nav-avatar-btn.active ::deep .k7-avatar {
+.app-nav-avatar-btn:hover ::deep > .k7-avatar,
+.app-nav-avatar-btn:focus-visible ::deep > .k7-avatar,
+.app-nav-avatar-btn.active ::deep > .k7-avatar,
+.app-nav-avatar-btn:hover ::deep .k7-avatar-group,
+.app-nav-avatar-btn:focus-visible ::deep .k7-avatar-group,
+.app-nav-avatar-btn.active ::deep .k7-avatar-group {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }

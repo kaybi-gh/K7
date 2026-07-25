@@ -32,10 +32,14 @@
     box-shadow: none !important;
 }
 
-.select-profile-page ::deep .select-profile-card:hover .k7-avatar,
-.select-profile-page ::deep .select-profile-card:focus .k7-avatar,
-.select-profile-page ::deep .select-profile-card:focus-within .k7-avatar,
-.select-profile-page ::deep .select-profile-card:focus-visible .k7-avatar {
+.select-profile-page ::deep .select-profile-card:hover .k7-avatar:not(.k7-avatar-group > .k7-avatar),
+.select-profile-page ::deep .select-profile-card:focus .k7-avatar:not(.k7-avatar-group > .k7-avatar),
+.select-profile-page ::deep .select-profile-card:focus-within .k7-avatar:not(.k7-avatar-group > .k7-avatar),
+.select-profile-page ::deep .select-profile-card:focus-visible .k7-avatar:not(.k7-avatar-group > .k7-avatar),
+.select-profile-page ::deep .select-profile-card:hover .k7-avatar-group,
+.select-profile-page ::deep .select-profile-card:focus .k7-avatar-group,
+.select-profile-page ::deep .select-profile-card:focus-within .k7-avatar-group,
+.select-profile-page ::deep .select-profile-card:focus-visible .k7-avatar-group {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
@@ -62,17 +66,9 @@
     min-height: 80px;
 }
 
-.select-profile-page ::deep .select-profile-group-avatars .k7-avatar {
-    margin-inline: calc(var(--spacing-1) * -1);
-    border: 2px solid var(--color-surface);
-}
-
-.select-profile-page ::deep .select-profile-card--group .select-profile-group-avatars .k7-avatar:first-child {
-    margin-inline-start: 0;
-}
-
 @media (prefers-reduced-motion: no-preference) {
-    .select-profile-page ::deep .select-profile-card .k7-avatar {
+    .select-profile-page ::deep .select-profile-card .k7-avatar,
+    .select-profile-page ::deep .select-profile-card .k7-avatar-group {
         transition: outline-color 0.15s, outline-offset 0.15s;
     }
 }

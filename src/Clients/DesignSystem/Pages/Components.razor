@@ -132,6 +132,26 @@
         </div>
     </section>
 
+    <section id="k7-avatar-group" class="ds-section">
+        <h2>K7AvatarGroup</h2>
+        <div class="ds-preview">
+            <K7AvatarGroup Members="@(new K7AvatarGroupItem[] {
+                new() { UserId = Guid.Parse("11111111-1111-1111-1111-111111111111"), Letter = "A" },
+                new() { UserId = Guid.Parse("22222222-2222-2222-2222-222222222222"), Letter = "B" },
+                new() { UserId = Guid.Parse("33333333-3333-3333-3333-333333333333"), Letter = "C" }
+            })" />
+            <K7AvatarGroup Size="sm" Members="@(new K7AvatarGroupItem[] {
+                new() { Image = "https://picsum.photos/seed/g1/64/64", Letter = "A" },
+                new() { Image = "https://picsum.photos/seed/g2/64/64", Letter = "B" }
+            })" />
+            <K7AvatarGroup Size="lg" Members="@(new K7AvatarGroupItem[] {
+                new() { UserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), Letter = "X" },
+                new() { UserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), Letter = "Y" },
+                new() { UserId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"), Letter = "Z" }
+            })" />
+        </div>
+    </section>
+
     <section id="k7-divider" class="ds-section">
         <h2>K7Divider</h2>
         <div class="ds-preview ds-preview--column">
