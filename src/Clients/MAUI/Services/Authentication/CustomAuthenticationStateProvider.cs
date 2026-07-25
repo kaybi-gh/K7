@@ -304,7 +304,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (lastUser is null)
             return;
 
-        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+        // Only skip online restore when there is truly no network.
+        // NetworkAccess.Local / ConstrainedInternet are common for self-hosted LAN
+        // servers and Android Auto (phone may have no upstream Internet). Treating
+        // those as offline wiped the access token and left AA online tabs empty.
+        if (Connectivity.Current.NetworkAccess == NetworkAccess.None)
         {
             SignInOffline(lastUser);
             await RestoreSharedProfileAsync();

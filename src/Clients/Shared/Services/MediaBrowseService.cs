@@ -29,6 +29,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private const string PrefixDownloadGroup = "download-group:";
     private const string PrefixArtistLetter = "artists-letter:";
     private const string ShuffleSuffix = ":shuffle";
+    private const string ServerUnavailableId = "error:server-unavailable";
 
     private readonly IMediaService _mediaService;
     private readonly IPlaylistService _playlistService;
@@ -64,23 +65,40 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
     public async Task<IReadOnlyList<MediaBrowseItem>> GetChildrenAsync(string parentId, CancellationToken cancellationToken = default)
     {
-        return parentId switch
+        try
         {
-            RootHome => await GetHomeItemsAsync(cancellationToken),
-            RootRecentLegacy => await GetRecentlyPlayedAsync(cancellationToken),
-            RootDownloads => await GetDownloadGroupsWithShuffleAsync(cancellationToken),
-            RootArtists => GetAlphabetIndex(PrefixArtistLetter),
-            RootPlaylists => await GetPlaylistsAsync(cancellationToken),
-            HomeSectionRecentPlaylists or HomeSectionRecentPlaylistsLegacy => await GetHomeRecentPlaylistsAsync(cancellationToken),
-            HomeSectionRecentlyAdded or HomeSectionRecentlyAddedLegacy => await GetHomeRecentlyAddedAsync(cancellationToken),
-            HomeSectionRecentPlays or HomeSectionRecentPlaysLegacy => await GetRecentlyPlayedAsync(cancellationToken),
-            _ when parentId.StartsWith(PrefixArtistLetter) => await GetArtistsByLetterAsync(parentId, cancellationToken),
-            _ when parentId.StartsWith(PrefixDownloadGroup) => await GetDownloadGroupTracksAsync(parentId, cancellationToken),
-            _ when parentId.StartsWith(PrefixArtist) => await GetArtistAlbumsAsync(parentId, cancellationToken),
-            _ when parentId.StartsWith(PrefixAlbum) => await GetAlbumTracksAsync(parentId, cancellationToken),
-            _ when parentId.StartsWith(PrefixPlaylist) => await GetPlaylistTracksAsync(parentId, cancellationToken),
-            _ => []
-        };
+            return parentId switch
+            {
+                RootHome => await GetHomeItemsAsync(cancellationToken),
+                RootRecentLegacy => await GetOnlineOrUnavailableAsync(() => GetRecentlyPlayedAsync(cancellationToken)),
+                RootDownloads => await GetDownloadGroupsWithShuffleAsync(cancellationToken),
+                RootArtists => GetAlphabetIndex(PrefixArtistLetter),
+                RootPlaylists => await GetOnlineOrUnavailableAsync(() => GetPlaylistsAsync(cancellationToken)),
+                HomeSectionRecentPlaylists or HomeSectionRecentPlaylistsLegacy =>
+                    await GetOnlineOrUnavailableAsync(() => GetHomeRecentPlaylistsAsync(cancellationToken)),
+                HomeSectionRecentlyAdded or HomeSectionRecentlyAddedLegacy =>
+                    await GetOnlineOrUnavailableAsync(() => GetHomeRecentlyAddedAsync(cancellationToken)),
+                HomeSectionRecentPlays or HomeSectionRecentPlaysLegacy =>
+                    await GetOnlineOrUnavailableAsync(() => GetRecentlyPlayedAsync(cancellationToken)),
+                _ when parentId.StartsWith(PrefixArtistLetter) =>
+                    await GetOnlineOrUnavailableAsync(() => GetArtistsByLetterAsync(parentId, cancellationToken)),
+                _ when parentId.StartsWith(PrefixDownloadGroup) => await GetDownloadGroupTracksAsync(parentId, cancellationToken),
+                _ when parentId.StartsWith(PrefixArtist) =>
+                    await GetOnlineOrUnavailableAsync(() => GetArtistAlbumsAsync(parentId, cancellationToken)),
+                _ when parentId.StartsWith(PrefixAlbum) =>
+                    await GetOnlineOrUnavailableAsync(() => GetAlbumTracksAsync(parentId, cancellationToken)),
+                _ when parentId.StartsWith(PrefixPlaylist) =>
+                    await GetOnlineOrUnavailableAsync(() => GetPlaylistTracksAsync(parentId, cancellationToken)),
+                _ => []
+            };
+        }
+        catch (Exception)
+        {
+            if (parentId is RootDownloads || parentId.StartsWith(PrefixDownloadGroup))
+                throw;
+
+            return [CreateServerUnavailableItem()];
+        }
     }
 
     public async Task<IReadOnlyList<AudioQueueItem>> GetPlayableItemsAsync(string parentId, CancellationToken cancellationToken = default)
@@ -290,7 +308,6 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
     }
 
-    // Nouvelle page Home : playlists récentes, albums récents, morceaux récemment joués
     private async Task<IReadOnlyList<MediaBrowseItem>> GetHomeItemsAsync(CancellationToken cancellationToken)
     {
         var homeSections = new List<MediaBrowseItem>
@@ -300,26 +317,58 @@ public sealed class MediaBrowseService : IMediaBrowseService
             new() { Id = HomeSectionRecentlyAdded, Title = "Recently Added", IsBrowsable = true }
         };
 
-        var hasAny = (await GetHomeRecentPlaylistsAsync(cancellationToken)).Count > 0
-            || (await GetRecentlyPlayedAsync(cancellationToken)).Count > 0
-            || (await GetHomeRecentlyAddedAsync(cancellationToken)).Count > 0;
+        var recentPlaylists = await TryGetOnlineAsync(() => GetHomeRecentPlaylistsAsync(cancellationToken));
+        var recentPlays = await TryGetOnlineAsync(() => GetRecentlyPlayedAsync(cancellationToken));
+        var recentlyAdded = await TryGetOnlineAsync(() => GetHomeRecentlyAddedAsync(cancellationToken));
+
+        // null means the API call failed (auth/network). Empty means the server
+        // responded but has no content for that section.
+        if (recentPlaylists is null && recentPlays is null && recentlyAdded is null)
+            return [CreateServerUnavailableItem()];
+
+        var hasAny = (recentPlaylists?.Count ?? 0) > 0
+            || (recentPlays?.Count ?? 0) > 0
+            || (recentlyAdded?.Count ?? 0) > 0;
 
         if (!hasAny)
-        {
-            return
-            [
-                new MediaBrowseItem
-                {
-                    Id = "home:server-unreachable",
-                    Title = "Server unavailable",
-                    Subtitle = "You can still use Downloads",
-                    IsBrowsable = false,
-                    IsPlayable = false
-                }
-            ];
-        }
+            return [CreateServerUnavailableItem()];
 
         return homeSections;
+    }
+
+    private static MediaBrowseItem CreateServerUnavailableItem() => new()
+    {
+        Id = ServerUnavailableId,
+        Title = "Server unavailable",
+        Subtitle = "You can still use Downloads",
+        IsBrowsable = false,
+        IsPlayable = false
+    };
+
+    private static async Task<IReadOnlyList<MediaBrowseItem>?> TryGetOnlineAsync(
+        Func<Task<IReadOnlyList<MediaBrowseItem>>> load)
+    {
+        try
+        {
+            return await load();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static async Task<IReadOnlyList<MediaBrowseItem>> GetOnlineOrUnavailableAsync(
+        Func<Task<IReadOnlyList<MediaBrowseItem>>> load)
+    {
+        try
+        {
+            return await load();
+        }
+        catch (Exception)
+        {
+            return [CreateServerUnavailableItem()];
+        }
     }
 
     private async Task<IReadOnlyList<MediaBrowseItem>> GetHomeRecentPlaylistsAsync(CancellationToken cancellationToken)

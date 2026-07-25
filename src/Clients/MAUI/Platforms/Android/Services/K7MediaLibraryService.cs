@@ -95,15 +95,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         _k7ServerService = services.GetRequiredService<IK7ServerService>();
 
         // Ensure HttpClient BaseAddress is set (service may start before App.xaml.cs runs)
-        if (_k7ServerService.HttpClient.BaseAddress is null)
-        {
-            var serverUrl = Preferences.Get(Constants.PreferenceKeys.K7_SERVER_URL, null);
-            if (!string.IsNullOrEmpty(serverUrl))
-            {
-                _k7ServerService.HttpClient.BaseAddress = new Uri(serverUrl);
-                Log.Info(Tag, $"BaseAddress set to {serverUrl}");
-            }
-        }
+        EnsureServerBaseAddress();
 
         _httpDataSourceFactory = new DefaultHttpDataSource.Factory();
         UpdateAuthHeaders();
@@ -764,9 +756,46 @@ public class K7MediaLibraryService : MediaLibraryService,
         RefreshLoudnessGain(applyToPlayer: !_crossfadeInProgress);
     }
 
+    private bool _acceptEncodingConfigured;
+
+    private void EnsureServerBaseAddress()
+    {
+        if (_k7ServerService is null || _k7ServerService.HttpClient.BaseAddress is not null)
+            return;
+
+        var serverUrl = Preferences.Get(Constants.PreferenceKeys.K7_SERVER_URL, null);
+        if (string.IsNullOrEmpty(serverUrl))
+            return;
+
+        _k7ServerService.HttpClient.BaseAddress = new Uri(serverUrl);
+        Log.Info(Tag, $"BaseAddress set to {serverUrl}");
+    }
+
     private void UpdateAuthHeaders()
     {
         if (_httpDataSourceFactory is null) return;
+
+        EnsureServerBaseAddress();
+
+        // Android Auto service sometimes runs without compression assemblies loaded;
+        // ask for identity encoding to avoid gzip/deflate decompression path.
+        // Configure once - mutating DefaultRequestHeaders while requests are in
+        // flight throws InvalidOperationException. Do this even without a token so
+        // unauthenticated/probe requests still decode.
+        if (_k7ServerService is not null && !_acceptEncodingConfigured)
+        {
+            try
+            {
+                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Clear();
+                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Add(
+                    new StringWithQualityHeaderValue("identity"));
+                _acceptEncodingConfigured = true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                Log.Warn(Tag, $"Could not set Accept-Encoding: {ex.Message}");
+            }
+        }
 
         // Read token directly from device storage (DelegatingHandler adds it per-request to HttpClient,
         // but ExoPlayer's HttpDataSource needs it set explicitly)
@@ -786,12 +815,6 @@ public class K7MediaLibraryService : MediaLibraryService,
             {
                 _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
-
-                // Android Auto service sometimes runs without compression assemblies loaded;
-                // ask for identity encoding to avoid gzip/deflate decompression path.
-                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Clear();
-                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Add(
-                    new StringWithQualityHeaderValue("identity"));
             }
         }
     }
@@ -932,7 +955,17 @@ public class K7MediaLibraryService : MediaLibraryService,
             catch (Exception ex)
             {
                 Log.Warn(Tag, $"Failed to load children for {parentId}: {ex}");
-                items = [];
+                items =
+                [
+                    new MediaBrowseItem
+                    {
+                        Id = "error:load-failed",
+                        Title = "Unable to load",
+                        Subtitle = "Check server connection, or use Downloads",
+                        IsBrowsable = false,
+                        IsPlayable = false
+                    }
+                ];
             }
 
             var mediaItems = new List<MediaItem>(items.Count);
@@ -1249,7 +1282,8 @@ public class K7MediaLibraryService : MediaLibraryService,
                 {
                     try
                     {
-                        var artworkBytes = await _k7ServerService.HttpClient.GetByteArrayAsync(item.ArtworkUrl);
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                        var artworkBytes = await _k7ServerService.HttpClient.GetByteArrayAsync(item.ArtworkUrl, cts.Token);
                         if (artworkBytes.Length > 0)
                         {
                             metadataBuilder.SetArtworkData(artworkBytes, Java.Lang.Integer.ValueOf((int)MediaMetadata.PictureTypeFrontCover));
