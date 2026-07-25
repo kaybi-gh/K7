@@ -51,7 +51,15 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<AuthSessionKeeper>();
         builder.ConfigureLifecycleEvents(events =>
         {
-#if ANDROID
+#if WINDOWS
+            events.AddWindows(windows =>
+            {
+                windows.OnWindowCreated(nativeWindow =>
+                {
+                    WindowGeometryPersistence.Attach(nativeWindow);
+                });
+            });
+#elif ANDROID
             events.AddAndroid(android => android.OnResume(_ =>
             {
                 if (IPlatformApplication.Current?.Services is { } services)

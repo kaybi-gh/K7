@@ -30,6 +30,8 @@ public class PreferenceKeyCatalogTests
         keys.Should().Contain(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE.Name);
         keys.Should().Contain(PreferenceKeys.MAX_DOWNLOAD_STORAGE_BYTES.Name);
         keys.Should().Contain(PreferenceKeys.PINNED_SHARED_PROFILE_IDS.Name);
+        keys.Should().Contain(PreferenceKeys.WINDOW_WIDTH.Name);
+        keys.Should().Contain(PreferenceKeys.WINDOW_MAXIMIZED.Name);
     }
 
     [Test]

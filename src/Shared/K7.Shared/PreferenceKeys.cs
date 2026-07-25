@@ -78,4 +78,11 @@ public static class PreferenceKeys
 
     // Page sidebar (admin / settings)
     public static readonly PreferenceKey<bool> PAGE_SIDEBAR_COLLAPSED = new("PageSidebarCollapsed");
+
+    // Desktop window chrome (MAUI Windows)
+    public static readonly PreferenceKey<int> WINDOW_X = new("WindowX");
+    public static readonly PreferenceKey<int> WINDOW_Y = new("WindowY");
+    public static readonly PreferenceKey<int> WINDOW_WIDTH = new("WindowWidth");
+    public static readonly PreferenceKey<int> WINDOW_HEIGHT = new("WindowHeight");
+    public static readonly PreferenceKey<bool> WINDOW_MAXIMIZED = new("WindowMaximized");
 }
