@@ -60,6 +60,7 @@ public class GetPersonKnownForQueryHandler(
 
         return allCredits
             .Where(c => !localIdSet.Contains(c.ExternalId))
+            .DistinctBy(c => (c.ExternalId, c.MediaType))
             .Take(request.PageSize)
             .Select(c => new PersonKnownForItemDto
             {

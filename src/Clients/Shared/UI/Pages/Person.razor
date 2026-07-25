@@ -181,7 +181,7 @@ else if (_person is not null)
                     <Carousel Title="@L["KnownFor"]">
                         @foreach (var item in _knownFor)
                         {
-                            <CarouselItem @key="item.ExternalId">
+                            <CarouselItem @key="@($"{item.MediaType}-{item.ExternalId}")">
                                 <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
                                            FooterVisible="true"
                                            OverlayEnabled="true"

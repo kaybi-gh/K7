@@ -67,8 +67,10 @@ public class TMDbPersonCreditsProvider(
                 }
             }
 
+            // TMDb can list the same title multiple times when a person has several roles.
             var sorted = results
                 .OrderByDescending(r => r.Popularity)
+                .DistinctBy(r => (r.ExternalId, r.MediaType))
                 .Take(30)
                 .ToList();
 
