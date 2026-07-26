@@ -921,6 +921,12 @@ public sealed class MockSharedProfileService : ISharedProfileService
 
     public Task DeleteHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+
+    public Task UploadAvatarAsync(Guid id, Stream stream, string fileName, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task RemoveAvatarAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }
 
 public sealed class MockSharedProfileSessionService : ISharedProfileSessionService

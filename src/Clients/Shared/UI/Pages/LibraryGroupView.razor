@@ -108,7 +108,8 @@
         }
         @if (vm is not null)
         {
-            <MediaCard Model="vm"
+            <MediaCard @key="item.Id"
+                       Model="vm"
                        ElementId="@GetCardElementId(item)"
                        Variant="@GetVariant(item)"
                        Href="@GetItemHref(item)"

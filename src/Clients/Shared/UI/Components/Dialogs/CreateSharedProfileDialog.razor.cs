@@ -18,6 +18,7 @@ public partial class CreateSharedProfileDialog
 
     private List<SharedProfileMemberCandidateDto> _candidates = [];
     private HashSet<Guid> _selectedMemberIds = [];
+    private Guid _currentUserId;
     private Guid _hostUserId;
     private string _name = "";
     private string _pin = "";
@@ -33,15 +34,23 @@ public partial class CreateSharedProfileDialog
             var me = await UserAdminService.GetCurrentUserAsync();
             if (me is not null)
             {
+                _currentUserId = me.Id;
                 _selectedMemberIds.Add(me.Id);
                 _hostUserId = me.Id;
+                EnsureCandidate(me.Id, me.DisplayName ?? me.UserName, me.AvatarUrl);
             }
 
             if (EditGroup is not null)
             {
                 _name = EditGroup.Name;
                 _selectedMemberIds = EditGroup.Members.Select(m => m.UserId).ToHashSet();
+                if (_currentUserId != Guid.Empty)
+                    _selectedMemberIds.Add(_currentUserId);
                 _hostUserId = EditGroup.HostUserId;
+
+                // Existing members may block new invitations; keep them visible for edit/host selection.
+                foreach (var member in EditGroup.Members)
+                    EnsureCandidate(member.UserId, member.DisplayName, member.AvatarUrl);
             }
             else if (_selectedMemberIds.Count >= 2)
             {
@@ -58,8 +67,29 @@ public partial class CreateSharedProfileDialog
         }
     }
 
+    private void EnsureCandidate(Guid id, string? displayName, string? avatarUrl)
+    {
+        if (_candidates.Any(c => c.Id == id))
+            return;
+
+        _candidates.Add(new SharedProfileMemberCandidateDto
+        {
+            Id = id,
+            DisplayName = displayName,
+            AvatarUrl = avatarUrl
+        });
+    }
+
+    private string GetMemberDisplayName(Guid id) =>
+        _candidates.FirstOrDefault(c => c.Id == id)?.DisplayName
+        ?? EditGroup?.Members.FirstOrDefault(m => m.UserId == id)?.DisplayName
+        ?? "-";
+
     private void ToggleMember(Guid id, bool selected)
     {
+        if (id == _currentUserId)
+            return;
+
         if (selected)
             _selectedMemberIds.Add(id);
         else

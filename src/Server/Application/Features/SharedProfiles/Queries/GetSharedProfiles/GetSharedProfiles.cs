@@ -21,7 +21,7 @@ public class GetSharedProfilesQueryHandler(IApplicationDbContext context, IUser 
         var groups = await context.SharedProfiles
             .AsNoTracking()
             .Include(g => g.Members)
-            .Where(g => g.Members.Any(m => m.UserId == userId))
+            .Where(g => g.HostUserId == userId || g.Members.Any(m => m.UserId == userId))
             .OrderBy(g => g.Name)
             .ToListAsync(cancellationToken);
 
@@ -31,8 +31,24 @@ public class GetSharedProfilesQueryHandler(IApplicationDbContext context, IUser 
         var memberUserIds = groups.SelectMany(g => g.Members).Select(m => m.UserId).Distinct().ToList();
         var userInfo = await SharedProfileUserInfoLoader.LoadAsync(context, memberUserIds, cancellationToken);
 
+        var groupIds = groups.Select(g => g.Id).ToList();
+        var profileAvatarMap = await context.MetadataPictures
+            .AsNoTracking()
+            .Where(p => p.SharedProfileId != null
+                        && groupIds.Contains(p.SharedProfileId.Value)
+                        && p.Type == MetadataPictureType.SharedProfileAvatar)
+            .Select(p => new { p.SharedProfileId, p.Id })
+            .ToDictionaryAsync(
+                p => p.SharedProfileId!.Value,
+                p => (string?)$"/api/metadata-pictures/{p.Id}",
+                cancellationToken);
+
         return groups
-            .Select(g => g.ToSharedProfileDto(userInfo.DisplayNames, userInfo.IdentityUserIds, userInfo.AvatarUrls))
+            .Select(g => g.ToSharedProfileDto(
+                userInfo.DisplayNames,
+                userInfo.IdentityUserIds,
+                userInfo.AvatarUrls,
+                profileAvatarMap.GetValueOrDefault(g.Id)))
             .ToList();
     }
 }

@@ -16,6 +16,30 @@ else
     <div class="d-flex flex-col gap-4">
         <p class="text-secondary">@string.Format(L["Description"], Group.Name)</p>
 
+        <h6>@L["AvatarTitle"]</h6>
+        <div class="d-flex align-center gap-3">
+            @if (!string.IsNullOrEmpty(_avatarUrl))
+            {
+                <K7Avatar Image="@_avatarUrl" Letter="@_avatarLetter" Size="lg" Alt="@Group.Name" />
+            }
+            else
+            {
+                <K7AvatarGroup Size="lg" Members="@_memberAvatarItems" />
+            }
+            <div class="d-flex gap-2">
+                <K7Button Variant="outlined" OnClick="UploadAvatar" Disabled="_saving">@L["UploadAvatar"]</K7Button>
+                @if (!string.IsNullOrEmpty(_avatarUrl))
+                {
+                    <K7Button Variant="text" Color="error" OnClick="RemoveAvatar" Disabled="_saving">@L["RemoveAvatar"]</K7Button>
+                }
+            </div>
+        </div>
+        <InputFile id="@_avatarFileInputId" OnChange="OnAvatarFileSelected" accept="image/*" style="display:none" />
+        @if (_avatarError is not null)
+        {
+            <K7Alert Severity="K7Severity.Error">@_avatarError</K7Alert>
+        }
+
         <h6>@L["VideoPolicyTitle"]</h6>
         <K7TextField TValue="int" Type="number" Label="@L["MinResumePercent"]" @bind-Value="_videoPolicy.MinResumePercent" />
         <K7TextField TValue="int" Type="number" Label="@L["MinResumeDurationSeconds"]" @bind-Value="_videoPolicy.MinResumeDurationSeconds" />

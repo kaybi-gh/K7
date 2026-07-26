@@ -18,7 +18,7 @@
 }
 else
 {
-    <div id="@ElementId" class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocused">
+    <div id="@ElementId" class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocusInAsync">
         <div class="media-card-container"
              @ref="_longPressContainerRef"
              data-longpress="@(LongPressEnabled ? "true" : null)"

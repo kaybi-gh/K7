@@ -55,15 +55,25 @@ public class UpdateSharedProfileCommandHandler(IApplicationDbContext context, IU
                 ]);
             }
 
-            await SharedProfileMemberValidator.EnsureValidMembersAsync(context, memberIds, currentUser.Id.Value, cancellationToken);
+            var existingMemberIds = group.Members.Select(m => m.UserId).ToHashSet();
+            await SharedProfileMemberValidator.EnsureValidMembersAsync(
+                context, memberIds, currentUser.Id.Value, cancellationToken, existingMemberIds);
 
             group.HostUserId = hostUserId;
-            context.SharedProfileMembers.RemoveRange(group.Members);
-            group.Members = memberIds.Select(id => new SharedProfileMember
+
+            var toRemove = group.Members.Where(m => !memberIds.Contains(m.UserId)).ToList();
+            context.SharedProfileMembers.RemoveRange(toRemove);
+            foreach (var member in toRemove)
+                group.Members.Remove(member);
+
+            foreach (var id in memberIds.Where(id => !existingMemberIds.Contains(id)))
             {
-                SharedProfileId = group.Id,
-                UserId = id
-            }).ToList();
+                group.Members.Add(new SharedProfileMember
+                {
+                    SharedProfileId = group.Id,
+                    UserId = id
+                });
+            }
         }
         else if (request.HostUserId is { } hostUserId)
         {

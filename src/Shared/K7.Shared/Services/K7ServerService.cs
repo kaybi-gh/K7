@@ -644,6 +644,22 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UploadSharedProfileAvatarAsync(Guid id, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(GetImageContentType(fileName));
+        content.Add(streamContent, "file", fileName);
+        var response = await HttpClient.PostAsync($"api/shared-profiles/{id}/avatar", content, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task RemoveSharedProfileAvatarAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/shared-profiles/{id}/avatar", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<LibraryPictureDto>>($"api/libraries/{libraryId}/pictures", _serializerOptions, cancellationToken);

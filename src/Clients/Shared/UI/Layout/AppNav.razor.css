@@ -345,6 +345,52 @@
     text-overflow: ellipsis;
 }
 
+.app-nav-popover-viewing-group {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    height: 1lh;
+    overflow: hidden;
+    container-type: inline-size;
+}
+
+.app-nav-popover-viewing-group-inner {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    will-change: transform;
+}
+
+.app-nav-popover-user:hover .app-nav-popover-viewing-group {
+    overflow: visible;
+}
+
+.app-nav-popover-user:hover .app-nav-popover-viewing-group-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    text-overflow: unset;
+    animation: app-nav-viewing-group-scroll 3s linear 0.5s infinite alternate;
+}
+
+@keyframes app-nav-viewing-group-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-nav-popover-user:hover .app-nav-popover-viewing-group-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
+    }
+}
+
 .app-nav-popover-status {
     font-size: var(--text-xs);
     color: var(--color-text-secondary);

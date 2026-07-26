@@ -32,6 +32,8 @@ public class MetadataPicture : BaseAuditableEntity
     public LibraryGroup? LibraryGroup { get; set; }
     public Guid? UserId { get; set; }
     public User? User { get; set; }
+    public Guid? SharedProfileId { get; set; }
+    public SharedProfile? SharedProfile { get; set; }
 
     public IList<MetadataPictureVariant> Variants { get; set; } = [];
 }

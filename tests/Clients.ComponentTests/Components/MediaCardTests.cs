@@ -156,6 +156,7 @@ public class MediaCardTests
         ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
 
         var featureAccess = Substitute.For<IFeatureAccessService>();
+        featureAccess.GetRoleAsync().Returns((string?)null);
         featureAccess.HasCapabilityAsync(Capability.CanRate).Returns(false);
         featureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist).Returns(false);
         ctx.Services.AddSingleton(featureAccess);

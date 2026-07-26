@@ -178,17 +178,17 @@ Synchronized session with chat, reactions, and shared play/pause/seek: create fr
 
 ## Shared profiles
 
-Shared profiles let a couple or group watch together with a **shared continue-watching / history / stats bucket** (**Settings -> Shared profiles**). Personal progress stays separate while the group exists: group watches do not appear in a member's personal continue watching, and activating a shared profile does not show another member's private watch data. If the shared profile is deleted (or removed because too few members remain), shared continue-watching progress is merged into each member's personal continue watching.
+Shared profiles let a couple or group watch together with a **shared continue-watching bucket** (**Settings -> Shared profiles**). Personal continue watching stays separate while the group exists: group watches do not appear in a member's personal continue watching, and activating a shared profile does not show another member's private continue watching. When the group finishes a title, every member gets it marked watched personally, and the session appears in each member's personal playback history and watch stats (not only the person who pressed play). If the shared profile is deleted (or removed because too few members remain), shared continue-watching progress is merged into each member's personal continue watching.
 
 1. Create a profile (name, at least two members, a host, optional PIN).
 2. Others cannot add you until you allow shared-profile invitations.
 3. The host can set a custom avatar for the profile; otherwise member avatars are stacked.
-4. Pin with **Show on this device**, then pick it on profile selection.
+4. On native apps, pin with **Show on this device**, then pick it on profile selection.
 5. The host can **Configure** playback policies, content restrictions, home layout, and playlists shared with members for navigation.
 
 While a shared profile is active:
 
-- Home continue-watching, playback history, and watch stats are scoped to the profile only. Personal and group history do not mix while the profile exists.
+- Home continue-watching is scoped to the profile only. Playback history and watch stats for the profile show group activity while the hat is on. Your personal history and stats include shared-profile sessions for every member of the group (via the acting player and co-viewer credits), not only the person who controlled playback.
 - The effective home layout is the profile's own layout if the host set one, otherwise the server default (never a member's personal layout).
 - Content restrictions come from the profile's assigned restriction profile, not the acting member's personal restrictions.
 - Playlists shared to the profile appear in members' navigation for the duration of the session.

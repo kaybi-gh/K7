@@ -14,31 +14,38 @@
 
             <div>
                 <span class="text-sm text-muted">@L["Members"]</span>
+                <p class="text-xs text-secondary mt-1 mb-0">@L["MembersMinHint"]</p>
+                <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true" Class="mt-2 mb-2">
+                    @L["MembersInvitationHint"]
+                </K7Alert>
                 <K7CheckboxList TItem="SharedProfileMemberCandidateDto"
                                 Items="_candidates"
                                 IsChecked="@(c => _selectedMemberIds.Contains(c.Id))"
+                                IsDisabled="@(c => c.Id == _currentUserId)"
                                 CheckedChanged="@(e => ToggleMember(e.Item.Id, e.Checked))">
                     <ItemTemplate Context="candidate">
                         <K7Avatar Size="sm" Image="@candidate.AvatarUrl" Letter="@GetInitial(candidate)" />
                         <span class="text-sm">@(candidate.DisplayName ?? "-")</span>
                     </ItemTemplate>
                 </K7CheckboxList>
+                @if (!_loading && _selectedMemberIds.Count < 2)
+                {
+                    <K7Alert Severity="K7Severity.Warning" Variant="outlined" NoIcon="true" Class="mt-2 mb-0">
+                        @L["MembersMinRequired"]
+                    </K7Alert>
+                }
             </div>
 
             @if (_selectedMemberIds.Count >= 2)
             {
                 <K7Select TValue="Guid" @bind-Value="_hostUserId" Label="@L["Host"]" Variant="outlined"
-                          ToStringFunc="@(id => _candidates.FirstOrDefault(c => c.Id == id)?.DisplayName ?? L["Host"])"
+                          ToStringFunc="@GetMemberDisplayName"
                           FullWidth="true">
                     @foreach (var memberId in _selectedMemberIds)
                     {
-                        var candidate = _candidates.FirstOrDefault(c => c.Id == memberId);
-                        if (candidate is not null)
-                        {
-                            <K7SelectItem TValue="Guid" Value="@memberId" Text="@(candidate.DisplayName ?? "-")">
-                                @(candidate.DisplayName ?? "-")
-                            </K7SelectItem>
-                        }
+                        <K7SelectItem TValue="Guid" Value="@memberId" Text="@GetMemberDisplayName(memberId)">
+                            @GetMemberDisplayName(memberId)
+                        </K7SelectItem>
                     }
                 </K7Select>
             }

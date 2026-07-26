@@ -2,10 +2,13 @@
 @page "/settings/viewing-groups"
 @layout SettingsLayout
 
+@using K7.Server.Domain.Enums
+@inject IDeviceService DeviceService
+
 <PageTitle>@L["SharedProfilesTitle"]</PageTitle>
 
 <h4 class="mb-2">@L["SharedProfilesTitle"]</h4>
-<p class="text-secondary mb-4">@L["SharedProfilesPageDescription"]</p>
+<p class="text-secondary mb-4">@(DeviceService.GetClientType() == ClientType.Web ? L["SharedProfilesPageDescriptionWeb"] : L["SharedProfilesPageDescription"])</p>
 
 <div class="pa-4 d-flex flex-col gap-4">
     <K7Paper Outlined="true" Class="watch-together-panel">
@@ -23,7 +26,7 @@
                 @L["CreateGroup"]
             </K7Button>
         </div>
-        <p class="text-secondary mb-3">@L["GroupsDescription"]</p>
+        <p class="text-secondary mb-3">@(DeviceService.GetClientType() == ClientType.Web ? L["GroupsDescriptionWeb"] : L["GroupsDescription"])</p>
 
         @if (_loading)
         {
@@ -77,7 +80,10 @@
                                 </K7Button>
                             </div>
                         </div>
-                        <K7Switch Label="@L["ShowOnDevice"]" Value="isPinned" ValueChanged="(v) => OnShowOnDeviceChanged(group, v)" />
+                        @if (DeviceService.GetClientType() != ClientType.Web)
+                        {
+                            <K7Switch Label="@L["ShowOnDevice"]" Value="isPinned" ValueChanged="(v) => OnShowOnDeviceChanged(group, v)" />
+                        }
                     </div>
                 }
             </div>

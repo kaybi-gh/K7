@@ -244,5 +244,56 @@ public class UpdatePlaybackProgressCommandHandlerTests
 
         var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
         session.SharedProfileId.Should().Be(sharedProfileId);
+        (await _context.UserMediaStates.CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task Handle_ShouldMarkAllSharedProfileMembersWatched_WhenSharedSessionCompletes()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var coViewerId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = coViewerId, IdentityUserId = "co-ident", DisplayName = "coviewer" });
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Family",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        await _context.SaveChangesAsync();
+
+        _sharedProfiles.ResolveAsync(sharedProfileId, _userId, Arg.Any<CancellationToken>())
+            .Returns(new SharedProfilePlaybackContext(sharedProfileId, "Family", [coViewerId]));
+
+        _sharedProfileStateUpdater.ApplyAsync(
+                Arg.Any<Guid>(), Arg.Any<BaseMedia>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<double>(),
+                Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(new SharedProfileMediaStateUpdateResult(100, true, true, null));
+
+        var sessionId = Guid.NewGuid();
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 95,
+            Duration: 100,
+            State: PlaybackState.Ended,
+            SharedProfileId: sharedProfileId), CancellationToken.None);
+
+        await _stateUpdater.DidNotReceive().ApplyAsync(
+            Arg.Any<Guid>(), Arg.Any<BaseMedia>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<double>(),
+            Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
+
+        var states = await _context.UserMediaStates.AsNoTracking().ToListAsync();
+        states.Should().HaveCount(2);
+        states.Should().OnlyContain(s =>
+            s.MediaId == _movieId
+            && s.IsCompleted
+            && s.ProgressPercentage == 100
+            && s.PlayCount == 1);
+        states.Select(s => s.UserId).Should().BeEquivalentTo([_userId, coViewerId]);
+
+        var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
+        session.CompletedAt.Should().NotBeNull();
     }
 }

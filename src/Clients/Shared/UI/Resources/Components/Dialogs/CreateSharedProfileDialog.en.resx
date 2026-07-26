@@ -21,6 +21,9 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="GroupName" xml:space="preserve"><value>Shared profile name</value></data>
   <data name="Members" xml:space="preserve"><value>Members</value></data>
+  <data name="MembersMinHint" xml:space="preserve"><value>At least 2 members (you are already included).</value></data>
+  <data name="MembersMinRequired" xml:space="preserve"><value>Select at least one more member to create the profile.</value></data>
+  <data name="MembersInvitationHint" xml:space="preserve"><value>Only users who have allowed shared profile invitations are shown.</value></data>
   <data name="Host" xml:space="preserve"><value>Host</value></data>
   <data name="GroupPinOptional" xml:space="preserve"><value>Shared profile PIN (optional)</value></data>
   <data name="NewPinOptional" xml:space="preserve"><value>New PIN (optional)</value></data>

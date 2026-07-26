@@ -23,6 +23,15 @@ public class LeaveSharedProfileCommandHandler(IApplicationDbContext context, IUs
 
         if (group.Members.Count <= SharedProfileMemberValidator.MinMembers)
         {
+            var recipientIds = group.Members
+                .Select(m => m.UserId)
+                .Append(group.HostUserId)
+                .Distinct()
+                .ToList();
+
+            await SharedProfileMediaStateMigration.MigrateToMembersAsync(
+                context, group.Id, recipientIds, cancellationToken);
+
             context.SharedProfiles.Remove(group);
         }
         else

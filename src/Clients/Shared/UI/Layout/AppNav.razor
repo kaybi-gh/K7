@@ -52,7 +52,13 @@
                 <Authorized>
                     <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
                             type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                        @if (_sharedAvatarMembers is { Count: > 0 })
+                        @if (!string.IsNullOrEmpty(_sharedAvatarUrl))
+                        {
+                            <K7Avatar Size="sm" Image="@_sharedAvatarUrl" Letter="@_sharedAvatarLetter">
+                                <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                            </K7Avatar>
+                        }
+                        else if (_sharedAvatarMembers is { Count: > 0 })
                         {
                             <K7AvatarGroup Size="sm" Members="_sharedAvatarMembers">
                                 <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
@@ -86,7 +92,13 @@
              data-sn-layer-close=".app-nav-backdrop">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
-                    @if (_sharedAvatarMembers is { Count: > 0 })
+                    @if (!string.IsNullOrEmpty(_sharedAvatarUrl))
+                    {
+                        <K7Avatar Image="@_sharedAvatarUrl" Letter="@_sharedAvatarLetter">
+                            <span class="connection-badge connection-badge--@_badgeClass"></span>
+                        </K7Avatar>
+                    }
+                    else if (_sharedAvatarMembers is { Count: > 0 })
                     {
                         <K7AvatarGroup Members="_sharedAvatarMembers">
                             <span class="connection-badge connection-badge--@_badgeClass"></span>
@@ -102,7 +114,9 @@
                         <span class="app-nav-popover-username">@context.User.Identity?.Name</span>
                         @if (!string.IsNullOrEmpty(_viewingGroupLabel))
                         {
-                            <span class="app-nav-popover-viewing-group text-muted text-sm">@string.Format(L["ViewingAsGroup"], _viewingGroupLabel)</span>
+                            <span class="app-nav-popover-viewing-group text-muted text-sm">
+                                <span class="app-nav-popover-viewing-group-inner">@string.Format(L["ViewingAsGroup"], _viewingGroupLabel)</span>
+                            </span>
                         }
                         <span class="app-nav-popover-status">@_badgeTitle</span>
                     </div>

@@ -194,14 +194,27 @@ public class UpdatePlaybackProgressCommandHandler(
                 completed = true;
         }
 
+        var newlyCompletedSession = false;
         if (completed && session.CompletedAt is null)
         {
             session.CompletedAt = timeNow;
+            newlyCompletedSession = true;
             session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
         }
 
         if (hostResult?.EpisodeIdForEnqueue is { } hostEpisodeId)
             await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
+
+        // Shared-profile mid-progress stays on SharedProfileMediaState only (personal CW stays clean).
+        // On completion, mark the media watched for every member so personal "Vu" badges match the group watch.
+        if (viewingGroup is not null && newlyCompletedSession)
+        {
+            var memberIds = viewingGroup.CoViewerUserIds
+                .Append(userId)
+                .Distinct()
+                .ToList();
+            await MarkMembersWatchedAsync(memberIds, request.MediaId, timeNow, cancellationToken);
+        }
 
         var notifiedUsers = new List<(Guid UserId, UserMediaStateUpdateResult Result)>();
         if (hostResult is not null)
@@ -214,8 +227,6 @@ public class UpdatePlaybackProgressCommandHandler(
                 sharedResult.WasNewlyCompleted,
                 sharedResult.EpisodeIdForEnqueue)));
         }
-
-        // SyncPlay still fans out personal progress; shared-profile sessions never write coviewer UserMediaState.
 
         if (request.State != previousState)
         {
@@ -450,6 +461,47 @@ public class UpdatePlaybackProgressCommandHandler(
             {
                 ReferenceId = referenceId,
                 UserId = coViewerUserId
+            });
+        }
+    }
+
+    private async Task MarkMembersWatchedAsync(
+        IReadOnlyList<Guid> memberUserIds,
+        Guid mediaId,
+        DateTime timeNow,
+        CancellationToken cancellationToken)
+    {
+        if (memberUserIds.Count == 0)
+            return;
+
+        var existingStates = await _context.UserMediaStates
+            .Where(s => memberUserIds.Contains(s.UserId) && s.MediaId == mediaId)
+            .ToDictionaryAsync(s => s.UserId, cancellationToken);
+
+        foreach (var memberId in memberUserIds)
+        {
+            if (existingStates.TryGetValue(memberId, out var state))
+            {
+                if (!state.IsCompleted)
+                    state.PlayCount++;
+
+                state.IsCompleted = true;
+                state.ProgressPercentage = 100;
+                state.LastPlaybackPosition = 0;
+                state.LastInteractedAt = timeNow;
+                state.ExcludedFromContinueWatching = false;
+                continue;
+            }
+
+            _context.UserMediaStates.Add(new UserMediaState
+            {
+                UserId = memberId,
+                MediaId = mediaId,
+                PlayCount = 1,
+                IsCompleted = true,
+                ProgressPercentage = 100,
+                LastPlaybackPosition = 0,
+                LastInteractedAt = timeNow
             });
         }
     }

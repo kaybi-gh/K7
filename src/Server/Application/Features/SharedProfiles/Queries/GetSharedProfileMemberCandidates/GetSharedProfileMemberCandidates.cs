@@ -11,13 +11,16 @@ public record GetSharedProfileMemberCandidatesQuery : IRequest<IReadOnlyList<Sha
 
 public class GetSharedProfileMemberCandidatesQueryHandler(
     IApplicationDbContext context,
-    IIdentityService identityService)
+    IIdentityService identityService,
+    IUser currentUser)
     : IRequestHandler<GetSharedProfileMemberCandidatesQuery, IReadOnlyList<SharedProfileMemberCandidateDto>>
 {
     public async Task<IReadOnlyList<SharedProfileMemberCandidateDto>> Handle(
         GetSharedProfileMemberCandidatesQuery request,
         CancellationToken cancellationToken)
     {
+        var actingUserId = currentUser.Id;
+
         var users = await context.Users
             .AsNoTracking()
             .Where(u => u.IsActive && u.PeerServerId == null && u.IdentityUserId != null)
@@ -52,7 +55,8 @@ public class GetSharedProfileMemberCandidatesQueryHandler(
             .ToDictionaryAsync(p => p.UserId!.Value, p => $"/api/metadata-pictures/{p.Id}", cancellationToken);
 
         return candidates
-            .Where(u => !blocked.Contains(u.Id))
+            // Acting user stays selectable (e.g. as host) even when they block invitations.
+            .Where(u => !blocked.Contains(u.Id) || u.Id == actingUserId)
             .Select(u => new SharedProfileMemberCandidateDto
             {
                 Id = u.Id,

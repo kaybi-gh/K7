@@ -5,12 +5,15 @@
     @foreach (var (item, index) in Items.Select((x, i) => (x, i)))
     {
         var isChecked = IsChecked(item);
-        <div @key="item" class="k7-checkbox-list__row focusable @(index % 2 == 1 ? "k7-checkbox-list__row--even" : "")"
+        var isDisabled = IsDisabled(item);
+        <div @key="item"
+             class="k7-checkbox-list__row focusable @(index % 2 == 1 ? "k7-checkbox-list__row--even" : "") @(isDisabled ? "k7-checkbox-list__row--disabled" : "")"
              tabindex="-1"
+             aria-disabled="@(isDisabled ? "true" : null)"
              @onclick="@(() => OnToggle(item, !isChecked))"
              @onkeydown="@(e => OnKeyDown(e, item, isChecked))"
              @onkeydown:preventDefault="@(ShouldPreventKey)">
-            <input type="checkbox" checked="@isChecked"
+            <input type="checkbox" checked="@isChecked" disabled="@isDisabled"
                    tabindex="-1"
                    @onclick:stopPropagation />
             @if (ItemTemplate is not null)

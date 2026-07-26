@@ -60,13 +60,15 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 if (targetUserId is null)
                     return new PlaybackHistoryPageDto();
 
+                // Personal history includes sessions the user drove and sessions where they were
+                // a co-viewer (shared-profile members and SyncPlay partners).
                 var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
                     .Where(c => c.UserId == targetUserId.Value)
                     .Select(c => c.ReferenceId);
 
                 sessionsQuery = context.MediaPlaybackSessions
-                    .Where(s => s.SharedProfileId == null
-                        && (s.UserId == targetUserId.Value || coViewerReferenceIds.Contains(s.ReferenceId)));
+                    .Where(s => s.UserId == targetUserId.Value
+                        || coViewerReferenceIds.Contains(s.ReferenceId));
             }
         }
 

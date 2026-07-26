@@ -358,6 +358,16 @@
                             ItemLabel="@(item => item)" />
         </div>
 
+        <h3>With disabled items</h3>
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7CheckboxList TItem="string"
+                            Items="_checkboxListItems"
+                            IsChecked="@(item => _selectedItems.Contains(item) || item == _checkboxListItems[0])"
+                            IsDisabled="@(item => item == _checkboxListItems[0])"
+                            CheckedChanged="@(e => ToggleCheckboxItem(e.Item, e.Checked))"
+                            ItemLabel="@(item => item)" />
+        </div>
+
         <h3>With ItemTemplate</h3>
         <div class="ds-preview ds-preview--column ds-preview--narrow">
             <K7CheckboxList TItem="string"

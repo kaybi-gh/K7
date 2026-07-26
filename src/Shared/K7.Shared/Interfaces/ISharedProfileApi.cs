@@ -26,4 +26,6 @@ public interface ISharedProfileApi
     Task<HomeLayoutDto?> GetSharedProfileHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateSharedProfileHomeLayoutAsync(Guid id, HomeLayoutDto layout, CancellationToken cancellationToken = default);
     Task DeleteSharedProfileHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default);
+    Task UploadSharedProfileAvatarAsync(Guid id, Stream stream, string fileName, CancellationToken cancellationToken = default);
+    Task RemoveSharedProfileAvatarAsync(Guid id, CancellationToken cancellationToken = default);
 }

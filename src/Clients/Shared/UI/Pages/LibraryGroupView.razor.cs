@@ -43,8 +43,10 @@ public partial class LibraryGroupView : IDisposable
 
     private const string ContentSourceAll = "";
     private const string ContentSourceLocal = "local";
-    private const int TvOverscanCount = 2;
+    private const int TvOverscanCount = 3;
     private const int DefaultOverscanCount = 5;
+    private const int PageSize = 50;
+    private const int PageCacheCapacity = 32;
 
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
@@ -58,7 +60,10 @@ public partial class LibraryGroupView : IDisposable
     private int _overscanCount = DefaultOverscanCount;
     private int _totalCount;
     private bool _totalCountKnown;
-    private const int PageSize = 50;
+    private readonly LruCache<(string Fingerprint, int Page), (IReadOnlyList<LiteMediaDto> Items, int TotalCount)> _pageCache
+        = new(PageCacheCapacity);
+    private readonly Dictionary<Guid, MediaCardViewModel> _viewModelCache = new();
+    private string _queryFingerprint = "";
     private LibraryMediaType? _libraryMediaType;
     private IReadOnlyList<Guid>? _libraryIds;
     private Guid[]? _libraryGroupIds;
@@ -143,6 +148,7 @@ public partial class LibraryGroupView : IDisposable
         _initializedId = Id;
         _loading = true;
         _selectedMediaType = default;
+        InvalidateBrowseCaches();
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         _overscanCount = _isTv ? TvOverscanCount : DefaultOverscanCount;
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
@@ -326,44 +332,118 @@ public partial class LibraryGroupView : IDisposable
 
         try
         {
+            EnsureQueryFingerprint();
+
             var startIndex = request.StartIndex;
             var count = request.Count;
 
             var firstPage = (startIndex / PageSize) + 1;
             var lastPage = ((startIndex + count - 1) / PageSize) + 1;
 
-            var pages = Enumerable.Range(firstPage, lastPage - firstPage + 1);
-            var tasks = pages.Select(page =>
-                k7ServerService.QueryMediasAsync(
-                    BuildQuery(page, PageSize), request.CancellationToken));
+            var pageItems = new List<(int Page, IReadOnlyList<LiteMediaDto> Items)>(lastPage - firstPage + 1);
+            var fetchPages = new List<int>();
 
-            var results = await Task.WhenAll(tasks);
-
-            var allItems = new List<LiteMediaDto>(count);
-            foreach (var result in results)
+            for (var page = firstPage; page <= lastPage; page++)
             {
-                if (result is null)
-                    continue;
-
-                _totalCount = result.TotalCount ?? 0;
-                _totalCountKnown = true;
-
-                if (result.Items is { Count: > 0 })
-                    allItems.AddRange(result.Items);
+                if (_pageCache.TryGetValue((_queryFingerprint, page), out var cached))
+                {
+                    _totalCount = cached.TotalCount;
+                    _totalCountKnown = true;
+                    pageItems.Add((page, cached.Items));
+                }
+                else
+                {
+                    fetchPages.Add(page);
+                }
             }
 
+            if (fetchPages.Count > 0)
+            {
+                var tasks = fetchPages.Select(page =>
+                    FetchAndCachePageAsync(page, request.CancellationToken));
+                var fetched = await Task.WhenAll(tasks);
+                foreach (var entry in fetched)
+                {
+                    if (entry is null)
+                        continue;
+
+                    pageItems.Add(entry.Value);
+                }
+            }
+
+            pageItems.Sort(static (a, b) => a.Page.CompareTo(b.Page));
+
+            var allItems = new List<LiteMediaDto>(count);
+            foreach (var (_, items) in pageItems)
+                allItems.AddRange(items);
+
             var offset = startIndex - (firstPage - 1) * PageSize;
-            var items = allItems.Skip(offset).Take(count).ToList();
+            var window = allItems.Skip(offset).Take(count).ToList();
 
             // BrowseView.WrappedItemsProvider already re-renders when TotalItemCount changes.
             // Avoid a full-page StateHasChanged here: it re-runs every mounted MediaCard.
-            return new ItemsProviderResult<LiteMediaDto>(items, _totalCount);
+            return new ItemsProviderResult<LiteMediaDto>(window, _totalCount);
         }
         catch (OperationCanceledException)
         {
             request.CancellationToken.ThrowIfCancellationRequested();
             return default;
         }
+    }
+
+    private async Task<(int Page, IReadOnlyList<LiteMediaDto> Items)?> FetchAndCachePageAsync(
+        int page,
+        CancellationToken cancellationToken)
+    {
+        var result = await k7ServerService.QueryMediasAsync(
+            BuildQuery(page, PageSize), cancellationToken);
+        if (result is null)
+            return null;
+
+        var totalCount = result.TotalCount ?? 0;
+        _totalCount = totalCount;
+        _totalCountKnown = true;
+
+        IReadOnlyList<LiteMediaDto> items = result.Items is { Count: > 0 }
+            ? result.Items.ToList()
+            : [];
+
+        _pageCache.Set((_queryFingerprint, page), (items, totalCount));
+        return (page, items);
+    }
+
+    private void EnsureQueryFingerprint()
+    {
+        var fingerprint = BuildQueryFingerprint();
+        if (fingerprint == _queryFingerprint)
+            return;
+
+        _queryFingerprint = fingerprint;
+        _pageCache.Clear();
+        _viewModelCache.Clear();
+    }
+
+    private string BuildQueryFingerprint()
+    {
+        var libraryKey = _libraryIds is { Count: > 0 }
+            ? string.Join(',', _libraryIds.OrderBy(id => id))
+            : string.Empty;
+        var filterJson = MediaBrowseFilterPresets.IsEmpty(_filter)
+            ? string.Empty
+            : JsonSerializer.Serialize(_filter);
+        return string.Join('|',
+            libraryKey,
+            (int)_selectedMediaType,
+            (int)_selectedSort,
+            _selectedContentSource,
+            filterJson);
+    }
+
+    private void InvalidateBrowseCaches()
+    {
+        _pageCache.Clear();
+        _viewModelCache.Clear();
+        _queryFingerprint = string.Empty;
     }
 
     private async Task<K7DataTableResult<LiteMediaDto>> LoadTableDataAsync(
@@ -541,6 +621,7 @@ public partial class LibraryGroupView : IDisposable
         _totalCountKnown = false;
         StateHasChanged();
         _selectedContentSource = value;
+        InvalidateBrowseCaches();
 
         try
         {
@@ -575,6 +656,7 @@ public partial class LibraryGroupView : IDisposable
             _intelligentSearchResults = [];
         }
 
+        InvalidateBrowseCaches();
         _contentLoading = true;
         _totalCount = 0;
         _totalCountKnown = false;
@@ -595,6 +677,7 @@ public partial class LibraryGroupView : IDisposable
     {
         _intelligentSearch = value;
         _filter = MediaBrowseFilterPresets.Empty;
+        InvalidateBrowseCaches();
 
         if (value is null)
         {
@@ -710,6 +793,7 @@ public partial class LibraryGroupView : IDisposable
         _filter = MediaBrowseFilterPresets.Empty;
         _intelligentSearch = null;
         _intelligentSearchResults = [];
+        InvalidateBrowseCaches();
         _totalCount = 0;
         _totalCountKnown = false;
         _tableScopeKey = $"{value}:{Guid.NewGuid():N}";
@@ -731,6 +815,7 @@ public partial class LibraryGroupView : IDisposable
         _contentLoading = true;
         StateHasChanged();
         _selectedSort = value;
+        InvalidateBrowseCaches();
 
         // Sync sort key/direction from dropdown
         (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(value);
@@ -755,6 +840,7 @@ public partial class LibraryGroupView : IDisposable
         if (ordering is not null)
         {
             _selectedSort = ordering.Value;
+            InvalidateBrowseCaches();
         }
 
         // Table refreshes itself; refresh grid/list too if they share the provider
@@ -779,6 +865,7 @@ public partial class LibraryGroupView : IDisposable
 
         await ContextStore.EnsureContextAsync(groupId);
         await LoadTagsAsync();
+        InvalidateBrowseCaches();
         await RefreshAllAsync();
         StateHasChanged();
     }
@@ -870,12 +957,20 @@ public partial class LibraryGroupView : IDisposable
         _ => $"/movies/{item.Id}"
     };
 
-    private MediaCardViewModel? GetGridCardViewModel(LiteMediaDto item) =>
-        item.ToCardViewModel(
+    private MediaCardViewModel? GetGridCardViewModel(LiteMediaDto item)
+    {
+        if (_viewModelCache.TryGetValue(item.Id, out var cached))
+            return cached;
+
+        var vm = item.ToCardViewModel(
             apiClient,
             n => string.Format(S["SeasonNumber"], n),
             episodeStillOnly: _selectedMediaType == MediaType.SerieEpisode,
             pictureSize: _selectedMediaType == MediaType.SerieEpisode ? MetadataPictureSize.Medium : MetadataPictureSize.Small);
+        if (vm is not null)
+            _viewModelCache[item.Id] = vm;
+        return vm;
+    }
 
     private MediaCardViewModel? GetCardViewModel(LiteMediaDto item) =>
         item.ToCardViewModel(
@@ -907,6 +1002,7 @@ public partial class LibraryGroupView : IDisposable
 
     private async Task RefreshBrowseAsync()
     {
+        InvalidateBrowseCaches();
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
         if (_browseView is not null)

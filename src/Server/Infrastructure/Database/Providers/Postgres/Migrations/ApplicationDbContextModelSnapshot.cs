@@ -1329,6 +1329,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid?>("PlaylistId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("SharedProfileId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
@@ -1356,6 +1359,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasIndex("PlaylistId")
                         .IsUnique();
+
+                    b.HasIndex("SharedProfileId");
 
                     b.HasIndex("UserId");
 
@@ -4046,6 +4051,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PlaylistId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
+                        .WithMany()
+                        .HasForeignKey("SharedProfileId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -4067,6 +4077,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("PersonRole");
 
                     b.Navigation("Playlist");
+
+                    b.Navigation("SharedProfile");
 
                     b.Navigation("User");
 

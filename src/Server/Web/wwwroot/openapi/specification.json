@@ -2653,6 +2653,52 @@
         }
       }
     },
+    "/api/shared-profiles/{id}/avatar": {
+      "post": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UploadSharedProfileAvatarEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "RemoveSharedProfileAvatarEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/setup/complete": {
       "post": {
         "tags": [
@@ -9020,6 +9066,28 @@
         }
       }
     },
+    "/api/authentication/link": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "LinkOidc",
+        "parameters": [
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/authentication/login": {
       "get": {
         "tags": [
@@ -11103,17 +11171,22 @@
       },
       "CompleteSetupRequest": {
         "required": [
-          "email",
-          "password",
-          "setupToken"
+          "username",
+          "password"
         ],
         "type": "object",
         "properties": {
-          "email": {
+          "username": {
             "type": "string"
           },
           "password": {
             "type": "string"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "setupToken": {
             "type": [
@@ -11687,6 +11760,12 @@
             "type": "string"
           },
           "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
             "type": [
               "null",
               "string"
@@ -18678,6 +18757,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "members": {
             "type": "array",

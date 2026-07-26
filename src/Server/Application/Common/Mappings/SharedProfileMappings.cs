@@ -11,6 +11,7 @@ public static class SharedProfileMappings
             IReadOnlyDictionary<Guid, string?> displayNames,
             IReadOnlyDictionary<Guid, string?> identityUserIds,
             IReadOnlyDictionary<Guid, string?> avatarUrls,
+            string? avatarUrl = null,
             bool includePinHash = false) => new()
             {
                 Id = group.Id,
@@ -20,6 +21,7 @@ public static class SharedProfileMappings
                 HasPin = group.PinHash is not null,
                 PinHash = includePinHash ? group.PinHash : null,
                 ContentRestrictionProfileId = group.ContentRestrictionProfileId,
+                AvatarUrl = avatarUrl,
                 Members = group.Members
                 .OrderBy(m => m.UserId == group.HostUserId ? 0 : 1)
                 .Select(m => new SharedProfileMemberDto

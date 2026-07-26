@@ -23,6 +23,7 @@
   <data name="PageDescription" xml:space="preserve"><value>SyncPlay et profils partagés pour regarder ensemble sur vos appareils.</value></data>
   <data name="SyncPlayPageDescription" xml:space="preserve"><value>Configurez la disponibilité SyncPlay et les invitations sur cet appareil.</value></data>
   <data name="SharedProfilesPageDescription" xml:space="preserve"><value>Gérez vos profils partagés et la visibilité sur cet appareil.</value></data>
+  <data name="SharedProfilesPageDescriptionWeb" xml:space="preserve"><value>Gérez vos profils partagés. Pour activer un profil partagé, utilisez une appli native.</value></data>
   <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
   <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Recevoir les invitations sur cet appareil</value></data>
   <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Affiche votre disponibilité SyncPlay et permet aux autres de vous inviter depuis cet appareil.</value></data>
@@ -34,6 +35,7 @@
   <data name="BlockNewMembership" xml:space="preserve"><value>Bloquer les ajouts à de nouveaux profils partagés</value></data>
   <data name="GroupsTitle" xml:space="preserve"><value>Vos profils</value></data>
   <data name="GroupsDescription" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. Épinglez ceux à afficher sur cet appareil.</value></data>
+  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. L'activation du mode profil partagé est disponible dans les applis natives.</value></data>
   <data name="ShowOnDevice" xml:space="preserve"><value>Afficher sur cet appareil</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Créer un profil partagé</value></data>
   <data name="EditGroup" xml:space="preserve"><value>Modifier</value></data>

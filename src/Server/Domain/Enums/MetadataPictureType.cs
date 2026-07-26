@@ -9,5 +9,6 @@ public enum MetadataPictureType
     Portrait = 5,
     Still = 6,
     Cover = 7,
-    UserAvatar = 8
+    UserAvatar = 8,
+    SharedProfileAvatar = 9
 }

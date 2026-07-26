@@ -28,6 +28,7 @@
     font: inherit;
     cursor: pointer;
     min-width: 140px;
+    max-width: 160px;
     outline: none !important;
     box-shadow: none !important;
 }
@@ -47,9 +48,68 @@
 .select-profile-page ::deep .select-profile-name {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-1);
+    width: 100%;
+    min-width: 0;
     font-size: var(--text-sm);
     color: var(--color-text-primary);
+}
+
+.select-profile-page ::deep .select-profile-name-text {
+    display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+    height: 1lh;
+    overflow: hidden;
+    text-align: center;
+    container-type: inline-size;
+}
+
+.select-profile-page ::deep .select-profile-name-inner {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    will-change: transform;
+}
+
+.select-profile-page ::deep .select-profile-card:hover .select-profile-name-text,
+.select-profile-page ::deep .select-profile-card:focus .select-profile-name-text,
+.select-profile-page ::deep .select-profile-card:focus-within .select-profile-name-text,
+.select-profile-page ::deep .select-profile-card:focus-visible .select-profile-name-text {
+    overflow: visible;
+}
+
+.select-profile-page ::deep .select-profile-card:hover .select-profile-name-inner,
+.select-profile-page ::deep .select-profile-card:focus .select-profile-name-inner,
+.select-profile-page ::deep .select-profile-card:focus-within .select-profile-name-inner,
+.select-profile-page ::deep .select-profile-card:focus-visible .select-profile-name-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    text-overflow: unset;
+    animation: select-profile-name-scroll 3s linear 0.5s infinite alternate;
+}
+
+@keyframes select-profile-name-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .select-profile-page ::deep .select-profile-card:hover .select-profile-name-inner,
+    .select-profile-page ::deep .select-profile-card:focus .select-profile-name-inner,
+    .select-profile-page ::deep .select-profile-card:focus-within .select-profile-name-inner,
+    .select-profile-page ::deep .select-profile-card:focus-visible .select-profile-name-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
+    }
 }
 
 .select-profile-switch {
@@ -63,7 +123,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 80px;
+    width: 80px;
+    height: 80px;
+    margin: var(--space-2);
+}
+
+.select-profile-page ::deep .select-profile-group-avatars > .k7-avatar,
+.select-profile-page ::deep .select-profile-group-avatars > .k7-avatar-group {
+    margin: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {

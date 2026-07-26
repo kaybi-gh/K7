@@ -41,7 +41,15 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         }
         else if (targetUserId is not null)
         {
-            sessionsQuery = sessionsQuery.Where(s => s.SharedProfileId == null && s.UserId == targetUserId.Value);
+            // Personal stats include sessions the user drove and sessions where they were a co-viewer
+            // (shared-profile members and SyncPlay partners).
+            var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
+                .Where(c => c.UserId == targetUserId.Value)
+                .Select(c => c.ReferenceId);
+
+            sessionsQuery = sessionsQuery.Where(s =>
+                s.UserId == targetUserId.Value
+                || coViewerReferenceIds.Contains(s.ReferenceId));
         }
 
         // Count only sessions that met the playback completion threshold (CompletedAt).

@@ -18,6 +18,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private readonly MediaCacheStore _cacheStore;
     private readonly IDeviceService _deviceService;
     private readonly IConnectivityService _connectivity;
+    private readonly ISharedProfileSessionService _sharedProfileSession;
 
     private readonly List<HomeFeedRow> _rows = [];
     private readonly object _sync = new();
@@ -25,9 +26,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private CancellationTokenSource? _continueWatchingRefreshCts;
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
+    private int _loadGeneration;
     private bool _isLoaded;
     private bool _isTv;
     private bool _hubHandlersRegistered;
+    private Guid? _loadedSharedProfileId;
 
     private static readonly TimeSpan ContinueWatchingRefreshDelay = TimeSpan.FromSeconds(1.5);
 
@@ -57,18 +60,24 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         K7HubClient hubClient,
         MediaCacheStore cacheStore,
         IDeviceService deviceService,
-        IConnectivityService connectivity)
+        IConnectivityService connectivity,
+        ISharedProfileSessionService sharedProfileSession)
     {
         _scopeFactory = scopeFactory;
         _hubClient = hubClient;
         _cacheStore = cacheStore;
         _deviceService = deviceService;
         _connectivity = connectivity;
+        _sharedProfileSession = sharedProfileSession;
+        _loadedSharedProfileId = sharedProfileSession.ActiveGroupId;
         _connectivity.ConnectivityChanged += OnConnectivityChanged;
+        _sharedProfileSession.ActiveGroupChanged += OnActiveGroupChanged;
     }
 
     public Task ResetAndReloadAsync(CancellationToken cancellationToken = default)
     {
+        Interlocked.Increment(ref _loadGeneration);
+
         lock (_sync)
         {
             _isLoaded = false;
@@ -85,6 +94,18 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     {
         lock (_sync)
         {
+            var currentProfileId = _sharedProfileSession.ActiveGroupId;
+            if (_isLoaded
+                && _loadTask is { IsCompletedSuccessfully: true }
+                && _loadedSharedProfileId != currentProfileId)
+            {
+                Interlocked.Increment(ref _loadGeneration);
+                _isLoaded = false;
+                _loadTask = null;
+                _rows.Clear();
+                InvalidateCache();
+            }
+
             if (_isLoaded && _loadTask is { IsCompletedSuccessfully: true })
                 return Task.CompletedTask;
 
@@ -133,11 +154,32 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     public void Dispose()
     {
         _connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        _sharedProfileSession.ActiveGroupChanged -= OnActiveGroupChanged;
         UnregisterHubHandlers();
         _picturesRefreshCts?.Cancel();
         _picturesRefreshCts?.Dispose();
         _continueWatchingRefreshCts?.Cancel();
         _continueWatchingRefreshCts?.Dispose();
+    }
+
+    private void OnActiveGroupChanged()
+    {
+        if (_sharedProfileSession.ActiveGroupId == _loadedSharedProfileId && _isLoaded)
+            return;
+
+        _ = ReloadAfterSharedProfileChangedAsync();
+    }
+
+    private async Task ReloadAfterSharedProfileChangedAsync()
+    {
+        try
+        {
+            await ResetAndReloadAsync();
+        }
+        catch
+        {
+            // Best effort; UI will reflect store state on next Changed.
+        }
     }
 
     private void OnConnectivityChanged(bool isOnline)
@@ -183,6 +225,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     {
         RegisterHubHandlers();
 
+        var loadGeneration = Volatile.Read(ref _loadGeneration);
+        var profileAtStart = _sharedProfileSession.ActiveGroupId;
+
         IsLoading = true;
         IsOffline = false;
         NotifyChanged();
@@ -191,6 +236,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             await sp.GetRequiredService<IFeatureAccessService>().HasCapabilityAsync(Capability.CanResumePlayback));
         _isTv = await _deviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
+        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+            return;
+
         HomeLayoutDto layout;
         try
         {
@@ -198,34 +246,33 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }
         catch (HttpRequestException) when (!_connectivity.IsOnline)
         {
-            IsOffline = true;
-            IsLoading = false;
-            _isLoaded = true;
-            NotifyChanged();
+            CompleteLoad(loadGeneration, profileAtStart, offline: true);
             return;
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested && !_connectivity.IsOnline)
         {
-            IsOffline = true;
-            IsLoading = false;
-            _isLoaded = true;
-            NotifyChanged();
+            CompleteLoad(loadGeneration, profileAtStart, offline: true);
             return;
         }
         catch (HttpRequestException)
         {
-            FailTransientLoad();
+            if (!IsLoadSuperseded(loadGeneration, profileAtStart))
+                FailTransientLoad();
             return;
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            FailTransientLoad();
+            if (!IsLoadSuperseded(loadGeneration, profileAtStart))
+                FailTransientLoad();
             return;
         }
         catch
         {
             layout = new HomeLayoutDto { Rows = [] };
         }
+
+        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+            return;
 
         var rowConfigs = layout.Rows
             .Where(r => r.IsVisible)
@@ -234,6 +281,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         lock (_sync)
         {
+            if (IsLoadSuperseded(loadGeneration, profileAtStart))
+                return;
+
             _rows.Clear();
             foreach (var config in rowConfigs)
                 _rows.Add(new HomeFeedRow { Config = config });
@@ -247,10 +297,27 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         await Task.WhenAll(tasks);
 
+        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+            return;
+
+        CompleteLoad(loadGeneration, profileAtStart, offline: false);
+        AppReadySignal.Signal();
+    }
+
+    private bool IsLoadSuperseded(int loadGeneration, Guid? profileAtStart) =>
+        loadGeneration != Volatile.Read(ref _loadGeneration)
+        || _sharedProfileSession.ActiveGroupId != profileAtStart;
+
+    private void CompleteLoad(int loadGeneration, Guid? profileId, bool offline)
+    {
+        if (IsLoadSuperseded(loadGeneration, profileId))
+            return;
+
+        IsOffline = offline;
         IsLoading = false;
+        _loadedSharedProfileId = profileId;
         _isLoaded = true;
         NotifyChanged();
-        AppReadySignal.Signal();
     }
 
     private void RegisterHubHandlers()
@@ -613,8 +680,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         PageSize = config.PageSize
     };
 
-    private static string BuildCacheKey(HomeRowConfigDto config) =>
-        MediaCacheStore.BuildKey("home-feed", config.Title, config.ContinueWatching.ToString());
+    private string BuildCacheKey(HomeRowConfigDto config)
+    {
+        var scope = _sharedProfileSession.ActiveGroupId?.ToString("N") ?? "personal";
+        return MediaCacheStore.BuildKey("home-feed", scope, config.Title, config.ContinueWatching.ToString());
+    }
 
     private static bool IsCardAffected(IReadOnlyList<MediaCardViewModel> items, Guid mediaId)
     {

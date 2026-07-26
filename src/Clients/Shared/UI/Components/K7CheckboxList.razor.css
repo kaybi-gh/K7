@@ -23,6 +23,19 @@
     background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
 }
 
+.k7-checkbox-list__row--disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.k7-checkbox-list__row--disabled:hover {
+    background: inherit;
+}
+
+.k7-checkbox-list__row--disabled.k7-checkbox-list__row--even:hover {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
+}
+
 .k7-checkbox-list__row:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;

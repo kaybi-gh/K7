@@ -20,6 +20,10 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Description" xml:space="preserve"><value>Preferences for the shared profile "{0}". They apply when this profile is active, not personal settings.</value></data>
+  <data name="AvatarTitle" xml:space="preserve"><value>Avatar</value></data>
+  <data name="UploadAvatar" xml:space="preserve"><value>Change</value></data>
+  <data name="RemoveAvatar" xml:space="preserve"><value>Remove</value></data>
+  <data name="AvatarTooLarge" xml:space="preserve"><value>Image must not exceed 2 MB.</value></data>
   <data name="VideoPolicyTitle" xml:space="preserve"><value>Video continue watching</value></data>
   <data name="MinResumePercent" xml:space="preserve"><value>Minimum resume percent</value></data>
   <data name="MinResumeDurationSeconds" xml:space="preserve"><value>Minimum resume duration (seconds)</value></data>

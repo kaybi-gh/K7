@@ -36,7 +36,9 @@
                                       Letter="@GetInitial(user)"
                                       UserId="@user.UserId" />
                             <div class="select-profile-name">
-                                <span>@(user.DisplayName ?? user.UserName)</span>
+                                <span class="select-profile-name-text">
+                                    <span class="select-profile-name-inner">@(user.DisplayName ?? user.UserName)</span>
+                                </span>
                                 @if (user.HasPin)
                                 {
                                     <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Sm" Color="secondary" />
@@ -54,11 +56,23 @@
                                 @attributes="GetInitialFocusAttributes(group.Id == _initialFocusGroupId)"
                                 @onclick="() => SelectGroupAsync(group)">
                             <div class="select-profile-group-avatars">
-                                <K7AvatarGroup Size="md"
-                                               Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
+                                @if (!string.IsNullOrEmpty(group.AvatarUrl))
+                                {
+                                    <K7Avatar Class="ma-2" Size="xl"
+                                              Image="@group.AvatarUrl"
+                                              Letter="@(string.IsNullOrEmpty(group.Name) ? "?" : group.Name[..1].ToUpperInvariant())"
+                                              Alt="@group.Name" />
+                                }
+                                else
+                                {
+                                    <K7AvatarGroup Class="ma-2" Size="xl"
+                                                   Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
+                                }
                             </div>
                             <div class="select-profile-name">
-                                <span>@group.Name</span>
+                                <span class="select-profile-name-text">
+                                    <span class="select-profile-name-inner">@group.Name</span>
+                                </span>
                                 @if (group.HasPin)
                                 {
                                     <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Sm" Color="secondary" />

@@ -32,6 +32,15 @@ public class DeleteSharedProfileCommandHandler(
         if (!isMember && !isAdmin)
             throw new ForbiddenAccessException();
 
+        var recipientIds = group.Members
+            .Select(m => m.UserId)
+            .Append(group.HostUserId)
+            .Distinct()
+            .ToList();
+
+        await SharedProfileMediaStateMigration.MigrateToMembersAsync(
+            context, group.Id, recipientIds, cancellationToken);
+
         context.SharedProfiles.Remove(group);
         await context.SaveChangesAsync(cancellationToken);
     }

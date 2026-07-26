@@ -121,4 +121,138 @@ public class GetWatchStatsQueryHandlerTests
         result.TotalWatchTimeHours.Should().Be(0);
         result.TopItems.Should().BeEmpty();
     }
+
+    [Test]
+    public async Task Handle_ShouldIncludeSharedProfileSessions_InPersonalStats()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Couple",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = Guid.NewGuid(),
+            SharedProfileId = sharedProfileId,
+            StartedAt = now.AddMinutes(-10),
+            CompletedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 6000,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetWatchStatsQuery(Period: "all"), CancellationToken.None);
+
+        result.TotalPlays.Should().Be(1);
+        result.UniqueItemsPlayed.Should().Be(1);
+        result.TopItems.Should().ContainSingle(i => i.Id == _movieId && i.PlayCount == 1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldIncludeSharedProfileSessions_WhenCoViewer()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var actorUserId = Guid.NewGuid();
+        var referenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.Users.Add(new User { Id = actorUserId, DisplayName = "actor" });
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Couple",
+            HostUserId = actorUserId,
+            CreatedByUserId = actorUserId
+        });
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = actorUserId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = referenceId,
+            SharedProfileId = sharedProfileId,
+            StartedAt = now.AddMinutes(-10),
+            CompletedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 6000,
+            State = PlaybackState.Ended
+        });
+        _context.MediaPlaybackSessionCoViewers.Add(new MediaPlaybackSessionCoViewer
+        {
+            ReferenceId = referenceId,
+            UserId = _userId
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetWatchStatsQuery(Period: "all"), CancellationToken.None);
+
+        result.TotalPlays.Should().Be(1);
+        result.UniqueItemsPlayed.Should().Be(1);
+        result.TopItems.Should().ContainSingle(i => i.Id == _movieId && i.PlayCount == 1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldScopeToSharedProfileOnly_WhenSharedProfileActive()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.Users.Add(new User { Id = otherUserId, DisplayName = "other" });
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Couple",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        _context.MediaPlaybackSessions.AddRange(
+            new MediaPlaybackSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = _userId,
+                MediaId = _movieId,
+                SessionId = Guid.NewGuid(),
+                ReferenceId = Guid.NewGuid(),
+                SharedProfileId = sharedProfileId,
+                StartedAt = now.AddMinutes(-10),
+                CompletedAt = now.AddMinutes(-2),
+                DurationSeconds = 7200,
+                WatchedDurationSeconds = 6000,
+                State = PlaybackState.Ended
+            },
+            new MediaPlaybackSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = _userId,
+                MediaId = _movieId,
+                SessionId = Guid.NewGuid(),
+                ReferenceId = Guid.NewGuid(),
+                SharedProfileId = null,
+                StartedAt = now.AddMinutes(-20),
+                CompletedAt = now.AddMinutes(-15),
+                DurationSeconds = 7200,
+                WatchedDurationSeconds = 5000,
+                State = PlaybackState.Ended
+            });
+        await _context.SaveChangesAsync();
+
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns(sharedProfileId);
+
+        var result = await _handler.Handle(new GetWatchStatsQuery(Period: "all"), CancellationToken.None);
+
+        result.TotalPlays.Should().Be(1);
+        result.TotalWatchTimeHours.Should().Be(Math.Round(6000 / 3600.0, 1));
+    }
 }

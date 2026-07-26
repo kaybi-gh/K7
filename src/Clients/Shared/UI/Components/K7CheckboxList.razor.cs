@@ -7,6 +7,7 @@ public partial class K7CheckboxList<TItem>
 {
     [Parameter] public IReadOnlyList<TItem> Items { get; set; } = [];
     [Parameter] public Func<TItem, bool> IsChecked { get; set; } = _ => false;
+    [Parameter] public Func<TItem, bool> IsDisabled { get; set; } = _ => false;
     [Parameter] public EventCallback<(TItem Item, bool Checked)> CheckedChanged { get; set; }
     [Parameter] public Func<TItem, string> ItemLabel { get; set; } = item => item?.ToString() ?? "";
     [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
@@ -16,14 +17,15 @@ public partial class K7CheckboxList<TItem>
 
     private async Task OnToggle(TItem item, bool value)
     {
+        if (IsDisabled(item))
+            return;
+
         await CheckedChanged.InvokeAsync((item, value));
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e, TItem item, bool currentValue)
     {
         if (e.Key is "Enter" or " ")
-        {
             await OnToggle(item, !currentValue);
-        }
     }
 }

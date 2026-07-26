@@ -16,7 +16,8 @@ internal static class SharedProfileMemberValidator
         IApplicationDbContext context,
         IReadOnlyList<Guid> memberIds,
         Guid actingUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyCollection<Guid>? existingMemberIds = null)
     {
         if (memberIds.Count is < MinMembers or > MaxMembers)
         {
@@ -38,7 +39,16 @@ internal static class SharedProfileMemberValidator
             ]);
         }
 
-        var blocked = await SharedProfilePreferencesHelper.GetUsersBlockingMembershipAsync(context, memberIds, cancellationToken);
+        // Block preference only applies to newly invited members, not people already in the group.
+        var candidatesToCheck = existingMemberIds is null
+            ? memberIds
+            : memberIds.Where(id => !existingMemberIds.Contains(id)).ToList();
+
+        if (candidatesToCheck.Count == 0)
+            return;
+
+        var blocked = await SharedProfilePreferencesHelper.GetUsersBlockingMembershipAsync(
+            context, candidatesToCheck, cancellationToken);
         if (blocked.Any(id => id != actingUserId))
         {
             throw new ValidationException(

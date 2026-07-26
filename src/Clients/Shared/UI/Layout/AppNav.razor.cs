@@ -27,6 +27,8 @@ public partial class AppNav : IDisposable
     private Guid? _userId;
     private string _avatarInitial = "?";
     private string? _viewingGroupLabel;
+    private string? _sharedAvatarUrl;
+    private string _sharedAvatarLetter = "?";
     private IReadOnlyList<K7AvatarGroupItem>? _sharedAvatarMembers;
     private bool _chatOpen;
     private readonly Dictionary<Guid, string> _knownParticipants = [];
@@ -352,7 +354,11 @@ public partial class AppNav : IDisposable
     private void UpdateSharedProfileState()
     {
         var activeGroup = SharedProfileSession?.ActiveGroup;
-        _sharedAvatarMembers = activeGroup is { Members.Count: > 0 }
+        _sharedAvatarUrl = activeGroup?.AvatarUrl;
+        _sharedAvatarLetter = string.IsNullOrEmpty(activeGroup?.Name)
+            ? "?"
+            : activeGroup.Name[..1].ToUpperInvariant();
+        _sharedAvatarMembers = string.IsNullOrEmpty(_sharedAvatarUrl) && activeGroup is { Members.Count: > 0 }
             ? activeGroup.Members
                 .Select(m => new K7AvatarGroupItem
                 {

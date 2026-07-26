@@ -72,6 +72,13 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 
+        builder
+            .HasOne(mp => mp.SharedProfile)
+            .WithMany()
+            .HasForeignKey(mp => mp.SharedProfileId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
         builder.Property(m => m.OriginalRemoteUri)
             .HasConversion(
                 v => v != null ? v.ToString() : null,

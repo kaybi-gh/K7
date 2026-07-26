@@ -1,12 +1,14 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
+using System.Runtime.CompilerServices;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -70,6 +72,17 @@ public partial class MediaCard : IDisposable
     private DotNetObjectReference<MediaCard>? _longPressDotNetRef;
     private bool _longPressRegistered;
 
+    // Role-scoped menu flags shared across remounted cards (Virtualize recycle).
+    private static readonly ConditionalWeakTable<IFeatureAccessService, SharedMenuCapabilities> SharedCapabilities = new();
+
+    private sealed class SharedMenuCapabilities
+    {
+        public string? Role;
+        public bool CanRate;
+        public bool CanCreateLibrary;
+        public bool CanSetWatchState;
+    }
+
     private bool LongPressEnabled =>
         ContextMenuEnabled
         && (OverlayEnabled || ExcludeMenuEnabled || ContinueWatchingMenuEnabled || _watchStateMenuVisible || _showRating || _showReview || _showPlaylist || _showCollection);
@@ -110,28 +123,48 @@ public partial class MediaCard : IDisposable
         }
 
         var hasValidMediaId = Guid.TryParse(Model.Id, out _);
-        var capabilitiesKey = $"{Model.Id}|{Model.Kind}|{Model.MediaType}|{WatchStateMenuEnabled}";
+        // Key by kind/type/flags only - not media Id - so remounts reuse resolved flags.
+        var capabilitiesKey = $"{Model.Kind}|{Model.MediaType}|{WatchStateMenuEnabled}|{hasValidMediaId}";
         if (_menuCapabilitiesKey == capabilitiesKey)
             return;
 
         _menuCapabilitiesKey = capabilitiesKey;
 
+        var shared = await EnsureSharedCapabilitiesAsync();
+        var mediaType = MediaCardMenuActions.InferMediaType(Model);
+
         _watchStateMenuVisible = hasValidMediaId
             && WatchStateMenuEnabled
             && WatchStateActions.SupportsWatchState(Model.Kind)
-            && await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+            && shared.CanSetWatchState;
 
-        var canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
-        var canCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
-        var mediaType = MediaCardMenuActions.InferMediaType(Model);
-
-        _showRating = hasValidMediaId && canRate;
-        _showReview = hasValidMediaId && canRate && MediaCardMenuActions.SupportsReview(mediaType);
-        _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
-        _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
+        _showRating = hasValidMediaId && shared.CanRate;
+        _showReview = hasValidMediaId && shared.CanRate && MediaCardMenuActions.SupportsReview(mediaType);
+        _showPlaylist = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
+        _showCollection = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task<SharedMenuCapabilities> EnsureSharedCapabilitiesAsync()
+    {
+        var shared = SharedCapabilities.GetOrCreateValue(FeatureAccess);
+        var role = await FeatureAccess.GetRoleAsync();
+        if (shared.Role == role)
+            return shared;
+
+        shared.CanRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        shared.CanCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+        shared.CanSetWatchState = role is Roles.User or Roles.Administrator;
+        shared.Role = role;
+        return shared;
+    }
+
+    private async Task OnFocusInAsync()
+    {
+        await EnsureLongPressRegisteredAsync();
+        await NotifyFocusedAsync();
+    }
+
+    private async Task EnsureLongPressRegisteredAsync()
     {
         if (_longPressRegistered || !LongPressEnabled)
             return;
@@ -288,6 +321,8 @@ public partial class MediaCard : IDisposable
         if (e.Repeat && _longPressCts is not null)
             return;
 
+        _ = EnsureLongPressRegisteredAsync();
+
         _keyHeldDown = true;
         CancelLongPress();
         _longPressTriggered = false;
@@ -322,6 +357,8 @@ public partial class MediaCard : IDisposable
     {
         if (!LongPressEnabled || e.Touches.Length == 0)
             return;
+
+        _ = EnsureLongPressRegisteredAsync();
 
         CancelLongPress();
         _longPressTriggered = false;

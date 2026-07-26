@@ -5,7 +5,7 @@ namespace K7.Server.Domain.Entities.Users;
 
 /// <summary>
 /// Profile-scoped playback progress for an active shared profile session.
-/// Separate from <see cref="UserMediaState"/> so personal member history is never polluted or leaked.
+/// Separate from <see cref="UserMediaState"/> while the group exists; on delete, progress may be merged into members' personal states.
 /// </summary>
 public class SharedProfileMediaState : BaseAuditableEntity
 {

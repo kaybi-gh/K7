@@ -38,6 +38,9 @@ public class SharedProfileService(
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await api.DeleteSharedProfileAsync(id, cancellationToken);
+        if (session?.ActiveGroupId == id)
+            session.ClearActiveGroup();
+
         await cache.RefreshAsync(cancellationToken);
     }
 
@@ -94,4 +97,28 @@ public class SharedProfileService(
 
     public Task DeleteHomeLayoutAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.DeleteSharedProfileHomeLayoutAsync(id, cancellationToken);
+
+    public async Task UploadAvatarAsync(Guid id, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        await api.UploadSharedProfileAvatarAsync(id, stream, fileName, cancellationToken);
+        await cache.RefreshAsync(cancellationToken);
+        RefreshActiveSession(id);
+    }
+
+    public async Task RemoveAvatarAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await api.RemoveSharedProfileAvatarAsync(id, cancellationToken);
+        await cache.RefreshAsync(cancellationToken);
+        RefreshActiveSession(id);
+    }
+
+    private void RefreshActiveSession(Guid id)
+    {
+        if (session?.ActiveGroupId != id)
+            return;
+
+        var refreshed = cache.FindById(id);
+        if (refreshed is not null)
+            session.SetActiveGroup(refreshed);
+    }
 }
