@@ -1468,13 +1468,21 @@ var SpatialNav = (function () {
             if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
                 if (handleHiddenVideoPlayerArrow(key, e.code || '', e)) return;
             }
-            if (el && el.closest('[data-carousel]') && handleCarouselNav(el, key)) {
+            // Normalize TV remote keyCodes (Android/WebView often omit e.key).
+            var arrowKey = key;
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(arrowKey) === -1) {
+                if (e.code === 'ArrowLeft' || e.keyCode === 37 || e.keyCode === 21) arrowKey = 'ArrowLeft';
+                else if (e.code === 'ArrowRight' || e.keyCode === 39 || e.keyCode === 22) arrowKey = 'ArrowRight';
+                else if (e.code === 'ArrowUp' || e.keyCode === 38 || e.keyCode === 19) arrowKey = 'ArrowUp';
+                else if (e.code === 'ArrowDown' || e.keyCode === 40 || e.keyCode === 20) arrowKey = 'ArrowDown';
+            }
+            if (el && el.closest('[data-carousel]') && handleCarouselNav(el, arrowKey)) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
             }
-            if ((key === 'ArrowDown' || key === 'ArrowUp') && window.K7 && window.K7.TvDetailScroll) {
-                if (window.K7.TvDetailScroll.handleVerticalNav(key, el)) {
+            if ((arrowKey === 'ArrowDown' || arrowKey === 'ArrowUp') && window.K7 && window.K7.TvDetailScroll) {
+                if (window.K7.TvDetailScroll.handleVerticalNav(arrowKey, el)) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
@@ -3070,8 +3078,15 @@ K7.TvDetailScroll = (function () {
                         inst.root.scrollTop = main.offsetHeight;
                     }
                 }
-            } else if ((isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) && !inst.showingBelow) {
-                clampMainView();
+            } else if (isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) {
+                // Keep the last hero tile so ArrowUp from casting restores the same episode.
+                inst.lastHeroFocus = e.target;
+                if (inst.showingBelow) {
+                    // Focus returned to episodes/seasons while the view still shows casting.
+                    scrollToMain(false);
+                } else {
+                    clampMainView();
+                }
             }
         }
 
@@ -3084,11 +3099,36 @@ K7.TvDetailScroll = (function () {
 
             if (!getZone(inst.root, 'below')) return false;
 
+            function focusFirstInBelow() {
+                var below = getZone(inst.root, 'below');
+                var target = below && (
+                    below.querySelector('[data-carousel-item] .focusable')
+                    || below.querySelector('.focusable')
+                );
+                if (!target) return false;
+                target.focus({ preventScroll: true });
+                return document.activeElement === target || target.contains(document.activeElement);
+            }
+
             if (key === 'ArrowDown') {
                 if (isInZoneCarousel(el, 'episodes') || isInZoneCarousel(el, 'seasons')) {
+                    inst.lastHeroFocus = el;
                     scrollToBelow();
-                } else if (isInZone(el, 'actions') && !getZone(inst.root, 'seasons') && !getZone(inst.root, 'episodes')) {
+                    // Defer focus so this keydown finishes while focus is still on the
+                    // episodes carousel (sync focus+preventDefault raced with Embla nav).
+                    setTimeout(function () {
+                        if (!inst.showingBelow) return;
+                        focusFirstInBelow();
+                    }, 0);
+                    return true;
+                }
+                if (isInZone(el, 'actions') && !getZone(inst.root, 'seasons') && !getZone(inst.root, 'episodes')) {
                     scrollToBelow();
+                    setTimeout(function () {
+                        if (!inst.showingBelow) return;
+                        focusFirstInBelow();
+                    }, 0);
+                    return true;
                 }
                 return false;
             }
@@ -3115,11 +3155,17 @@ K7.TvDetailScroll = (function () {
 
                 scrollToMain(false);
                 var target = null;
+                if (inst.lastHeroFocus && inst.lastHeroFocus.isConnected
+                    && inst.root.contains(inst.lastHeroFocus)) {
+                    target = inst.lastHeroFocus;
+                }
                 // TV detail pages keep seasons/episodes on the hero between casting and
                 // actions/synopsis; prefer those so ArrowUp from casting does not skip them.
-                var heroCarousel = getZone(inst.root, 'seasons') || getZone(inst.root, 'episodes');
-                if (heroCarousel) {
-                    target = heroCarousel.querySelector('.focusable');
+                if (!target) {
+                    var heroCarousel = getZone(inst.root, 'seasons') || getZone(inst.root, 'episodes');
+                    if (heroCarousel) {
+                        target = heroCarousel.querySelector('.focusable');
+                    }
                 }
                 if (!target) {
                     var actions = getZone(inst.root, 'actions');
@@ -3145,7 +3191,7 @@ K7.TvDetailScroll = (function () {
         init: function (root) {
             if (!root) return;
             K7.TvDetailScroll.dispose(root);
-            var inst = { root: root, showingBelow: false, onFocusIn: null };
+            var inst = { root: root, showingBelow: false, lastHeroFocus: null, onFocusIn: null };
             createHandlers(inst);
             root.scrollTop = 0;
             root.addEventListener('focusin', inst.onFocusIn, true);
