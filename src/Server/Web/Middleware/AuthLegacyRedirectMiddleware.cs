@@ -13,7 +13,6 @@ public class AuthLegacyRedirectMiddleware(RequestDelegate next)
         ["/account/loginwithrecoverycode"] = "/sign-in/recovery-code",
         ["/account/lockout"] = "/sign-in/lockout",
         ["/account/accessdenied"] = "/sign-in/access-denied",
-        ["/link"] = "/link-device/authorize",
     };
 
     public Task InvokeAsync(HttpContext context)
