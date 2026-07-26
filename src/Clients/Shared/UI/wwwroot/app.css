@@ -308,10 +308,18 @@ html.platform-tv .k7-menu-portal.k7-menu-dropdown--open {
     max-width: min(480px, calc(100vw - 16px));
 }
 
-html.platform-tv .avatar--sm {
+html.platform-tv .k7-avatar--sm {
     width: 40px;
     height: 40px;
     font-size: var(--text-base);
+}
+
+/* App bar profile: match search K7IconButton hit target on TV */
+html.platform-tv .app-nav-avatar-btn .k7-avatar--sm,
+html.platform-tv .app-nav-avatar-btn .k7-avatar-group .k7-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: var(--text-2xl);
 }
 
 /* -- Chips --------------------------------------------------------------- */

@@ -217,14 +217,14 @@
     letter-spacing: 1px;
 }
 
-.avatar--sm {
+.app-nav-avatar-btn ::deep .k7-avatar--sm {
     width: 28px;
     height: 28px;
     font-size: var(--text-xs);
 }
 
 @media (min-width: 600px) {
-    .avatar--sm {
+    .app-nav-avatar-btn ::deep .k7-avatar--sm {
         width: 34px;
         height: 34px;
         font-size: var(--text-sm);
