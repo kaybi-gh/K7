@@ -14,19 +14,19 @@
 }
 
 .rating-stars--xs .rating-star {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
 }
 
 .rating-stars--sm .rating-star {
-    font-size: 1rem;
+    font-size: var(--text-base);
 }
 
 .rating-stars--md .rating-star {
-    font-size: 1.125rem;
+    font-size: var(--text-lg);
 }
 
 .rating-stars--lg .rating-star {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
 }
 
 .rating-star.star--filled {

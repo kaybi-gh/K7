@@ -59,7 +59,7 @@
 .music-radio-presets__card-title {
     width: 100%;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     line-height: 1.25;
     color: rgba(255, 255, 255, 0.95);

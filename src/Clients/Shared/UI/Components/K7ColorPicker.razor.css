@@ -5,7 +5,7 @@
 }
 
 .k7-color-picker__label {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--text-secondary);
 }
 
@@ -46,7 +46,7 @@
 }
 
 .k7-color-picker__value {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     font-family: monospace;
     color: var(--text-secondary);
 }

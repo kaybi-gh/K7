@@ -453,7 +453,7 @@
     }
 
     .app-nav-label {
-        font-size: 0.625rem;
+        font-size: var(--text-2xs);
     }
 
     .app-nav-main ::deep .app-nav-item--search-mobile {
@@ -479,7 +479,7 @@
     }
 
     .app-nav-main ::deep .app-nav-item--search-mobile .app-nav-label {
-        font-size: 0.625rem;
+        font-size: var(--text-2xs);
     }
 }
 
@@ -544,11 +544,11 @@
     }
 
     .app-nav-player ::deep .mini-player-title {
-        font-size: 0.8rem;
+        font-size: var(--text-sm);
     }
 
     .app-nav-player ::deep .mini-player-artist {
-        font-size: 0.625rem;
+        font-size: var(--text-2xs);
     }
 
     .app-nav-player ::deep .mini-player-controls .k7-icon-btn {
@@ -559,7 +559,7 @@
     }
 
     .app-nav-player ::deep .mini-player-controls .k7-icon-btn .k7-icon {
-        font-size: 1rem;
+        font-size: var(--text-base);
     }
 
     .app-nav-player ::deep .k7-fab {
@@ -570,7 +570,7 @@
     }
 
     .app-nav-player ::deep .k7-fab .k7-icon {
-        font-size: 1rem;
+        font-size: var(--text-base);
     }
 
     .app-nav-player ::deep .mini-player-time,
@@ -593,7 +593,7 @@
     }
 
     .app-nav-player ::deep .mini-player-secondary-controls .k7-icon {
-        font-size: 1rem;
+        font-size: var(--text-base);
     }
 }
 

@@ -42,7 +42,7 @@
 
 .k7-img-wrap ::deep .k7-img-fallback-icon {
     opacity: 0.3;
-    font-size: 2rem;
+    font-size: var(--text-3xl);
 }
 
 .k7-img-wrap--pending ::deep .k7-img {

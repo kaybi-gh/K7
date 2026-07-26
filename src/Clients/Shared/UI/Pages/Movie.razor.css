@@ -295,7 +295,7 @@
     }
 
     .movie-actions-play ::deep .k7-icon {
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
     }
 
     .movie-actions-secondary {

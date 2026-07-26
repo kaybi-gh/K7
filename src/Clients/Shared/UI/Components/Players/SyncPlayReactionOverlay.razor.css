@@ -21,11 +21,11 @@
 }
 
 .syncplay-reaction-emoji {
-    font-size: 2rem;
+    font-size: var(--text-3xl);
 }
 
 .syncplay-reaction-name {
-    font-size: 0.625rem;
+    font-size: var(--text-2xs);
     color: var(--color-on-surface-variant);
     white-space: nowrap;
 }

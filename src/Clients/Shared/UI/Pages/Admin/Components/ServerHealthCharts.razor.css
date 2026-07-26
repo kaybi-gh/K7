@@ -55,7 +55,7 @@
     align-items: center;
     justify-content: center;
     min-height: 120px;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
 }
 

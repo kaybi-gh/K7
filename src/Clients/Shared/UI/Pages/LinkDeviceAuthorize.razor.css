@@ -28,19 +28,19 @@
 }
 
 .link-device__icon {
-    font-size: 2rem;
+    font-size: var(--text-3xl);
     color: var(--color-primary);
 }
 
 .link-device__title {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: 600;
     margin: 0;
     color: var(--color-text);
 }
 
 .link-device__hint {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     text-align: center;
     margin: 0;
@@ -72,7 +72,7 @@
     border-radius: var(--radius-md, 8px);
     background: var(--color-background);
     color: var(--color-text);
-    font-size: 1rem;
+    font-size: var(--text-base);
 }
 
 .link-device__separator {
@@ -83,7 +83,7 @@
     width: 100%;
     padding: var(--space-3);
     border-radius: var(--radius-md, 8px);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     text-align: center;
 }
 

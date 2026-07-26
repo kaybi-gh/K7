@@ -26,7 +26,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     font-weight: 600;
     color: white;
     background: rgba(0, 0, 0, 0.55);
@@ -89,7 +89,7 @@
     background: rgba(0, 0, 0, 0.55);
     border-radius: 0.75rem;
     color: white;
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 600;
     z-index: 100010;
     pointer-events: none;
@@ -241,7 +241,7 @@
         color: #fff;
         width: 100%;
         text-align: center;
-        font-size: 1.5rem;
+        font-size: var(--text-2xl);
         line-height: 1;
         padding: 0.75rem 0;
         pointer-events: none;

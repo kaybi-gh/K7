@@ -1,6 +1,6 @@
 .hidden-page-empty {
     padding: var(--space-4);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin: 0;
 }
@@ -48,7 +48,7 @@
 }
 
 .hidden-item__title {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

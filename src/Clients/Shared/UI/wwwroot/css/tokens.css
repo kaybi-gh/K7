@@ -8,15 +8,24 @@
     --font-body: 'Manrope', 'Helvetica Neue', Arial, sans-serif;
     --font-heading: 'Epilogue', 'Helvetica Neue', Arial, sans-serif;
 
-    --text-xs:   0.75rem;
-    --text-sm:   0.875rem;
-    --text-base: 1rem;
-    --text-lg:   1.125rem;
-    --text-xl:   1.25rem;
-    --text-2xl:  1.5rem;
-    --text-3xl:  1.875rem;
-    --text-4xl:  2.25rem;
-    --text-5xl:  3rem;
+    /* Type scale (rem of root). Prefer these over literal font-size values. */
+    --text-2xs:  0.625rem; /* 10px @ 16 - badges, dense admin chrome */
+    --text-xs:   0.75rem;  /* 12px */
+    --text-sm:   0.875rem; /* 14px */
+    --text-base: 1rem;     /* 16px */
+    --text-lg:   1.125rem; /* 18px */
+    --text-xl:   1.25rem;  /* 20px */
+    --text-2xl:  1.5rem;   /* 24px */
+    --text-3xl:  1.875rem; /* 30px */
+    --text-4xl:  2.25rem;  /* 36px */
+    --text-5xl:  3rem;     /* 48px */
+
+    /* Legacy aliases used by a few pages before the scale was standardized */
+    --font-size-xs: var(--text-xs);
+    --font-size-sm: var(--text-sm);
+    --font-size-md: var(--text-base);
+    --font-size-lg: var(--text-lg);
+    --font-size-xl: var(--text-xl);
 
     --font-normal:   400;
     --font-medium:   500;

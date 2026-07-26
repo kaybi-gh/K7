@@ -21,7 +21,7 @@
     justify-content: center;
     border: 2px solid transparent;
     background: transparent;
-    font-size: 1.75rem;
+    font-size: var(--text-3xl);
     line-height: 1;
     min-width: 2.75rem;
     min-height: 2.75rem;

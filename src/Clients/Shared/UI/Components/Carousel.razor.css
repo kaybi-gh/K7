@@ -258,7 +258,7 @@
     text-align: center;
     overflow: hidden;
     color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin-top: 8px;
     font-weight: 500;
 }

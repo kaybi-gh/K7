@@ -57,7 +57,7 @@
 }
 
 .vertical-carousel__chevron {
-    font-size: 14px;
+    font-size: var(--text-sm);
     line-height: 1;
     color: color-mix(in srgb, var(--color-text-primary, #fff) 45%, transparent);
     opacity: 0.85;

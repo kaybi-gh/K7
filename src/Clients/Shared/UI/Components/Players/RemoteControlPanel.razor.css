@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.7;
 }
 
@@ -47,17 +47,17 @@
 }
 
 .remote-control-panel__title {
-    font-size: 1.125rem;
+    font-size: var(--text-lg);
     font-weight: 600;
 }
 
 .remote-control-panel__artist {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.8;
 }
 
 .remote-control-panel__album {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     opacity: 0.6;
 }
 
@@ -75,7 +75,7 @@
 }
 
 .remote-control-panel__time {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-variant-numeric: tabular-nums;
     opacity: 0.7;
     min-width: 3rem;

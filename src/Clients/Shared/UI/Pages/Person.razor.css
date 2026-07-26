@@ -361,7 +361,7 @@
     justify-content: center;
     background: var(--k7-surface-variant);
     color: var(--k7-on-surface-variant);
-    font-size: 2rem;
+    font-size: var(--text-3xl);
 }
 
 .known-for-info {

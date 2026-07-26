@@ -115,7 +115,7 @@ textarea[data-sn-editing="true"] {
    ============================================================ */
 html.platform-tv {
     /* 10-foot: scale all rem-based type (tokens, utilities, most pages). */
-    font-size: 1.125rem;
+    font-size: var(--text-lg);
     /* Avoid hover side-effects on D-pad navigation */
     cursor: none;
 }
@@ -163,8 +163,8 @@ html.platform-tv .overview-clickable p,
 html.platform-tv .serie-hero p,
 html.platform-tv p.overview-clickable {
     /* Synopsis on detail pages.
-       !important overrides the inline style="font-size:1.05rem". */
-    font-size: 1.3rem !important;
+       !important overrides inline synopsis font-size. */
+    font-size: var(--text-xl) !important;
 }
 
 html.platform-tv .text-sm {
@@ -172,6 +172,7 @@ html.platform-tv .text-sm {
     font-size: var(--text-base);
 }
 
+html.platform-tv .text-2xs,
 html.platform-tv .text-xs,
 html.platform-tv .text-caption {
     /* Captions, secondary labels, admin/settings hints */
@@ -209,7 +210,7 @@ html.platform-tv .k7-category-card__desc {
 html.platform-tv .k7-category-card__icon-badge {
     width: 60px;
     height: 60px;
-    font-size: 1.75rem;
+    font-size: var(--text-3xl);
 }
 
 html.platform-tv .music-radio-presets__card-title {
@@ -337,7 +338,7 @@ html.platform-tv .k7-btn--lg {
 html.platform-tv .k7-icon-btn {
     width: 52px;
     height: 52px;
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
 }
 
 /* -- Menus / dropdowns --------------------------------------------------- */
@@ -349,7 +350,7 @@ html.platform-tv .k7-menu-item {
 
 html.platform-tv .k7-menu-item i,
 html.platform-tv .k7-menu-item .ph {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
 }
 
 /* -- Profile popover (avatar menu) --------------------------------------- */
@@ -491,7 +492,7 @@ html.platform-tv .media-card--menu-open .media-card-menu {
 }
 
 .preload-title {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     color: var(--color-primary);
     letter-spacing: 2px;

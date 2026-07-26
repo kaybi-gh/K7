@@ -17,7 +17,7 @@
 }
 
 .device-activation__title {
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     font-weight: 600;
     text-align: center;
     color: var(--color-text);
@@ -39,7 +39,7 @@
 }
 
 .device-activation__qr-label {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     color: var(--color-text-secondary);
     text-align: center;
 }
@@ -67,26 +67,26 @@
 }
 
 .device-activation__separator-text {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     font-weight: 600;
     color: var(--color-text-secondary);
 }
 
 .device-activation__instructions {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     color: var(--color-text-secondary);
     text-align: center;
 }
 
 .device-activation__url {
-    font-size: 2rem;
+    font-size: var(--text-3xl);
     font-weight: 700;
     color: var(--color-accent);
     text-align: center;
 }
 
 .device-activation__code-label {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     color: var(--color-text-secondary);
     text-align: center;
     margin-top: var(--space-4);
@@ -99,7 +99,7 @@
 }
 
 .device-activation__code {
-    font-size: 3rem;
+    font-size: var(--text-5xl);
     font-weight: 700;
     letter-spacing: 0.2em;
     text-align: center;
@@ -116,6 +116,6 @@
 }
 
 .device-activation__timer {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     color: var(--color-text-secondary);
 }

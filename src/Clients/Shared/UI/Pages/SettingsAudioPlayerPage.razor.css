@@ -19,5 +19,5 @@
 
 .eq-band .text-caption {
     color: var(--color-text-muted);
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
 }

@@ -1,5 +1,5 @@
 .exclusions__hint {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin-bottom: 0.75rem;
 }
@@ -59,14 +59,14 @@
 }
 
 .exclusions__name {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .exclusions__empty {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     font-style: italic;
 }

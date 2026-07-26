@@ -64,7 +64,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     color: rgba(255, 255, 255, 0.15);
 }
 
@@ -90,7 +90,7 @@
 }
 
 .nep-action-btn i {
-    font-size: 1.15rem;
+    font-size: var(--text-lg);
 }
 
 .nep-action-btn:hover {
@@ -146,7 +146,7 @@
 }
 
 .nep-card-badge {
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -185,7 +185,7 @@
 }
 
 .nep-card-empty-state i {
-    font-size: 2rem;
+    font-size: var(--text-3xl);
 }
 
 /* Dismiss button */

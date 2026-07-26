@@ -32,13 +32,13 @@
 }
 
 .syncplay-invite-device {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-on-surface-variant);
     white-space: nowrap;
 }
 
 .syncplay-invite-badge {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     padding: 0.125rem 0.5rem;
     border-radius: var(--radius-full);
     background: var(--color-surface-variant);

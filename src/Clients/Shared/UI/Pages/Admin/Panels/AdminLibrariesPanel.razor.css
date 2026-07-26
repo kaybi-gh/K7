@@ -14,7 +14,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     overflow: hidden;
 }
@@ -36,7 +36,7 @@
 }
 
 ::deep .library-card__scan-label {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
 
@@ -54,6 +54,6 @@
 }
 
 ::deep .empty-state__hint {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
 }

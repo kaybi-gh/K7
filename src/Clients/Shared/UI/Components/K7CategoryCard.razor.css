@@ -127,7 +127,7 @@
     height: 52px;
     border-radius: var(--radius-lg);
     background: var(--card-icon-color);
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     color: var(--color-text);
 }
 
@@ -158,6 +158,6 @@
     .k7-category-card--lg .k7-category-card__icon-badge {
         width: 64px;
         height: 64px;
-        font-size: 1.875rem;
+        font-size: var(--text-3xl);
     }
 }

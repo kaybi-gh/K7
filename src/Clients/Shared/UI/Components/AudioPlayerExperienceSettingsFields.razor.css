@@ -28,12 +28,12 @@
 
 .eq-band-value {
     color: var(--color-text-muted);
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     font-variant-numeric: tabular-nums;
     min-height: 1rem;
 }
 
 .eq-band-label {
     color: var(--color-text-muted);
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
 }

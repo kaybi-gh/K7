@@ -12,14 +12,14 @@
 }
 
 .syncplay-invitation-text {
-    font-size: 0.9375rem;
+    font-size: var(--text-sm);
     line-height: 1.4;
     color: var(--color-on-surface);
 }
 
 .syncplay-invitation-device {
     color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
 }
 
 .syncplay-invitation-media,
@@ -27,7 +27,7 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-on-surface-variant);
 }
 
@@ -40,5 +40,5 @@
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, var(--color-error) 12%, transparent);
     color: var(--color-error);
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
 }

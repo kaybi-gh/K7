@@ -24,7 +24,7 @@
 .user-card ::deep .user-card__avatar.k7-avatar {
     width: 72%;
     height: 72%;
-    font-size: clamp(1.5rem, 18cqw, 2.5rem);
+    font-size: clamp(var(--text-2xl), 18cqw, var(--text-4xl));
 }
 
 .user-card ::deep .user-card__avatar .k7-avatar__clip {

@@ -53,7 +53,7 @@
 ::deep .artist-avatar-placeholder {
     width: 160px;
     height: 160px;
-    font-size: 48px;
+    font-size: var(--text-5xl);
     border-radius: 50%;
 }
 
@@ -115,7 +115,7 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
 }
 
 .artist-albums-section,
@@ -151,7 +151,7 @@
 }
 
 .track-number {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.5;
 }
 
@@ -160,7 +160,7 @@
 }
 
 .track-duration {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.5;
 }
 

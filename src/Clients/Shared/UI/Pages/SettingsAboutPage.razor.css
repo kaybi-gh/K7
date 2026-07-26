@@ -19,12 +19,12 @@
 
 .about-label {
     color: var(--k7-text-secondary);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
 }
 
 .about-value {
     font-family: monospace;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     cursor: default;
 }
 
@@ -42,7 +42,7 @@
 
 .about-tech-name {
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
 }
 
 .about-credits-grid {
@@ -73,7 +73,7 @@
     width: 32px;
     height: 32px;
     flex-shrink: 0;
-    font-size: 32px;
+    font-size: var(--text-3xl);
     line-height: 1;
 }
 
@@ -93,7 +93,7 @@
 
 .about-credit-link {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--k7-primary);
     text-decoration: none;
     display: inline-flex;
@@ -107,12 +107,12 @@
 
 .about-credit-desc {
     color: var(--k7-text-secondary);
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
 }
 
 .about-disclaimer {
     margin-top: 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--k7-text-secondary);
     font-style: italic;
 }
@@ -125,7 +125,7 @@
 
 .about-codec-group-title {
     margin-bottom: 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--k7-text-secondary);
 }

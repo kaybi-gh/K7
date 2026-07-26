@@ -71,7 +71,7 @@
 
 .album-artist-link {
     text-decoration: none;
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 600;
     opacity: 0.9;
     color: var(--color-on-bg);
@@ -91,7 +91,7 @@
     align-items: center;
     gap: 6px;
     margin-top: 6px;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.7;
 }
 
@@ -100,7 +100,7 @@
     align-items: center;
     gap: 6px;
     padding: 8px 0 12px;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.7;
 }
 
@@ -180,7 +180,7 @@
 }
 
 .track-number {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.5;
 }
 
@@ -198,7 +198,7 @@
 }
 
 .track-duration {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     opacity: 0.5;
     text-align: right;
 }

@@ -16,7 +16,7 @@
 }
 
 .streams-count {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin-right: auto;
 }

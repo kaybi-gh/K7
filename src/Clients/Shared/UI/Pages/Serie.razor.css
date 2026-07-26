@@ -194,7 +194,7 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-size: 1.05rem;
+    font-size: var(--text-base);
 }
 
 .serie-page-scroll[data-tv-scroll] [data-tv-scroll-zone="below"] .media-card,

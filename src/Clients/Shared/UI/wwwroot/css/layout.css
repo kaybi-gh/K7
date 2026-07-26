@@ -9,11 +9,11 @@
     line-height: 1;
 }
 
-.k7-icon--xs { font-size: 0.75rem; }
-.k7-icon--sm { font-size: 1rem; }
-.k7-icon--md { font-size: 1.5rem; }
-.k7-icon--lg { font-size: 2rem; }
-.k7-icon--xl { font-size: 3rem; }
+.k7-icon--xs { font-size: var(--text-xs); }
+.k7-icon--sm { font-size: var(--text-base); }
+.k7-icon--md { font-size: var(--text-2xl); }
+.k7-icon--lg { font-size: var(--text-3xl); }
+.k7-icon--xl { font-size: var(--text-5xl); }
 
 /* Brand SVG icons - size via width/height instead of font-size */
 svg.k7-icon { display: inline-block; vertical-align: middle; height: auto; }
@@ -549,7 +549,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 }
 
 .error-state .error-icon {
-    font-size: 3rem;
+    font-size: var(--text-5xl);
     color: var(--color-error);
 }
 

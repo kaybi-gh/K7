@@ -73,7 +73,7 @@
 
 .library-browse-filters__caret {
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
 }
 

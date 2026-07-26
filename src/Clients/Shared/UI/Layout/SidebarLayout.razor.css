@@ -133,7 +133,7 @@
     justify-content: center;
     width: 1.25rem;
     flex-shrink: 0;
-    font-size: 1rem;
+    font-size: var(--text-base);
     color: var(--color-text-muted);
 }
 
@@ -158,7 +158,7 @@
     display: block;
     margin-inline-start: auto;
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
     transition: transform var(--transition-fast);
 }
@@ -220,7 +220,7 @@
         background: none;
         border: none;
         color: var(--color-text-primary);
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
         padding: var(--space-1);
         cursor: pointer;
         border-radius: var(--radius-sm);
@@ -285,7 +285,7 @@
     background: none;
     border: none;
     color: var(--color-text-primary);
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     padding: var(--space-1);
     cursor: pointer;
     border-radius: var(--radius-sm);

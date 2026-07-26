@@ -120,6 +120,7 @@
 .overflow-y-auto { overflow-y: auto; }
 
 /* --- Typography --- */
+.text-2xs  { font-size: var(--text-2xs); }
 .text-xs   { font-size: var(--text-xs); }
 .text-sm   { font-size: var(--text-sm); }
 .text-base { font-size: var(--text-base); }
@@ -128,6 +129,7 @@
 .text-2xl  { font-size: var(--text-2xl); }
 .text-3xl  { font-size: var(--text-3xl); }
 .text-4xl  { font-size: var(--text-4xl); }
+.text-5xl  { font-size: var(--text-5xl); }
 
 .font-normal   { font-weight: var(--font-normal); }
 .font-medium   { font-weight: var(--font-medium); }

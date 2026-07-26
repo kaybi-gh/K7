@@ -7,7 +7,7 @@
 }
 
 .picker-row__label {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     width: 100px;
     flex-shrink: 0;
@@ -23,7 +23,7 @@
 }
 
 .picker-row__icon-preview {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     color: var(--color-text-primary);
 }
 

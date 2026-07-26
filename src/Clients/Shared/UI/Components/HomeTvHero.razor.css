@@ -122,7 +122,7 @@
 
 .home-tv-hero__overview {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: var(--text-xl);
     color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     line-height: 1.6;

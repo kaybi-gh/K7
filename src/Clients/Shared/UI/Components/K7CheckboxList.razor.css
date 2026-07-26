@@ -38,7 +38,7 @@
 }
 
 .k7-checkbox-list__label {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

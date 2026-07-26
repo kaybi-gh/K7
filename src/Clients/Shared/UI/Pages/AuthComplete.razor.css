@@ -22,7 +22,7 @@
 }
 
 .auth-complete__title {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: 600;
     margin: 0;
     color: var(--color-text);
@@ -32,7 +32,7 @@
     width: 100%;
     padding: var(--space-3);
     border-radius: var(--radius-md, 8px);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
 }
 
 .auth-complete__alert--success {

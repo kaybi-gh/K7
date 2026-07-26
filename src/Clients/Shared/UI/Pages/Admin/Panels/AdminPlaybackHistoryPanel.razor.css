@@ -29,7 +29,7 @@
 }
 
 .history-date-cell .text-muted {
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     color: var(--color-text-muted);
 }
 
@@ -49,7 +49,7 @@
     display: inline-flex;
     padding: 2px 8px;
     border-radius: var(--radius-sm);
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     text-transform: uppercase;
     white-space: nowrap;

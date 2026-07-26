@@ -13,7 +13,7 @@
 }
 
 .k7-empty-state--compact .k7-empty-state__title {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     font-weight: 400;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .k7-empty-state__subtitle {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
     text-align: center;
     max-width: 360px;

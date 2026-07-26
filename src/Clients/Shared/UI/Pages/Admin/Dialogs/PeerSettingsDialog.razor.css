@@ -15,7 +15,7 @@
 
 .peer-settings__label {
     display: block;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--color-text-secondary);
     margin-bottom: 0.5rem;
@@ -51,7 +51,7 @@
 }
 
 .peer-settings__empty {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     font-style: italic;
 }

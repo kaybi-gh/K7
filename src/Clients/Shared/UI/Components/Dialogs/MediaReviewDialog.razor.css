@@ -20,6 +20,6 @@
 }
 
 .media-review-dialog-emoji-preview {
-    font-size: 1.75rem;
+    font-size: var(--text-3xl);
     line-height: 1;
 }

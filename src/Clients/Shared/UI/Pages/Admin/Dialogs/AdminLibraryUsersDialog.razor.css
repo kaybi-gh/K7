@@ -1,5 +1,5 @@
 .library-users__hint {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin-bottom: 0.75rem;
 }
@@ -46,19 +46,19 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .library-users__role {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-secondary);
 }
 
 .library-users__empty {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     font-style: italic;
 }

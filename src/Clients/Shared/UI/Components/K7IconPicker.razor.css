@@ -17,7 +17,7 @@
     border-radius: 6px;
     background: var(--surface-2);
     color: var(--text-1);
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     outline-offset: 2px;
 }
 
@@ -34,7 +34,7 @@
     border-radius: 8px;
     background: var(--primary);
     color: var(--on-primary, #fff);
-    font-size: 1.2rem;
+    font-size: var(--text-xl);
     flex-shrink: 0;
     position: relative;
 }
@@ -54,7 +54,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.6rem;
+    font-size: var(--text-2xs);
     line-height: 1;
 }
 
@@ -84,7 +84,7 @@
     background: transparent;
     color: var(--text-1);
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 

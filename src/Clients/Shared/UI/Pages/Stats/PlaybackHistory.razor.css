@@ -6,7 +6,7 @@
 }
 
 .playback-history-date-cell .text-muted {
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     color: var(--color-text-muted);
 }
 

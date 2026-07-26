@@ -69,7 +69,7 @@
     }
 
     .group-card__type {
-        font-size: 0.6875rem;
+        font-size: var(--text-2xs);
         padding-inline: var(--space-2);
     }
 }

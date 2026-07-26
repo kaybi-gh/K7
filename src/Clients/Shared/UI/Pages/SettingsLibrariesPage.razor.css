@@ -6,13 +6,13 @@
 }
 
 .settings-libraries__description {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin: 0;
 }
 
 .settings-libraries__empty {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
     margin: 0;
 }
@@ -32,7 +32,7 @@
 
 .settings-libraries__group-title {
     display: block;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--color-text-secondary);
 }

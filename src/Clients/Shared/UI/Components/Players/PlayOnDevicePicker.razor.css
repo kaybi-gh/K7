@@ -1,6 +1,6 @@
 .cast-section-header {
     padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     color: var(--k7-text-secondary);
     text-transform: uppercase;
@@ -11,5 +11,5 @@
     padding: 0.75rem;
     text-align: center;
     color: var(--k7-text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
 }

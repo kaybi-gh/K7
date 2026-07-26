@@ -231,7 +231,7 @@
     }
 
     .episode-actions-play ::deep .k7-icon {
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
     }
 
     .episode-actions-secondary {

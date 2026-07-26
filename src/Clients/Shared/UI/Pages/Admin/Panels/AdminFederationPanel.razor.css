@@ -35,14 +35,14 @@
 }
 
 .peer-card__url {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
 
 .peer-card__details {
     display: flex;
     gap: 16px;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
 
@@ -65,7 +65,7 @@
 }
 
 .federation-panel__section-title {
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;

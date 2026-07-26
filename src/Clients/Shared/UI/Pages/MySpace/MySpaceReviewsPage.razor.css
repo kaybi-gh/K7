@@ -76,7 +76,7 @@
 }
 
 .my-space-reviews-page ::deep .k7-virtual-list-item .media-review-card__leading-title {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
 }
 
 @media (max-width: 599.98px) {

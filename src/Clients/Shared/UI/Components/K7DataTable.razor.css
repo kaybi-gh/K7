@@ -82,7 +82,7 @@
 
 .k7-data-table-el th {
     font-weight: 600;
-    font-size: 0.8125rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary, inherit);
     user-select: none;
 }
