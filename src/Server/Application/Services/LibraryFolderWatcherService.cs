@@ -91,11 +91,74 @@ public sealed class LibraryFolderWatcherService(
             return;
         }
 
+        var watched = new WatchedLibrary(library.Id, library.RootPath);
+
         try
         {
-            var watcher = new FileSystemWatcher(library.RootPath)
+            // Per-directory watches (no IncludeSubdirectories) so Synology @eaDir and other
+            // excluded NAS folders are never registered with inotify / ReadDirectoryChanges.
+            var stack = new Stack<string>();
+            stack.Push(library.RootPath);
+
+            while (stack.Count > 0)
             {
-                IncludeSubdirectories = true,
+                var currentDir = stack.Pop();
+                if (!TryAddDirectoryWatch(watched, currentDir))
+                    continue;
+
+                IEnumerable<string> subDirs;
+                try
+                {
+                    subDirs = Directory.EnumerateDirectories(currentDir);
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+                {
+                    logger.LogDebug(ex, "Skipping inaccessible directory while building watches for library {LibraryId}: {Path}", library.Id, currentDir);
+                    continue;
+                }
+
+                foreach (var subDir in subDirs)
+                {
+                    var dirName = Path.GetFileName(subDir);
+                    if (FileInfoHelper.IsExcludedDirectoryName(dirName))
+                        continue;
+
+                    stack.Push(subDir);
+                }
+            }
+
+            if (watched.Watchers.Count == 0)
+            {
+                logger.LogWarning("Realtime monitor for library {LibraryId} created no watches at {RootPath}", library.Id, library.RootPath);
+                watched.Dispose();
+                return;
+            }
+
+            _watchedLibraries[library.Id] = watched;
+            logger.LogInformation(
+                "Started realtime monitor for library {LibraryId} at {RootPath} ({WatchCount} directory watches)",
+                library.Id, library.RootPath, watched.Watchers.Count);
+        }
+        catch (Exception ex)
+        {
+            watched.Dispose();
+            logger.LogWarning(ex, "Failed to start realtime monitor for library {LibraryId}", library.Id);
+        }
+    }
+
+    private bool TryAddDirectoryWatch(WatchedLibrary watched, string directoryPath)
+    {
+        if (FileInfoHelper.IsExcludedPath(directoryPath))
+            return false;
+
+        if (watched.Watchers.ContainsKey(directoryPath))
+            return true;
+
+        try
+        {
+            var watcher = new FileSystemWatcher(directoryPath)
+            {
+                IncludeSubdirectories = false,
                 InternalBufferSize = 65536,
                 NotifyFilter = NotifyFilters.FileName
                     | NotifyFilters.DirectoryName
@@ -103,20 +166,81 @@ public sealed class LibraryFolderWatcherService(
                     | NotifyFilters.Size
             };
 
-            watcher.Created += (_, e) => OnFileSystemEvent(library.Id, e.FullPath);
-            watcher.Changed += (_, e) => OnFileSystemEvent(library.Id, e.FullPath);
-            watcher.Deleted += (_, e) => OnFileSystemEvent(library.Id, e.FullPath);
-            watcher.Renamed += (_, e) => OnFileSystemEvent(library.Id, e.FullPath);
-            watcher.Error += (_, e) => logger.LogWarning(e.GetException(), "FileSystemWatcher error for library {LibraryId}", library.Id);
+            var libraryId = watched.LibraryId;
+            watcher.Created += (_, e) => OnCreated(libraryId, e.FullPath);
+            watcher.Changed += (_, e) => OnFileSystemEvent(libraryId, e.FullPath);
+            watcher.Deleted += (_, e) => OnDeleted(libraryId, e.FullPath);
+            watcher.Renamed += (_, e) => OnRenamed(libraryId, e.OldFullPath, e.FullPath);
+            watcher.Error += (_, e) =>
+            {
+                var ex = e.GetException();
+                if (ex is UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "FileSystemWatcher access denied for library {LibraryId} at {Path}", libraryId, directoryPath);
+                    return;
+                }
+
+                logger.LogWarning(ex, "FileSystemWatcher error for library {LibraryId} at {Path}", libraryId, directoryPath);
+            };
             watcher.EnableRaisingEvents = true;
 
-            _watchedLibraries[library.Id] = new WatchedLibrary(library.Id, library.RootPath, watcher);
-            logger.LogInformation("Started realtime monitor for library {LibraryId} at {RootPath}", library.Id, library.RootPath);
+            watched.Watchers[directoryPath] = watcher;
+            return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or ArgumentException)
         {
-            logger.LogWarning(ex, "Failed to start realtime monitor for library {LibraryId}", library.Id);
+            logger.LogDebug(ex, "Could not watch directory for library {LibraryId}: {Path}", watched.LibraryId, directoryPath);
+            return false;
         }
+    }
+
+    private void OnCreated(Guid libraryId, string path)
+    {
+        if (FileInfoHelper.IsExcludedPath(path))
+            return;
+
+        if (Directory.Exists(path))
+        {
+            lock (_sync)
+            {
+                if (_watchedLibraries.TryGetValue(libraryId, out var watched))
+                    TryAddDirectoryWatch(watched, path);
+            }
+        }
+
+        OnFileSystemEvent(libraryId, path);
+    }
+
+    private void OnDeleted(Guid libraryId, string path)
+    {
+        lock (_sync)
+        {
+            if (_watchedLibraries.TryGetValue(libraryId, out var watched)
+                && watched.Watchers.Remove(path, out var watcher))
+            {
+                watcher.Dispose();
+            }
+        }
+
+        OnFileSystemEvent(libraryId, path);
+    }
+
+    private void OnRenamed(Guid libraryId, string oldPath, string newPath)
+    {
+        lock (_sync)
+        {
+            if (_watchedLibraries.TryGetValue(libraryId, out var watched)
+                && watched.Watchers.Remove(oldPath, out var watcher))
+            {
+                watcher.Dispose();
+            }
+
+            if (!FileInfoHelper.IsExcludedPath(newPath) && Directory.Exists(newPath) && watched is not null)
+                TryAddDirectoryWatch(watched, newPath);
+        }
+
+        OnFileSystemEvent(libraryId, oldPath);
+        OnFileSystemEvent(libraryId, newPath);
     }
 
     private void OnFileSystemEvent(Guid libraryId, string path)
@@ -190,7 +314,7 @@ public sealed class LibraryFolderWatcherService(
     {
         if (_watchedLibraries.Remove(libraryId, out var watched))
         {
-            watched.Watcher.Dispose();
+            watched.Dispose();
             logger.LogInformation("Stopped realtime monitor for library {LibraryId}", libraryId);
         }
 
@@ -217,7 +341,20 @@ public sealed class LibraryFolderWatcherService(
         base.Dispose();
     }
 
-    private sealed record WatchedLibrary(Guid LibraryId, string RootPath, FileSystemWatcher Watcher);
+    private sealed class WatchedLibrary(Guid libraryId, string rootPath)
+    {
+        public Guid LibraryId { get; } = libraryId;
+        public string RootPath { get; } = rootPath;
+        public Dictionary<string, FileSystemWatcher> Watchers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public void Dispose()
+        {
+            foreach (var watcher in Watchers.Values)
+                watcher.Dispose();
+
+            Watchers.Clear();
+        }
+    }
 
     private sealed class PendingScan
     {

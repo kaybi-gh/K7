@@ -109,12 +109,26 @@ public class FileIndexer : IFileIndexer
             var (scannedEntries, inaccessiblePaths) = scanFiles(cancellationToken);
             var skippedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            _logger.LogInformation(
+                "Scan finished for library {LibraryId}: {FileCount} media files, {InaccessibleCount} inaccessible paths.",
+                library.Id, scannedEntries.Count, inaccessiblePaths.Count);
+
             await _progressReporter.ReportProgressAsync(library.Id, 0, scannedEntries.Count, "comparing", cancellationToken);
 
             var existingFiles = await LoadExistingFilesAsync(library.Id, scopePaths, cancellationToken);
 
-            var diff = BuildDiff(library.Id, library.RootPath!, scannedEntries, existingFiles, skippedFilePaths, cancellationToken);
-            var removedFiles = CollectFilesAbsentFromDisk(diff.RemovedFiles, existingFiles, cancellationToken);
+            var diff = BuildDiff(
+                library.Id,
+                library.RootPath!,
+                scannedEntries,
+                existingFiles,
+                skippedFilePaths,
+                inaccessiblePaths,
+                cancellationToken);
+
+            // Trust the filesystem scan membership for removals. A full File.Exists sweep over the
+            // whole catalog is a common hang point on SMB/NAS and duplicates work already done by scan.
+            var removedFiles = diff.RemovedFiles;
             var removedIds = removedFiles.Select(f => f.Id).ToHashSet();
 
             var unchangedFiles = diff.UnchangedFiles.Where(f => !removedIds.Contains(f.Id)).ToList();
@@ -125,10 +139,32 @@ public class FileIndexer : IFileIndexer
                 .Where(x => x.Identification is null || !x.MediaId.HasValue)
                 .ToList();
 
-            var modifiedAsNew = diff.ModifiedFiles
-                .Where(pair => !removedIds.Contains(pair.ExistingFile.Id))
-                .Select(pair => ApplyContentChange(pair.ExistingFile, pair.ScannedFile, cancellationToken))
-                .ToList();
+            var modifiedAsNew = new List<IndexedFile>();
+            var modifiedTotal = diff.ModifiedFiles.Count;
+            for (var i = 0; i < diff.ModifiedFiles.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var pair = diff.ModifiedFiles[i];
+                if (removedIds.Contains(pair.ExistingFile.Id))
+                    continue;
+
+                try
+                {
+                    modifiedAsNew.Add(ApplyContentChange(pair.ExistingFile, pair.ScannedFile, cancellationToken));
+                }
+                catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
+                {
+                    skippedFilePaths.Add(pair.ScannedFile.Path);
+                    inaccessiblePaths.Add((pair.ScannedFile.Path, ex.Message));
+                    _logger.LogWarning(ex, "Skipping modified file during hash: {Path}", pair.ScannedFile.Path);
+                }
+
+                if ((i + 1) % ProgressReportInterval == 0 || i + 1 == modifiedTotal)
+                {
+                    await _progressReporter.ReportProgressAsync(
+                        library.Id, i + 1, Math.Max(modifiedTotal, 1), "comparing", cancellationToken);
+                }
+            }
 
             var toBeIdentifiedFiles = addedFiles
                 .Concat(unchangedToReIdentify)
@@ -252,48 +288,40 @@ public class FileIndexer : IFileIndexer
         IReadOnlyList<ScannedFileEntry> scannedEntries,
         IReadOnlyList<IndexedFile> existingFiles,
         HashSet<string> skippedFilePaths,
+        List<(string Path, string Error)> inaccessiblePaths,
         CancellationToken cancellationToken)
     {
         var hashCache = new ConcurrentDictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
 
-        uint ComputeHash(ScannedFileEntry entry)
+        uint? TryComputeHash(ScannedFileEntry entry)
         {
-            return hashCache.GetOrAdd(entry.Path, _ =>
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                return new FileInfo(entry.Path).ComputeFileHash(cancellationToken);
-            });
+                return hashCache.GetOrAdd(entry.Path, _ =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return new FileInfo(entry.Path).ComputeFileHash(cancellationToken);
+                });
+            }
+            catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
+            {
+                skippedFilePaths.Add(entry.Path);
+                inaccessiblePaths.Add((entry.Path, ex.Message));
+                _logger.LogWarning(ex, "Skipping file during hash: {Path}", entry.Path);
+                return null;
+            }
         }
 
         return LibraryScanDiffBuilder.Build(
             scannedEntries,
             existingFiles,
             skippedFilePaths,
-            entry => entry.ToIndexedFile(libraryId, ComputeHash(entry)),
+            entry =>
+            {
+                var hash = TryComputeHash(entry);
+                return hash is null ? null : entry.ToIndexedFile(libraryId, hash.Value);
+            },
             libraryRootPath);
-    }
-
-    private static List<IndexedFile> CollectFilesAbsentFromDisk(
-        IReadOnlyList<IndexedFile> removedFromDiff,
-        IReadOnlyList<IndexedFile> existingFiles,
-        CancellationToken cancellationToken)
-    {
-        var removedById = removedFromDiff.ToDictionary(f => f.Id);
-
-        foreach (var existing in existingFiles)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (removedById.ContainsKey(existing.Id))
-                continue;
-
-            if (File.Exists(existing.Path))
-                continue;
-
-            removedById[existing.Id] = existing;
-        }
-
-        return removedById.Values.ToList();
     }
 
     private static IndexedFile ApplyContentChange(
@@ -421,7 +449,7 @@ public class FileIndexer : IFileIndexer
             _ => throw new InvalidOperationException(),
         };
 
-        foreach (var file in addedFiles.Where(f => File.Exists(f.Path)))
+        foreach (var file in addedFiles)
         {
             backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
             {
@@ -450,8 +478,8 @@ public class FileIndexer : IFileIndexer
             .ToListAsync(cancellationToken))
             .ToHashSet();
 
+        // Trust the scan: unchanged files were seen on disk during enumeration.
         var filesMissingMetadata = unchangedFiles
-            .Where(f => File.Exists(f.Path))
             .Where(f => !idsWithMetadata.Contains(f.Id))
             .ToList();
         if (filesMissingMetadata.Count == 0) return;

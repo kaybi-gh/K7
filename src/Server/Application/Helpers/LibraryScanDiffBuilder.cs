@@ -19,7 +19,7 @@ public static class LibraryScanDiffBuilder
         IReadOnlyList<ScannedFileEntry> scannedFiles,
         IReadOnlyList<IndexedFile> existingFiles,
         HashSet<string> skippedFilePaths,
-        Func<ScannedFileEntry, IndexedFile> createIndexedFile,
+        Func<ScannedFileEntry, IndexedFile?> createIndexedFile,
         string? libraryRootPath = null)
     {
         var scanned = DedupeScannedFiles(scannedFiles, libraryRootPath);
@@ -55,7 +55,9 @@ public static class LibraryScanDiffBuilder
             }
             else
             {
-                addedCandidates.Add(createIndexedFile(scannedFile));
+                var created = createIndexedFile(scannedFile);
+                if (created is not null)
+                    addedCandidates.Add(created);
             }
         }
 

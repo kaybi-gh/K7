@@ -43,10 +43,27 @@ public static class FileInfoHelper
 
         foreach (var fileInfo in fileInfos)
         {
-            if (!fileInfo.Exists || !fileInfo.IsSupportedFile())
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!fileInfo.IsSupportedFile())
                 continue;
 
-            files.Add(fileInfo.ToScannedFileEntry());
+            try
+            {
+                var entry = FileSystemIo.Run(
+                    fileInfo.ToScannedFileEntry,
+                    FileSystemIo.FileAccessTimeout,
+                    cancellationToken);
+                files.Add(entry);
+            }
+            catch (TimeoutException)
+            {
+                inaccessiblePaths.Add((fileInfo.FullName, $"Timed out after {FileSystemIo.FileAccessTimeout.TotalSeconds:0}s reading file metadata."));
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                inaccessiblePaths.Add((fileInfo.FullName, ex.Message));
+            }
         }
 
         return (files, inaccessiblePaths);
@@ -66,13 +83,43 @@ public static class FileInfoHelper
             if (IsExcludedPath(path))
                 continue;
 
-            if (File.Exists(path))
+            bool isFile;
+            bool isDirectory;
+            try
+            {
+                (isFile, isDirectory) = FileSystemIo.Run(
+                    () => (File.Exists(path), Directory.Exists(path)),
+                    FileSystemIo.FileAccessTimeout,
+                    cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                inaccessiblePaths.Add((path, $"Timed out after {FileSystemIo.FileAccessTimeout.TotalSeconds:0}s checking path."));
+                continue;
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                inaccessiblePaths.Add((path, ex.Message));
+                continue;
+            }
+
+            if (isFile)
             {
                 try
                 {
                     var fileInfo = new FileInfo(path);
-                    if (fileInfo.Exists && fileInfo.IsSupportedFile())
-                        files.Add(fileInfo.ToScannedFileEntry());
+                    if (fileInfo.IsSupportedFile())
+                    {
+                        var entry = FileSystemIo.Run(
+                            fileInfo.ToScannedFileEntry,
+                            FileSystemIo.FileAccessTimeout,
+                            cancellationToken);
+                        files.Add(entry);
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    inaccessiblePaths.Add((path, $"Timed out after {FileSystemIo.FileAccessTimeout.TotalSeconds:0}s reading file metadata."));
                 }
                 catch (Exception ex)
                 {
@@ -82,7 +129,7 @@ public static class FileInfoHelper
                 continue;
             }
 
-            if (Directory.Exists(path))
+            if (isDirectory)
             {
                 var (dirFiles, dirErrors) = GetSupportedFilesRecursively(path, cancellationToken);
                 files.AddRange(dirFiles);
@@ -101,7 +148,9 @@ public static class FileInfoHelper
         return (distinctFiles, inaccessiblePaths);
     }
 
-    public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(string rootDirectory, CancellationToken cancellationToken = default)
+    public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(
+        string rootDirectory,
+        CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(rootDirectory))
         {
@@ -124,12 +173,20 @@ public static class FileInfoHelper
             cancellationToken.ThrowIfCancellationRequested();
             var currentDir = stack.Pop();
 
+            List<string> filePaths;
             try
             {
-                foreach (var filePath in Directory.EnumerateFiles(currentDir))
-                {
-                    files.Add(new FileInfo(filePath));
-                }
+                filePaths = FileSystemIo.Run(
+                    () => Directory.EnumerateFiles(currentDir).ToList(),
+                    FileSystemIo.DirectoryEnumerationTimeout,
+                    cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                inaccessiblePaths.Add((
+                    currentDir,
+                    $"Timed out after {FileSystemIo.DirectoryEnumerationTimeout.TotalSeconds:0}s enumerating files."));
+                continue;
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -142,25 +199,42 @@ public static class FileInfoHelper
                 continue;
             }
 
+            foreach (var filePath in filePaths)
+                files.Add(new FileInfo(filePath));
+
+            List<string> subDirs;
             try
             {
-                foreach (var subDir in Directory.EnumerateDirectories(currentDir))
-                {
-                    var dirName = Path.GetFileName(subDir);
-
-                    if (IsExcludedDirectoryName(dirName))
-                        continue;
-
-                    stack.Push(subDir);
-                }
+                subDirs = FileSystemIo.Run(
+                    () => Directory.EnumerateDirectories(currentDir).ToList(),
+                    FileSystemIo.DirectoryEnumerationTimeout,
+                    cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                inaccessiblePaths.Add((
+                    currentDir,
+                    $"Timed out after {FileSystemIo.DirectoryEnumerationTimeout.TotalSeconds:0}s enumerating subdirectories."));
+                continue;
             }
             catch (UnauthorizedAccessException ex)
             {
                 inaccessiblePaths.Add((currentDir, ex.Message));
+                continue;
             }
             catch (IOException ex)
             {
                 inaccessiblePaths.Add((currentDir, ex.Message));
+                continue;
+            }
+
+            foreach (var subDir in subDirs)
+            {
+                var dirName = Path.GetFileName(subDir);
+                if (IsExcludedDirectoryName(dirName))
+                    continue;
+
+                stack.Push(subDir);
             }
         }
 

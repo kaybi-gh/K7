@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Models;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -27,6 +28,14 @@ public static class FileInfoExtensions
 
     public static uint ComputeFileHash(this FileInfo fileInfo, CancellationToken cancellationToken = default)
     {
+        return FileSystemIo.Run(
+            () => ComputeFileHashCore(fileInfo, cancellationToken),
+            FileSystemIo.FileAccessTimeout,
+            cancellationToken);
+    }
+
+    private static uint ComputeFileHashCore(FileInfo fileInfo, CancellationToken cancellationToken)
+    {
         // Changing count will invalidate every IndexedFile seed
         const int kiloBytesCount = 10;
         const int bufferSize = kiloBytesCount * 1024;
@@ -36,10 +45,7 @@ public static class FileInfoExtensions
         var buffer = new byte[bufferSize];
 
         using var fileStream = fileInfo.OpenRead();
-        var bytesRead = fileStream.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken)
-            .AsTask()
-            .GetAwaiter()
-            .GetResult();
+        var bytesRead = fileStream.Read(buffer, 0, bufferSize);
 
         if (bytesRead == 0)
             return 0;

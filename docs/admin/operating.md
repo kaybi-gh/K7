@@ -186,9 +186,9 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 - List / cancel / summary: `/api/background-tasks`
 - Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3; per-group concurrency for metadata, `ffmpeg`, `library-scan`, federation, etc.)
 - Library scans use the `library-scan` concurrency group (default limit 1). Workers reserve a group slot before claiming a task so the configured limit is not bypassed under parallel dequeue.
-- Task timeouts abandon the in-flight handler when sync filesystem I/O ignores cancellation, so the worker slot is released and the task is marked failed/retry instead of staying zombie `InProgress`.
-- Realtime folder monitoring and path scans ignore NAS/system folders: `@eaDir`, `.@__thumb`, `@tmp`, `#recycle`, `@Recycle`, `.synology`, `.Trash-*`.
-- After upgrading, restart the server once so any existing zombie `InProgress` scans are recovered (`RecoverStuckTasksAsync`), then re-run indexing if needed.
+- Library indexing skips hung NAS paths: directory enumeration and file hash/metadata reads use per-operation timeouts (30s / 15s); timed-out paths are recorded as inaccessible and the scan continues.
+- Indexing trusts the filesystem scan for add/remove detection (no full-catalog `File.Exists` re-sweep, which commonly hangs on SMB).
+- Realtime folder monitoring registers per-directory watches and skips NAS/system folders (`@eaDir`, `.@__thumb`, `@tmp`, `#recycle`, `@Recycle`, `.synology`, `.Trash-*`) so Synology metadata dirs are never attached to inotify.
 
 ### Outgoing notifications (webhooks)
 
