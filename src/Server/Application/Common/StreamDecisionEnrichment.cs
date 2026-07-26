@@ -50,7 +50,7 @@ public static class StreamDecisionEnrichment
         CancellationToken cancellationToken = default)
     {
         decision = await EnrichVideoEncoderAsync(decision, ffmpegCapabilitiesService, cancellationToken);
-        return EnrichAudioEncoder(decision);
+        return await EnrichAudioEncoderAsync(decision, ffmpegCapabilitiesService, cancellationToken);
     }
 
     public static async Task<StreamDecisionDto> EnrichVideoEncoderAsync(
@@ -81,7 +81,9 @@ public static class StreamDecisionEnrichment
         };
     }
 
-    public static StreamDecisionDto EnrichAudioEncoder(StreamDecisionDto decision)
+    public static StreamDecisionDto EnrichAudioEncoder(
+        StreamDecisionDto decision,
+        IReadOnlyList<string>? availableEncoders = null)
     {
         if (!RequiresAudioEncoder(decision))
             return decision;
@@ -89,11 +91,31 @@ public static class StreamDecisionEnrichment
         if (decision.AudioEncoder is not null)
             return decision;
 
-        var encoder = FfmpegAudioEncoderResolver.ResolveEncoderName(decision.StreamAudioCodec!);
+        var encoder = FfmpegAudioEncoderResolver.ResolveEncoderName(
+            decision.StreamAudioCodec!,
+            availableEncoders);
         if (encoder is null)
             return decision;
 
         return decision with { AudioEncoder = encoder };
+    }
+
+    public static async Task<StreamDecisionDto> EnrichAudioEncoderAsync(
+        StreamDecisionDto decision,
+        IFfmpegCapabilitiesService ffmpegCapabilitiesService,
+        CancellationToken cancellationToken = default)
+    {
+        if (!RequiresAudioEncoder(decision) || decision.AudioEncoder is not null)
+            return decision;
+
+        IReadOnlyList<string>? availableEncoders = null;
+        if (string.Equals(decision.StreamAudioCodec, "aac", StringComparison.OrdinalIgnoreCase))
+        {
+            var capabilities = await ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
+            availableEncoders = capabilities.VideoEncoders;
+        }
+
+        return EnrichAudioEncoder(decision, availableEncoders);
     }
 
     public static async Task TryEnrichAndUpdateTrackerAsync(

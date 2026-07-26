@@ -109,6 +109,11 @@ public class StreamDecisionEnrichmentTests
                 EncoderName = "h264_nvenc",
                 IsHardwareAccelerated = true
             });
+        ffmpeg.GetCapabilitiesAsync(Arg.Any<CancellationToken>())
+            .Returns(new FfmpegCapabilitiesDto
+            {
+                VideoEncoders = ["aac", "libx264"]
+            });
 
         var decision = new StreamDecisionDto
         {
@@ -125,6 +130,29 @@ public class StreamDecisionEnrichmentTests
         enriched.VideoEncoder.Should().Be("h264_nvenc");
         enriched.IsHardwareAccelerated.Should().BeTrue();
         enriched.AudioEncoder.Should().Be("aac");
+    }
+
+    [Test]
+    public async Task EnrichEncodersAsync_ShouldPreferLibfdkAac_WhenAvailable()
+    {
+        var ffmpeg = Substitute.For<IFfmpegCapabilitiesService>();
+        ffmpeg.GetCapabilitiesAsync(Arg.Any<CancellationToken>())
+            .Returns(new FfmpegCapabilitiesDto
+            {
+                VideoEncoders = ["aac", "libfdk_aac"]
+            });
+
+        var decision = new StreamDecisionDto
+        {
+            Mode = PlaybackMode.Transmux,
+            Reason = TranscodeReason.AudioCodecNotSupported,
+            SourceAudioCodec = "dts",
+            StreamAudioCodec = "aac"
+        };
+
+        var enriched = await StreamDecisionEnrichment.EnrichEncodersAsync(decision, ffmpeg);
+
+        enriched.AudioEncoder.Should().Be("libfdk_aac");
     }
 
     [Test]
