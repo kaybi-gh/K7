@@ -777,8 +777,11 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         }
     }
 
-    private void OnSourceChanged(PlayerSource source) =>
+    private void OnSourceChanged(PlayerSource source)
+    {
+        RequestRender();
         _ = EnsureMediaSegmentsLoadedAsync(source.MediaId);
+    }
 
     private async Task EnsureMediaSegmentsLoadedAsync(Guid? mediaId)
     {

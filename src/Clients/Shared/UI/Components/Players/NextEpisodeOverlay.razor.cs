@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
@@ -252,6 +253,7 @@ public partial class NextEpisodeOverlay : IDisposable
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString(),
             nextEpisodeId,
+            VideoPlayerTitleHelper.FormatEpisode(episodeDto),
             chapters: videoMetadata.Chapters);
 
         StateHasChanged();

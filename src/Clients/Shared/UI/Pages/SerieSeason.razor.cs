@@ -3,9 +3,9 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
-using K7.Shared.Enums;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
@@ -324,7 +324,7 @@ public partial class SerieSeason : IAsyncDisposable
                 Guid.Parse(SerieId),
                 indexedFile.Id);
 
-            var episodeTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+            var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
             var coverUrl = GetEpisodeStillUrl(episode);
 
             await PlayerService.PlayIndexedFileAsync(
@@ -351,7 +351,7 @@ public partial class SerieSeason : IAsyncDisposable
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
             Guid.Parse(SerieId));
 
-        var epTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+        var epTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
         var cover = GetEpisodeStillUrl(episode);
 
         var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);

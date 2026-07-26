@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared.Dtos;
@@ -64,7 +65,7 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
                 videoMetadata?.AudioTracks ?? [],
                 videoMetadata?.SubtitleTracks,
                 mediaId: media.Id,
-                title: title ?? media.Title,
+                title: title ?? VideoPlayerTitleHelper.FormatFromMedia(media),
                 coverUrl: coverUrl);
 
             var serieId = (media as SerieEpisodeDto)?.SerieId;

@@ -260,7 +260,7 @@ public partial class Movie : IAsyncDisposable
             startPosition = _movie.UserState.LastPlaybackPosition;
         }
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl, startPosition, videoMetadata.Chapters);
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters);
     }
 
     private async Task RefreshMovieUserStateAsync()
@@ -306,7 +306,7 @@ public partial class Movie : IAsyncDisposable
             _selectedSubtitleFileTrack?.Index ?? videoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata?.VideoResolution,
             _movie.Id,
-            _movie.Title,
+            VideoPlayerTitleHelper.FormatMovie(_movie),
             coverUrl,
             startPosition);
     }

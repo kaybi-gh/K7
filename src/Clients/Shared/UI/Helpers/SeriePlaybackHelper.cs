@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
@@ -68,7 +69,7 @@ internal static class SeriePlaybackHelper
                 serieId,
                 indexedFile.Id);
 
-            var episodeTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+            var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
             var coverUrl = GetEpisodeStillUrl(episode, apiClient);
 
             await playerService.PlayIndexedFileAsync(
@@ -97,7 +98,7 @@ internal static class SeriePlaybackHelper
             await featureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
             serieId);
 
-        var epTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+        var epTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
         var cover = GetEpisodeStillUrl(episode, apiClient);
 
         var details = await federationService.GetRemoteFileDetailsAsync(remoteFile.Id, cancellationToken);

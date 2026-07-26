@@ -219,7 +219,7 @@ public partial class SerieEpisode : IAsyncDisposable
             Guid.Parse(SerieId),
             _indexedFile.Id);
 
-        var episodeTitle = _episode.Title ?? $"S{SeasonNumber:D2}E{EpisodeNumber:D2}";
+        var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(_episode);
 
         double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
