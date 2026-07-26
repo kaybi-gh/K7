@@ -314,14 +314,6 @@ html.platform-tv .k7-avatar--sm {
     font-size: var(--text-base);
 }
 
-/* App bar profile: match search K7IconButton hit target on TV */
-html.platform-tv .app-nav-avatar-btn .k7-avatar--sm,
-html.platform-tv .app-nav-avatar-btn .k7-avatar-group .k7-avatar {
-    width: 52px;
-    height: 52px;
-    font-size: var(--text-2xl);
-}
-
 /* -- Chips --------------------------------------------------------------- */
 
 html.platform-tv .k7-chip {
