@@ -1,6 +1,7 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -20,6 +21,7 @@ public partial class SettingsVideoPlaybackPage
     [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IPlayerService PlayerService { get; set; } = default!;
 
     private VideoPlayerSettingsDto? _settings;
     private VideoPlaybackPolicySettingsDto? _videoPolicy;
@@ -47,6 +49,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync();
+            ApplyLocalVideoSkip(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -55,6 +58,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = new VideoPlayerSettingsDto();
             _videoPolicy = new VideoPlaybackPolicySettingsDto();
             _preferences = new TrackSelectionPreferencesDto();
+            ApplyLocalVideoSkip(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -113,6 +117,32 @@ public partial class SettingsVideoPlaybackPage
 
     private static string FormatBlur(double value) => $"{value:F1} px";
 
+    private static string FormatSkipSeconds(int value) => $"{value}s";
+
+    private void OnSkipBackSecondsChanged(int value)
+    {
+        if (_settings is null)
+            return;
+
+        _settings.SkipBackSeconds = value;
+        StateHasChanged();
+    }
+
+    private void OnSkipForwardSecondsChanged(int value)
+    {
+        if (_settings is null)
+            return;
+
+        _settings.SkipForwardSeconds = value;
+        StateHasChanged();
+    }
+
+    private void ApplyLocalVideoSkip(VideoPlayerSettingsDto settings)
+    {
+        PlayerService.SetSkipBackSeconds(Math.Max(1, settings.SkipBackSeconds));
+        PlayerService.SetSkipForwardSeconds(Math.Max(1, settings.SkipForwardSeconds));
+    }
+
     private async Task OnLibraryScopeChanged(Guid? libraryId)
     {
         if (libraryId == _selectedLibraryId)
@@ -162,6 +192,7 @@ public partial class SettingsVideoPlaybackPage
                 UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
                 UserPreferencesService.UpdateUserVideoPlaybackPolicySettingsAsync(_videoPolicy),
                 UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
+            ApplyLocalVideoSkip(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
@@ -191,6 +222,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(_selectedLibraryId);
+            ApplyLocalVideoSkip(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
             Snackbar.Add(L["ResetSuccess"], K7Severity.Success);

@@ -116,6 +116,26 @@ public partial class AdminVideoPlaybackPanel
 
     private static string FormatBlur(double value) => $"{value:F1} px";
 
+    private static string FormatSkipSeconds(int value) => $"{value}s";
+
+    private void OnSkipBackSecondsChanged(int value)
+    {
+        if (_settings is null)
+            return;
+
+        _settings.SkipBackSeconds = value;
+        StateHasChanged();
+    }
+
+    private void OnSkipForwardSecondsChanged(int value)
+    {
+        if (_settings is null)
+            return;
+
+        _settings.SkipForwardSeconds = value;
+        StateHasChanged();
+    }
+
     private async Task OnLibraryScopeChanged(Guid? libraryId)
     {
         if (libraryId == _selectedLibraryId)

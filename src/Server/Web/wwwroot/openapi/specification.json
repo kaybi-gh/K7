@@ -20665,6 +20665,22 @@
           },
           "outroSkipBehavior": {
             "$ref": "#/components/schemas/IntroSkipBehavior"
+          },
+          "skipBackSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skipForwardSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

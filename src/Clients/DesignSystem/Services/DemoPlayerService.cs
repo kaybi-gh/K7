@@ -144,4 +144,20 @@ public sealed class DemoPlayerService : IPlayerService
         PlaybackStartFailureMessageKey = messageKey ?? "StreamPlaybackFailed";
         return Task.CompletedTask;
     }
+
+    public event Action? PlayerUxSettingsChanged;
+    public int SkipBackSeconds { get; private set; } = 10;
+    public int SkipForwardSeconds { get; private set; } = 10;
+
+    public void SetSkipBackSeconds(int seconds)
+    {
+        SkipBackSeconds = Math.Max(1, seconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
+    public void SetSkipForwardSeconds(int seconds)
+    {
+        SkipForwardSeconds = Math.Max(1, seconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
 }

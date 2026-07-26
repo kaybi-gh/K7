@@ -40,6 +40,9 @@
   <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée pour la bibliothèque concernée.</value></data>
   <data name="ShowChapterTicks" xml:space="preserve"><value>Afficher les chapitres sur la barre de lecture</value></data>
   <data name="ShowChapterTicksHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est desactivee pour la bibliotheque concernee.</value></data>
+  <data name="SkipBackDuration" xml:space="preserve"><value>Retour rapide</value></data>
+  <data name="SkipForwardDuration" xml:space="preserve"><value>Avance rapide</value></data>
+  <data name="SkipDurationHint" xml:space="preserve"><value>Duree du saut court (clavier, telecommande TV, double tap). Le maintien sur la barre de lecture reste un scrub.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>

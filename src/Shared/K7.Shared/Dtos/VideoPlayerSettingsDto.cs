@@ -16,4 +16,10 @@ public sealed record VideoPlayerSettingsDto
     public bool PlayThemeSongs { get; set; } = true;
     public IntroSkipBehavior IntroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
     public IntroSkipBehavior OutroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
+
+    /// <summary>Short-press rewind duration for video (keyboard / TV remote), in seconds.</summary>
+    public int SkipBackSeconds { get; set; } = 10;
+
+    /// <summary>Short-press fast-forward duration for video (keyboard / TV remote), in seconds.</summary>
+    public int SkipForwardSeconds { get; set; } = 10;
 }

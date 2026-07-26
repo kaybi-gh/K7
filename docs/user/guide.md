@@ -80,7 +80,7 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers |
+| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers |
 | Track selection | Preferred audio languages; when to show subtitles (Off, Forced only, Full, Hearing impaired) |
 | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume / completion threshold |
 
@@ -92,8 +92,8 @@ Theme songs play quietly in the background when you open a series or movie page,
 
 | Gesture | Action |
 |---|---|
-| Double-tap left half | Seek backward (~10 s; repeats accumulate) |
-| Double-tap right half | Seek forward |
+| Double-tap left half | Seek backward (configured skip back; default 10 s; repeats accumulate) |
+| Double-tap right half | Seek forward (configured skip forward; default 10 s) |
 | Vertical drag left half | Brightness |
 | Vertical drag right half | Volume |
 
@@ -103,7 +103,7 @@ Single tap shows or hides controls when you are not mid-gesture.
 
 | Input | Action |
 |---|---|
-| Left / Right | Seek (~10 s; repeats accumulate) |
+| Left / Right | Short skip (Settings -> Video playback; default 10 s). Hold to scrub on the seek bar |
 | Up / Down | Volume |
 | Enter / Select | Show controls, or skip intro when offered |
 
@@ -120,7 +120,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |
-| Video and subtitles | Settings -> Video playback / track selection | Intro skip, subtitle look, resume rules, preferred audio / subtitle languages - see [Playback](#playback) |
+| Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages - see [Playback](#playback) |
 | Music player | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
 | Offline | Settings -> Offline | Storage and network rules on native apps - see [Offline downloads](#offline-downloads) |
 

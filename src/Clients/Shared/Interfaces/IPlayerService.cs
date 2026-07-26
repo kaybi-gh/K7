@@ -112,4 +112,14 @@ public interface IPlayerService
     /// </param>
     Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default);
 
+    /// <summary>Short-press rewind duration for video controls (seconds).</summary>
+    int SkipBackSeconds { get; }
+
+    /// <summary>Short-press fast-forward duration for video controls (seconds).</summary>
+    int SkipForwardSeconds { get; }
+
+    void SetSkipBackSeconds(int seconds);
+    void SetSkipForwardSeconds(int seconds);
+
+    event Action? PlayerUxSettingsChanged;
 }

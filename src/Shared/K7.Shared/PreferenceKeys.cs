@@ -62,6 +62,8 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<bool> KEEP_SCREEN_ON = new("KeepScreenOn");
     public static readonly PreferenceKey<int> SKIP_BACK_SECONDS = new("SkipBackSeconds");
     public static readonly PreferenceKey<int> SKIP_FORWARD_SECONDS = new("SkipForwardSeconds");
+    public static readonly PreferenceKey<int> VIDEO_SKIP_BACK_SECONDS = new("VideoSkipBackSeconds");
+    public static readonly PreferenceKey<int> VIDEO_SKIP_FORWARD_SECONDS = new("VideoSkipForwardSeconds");
 
     // Sleep timer
     public static readonly PreferenceKey<string> SLEEP_TIMER_MODE = new("SleepTimerMode");

@@ -153,6 +153,28 @@ internal class PlayerService(
         }
     }
 
+    public event Action? PlayerUxSettingsChanged;
+
+    private int _skipBackSeconds = deviceStorageService.Get(PreferenceKeys.VIDEO_SKIP_BACK_SECONDS, 10);
+    public int SkipBackSeconds => _skipBackSeconds;
+
+    private int _skipForwardSeconds = deviceStorageService.Get(PreferenceKeys.VIDEO_SKIP_FORWARD_SECONDS, 10);
+    public int SkipForwardSeconds => _skipForwardSeconds;
+
+    public void SetSkipBackSeconds(int seconds)
+    {
+        _skipBackSeconds = Math.Max(1, seconds);
+        deviceStorageService.Set(PreferenceKeys.VIDEO_SKIP_BACK_SECONDS, _skipBackSeconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
+    public void SetSkipForwardSeconds(int seconds)
+    {
+        _skipForwardSeconds = Math.Max(1, seconds);
+        deviceStorageService.Set(PreferenceKeys.VIDEO_SKIP_FORWARD_SECONDS, _skipForwardSeconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
     private double _playbackRate = deviceStorageService.Get(PreferenceKeys.PLAYER_PLAYBACK_RATE, 1);
     public double PlaybackRate
     {

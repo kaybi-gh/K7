@@ -90,6 +90,18 @@ else
                 <span class="text-caption video-playback-hint">@L["ShowSeekbarThumbnailsHintLibrary"]</span>
                 <K7Switch Label="@L["ShowChapterTicks"]" @bind-Value="_settings.ShowChapterTicks" />
                 <span class="text-caption video-playback-hint">@L["ShowChapterTicksHintLibrary"]</span>
+
+                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
+                          Label="@L["SkipBackDuration"]"
+                          FormatValue="FormatSkipSeconds"
+                          Value="_settings.SkipBackSeconds"
+                          ValueChanged="OnSkipBackSecondsChanged" />
+                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
+                          Label="@L["SkipForwardDuration"]"
+                          FormatValue="FormatSkipSeconds"
+                          Value="_settings.SkipForwardSeconds"
+                          ValueChanged="OnSkipForwardSecondsChanged" />
+                <span class="text-caption video-playback-hint">@L["SkipDurationHint"]</span>
             </section>
 
             <K7Divider />
