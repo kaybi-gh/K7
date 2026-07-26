@@ -26,6 +26,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private const string PrefixArtist = "artist:";
     private const string PrefixPlaylist = "playlist:";
     private const string PrefixTrack = "track:";
+    private const string PrefixRecent = "recent:";
     private const string PrefixDownloadGroup = "download-group:";
     private const string PrefixArtistLetter = "artists-letter:";
     private const string ShuffleSuffix = ":shuffle";
@@ -156,6 +157,11 @@ public sealed class MediaBrowseService : IMediaBrowseService
             return await GetDownloadGroupQueueAsync(parentId, cancellationToken);
         }
 
+        if (parentId.StartsWith(PrefixRecent))
+        {
+            return await GetRecentPlaysQueueAsync(parentId, cancellationToken);
+        }
+
         if (parentId.StartsWith(PrefixTrack))
         {
             return await GetSingleTrackQueueAsync(parentId, cancellationToken);
@@ -180,13 +186,14 @@ public sealed class MediaBrowseService : IMediaBrowseService
         if (history is null || history.Items.Count == 0)
             return [];
 
-        // Deduplicate by MediaId, keep most recent
+        // Deduplicate by MediaId, keep most recent.
+        // Use recent: so tapping a track queues the full recent list from that point.
         return history.Items
             .GroupBy(h => h.MediaId)
             .Select(g => g.First())
             .Select(h => new MediaBrowseItem
             {
-                Id = $"{PrefixTrack}{h.MediaId}",
+                Id = $"{PrefixRecent}{h.MediaId}",
                 Title = h.MediaTitle ?? "Unknown",
                 ArtworkUrl = h.ImageUrl is not null ? _apiClient.GetAbsoluteUri(h.ImageUrl)?.AbsoluteUri : null,
                 IsPlayable = true
@@ -254,17 +261,25 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private async Task<IReadOnlyList<MediaBrowseItem>> GetArtistAlbumsAsync(string parentId, CancellationToken cancellationToken)
     {
         var artistId = Guid.Parse(parentId[PrefixArtist.Length..]);
-        var media = await _mediaService.GetMediaAsync(artistId, cancellationToken);
 
-        if (media is not MusicArtistDto artist)
-            return [];
+        // Use lite listing (same as letter browse) instead of full GetMedia.
+        // Full artist payloads can fail/timeout on car networks and return null -> empty children.
+        var result = await _mediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+        {
+            MediaTypes = [MediaType.MusicAlbum],
+            ArtistIds = [artistId],
+            OrderBy = [MediaOrderingOption.ReleaseDateDesc],
+            PageNumber = 1,
+            PageSize = 200
+        }, cancellationToken);
 
         var items = new List<MediaBrowseItem>
         {
             new() { Id = $"{parentId}{ShuffleSuffix}", Title = "Shuffle All", IsPlayable = true }
         };
 
-        items.AddRange((artist.Albums ?? [])
+        items.AddRange((result?.Items ?? [])
+            .OfType<LiteMusicAlbumDto>()
             .Select(a => new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{a.Id}",
@@ -520,6 +535,69 @@ public sealed class MediaBrowseService : IMediaBrowseService
         ];
     }
 
+    private async Task<IReadOnlyList<AudioQueueItem>> GetRecentPlaysQueueAsync(string parentId, CancellationToken cancellationToken)
+    {
+        var targetTrackId = Guid.Parse(parentId[PrefixRecent.Length..]);
+        var history = await _serverInfoService.GetPlaybackHistoryAsync(
+            page: 1,
+            pageSize: 30,
+            mediaType: "MusicTrack",
+            cancellationToken: cancellationToken);
+
+        if (history is null || history.Items.Count == 0)
+            return await GetSingleTrackQueueAsync($"{PrefixTrack}{targetTrackId}", cancellationToken);
+
+        var orderedMediaIds = history.Items
+            .GroupBy(h => h.MediaId)
+            .Select(g => g.Key)
+            .ToArray();
+
+        var result = await _mediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+        {
+            MediaTypes = [MediaType.MusicTrack],
+            Ids = orderedMediaIds,
+            PageNumber = 1,
+            PageSize = orderedMediaIds.Length
+        }, cancellationToken);
+
+        var byId = (result?.Items ?? [])
+            .OfType<LiteMusicTrackDto>()
+            .Where(t => t.IndexedFileId.HasValue)
+            .ToDictionary(t => t.Id);
+
+        var queue = orderedMediaIds
+            .Where(id => byId.ContainsKey(id))
+            .Select(id =>
+            {
+                var t = byId[id];
+                return new AudioQueueItem
+                {
+                    IndexedFileId = t.IndexedFileId!.Value,
+                    MediaId = t.Id,
+                    Title = t.Title ?? "Unknown Track",
+                    Artist = t.ArtistName,
+                    ArtistId = t.ArtistId,
+                    AlbumTitle = t.AlbumTitle,
+                    Genre = t.Genre,
+                    CoverUrl = GetPictureUrl(t.Pictures),
+                    Duration = t.Duration
+                };
+            })
+            .ToArray();
+
+        if (queue.Length == 0)
+            return await GetSingleTrackQueueAsync($"{PrefixTrack}{targetTrackId}", cancellationToken);
+
+        var startIdx = Array.FindIndex(queue, q => q.MediaId == targetTrackId);
+        if (startIdx > 0)
+            return queue.Skip(startIdx).Concat(queue.Take(startIdx)).ToArray();
+
+        if (startIdx < 0)
+            return await GetSingleTrackQueueAsync($"{PrefixTrack}{targetTrackId}", cancellationToken);
+
+        return queue;
+    }
+
     private async Task<IReadOnlyList<AudioQueueItem>> GetPlaylistQueueAsync(string parentId, CancellationToken cancellationToken)
     {
         var playlistId = Guid.Parse(parentId[PrefixPlaylist.Length..]);
@@ -675,37 +753,31 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private async Task<IReadOnlyList<AudioQueueItem>> GetArtistQueueAsync(string parentId, CancellationToken cancellationToken)
     {
         var artistId = Guid.Parse(parentId[PrefixArtist.Length..]);
-        var media = await _mediaService.GetMediaAsync(artistId, cancellationToken);
-
-        if (media is not MusicArtistDto artist)
-            return [];
-
-        var queue = new List<AudioQueueItem>();
-
-        foreach (var album in artist.Albums ?? [])
+        var result = await _mediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
         {
-            var albumMedia = await _mediaService.GetMediaAsync(album.Id, cancellationToken);
-            if (albumMedia is not MusicAlbumDto fullAlbum) continue;
+            MediaTypes = [MediaType.MusicTrack],
+            ArtistIds = [artistId],
+            OrderBy = [MediaOrderingOption.TitleAsc],
+            PageNumber = 1,
+            PageSize = 1000
+        }, cancellationToken);
 
-            var coverUrl = GetPictureUrl(fullAlbum.Pictures);
-
-            queue.AddRange((fullAlbum.Tracks ?? [])
-                .OrderBy(t => t.TrackNumber)
-                .Where(t => t.IndexedFileId.HasValue)
-                .Select(t => new AudioQueueItem
-                {
-                    IndexedFileId = t.IndexedFileId!.Value,
-                    MediaId = t.Id,
-                    Title = t.Title ?? "Unknown Track",
-                    Artist = artist.Title,
-                    ArtistId = artist.Id,
-                    AlbumTitle = fullAlbum.Title,
-                    CoverUrl = coverUrl,
-                    Duration = t.Duration
-                }));
-        }
-
-        return queue;
+        return (result?.Items ?? [])
+            .OfType<LiteMusicTrackDto>()
+            .Where(t => t.IndexedFileId.HasValue)
+            .Select(t => new AudioQueueItem
+            {
+                IndexedFileId = t.IndexedFileId!.Value,
+                MediaId = t.Id,
+                Title = t.Title ?? "Unknown Track",
+                Artist = t.ArtistName,
+                ArtistId = t.ArtistId,
+                AlbumTitle = t.AlbumTitle,
+                Genre = t.Genre,
+                CoverUrl = GetPictureUrl(t.Pictures),
+                Duration = t.Duration
+            })
+            .ToArray();
     }
 
     private static IReadOnlyList<AudioQueueItem> Shuffle(IReadOnlyList<AudioQueueItem> queue)
