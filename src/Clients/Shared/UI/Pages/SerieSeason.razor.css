@@ -311,26 +311,26 @@
     flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
-    height: 200px;
+    min-height: 240px;
     justify-content: flex-end;
 }
 
 .tv-episode-overview {
     color: var(--color-text-secondary);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
     max-width: 600px;
-    line-height: 1.6;
-    height: calc(3 * 1.6 * 1.05rem);
 }
 
 .tv-episode-overview p {
     margin: 0;
-    font-size: var(--text-base);
+    /* Match platform-tv overview bump; clamp on the same element as the font. */
+    font-size: var(--text-xl);
     opacity: 0.85;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .tv-carousel-area {

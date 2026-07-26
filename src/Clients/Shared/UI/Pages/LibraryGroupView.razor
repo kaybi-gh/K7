@@ -18,6 +18,7 @@
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="@GridItemWidth"
             DefaultSpacing="24"
+            GridFooterHeight="GridFooterHeight"
             DefaultMode="_browseViewMode"
             DisableViewModePersistence="true"
             ViewModeChanged="OnBrowseViewModeChanged"
@@ -118,6 +119,7 @@
                        WatchedStatusEnabled="true"
                        WatchStateMenuEnabled="_canSetWatchState"
                        FooterVisible="true"
+                       ImageLoading="@(_isTv ? "eager" : "lazy")"
                        PlaceholderIcon="@GetGridPlaceholderIcon(item)"
                        OnFocused="() => OnCardFocused(item)" />
         }

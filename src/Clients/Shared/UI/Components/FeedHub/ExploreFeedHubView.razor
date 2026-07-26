@@ -4,12 +4,15 @@
 @inject IExploreGroupStore ExploreGroupStore
 @inject IStringLocalizer<ExplorePage> L
 
-@if (_loading)
+@if (_isTv is null || _loading)
 {
-    <div class="explore-page page-scrollable">
-        <div class="d-flex flex-col pa-16">
-            <K7Spinner />
-        </div>
+    <div class="@(_isTv == true ? "tv-feed-page" : "explore-page page-scrollable")" aria-busy="true">
+        @if (_isTv != true)
+        {
+            <div class="d-flex flex-col pa-16">
+                <K7Spinner />
+            </div>
+        }
     </div>
 }
 else if (_group is null)
@@ -22,7 +25,7 @@ else
 {
     <div class="@_pageClass" data-initial-focus="@_initialFocus">
         <CascadingValue Value="_focusNavigation" IsFixed="true">
-            <ExploreLibraryGroupView Group="_group" IsTv="_isTv" />
+            <ExploreLibraryGroupView Group="_group" IsTv="@(_isTv == true)" />
         </CascadingValue>
     </div>
 }

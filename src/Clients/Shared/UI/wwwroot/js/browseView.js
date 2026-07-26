@@ -87,8 +87,8 @@ export function dispose(element) {
     const observer = _observers.get(element);
     if (observer) {
         observer.disconnect();
-        _observers.delete(element);
     }
+    _observers.delete(element);
 }
 
 export function scrollTo(element, scrollTop) {
@@ -152,9 +152,10 @@ function getGridColumnCount(scrollRoot, fallback) {
 
 /**
  * Keyboard scrubbing for virtualized grids/lists/tables:
- * - keep focus on placeholder nodes while Virtualize loads
- * - scroll the viewport ahead of ArrowUp/Down
- * - recover focus only when Virtualize recycled the node (focus fell to body)
+ * - own ArrowUp/Down so spatial nav cannot escape to jump-index on vertical moves
+ * - land on placeholder cells while Virtualize loads; block further Down until real
+ * - recover focus when placeholders are replaced with content
+ * - ArrowRight still reaches jump-index via spatial nav
  */
 export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
     if (!(scrollRoot instanceof Element) || _gridKeyHandlers.has(scrollRoot)) return;
@@ -167,6 +168,8 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
     let _lastFocusedIndex = -1;
     let _colCount = 0;
     let _recovering = false;
+    let _waitingForRow = false;
+    let _desiredIndex = -1;
 
     function getCards() {
         return Array.from(scrollRoot.querySelectorAll(focusableSelector));
@@ -174,6 +177,72 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
 
     function getCardIndex(el) {
         return getCards().indexOf(el);
+    }
+
+    function isPlaceholder(el) {
+        return !!(el && el.matches && el.matches(VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR));
+    }
+
+    function focusCardAt(index, cards) {
+        const list = cards || getCards();
+        if (index < 0 || index >= list.length) return false;
+        const target = list[index];
+        if (!target) return false;
+        _recovering = true;
+        target.focus({ preventScroll: true });
+        _recovering = false;
+        _lastFocusedIndex = index;
+        return true;
+    }
+
+    function scrollRowIntoView(row, direction) {
+        if (!row) return;
+        const rowRect = row.getBoundingClientRect();
+        const rootRect = scrollRoot.getBoundingClientRect();
+
+        if (direction === 'down') {
+            const bottomEdge = rowRect.bottom - rootRect.top + scrollRoot.scrollTop;
+            const targetScroll = bottomEdge + itemHeight - scrollRoot.clientHeight;
+            if (targetScroll > scrollRoot.scrollTop) {
+                scrollRoot.scrollTop = targetScroll;
+            }
+        } else {
+            const topEdge = rowRect.top - rootRect.top + scrollRoot.scrollTop;
+            const targetScroll = topEdge - itemHeight;
+            if (targetScroll < scrollRoot.scrollTop) {
+                scrollRoot.scrollTop = Math.max(0, targetScroll);
+            }
+        }
+    }
+
+    function nudgeScrollForLoad() {
+        const maxScroll = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+        const next = Math.min(maxScroll, scrollRoot.scrollTop + Math.max(itemHeight * 0.5, 24));
+        if (next > scrollRoot.scrollTop) {
+            scrollRoot.scrollTop = next;
+        }
+    }
+
+    function tryFulfillPendingFocus() {
+        if (!_waitingForRow || _desiredIndex < 0) return;
+
+        const cards = getCards();
+        if (_desiredIndex >= cards.length) {
+            nudgeScrollForLoad();
+            return;
+        }
+
+        const target = cards[_desiredIndex];
+        focusCardAt(_desiredIndex, cards);
+
+        if (isPlaceholder(target)) {
+            scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), 'down');
+            return;
+        }
+
+        _waitingForRow = false;
+        _desiredIndex = -1;
+        scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), 'down');
     }
 
     function recoverFocus() {
@@ -188,21 +257,84 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
         _recovering = false;
     }
 
+    function handleVerticalArrow(arrowKey, focused) {
+        if (!focused || !scrollRoot.contains(focused)) return false;
+        if (!focused.matches(focusableSelector)) return false;
+
+        const isDown = arrowKey === 'ArrowDown';
+        const isUp = arrowKey === 'ArrowUp';
+        if (!isDown && !isUp) return false;
+
+        const row = focused.closest(VIRTUAL_ROW_SELECTOR);
+        if (!row) return false;
+
+        const cols = _colCount || getColumns(_colCount) || 1;
+        _colCount = cols;
+        const cards = getCards();
+        const currentIndex = getCardIndex(focused);
+        if (currentIndex < 0) return false;
+
+        if (isDown && isPlaceholder(focused)) {
+            _waitingForRow = true;
+            _desiredIndex = currentIndex;
+            nudgeScrollForLoad();
+            return true;
+        }
+
+        const targetIndex = isDown
+            ? currentIndex + cols
+            : Math.max(0, currentIndex - cols);
+
+        if (isUp) {
+            _waitingForRow = false;
+            _desiredIndex = -1;
+        }
+
+        if (targetIndex >= cards.length) {
+            _waitingForRow = true;
+            _desiredIndex = targetIndex;
+            _lastFocusedIndex = currentIndex;
+            nudgeScrollForLoad();
+            return true;
+        }
+
+        const target = cards[targetIndex];
+        _lastFocusedIndex = targetIndex;
+        focusCardAt(targetIndex, cards);
+        scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), isDown ? 'down' : 'up');
+
+        if (isDown && isPlaceholder(target)) {
+            _waitingForRow = true;
+            _desiredIndex = targetIndex;
+        } else if (!isPlaceholder(target)) {
+            _waitingForRow = false;
+            _desiredIndex = -1;
+        }
+
+        return true;
+    }
+
     const onFocusIn = (e) => {
         if (_recovering) return;
         if (e.target && e.target.matches && e.target.matches(focusableSelector)) {
             _lastFocusedIndex = getCardIndex(e.target);
             _colCount = getColumns(_colCount) || 1;
+            if (!isPlaceholder(e.target) && _waitingForRow && _lastFocusedIndex === _desiredIndex) {
+                _waitingForRow = false;
+                _desiredIndex = -1;
+            }
         }
     };
 
     const onFocusOut = () => {
         if (_recovering) return;
-        // Only recover when Virtualize recycled the focused node (focus fell to body).
-        // Do not pull focus back when the user intentionally leaves to chrome / jump index.
         setTimeout(() => {
             const active = document.activeElement;
             if (!active || active === document.body) {
+                if (_waitingForRow) {
+                    tryFulfillPendingFocus();
+                    return;
+                }
                 recoverFocus();
             }
         }, 0);
@@ -212,7 +344,6 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
         const focused = document.activeElement;
         if (!focused || !scrollRoot.contains(focused)) return;
 
-        // Placeholders are Enter-inert (scrubbing only).
         if ((e.key === 'Enter' || e.key === ' ')
             && focused.matches(VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR)) {
             e.preventDefault();
@@ -220,45 +351,35 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
             return;
         }
 
-        // Ignore arrow scrubbing while focus is on header/chrome controls inside the scroll root.
-        if (!focused.matches(focusableSelector)) return;
-
-        const isDown = e.key === 'ArrowDown';
-        const isUp = e.key === 'ArrowUp';
-        if (!isDown && !isUp) return;
-
-        const row = focused.closest(VIRTUAL_ROW_SELECTOR);
-        if (!row) return;
-
-        const cols = _colCount || getColumns(_colCount) || 1;
-        if (isDown) {
-            _lastFocusedIndex = getCardIndex(focused) + cols;
-        } else {
-            _lastFocusedIndex = Math.max(0, getCardIndex(focused) - cols);
-        }
-
-        const rowRect = row.getBoundingClientRect();
-        const rootRect = scrollRoot.getBoundingClientRect();
-
-        if (isDown) {
-            const bottomEdge = rowRect.bottom - rootRect.top + scrollRoot.scrollTop;
-            const targetScroll = bottomEdge + itemHeight - scrollRoot.clientHeight;
-            if (targetScroll > scrollRoot.scrollTop) {
-                scrollRoot.scrollTop = targetScroll;
-            }
-        } else if (isUp) {
-            const topEdge = rowRect.top - rootRect.top + scrollRoot.scrollTop;
-            const targetScroll = topEdge - itemHeight;
-            if (targetScroll < scrollRoot.scrollTop) {
-                scrollRoot.scrollTop = Math.max(0, targetScroll);
-            }
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        if (handleVerticalArrow(e.key, focused)) {
+            e.preventDefault();
+            e.stopPropagation();
         }
     };
 
-    scrollRoot.addEventListener('keydown', onKeyDown);
+    const mutationObserver = typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(() => {
+            if (_waitingForRow) {
+                tryFulfillPendingFocus();
+            }
+        })
+        : null;
+
+    if (mutationObserver) {
+        mutationObserver.observe(scrollRoot, { childList: true, subtree: true });
+    }
+
+    scrollRoot.addEventListener('keydown', onKeyDown, true);
     scrollRoot.addEventListener('focusin', onFocusIn);
     scrollRoot.addEventListener('focusout', onFocusOut);
-    _gridKeyHandlers.set(scrollRoot, { onKeyDown, onFocusIn, onFocusOut });
+    _gridKeyHandlers.set(scrollRoot, {
+        onKeyDown,
+        onFocusIn,
+        onFocusOut,
+        mutationObserver,
+        handleVerticalArrow
+    });
 }
 
 export function initGridKeyNav(gridElement, rowHeight) {
@@ -280,9 +401,12 @@ export function initTableKeyNav(scrollElement, rowHeight) {
 export function disposeVirtualKeyNav(scrollRoot) {
     const handlers = _gridKeyHandlers.get(scrollRoot);
     if (handlers) {
-        scrollRoot.removeEventListener('keydown', handlers.onKeyDown);
+        scrollRoot.removeEventListener('keydown', handlers.onKeyDown, true);
         scrollRoot.removeEventListener('focusin', handlers.onFocusIn);
         scrollRoot.removeEventListener('focusout', handlers.onFocusOut);
+        if (handlers.mutationObserver) {
+            handlers.mutationObserver.disconnect();
+        }
         _gridKeyHandlers.delete(scrollRoot);
     }
 }
@@ -297,4 +421,23 @@ export function disposeListKeyNav(listElement) {
 
 export function disposeTableKeyNav(scrollElement) {
     disposeVirtualKeyNav(scrollElement);
+}
+
+/** Called from navigation.js (document capture) before SpatialNavigation can steal Down to jump-index. */
+export function handleVirtualBrowseArrow(arrowKey, focusedEl) {
+    if (!focusedEl || !focusedEl.closest) return false;
+    if (arrowKey !== 'ArrowDown' && arrowKey !== 'ArrowUp') return false;
+    if (focusedEl.closest('.k7-jump-index')) return false;
+
+    const root = focusedEl.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table');
+    if (!root) return false;
+
+    const handlers = _gridKeyHandlers.get(root);
+    if (!handlers || typeof handlers.handleVerticalArrow !== 'function') return false;
+    return handlers.handleVerticalArrow(arrowKey, focusedEl);
+}
+
+if (typeof window !== 'undefined') {
+    window.K7 = window.K7 || {};
+    window.K7.handleVirtualBrowseArrow = handleVirtualBrowseArrow;
 }

@@ -39,6 +39,8 @@ public partial class MediaCard : IDisposable
     [Parameter] public string? ElementId { get; set; }
     [Parameter] public RenderFragment? CoverContent { get; set; }
     [Parameter] public string? PlaceholderIcon { get; set; }
+    /// <summary>Native img loading hint. Use "eager" for TV overscan rows so posters fetch before focus.</summary>
+    [Parameter] public string ImageLoading { get; set; } = "lazy";
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -528,7 +530,7 @@ public partial class MediaCard : IDisposable
             builder.AddAttribute(4, "Class", "rounded-lg");
             builder.AddAttribute(5, "Fluid", true);
             builder.AddAttribute(6, "ObjectFit", "cover");
-            builder.AddAttribute(7, "loading", "lazy");
+            builder.AddAttribute(7, "Loading", ImageLoading);
             builder.AddAttribute(8, "LoadingMode", K7ImageLoadingMode.Css);
             builder.AddAttribute(9, "FallbackContent", CardPlaceholder);
             builder.CloseComponent();

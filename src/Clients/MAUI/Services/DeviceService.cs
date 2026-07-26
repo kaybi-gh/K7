@@ -13,6 +13,10 @@ namespace K7.Clients.MAUI.Services;
 
 public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService, IMediaService mediaService) : IDeviceService
 {
+    private readonly DeviceType _cachedDeviceType = ResolveDeviceType();
+
+    public DeviceType? CachedDeviceType => _cachedDeviceType;
+
     public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
     {
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
@@ -24,7 +28,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             DeviceUniqueId = deviceIdService.GetDeviceId(),
             DeviceName = DeviceInfo.Name,
             ClientType = GetClientType(),
-            DeviceType = await GetDeviceTypeAsync(),
+            DeviceType = _cachedDeviceType,
             OperatingSystem = await GetOperatingSystemAsync(),
             OperatingSystemVersion = nativeDeviceDetails.RawVersion,
             DisplayHeight = displayInfo.Orientation == DisplayOrientation.Landscape ? displayInfo.Height : displayInfo.Width,
@@ -55,20 +59,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         return ClientType.Native;
     }
 
-    public Task<DeviceType> GetDeviceTypeAsync()
-    {
-        var mapped = MapDeviceType(DeviceInfo.Idiom);
-        if (mapped == DeviceType.TV)
-            return Task.FromResult(DeviceType.TV);
-
-#if ANDROID
-        // Many Android TV boxes report Tablet/Phone idiom; UiMode is authoritative.
-        if (IsAndroidTelevision())
-            return Task.FromResult(DeviceType.TV);
-#endif
-
-        return Task.FromResult(mapped);
-    }
+    public Task<DeviceType> GetDeviceTypeAsync() => Task.FromResult(_cachedDeviceType);
 
     public Task<OperatingSystem> GetOperatingSystemAsync()
     {
@@ -155,6 +146,21 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         var relativePath = localPath[downloadsBase.Length..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var normalizedPath = relativePath.Replace('\\', '/');
         return $"https://k7-local-files/{normalizedPath}";
+    }
+
+    private static DeviceType ResolveDeviceType()
+    {
+        var mapped = MapDeviceType(DeviceInfo.Idiom);
+        if (mapped == DeviceType.TV)
+            return DeviceType.TV;
+
+#if ANDROID
+        // Many Android TV boxes report Tablet/Phone idiom; UiMode is authoritative.
+        if (IsAndroidTelevision())
+            return DeviceType.TV;
+#endif
+
+        return mapped;
     }
 
     private static DeviceType MapDeviceType(DeviceIdiom deviceIdiom)

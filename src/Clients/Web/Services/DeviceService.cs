@@ -12,6 +12,11 @@ namespace K7.Clients.Web.Services;
 
 public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDeviceStorageService deviceStorageService) : IDeviceService
 {
+    private DeviceType? _cachedDeviceType;
+    private Task<DeviceType>? _deviceTypeTask;
+
+    public DeviceType? CachedDeviceType => _cachedDeviceType;
+
     public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
     {
         var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
@@ -20,7 +25,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var displayWidth = await jsRuntime.InvokeAsync<int>("getDisplayWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
-        var deviceType = MapDeviceType(parsedUserAgent.PlatformType);
+        var deviceType = CacheDeviceType(MapDeviceType(parsedUserAgent.PlatformType));
         var browser = MapBrowser(parsedUserAgent.BrowserName);
         var operatingSystem = MapOperatingSystem(parsedUserAgent.OsName);
         
@@ -62,11 +67,25 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         return ClientType.Web;
     }
 
-    public async Task<DeviceType> GetDeviceTypeAsync()
+    public Task<DeviceType> GetDeviceTypeAsync()
+    {
+        if (_cachedDeviceType is { } cached)
+            return Task.FromResult(cached);
+
+        return _deviceTypeTask ??= ResolveDeviceTypeAsync();
+    }
+
+    private async Task<DeviceType> ResolveDeviceTypeAsync()
     {
         var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
             ?? new ParsedUserAgent();
-        return MapDeviceType(parsedUserAgent.PlatformType);
+        return CacheDeviceType(MapDeviceType(parsedUserAgent.PlatformType));
+    }
+
+    private DeviceType CacheDeviceType(DeviceType deviceType)
+    {
+        _cachedDeviceType = deviceType;
+        return deviceType;
     }
 
     public async Task<OperatingSystem> GetOperatingSystemAsync()

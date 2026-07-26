@@ -11,6 +11,11 @@ public interface IDeviceService
     string? GetDeviceId();
     string? GetDeviceUniqueId();
     ClientType GetClientType();
+    /// <summary>
+    /// Synchronously known device type when the host can resolve it without JS (e.g. MAUI).
+    /// Null until the first successful <see cref="GetDeviceTypeAsync"/> on Web.
+    /// </summary>
+    DeviceType? CachedDeviceType { get; }
     Task<DeviceType> GetDeviceTypeAsync();
     Task<OperatingSystem> GetOperatingSystemAsync();
     Task<NativeDeviceDetailsDto> GetNativeDeviceDetailsAsync();

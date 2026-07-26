@@ -3,41 +3,52 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="@(_isTv ? "tv-feed-page home-page home-page--tv" : "home-page page-scrollable")" data-initial-focus="@_homeFocusSelector">
-    @if (_isOffline)
-    {
-        <div class="home-offline-banner">
-            <K7Icon Icon="@Phosphor.WifiSlash" Style="font-size: 48px; opacity: 0.4;" />
-            <p class="home-offline-banner__title">@L["OfflineTitle"]</p>
-            <p class="home-offline-banner__subtitle">@L["OfflineSubtitle"]</p>
-            <K7Button Href="/my-space/downloads" Variant="filled" Color="primary">
-                @L["GoToDownloads"]
-            </K7Button>
-        </div>
-    }
-    else if (_isTv)
-    {
-        <HomeTvHero Model="_focusedItem" />
-    }
-    @if (!FeedStore.IsLoaded || isLoading)
-    {
-        @if (_isTv)
+@if (_isTv is null)
+{
+    <div class="tv-feed-page home-page home-page--tv" aria-busy="true"></div>
+}
+else
+{
+    <div class="@(_isTv == true ? "tv-feed-page home-page home-page--tv" : "home-page page-scrollable")" data-initial-focus="@_homeFocusSelector">
+        @if (_isOffline)
         {
+            <div class="home-offline-banner">
+                <K7Icon Icon="@Phosphor.WifiSlash" Style="font-size: 48px; opacity: 0.4;" />
+                <p class="home-offline-banner__title">@L["OfflineTitle"]</p>
+                <p class="home-offline-banner__subtitle">@L["OfflineSubtitle"]</p>
+                <K7Button Href="/my-space/downloads" Variant="filled" Color="primary">
+                    @L["GoToDownloads"]
+                </K7Button>
+            </div>
+        }
+        else if (_isTv == true)
+        {
+            <HomeTvHero Model="_focusedItem" />
             <VerticalCarousel>
-                @for (int i = 0; i < 3; i++)
+                @if (!FeedStore.IsLoaded || isLoading)
                 {
-                    <Carousel Skeleton="true">
-                        @for (int j = 0; j < 10; j++)
-                        {
-                            <CarouselItem>
-                                <MediaCard Skeleton="true" FooterVisible="true" />
-                            </CarouselItem>
-                        }
-                    </Carousel>
+                    @for (int i = 0; i < 3; i++)
+                    {
+                        <Carousel Skeleton="true">
+                            @for (int j = 0; j < 10; j++)
+                            {
+                                <CarouselItem>
+                                    <MediaCard Skeleton="true" FooterVisible="true" />
+                                </CarouselItem>
+                            }
+                        </Carousel>
+                    }
+                }
+                else
+                {
+                    @foreach (var row in GetVisibleRows())
+                    {
+                        @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                    }
                 }
             </VerticalCarousel>
         }
-        else
+        else if (!FeedStore.IsLoaded || isLoading)
         {
             @for (int i = 0; i < 3; i++)
             {
@@ -51,34 +62,27 @@
                 </Carousel>
             }
         }
-    }
-    else
-    {
-        var hasAnyCarousel = GetVisibleRows().Any();
-
-        @if (_isTv)
-        {
-            <VerticalCarousel>
-                @foreach (var row in GetVisibleRows())
-                {
-                    @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
-                }
-            </VerticalCarousel>
-        }
         else
         {
+            var hasAnyCarousel = GetVisibleRows().Any();
+
             @foreach (var row in GetVisibleRows())
             {
                 @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
             }
+
+            @if (!hasAnyCarousel)
+            {
+                <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
+            }
         }
 
-        @if (!hasAnyCarousel)
+        @if (_isTv == true && FeedStore.IsLoaded && !isLoading && !GetVisibleRows().Any() && !_isOffline)
         {
             <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
         }
-    }
-</div>
+    </div>
+}
 
 @{ RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {

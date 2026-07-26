@@ -73,6 +73,7 @@ public sealed class MockDeviceService : IDeviceService
     public string? GetDeviceId() => "design-device";
     public string? GetDeviceUniqueId() => "design-unique-id";
     public ClientType GetClientType() => ClientType.Web;
+    public DeviceType? CachedDeviceType => DeviceType.Desktop;
     public Task<DeviceType> GetDeviceTypeAsync() => Task.FromResult(DeviceType.Desktop);
     public Task<K7.Server.Domain.Enums.OperatingSystem> GetOperatingSystemAsync() => Task.FromResult(K7.Server.Domain.Enums.OperatingSystem.Windows);
     public Task<NativeDeviceDetailsDto> GetNativeDeviceDetailsAsync() => Task.FromResult(new NativeDeviceDetailsDto());

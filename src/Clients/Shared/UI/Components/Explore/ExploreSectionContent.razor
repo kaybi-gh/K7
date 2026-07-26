@@ -7,7 +7,8 @@
                             BrowseLabel="@BrowseLabel"
                             BackAriaLabel="@BackAriaLabel"
                             OnBack="OnBack" />
-        <VerticalCarousel @key="_carouselKey">
+        @* Keep one VerticalCarousel across loading/content so JS ready state is not reset. *@
+        <VerticalCarousel>
             @if (IsLoading)
             {
                 @for (var i = 0; i < 3; i++)

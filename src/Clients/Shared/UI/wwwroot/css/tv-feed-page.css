@@ -27,3 +27,22 @@
     font-size: var(--text-2xl);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
+
+/*
+ * Unscoped fallback: hide non-first shelves before vertical-carousel.js marks ready.
+ * Scoped :deep rules can miss remounts / child-component roots; this runs globally.
+ */
+html.platform-tv .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__container > *:not(:first-child),
+.tv-feed-page .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__container > *:not(:first-child) {
+    position: absolute !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    inset-inline: 0;
+    top: 0;
+}
+
+html.platform-tv .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__viewport,
+.tv-feed-page .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__viewport {
+    overflow: hidden;
+    max-height: min(42vh, 420px);
+}

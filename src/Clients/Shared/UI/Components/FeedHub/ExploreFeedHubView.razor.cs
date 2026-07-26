@@ -19,7 +19,7 @@ public partial class ExploreFeedHubView : IDisposable
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     private bool _loading = true;
-    private bool _isTv;
+    private bool? _isTv;
     private bool _hubPageActive;
     private Guid? _initializedGroupId;
     private LibraryGroupDto? _group;
@@ -29,13 +29,22 @@ public partial class ExploreFeedHubView : IDisposable
 
     private FeedHubKey PageKey => FeedHubKey.ForExploreGroup(GroupId);
 
-    private string _pageClass => _isTv
+    private string _pageClass => _isTv == true
         ? "tv-feed-page"
         : "explore-group-page page-scrollable";
 
-    private string? _initialFocus => _isTv
+    private string? _initialFocus => _isTv == true
         ? "[data-carousel-item] a, [data-carousel-item] button"
         : null;
+
+    protected override void OnInitialized()
+    {
+        if (DeviceService.CachedDeviceType is { } cached)
+            _isTv = cached == DeviceType.TV;
+
+        FeedHub.Changed += OnFeedHubChanged;
+        _hubPageActive = IsHubPageActive();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -43,8 +52,7 @@ public partial class ExploreFeedHubView : IDisposable
             return;
 
         _initializedGroupId = GroupId;
-        // Resolve TV layout before loading so the first paint is not desktop/spinner-wrong.
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        _isTv ??= await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         _loading = true;
         var snapshot = await ExploreGroupStore.EnsureGroupAsync(GroupId);
         _group = snapshot?.Group;
@@ -54,12 +62,6 @@ public partial class ExploreFeedHubView : IDisposable
             SaveMediaId = mediaId => HubFocus.Save(PageKey, mediaId)
         };
         _loading = false;
-    }
-
-    protected override void OnInitialized()
-    {
-        FeedHub.Changed += OnFeedHubChanged;
-        _hubPageActive = IsHubPageActive();
     }
 
     public void Dispose()
@@ -102,7 +104,7 @@ public partial class ExploreFeedHubView : IDisposable
 
         var cardId = _focusNavigation.GetCardElementId(mediaId);
 
-        if (_isTv)
+        if (_isTv == true)
         {
             try
             {

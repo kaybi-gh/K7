@@ -29,7 +29,7 @@ public partial class HomeView : IAsyncDisposable
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
-    private bool _isTv;
+    private bool? _isTv;
     private MediaCardViewModel? _focusedItem;
     private bool _focusRestored;
     private bool _emptyFeedRetried;
@@ -50,7 +50,7 @@ public partial class HomeView : IAsyncDisposable
     {
         get
         {
-            if (!_isTv)
+            if (_isTv != true)
                 return null;
 
             if (NavigationState.SavedFocus is { } focus)
@@ -60,10 +60,16 @@ public partial class HomeView : IAsyncDisposable
         }
     }
 
+    protected override void OnInitialized()
+    {
+        // MAUI resolves device type synchronously; use it before any await so the first paint is TV.
+        if (DeviceService.CachedDeviceType is { } cached)
+            _isTv = cached == DeviceType.TV;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        // Resolve TV layout before any other await so the first paint is not desktop.
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        _isTv ??= await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var role = await FeatureAccess.GetRoleAsync();
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
@@ -75,7 +81,7 @@ public partial class HomeView : IAsyncDisposable
         _hubHomeActive = IsHubHomeActive();
         await FeedStore.EnsureLoadedAsync();
 
-        if (_isTv)
+        if (_isTv == true)
         {
             if (NavigationState.SavedFocus is { } saved && ResolveSavedFocus(saved) is { } resolved)
                 _focusedItem = resolved.Item;
@@ -120,7 +126,7 @@ public partial class HomeView : IAsyncDisposable
     {
         if (NavigationState.SavedFocus is not { } saved || ResolveSavedFocus(saved) is not { } resolved)
         {
-            if (_isTv)
+            if (_isTv == true)
             {
                 try
                 {
@@ -134,7 +140,7 @@ public partial class HomeView : IAsyncDisposable
             return;
         }
 
-        if (_isTv)
+        if (_isTv == true)
         {
             _focusedItem = resolved.Item;
             await InvokeAsync(StateHasChanged);
@@ -158,7 +164,7 @@ public partial class HomeView : IAsyncDisposable
         try
         {
             var focused = await JSRuntime.InvokeAsync<bool>("K7.focusById", GetHomeCardId(resolved.MediaId), true);
-            if (!focused && _isTv)
+            if (!focused && _isTv == true)
             {
                 await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
             }
@@ -197,7 +203,7 @@ public partial class HomeView : IAsyncDisposable
             _emptyFeedRetried = true;
             await FeedStore.ResetAndReloadAsync();
 
-            if (_isTv)
+            if (_isTv == true)
             {
                 _focusedItem = GetVisibleRows().Select(r => r.Items.FirstOrDefault()).FirstOrDefault(i => i is not null);
             }
@@ -209,7 +215,7 @@ public partial class HomeView : IAsyncDisposable
             return;
 
         // Non-TV: FeedHub keep-alive preserves DOM (page + Embla). Do not call restore JS.
-        if (!_isTv)
+        if (_isTv != true)
         {
             _focusRestored = true;
             return;
@@ -312,7 +318,7 @@ public partial class HomeView : IAsyncDisposable
 
     private string GetHref(MediaCardViewModel item)
     {
-        if (!_isTv && item.Kind == MediaCardKind.Episode && TryGetEpisodePageHref(item, out var episodeHref))
+        if (_isTv != true && item.Kind == MediaCardKind.Episode && TryGetEpisodePageHref(item, out var episodeHref))
             return episodeHref;
 
         return item.NavigationTarget ?? item.Kind switch
@@ -408,7 +414,7 @@ public partial class HomeView : IAsyncDisposable
     {
         NavigationState.Save(row.Id, item.Id, cardIndex);
 
-        if (!_isTv)
+        if (_isTv != true)
             return;
 
         // Avoid re-render loops: focusin can re-fire after parent StateHasChanged patches the DOM.

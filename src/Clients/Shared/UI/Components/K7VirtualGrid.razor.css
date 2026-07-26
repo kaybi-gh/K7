@@ -16,6 +16,21 @@
     background: var(--color-surface);
     position: relative;
     aspect-ratio: 2 / 3;
+    border: 1px solid var(--color-border-subtle);
+    overflow: hidden;
+}
+
+.k7-virtual-grid-placeholder-cell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 30%,
+        color-mix(in srgb, var(--color-text-muted) 8%, transparent) 50%,
+        transparent 70%);
+    background-size: 200% 100%;
+    animation: k7-virtual-grid-placeholder-shimmer 1.4s ease-in-out infinite;
 }
 
 .k7-virtual-grid-placeholder-focus {
@@ -25,10 +40,16 @@
     border-radius: inherit;
     background: transparent;
     outline: none;
+    z-index: 1;
 }
 
 .k7-virtual-grid-placeholder-focus:focus-visible {
     box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+@keyframes k7-virtual-grid-placeholder-shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
 }
 
 @media (max-width: 599.98px) {

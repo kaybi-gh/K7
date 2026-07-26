@@ -102,3 +102,8 @@ window.K7.preloadImage = function (url) {
         if (img.complete) finish();
     });
 };
+
+window.K7.preloadImages = function (urls) {
+    if (!urls || !urls.length) return Promise.resolve();
+    return Promise.all(urls.map(window.K7.preloadImage));
+};

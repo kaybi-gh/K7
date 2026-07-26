@@ -43,10 +43,15 @@ public partial class LibraryGroupView : IDisposable
 
     private const string ContentSourceAll = "";
     private const string ContentSourceLocal = "local";
-    private const int TvOverscanCount = 3;
+    // Extra rows mounted above/below the viewport so D-pad scrub hits warm cards.
+    private const int TvOverscanCount = 6;
     private const int DefaultOverscanCount = 5;
+    // Desktop MediaCard footer fits in 44px; TV bumps title/subtitle so rows need more room.
+    private const int DefaultGridFooterHeight = 44;
+    private const int TvGridFooterHeight = 72;
     private const int PageSize = 50;
     private const int PageCacheCapacity = 32;
+    private const int TvPrefetchPageCount = 2;
 
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
@@ -63,6 +68,8 @@ public partial class LibraryGroupView : IDisposable
     private readonly LruCache<(string Fingerprint, int Page), (IReadOnlyList<LiteMediaDto> Items, int TotalCount)> _pageCache
         = new(PageCacheCapacity);
     private readonly Dictionary<Guid, MediaCardViewModel> _viewModelCache = new();
+    private readonly HashSet<int> _prefetchInFlight = [];
+    private readonly HashSet<int> _warmedImagePages = [];
     private string _queryFingerprint = "";
     private LibraryMediaType? _libraryMediaType;
     private IReadOnlyList<Guid>? _libraryIds;
@@ -126,6 +133,8 @@ public partial class LibraryGroupView : IDisposable
     };
 
     private int GridItemWidth => _selectedMediaType == MediaType.SerieEpisode ? 200 : 160;
+
+    private int GridFooterHeight => _isTv ? TvGridFooterHeight : DefaultGridFooterHeight;
 
     private string FilterStorageKey => $"library-group.{Id}";
 
@@ -350,6 +359,7 @@ public partial class LibraryGroupView : IDisposable
                     _totalCount = cached.TotalCount;
                     _totalCountKnown = true;
                     pageItems.Add((page, cached.Items));
+                    WarmPageImages(page, cached.Items);
                 }
                 else
                 {
@@ -368,6 +378,7 @@ public partial class LibraryGroupView : IDisposable
                         continue;
 
                     pageItems.Add(entry.Value);
+                    WarmPageImages(entry.Value.Page, entry.Value.Items);
                 }
             }
 
@@ -380,6 +391,8 @@ public partial class LibraryGroupView : IDisposable
             var offset = startIndex - (firstPage - 1) * PageSize;
             var window = allItems.Skip(offset).Take(count).ToList();
 
+            SchedulePrefetchAhead(lastPage);
+
             // BrowseView.WrappedItemsProvider already re-renders when TotalItemCount changes.
             // Avoid a full-page StateHasChanged here: it re-runs every mounted MediaCard.
             return new ItemsProviderResult<LiteMediaDto>(window, _totalCount);
@@ -389,6 +402,73 @@ public partial class LibraryGroupView : IDisposable
             request.CancellationToken.ThrowIfCancellationRequested();
             return default;
         }
+    }
+
+    private void SchedulePrefetchAhead(int lastVisiblePage)
+    {
+        if (!_isTv || string.IsNullOrEmpty(_queryFingerprint))
+            return;
+
+        var fingerprint = _queryFingerprint;
+        for (var offset = 1; offset <= TvPrefetchPageCount; offset++)
+        {
+            var page = lastVisiblePage + offset;
+            if (_totalCountKnown && (page - 1) * PageSize >= _totalCount)
+                break;
+
+            if (_pageCache.TryGetValue((fingerprint, page), out var cached))
+            {
+                WarmPageImages(page, cached.Items);
+                continue;
+            }
+
+            if (!_prefetchInFlight.Add(page))
+                continue;
+
+            _ = PrefetchPageAheadAsync(page, fingerprint);
+        }
+    }
+
+    private async Task PrefetchPageAheadAsync(int page, string fingerprint)
+    {
+        try
+        {
+            var entry = await FetchAndCachePageAsync(page, CancellationToken.None);
+            if (entry is null || fingerprint != _queryFingerprint)
+                return;
+
+            WarmPageImages(page, entry.Value.Items);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+            // Best-effort lookahead; visible scroll path has its own error handling.
+        }
+        finally
+        {
+            _prefetchInFlight.Remove(page);
+        }
+    }
+
+    private void WarmPageImages(int page, IReadOnlyList<LiteMediaDto> items)
+    {
+        if (!_isTv || items.Count == 0 || !_warmedImagePages.Add(page))
+            return;
+
+        var urls = new List<string>(items.Count);
+        foreach (var item in items)
+        {
+            var url = GetGridCardViewModel(item)?.PictureUrl;
+            if (!string.IsNullOrEmpty(url))
+                urls.Add(url);
+        }
+
+        if (urls.Count == 0)
+            return;
+
+        _ = JSRuntime.InvokeVoidAsync("K7.preloadImages", urls);
     }
 
     private async Task<(int Page, IReadOnlyList<LiteMediaDto> Items)?> FetchAndCachePageAsync(
@@ -421,6 +501,8 @@ public partial class LibraryGroupView : IDisposable
         _queryFingerprint = fingerprint;
         _pageCache.Clear();
         _viewModelCache.Clear();
+        _prefetchInFlight.Clear();
+        _warmedImagePages.Clear();
     }
 
     private string BuildQueryFingerprint()
@@ -443,6 +525,8 @@ public partial class LibraryGroupView : IDisposable
     {
         _pageCache.Clear();
         _viewModelCache.Clear();
+        _prefetchInFlight.Clear();
+        _warmedImagePages.Clear();
         _queryFingerprint = string.Empty;
     }
 

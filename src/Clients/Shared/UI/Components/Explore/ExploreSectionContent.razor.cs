@@ -20,16 +20,13 @@ public partial class ExploreSectionContent
     private ExploreTvHeroPanel? _heroPanel;
     private ExploreTvFocusContext? _tvFocusContext;
     private bool _focusApplied;
-    private string _carouselKey = "loading";
 
     protected override void OnParametersSet()
     {
-        var nextKey = IsLoading ? "loading" : "content";
-        if (_carouselKey != nextKey)
-        {
-            _carouselKey = nextKey;
-            _focusApplied = false;
-        }
+        if (!IsLoading)
+            return;
+
+        _focusApplied = false;
     }
 
     protected override void OnInitialized()
