@@ -10,7 +10,7 @@
     <div class="home-tv-hero">
         <div class="home-tv-hero__content">
             <h2 class="home-tv-hero__title">@Model.Title</h2>
-            @if (!string.IsNullOrEmpty(Model.AdditionalInformations))
+            @if (ShouldShowSubtitle(Model))
             {
                 <p class="home-tv-hero__subtitle">@Model.AdditionalInformations</p>
             }

@@ -1819,6 +1819,10 @@ var SpatialNav = (function () {
 
     function shouldRefocusPage(el) {
         if (!el || el === document.body || el === document.documentElement) return true;
+        // Focus left on a hidden Movie/detail route while FeedHub Home is showing.
+        if (el.closest && el.closest('.page-route--hub-delegated')) return true;
+        // Focus stuck on a parked (inert / inactive) hub page.
+        if (isInsideInactiveFeedHub(el)) return true;
         if (/^H[1-6]$/.test(el.tagName)) return true;
         if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') === '-1' && !el.matches(FOCUSABLE)) return true;
         // Pull focus off the navbar only until the page's initial focus has landed.
@@ -3192,9 +3196,12 @@ K7.scrollToTop = function (element) {
 
 K7.focusById = function (id, preventScroll) {
     var el = document.getElementById(id);
-    if (!el) return;
+    if (!el) return false;
+    if (el.closest && (el.closest('[inert]') || el.closest('.feed-hub-page:not(.feed-hub-page--active)')))
+        return false;
     var target = el.querySelector('.focusable') || el;
     target.focus({ preventScroll: !!preventScroll });
+    return true;
 };
 
 K7.RatingStars = {

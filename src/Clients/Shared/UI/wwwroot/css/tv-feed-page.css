@@ -16,9 +16,14 @@
 }
 
 .tv-feed-page .vertical-carousel {
-    flex: 1;
+    flex: 0 0 auto;
+    margin-top: auto;
     min-height: 0;
     overflow: hidden;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    padding-bottom: 32px;
+}
+
+.tv-feed-page .vertical-carousel ::deep .carousel-wrapper h6 {
+    font-size: var(--text-2xl);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }

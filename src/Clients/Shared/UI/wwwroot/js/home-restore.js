@@ -16,8 +16,7 @@ function scrollRowIntoView(cardRoot, carousel) {
         rowEl.scrollIntoView({ block: 'nearest', behavior: 'instant' });
 }
 
-function tryScrollToCard(mediaId, allowWithoutEmbla) {
-    var cardRoot = document.getElementById('home-card-' + mediaId);
+function tryScrollToCardRoot(cardRoot, allowWithoutEmbla) {
     if (!cardRoot) return false;
 
     var carouselItem = cardRoot.closest('[data-carousel-item]');
@@ -65,18 +64,26 @@ function waitFrame() {
 }
 
 /**
- * Scroll the home feed so the previously focused card is visible.
+ * Scroll the feed so the previously focused card is visible.
  * Retries briefly while carousels finish initializing (Embla).
  */
-export async function scrollToCard(mediaId, maxAttempts) {
+export async function scrollToCardById(elementId, maxAttempts) {
     var attempts = typeof maxAttempts === 'number' && maxAttempts > 0 ? maxAttempts : 40;
 
     for (var attempt = 0; attempt < attempts; attempt++) {
-        if (tryScrollToCard(mediaId, attempt === attempts - 1))
+        var cardRoot = document.getElementById(elementId);
+        if (tryScrollToCardRoot(cardRoot, attempt === attempts - 1))
             return true;
 
         await waitFrame();
     }
 
     return false;
+}
+
+/**
+ * Home feed helper: cards use id="home-card-{mediaId}".
+ */
+export async function scrollToCard(mediaId, maxAttempts) {
+    return scrollToCardById('home-card-' + mediaId, maxAttempts);
 }

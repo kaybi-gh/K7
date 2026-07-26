@@ -24,6 +24,8 @@ public partial class ExploreFeedHubView : IDisposable
     private Guid? _initializedGroupId;
     private LibraryGroupDto? _group;
     private ExploreFocusNavigationContext? _focusNavigation;
+    private bool _feedRestoreLoadFailed;
+    private IJSObjectReference? _feedRestoreModule;
 
     private FeedHubKey PageKey => FeedHubKey.ForExploreGroup(GroupId);
 
@@ -41,6 +43,7 @@ public partial class ExploreFeedHubView : IDisposable
             return;
 
         _initializedGroupId = GroupId;
+        // Resolve TV layout before loading so the first paint is not desktop/spinner-wrong.
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         _loading = true;
         var snapshot = await ExploreGroupStore.EnsureGroupAsync(GroupId);
@@ -59,7 +62,15 @@ public partial class ExploreFeedHubView : IDisposable
         _hubPageActive = IsHubPageActive();
     }
 
-    public void Dispose() => FeedHub.Changed -= OnFeedHubChanged;
+    public void Dispose()
+    {
+        FeedHub.Changed -= OnFeedHubChanged;
+        if (_feedRestoreModule is not null)
+        {
+            _ = _feedRestoreModule.DisposeAsync().AsTask();
+            _feedRestoreModule = null;
+        }
+    }
 
     private bool IsHubPageActive() =>
         FeedHub.IsHubRouteActive && FeedHub.ActiveKey == PageKey;
@@ -73,7 +84,14 @@ public partial class ExploreFeedHubView : IDisposable
         if (!becameActive)
             return;
 
-        InvokeAsync(RestoreLastFocusedCardAsync).FireAndForget();
+        InvokeAsync(OnHubPageBecameActiveAsync).FireAndForget();
+    }
+
+    private async Task OnHubPageBecameActiveAsync()
+    {
+        await Task.Yield();
+        await Task.Delay(50);
+        await RestoreLastFocusedCardAsync();
     }
 
     private async Task RestoreLastFocusedCardAsync()
@@ -82,12 +100,33 @@ public partial class ExploreFeedHubView : IDisposable
         if (string.IsNullOrEmpty(mediaId) || _focusNavigation is null)
             return;
 
+        var cardId = _focusNavigation.GetCardElementId(mediaId);
+
+        if (_isTv)
+        {
+            try
+            {
+                if (_feedRestoreModule is null && !_feedRestoreLoadFailed)
+                {
+                    _feedRestoreModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                        "import", "./_content/K7.Clients.Shared.UI/js/home-restore.js");
+                }
+
+                if (_feedRestoreModule is not null)
+                    await _feedRestoreModule.InvokeAsync<bool>("scrollToCardById", cardId);
+            }
+            catch (JSException)
+            {
+                _feedRestoreLoadFailed = true;
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
         try
         {
-            await JSRuntime.InvokeVoidAsync(
-                "K7.focusById",
-                _focusNavigation.GetCardElementId(mediaId),
-                true);
+            await JSRuntime.InvokeAsync<bool>("K7.focusById", cardId, true);
         }
         catch (JSException)
         {

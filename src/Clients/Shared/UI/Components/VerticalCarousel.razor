@@ -1,4 +1,9 @@
 <div class="vertical-carousel" @ref="_root">
+    <div class="vertical-carousel__pagination" data-vcarousel-pagination aria-hidden="true" hidden>
+        <i class="ph ph-caret-up vertical-carousel__chevron" data-vcarousel-chevron-up hidden></i>
+        <div class="vertical-carousel__dots" data-vcarousel-dots></div>
+        <i class="ph ph-caret-down vertical-carousel__chevron" data-vcarousel-chevron-down hidden></i>
+    </div>
     <div class="vertical-carousel__viewport" data-vcarousel-viewport>
         <div class="vertical-carousel__container">
             @ChildContent

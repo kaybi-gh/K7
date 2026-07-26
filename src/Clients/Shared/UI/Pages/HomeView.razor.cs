@@ -62,11 +62,13 @@ public partial class HomeView : IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        // Resolve TV layout before any other await so the first paint is not desktop.
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+
         var role = await FeatureAccess.GetRoleAsync();
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
         _canSetWatchState = role is K7.Server.Domain.Constants.Roles.User or K7.Server.Domain.Constants.Roles.Administrator;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         FeedStore.Changed += OnFeedStoreChanged;
         FeedHub.Changed += OnFeedHubChanged;
@@ -107,30 +109,84 @@ public partial class HomeView : IAsyncDisposable
             await Task.Yield();
         }
 
+        // Wait for FeedHub to drop inert / paint the active page before focusing.
+        await Task.Yield();
+        await Task.Delay(50);
+
         await RestoreLastFocusedCardAsync();
     }
 
     private async Task RestoreLastFocusedCardAsync()
     {
         if (NavigationState.SavedFocus is not { } saved || ResolveSavedFocus(saved) is not { } resolved)
+        {
+            if (_isTv)
+            {
+                try
+                {
+                    await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+
             return;
+        }
 
         if (_isTv)
         {
             _focusedItem = resolved.Item;
             await InvokeAsync(StateHasChanged);
+
+            await EnsureHomeRestoreModuleAsync();
+            if (_homeRestoreModule is not null)
+            {
+                try
+                {
+                    await _homeRestoreModule.InvokeAsync<bool>("scrollToCard", resolved.MediaId);
+                }
+                catch (JSException)
+                {
+                }
+                catch (JSDisconnectedException)
+                {
+                }
+            }
         }
 
         try
         {
-            // preventScroll: keep Embla / page scroll exactly as parked by FeedHub.
-            await JSRuntime.InvokeVoidAsync("K7.focusById", GetHomeCardId(resolved.MediaId), true);
+            var focused = await JSRuntime.InvokeAsync<bool>("K7.focusById", GetHomeCardId(resolved.MediaId), true);
+            if (!focused && _isTv)
+            {
+                await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+            }
         }
         catch (JSException)
         {
         }
         catch (JSDisconnectedException)
         {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private async Task EnsureHomeRestoreModuleAsync()
+    {
+        if (_homeRestoreModule is not null || _homeRestoreLoadFailed)
+            return;
+
+        try
+        {
+            _homeRestoreModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/home-restore.js");
+        }
+        catch (JSException)
+        {
+            _homeRestoreLoadFailed = true;
         }
     }
 
@@ -161,14 +217,9 @@ public partial class HomeView : IAsyncDisposable
 
         if (_homeRestoreModule is null && !_homeRestoreLoadFailed)
         {
-            try
+            await EnsureHomeRestoreModuleAsync();
+            if (_homeRestoreLoadFailed)
             {
-                _homeRestoreModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", "./_content/K7.Clients.Shared.UI/js/home-restore.js");
-            }
-            catch (JSException)
-            {
-                _homeRestoreLoadFailed = true;
                 _focusRestored = true;
                 return;
             }

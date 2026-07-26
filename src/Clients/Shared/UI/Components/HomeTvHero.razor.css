@@ -43,37 +43,41 @@
     position: relative;
     z-index: 2;
     width: 100%;
-    flex-shrink: 0;
-    height: 30vh;
-    min-height: 220px;
-    max-height: 380px;
+    flex: 1;
+    min-height: 0;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
 }
 
 .home-tv-hero__content {
     padding: 32px var(--carousel-margin-start, 40px);
-    max-width: 55%;
+    max-width: 700px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .home-tv-hero__title {
     margin: 0;
-    font-size: 2rem;
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
     font-weight: 700;
+    line-height: 1.15;
     color: var(--color-text-primary, #fff);
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
 .home-tv-hero__subtitle {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: var(--text-base);
     font-weight: 500;
-    color: var(--color-text-secondary, rgba(255, 255, 255, 0.75));
+    color: var(--color-text-muted, rgba(255, 255, 255, 0.65));
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -83,8 +87,9 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    font-size: 1.1rem;
-    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+    font-size: var(--text-base);
+    color: var(--color-text-muted, rgba(255, 255, 255, 0.65));
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .home-tv-hero__meta-item {
@@ -95,7 +100,7 @@
     border: 1px solid var(--color-text-secondary, rgba(255, 255, 255, 0.4));
     border-radius: 3px;
     padding: 1px 6px;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
 }
 
 .home-tv-hero__rating {
@@ -112,16 +117,19 @@
 }
 
 ::deep .home-tv-hero__genres .k7-chip {
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
 }
 
 .home-tv-hero__overview {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.3rem;
     color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
-    line-height: 1.5;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    line-height: 1.6;
+    max-width: 600px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    opacity: 0.85;
 }

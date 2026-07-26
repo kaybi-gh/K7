@@ -114,6 +114,8 @@ textarea[data-sn-editing="true"] {
    class is added on <html> by index.html before Blazor mounts.
    ============================================================ */
 html.platform-tv {
+    /* 10-foot: scale all rem-based type (tokens, utilities, most pages). */
+    font-size: 1.125rem;
     /* Avoid hover side-effects on D-pad navigation */
     cursor: none;
 }
@@ -158,8 +160,9 @@ html.platform-tv h6 {
 }
 
 html.platform-tv .overview-clickable p,
-html.platform-tv .serie-hero p {
-    /* Synopsis on Movie and Serie detail pages.
+html.platform-tv .serie-hero p,
+html.platform-tv p.overview-clickable {
+    /* Synopsis on detail pages.
        !important overrides the inline style="font-size:1.05rem". */
     font-size: 1.3rem !important;
 }
@@ -169,29 +172,116 @@ html.platform-tv .text-sm {
     font-size: var(--text-base);
 }
 
+html.platform-tv .text-xs,
 html.platform-tv .text-caption {
-    /* PersonRole character names, misc captions */
+    /* Captions, secondary labels, admin/settings hints */
     font-size: var(--text-sm);
 }
 
-html.platform-tv .person-text {
-    /* PersonRole actor names */
+html.platform-tv .person-text,
+html.platform-tv .person-title {
+    /* Person / PersonRole names */
     font-size: var(--text-base);
+}
+
+html.platform-tv .person-subtitle {
+    font-size: var(--text-sm);
+}
+
+html.platform-tv .media-card-title {
+    /* Shelf / carousel card footers (10-foot) */
+    font-size: var(--text-base);
+}
+
+html.platform-tv .media-card-subtitle {
+    font-size: var(--text-sm);
+}
+
+html.platform-tv .k7-category-card {
+    height: 140px;
+}
+
+html.platform-tv .k7-category-card__desc {
+    font-size: var(--text-sm);
+    letter-spacing: 0.08em;
+}
+
+html.platform-tv .k7-category-card__icon-badge {
+    width: 60px;
+    height: 60px;
+    font-size: 1.75rem;
+}
+
+html.platform-tv .music-radio-presets__card-title {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .music-radio-presets__subtitle {
+    font-size: var(--text-sm);
+}
+
+html.platform-tv .k7-dialog-title {
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .k7-empty-state__title,
+html.platform-tv .k7-empty-state__subtitle {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .k7-field-error,
+html.platform-tv .k7-field-helper {
+    font-size: var(--text-sm);
+}
+
+html.platform-tv .library-list-item-title {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .library-list-item-secondary,
+html.platform-tv .library-list-item-rating {
+    font-size: var(--text-sm);
 }
 
 /* -- Top navbar ---------------------------------------------------------- */
 
 html.platform-tv .app-nav-link {
-    font-size: var(--text-xl);
-    min-height: 44px;
+    font-size: var(--text-2xl);
+    min-height: 48px;
 }
 
 html.platform-tv .app-nav-icon {
-    font-size: var(--text-2xl);
+    font-size: var(--text-3xl);
 }
 
 html.platform-tv .app-nav-logo-text {
+    font-size: var(--text-3xl);
+}
+
+/* -- Sidebar (settings / admin) ------------------------------------------ */
+
+html.platform-tv .nav-link,
+html.platform-tv .nav-group-toggle {
+    font-size: var(--text-base);
+    min-height: 44px;
+}
+
+html.platform-tv .nav-link .nav-icon,
+html.platform-tv .nav-group-toggle .nav-icon {
     font-size: var(--text-2xl);
+}
+
+html.platform-tv .sidebar-logo-text {
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .sidebar-search-input,
+html.platform-tv .sidebar-user-name {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .nav-rail-hint {
+    font-size: var(--text-sm);
 }
 
 html.platform-tv .app-nav {
@@ -226,7 +316,7 @@ html.platform-tv .avatar--sm {
 /* -- Chips --------------------------------------------------------------- */
 
 html.platform-tv .k7-chip {
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     padding: var(--space-1) var(--space-4);
 }
 

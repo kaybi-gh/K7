@@ -24,11 +24,11 @@
 }
 
 .home-page--tv ::deep .vertical-carousel {
-    flex: 1;
+    flex: 0 0 auto;
+    margin-top: auto;
     min-height: 0;
     overflow: hidden;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    padding-bottom: 32px;
 }
 
 @media (max-width: 599.98px) {

@@ -55,6 +55,20 @@ public partial class HomeTvHero : IAsyncDisposable
         _activeLayer = targetLayer;
     }
 
+    private static bool ShouldShowSubtitle(MediaCardViewModel model)
+    {
+        if (string.IsNullOrEmpty(model.AdditionalInformations))
+            return false;
+
+        // Movies/series often put the year in AdditionalInformations for card footers;
+        // the hero already shows ReleaseYear in the meta row.
+        if (model.ReleaseYear is { } year
+            && string.Equals(model.AdditionalInformations, year.ToString(), StringComparison.Ordinal))
+            return false;
+
+        return true;
+    }
+
     private static bool ShouldUseSoftBackdrop(MediaCardViewModel? model) =>
         model?.MediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist
             or MediaType.SerieEpisode

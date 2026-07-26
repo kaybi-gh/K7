@@ -1,12 +1,11 @@
 .vertical-carousel {
     position: relative;
     z-index: 2;
-    flex: 1;
+    flex: 0 0 auto;
     min-height: 0;
 }
 
 .vertical-carousel__viewport {
-    height: 100%;
     overflow: hidden;
     scrollbar-width: none;
 }
@@ -16,12 +15,84 @@
 }
 
 .vertical-carousel__container {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 0;
 }
 
 .vertical-carousel__container > :deep(*) {
-    scroll-snap-align: center;
-    transition: mask-image 0.55s cubic-bezier(0.4, 0, 0.2, 1), -webkit-mask-image 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-sizing: border-box;
+}
+
+/* Before JS sets viewport height, keep extra shelves out of document flow
+   so the page does not flash a full desktop-style stack. Absolute + hidden
+   still allows offsetHeight measurement for equalized strip height. */
+.vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__container > :deep(*:not(:first-child)) {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    inset-inline: 0;
+    top: 0;
+}
+
+.vertical-carousel__pagination {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.vertical-carousel__pagination[hidden] {
+    display: none;
+}
+
+.vertical-carousel__chevron {
+    font-size: 14px;
+    line-height: 1;
+    color: color-mix(in srgb, var(--color-text-primary, #fff) 45%, transparent);
+    opacity: 0.85;
+}
+
+.vertical-carousel__chevron[hidden] {
+    display: inline-block;
+    visibility: hidden;
+}
+
+.vertical-carousel__dots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.vertical-carousel__dots ::deep .vertical-carousel__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-text-primary, #fff) 35%, transparent);
+    transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, border-radius 0.25s ease;
+    flex-shrink: 0;
+}
+
+.vertical-carousel__dots ::deep .vertical-carousel__dot--active {
+    width: 12px;
+    height: 12px;
+    background: var(--color-accent);
+}
+
+.vertical-carousel__dots ::deep .vertical-carousel__dot--overflow {
+    width: 6px;
+    height: 18px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-text-primary, #fff) 35%, transparent);
 }
