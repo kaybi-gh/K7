@@ -84,4 +84,36 @@ public class FfmpegVideoEncoderBuilderTests
         selection.VideoFilter.Should().Be("format=nv12,hwupload");
         selection.UsesHardwareDecode.Should().BeFalse();
     }
+
+    [Test]
+    public void GetHdrTonemapFilter_ShouldIncludeLinearPrimariesChain_WhenEnabled()
+    {
+        var filter = FfmpegVideoEncoderBuilder.GetHdrTonemapFilter(true);
+
+        filter.Should().Contain("npl=100");
+        filter.Should().Contain("format=gbrpf32le");
+        filter.Should().Contain("primaries=bt709");
+        filter.Should().Contain("tonemap=hable");
+        FfmpegVideoEncoderBuilder.GetHdrTonemapFilter(false).Should().BeNull();
+    }
+
+    [Test]
+    public void BuildVideoFilterChain_ShouldOrderTonemapScaleThenEncoderFilter()
+    {
+        var filter = FfmpegVideoEncoderBuilder.BuildVideoFilterChain(
+            "zscale=transfer=linear",
+            720,
+            "format=nv12,hwupload");
+
+        filter.Should().Be("zscale=transfer=linear,scale=-2:720,format=nv12,hwupload");
+    }
+
+    [Test]
+    public void IsHdrTransfer_ShouldDetectHdr10AndHlg()
+    {
+        HdrVideoProbe.IsHdrTransfer("smpte2084").Should().BeTrue();
+        HdrVideoProbe.IsHdrTransfer("arib-std-b67").Should().BeTrue();
+        HdrVideoProbe.IsHdrTransfer("bt709").Should().BeFalse();
+        HdrVideoProbe.IsHdrTransfer(null).Should().BeFalse();
+    }
 }

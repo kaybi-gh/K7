@@ -3,6 +3,7 @@ using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTa
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
 using K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -34,7 +35,7 @@ public class FileMetadataCreatedEventHandler(
                 Request = new ComputeHlsSegmentsCommand()
                 {
                     Id = notification.IndexedFile.Id,
-                    SegmentsDuration = TimeSpan.FromSeconds(2)
+                    SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
                 },
                 Priority = BackgroundTaskPriority.High,
                 TargetEntityId = notification.IndexedFile.Id,

@@ -90,36 +90,72 @@ public class TranscodeJob
     public SemaphoreSlim FfmpegStartLock { get; } = new(1, 1);
     
     /// <summary>
-    /// Gets the index of the last segment that has been completely written to disk.
+    /// Highest contiguous ready media segment index in the output directory.
+    /// Mid-seek windows start at N (not 0); never report N-1 when N is present but unready
+    /// (that caused infinite ContinueJob regenerating the same window).
     /// </summary>
     public int GetCurrentSegmentIndex()
     {
         if (!Directory.Exists(OutputDirectory))
-        {
             return -1;
-        }
 
-        var segmentFiles = Directory.GetFiles(OutputDirectory, "*.m4s")
-            .Select(f =>
+        var indices = Directory.GetFiles(OutputDirectory, "*.m4s")
+            .Select(static f =>
             {
                 var fileName = Path.GetFileNameWithoutExtension(f);
-                // Skip init.m4s
-                if (fileName == "init")
-                {
+                if (string.Equals(fileName, "init", StringComparison.OrdinalIgnoreCase))
                     return -1;
-                }
-                
-                // Match pattern: 0.m4s, 1.m4s, 958.m4s, etc.
-                if (int.TryParse(fileName, out var segmentIndex))
-                {
-                    return segmentIndex;
-                }
-                
-                return -1;
-            })
-            .Where(n => n >= 0)
-            .OrderByDescending(n => n);
 
-        return segmentFiles.FirstOrDefault(-1);
+                return int.TryParse(fileName, out var segmentIndex) ? segmentIndex : -1;
+            })
+            .Where(static n => n >= 0)
+            .Distinct()
+            .OrderBy(static n => n)
+            .ToList();
+
+        if (indices.Count == 0)
+            return -1;
+
+        // Skip leading unready placeholders, then take the contiguous ready run.
+        var i = 0;
+        while (i < indices.Count
+               && !IsReadyMediaSegment(Path.Combine(OutputDirectory, $"{indices[i]}.m4s")))
+        {
+            i++;
+        }
+
+        if (i >= indices.Count)
+            return -1;
+
+        var current = indices[i];
+        var expected = current + 1;
+        for (var j = i + 1; j < indices.Count; j++)
+        {
+            if (indices[j] != expected)
+                break;
+
+            if (!IsReadyMediaSegment(Path.Combine(OutputDirectory, $"{indices[j]}.m4s")))
+                break;
+
+            current = indices[j];
+            expected++;
+        }
+
+        return current;
+    }
+
+    private static bool IsReadyMediaSegment(string path)
+    {
+        try
+        {
+            var length = new FileInfo(path).Length;
+            // Full fMP4 validation lives in Application; here only reject empty/tiny placeholders
+            // so Domain stays dependency-free.
+            return length >= 32;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
     }
 }

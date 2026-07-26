@@ -11,7 +11,6 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos;
 using Microsoft.Extensions.Logging;
@@ -98,10 +97,6 @@ public sealed class StreamPlaybackService(
         GetHlsVideoStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation(
-            "Handling segment request: Id={Id}, Quality={Quality}, SegmentNumber={SegmentNumber}",
-            query.Id, query.Quality, query.SegmentNumber);
-
         if (query.Quality != "original")
         {
             var qualityDef = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
@@ -131,21 +126,16 @@ public sealed class StreamPlaybackService(
         }
 
         List<HlsSegment> allSegments;
-        if (isTransmuxing)
-        {
-            allSegments = query.SegmentNumber == -1
-                ? hlsSegments.OrderBy(s => s.Number).Take(20).ToList()
-                : hlsSegments.OrderBy(s => s.Number).ToList();
-        }
-        else
-        {
-            var totalDurationMs = hlsSegments.Count > 0
-                ? hlsSegments.Sum(s => s.Duration)
-                : entity.FileMetadata is VideoFileMetadata videoMetadata
-                    ? (long)videoMetadata.Duration.TotalMilliseconds
-                    : throw new InvalidOperationException("Cannot determine duration for HLS transcoding");
-            allSegments = ComputeEqualLengthHlsSegments(totalDurationMs);
-        }
+        var totalDurationMs = hlsSegments.Count > 0
+            ? hlsSegments.Sum(s => s.Duration)
+            : entity.FileMetadata is VideoFileMetadata videoMetadata
+                ? (long)videoMetadata.Duration.TotalMilliseconds
+                : throw new InvalidOperationException("Cannot determine duration for HLS video segment");
+
+        // Same keyframe timeline for transmux and transcode so ABR quality switches stay seamless.
+        // Never truncate for init.m4s: EnsureInit shares this list with ContinueJobAsync, and a
+        // short list races mid-seek media requests (wrong totalSegments / stuck generation).
+        allSegments = HlsSegmentHelper.ResolveVideoStreamingSegments(hlsSegments, totalDurationMs);
 
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
             return new EmptyHttpContentResult(404);
@@ -171,10 +161,6 @@ public sealed class StreamPlaybackService(
         GetHlsAudioStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation(
-            "Handling audio segment request: Id={Id}, AudioTrack={AudioTrack}, SegmentNumber={SegmentNumber}",
-            query.Id, query.AudioTrackIndex, query.SegmentNumber);
-
         var entity = await context.IndexedFiles.Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
         Guard.Against.NotFound(query.Id, entity);
@@ -184,16 +170,18 @@ public sealed class StreamPlaybackService(
         if (!new FileInfo(entity.Path).Exists)
             return new EmptyHttpContentResult(404);
 
-        var hlsSegments = entity.FileMetadata.GetHlsSegments();
-        var totalDurationMs = hlsSegments is { Count: > 0 } segments
-            ? segments.Sum(s => s.Duration)
+        // Must load DB keyframe rows (same as video). Navigation on FileMetadata is often
+        // unloaded here and would silently fall back to equal-length -> A/V desync.
+        var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(context, query.Id, cancellationToken);
+        var totalDurationMs = hlsSegments.Count > 0
+            ? hlsSegments.Sum(s => s.Duration)
             : entity.FileMetadata switch
             {
                 VideoFileMetadata videoMetadata => (long)videoMetadata.Duration.TotalMilliseconds,
                 AudioFileMetadata audioMetadata => (long)audioMetadata.Duration.TotalMilliseconds,
                 _ => throw new InvalidOperationException("Cannot determine duration for HLS audio segment")
             };
-        var allSegments = ComputeEqualLengthHlsSegments(totalDurationMs);
+        var allSegments = HlsSegmentHelper.ResolveStreamingSegments(hlsSegments, totalDurationMs);
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
             return new EmptyHttpContentResult(404);
 
@@ -265,12 +253,6 @@ public sealed class StreamPlaybackService(
         string contentType,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation(
-            "Looking for segment file at: {SegmentPath} (audioOnly={IsAudioOnly}, job={JobId})",
-            segmentPath,
-            job.IsAudioOnly,
-            job.JobId);
-
         // Demuxed HLS: if the paired video job already exists but init.m4s is not ready yet,
         // hold audio responses so ExoPlayer does not start parsing audio while video fMP4 is
         // still generating (PGS burn-in can take seconds). Wait for init only - mid-seek
@@ -315,14 +297,32 @@ public sealed class StreamPlaybackService(
                 503);
         }
 
-        logger.LogInformation(
-            "Serving fMP4 segment {SegmentNumber} for job {JobId}: {ByteCount} bytes, leading=[{LeadingHex}], boxes=[{Boxes}], trun=[{Trun}]",
-            segmentNumber,
-            job.JobId,
-            segmentBytes.Length,
-            HlsSegmentFileWaiter.FormatLeadingBytesHex(segmentBytes),
-            HlsSegmentFileWaiter.DescribeTopLevelBoxes(segmentBytes),
-            HlsSegmentFileWaiter.DescribeMoofTrun(segmentBytes));
+        // Lazy ffmpeg windows use -start_at_zero, which resets tfdt to ~0. Rebase
+        // media segments onto the absolute playlist timeline so ExoPlayer does not stall.
+        if (segmentNumber >= 0 && segmentNumber < allSegments.Count)
+        {
+            var initPath = Path.Combine(
+                Path.GetDirectoryName(segmentPath) ?? job.OutputDirectory,
+                HlsSegmentFileWaiter.InitSegmentFileName);
+            var startMs = allSegments[segmentNumber].StartTimestamp;
+            if (Fmp4TfdtRebase.TryRebaseMediaSegment(
+                    segmentBytes,
+                    initPath,
+                    startMs,
+                    out var rebasedBytes,
+                    out _))
+            {
+                segmentBytes = rebasedBytes;
+                try
+                {
+                    await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
+                }
+                catch (IOException)
+                {
+                    // Best-effort persist; response still uses the rebased bytes in memory.
+                }
+            }
+        }
 
         // Serve a snapshot - never stream a live ffmpeg output file (partial init.m4s
         // parses as ISO BMFF garbage; ExoPlayer reports "Top bit not zero").
@@ -343,24 +343,13 @@ public sealed class StreamPlaybackService(
         if (HlsSegmentFileWaiter.IsInitReadyOnDisk(videoJob.OutputDirectory))
             return;
 
-        logger.LogInformation(
-            "Holding audio job {AudioJobId} until paired video init is ready (videoJob={VideoJobId}, videoDir={VideoDir})",
-            audioJob.JobId,
-            videoJob.JobId,
-            videoJob.OutputDirectory);
-
         var deadline = DateTime.UtcNow.AddSeconds(90);
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (HlsSegmentFileWaiter.IsInitReadyOnDisk(videoJob.OutputDirectory))
-            {
-                logger.LogInformation(
-                    "Paired video init ready for audio job {AudioJobId}; continuing audio serve",
-                    audioJob.JobId);
                 return;
-            }
 
             if (videoJob.FfmpegTask is { IsFaulted: true })
             {
@@ -376,21 +365,5 @@ public sealed class StreamPlaybackService(
         logger.LogWarning(
             "Timed out waiting for paired video init ({VideoDir}); serving audio anyway",
             videoJob.OutputDirectory);
-    }
-
-    private static List<HlsSegment> ComputeEqualLengthHlsSegments(long totalDurationMs, int desiredSegmentLengthMs = 6000)
-    {
-        var segments = new List<HlsSegment>();
-        long offset = 0;
-        var index = 0;
-        while (offset < totalDurationMs)
-        {
-            var duration = Math.Min(desiredSegmentLengthMs, totalDurationMs - offset);
-            segments.Add(new HlsSegment { Number = index, StartTimestamp = offset, Duration = duration });
-            offset += desiredSegmentLengthMs;
-            index++;
-        }
-
-        return segments;
     }
 }

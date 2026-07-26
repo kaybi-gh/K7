@@ -4,6 +4,7 @@ using System.Text.Json;
 using FFMpegCore;
 using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -23,6 +24,11 @@ public class MediaTranscoder : IMediaTranscoder
     /// (breaks HLS into init.m4s + empty media segments).
     /// </summary>
     public const string HlsFmp4MovFlags = "frag_discont";
+
+    /// <summary>
+    /// movflags for -f segment fMP4. Init holds the moov; media segments are moof+mdat.
+    /// </summary>
+    public const string SegmentFmp4MovFlags = FfmpegStreamingArgs.SegmentFmp4MovFlags;
 
     private readonly ILogger<MediaTranscoder> _logger;
     private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService;
@@ -141,7 +147,14 @@ public class MediaTranscoder : IMediaTranscoder
         // Burn-in forces a transcode (can't stream copy when overlaying subtitles)
         var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
-        _logger.LogInformation(
+        // For stream-copy, seek slightly after the target keyframe so -ss does not pick the
+        // previous IDR; -segment_times then cuts precisely at the planned boundaries.
+        var seekTime = FfmpegStreamingArgs.ResolveTransmuxSeekTime(
+            allSegments,
+            startSegmentIndex,
+            needsTranscode);
+
+        _logger.LogDebug(
             "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
             inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none");
 
@@ -176,6 +189,7 @@ public class MediaTranscoder : IMediaTranscoder
         }
 
         VideoEncoderSelection? encoderSelection = null;
+        string? hdrTonemapFilter = null;
         if (needsTranscode)
         {
             var effectiveCodec = videoCodec ?? (hasBurnIn ? "h264" : null);
@@ -186,6 +200,15 @@ public class MediaTranscoder : IMediaTranscoder
                 // Burn-in overlays run on CPU; VAAPI still works via format=nv12,hwupload
                 // appended inside the filter_complex (see PgsBurnInFilterBuilder).
                 encoderSelection = FfmpegVideoEncoderBuilder.Resolve(effectiveCodec, settings, capabilities);
+
+                if (settings.EnableHdrTonemap
+                    && await HdrVideoProbe.IsHdrAsync(inputFilePath, cancellationToken))
+                {
+                    hdrTonemapFilter = FfmpegVideoEncoderBuilder.GetHdrTonemapFilter(true);
+                    _logger.LogInformation(
+                        "Applying HDR to SDR tonemap for {Input}",
+                        inputFilePath);
+                }
             }
         }
 
@@ -194,6 +217,7 @@ public class MediaTranscoder : IMediaTranscoder
 
         // Scale and encoder -vf chains must live inside -filter_complex when burn-in is active;
         // FFmpeg rejects combining simple -vf with a complex graph on the same stream.
+        // Tonemap runs before overlay so PGS composites on SDR frames.
         if (hasBurnIn && burnInDimensions is { } dims)
         {
             burnInFilterComplex = PgsBurnInFilterBuilder.BuildFilterComplex(
@@ -203,9 +227,13 @@ public class MediaTranscoder : IMediaTranscoder
                 dims.SubtitleWidth,
                 dims.SubtitleHeight,
                 scaleHeight,
-                resolvedEncoder?.VideoFilter);
+                resolvedEncoder?.VideoFilter,
+                preVideoFilter: hdrTonemapFilter);
         }
 
+        // -f segment writes %d.m4s + init via segment_header_filename (not HLS playlist).
+        // Absolute pattern avoids depending on process cwd for segment file placement.
+        var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
             {
@@ -225,17 +253,25 @@ public class MediaTranscoder : IMediaTranscoder
                     // Required for burn-in too when VideoFilter uploads frames after overlay.
                     options.WithCustomArgument(resolvedEncoder.GlobalArguments);
                 }
-                else if (!hasBurnIn)
+                else if (needsTranscode && !hasBurnIn)
                 {
                     // Do not use Auto hwaccel with burn-in: overlay/scale2ref need system frames.
+                    // Do not use Auto hwaccel with bitstream copy: it can yield empty segment files.
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
                 }
 
-                // Generate missing PTS so DTS/PTS stay monotonic after seeks.
-                options.WithCustomArgument("-fflags +genpts");
-                options.Seek(startTime);
+                // Seek/duration before -i. Output -t + copyts empty mid-seek segments.
+                foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
+                             allSegments,
+                             startSegmentIndex,
+                             endSegmentIndex,
+                             seekTime,
+                             copyAudio: false))
+                {
+                    options.WithCustomArgument(arg);
+                }
             })
-            .OutputToFile("index.m3u8", overwrite: true, options =>
+            .OutputToFile(segmentPattern, overwrite: true, options =>
             {
                 if (hasBurnIn)
                 {
@@ -274,34 +310,37 @@ public class MediaTranscoder : IMediaTranscoder
                             options.WithCustomArgument(resolvedEncoder.EncoderArguments);
                         }
 
-                        // Force keyframes on HLS segment boundaries.
-                        ApplyHlsCompatibleEncodeFlags(
+                        ApplyKeyframeAlignedEncodeFlags(
                             options,
+                            allSegments,
+                            startSegmentIndex,
+                            endSegmentIndex,
+                            seekTime,
                             effectiveCodec,
                             resolvedEncoder?.EncoderName);
                     }
 
                     if (!hasBurnIn)
                     {
-                        ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight);
+                        ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight, hdrTonemapFilter);
                     }
                 }
                 else
                 {
                     options.WithCustomArgument("-c:v copy");
-                    options.WithCustomArgument("-tag:v hvc1");
                 }
 
-                ConfigureHlsOutput(options, startSegmentIndex, endTime);
+                ConfigureKeyframeAlignedSegmentOutput(
+                    options,
+                    allSegments,
+                    startSegmentIndex,
+                    endSegmentIndex,
+                    seekTime,
+                    endTime);
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) =>
-            {
-                stderrLines.Add(error);
-                _logger.LogDebug("FFmpeg stderr: {Error}", error);
-            })
+            .NotifyOnError(stderrLines.Add)
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
@@ -314,8 +353,6 @@ public class MediaTranscoder : IMediaTranscoder
                 subtitleBurnInStreamIndex?.ToString() ?? "none",
                 stderr);
         }
-
-        _logger.LogInformation("FFmpeg video process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
     }
 
     private static async Task<(int VideoWidth, int VideoHeight, int SubtitleWidth, int SubtitleHeight)> GetBurnInStreamDimensionsAsync(
@@ -414,50 +451,107 @@ public class MediaTranscoder : IMediaTranscoder
         Directory.CreateDirectory(outputDirectory);
 
         var needsTranscode = !string.IsNullOrEmpty(audioCodec);
+        IReadOnlyList<string>? aacEncodeArgs = null;
 
-        _logger.LogInformation(
-            "Starting audio streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, audioCodec={AudioCodec}, track={Track}",
-            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, audioCodec ?? "copy", audioTrackIndex);
+        if (needsTranscode && string.Equals(audioCodec, "aac", StringComparison.OrdinalIgnoreCase))
+        {
+            var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
+            var encoder = FfmpegAudioEncoderResolver.ResolveAacEncoder(capabilities.VideoEncoders);
+            aacEncodeArgs = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(
+                encoder,
+                forceChannels: FfmpegAudioEncoderResolver.HlsStereoChannels,
+                sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
 
+            _logger.LogDebug(
+                "Starting audio streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, audioCodec={AudioCodec}, encoder={Encoder}, bitrate={Bitrate}, track={Track}",
+                inputFilePath,
+                outputDirectory,
+                startSegmentIndex,
+                endSegmentIndex,
+                audioCodec,
+                encoder,
+                FfmpegAudioEncoderResolver.FixedAacBitrateBps,
+                audioTrackIndex);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Starting audio streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, audioCodec={AudioCodec}, track={Track}",
+                inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, audioCodec ?? "copy", audioTrackIndex);
+        }
+
+        var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
         var ffmpegTask = FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options => options
-                .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
-                .WithCustomArgument("-fflags +genpts")
-                .Seek(startTime))
-            .OutputToFile("index.m3u8", overwrite: true, options =>
+            .FromFileInput(inputFilePath, verifyExists: true, options =>
+            {
+                // Bitstream copy must not use Auto hwaccel (empty/corrupt fMP4 segments).
+                if (needsTranscode)
+                    options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
+
+                // Encode: input -to. Copy: seek only (duration via output -t).
+                foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
+                             allSegments,
+                             startSegmentIndex,
+                             endSegmentIndex,
+                             startTime,
+                             copyAudio: !needsTranscode))
+                {
+                    options.WithCustomArgument(arg);
+                }
+            })
+            .OutputToFile(segmentPattern, overwrite: true, options =>
             {
                 options.WithCustomArgument($"-map 0:{audioTrackIndex}");
                 options.WithCustomArgument("-vn");
 
                 if (needsTranscode)
                 {
-                    if (audioCodec == "aac")
+                    if (aacEncodeArgs is not null)
                     {
-                        options.WithCustomArgument("-c:a aac")
-                            .WithCustomArgument("-ac 2")
-                            .WithCustomArgument("-ar 48000")
-                            .WithCustomArgument("-b:a 128k");
+                        foreach (var arg in aacEncodeArgs)
+                            options.WithCustomArgument(arg);
                     }
-                    else if (audioCodec == "opus")
+                    else if (string.Equals(audioCodec, "opus", StringComparison.OrdinalIgnoreCase))
                     {
                         options.WithCustomArgument("-c:a libopus");
                     }
+
+                    // Encode path shares video's start_at_zero + segment_times contract.
+                    ConfigureKeyframeAlignedSegmentOutput(
+                        options,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        startTime,
+                        endTime);
                 }
                 else
                 {
                     options.WithCustomArgument("-c:a copy");
+                    // Audio copy: keep container timebase, offset absolute PTS, no start_at_zero.
+                    foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedAudioCopySegmentArguments(
+                                 allSegments,
+                                 startSegmentIndex,
+                                 endSegmentIndex,
+                                 endTime))
+                    {
+                        options.WithCustomArgument(arg);
+                    }
                 }
-
-                ConfigureHlsOutput(options, startSegmentIndex, endTime);
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) => _logger.LogDebug("FFmpeg stderr: {Error}", error))
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-        _logger.LogInformation("FFmpeg audio process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
+        if (!result)
+        {
+            _logger.LogError(
+                "FFmpeg audio transcode failed for {Input}, track={Track}. Success={Success}",
+                inputFilePath,
+                audioTrackIndex,
+                result);
+        }
     }
 
     private static (TimeSpan StartTime, TimeSpan EndTime) ValidateAndComputeTimeRange(
@@ -477,23 +571,67 @@ public class MediaTranscoder : IMediaTranscoder
         return (startTime, endTime);
     }
 
+    /// <summary>
+    /// Deterministic fMP4 cuts on the shared keyframe timeline (-f segment).
+    /// Used for video transmux and transcode so ABR variants share the same boundaries.
+    /// </summary>
+    private static void ConfigureKeyframeAlignedSegmentOutput(
+        FFMpegArgumentOptions options,
+        List<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndex,
+        TimeSpan seekTime,
+        TimeSpan endTime)
+    {
+        foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
+                     allSegments,
+                     startSegmentIndex,
+                     endSegmentIndex,
+                     seekTime,
+                     endTime))
+        {
+            options.WithCustomArgument(arg);
+        }
+    }
+
+    /// <summary>
+    /// Force IDR frames at the same relative boundaries used by -segment_times.
+    /// </summary>
+    private static void ApplyKeyframeAlignedEncodeFlags(
+        FFMpegArgumentOptions options,
+        List<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndex,
+        TimeSpan seekTime,
+        string logicalCodec,
+        string? encoderName)
+    {
+        foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+                     allSegments,
+                     startSegmentIndex,
+                     endSegmentIndex,
+                     seekTime,
+                     logicalCodec,
+                     encoderName))
+        {
+            options.WithCustomArgument(arg);
+        }
+    }
+
     private static void ConfigureHlsOutput(FFMpegArgumentOptions options, int startSegmentIndex, TimeSpan endTime)
     {
         // Duration limit (using -to because of -copyts)
         options.WithCustomArgument($"-to {endTime.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
 
-        // fMP4 HLS: preserve timestamps (copyts) but never emit negative decode times.
-        // avoid_negative_ts disabled + AAC encoder delay writes tfdt v1 =
-        // 0xFFFFFFFFFFFFFC00 (-1024) -> ExoPlayer readUnsignedLongToLong
-        // "Top bit not zero: -1024". make_non_negative keeps relative offsets.
-        // movflags via -hls_segment_options (not global -movflags).
+        // Legacy equal-length HLS path (downloads / rare). Streaming A/V uses
+        // ConfigureKeyframeAlignedSegmentOutput instead.
         options.WithCustomArgument("-copyts")
             .WithCustomArgument("-avoid_negative_ts make_non_negative")
             .WithCustomArgument("-start_at_zero")
             .WithCustomArgument("-max_muxing_queue_size 2048")
             .WithCustomArgument("-f hls")
             .WithCustomArgument("-max_delay 5000000")
-            .WithCustomArgument("-hls_time 6")
+            .WithCustomArgument($"-hls_time {Hls.TargetSegmentDurationSeconds.ToString(CultureInfo.InvariantCulture)}")
             .WithCustomArgument("-hls_segment_type fmp4")
             .WithCustomArgument($"-hls_segment_options movflags=+{HlsFmp4MovFlags}")
             .WithCustomArgument("-hls_flags independent_segments")
@@ -502,34 +640,6 @@ public class MediaTranscoder : IMediaTranscoder
             .WithCustomArgument("-hls_segment_filename %d.m4s")
             .WithCustomArgument("-hls_playlist_type vod")
             .WithCustomArgument("-hls_list_size 0");
-    }
-
-    /// <summary>
-    /// Force keyframes on HLS segment boundaries (hls_time = 6s).
-    /// -bf 0 disables B-frames so trun needs no composition offsets (ExoPlayer-safe).
-    /// </summary>
-    private static void ApplyHlsCompatibleEncodeFlags(
-        FFMpegArgumentOptions options,
-        string logicalCodec,
-        string? encoderName)
-    {
-        // Align keyframes with VOD segment length (hls_time = 6).
-        options.WithCustomArgument("-force_key_frames expr:gte(t,n_forced*6)");
-
-        // No B-frames for software x264/x265 (and when falling back to libx264).
-        var effectiveEncoder = encoderName
-            ?? (logicalCodec is "h264" or "hevc" or "h265"
-                ? (logicalCodec == "h264" ? "libx264" : "libx265")
-                : null);
-        if (effectiveEncoder is not null
-            && (effectiveEncoder.Contains("libx264", StringComparison.OrdinalIgnoreCase)
-                || effectiveEncoder.Contains("libx265", StringComparison.OrdinalIgnoreCase)))
-        {
-            options.WithCustomArgument("-bf 0");
-        }
-
-        if (logicalCodec is "hevc" or "h265")
-            options.WithCustomArgument("-tag:v hvc1");
     }
 
     public async Task ExtractSubtitleAsVttAsync(
@@ -581,9 +691,13 @@ public class MediaTranscoder : IMediaTranscoder
         var outputDir = Path.GetDirectoryName(outputFilePath)!;
         Directory.CreateDirectory(outputDir);
 
+        var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
+        var encoder = FfmpegAudioEncoderResolver.ResolveAacEncoder(capabilities.VideoEncoders);
+        var aacEncodeArgs = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(encoder);
+
         _logger.LogInformation(
-            "Remuxing {Input} -> {Output} with audio track {AudioTrack} transcoded to AAC",
-            inputFilePath, outputFilePath, audioTrackIndex);
+            "Remuxing {Input} -> {Output} with audio track {AudioTrack} transcoded to AAC ({Encoder}, {Bitrate})",
+            inputFilePath, outputFilePath, audioTrackIndex, encoder, FfmpegAudioEncoderResolver.FixedAacBitrateBps);
 
         var result = await FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true)
@@ -602,8 +716,8 @@ public class MediaTranscoder : IMediaTranscoder
                 }
 
                 options.WithCustomArgument("-c:v copy");
-                options.WithCustomArgument("-c:a aac");
-                options.WithCustomArgument("-b:a 192k");
+                foreach (var arg in aacEncodeArgs)
+                    options.WithCustomArgument(arg);
                 options.WithCustomArgument("-movflags +faststart");
             })
             .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg remux stdout: {Output}", output))
@@ -633,13 +747,16 @@ public class MediaTranscoder : IMediaTranscoder
     private static void ApplyVideoFilterOrScale(
         FFMpegArgumentOptions options,
         VideoEncoderSelection? encoder,
-        int? scaleHeight)
+        int? scaleHeight,
+        string? hdrTonemapFilter = null)
     {
-        if (!string.IsNullOrWhiteSpace(encoder?.VideoFilter))
+        var filter = FfmpegVideoEncoderBuilder.BuildVideoFilterChain(
+            hdrTonemapFilter,
+            scaleHeight,
+            encoder?.VideoFilter);
+
+        if (filter is not null)
         {
-            var filter = scaleHeight is int height
-                ? $"scale=-2:{height},{encoder.VideoFilter}"
-                : encoder.VideoFilter;
             options.WithCustomArgument($"-vf \"{filter}\"");
             return;
         }

@@ -68,7 +68,7 @@ public class FixDiagnosticItemsCommandHandler(
                     case DiagnosticFixAction.ComputeHlsSegments:
                         await sender.Send(new CreateBackgroundTaskCommand
                         {
-                            Request = new ComputeHlsSegmentsCommand { Id = entityId, SegmentsDuration = TimeSpan.FromSeconds(2) },
+                            Request = new ComputeHlsSegmentsCommand { Id = entityId, SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs) },
                             Priority = BackgroundTaskPriority.Normal,
                             TargetEntityId = entityId,
                             TargetEntityTypeName = nameof(IndexedFile),

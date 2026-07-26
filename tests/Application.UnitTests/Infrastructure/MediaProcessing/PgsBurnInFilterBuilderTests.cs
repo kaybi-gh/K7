@@ -104,11 +104,18 @@ public class PgsBurnInFilterBuilderTests
     }
 
     [Test]
-    public void BuildFilterComplex_ShouldAppendScaleAfterPadOverlay_WhenCanvasMismatch()
+    public void BuildFilterComplex_ShouldTonemapBeforeOverlay_WhenPreVideoFilterProvided()
     {
-        var filter = PgsBurnInFilterBuilder.BuildFilterComplex(1, 1920, 800, 1920, 1080, scaleHeight: 480);
+        var filter = PgsBurnInFilterBuilder.BuildFilterComplex(
+            2,
+            1920,
+            1080,
+            1920,
+            1080,
+            preVideoFilter: "zscale=transfer=linear");
 
-        filter.Should().Contain("pad=1920:1080");
-        filter.Should().Contain("[burned]scale=trunc(oh*a/2)*2:480[vout]");
+        filter.Should().StartWith("[0:v:0]zscale=transfer=linear[vpre];");
+        filter.Should().Contain("[vpre][0:2]scale2ref");
+        filter.Should().NotContain("[0:v:0][0:2]");
     }
 }

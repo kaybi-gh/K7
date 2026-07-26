@@ -153,6 +153,11 @@ public class TranscodeJobManager(
             return;
         }
 
+        // Advertise the real target early so a racing init request does not assume cold start at 0.
+        job.TargetSegmentIndex = Math.Max(
+            job.TargetSegmentIndex,
+            requestedSegmentIndex + job.BufferSize);
+
         var currentIndex = job.GetCurrentSegmentIndex();
         var gap = requestedSegmentIndex - currentIndex;
 
@@ -195,25 +200,13 @@ public class TranscodeJobManager(
             // Restart threshold: 30 segments or 60 seconds
             if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
-                logger.LogInformation(
-                    "Job {JobId}: Gap too large ({Gap} segments, {GapSeconds}s), restarting with seek",
-                    jobId,
-                    gap,
-                    gapDuration.TotalSeconds);
-
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
             }
             else if (gap < 0)
             {
                 // Backward seek: segment should exist but doesn't, restart with seek
-                logger.LogInformation(
-                    "Job {JobId}: Backward seek detected (gap {Gap}), but segment {RequestedIndex} doesn't exist, restarting with seek",
-                    jobId,
-                    gap,
-                    requestedSegmentIndex);
-
-                var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
             }
             else if (requestedSegmentIndex >= job.TargetSegmentIndex
@@ -233,13 +226,6 @@ public class TranscodeJobManager(
 
                 if (newTarget != job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
                 {
-                    logger.LogInformation(
-                        "Job {JobId}: Extending target from {OldTarget} to {NewTarget} (ffmpeg running: {FfmpegRunning})",
-                        jobId,
-                        job.TargetSegmentIndex,
-                        newTarget,
-                        job.FfmpegTask != null && !job.FfmpegTask.IsCompleted);
-
                     job.TargetSegmentIndex = newTarget;
 
                     // If ffmpeg has finished or not started, continue/start
@@ -293,22 +279,27 @@ public class TranscodeJobManager(
                 // Mid-file segments exist without a usable init (e.g. purge race). Restart near
                 // the current window - never force start at 0 solely because init was requested.
                 var startSegmentIndex = Math.Clamp(currentIndex - 5, 0, allSegments.Count - 1);
-                logger.LogInformation(
-                    "Job {JobId}: init.m4s missing with media segments present (current={CurrentIndex}); restarting from {StartIndex}",
-                    job.JobId,
-                    currentIndex,
-                    startSegmentIndex);
-                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
                 return;
             }
 
-            // Cold start: begin at segment 0 to produce init + first media window.
-            job.TargetSegmentIndex = Math.Max(job.TargetSegmentIndex, job.BufferSize);
+            // Cold start for init alone: do not launch ffmpeg from segment 0.
+            // Parallel media-segment requests set the real target and drive generation
+            // (init.m4s is a byproduct). Starting from 0 here races with mid-seek resume.
+            if (job.TargetSegmentIndex > job.BufferSize)
+            {
+                var startSegmentIndex = Math.Clamp(
+                    job.TargetSegmentIndex - job.BufferSize,
+                    0,
+                    allSegments.Count - 1);
+await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+                return;
+            }
 
-            logger.LogInformation(
-                "Job {JobId}: Starting ffmpeg to produce init.m4s from segment 0",
-                job.JobId);
-            await ContinueJobAsync(job, allSegments, cancellationToken);
+            logger.LogDebug(
+                "Job {JobId}: init.m4s not ready; waiting for media-driven ffmpeg (target={Target})",
+                job.JobId,
+                job.TargetSegmentIndex);
         }
         finally
         {
@@ -443,6 +434,32 @@ public class TranscodeJobManager(
         }
     }
 
+    private void PurgeUnreadySegmentsInRange(string outputDirectory, int startSegmentIndex, int endSegmentIndexExclusive)
+    {
+        if (!Directory.Exists(outputDirectory))
+            return;
+
+        for (var i = startSegmentIndex; i < endSegmentIndexExclusive; i++)
+        {
+            var path = Path.Combine(outputDirectory, $"{i}.m4s");
+            if (!File.Exists(path))
+                continue;
+
+            try
+            {
+                if (new FileInfo(path).Length >= 32)
+                    continue;
+
+                File.Delete(path);
+                logger.LogDebug("Removed empty placeholder segment {Path}", path);
+            }
+            catch (IOException ex)
+            {
+                logger.LogDebug(ex, "Could not remove placeholder segment {Path}", path);
+            }
+        }
+    }
+
     private async Task ContinueJobAsync(
         TranscodeJob job,
         List<HlsSegment> allSegments,
@@ -451,21 +468,61 @@ public class TranscodeJobManager(
         var currentIndex = job.GetCurrentSegmentIndex();
         var startIndex = currentIndex + 1;
 
-        logger.LogInformation(
-            "Job {JobId}: ContinueJobAsync - currentIndex={CurrentIndex}, startIndex={StartIndex}, targetIndex={TargetIndex}, totalSegments={TotalSegments}",
-            job.JobId,
-            currentIndex,
-            startIndex,
-            job.TargetSegmentIndex,
-            allSegments.Count);
-
-        if (startIndex >= allSegments.Count)
+        // Mid-seek windows can leave unready placeholders; currentIndex is then -1.
+        // Prefer the lowest ready media index, else resume near the client target
+        // (never fall back to 0 while TargetSegmentIndex is mid-file).
+        if (currentIndex < 0)
         {
-            logger.LogInformation("Job {JobId}: All segments already generated", job.JobId);
-            return;
+            var lowestReady = FindLowestReadySegmentIndex(job.OutputDirectory);
+            if (lowestReady >= 0)
+            {
+                startIndex = lowestReady;
+            }
+            else if (job.TargetSegmentIndex > 0)
+            {
+                startIndex = Math.Clamp(
+                    job.TargetSegmentIndex - job.BufferSize,
+                    0,
+                    allSegments.Count - 1);
+            }
         }
 
+        if (startIndex >= allSegments.Count)
+            return;
+
         await StartFfmpegAsync(job, startIndex, allSegments, cancellationToken);
+    }
+
+    private static int FindLowestReadySegmentIndex(string outputDirectory)
+    {
+        if (!Directory.Exists(outputDirectory))
+            return -1;
+
+        var lowest = -1;
+        foreach (var file in Directory.EnumerateFiles(outputDirectory, "*.m4s"))
+        {
+            var name = Path.GetFileNameWithoutExtension(file);
+            if (string.Equals(name, "init", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!int.TryParse(name, out var index) || index < 0)
+                continue;
+
+            try
+            {
+                if (new FileInfo(file).Length < 32)
+                    continue;
+            }
+            catch (IOException)
+            {
+                continue;
+            }
+
+            if (lowest < 0 || index < lowest)
+                lowest = index;
+        }
+
+        return lowest;
     }
 
     private async Task StartFfmpegAsync(
@@ -495,17 +552,14 @@ public class TranscodeJobManager(
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
         await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
 
-        logger.LogInformation(
-            "Job {JobId}: Starting ffmpeg from segment {Start} to {Target} ({Count} segments)",
-            job.JobId,
-            startSegmentIndex,
-            job.TargetSegmentIndex,
-            segmentsToGenerate);
-
         // Determine video and audio codecs for transcoding
         var videoCodec = job.VideoCodec != "copy" ? job.VideoCodec : null;
         var audioCodec = job.AudioCodec != "copy" ? job.AudioCodec : null;
         var endSegmentIndex = Math.Min(job.TargetSegmentIndex + 1, allSegments.Count);
+
+// Drop empty placeholders from a previous failed window so GetCurrentSegmentIndex
+        // and WaitUntilAvailable do not keep seeing stale unready files.
+        PurgeUnreadySegmentsInRange(job.OutputDirectory, startSegmentIndex, endSegmentIndex);
 
         try
         {
@@ -557,10 +611,6 @@ public class TranscodeJobManager(
             }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
             job.FfmpegTask = ffmpegTask;
-
-            logger.LogInformation(
-                "Job {JobId}: ffmpeg task started in background",
-                job.JobId);
         }
         catch (Exception ex)
         {

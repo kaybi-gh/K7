@@ -39,7 +39,8 @@ internal static class PgsBurnInFilterBuilder
         int subtitleWidth,
         int subtitleHeight,
         int? scaleHeight = null,
-        string? additionalVideoFilter = null)
+        string? additionalVideoFilter = null,
+        string? preVideoFilter = null)
     {
         (videoWidth, videoHeight, subtitleWidth, subtitleHeight) = ResolveDimensions(
             videoWidth,
@@ -52,14 +53,21 @@ internal static class PgsBurnInFilterBuilder
         var needsCanvasPadding = subtitleHeight > videoHeight || subtitleWidth > videoWidth;
         var needsPostFilters = scaleHeight is not null || !string.IsNullOrWhiteSpace(additionalVideoFilter);
         var overlayLabel = needsPostFilters ? "burned" : "vout";
+        var hasPreFilter = !string.IsNullOrWhiteSpace(preVideoFilter);
+        var videoLabel = hasPreFilter ? "vpre" : "0:v:0";
+
+        var prefix = hasPreFilter
+            ? string.Format(CultureInfo.InvariantCulture, "[0:v:0]{0}[vpre];", preVideoFilter)
+            : string.Empty;
 
         string overlayGraph;
         if (!needsCanvasPadding && Math.Abs(videoDar - subtitleDar) < DarTolerance)
         {
             overlayGraph = string.Format(
                 CultureInfo.InvariantCulture,
-                "[0:v:0][0:{0}]scale2ref=flags=lanczos[base][sub];" +
-                "[base][sub]overlay=format=auto:eof_action=pass:repeatlast=0[{1}]",
+                "[{0}][0:{1}]scale2ref=flags=lanczos[base][sub];" +
+                "[base][sub]overlay=format=auto:eof_action=pass:repeatlast=0[{2}]",
+                videoLabel,
                 subStreamIndex,
                 overlayLabel);
         }
@@ -69,14 +77,17 @@ internal static class PgsBurnInFilterBuilder
             // is shorter (e.g. 1920x818). Pad the video into the subtitle canvas before overlay.
             overlayGraph = string.Format(
                 CultureInfo.InvariantCulture,
-                "[0:v:0]pad={0}:{1}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1[base];" +
-                "[0:{2}]scale={0}:{1}:flags=lanczos,format=yuva420p[sub];" +
-                "[base][sub]overlay=0:0:format=auto:eof_action=pass:repeatlast=0[{3}]",
+                "[{0}]pad={1}:{2}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1[base];" +
+                "[0:{3}]scale={1}:{2}:flags=lanczos,format=yuva420p[sub];" +
+                "[base][sub]overlay=0:0:format=auto:eof_action=pass:repeatlast=0[{4}]",
+                videoLabel,
                 subtitleWidth,
                 subtitleHeight,
                 subStreamIndex,
                 overlayLabel);
         }
+
+        overlayGraph = prefix + overlayGraph;
 
         if (!needsPostFilters)
         {

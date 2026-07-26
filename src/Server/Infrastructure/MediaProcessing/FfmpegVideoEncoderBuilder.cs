@@ -66,12 +66,34 @@ public static class FfmpegVideoEncoderBuilder
     }
 
     /// <summary>
-    /// Optional HDR to SDR filter chain. Apply only when the source stream is HDR and tonemap is enabled.
+    /// Software HDR to SDR filter chain (zimg). Prefer applying only when the source is HDR
+    /// and Admin tonemap is enabled. Includes linear light + BT.709 primaries to avoid washed output.
     /// </summary>
     public static string? GetHdrTonemapFilter(bool enableHdrTonemap) =>
         enableHdrTonemap
-            ? "zscale=transfer=linear,tonemap=tonemap=hable:desat=0,zscale=transfer=bt709:matrix=bt709:range=tv,format=yuv420p"
+            ? "zscale=transfer=linear:npl=100,format=gbrpf32le,zscale=primaries=bt709,tonemap=tonemap=hable:desat=0,zscale=transfer=bt709:matrix=bt709:range=tv,format=yuv420p"
             : null;
+
+    /// <summary>
+    /// Joins optional HDR tonemap, quality scale, and encoder upload filters into one -vf chain.
+    /// </summary>
+    public static string? BuildVideoFilterChain(
+        string? hdrTonemapFilter,
+        int? scaleHeight,
+        string? encoderVideoFilter)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(hdrTonemapFilter))
+            parts.Add(hdrTonemapFilter);
+
+        if (scaleHeight is int height)
+            parts.Add($"scale=-2:{height}");
+
+        if (!string.IsNullOrWhiteSpace(encoderVideoFilter))
+            parts.Add(encoderVideoFilter);
+
+        return parts.Count == 0 ? null : string.Join(",", parts);
+    }
 
     public static string? FindVaapiRenderNode()
     {

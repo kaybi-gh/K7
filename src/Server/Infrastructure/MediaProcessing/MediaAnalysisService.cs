@@ -1,15 +1,17 @@
-﻿using System.Globalization;
-using FFMpegCore;
-using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
-using K7.Server.Domain.Entities.Metadatas.Files;
+﻿using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Entities;
-using K7.Server.Application.Common.Configuration;
+using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Helpers;
+using K7.Server.Domain.Interfaces;
 using K7.Shared;
 using Microsoft.Extensions.Options;
+using FFMpegCore;
 using FFMpegCore.Enums;
+using System.Globalization;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -150,58 +152,15 @@ public class MediaAnalysisService : IMediaAnalysisService
             return [];
         }
 
-        var segments = new List<HlsSegment>();
-        long segmentStart = 0;
-        var nextSegmentBoundary = segmentStart + (long)segmentsDuration.TotalMilliseconds;
+        // segmentsDuration retained for API compatibility. Video playlists use every source
+        // keyframe (shared with demuxed audio). Only collapse pathological micro-GOPs.
+        _ = segmentsDuration;
 
-        for (int i = 1; i < keyframeTimestamps.Count; i++)
-        {
-            if (keyframeTimestamps[i] >= nextSegmentBoundary)
-            {
-                // Compare the keyframe timestamps to find the closest one to the boundary
-                var segmentEnd = GetClosestTimestamp(keyframeTimestamps[i - 1], keyframeTimestamps[i], nextSegmentBoundary);
-
-                // Ensure that the segment has a non-zero duration
-                if (segmentEnd > segmentStart)
-                {
-                    segments.Add(new HlsSegment
-                    {
-                        FileMetadataId = indexedFile.FileMetadata.Id,
-                        IndexedFileId = indexedFile.Id,
-                        Number = segments.Count,
-                        StartTimestamp = segmentStart,
-                        Duration = segmentEnd - segmentStart
-                    });
-
-                    segmentStart = segmentEnd;
-                    nextSegmentBoundary = segmentStart + (long)segmentsDuration.TotalMilliseconds;
-                }
-            }
-        }
-
-        // Handle the last segment and extend it to the totalVideoDuration
-        long lastSegmentDuration = totalVideoDuration - segmentStart;
-
-        if (lastSegmentDuration < segmentsDuration.TotalMilliseconds / 2 && segments.Count > 0)
-        {
-            // Merge the last short segment with the previous one
-            var previousSegment = segments[^1];
-            previousSegment.Duration = totalVideoDuration - previousSegment.StartTimestamp;
-        }
-        else
-        {
-            // Add the last segment
-            segments.Add(new HlsSegment
-            {
-                FileMetadataId = indexedFile.FileMetadata.Id,
-                IndexedFileId = indexedFile.Id,
-                Number = segments.Count,
-                StartTimestamp = segmentStart,
-                Duration = lastSegmentDuration
-            });
-        }
-
-        return segments;
+        return HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+            keyframeTimestamps,
+            totalVideoDuration,
+            indexedFile.FileMetadata.Id,
+            indexedFile.Id);
     }
 
     public async Task<MetadataPicture> GenerateThumbnailsAsync(IndexedFile indexedFile, int delayBetweenTilesInSeconds = 30, CancellationToken cancellationToken = default)
@@ -249,15 +208,6 @@ public class MediaAnalysisService : IMediaAnalysisService
             VideoFileMetadataId = indexedFile.FileMetadata.Id,
             LocalPath = outputPath
         };
-    }
-
-    private static long GetClosestTimestamp(long previousTimestamp, long nextTimestamp, long targetTimestamp)
-    {
-        long distanceToPreviousTimestamp = Math.Abs(previousTimestamp - targetTimestamp);
-        long distanceToNextTimestamp = Math.Abs(nextTimestamp - targetTimestamp);
-        return distanceToPreviousTimestamp <= distanceToNextTimestamp
-            ? previousTimestamp
-            : nextTimestamp;
     }
 
     private static List<AudioFileTrack> ExtractAudioTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
@@ -325,9 +275,56 @@ public class MediaAnalysisService : IMediaAnalysisService
                 Name = name,
                 Codec = x.CodecName,
                 IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
-                IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false,
-                IsHearingImpaired = x.Disposition?.Any(d => d.Key == "hearing_impaired" && d.Value) ?? false
+                IsForced = IsForcedSubtitle(x.Disposition, name),
+                IsHearingImpaired = IsHearingImpairedSubtitle(x.Disposition, name)
             };
         })];
+    }
+
+    /// <summary>
+    /// Prefer container disposition; many rips only put Forced/Force/Forcé in the track title.
+    /// </summary>
+    internal static bool IsForcedSubtitle(IDictionary<string, bool>? disposition, string? title)
+    {
+        if (disposition?.Any(d => d.Key == "forced" && d.Value) == true)
+            return true;
+
+        if (string.IsNullOrWhiteSpace(title))
+            return false;
+
+        if (ContainsToken(title, "non-forced")
+            || ContainsToken(title, "nonforced")
+            || ContainsToken(title, "non forced"))
+        {
+            return false;
+        }
+
+        return ContainsToken(title, "forced")
+            || ContainsToken(title, "forcé");
+    }
+
+    internal static bool IsHearingImpairedSubtitle(IDictionary<string, bool>? disposition, string? title)
+    {
+        if (disposition?.Any(d => d.Key == "hearing_impaired" && d.Value) == true)
+            return true;
+
+        if (string.IsNullOrWhiteSpace(title))
+            return false;
+
+        return ContainsToken(title, "sdh")
+            || ContainsToken(title, "hearing impaired");
+    }
+
+    private static bool ContainsToken(string value, string token)
+    {
+        var index = value.IndexOf(token, StringComparison.OrdinalIgnoreCase);
+        if (index < 0)
+            return false;
+
+        // Require token boundaries so "hi" does not match inside "French".
+        var beforeOk = index == 0 || !char.IsLetterOrDigit(value[index - 1]);
+        var afterIndex = index + token.Length;
+        var afterOk = afterIndex >= value.Length || !char.IsLetterOrDigit(value[afterIndex]);
+        return beforeOk && afterOk;
     }
 }

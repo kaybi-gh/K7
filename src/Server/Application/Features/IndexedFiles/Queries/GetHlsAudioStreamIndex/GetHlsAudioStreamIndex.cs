@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
@@ -66,84 +64,20 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
                 _ => throw new InvalidOperationException("Cannot determine duration for HLS audio stream")
             };
 
-        var indexPlaylist = GenerateHlsAudioIndexContent(
-            totalDurationMs,
+        // Same keyframe timeline as video so track switches stay segment-aligned.
+        var streamingSegments = HlsSegmentHelper.ResolveStreamingSegments(hlsSegments, totalDurationMs);
+        var segmentDurations = HlsSegmentHelper.ToDurationSeconds(streamingSegments);
+
+        var queryString = HlsMediaPlaylistBuilder.BuildQueryString(
             query.StreamSessionId,
-            query.TranscodingAudioCodec,
+            ("TranscodingAudioCodec", query.TranscodingAudioCodec));
+
+        var indexPlaylist = HlsMediaPlaylistBuilder.Build(
+            segmentDurations,
+            queryString,
+            GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath,
             query.StartSeconds);
 
         return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
-    }
-
-    private static string GenerateHlsAudioIndexContent(
-        long totalDurationMs,
-        Guid streamSessionId,
-        string? transcodingAudioCodec,
-        double? startSeconds)
-    {
-        var content = new StringBuilder();
-        content.AppendLine("#EXTM3U");
-        content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-
-        var segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
-
-        var queryParams = new List<string>
-        {
-            $"streamSessionId={streamSessionId}"
-        };
-
-        if (!string.IsNullOrEmpty(transcodingAudioCodec))
-            queryParams.Add($"TranscodingAudioCodec={transcodingAudioCodec}");
-
-        var queryString = "?" + string.Join("&", queryParams);
-
-        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(segmentDurations.Max())}");
-        content.AppendLine("#EXT-X-VERSION:7");
-        content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
-        content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
-
-        if (startSeconds is > 0)
-        {
-            var offset = startSeconds.Value.ToString("F3", CultureInfo.InvariantCulture);
-            content.AppendLine($"#EXT-X-START:TIME-OFFSET={offset},PRECISE=YES");
-        }
-
-        content.AppendLine($"#EXT-X-MAP:URI=\"segments/init.m4s{queryString}\"");
-
-        for (int i = 0; i < segmentDurations.Length; i++)
-        {
-            content.AppendLine($"#EXTINF:{segmentDurations[i].ToString("F6", CultureInfo.InvariantCulture)},");
-            content.AppendLine($"{GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(i)}{queryString}");
-        }
-
-        content.AppendLine("#EXT-X-ENDLIST");
-
-        return content.ToString();
-    }
-
-    private static double[] ComputeEqualLengthSegments(int desiredSegmentLengthMs, double totalDurationMs)
-    {
-        if (desiredSegmentLengthMs == 0 || totalDurationMs == 0)
-        {
-            throw new InvalidOperationException($"Invalid segment length ({desiredSegmentLengthMs}) or duration ({totalDurationMs})");
-        }
-
-        var wholeSegments = (int)(totalDurationMs / desiredSegmentLengthMs);
-        var remainingMs = totalDurationMs % desiredSegmentLengthMs;
-
-        var segmentsLen = wholeSegments + (remainingMs > 0 ? 1 : 0);
-        var segments = new double[segmentsLen];
-
-        for (int i = 0; i < wholeSegments; i++)
-        {
-            segments[i] = desiredSegmentLengthMs / 1000.0;
-        }
-
-        if (remainingMs > 0)
-        {
-            segments[^1] = remainingMs / 1000.0;
-        }
-
-        return segments;
     }
 }

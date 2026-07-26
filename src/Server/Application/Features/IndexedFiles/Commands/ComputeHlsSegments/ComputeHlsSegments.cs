@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
@@ -9,7 +10,7 @@ namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegment
 public record ComputeHlsSegmentsCommand : IRequest
 {
     public required Guid Id { get; set; }
-    public required TimeSpan SegmentsDuration { get; init; } = TimeSpan.FromSeconds(2);
+    public required TimeSpan SegmentsDuration { get; init; } = TimeSpan.FromMilliseconds(Hls.TargetSegmentDurationMs);
 }
 
 public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmentsCommand>
@@ -80,7 +81,11 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private static List<HlsSegment> ComputeTimeBasedHlsSegments(long totalDurationMs, Guid fileMetadataId, Guid indexedFileId, int segmentLengthMs = 6000)
+    private static List<HlsSegment> ComputeTimeBasedHlsSegments(
+        long totalDurationMs,
+        Guid fileMetadataId,
+        Guid indexedFileId,
+        int segmentLengthMs = Hls.TargetSegmentDurationMs)
     {
         var segments = new List<HlsSegment>();
         long offset = 0;

@@ -34,7 +34,7 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
             }).ToList(),
             DiagnosticFixAction.ComputeHlsSegments => entityIds.Select(fileId => new CreateBackgroundTasksBatchItem
             {
-                Request = new ComputeHlsSegmentsCommand { Id = fileId, SegmentsDuration = TimeSpan.FromSeconds(2) },
+                Request = new ComputeHlsSegmentsCommand { Id = fileId, SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs) },
                 Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = fileId,
                 TargetEntityTypeName = nameof(IndexedFile),

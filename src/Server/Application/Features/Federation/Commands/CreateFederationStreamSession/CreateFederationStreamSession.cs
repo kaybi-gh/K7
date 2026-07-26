@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
@@ -98,7 +99,7 @@ public class CreateFederationStreamSessionCommandHandler(
                     Request = new ComputeHlsSegmentsCommand
                     {
                         Id = indexedFile.Id,
-                        SegmentsDuration = TimeSpan.FromSeconds(2)
+                        SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
                     },
                     Priority = BackgroundTaskPriority.High,
                     TargetEntityId = indexedFile.Id,
