@@ -32,6 +32,12 @@
   <data name="SignInPrompt" xml:space="preserve">
     <value>Sign in to your account to continue</value>
   </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>username</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>Email</value>
   </data>
@@ -76,6 +82,12 @@
   </data>
   <data name="InvalidLogin" xml:space="preserve">
     <value>Error: Invalid login attempt.</value>
+  </data>
+  <data name="OidcAutoProvisioningDisabled" xml:space="preserve">
+    <value>No local account is linked to this OIDC login. Ask an administrator to create your account.</value>
+  </data>
+  <data name="OidcAccountExists" xml:space="preserve">
+    <value>A local account already exists with this username or email. OIDC sign-in will not automatically take over an existing account.</value>
   </data>
   <data name="ShowPassword" xml:space="preserve">
     <value>Show Password</value>

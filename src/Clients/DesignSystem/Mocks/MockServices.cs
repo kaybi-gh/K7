@@ -607,7 +607,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<bool> VerifyUserPinAsync(Guid userId, string pin, CancellationToken cancellationToken = default) => Task.FromResult(true);
-    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [] });
+    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [], CanLinkOidc = false });
     public Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorStatusDto { IsEnabled = false, HasAuthenticator = false, RecoveryCodesLeft = 0 });
     public Task<TwoFactorSetupDto> BeginTwoFactorSetupAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorSetupDto { SharedKey = "abcd efgh", AuthenticatorUri = "otpauth://totp/K7:user?secret=abcdefgh&issuer=K7&digits=6" });

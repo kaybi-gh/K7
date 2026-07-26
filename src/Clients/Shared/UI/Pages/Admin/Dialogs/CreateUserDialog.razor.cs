@@ -12,6 +12,7 @@ public partial class CreateUserDialog
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     private string _username = "";
+    private string _email = "";
     private string _password = "";
     private string _role = "User";
     private bool _isSubmitting;
@@ -29,7 +30,8 @@ public partial class CreateUserDialog
             {
                 Username = _username.Trim(),
                 Role = _role,
-                Password = string.IsNullOrWhiteSpace(_password) ? null : _password
+                Password = string.IsNullOrWhiteSpace(_password) ? null : _password,
+                Email = string.IsNullOrWhiteSpace(_email) ? null : _email.Trim()
             });
             Dialog.Close(K7DialogResult.Ok(user));
         }

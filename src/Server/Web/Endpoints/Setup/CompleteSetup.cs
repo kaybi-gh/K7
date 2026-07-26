@@ -14,7 +14,12 @@ public class CompleteSetup : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/setup/complete", async (CompleteSetupRequest request, [FromServices] ISetupService setupService, CancellationToken cancellationToken) =>
         {
-            var result = await setupService.CompleteSetupAsync(request.Email, request.Password, request.SetupToken, cancellationToken);
+            var result = await setupService.CompleteSetupAsync(
+                request.Username,
+                request.Password,
+                request.Email,
+                request.SetupToken,
+                cancellationToken);
 
             return result.Succeeded
                 ? Results.Ok()
@@ -27,4 +32,4 @@ public class CompleteSetup : IEndpoint
     }
 }
 
-public record CompleteSetupRequest(string Email, string Password, string? SetupToken);
+public record CompleteSetupRequest(string Username, string Password, string? Email = null, string? SetupToken = null);

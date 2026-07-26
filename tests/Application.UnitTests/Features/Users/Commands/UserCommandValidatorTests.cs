@@ -36,6 +36,40 @@ public class UserCommandValidatorTests
     }
 
     [Test]
+    public void CreateUser_ShouldAllowMissingEmail_AndRejectInvalidEmail()
+    {
+        var validator = new CreateUserCommandValidator();
+
+        validator.Validate(new CreateUserCommand
+        {
+            Username = "kay",
+            Role = Roles.User,
+            Email = null
+        }).IsValid.Should().BeTrue();
+
+        validator.Validate(new CreateUserCommand
+        {
+            Username = "kay",
+            Role = Roles.User,
+            Email = ""
+        }).IsValid.Should().BeTrue();
+
+        validator.Validate(new CreateUserCommand
+        {
+            Username = "kay",
+            Role = Roles.User,
+            Email = "kay@example.com"
+        }).IsValid.Should().BeTrue();
+
+        validator.Validate(new CreateUserCommand
+        {
+            Username = "kay",
+            Role = Roles.User,
+            Email = "not-an-email"
+        }).IsValid.Should().BeFalse();
+    }
+
+    [Test]
     public void ChangePassword_ShouldRequireCurrentAndMinLengthNewPassword()
     {
         var validator = new ChangePasswordCommandValidator();

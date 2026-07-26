@@ -10,6 +10,11 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
             .NotEmpty()
             .MaximumLength(256);
 
+        RuleFor(x => x.Email)
+            .EmailAddress()
+            .MaximumLength(256)
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
+
         RuleFor(x => x.Role)
             .NotEmpty()
             .Must(r => r is Roles.User or Roles.Administrator)

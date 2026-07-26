@@ -33,7 +33,7 @@ public class SetupService(
         return !string.IsNullOrWhiteSpace(storedHash);
     }
 
-    public async Task<Result> CompleteSetupAsync(string email, string password, string? setupToken = null, CancellationToken cancellationToken = default)
+    public async Task<Result> CompleteSetupAsync(string userName, string password, string? email = null, string? setupToken = null, CancellationToken cancellationToken = default)
     {
         await _setupLock.WaitAsync(cancellationToken);
         try
@@ -44,7 +44,7 @@ public class SetupService(
             if (!await ValidateSetupTokenAsync(setupToken, cancellationToken))
                 return Result.Failure(["A valid setup token is required. Check the server logs from first boot or set K7_SETUP_TOKEN."]);
 
-            var adminResult = await CreateAdminAsync(email, password, cancellationToken);
+            var adminResult = await CreateAdminAsync(userName, password, email, cancellationToken);
             if (!adminResult.Succeeded)
                 return adminResult;
 
@@ -59,7 +59,7 @@ public class SetupService(
         }
     }
 
-    public async Task<Result> CompleteSetupWithExternalLoginAsync(string email, string loginProvider, string providerKey, CancellationToken cancellationToken = default)
+    public async Task<Result> CompleteSetupWithExternalLoginAsync(string userName, string? email, string loginProvider, string providerKey, CancellationToken cancellationToken = default)
     {
         await _setupLock.WaitAsync(cancellationToken);
         try
@@ -68,7 +68,7 @@ public class SetupService(
                 return Result.Failure(["Setup has already been completed."]);
 
             // OIDC/external login already authenticates the operator; no setup token required.
-            var adminResult = await CreateAdminWithExternalLoginAsync(email, loginProvider, providerKey, cancellationToken);
+            var adminResult = await CreateAdminWithExternalLoginAsync(userName, email, loginProvider, providerKey, cancellationToken);
             if (!adminResult.Succeeded)
                 return adminResult;
 
@@ -92,9 +92,13 @@ public class SetupService(
         return SetupTokenHelper.VerifyToken(setupToken, storedHash);
     }
 
-    private async Task<Result> CreateAdminAsync(string email, string password, CancellationToken cancellationToken)
+    private async Task<Result> CreateAdminAsync(string userName, string password, string? email, CancellationToken cancellationToken)
     {
-        var identityUser = new ApplicationUser { UserName = email, Email = email };
+        var identityUser = new ApplicationUser
+        {
+            UserName = userName,
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+        };
         var createResult = await userManager.CreateAsync(identityUser, password);
 
         if (!createResult.Succeeded)
@@ -109,14 +113,18 @@ public class SetupService(
         return Result.Success();
     }
 
-    private async Task<Result> CreateAdminWithExternalLoginAsync(string email, string loginProvider, string providerKey, CancellationToken cancellationToken)
+    private async Task<Result> CreateAdminWithExternalLoginAsync(string userName, string? email, string loginProvider, string providerKey, CancellationToken cancellationToken)
     {
-        var identityUser = await userManager.FindByLoginAsync(loginProvider, providerKey)
-            ?? await userManager.FindByEmailAsync(email);
+        var identityUser = await userManager.FindByLoginAsync(loginProvider, providerKey);
 
         if (identityUser is null)
         {
-            identityUser = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
+            identityUser = new ApplicationUser
+            {
+                UserName = userName,
+                Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+                EmailConfirmed = !string.IsNullOrWhiteSpace(email),
+            };
             var createResult = await userManager.CreateAsync(identityUser);
 
             if (!createResult.Succeeded)

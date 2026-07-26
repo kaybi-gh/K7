@@ -69,12 +69,12 @@ You can finish first-run in any of these ways:
 |---|---|---|
 | **Password wizard** on `/setup` | Default local admin | Required when a token was generated (see logs / `K7_SETUP_TOKEN`) |
 | **OIDC on `/setup`** | OIDC already enabled in config before first boot | **Not required** - completing IdP login creates the first Administrator |
-| **Unattended env** | `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | N/A (bootstrap skips the wizard) |
+| **Unattended env** | `K7_ADMIN_USERNAME` (or `K7_ADMIN_EMAIL`) + `K7_ADMIN_PASSWORD` | N/A (bootstrap skips the wizard) |
 
 ### Wizard (browser) - password
 
 1. Open the server URL.
-2. Create the first **Administrator** with email + password.
+2. Create the first **Administrator** with a username + password (email is optional).
 3. If a setup token field is shown, enter the token from the server logs (or set `K7_SETUP_TOKEN` before first start). The token stops anyone who can reach `/setup` from becoming admin without server access.
 
 Password rules (Identity defaults): length at least 10, upper and lower case, a digit, at least 4 distinct characters.
@@ -91,7 +91,7 @@ The first account that completes this OIDC flow becomes admin. Prefer an IdP you
 
 | Mechanism | How |
 |---|---|
-| Env credentials | Set `K7_ADMIN_EMAIL` and `K7_ADMIN_PASSWORD` before first start |
+| Env credentials | Set `K7_ADMIN_USERNAME` (preferred) or `K7_ADMIN_EMAIL`, plus `K7_ADMIN_PASSWORD`, before first start. Optional `K7_ADMIN_EMAIL` is stored when it looks like an email. |
 | Setup token | Applies to the **password** wizard only (`K7_SETUP_TOKEN`, or auto-generated and logged) |
 | Existing admin | If an Administrator already exists, setup is treated as completed |
 

@@ -58,6 +58,18 @@ public class RemainingCommandValidatorTests
             Email = "kay@example.com",
             CurrentPassword = "secret"
         }).IsValid.Should().BeTrue();
+
+        validator.Validate(new UpdateEmailCommand
+        {
+            Email = "",
+            CurrentPassword = "secret"
+        }).IsValid.Should().BeTrue();
+
+        validator.Validate(new UpdateEmailCommand
+        {
+            Email = "kay@example.com",
+            CurrentPassword = ""
+        }).IsValid.Should().BeFalse();
     }
 
     [Test]

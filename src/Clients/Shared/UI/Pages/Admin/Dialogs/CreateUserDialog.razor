@@ -5,6 +5,8 @@
         <div class="d-flex flex-col mt-2">
             <K7TextField @bind-Value="_username" Label="@L["Username"]" Variant="outlined"
                           Required="true" RequiredError="@L["UsernameRequired"]" />
+            <K7TextField @bind-Value="_email" Label="@L["EmailOptional"]" Variant="outlined"
+                          HelperText="@L["EmailHelper"]" />
             <K7TextField @bind-Value="_password" Label="@L["Password"]" Variant="outlined"
                           Type="password" HelperText="@L["PasswordHelper"]" />
             <K7Select TValue="string" @bind-Value="_role" Label="@L["Role"]" Variant="outlined">

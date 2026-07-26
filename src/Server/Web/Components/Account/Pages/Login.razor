@@ -9,6 +9,7 @@
 @using Microsoft.Extensions.Options
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -31,9 +32,9 @@
                 <DataAnnotationsValidator />
                 <div class="auth-form-stack">
                     <div class="auth-form-field">
-                        <label>@L["Email"]</label>
-                        <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" autofocus />
-                        <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+                        <label>@L["Username"]</label>
+                        <InputText @bind-Value="Input!.Username" type="text" class="auth-input focusable" placeholder="@L["UsernamePlaceholder"]" autocomplete="username" aria-required="true" autofocus />
+                        <ValidationMessage For="@(() => Input!.Username)" class="auth-validation" />
                     </div>
 
                     <div class="auth-form-field">
@@ -108,6 +109,9 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery]
+    private string? Error { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
@@ -119,6 +123,13 @@
         var returnUrl = ReturnUrl ?? "/";
         _oidcLoginUrl = NavigationManager.GetUriWithQueryParameters("/api/authentication/login",
             new Dictionary<string, object?> { ["returnUrl"] = returnUrl });
+
+        errorMessage = Error switch
+        {
+            "auto_provisioning_disabled" => L["OidcAutoProvisioningDisabled"],
+            "account_exists" => L["OidcAccountExists"],
+            _ => errorMessage
+        };
 
         if (!_auth.Local.SignInEnabled && _auth.Oidc.Enabled)
         {
@@ -137,7 +148,8 @@
 
     public async Task LoginUser()
     {
-        var result = await SignInManager.PasswordSignInAsync(Input!.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        var userName = await ResolveUserNameAsync(Input!.Username);
+        var result = await SignInManager.PasswordSignInAsync(userName, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
@@ -160,11 +172,27 @@
         }
     }
 
+    private async Task<string> ResolveUserNameAsync(string login)
+    {
+        var trimmed = login.Trim();
+        var byName = await UserManager.FindByNameAsync(trimmed);
+        if (byName is not null)
+            return byName.UserName ?? trimmed;
+
+        if (trimmed.Contains('@'))
+        {
+            var byEmail = await UserManager.FindByEmailAsync(trimmed);
+            if (byEmail?.UserName is not null)
+                return byEmail.UserName;
+        }
+
+        return trimmed;
+    }
+
     private sealed class InputModel
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
+        public string Username { get; set; } = "";
 
         [Required]
         [DataType(DataType.Password)]

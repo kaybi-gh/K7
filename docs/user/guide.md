@@ -10,10 +10,30 @@ How you sign in depends on how the administrator configured the server:
 
 | Mode | What you do |
 |---|---|
-| Admin-created local account | Email and password on the sign-in page |
-| Self-registration | Sign-up page when the admin enabled it (**disabled by default**) |
+| Admin-created local account | Username and password on the sign-in page (email optional) |
+| Self-registration | Sign-up page when the admin enabled it (**disabled by default**): username required, email optional |
 | OIDC / SSO | Provider button or automatic redirect when SSO is enabled (**disabled by default**) |
 | Guest | Welcome screen -> continue as guest when Guest is active (Admin -> Users; **inactive until enabled**) |
+
+Login uses your **username**. If you also set an email, you can sign in with that email as a convenience. Changing email later does not rename your username.
+
+### Link OIDC to a local account (web)
+
+If the server has OIDC enabled and your local account is not already linked:
+
+1. Sign in with username/password.
+2. Open **Settings -> Account**.
+3. Under login methods, choose **Link ...** (provider display name).
+
+Outcomes:
+
+| Result | What you see |
+|---|---|
+| Linked | Success message |
+| Already linked to this account | Info message |
+| Already linked to another account | Dialog asking you to contact an administrator (no automatic merge) |
+
+OIDC sign-in never attaches itself to an existing local account by email. Linking is always an explicit action from Settings (web client). Native apps do not offer this link button yet.
 
 Guest mode is limited: many Settings sections and personal features (My Space, offline, and similar) are hidden, and playback progress is not kept like a full account.
 
@@ -158,16 +178,17 @@ Synchronized session with chat, reactions, and shared play/pause/seek: create fr
 
 ## Shared profiles
 
-Shared profiles let a couple or group watch together with a **shared continue-watching / history / stats bucket** (**Settings -> Shared profiles**). Personal progress stays separate: group watches do not appear in a member's personal history, and activating a shared profile does not show another member's private watch data.
+Shared profiles let a couple or group watch together with a **shared continue-watching / history / stats bucket** (**Settings -> Shared profiles**). Personal progress stays separate while the group exists: group watches do not appear in a member's personal continue watching, and activating a shared profile does not show another member's private watch data. If the shared profile is deleted (or removed because too few members remain), shared continue-watching progress is merged into each member's personal continue watching.
 
 1. Create a profile (name, at least two members, a host, optional PIN).
 2. Others cannot add you until you allow shared-profile invitations.
-3. Pin with **Show on this device**, then pick it on profile selection.
-4. The host can **Configure** playback policies, content restrictions, home layout, and playlists shared with members for navigation.
+3. The host can set a custom avatar for the profile; otherwise member avatars are stacked.
+4. Pin with **Show on this device**, then pick it on profile selection.
+5. The host can **Configure** playback policies, content restrictions, home layout, and playlists shared with members for navigation.
 
 While a shared profile is active:
 
-- Home continue-watching, playback history, and watch stats are scoped to the profile only. Personal history never mixes with group history in either direction.
+- Home continue-watching, playback history, and watch stats are scoped to the profile only. Personal and group history do not mix while the profile exists.
 - The effective home layout is the profile's own layout if the host set one, otherwise the server default (never a member's personal layout).
 - Content restrictions come from the profile's assigned restriction profile, not the acting member's personal restrictions.
 - Playlists shared to the profile appear in members' navigation for the duration of the session.

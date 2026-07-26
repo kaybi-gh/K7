@@ -14,6 +14,7 @@ public record CreateUserCommand : IRequest<UserDto>
     public required string Username { get; init; }
     public required string Role { get; init; }
     public string? Password { get; init; }
+    public string? Email { get; init; }
 }
 
 public class CreateUserCommandHandler(IApplicationDbContext context, IIdentityService identityService)
@@ -22,7 +23,8 @@ public class CreateUserCommandHandler(IApplicationDbContext context, IIdentitySe
     public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
         var password = request.Password ?? Guid.NewGuid().ToString("N") + "A!1";
-        var (result, identityUserId) = await identityService.CreateUserAsync(request.Username, password);
+        var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+        var (result, identityUserId) = await identityService.CreateUserAsync(request.Username, password, email);
 
         if (!result.Succeeded)
         {
@@ -48,7 +50,7 @@ public class CreateUserCommandHandler(IApplicationDbContext context, IIdentitySe
             .FirstAsync(u => u.Id == domainUser.Id, cancellationToken);
 
         created.UserName = request.Username;
-        created.Email = request.Username.Contains('@') ? request.Username : null;
+        created.Email = email;
         created.Role = request.Role;
 
         return created.ToUserDto();

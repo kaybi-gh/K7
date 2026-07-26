@@ -58,12 +58,14 @@ public static class DependencyInjection
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             options.SignIn.RequireConfirmedEmail = false;
-            options.User.RequireUniqueEmail = true;
+            options.User.RequireUniqueEmail = false;
         })
         .AddSignInManager()
         .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
+
+        services.AddScoped<IUserValidator<ApplicationUser>, OptionalUniqueEmailUserValidator>();
 
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 

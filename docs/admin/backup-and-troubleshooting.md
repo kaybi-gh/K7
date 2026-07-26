@@ -125,7 +125,7 @@ Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the curre
 ### Setup page every time
 
 - Setup never completed, or database volume was wiped
-- Complete `/setup` or set `K7_ADMIN_EMAIL` / `K7_ADMIN_PASSWORD`
+- Complete `/setup` or set `K7_ADMIN_USERNAME` (or `K7_ADMIN_EMAIL`) / `K7_ADMIN_PASSWORD`
 
 ### Playback buffers or fails
 

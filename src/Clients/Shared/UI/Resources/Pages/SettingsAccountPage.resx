@@ -27,6 +27,8 @@
   <data name="DisplayName" xml:space="preserve"><value>Nom d'affichage</value></data>
   <data name="ProfileSaved" xml:space="preserve"><value>Profil mis a jour.</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="EmailOptional" xml:space="preserve"><value>Email (optionnel)</value></data>
+  <data name="EmailHelper" xml:space="preserve"><value>Laissez vide si non utilise</value></data>
   <data name="EmailRequired" xml:space="preserve"><value>L'email est requis.</value></data>
   <data name="PasswordRequired" xml:space="preserve"><value>Le mot de passe est requis.</value></data>
   <data name="EmailSaved" xml:space="preserve"><value>Email mis a jour.</value></data>
@@ -64,6 +66,13 @@
   <data name="LoginMethods" xml:space="preserve"><value>Méthodes de connexion</value></data>
   <data name="Unlink" xml:space="preserve"><value>Dissocier</value></data>
   <data name="NoExternalLogins" xml:space="preserve"><value>Aucun fournisseur externe lie.</value></data>
+  <data name="LinkOidc" xml:space="preserve"><value>Lier {0}</value></data>
+  <data name="OidcLinkSuccess" xml:space="preserve"><value>Identite OIDC rattachee a ce compte.</value></data>
+  <data name="OidcLinkAlreadyLinked" xml:space="preserve"><value>Identite OIDC deja rattachee a ce compte.</value></data>
+  <data name="OidcLinkConflictTitle" xml:space="preserve"><value>Identite OIDC indisponible</value></data>
+  <data name="OidcLinkConflictMessage" xml:space="preserve"><value>Identite OIDC deja rattachee a un autre compte utilisateur, veuillez contacter votre administrateur.</value></data>
+  <data name="OidcLinkDisabled" xml:space="preserve"><value>La connexion OIDC n'est pas activee sur ce serveur.</value></data>
+  <data name="OidcLinkError" xml:space="preserve"><value>Impossible de lier l'identite OIDC. Reessayez plus tard.</value></data>
   <data name="UnlinkLoginTitle" xml:space="preserve"><value>Dissocier le fournisseur</value></data>
   <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir dissocier ce fournisseur de connexion ?</value></data>
   <data name="DangerZone" xml:space="preserve"><value>Zone de danger</value></data>

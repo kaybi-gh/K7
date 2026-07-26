@@ -32,6 +32,15 @@
   <data name="CreateAccount" xml:space="preserve">
     <value>Create a new account.</value>
   </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>username</value>
+  </data>
+  <data name="EmailOptional" xml:space="preserve">
+    <value>Email (optional)</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>Email</value>
   </data>

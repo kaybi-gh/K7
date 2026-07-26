@@ -57,13 +57,13 @@
         }
 
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrEmpty(email))
-        {
-            _statusMessage = "No email claim received from the external provider. An email is required to create the admin account.";
-            return;
-        }
+        var userName = info.Principal.FindFirstValue("preferred_username")
+            ?? info.Principal.FindFirstValue(ClaimTypes.Name)
+            ?? email
+            ?? info.ProviderKey;
 
         var result = await SetupService.CompleteSetupWithExternalLoginAsync(
+            userName,
             email,
             info.LoginProvider,
             info.ProviderKey);
@@ -74,9 +74,10 @@
             return;
         }
 
-        Logger.LogInformation("Admin account created via external login provider {Provider} for {Email}", info.LoginProvider, email);
+        Logger.LogInformation("Admin account created via external login provider {Provider} for {UserName}", info.LoginProvider, userName);
 
-        var user = await UserManager.FindByEmailAsync(email);
+        var user = await UserManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey)
+            ?? await UserManager.FindByNameAsync(userName);
         if (user is not null)
         {
             await SignInManager.SignInAsync(user, isPersistent: false);

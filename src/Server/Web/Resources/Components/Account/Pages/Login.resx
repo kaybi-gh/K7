@@ -32,6 +32,12 @@
   <data name="SignInPrompt" xml:space="preserve">
     <value>Connectez-vous pour continuer</value>
   </data>
+  <data name="Username" xml:space="preserve">
+    <value>Nom d'utilisateur</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>nom d'utilisateur</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>E-mail</value>
   </data>
@@ -76,6 +82,12 @@
   </data>
   <data name="InvalidLogin" xml:space="preserve">
     <value>Erreur : tentative de connexion invalide.</value>
+  </data>
+  <data name="OidcAutoProvisioningDisabled" xml:space="preserve">
+    <value>Aucun compte local n'est associe a cette connexion OIDC. Demandez a un administrateur de creer votre compte.</value>
+  </data>
+  <data name="OidcAccountExists" xml:space="preserve">
+    <value>Un compte local existe deja avec cet identifiant ou cet e-mail. La connexion OIDC ne reprend pas automatiquement un compte existant.</value>
   </data>
   <data name="ShowPassword" xml:space="preserve">
     <value>Afficher le mot de passe</value>

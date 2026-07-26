@@ -42,10 +42,10 @@ public class LogInCallback : IEndpoint
                 var providerKey = result.Principal.GetClaim(ClaimTypes.NameIdentifier)
                     ?? throw new InvalidOperationException("Provider key (NameIdentifier) is missing.");
 
-                var email = result.Principal.GetClaim(ClaimTypes.Email)
-                    ?? throw new InvalidOperationException("Email claim is missing.");
-
+                var email = result.Principal.GetClaim(ClaimTypes.Email);
                 var name = result.Principal.GetClaim(ClaimTypes.Name);
+                var preferredUsername = result.Principal.GetClaim("preferred_username");
+                var userName = preferredUsername ?? name ?? email ?? providerKey;
 
                 var returnUrl = result.Properties!.RedirectUri ?? "/";
                 if (!await setupService.IsSetupCompletedAsync(cancellationToken)
@@ -57,6 +57,12 @@ public class LogInCallback : IEndpoint
                     return Results.Redirect(returnUrl);
                 }
 
+                if (OidcLinkHelper.IsLinkRequest(result.Properties?.Items, returnUrl))
+                {
+                    return await LinkExternalLoginAsync(
+                        context, userManager, provider, providerKey, returnUrl);
+                }
+
                 var user = await userManager.FindByLoginAsync(provider, providerKey);
                 if (user == null)
                 {
@@ -65,11 +71,23 @@ public class LogInCallback : IEndpoint
                         return Results.Redirect("/sign-in?error=auto_provisioning_disabled");
                     }
 
-                    user = new ApplicationUser { UserName = name, Email = email };
+                    // Never auto-link by email: an unknown IdP subject always gets a new account
+                    // (or fails). Linking an existing local account must be an explicit user action.
+                    user = new ApplicationUser
+                    {
+                        UserName = userName,
+                        Email = string.IsNullOrWhiteSpace(email) ? null : email,
+                    };
 
                     var creationResult = await userManager.CreateAsync(user);
                     if (!creationResult.Succeeded)
                     {
+                        if (creationResult.Errors.Any(e =>
+                                e.Code is "DuplicateEmail" or "DuplicateUserName"))
+                        {
+                            return Results.Redirect("/sign-in?error=account_exists");
+                        }
+
                         throw new InvalidOperationException($"Failed to create user: {string.Join(", ", creationResult.Errors.Select(e => e.Description))}");
                     }
 
@@ -132,6 +150,42 @@ public class LogInCallback : IEndpoint
             })
         .WithName(type.Name)
         .WithTags(groupName);
+    }
+
+    private static async Task<IResult> LinkExternalLoginAsync(
+        HttpContext context,
+        UserManager<ApplicationUser> userManager,
+        string provider,
+        string providerKey,
+        string returnUrl)
+    {
+        var appAuth = await context.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        if (!appAuth.Succeeded || appAuth.Principal is null)
+            return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "error"));
+
+        var currentIdentityId = appAuth.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(currentIdentityId))
+            return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "error"));
+
+        var currentUser = await userManager.FindByIdAsync(currentIdentityId);
+        if (currentUser is null)
+            return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "error"));
+
+        var existingLoginOwner = await userManager.FindByLoginAsync(provider, providerKey);
+        if (existingLoginOwner is not null)
+        {
+            if (string.Equals(existingLoginOwner.Id, currentUser.Id, StringComparison.Ordinal))
+                return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "already_linked"));
+
+            return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "conflict"));
+        }
+
+        var loginInfo = new UserLoginInfo(provider, providerKey, provider);
+        var addLoginResult = await userManager.AddLoginAsync(currentUser, loginInfo);
+        if (!addLoginResult.Succeeded)
+            return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "error"));
+
+        return Results.Redirect(OidcLinkHelper.BuildResultUrl(returnUrl, "success"));
     }
 
     private static bool IsSetupExternalLoginReturnUrl(string returnUrl) =>

@@ -7,6 +7,8 @@ public sealed record LoginMethodsDto
     public required bool TwoFactorEnabled { get; init; }
     public required int RecoveryCodesLeft { get; init; }
     public required IReadOnlyList<ExternalLoginDto> ExternalLogins { get; init; }
+    public bool CanLinkOidc { get; init; }
+    public string? OidcDisplayName { get; init; }
 }
 
 public sealed record ExternalLoginDto

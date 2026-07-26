@@ -32,6 +32,15 @@
   <data name="CreateAdmin" xml:space="preserve">
     <value>Créez votre compte administrateur pour commencer.</value>
   </data>
+  <data name="Username" xml:space="preserve">
+    <value>Nom d'utilisateur</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>admin</value>
+  </data>
+  <data name="EmailOptional" xml:space="preserve">
+    <value>E-mail (optionnel)</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>E-mail</value>
   </data>

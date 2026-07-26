@@ -27,6 +27,8 @@
   <data name="DisplayName" xml:space="preserve"><value>Display name</value></data>
   <data name="ProfileSaved" xml:space="preserve"><value>Profile updated.</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="EmailOptional" xml:space="preserve"><value>Email (optional)</value></data>
+  <data name="EmailHelper" xml:space="preserve"><value>Leave empty if unused</value></data>
   <data name="EmailRequired" xml:space="preserve"><value>Email is required.</value></data>
   <data name="PasswordRequired" xml:space="preserve"><value>Password is required.</value></data>
   <data name="EmailSaved" xml:space="preserve"><value>Email updated.</value></data>
@@ -64,6 +66,13 @@
   <data name="LoginMethods" xml:space="preserve"><value>Login methods</value></data>
   <data name="Unlink" xml:space="preserve"><value>Unlink</value></data>
   <data name="NoExternalLogins" xml:space="preserve"><value>No external providers linked.</value></data>
+  <data name="LinkOidc" xml:space="preserve"><value>Link {0}</value></data>
+  <data name="OidcLinkSuccess" xml:space="preserve"><value>OIDC identity linked to this account.</value></data>
+  <data name="OidcLinkAlreadyLinked" xml:space="preserve"><value>OIDC identity is already linked to this account.</value></data>
+  <data name="OidcLinkConflictTitle" xml:space="preserve"><value>OIDC identity unavailable</value></data>
+  <data name="OidcLinkConflictMessage" xml:space="preserve"><value>OIDC identity is already linked to another user account. Please contact your administrator.</value></data>
+  <data name="OidcLinkDisabled" xml:space="preserve"><value>OIDC sign-in is not enabled on this server.</value></data>
+  <data name="OidcLinkError" xml:space="preserve"><value>Could not link the OIDC identity. Try again later.</value></data>
   <data name="UnlinkLoginTitle" xml:space="preserve"><value>Unlink provider</value></data>
   <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Are you sure you want to unlink this login provider?</value></data>
   <data name="DangerZone" xml:space="preserve"><value>Danger zone</value></data>

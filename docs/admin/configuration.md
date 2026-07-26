@@ -64,10 +64,14 @@ When using `POSTGRES_PASSWORD_FILE`, do not also set `POSTGRES_PASSWORD` on the 
 
 | Key | Env | Default (appsettings) | Description |
 |---|---|---|---|
-| `Authentication:Local:SignInEnabled` | `Authentication__Local__SignInEnabled` | `true` | Allow email/password (and 2FA) sign-in. Set `false` for OIDC-only. |
+| `Authentication:Local:SignInEnabled` | `Authentication__Local__SignInEnabled` | `true` | Allow username/password (and 2FA) sign-in. Set `false` for OIDC-only. |
 | `Authentication:Local:RegistrationEnabled` | `Authentication__Local__RegistrationEnabled` | `false` | Allow self-service `/sign-up`. |
 
 These flags are **config-only** (shown read-only under Admin -> Authentication). Changing them requires restart.
+
+**Username vs email:** the stable login id is `UserName`. Email is optional (setup, register, admin create, Settings). When an email is set it must be unique across users; empty emails are allowed for multiple users. Sign-in accepts username, and also email as a lookup fallback. Updating email does not rename the username.
+
+**Admin create / register / setup:** username required; email optional. No placeholder emails such as `user@local` are synthesized.
 
 ### OIDC / SSO
 
@@ -154,7 +158,7 @@ Authentication__Oidc__AutomaticAccountCreation: "true"
 
 5. Restart K7. On `/sign-in` you should see an **Authentik** button (the `DisplayName`). First successful login creates a local **User** role account when auto-provisioning is on.
 
-**Other IdPs (Keycloak, Pocket ID, Authelia, ...):** same idea - confidential OIDC client, set the two redirect URIs above, put the issuer / discovery base URL in `Authority`, and copy Client ID + secret. Prefer scopes `openid,profile`; add `email` only if your IdP requires it for claims you care about (K7 links accounts by provider subject, not by email). Optionally set `WebSessionLifetime` if you want a web cookie lifetime other than the 7-day default (MAUI is unaffected).
+**Other IdPs (Keycloak, Pocket ID, Authelia, ...):** same idea - confidential OIDC client, set the two redirect URIs above, put the issuer / discovery base URL in `Authority`, and copy Client ID + secret. Prefer scopes `openid,profile`; add `email` only if your IdP requires it for claims you care about (K7 links accounts by provider subject, not by email). Local accounts can explicitly link OIDC from **Settings -> Account** on the web client; OIDC sign-in never auto-links by email. Optionally set `WebSessionLifetime` if you want a web cookie lifetime other than the 7-day default (MAUI is unaffected).
 
 #### Local + OIDC modes
 
@@ -163,6 +167,19 @@ Authentication__Oidc__AutomaticAccountCreation: "true"
 | Local + OIDC | Both enabled - sign-in page shows both |
 | OIDC only | `Local:SignInEnabled=false`, OIDC on |
 | Local only | `Oidc:Enabled=false` |
+
+**OIDC account linking rules:**
+
+| Situation | Behavior |
+|---|---|
+| First OIDC sign-in, unknown subject | Create a new local user when `AutomaticAccountCreation` is true; otherwise redirect with `auto_provisioning_disabled` |
+| OIDC subject already linked | Sign in that account |
+| Same email as an existing local user, different subject | **No auto-link.** Create fails with `account_exists` if email collides; otherwise a separate account may be created |
+| Explicit link from Settings (web) | Attaches the OIDC subject to the signed-in account |
+| Link subject already on this account | Info / no-op |
+| Link subject already on another account | Conflict dialog; administrator must resolve (no merge) |
+
+Settings shows the OIDC link control only when OIDC is enabled and the current account is not already linked. If OIDC is disabled and the account has no external logins, the login-methods section is hidden.
 
 **First-run via OIDC:** if OIDC is enabled before setup completes, `/setup` offers **Create admin with ...**. Completing IdP login creates the first Administrator - **no `K7_SETUP_TOKEN`**. The password wizard still requires the token when one exists. Details: [install.md](install.md#first-run-setup).
 
@@ -220,7 +237,7 @@ Example: `Serilog__MinimumLevel__Default=Debug`.
 
 | Env | Description |
 |---|---|
-| `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | Create first admin and complete setup on first boot. |
+| `K7_ADMIN_USERNAME` and/or `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | Create first admin and complete setup on first boot. Prefer `K7_ADMIN_USERNAME`; `K7_ADMIN_EMAIL` alone still works as username (and is stored as email when it contains `@`). |
 | `K7_SETUP_TOKEN` | Required for the **password** setup wizard (or auto-generated and logged). Not required for OIDC setup. |
 | `PUID` / `PGID` | Container UID/GID (default `911`). |
 | `SmokeTest:SkipFfmpegVerification` | Skip ffmpeg check at startup (tests). |

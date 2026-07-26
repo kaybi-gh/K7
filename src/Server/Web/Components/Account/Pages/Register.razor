@@ -33,8 +33,13 @@
             <DataAnnotationsValidator />
             <div class="auth-form-stack">
                 <div class="auth-form-field">
-                    <label>@L["Email"]</label>
-                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" autofocus />
+                    <label>@L["Username"]</label>
+                    <InputText @bind-Value="Input!.Username" type="text" class="auth-input focusable" placeholder="@L["UsernamePlaceholder"]" autocomplete="username" aria-required="true" autofocus />
+                    <ValidationMessage For="@(() => Input!.Username)" class="auth-validation" />
+                </div>
+                <div class="auth-form-field">
+                    <label>@L["EmailOptional"]</label>
+                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" />
                     <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
                 </div>
                 <div class="auth-form-field">
@@ -91,9 +96,13 @@
 
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input!.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input!.Username.Trim(), CancellationToken.None);
+        if (!string.IsNullOrWhiteSpace(Input.Email))
+        {
+            var emailStore = GetEmailStore();
+            await emailStore.SetEmailAsync(user, Input.Email.Trim(), CancellationToken.None);
+        }
+
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
@@ -148,9 +157,12 @@
     private sealed class InputModel
     {
         [Required]
+        [Display(Name = "Username")]
+        public string Username { get; set; } = "";
+
         [EmailAddress]
         [Display(Name = "Email")]
-        public string Email { get; set; } = "";
+        public string? Email { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]

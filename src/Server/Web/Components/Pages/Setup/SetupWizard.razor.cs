@@ -43,11 +43,12 @@ public partial class SetupWizard
             ? Input!.SetupToken ?? SetupTokenProvider.CurrentToken
             : null;
 
-        var result = await SetupService.CompleteSetupAsync(Input!.Email, Input.Password, setupToken);
+        var email = string.IsNullOrWhiteSpace(Input!.Email) ? null : Input.Email.Trim();
+        var result = await SetupService.CompleteSetupAsync(Input.Username.Trim(), Input.Password, email, setupToken);
 
         if (result.Succeeded)
         {
-            var user = await UserManager.FindByEmailAsync(Input.Email);
+            var user = await UserManager.FindByNameAsync(Input.Username.Trim());
             await SignInManager.SignInAsync(user!, isPersistent: false);
             RedirectManager.RedirectTo("/");
             return;
@@ -58,9 +59,11 @@ public partial class SetupWizard
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "Email is required.")]
+        [Required(ErrorMessage = "Username is required.")]
+        public string Username { get; set; } = string.Empty;
+
         [EmailAddress(ErrorMessage = "Invalid email address.")]
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
 
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; } = string.Empty;

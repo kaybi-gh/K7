@@ -22,7 +22,8 @@ public class CreateUser : IEndpoint
             {
                 Username = request.Username,
                 Role = request.Role,
-                Password = request.Password
+                Password = request.Password,
+                Email = request.Email
             }, cancellationToken);
             return Results.Created($"/api/users/{userDto.Id}", userDto);
         })

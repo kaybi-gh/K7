@@ -80,7 +80,7 @@ public class ApplicationDbContextInitializer(
         if (existingGuest is not null)
             return;
 
-        var guestIdentity = new ApplicationUser { UserName = Roles.Guest, Email = "guest@k7.local" };
+        var guestIdentity = new ApplicationUser { UserName = Roles.Guest, Email = null };
         var result = await userManager.CreateAsync(guestIdentity);
 
         if (!result.Succeeded)
@@ -117,14 +117,18 @@ public class ApplicationDbContextInitializer(
         if (await setupService.IsSetupCompletedAsync())
             return;
 
+        var userName = Environment.GetEnvironmentVariable("K7_ADMIN_USERNAME")
+            ?? Environment.GetEnvironmentVariable("K7_ADMIN_EMAIL");
         var email = Environment.GetEnvironmentVariable("K7_ADMIN_EMAIL");
         var password = Environment.GetEnvironmentVariable("K7_ADMIN_PASSWORD");
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
             return;
 
-        logger.LogInformation("K7_ADMIN_EMAIL and K7_ADMIN_PASSWORD detected - completing setup automatically.");
-        var result = await setupService.CompleteSetupAsync(email, password);
+        var storedEmail = !string.IsNullOrWhiteSpace(email) && email.Contains('@') ? email : null;
+
+        logger.LogInformation("Admin bootstrap credentials detected - completing setup automatically.");
+        var result = await setupService.CompleteSetupAsync(userName, password, storedEmail);
 
         if (!result.Succeeded)
             logger.LogError("Auto-setup failed: {Errors}", string.Join(", ", result.Errors));

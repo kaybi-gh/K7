@@ -93,12 +93,12 @@ public class IdentityService : IIdentityService
             id => rolesByUser.GetValueOrDefault(id, []));
     }
 
-    public async Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password)
+    public async Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password, string? email = null)
     {
         var user = new ApplicationUser
         {
             UserName = userName,
-            Email = userName.Contains('@') ? userName : $"{userName}@local",
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -245,17 +245,14 @@ public class IdentityService : IIdentityService
         var user = await _userManager.FindByIdAsync(userId)
             ?? throw new NotFoundException(userId, "Identity user");
 
-        var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
-        var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
+        var email = string.IsNullOrWhiteSpace(newEmail) ? null : newEmail.Trim();
+        var result = await _userManager.SetEmailAsync(user, email);
 
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(
                 $"Failed to update email: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
-
-        // Keep username in sync with email
-        await _userManager.SetUserNameAsync(user, newEmail);
     }
 
     public async Task<IList<Application.Common.Interfaces.ExternalLoginInfo>> GetExternalLoginsAsync(string userId)

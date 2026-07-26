@@ -34,8 +34,14 @@
             <ValidationSummary class="auth-alert auth-alert--error" role="alert" />
             <div class="auth-form-stack">
                 <div class="auth-form-field">
-                    <label>@L["Email"]</label>
-                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" aria-required="true" autofocus />
+                    <label>@L["Username"]</label>
+                    <InputText @bind-Value="Input!.Username" type="text" class="auth-input focusable" placeholder="@L["UsernamePlaceholder"]" autocomplete="username" aria-required="true" autofocus />
+                    <ValidationMessage For="@(() => Input!.Username)" class="auth-validation" />
+                </div>
+
+                <div class="auth-form-field">
+                    <label>@L["EmailOptional"]</label>
+                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" />
                     <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
                 </div>
 

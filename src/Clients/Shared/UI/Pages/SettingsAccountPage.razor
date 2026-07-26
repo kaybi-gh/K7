@@ -11,6 +11,7 @@
 @inject IJSRuntime JSRuntime
 @inject IK7DialogService DialogService
 @inject IDeviceService DeviceService
+@inject IK7Snackbar Snackbar
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
@@ -62,12 +63,12 @@
     <hr class="k7-divider my-4" />
 
     @* Email Section *@
-    @if (_email is not null && _hasPassword)
+    @if (_hasPassword)
     {
         <section class="settings-section mb-4">
             <h6 class="mb-2">@L["Email"]</h6>
-            <K7TextField @bind-Value="@_newEmail" Label="@L["Email"]" />
-            @if (_newEmail != _email)
+            <K7TextField @bind-Value="@_newEmail" Label="@L["EmailOptional"]" HelperText="@L["EmailHelper"]" />
+            @if ((_newEmail ?? "") != (_email ?? ""))
             {
                 <K7TextField @bind-Value="@_emailPassword" Label="@L["CurrentPassword"]" Type="password" Class="mt-2" />
                 <K7Button Variant="outlined" OnClick="SaveEmail" Class="mt-2">@S["Save"]</K7Button>
@@ -188,7 +189,7 @@
     <hr class="k7-divider my-4" />
 
     @* Login Methods Section *@
-    @if (_loginMethods is not null)
+    @if (_loginMethods is not null && (_loginMethods.ExternalLogins.Count > 0 || _canShowLinkOidc))
     {
         <section class="settings-section mb-4">
             <h6 class="mb-2">@L["LoginMethods"]</h6>
@@ -208,9 +209,15 @@
                     }
                 </ul>
             }
-            else
+            else if (_canShowLinkOidc)
             {
                 <p class="text-sm text-muted">@L["NoExternalLogins"]</p>
+            }
+            @if (_canShowLinkOidc)
+            {
+                <K7Button Variant="outlined" Class="mt-2" OnClick="LinkOidcAsync">
+                    @L["LinkOidc", _loginMethods.OidcDisplayName ?? "OIDC"]
+                </K7Button>
             }
             @if (_loginMethodsError is not null)
             {

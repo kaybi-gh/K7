@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Extensions;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
@@ -62,11 +64,15 @@ public partial class SettingsAccountPage
     // Login Methods
     private LoginMethodsDto? _loginMethods;
     private string? _loginMethodsError;
+    private bool _canShowLinkOidc;
 
     // Delete
     private string? _deleteError;
 
     private bool _isGuest;
+
+    [SupplyParameterFromQuery(Name = "oidcLink")]
+    private string? OidcLinkResult { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,7 +86,7 @@ public partial class SettingsAccountPage
             _avatarLetter = GetLetter(me.DisplayName, me.UserName);
             _hasPin = me.HasPin;
             _email = me.Email;
-            _newEmail = me.Email;
+            _newEmail = me.Email ?? "";
             _isGuest = me.IsGuest;
         }
 
@@ -95,6 +101,7 @@ public partial class SettingsAccountPage
         }
 
         await LoadLoginMethodsAsync();
+        await HandleOidcLinkResultAsync();
     }
 
     private async Task LoadLoginMethodsAsync()
@@ -106,11 +113,51 @@ public partial class SettingsAccountPage
             _canRemovePassword = _loginMethods.CanRemovePassword;
             _twoFactorEnabled = _loginMethods.TwoFactorEnabled;
             _recoveryCodesLeft = _loginMethods.RecoveryCodesLeft;
+            _canShowLinkOidc = _loginMethods.CanLinkOidc
+                && DeviceService.GetClientType() == ClientType.Web;
         }
         catch
         {
             // Login methods may not be available for all users
         }
+    }
+
+    private async Task HandleOidcLinkResultAsync()
+    {
+        if (string.IsNullOrWhiteSpace(OidcLinkResult))
+            return;
+
+        switch (OidcLinkResult)
+        {
+            case "success":
+                Snackbar.Add(L["OidcLinkSuccess"], K7Severity.Success);
+                break;
+            case "already_linked":
+                Snackbar.Add(L["OidcLinkAlreadyLinked"], K7Severity.Info);
+                break;
+            case "conflict":
+                await DialogService.ShowMessageBoxAsync(
+                    L["OidcLinkConflictTitle"],
+                    L["OidcLinkConflictMessage"],
+                    yesText: S["Ok"]);
+                break;
+            case "disabled":
+                Snackbar.Add(L["OidcLinkDisabled"], K7Severity.Warning);
+                break;
+            default:
+                Snackbar.Add(L["OidcLinkError"], K7Severity.Error);
+                break;
+        }
+
+        NavigationManager.NavigateTo("/settings/account", replace: true);
+    }
+
+    private void LinkOidcAsync()
+    {
+        var returnUrl = Uri.EscapeDataString("/settings/account");
+        NavigationManager.NavigateTo(
+            $"/api/authentication/link?returnUrl={returnUrl}",
+            forceLoad: true);
     }
 
     private static string GetLetter(string? displayName, string? userName)
@@ -197,22 +244,19 @@ public partial class SettingsAccountPage
         _emailError = null;
         _emailSuccess = null;
 
-        if (string.IsNullOrWhiteSpace(_newEmail))
-        {
-            _emailError = L["EmailRequired"];
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(_emailPassword))
         {
             _emailError = L["PasswordRequired"];
             return;
         }
 
+        var email = string.IsNullOrWhiteSpace(_newEmail) ? "" : _newEmail.Trim();
+
         try
         {
-            await UserService.UpdateEmailAsync(new UpdateEmailRequest { Email = _newEmail!, CurrentPassword = _emailPassword! });
-            _email = _newEmail;
+            await UserService.UpdateEmailAsync(new UpdateEmailRequest { Email = email, CurrentPassword = _emailPassword! });
+            _email = string.IsNullOrEmpty(email) ? null : email;
+            _newEmail = _email ?? "";
             _emailPassword = null;
             _emailSuccess = L["EmailSaved"];
         }
