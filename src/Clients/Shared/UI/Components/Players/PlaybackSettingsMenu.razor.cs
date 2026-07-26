@@ -17,11 +17,18 @@ public partial class PlaybackSettingsMenu : IDisposable
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
     [Parameter] public string Class { get; set; } = "";
     [Inject] private ILogger<PlaybackSettingsMenu> Logger { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private bool _open;
     private SettingsSection _activeSection = SettingsSection.None;
+    private SettingsSection _focusSectionPending = SettingsSection.None;
+    private bool _focusRootPending;
+    private bool _stackLayerPushed;
+    private bool _detailLayerPushed;
     private ElementReference _stackRef;
     private ElementReference _detailRef;
+    private DotNetObjectReference<LayerCloseCallback>? _menuCloseRef;
+    private DotNetObjectReference<LayerCloseCallback>? _detailCloseRef;
     private volatile bool _disposed;
 
     private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
@@ -62,6 +69,8 @@ public partial class PlaybackSettingsMenu : IDisposable
         if (_activeSection != SettingsSection.None)
         {
             _activeSection = SettingsSection.None;
+            _focusSectionPending = SettingsSection.None;
+            _focusRootPending = true;
             RequestStateHasChanged();
             return true;
         }
@@ -110,12 +119,109 @@ public partial class PlaybackSettingsMenu : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_open || _activeSection == SettingsSection.None)
+        if (!_open)
+        {
+            await ClearLayersAsync();
             return;
+        }
 
         try
         {
+            await EnsureStackLayerAsync();
+
+            if (_activeSection != SettingsSection.None)
+                await EnsureDetailLayerAsync();
+            else if (_detailLayerPushed)
+                await ClearDetailLayerAsync();
+
+            if (_focusRootPending)
+            {
+                _focusRootPending = false;
+                await SpatialNav.FocusFirstAsync(".playback-settings-panel--root .playback-settings-nav-item");
+            }
+
+            if (_focusSectionPending != SettingsSection.None && _activeSection == _focusSectionPending)
+            {
+                _focusSectionPending = SettingsSection.None;
+                await SpatialNav.FocusFirstAsync(".playback-settings-panel--detail .playback-settings-body .k7-menu-item");
+            }
+
+            if (_activeSection == SettingsSection.None)
+                return;
+
             await JS.InvokeVoidAsync("K7.positionPlaybackSettingsDetail", _stackRef, _detailRef);
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private async Task EnsureStackLayerAsync()
+    {
+        _menuCloseRef ??= DotNetObjectReference.Create(new LayerCloseCallback(() => CloseAsync().FireAndForget(Logger)));
+        if (_stackLayerPushed)
+        {
+            await SpatialNav.AttachLayerCallbackAsync(_stackRef, _menuCloseRef);
+            return;
+        }
+
+        _stackLayerPushed = true;
+        await SpatialNav.PushLayerAsync(_stackRef, "popover", new SpatialNavLayerOptions
+        {
+            OnClose = _menuCloseRef,
+            FocusSelector = ".playback-settings-panel--root .playback-settings-nav-item"
+        });
+    }
+
+    private async Task EnsureDetailLayerAsync()
+    {
+        _detailCloseRef ??= DotNetObjectReference.Create(new LayerCloseCallback(BackToRoot));
+        if (_detailLayerPushed)
+        {
+            await SpatialNav.AttachLayerCallbackAsync(_detailRef, _detailCloseRef);
+            return;
+        }
+
+        _detailLayerPushed = true;
+        await SpatialNav.PushLayerAsync(_detailRef, "popover", new SpatialNavLayerOptions
+        {
+            OnClose = _detailCloseRef,
+            FocusSelector = ".playback-settings-body .k7-menu-item"
+        });
+    }
+
+    private async Task ClearDetailLayerAsync()
+    {
+        if (!_detailLayerPushed)
+            return;
+
+        _detailLayerPushed = false;
+        try
+        {
+            await SpatialNav.PopLayerAsync(_detailRef);
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private async Task ClearLayersAsync()
+    {
+        await ClearDetailLayerAsync();
+
+        if (!_stackLayerPushed)
+            return;
+
+        _stackLayerPushed = false;
+        try
+        {
+            await SpatialNav.PopLayerAsync(_stackRef);
         }
         catch (JSException)
         {
@@ -129,7 +235,15 @@ public partial class PlaybackSettingsMenu : IDisposable
     {
         _open = !_open;
         if (!_open)
+        {
             _activeSection = SettingsSection.None;
+            _focusSectionPending = SettingsSection.None;
+            _focusRootPending = false;
+        }
+        else
+        {
+            _focusRootPending = true;
+        }
 
         await OpenChanged.InvokeAsync(_open);
     }
@@ -141,15 +255,33 @@ public partial class PlaybackSettingsMenu : IDisposable
 
         _open = false;
         _activeSection = SettingsSection.None;
+        _focusSectionPending = SettingsSection.None;
+        _focusRootPending = false;
         await OpenChanged.InvokeAsync(false);
     }
 
     private void SelectSection(SettingsSection section)
     {
-        _activeSection = _activeSection == section ? SettingsSection.None : section;
+        if (_activeSection == section)
+        {
+            _activeSection = SettingsSection.None;
+            _focusSectionPending = SettingsSection.None;
+            _focusRootPending = true;
+            return;
+        }
+
+        _activeSection = section;
+        _focusSectionPending = section;
+        // Detail panel is recreated; force a fresh SpatialNav layer push + autofocus.
+        _detailLayerPushed = false;
     }
 
-    private void BackToRoot() => _activeSection = SettingsSection.None;
+    private void BackToRoot()
+    {
+        _activeSection = SettingsSection.None;
+        _focusSectionPending = SettingsSection.None;
+        _focusRootPending = true;
+    }
 
     private int GetSectionIndex(SettingsSection section)
     {
@@ -286,5 +418,9 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.QualityChanged -= OnQualityChanged;
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
         PlayerService.IsVisibleChanged -= OnPlayerVisibilityChanged;
+        _menuCloseRef?.Dispose();
+        _detailCloseRef?.Dispose();
+        _menuCloseRef = null;
+        _detailCloseRef = null;
     }
 }

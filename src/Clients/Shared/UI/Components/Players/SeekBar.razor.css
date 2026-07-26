@@ -5,15 +5,28 @@
     touch-action: none;
     user-select: none;
     outline: none;
+    /* Thumb/thumbnail sit above the track; must not clip JS or Blazor previews. */
+    overflow: visible;
 }
 
-.seekbar-container:focus-visible .seekbar-track,
-.seekbar-container:focus-visible .chapter-segment {
-    height: 8px;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+.seekbar-container.scrubbing ::deep .thumb:not([data-scrub-preview]),
+.seekbar-container.scrubbing ::deep .thumbnail:not([data-scrub-preview]),
+.seekbar-container[data-scrub-time] ::deep .thumb:not([data-scrub-preview]),
+.seekbar-container[data-scrub-time] ::deep .thumbnail:not([data-scrub-preview]) {
+    /* Blazor keeps a live-position preview; JS owns scrub preview (data-scrub-preview). */
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
-.seekbar-track {
+    .seekbar-container:focus-visible ::deep .seekbar-track,
+    .seekbar-container:focus-visible ::deep .chapter-segment {
+        height: 8px;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+    }
+
+/* ::deep so JS-created .thumb / .thumbnail / .hover (no b-xxx attr) still match. */
+::deep .seekbar-track {
     position: absolute;
     top: 50%;
     left: 0;
@@ -27,19 +40,19 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .seekbar-track {
+    ::deep .seekbar-track {
         transition: height 0.2s ease;
     }
 }
 
-.seekbar-container:hover .seekbar-track,
-.seekbar-container:focus-within .seekbar-track,
-.seekbar-container:hover .chapter-segment,
-.seekbar-container:focus-within .chapter-segment {
+.seekbar-container:hover ::deep .seekbar-track,
+.seekbar-container:focus-within ::deep .seekbar-track,
+.seekbar-container:hover ::deep .chapter-segment,
+.seekbar-container:focus-within ::deep .chapter-segment {
     height: 8px;
 }
 
-.seekbar-track .buffered {
+::deep .seekbar-track .buffered {
     position: absolute;
     height: 100%;
     background-color: rgba(255, 255, 255, .2);
@@ -48,12 +61,12 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .seekbar-track .buffered {
+    ::deep .seekbar-track .buffered {
         transition: width 0.2s linear;
     }
 }
 
-.seekbar-track .hover {
+::deep .seekbar-track .hover {
     position: absolute;
     height: 100%;
     background-color: rgba(255,255,255,0.5);
@@ -61,7 +74,7 @@
     z-index: 2;
 }
 
-.seekbar-track .progress {
+::deep .seekbar-track .progress {
     position: absolute;
     height: 100%;
     background-color: rgba(255,0,0,0.8);
@@ -70,20 +83,23 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .seekbar-track .progress {
+    ::deep .seekbar-track .progress {
         transition: width 0.2s linear;
     }
 }
 
-.seekbar-container.scrubbing .seekbar-track .progress,
-.seekbar-container.scrubbing .seekbar-track .buffered,
-.seekbar-container.scrubbing .thumb,
-.seekbar-container.scrubbing .chapter-progress,
-.seekbar-container.scrubbing .chapter-buffered {
-    transition: none;
+.seekbar-container.scrubbing ::deep .seekbar-track .progress,
+.seekbar-container.scrubbing ::deep .seekbar-track .buffered,
+.seekbar-container.scrubbing ::deep .seekbar-track .hover,
+.seekbar-container.scrubbing ::deep .thumb,
+.seekbar-container.scrubbing ::deep .thumbnail,
+.seekbar-container.scrubbing ::deep .chapter-progress,
+.seekbar-container.scrubbing ::deep .chapter-buffered,
+.seekbar-container.scrubbing ::deep .chapter-hover {
+    transition: none !important;
 }
 
-.thumb {
+::deep .thumb {
     position: absolute;
     top: 50%;
     width: 16px;
@@ -96,12 +112,12 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .thumb {
+    ::deep .thumb {
         transition: left 0.2s linear;
     }
 }
 
-.thumbnail {
+::deep .thumbnail {
     position: absolute;
     bottom: 30px;
     transform: translateX(-50%);
@@ -112,16 +128,18 @@
     z-index: 100006;
 }
 
-.thumbnail-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+::deep .thumbnail-image {
+    display: block;
+    box-sizing: border-box;
     border-radius: 4px;
     border: 1px solid white;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    flex-shrink: 0;
 }
 
-.thumbnail-time,
-.thumbnail-chapter-title {
+::deep .thumbnail-time,
+::deep .thumbnail-chapter-title {
     margin-top: 4px;
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
@@ -131,21 +149,21 @@
     white-space: nowrap;
 }
 
-.seekbar-chapters {
+::deep .seekbar-chapters {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
 }
 
-.chapter-segment-container {
+::deep .chapter-segment-container {
     position: absolute;
     top: 0;
     height: 24px;
     overflow: visible;
 }
 
-.chapter-segment {
+::deep .chapter-segment {
     position: absolute;
     top: 50%;
     left: 0;
@@ -159,43 +177,43 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .chapter-segment {
+    ::deep .chapter-segment {
         transition: height 0.2s ease;
     }
 }
 
-.chapter-buffered,
-.chapter-progress,
-.chapter-hover {
+::deep .chapter-buffered,
+::deep .chapter-progress,
+::deep .chapter-hover {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
 }
 
-.chapter-buffered {
+::deep .chapter-buffered {
     background-color: rgba(255, 255, 255, .2);
     z-index: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .chapter-buffered {
+    ::deep .chapter-buffered {
         transition: width 0.2s linear;
     }
 }
 
-.chapter-hover {
+::deep .chapter-hover {
     background-color: rgba(255,255,255,0.5);
     z-index: 2;
 }
 
-.chapter-progress {
+::deep .chapter-progress {
     background-color: rgba(255,0,0,0.8);
     z-index: 3;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .chapter-progress {
+    ::deep .chapter-progress {
         transition: width 0.2s linear;
     }
 }

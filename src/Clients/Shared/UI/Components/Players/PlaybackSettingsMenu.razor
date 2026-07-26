@@ -20,7 +20,7 @@
 
     @if (_open)
     {
-        <div class="playback-settings-stack" @ref="_stackRef" @onclick:stopPropagation="true">
+        <div class="playback-settings-stack" @ref="_stackRef" data-sn-layer="popover" @onclick:stopPropagation="true">
             <div class="playback-settings-panel playback-settings-panel--root">
                 <div class="playback-settings-header">
                     <span class="playback-settings-title">@L["PlaybackSettings"]</span>
@@ -28,7 +28,7 @@
                         <K7Icon Icon="@Phosphor.X"  IconSize="@K7IconSize.Sm" />
                     </button>
                 </div>
-                <nav class="playback-settings-nav" aria-label="@L["PlaybackSettings"]">
+                <nav class="playback-settings-nav" aria-label="@L["PlaybackSettings"]" data-initial-focus=".playback-settings-nav-item">
                     @foreach (var section in VisibleSections)
                     {
                         <button @key="section" type="button"
@@ -46,14 +46,16 @@
             {
                 <div class="playback-settings-panel playback-settings-panel--detail"
                      @ref="_detailRef"
+                     data-sn-layer="popover"
+                     data-sn-submenu="true"
                      style="--section-index: @GetSectionIndex(_activeSection)">
                     <div class="playback-settings-header">
-                        <button type="button" class="playback-settings-back focusable playback-settings-back--mobile" aria-label="@S["Back"]" @onclick="BackToRoot">
+                        <button type="button" class="playback-settings-back focusable playback-settings-back--compact" aria-label="@S["Back"]" @onclick="BackToRoot">
                             <K7Icon Icon="@Phosphor.CaretLeft"  IconSize="@K7IconSize.Sm" />
                         </button>
                         <span class="playback-settings-title">@GetSectionTitle(_activeSection)</span>
                     </div>
-                    <div class="playback-settings-body">
+                    <div class="playback-settings-body" data-initial-focus=".k7-menu-item">
                         @switch (_activeSection)
                         {
                             case SettingsSection.Audio:

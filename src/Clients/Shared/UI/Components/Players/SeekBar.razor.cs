@@ -26,7 +26,9 @@ public partial class SeekBar : IAsyncDisposable
     private double SeekBarLeft;
     private DotNetObjectReference<SeekBar>? _dotNetRef;
     private bool _needsRender = true;
+    private bool _allowScrubRender;
     private DateTime _lastProgressRenderUtc;
+    private string? _preloadedThumbnailsUri;
 
     [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
     [Parameter] public Uri? ThumbnailsUri { get; set; }
@@ -52,11 +54,22 @@ public partial class SeekBar : IAsyncDisposable
 
     protected override bool ShouldRender()
     {
+        // While TV/desktop keyboard scrubbing, preview is painted by JS. Block Blazor
+        // progress re-renders or the thumb teleports back to a stale HoverPercent.
+        if (_isScrubbing && !_allowScrubRender)
+            return false;
+
         if (!_needsRender)
             return false;
 
         _needsRender = false;
+        _allowScrubRender = false;
         return true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await EnsureThumbnailsPreloadedAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -67,15 +80,28 @@ public partial class SeekBar : IAsyncDisposable
             {
                 _dotNetRef = DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("K7.SeekBar.init", SeekBarRef, _dotNetRef);
-                if (ThumbnailsUri is not null)
-                {
-                    // Preload the thumbnail sprite to avoid freeze on first seekbar hovering
-                    await JS.InvokeVoidAsync("K7.preloadImage", ThumbnailsUri.ToString());
-                }
             }
             catch (JSException) { }
             catch (InvalidOperationException) { }
         }
+
+        await EnsureThumbnailsPreloadedAsync();
+    }
+
+    private async Task EnsureThumbnailsPreloadedAsync()
+    {
+        var uri = ThumbnailsUri?.ToString();
+        if (string.IsNullOrEmpty(uri) || uri == _preloadedThumbnailsUri)
+            return;
+
+        _preloadedThumbnailsUri = uri;
+        try
+        {
+            // ThumbnailsUri often arrives after firstRender (source change); preload then.
+            await JS.InvokeVoidAsync("K7.preloadImage", uri);
+        }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
     }
 
     private async Task OnPointerDown(PointerEventArgs e)
@@ -167,62 +193,134 @@ public partial class SeekBar : IAsyncDisposable
         {
             case "ArrowLeft":
                 _preventKeyDefault = true;
-                _scrubRepeatCount++;
-                _scrubDecayTimer?.Stop();
-                _scrubDecayTimer?.Start();
-                _scrubTime = Math.Max(0, _scrubTime - GetScrubStep());
-                HoverPercent = _scrubTime / PlayerService.Duration * 100;
-                HoverTime = _scrubTime;
+                ApplyScrubStep(-1);
+                RequestScrubUiRender();
                 break;
             case "ArrowRight":
                 _preventKeyDefault = true;
-                _scrubRepeatCount++;
-                _scrubDecayTimer?.Stop();
-                _scrubDecayTimer?.Start();
-                _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + GetScrubStep());
-                HoverPercent = _scrubTime / PlayerService.Duration * 100;
-                HoverTime = _scrubTime;
+                ApplyScrubStep(1);
+                RequestScrubUiRender();
                 break;
         }
-
-        RequestRender();
     }
 
     [JSInvokable("OnEditStart")]
     public void OnEditStart()
     {
+        if (_isScrubbing)
+            return;
+
         _isScrubbing = true;
         _scrubRepeatCount = 0;
         _scrubTime = PlayerService.CurrentTime;
         HoverPercent = CurrentPercent;
         HoverTime = _scrubTime;
-        IsHovering = true;
+        // Drop Blazor current-position preview; JS paints the scrub preview only.
+        IsHovering = false;
+        _isFocused = false;
         _ = OnDragChanged.InvokeAsync(true);
-        RequestRender();
+        // Must re-render once so showPreview becomes false and the live-position
+        // thumb/thumbnail are removed from the DOM (otherwise they stay stuck while
+        // JS adds a second pair for the scrub position).
+        RequestScrubUiRender();
+    }
+
+    [JSInvokable]
+    public void ScrubBy(int direction)
+    {
+        // Fallback for non-JS paths; TV key-repeat uses K7.SeekBar.stepLocal instead.
+        if (!_isScrubbing)
+            OnEditStart();
+
+        if (direction == 0)
+            return;
+
+        ApplyScrubStep(direction < 0 ? -1 : 1);
+        RequestScrubUiRender();
+    }
+
+    private void ApplyScrubStep(int direction)
+    {
+        _scrubRepeatCount++;
+        _scrubDecayTimer?.Stop();
+        _scrubDecayTimer?.Start();
+        var step = GetScrubStep();
+        _scrubTime = direction < 0
+            ? Math.Max(0, _scrubTime - step)
+            : Math.Min(PlayerService.Duration, _scrubTime + step);
+        HoverPercent = PlayerService.Duration > 0
+            ? _scrubTime / PlayerService.Duration * 100
+            : 0;
+        HoverTime = _scrubTime;
+        IsHovering = true;
     }
 
     [JSInvokable("OnEditCommit")]
-    public async Task OnEditCommit()
+    public Task OnEditCommit() => OnEditCommitAt(_scrubTime);
+
+    [JSInvokable]
+    public async Task OnEditCommitAt(double scrubTime)
     {
-        if (_isScrubbing)
-        {
-            PlayerService.Seek(_scrubTime);
-        }
+        // Always seek: TV scrub is driven by JS (K7.SeekBar.stepLocal). OnEditStart can be
+        // missed on the first arrow while the overlay becomes visible, leaving _isScrubbing false
+        // while the thumbnail still moves - guarding on it would drop the commit entirely.
+        PlayerService.Seek(Math.Clamp(scrubTime, 0, Math.Max(0, PlayerService.Duration)));
+
         _isScrubbing = false;
         _scrubRepeatCount = 0;
         IsHovering = false;
         await OnDragChanged.InvokeAsync(false);
-        RequestRender();
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.SeekBar.afterScrubCommit");
+        }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+
+        RequestScrubUiRender();
     }
 
     [JSInvokable("OnEditCancel")]
     public async Task OnEditCancel()
     {
+        try
+        {
+            await JS.InvokeVoidAsync("K7.SeekBar.clearLocalScrub", SeekBarRef);
+        }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+
         _isScrubbing = false;
         _scrubRepeatCount = 0;
         IsHovering = false;
         await OnDragChanged.InvokeAsync(false);
-        RequestRender();
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.SeekBar.afterScrubCommit");
+        }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+
+        RequestScrubUiRender();
+    }
+
+    /// <summary>
+    /// Exit seekbar edit mode without dismissing the video overlay (OK then Escape, no L/R).
+    /// Also clears parent scrubbing flags via OnDragChanged(false) without afterScrubCommit hide
+    /// when the parent treats wasScrubbing specially - VideoPlayer uses OnRemoteOverlayHidden
+    /// for hide; here we only clear SeekBar local state. Parent overlay clears via soft cancel path.
+    /// </summary>
+    [JSInvokable]
+    public void OnEditCancelSoft()
+    {
+        _isScrubbing = false;
+        _scrubRepeatCount = 0;
+        IsHovering = false;
+        // Clear overlay scrubbing flag without HideOverlay (OnDragChanged(false) would hide).
+        // Parent Overlay syncs via HandleBack soft path / OnRemoteOverlayHidden.
+        RequestScrubUiRender();
     }
 
     private void OnFocus(FocusEventArgs e)
@@ -234,21 +332,22 @@ public partial class SeekBar : IAsyncDisposable
     private void OnBlur(FocusEventArgs e)
     {
         _isFocused = false;
-        _isScrubbing = false;
-        _scrubRepeatCount = 0;
-        IsHovering = false;
+        // Do not clear scrubbing here. Android TV WebView emits spurious blurs while
+        // data-sn-editing is active; scrubbing ends via OnEditCommit / OnEditCancel only.
         RequestRender();
     }
 
     private double GetScrubStep()
     {
+        // Finer steps for keyboard/TV scrub; acceleration still kicks in on long holds.
         return _scrubRepeatCount switch
         {
-            <= 5 => 10,
-            <= 12 => 20,
-            <= 20 => 30,
-            <= 30 => 60,
-            _ => 120
+            <= 4 => 2,
+            <= 10 => 5,
+            <= 18 => 10,
+            <= 28 => 20,
+            <= 40 => 30,
+            _ => 60
         };
     }
 
@@ -317,16 +416,22 @@ public partial class SeekBar : IAsyncDisposable
 
     private void OnDurationChanged(double duration)
     {
+        if (_isScrubbing)
+            return;
         RequestRender();
     }
 
     private void OnCurrentTimeChanged(double time)
     {
+        if (_isScrubbing)
+            return;
         RequestProgressRender();
     }
 
     private void OnBufferedTimeChanged(double time)
     {
+        if (_isScrubbing)
+            return;
         RequestProgressRender();
     }
 
@@ -336,6 +441,12 @@ public partial class SeekBar : IAsyncDisposable
             return;
 
         _lastProgressRenderUtc = DateTime.UtcNow;
+        RequestRender();
+    }
+
+    private void RequestScrubUiRender()
+    {
+        _allowScrubRender = true;
         RequestRender();
     }
 

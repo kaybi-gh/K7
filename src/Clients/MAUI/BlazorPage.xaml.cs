@@ -156,11 +156,28 @@ public partial class BlazorPage : ContentPage
         if (_backButtonService.HandleBackButton())
             return;
 
-        // When native video player is active, signal the overlay component
+        // When native video player is active, prefer pure WebView JS (cancel/hide/close).
+        // Blazor OnBackPressed + JSRuntime await can hang after scrub storms.
         if (_playerService.IsVisible)
         {
             MainThread.BeginInvokeOnMainThread(() =>
             {
+#if ANDROID
+                // handleVideoTvBack hides overlay or closes. Re-call closePlayer when r===close
+                // so a missing K7.tvNativeClosePlayer mirror still tears down MediaElement.
+                if (TryEvaluateWebViewJs(
+                        "(function(){try{"
+                        + "var r=window.K7&&K7.handleVideoTvBack?K7.handleVideoTvBack():'';"
+                        + "if(r==='close'){"
+                        + "try{if(window.K7TvVideo&&K7TvVideo.closePlayer)K7TvVideo.closePlayer();}"
+                        + "catch(e1){}"
+                        + "}"
+                        + "}catch(e){"
+                        + "try{if(window.SpatialNav&&SpatialNav.handleBack)SpatialNav.handleBack();}"
+                        + "catch(e2){}"
+                        + "}})();"))
+                    return;
+#endif
                 if (_playerService is MAUI.Services.PlayerService ps)
                     ps.OnBackPressed();
             });
@@ -170,10 +187,106 @@ public partial class BlazorPage : ContentPage
         DispatchBackAsEscape();
     }
 
+#if ANDROID
+    /// <summary>Called from K7TvVideo.seek JavascriptInterface (bypasses Blazor circuit).</summary>
+    internal void SeekFromTvJs(double seconds)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            RememberSeekTarget(seconds);
+            SeekNativeVideoAsync(seconds).FireAndForget();
+        });
+    }
+
+    /// <summary>Called from K7TvVideo.seekBy for short-press relative seeks.</summary>
+    internal void SeekByFromTvJs(double deltaSeconds)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var target = Math.Max(0, GetSeekAnchorSeconds() + deltaSeconds);
+            if (_playerService.Duration > 0)
+                target = Math.Min(target, _playerService.Duration);
+            RememberSeekTarget(target);
+            SeekNativeVideoAsync(target).FireAndForget();
+        });
+    }
+
+    /// <summary>Called from K7TvVideo.skip using SkipBack/SkipForward preferences.</summary>
+    internal void SkipFromTvJs(int direction)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var back = Math.Max(1, _playerService.SkipBackSeconds);
+            var forward = Math.Max(1, _playerService.SkipForwardSeconds);
+            var delta = direction < 0 ? -back : forward;
+            var anchor = GetSeekAnchorSeconds();
+            var target = Math.Max(0, anchor + delta);
+            if (_playerService.Duration > 0)
+                target = Math.Min(target, _playerService.Duration);
+            RememberSeekTarget(target);
+            SeekNativeVideoAsync(target).FireAndForget();
+        });
+    }
+
+    /// <summary>Called from K7TvVideo.closePlayer when Blazor overlay close is wedged.</summary>
+    internal void ClosePlayerFromTvJs()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            try
+            {
+                _playerService.Stop();
+                _ = _playerService.HideAsync();
+            }
+            catch (Exception)
+            {
+            }
+        });
+    }
+#endif
+
+    private double? _chainedSeekTargetSeconds;
+    private DateTime _chainedSeekUtc;
+
+    /// <summary>
+    /// Prefer last seek target when skips arrive faster than CurrentTime updates.
+    /// </summary>
+    private double GetSeekAnchorSeconds()
+    {
+        if (_chainedSeekTargetSeconds is double chained
+            && (DateTime.UtcNow - _chainedSeekUtc).TotalMilliseconds < 900)
+            return chained;
+
+#if !WINDOWS
+        try
+        {
+            var native = NativePlayer.Position.TotalSeconds;
+            if (native > 0)
+                return native;
+        }
+        catch
+        {
+        }
+#endif
+        return Math.Max(0, _playerService.CurrentTime);
+    }
+
+    private void RememberSeekTarget(double seconds)
+    {
+        _chainedSeekTargetSeconds = seconds;
+        _chainedSeekUtc = DateTime.UtcNow;
+    }
+
     internal void DispatchBackAsEscape()
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+#if ANDROID
+            // Bypass Blazor circuit - after seek/scrub the dispatcher can stall and leave a black shell.
+            if (TryEvaluateWebViewJs(
+                    "try{if(window.SpatialNav&&SpatialNav.handleBack)SpatialNav.handleBack();}catch(e){}"))
+                return;
+#endif
             _ = blazorWebView.TryDispatchAsync(async sp =>
             {
                 try
@@ -198,6 +311,21 @@ public partial class BlazorPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+#if ANDROID
+            // Direct WebView JS - TryDispatchAsync silently dies after scrub/seek storms.
+            if (TryEvaluateWebViewJs(
+                    "try{if(window.K7&&K7.onTvRemoteSelect)K7.onTvRemoteSelect("
+                    + System.Text.Json.JsonSerializer.Serialize(phase)
+                    + ","
+                    + keyCode
+                    + ","
+                    + heldMs
+                    + ");}catch(e){}"))
+            {
+                return;
+            }
+
+#endif
             _ = blazorWebView.TryDispatchAsync(async sp =>
             {
                 try
@@ -337,13 +465,21 @@ public partial class BlazorPage : ContentPage
         return Task.CompletedTask;
     }
 
-    private Task HandleVideoSeekRequested(double position)
+    private Task HandleVideoSeekRequested(double position) =>
+        SeekNativeVideoAsync(position);
+
+    private Task SeekNativeVideoAsync(double positionSeconds)
     {
+#if ANDROID
+        return SeekAndroidVideoAsync(positionSeconds);
+#else
         return SeekMediaElementAsync(
             NativePlayer,
-            TimeSpan.FromSeconds(position),
+            TimeSpan.FromSeconds(positionSeconds),
             () => _playerService.PlaybackState,
-            t => _playerService.CurrentTime = t);
+            t => _playerService.CurrentTime = t,
+            () => OnAfterNativeVideoSeek());
+#endif
     }
 #endif
 
@@ -421,6 +557,8 @@ public partial class BlazorPage : ContentPage
         // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
         // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
         NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
+        // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
+        ConfigureNativeVideoPlayerAfterOpen();
         NativePlayer.Play();
         AttachPendingSeekHandler(source);
     }
@@ -439,11 +577,7 @@ public partial class BlazorPage : ContentPage
             if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
             {
                 NativePlayer.PropertyChanged -= OnStateChanged;
-                SeekMediaElementAsync(
-                    NativePlayer,
-                    TimeSpan.FromSeconds(seekTime),
-                    () => _playerService.PlaybackState,
-                    t => _playerService.CurrentTime = t).FireAndForget();
+                SeekNativeVideoAsync(seekTime).FireAndForget();
             }
         }
 
@@ -474,6 +608,7 @@ public partial class BlazorPage : ContentPage
 #endif
 #if ANDROID
                 EnsureAndroidWebViewTransparent();
+                SetVideoFocusOwnership(active: true);
 #endif
             }
             else
@@ -486,6 +621,11 @@ public partial class BlazorPage : ContentPage
                 DeviceDisplay.Current.KeepScreenOn = false;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayInfoChanged;
                 RestoreOrientation();
+#endif
+#if ANDROID
+                // Video closed: drop focus bounce, clear native-player-active shell, keep WebView focused.
+                SetVideoFocusOwnership(active: false);
+                ClearNativePlayerActiveShell();
 #endif
             }
 #endif
@@ -517,6 +657,7 @@ public partial class BlazorPage : ContentPage
             _playerService.Duration = duration;
 
         // Do not force Idle here - PropertyChanged owns state (Opening/Buffering/Playing).
+        ConfigureNativeVideoPlayerAfterOpen();
 #endif
     }
 
@@ -1275,6 +1416,10 @@ public partial class BlazorPage : ContentPage
 
     partial void InitializePlayerPlatform();
 
+    partial void ConfigureNativeVideoPlayerAfterOpen();
+
+    partial void OnAfterNativeVideoSeek();
+
 #if WINDOWS
     partial void ConfigureWindowsVideoPlayerLayout();
 
@@ -1286,7 +1431,8 @@ public partial class BlazorPage : ContentPage
         MediaElement mediaElement,
         TimeSpan position,
         Func<Server.Domain.Enums.PlaybackState>? getPlaybackState = null,
-        Action<double>? setCurrentTime = null) =>
+        Action<double>? setCurrentTime = null,
+        Action? afterSeek = null) =>
         MainThread.InvokeOnMainThreadAsync(async () =>
         {
             var target = position < TimeSpan.Zero ? TimeSpan.Zero : position;
@@ -1312,6 +1458,7 @@ public partial class BlazorPage : ContentPage
             }
 
             setCurrentTime?.Invoke(target.TotalSeconds);
+            afterSeek?.Invoke();
 
             if (resumePlayback
                 && mediaElement.CurrentState is not MediaElementState.Playing

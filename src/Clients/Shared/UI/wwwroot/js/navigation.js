@@ -622,11 +622,127 @@ var SpatialNav = (function () {
     }
 
     function getVideoControlsOverlay(el) {
-        return el && el.closest ? el.closest('.video-controls-overlay') : null;
+        if (el && el.closest) {
+            var fromEl = el.closest('.video-controls-overlay');
+            if (fromEl) return fromEl;
+        }
+        return document.querySelector('.video-controls-overlay');
     }
 
+    // When overlay chrome is forced visible by scrub JS but Blazor already hid it,
+    // treat as hidden so OK/arrows reopen scrub instead of no-oping.
     function isVideoControlsHidden(overlay) {
-        return !!(overlay && overlay.classList.contains('controls-hidden'));
+        if (!overlay) return false;
+        // Stuck seekbar-scrubbing after a failed commit still means chrome is "busy",
+        // but if controls-hidden is also set, prefer the hidden path so OK can reopen.
+        if (overlay.classList.contains('seekbar-scrubbing')
+            && !overlay.classList.contains('controls-hidden'))
+            return false;
+        return overlay.classList.contains('controls-hidden');
+    }
+
+    function getVideoSeekBarScrubbing() {
+        var overlay = document.querySelector('.video-controls-overlay');
+        if (!overlay) return null;
+        return overlay.querySelector('.seekbar-container[data-sn-editing], .seekbar-container.scrubbing');
+    }
+
+    function setVideoOverlayScrubbingClass(active) {
+        var overlay = document.querySelector('.video-controls-overlay');
+        if (!overlay) return;
+        if (active) {
+            overlay.classList.add('seekbar-scrubbing');
+            overlay.classList.remove('controls-hidden');
+            overlay.classList.add('controls-visible');
+        } else {
+            overlay.classList.remove('seekbar-scrubbing');
+        }
+    }
+
+    // Commit/cancel even when focus drifted off the seekbar (common on Android TV WebView).
+    function commitVideoSeekBarScrubIfAny() {
+        var seekbar = getVideoSeekBarScrubbing();
+        if (!seekbar) return false;
+        try { seekbar.focus({ preventScroll: true }); } catch (ex) { }
+        var scrubTime = (window.K7 && K7.SeekBar) ? K7.SeekBar.getScrubTime(seekbar) : 0;
+        stopEditing(seekbar);
+        if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
+        setVideoOverlayScrubbingClass(false);
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+
+        // Call the JavascriptInterface directly. K7.tvNativeSeek may be missing if the
+        // bridge inject raced; never claim success without a real seek.
+        var nativeOk = false;
+        try {
+            if (window.K7TvVideo && typeof K7TvVideo.seek === 'function') {
+                K7TvVideo.seek(scrubTime);
+                nativeOk = true;
+            } else if (window.K7 && typeof K7.tvNativeSeek === 'function') {
+                K7.tvNativeSeek(scrubTime);
+                nativeOk = true;
+            }
+        } catch (exSeek) {
+        }
+
+        if (nativeOk) {
+            var inst = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+            try {
+                if (inst && inst.dotNetRef) {
+                    if (inst.dotNetRef.invokeMethod) inst.dotNetRef.invokeMethod('OnEditCancelSoft');
+                    else if (inst.dotNetRef.invokeMethodAsync) inst.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
+                }
+            } catch (exSoft) { }
+            if (window.K7 && K7.hideVideoControlsOverlay) K7.hideVideoControlsOverlay();
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayHidden');
+            return true;
+        }
+
+        // Fallback: SeekBar sn:editcommit -> DotNet OnEditCommitAt -> afterScrubCommit.
+        seekbar.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
+        return true;
+    }
+
+    // Returns "" | "soft" | "hard". soft = exit edit, keep overlay. hard = cancel scrub (hide chrome).
+    function cancelVideoSeekBarScrubIfAny() {
+        var overlay = document.querySelector('.video-controls-overlay');
+        var seekbar = getVideoSeekBarScrubbing();
+        if (!seekbar && overlay)
+            seekbar = overlay.querySelector('.seekbar-container[data-sn-editing]');
+        if (!seekbar) return '';
+
+        // stepLocal sets _scrub; OK-only edit must not initLocalScrub (see SeekBar.init).
+        var hadLocalScrub = !!(window.K7 && K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el === seekbar);
+
+        stopEditing(seekbar);
+        if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
+        setVideoOverlayScrubbingClass(false);
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop();
+
+        if (hadLocalScrub) {
+            // Hide in pure JS - do not wait for DotNet OnEditCancel / afterScrubCommit.
+            if (window.K7 && K7.hideVideoControlsOverlay) K7.hideVideoControlsOverlay();
+            var instHard = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+            try {
+                if (instHard && instHard.dotNetRef) {
+                    if (instHard.dotNetRef.invokeMethod) instHard.dotNetRef.invokeMethod('OnEditCancelSoft');
+                    else if (instHard.dotNetRef.invokeMethodAsync) instHard.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
+                }
+            } catch (exH) { }
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayHidden');
+        } else {
+            var inst = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+            try {
+                if (inst && inst.dotNetRef) {
+                    if (inst.dotNetRef.invokeMethod) inst.dotNetRef.invokeMethod('OnEditCancelSoft');
+                    else if (inst.dotNetRef.invokeMethodAsync) inst.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
+                }
+            } catch (ex) { }
+            try { seekbar.focus({ preventScroll: true }); } catch (ex2) { }
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSeekEditCancelled');
+        }
+
+        return hadLocalScrub ? 'hard' : 'soft';
     }
 
     function swallowNextEnterClick() {
@@ -662,30 +778,67 @@ var SpatialNav = (function () {
         return false;
     }
 
+    // Snapshot on Select down so key-up still activates the control the user focused,
+    // even if Android window focus churn moved document.activeElement mid-press.
+    var _tvSelectSnapshotEl = null;
+
+    function resolveSelectActivationTarget(el) {
+        if (!el || el === document.body || el === document.documentElement)
+            return null;
+        if (el.closest) {
+            var hit = el.closest('button, a.focusable, a.media-card-link, .focusable, [data-sn-activatable]');
+            if (hit) return hit;
+        }
+        return el;
+    }
+
+    function snapshotTvSelectTarget() {
+        var active = document.activeElement;
+        _tvSelectSnapshotEl = resolveSelectActivationTarget(active) || active;
+    }
+
+    function takeTvSelectSnapshot() {
+        var el = _tvSelectSnapshotEl;
+        _tvSelectSnapshotEl = null;
+        if (el && el.isConnected)
+            return el;
+        return resolveSelectActivationTarget(document.activeElement) || document.activeElement;
+    }
+
+
     function handleTvRemoteSelect(phase, keyCode, heldMs) {
         window.__k7TvNativeRemote = true;
 
-        var active = document.activeElement;
+        if (phase === 'down')
+            snapshotTvSelectTarget();
+
+        var active = (phase === 'up' || phase === 'long-up')
+            ? (_tvSelectSnapshotEl && _tvSelectSnapshotEl.isConnected
+                ? _tvSelectSnapshotEl
+                : document.activeElement)
+            : document.activeElement;
+
+
         var openMenuEl = active && active.closest ? active.closest('.k7-menu-dropdown--open') : null;
 
         if (openMenuEl) {
             if (phase === 'up' && heldMs < 600) {
-                if (active && active !== document.body) {
-                    // Menu-local activatable fields (e.g. actor K7SearchSelect) must use the
-                    // same edit + soft-keyboard path as page-level K7TextField on TV.
-                    if (toggleActivatableEdit(active)) {
+                var menuTarget = takeTvSelectSnapshot();
+                if (menuTarget && menuTarget !== document.body) {
+                    if (toggleActivatableEdit(menuTarget)) {
                         return;
                     }
-                    if (active.classList.contains('k7-menu-close')
-                        || active.classList.contains('k7-menu-item')
-                        || active.tagName === 'BUTTON') {
-                        active.click();
+                    if (menuTarget.classList.contains('k7-menu-close')
+                        || menuTarget.classList.contains('k7-menu-item')
+                        || menuTarget.tagName === 'BUTTON') {
+                        menuTarget.click();
                     }
                 }
             }
             if (phase === 'long-up' || phase === 'up') {
                 cancelMediaCardLongPress();
                 _mediaCardPressStart = null;
+                _tvSelectSnapshotEl = null;
             }
             return;
         }
@@ -694,8 +847,14 @@ var SpatialNav = (function () {
 
         if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
             if (phase === 'up' && heldMs < 600) {
+                _tvSelectSnapshotEl = null;
                 handleHiddenVideoPlayerSelect(makeFakeKeyEvent(keyCode, active));
             }
+            return;
+        }
+
+        if (phase === 'up' && heldMs < 600 && commitVideoSeekBarScrubIfAny()) {
+            _tvSelectSnapshotEl = null;
             return;
         }
 
@@ -730,12 +889,14 @@ var SpatialNav = (function () {
             window.K7 = window.K7 || {};
             window.K7._suppressEnterUntilKeyUp = true;
             _mediaCardLongPress = { card: longCtx.card, link: longCtx.link, triggered: true };
+            _tvSelectSnapshotEl = null;
             return;
         }
 
         if (phase === 'long-up') {
             cancelMediaCardLongPress();
             _mediaCardPressStart = null;
+            _tvSelectSnapshotEl = null;
             swallowNextEnterClick();
             window.K7 = window.K7 || {};
             window.K7._suppressEnterUntilKeyUp = false;
@@ -753,24 +914,31 @@ var SpatialNav = (function () {
             _mediaCardPressStart = null;
 
             if (state && state.triggered) {
+                _tvSelectSnapshotEl = null;
                 swallowNextEnterClick();
                 return;
             }
 
             if (card && link) {
+                _tvSelectSnapshotEl = null;
                 navigateMediaCardLink(link);
                 return;
             }
 
-            if (active && active !== document.body && heldMs < 600) {
+            var target = takeTvSelectSnapshot();
+            // Stale Select-up after process sleep / unpaired down (adb heldMs=404696018).
+            if (heldMs > 10000) {
+                return;
+            }
+            if (target && target !== document.body && heldMs < 600) {
                 // MAUI Android TV consumes Select keys before keydown reaches handleEnter.
                 // Activatable controls (search fields, seekbar, sliders) must enter edit mode here.
-                if (toggleActivatableEdit(active)) {
+                if (toggleActivatableEdit(target)) {
                     return;
                 }
-                var tag = (active.tagName || '').toLowerCase();
-                if (tag === 'button' || tag === 'a' || active.classList.contains('focusable')) {
-                    active.click();
+                var tag = (target.tagName || '').toLowerCase();
+                if (tag === 'button' || tag === 'a' || target.classList.contains('focusable')) {
+                    target.click();
                 }
             }
         }
@@ -929,33 +1097,120 @@ var SpatialNav = (function () {
         return true;
     }
 
+    function invokeCallbackSync(callback, methodName, arg) {
+        if (!callback) return false;
+        try {
+            if (callback.invokeMethod) {
+                if (typeof arg === 'undefined')
+                    callback.invokeMethod(methodName || 'Invoke');
+                else
+                    callback.invokeMethod(methodName || 'Invoke', arg);
+                return true;
+            }
+        } catch (ex) { }
+        // Fallback when sync interop is unavailable (some hosts only expose async).
+        if (typeof arg === 'undefined')
+            invokeCallback(callback, methodName);
+        else if (callback.invokeMethodAsync) {
+            try { callback.invokeMethodAsync(methodName || 'Invoke', arg); } catch (ex2) { }
+        }
+        return false;
+    }
+
     function handleHiddenVideoPlayerArrow(key, code, e) {
         if (!_videoPlayerRemoteRef) return false;
 
         e.preventDefault();
         e.stopImmediatePropagation();
-        if (window.SpatialNavigation) SpatialNavigation.pause();
 
         var keyCode = e.keyCode || 0;
+        // L/R while chrome is hidden: short-skip is owned by K7.tvDpadHold* on Android TV.
+        // Keep a non-hold fallback for hosts that still deliver keydown here.
         if (key === 'ArrowLeft' || code === 'ArrowLeft' || keyCode === 37 || keyCode === 21) {
-            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekLeft');
-        } else if (key === 'ArrowRight' || code === 'ArrowRight' || keyCode === 39 || keyCode === 22) {
-            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekRight');
-        } else if (key === 'ArrowUp' || code === 'ArrowUp' || keyCode === 38 || keyCode === 19) {
-            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteVolumeUp');
+            if (window.K7 && K7.tvDpadHoldStart)
+                return true;
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', -1);
+            return true;
+        }
+        if (key === 'ArrowRight' || code === 'ArrowRight' || keyCode === 39 || keyCode === 22) {
+            if (window.K7 && K7.tvDpadHoldStart)
+                return true;
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', 1);
+            return true;
+        }
+        if (window.SpatialNavigation) SpatialNavigation.pause();
+        if (key === 'ArrowUp' || code === 'ArrowUp' || keyCode === 38 || keyCode === 19) {
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteVolumeUp');
         } else if (key === 'ArrowDown' || code === 'ArrowDown' || keyCode === 40 || keyCode === 20) {
-            invokeCallback(_videoPlayerRemoteRef, 'OnRemoteVolumeDown');
+            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteVolumeDown');
         } else {
             return false;
         }
         return true;
     }
 
+    // Soft-notify Blazor that chrome should be considered visible - async only, never per-step.
+    var _videoOverlayShownNotifyAt = 0;
+    function notifyVideoRemoteOverlayShown() {
+        var now = Date.now();
+        if (now - _videoOverlayShownNotifyAt < 500) return;
+        _videoOverlayShownNotifyAt = now;
+        invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayShown');
+    }
+
     function handleHiddenVideoPlayerSelect(e) {
         e.preventDefault();
         e.stopImmediatePropagation();
         swallowNextEnterClick();
-        if (_videoPlayerRemoteRef) invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSelect');
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+
+        // Show chrome in the DOM immediately even if the Blazor circuit is wedged.
+        var overlay = document.querySelector('.video-controls-overlay');
+        if (overlay) {
+            overlay.classList.remove('controls-hidden', 'seekbar-scrubbing');
+            overlay.classList.add('controls-visible');
+            var seekbar = overlay.querySelector('.seekbar-container');
+            if (seekbar) {
+                // Never leave the seekbar in edit/scrub mode when merely opening chrome -
+                // that traps DPAD on the bar.
+                seekbar.removeAttribute('data-sn-editing');
+                if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
+            }
+            if (window.SpatialNavigation) {
+                try { SpatialNavigation.resume(); } catch (exSn) { }
+                try { SpatialNavigation.makeFocusable(); } catch (exMf) { }
+            }
+            try {
+                var playBtn = overlay.querySelector('.play-pause-btn');
+                if (playBtn) playBtn.focus({ preventScroll: true });
+                else if (seekbar) seekbar.focus({ preventScroll: true });
+                else overlay.focus({ preventScroll: true });
+            } catch (ex) { }
+        }
+        if (window.SpatialNavigation) SpatialNavigation.resume();
+        // Sync Blazor _showOverlay via sync invokeMethod when possible (async stalls leave
+        // progress re-renders re-applying controls-hidden).
+        if (_videoPlayerRemoteRef) {
+            try {
+                if (_videoPlayerRemoteRef.invokeMethod)
+                    _videoPlayerRemoteRef.invokeMethod('OnRemoteSelect');
+                else
+                    invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSelect');
+            } catch (exSelect) {
+                invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSelect');
+            }
+        }
+    }
+
+    function invokeCallbackAsync(callback, methodName, arg) {
+        if (!callback) return;
+        try {
+            if (typeof arg === 'undefined') {
+                if (callback.invokeMethodAsync) callback.invokeMethodAsync(methodName || 'Invoke');
+            } else if (callback.invokeMethodAsync) {
+                callback.invokeMethodAsync(methodName || 'Invoke', arg);
+            }
+        } catch (ex) { }
     }
 
     // Enter Handling
@@ -980,6 +1235,13 @@ var SpatialNav = (function () {
         var videoOverlay = getVideoControlsOverlay(active);
         if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
             handleHiddenVideoPlayerSelect(e);
+            return;
+        }
+
+        // Seekbar scrub commit even when focus left the seekbar (Android TV blur).
+        if (commitVideoSeekBarScrubIfAny()) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
             return;
         }
 
@@ -1040,8 +1302,11 @@ var SpatialNav = (function () {
             || e.keyCode === 37 || e.keyCode === 39 || e.keyCode === 21 || e.keyCode === 22) {
             var overlay = getVideoControlsOverlay(document.activeElement);
             if (overlay && isVideoControlsHidden(overlay)) {
+                // Phone/Tablet keyboard accumulate-seek commits on keyup. TV/Desktop already
+                // opened seekbar edit on keydown (overlay no longer hidden).
                 e.preventDefault();
-                if (_videoPlayerRemoteRef) invokeCallback(_videoPlayerRemoteRef, 'OnRemoteSeekCommit');
+                if (_videoPlayerRemoteRef) invokeCallbackSync(_videoPlayerRemoteRef, 'OnRemoteSeekCommit');
+                if (window.SpatialNavigation) SpatialNavigation.resume();
                 return;
             }
         }
@@ -1147,6 +1412,13 @@ var SpatialNav = (function () {
     function handleEscape(e) {
         var active = document.activeElement;
 
+        // Seekbar scrub may keep data-sn-editing while focus has drifted to the overlay root.
+        if (cancelVideoSeekBarScrubIfAny()) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+
         if (active && isEditing(active)) {
             if (isTextInput(active) && isTvLongPressMode()) {
                 _tvEditDismissViaBack = true;
@@ -1165,21 +1437,9 @@ var SpatialNav = (function () {
 
         if (isOpenSearchSelectInput(active)) return;
 
-        var playbackDetail = document.querySelector('.playback-settings-menu--open.playback-settings-menu--detail');
-        if (playbackDetail) {
+        if (tryClosePlaybackSettingsLevel()) {
             e.preventDefault();
             e.stopImmediatePropagation();
-            var activeNav = playbackDetail.querySelector('.playback-settings-nav-item--active');
-            if (activeNav) activeNav.click();
-            return;
-        }
-
-        var playbackOpen = document.querySelector('.playback-settings-menu--open:not(.playback-settings-menu--detail)');
-        if (playbackOpen) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            var closeBtn = playbackOpen.querySelector('.playback-settings-close');
-            if (closeBtn) closeBtn.click();
             return;
         }
 
@@ -1374,7 +1634,18 @@ var SpatialNav = (function () {
             document.addEventListener('blur', function (ev) {
                 if (!ev.target || !ev.target.hasAttribute || !ev.target.hasAttribute('data-sn-editing')) return;
                 var editingEl = ev.target;
-                // Seekbar/slider divs and desktop blur-to-commit keep the old behavior.
+                // Seekbar/slider: Android TV WebView often blurs mid-edit; keep editing and refocus.
+                // Explicit OK (commit) or Back (cancel) still exit via toggleActivatableEdit / Escape.
+                var role = editingEl.getAttribute('role') || '';
+                if (editingEl.classList.contains('seekbar-container') || role === 'slider') {
+                    setTimeout(function () {
+                        if (!editingEl.isConnected || !editingEl.hasAttribute('data-sn-editing')) return;
+                        if (document.activeElement !== editingEl)
+                            editingEl.focus({ preventScroll: true });
+                    }, 0);
+                    return;
+                }
+                // Other non-text activatables and desktop blur-to-commit keep the old behavior.
                 if (!isTextInput(editingEl) || !isTvLongPressMode()) {
                     stopEditing(editingEl);
                     if (window.SpatialNavigation) SpatialNavigation.resume();
@@ -1463,7 +1734,7 @@ var SpatialNav = (function () {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
                 return;
             }
-            // When overlay is hidden, route arrows to the player for seek/volume HUD.
+            // When overlay is hidden, route arrows to the player (seekbar edit / volume / phone HUD).
             var videoOverlay = getVideoControlsOverlay(el);
             if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
                 if (handleHiddenVideoPlayerArrow(key, e.code || '', e)) return;
@@ -1476,9 +1747,29 @@ var SpatialNav = (function () {
                 else if (e.code === 'ArrowUp' || e.keyCode === 38 || e.keyCode === 19) arrowKey = 'ArrowUp';
                 else if (e.code === 'ArrowDown' || e.keyCode === 40 || e.keyCode === 20) arrowKey = 'ArrowDown';
             }
+            // Overlay just opened for scrub but focus may still be on the overlay root:
+            // keep routing L/R into seekbar edit instead of SpatialNav.
+            if (videoOverlay && !isVideoControlsHidden(videoOverlay)
+                && (arrowKey === 'ArrowLeft' || arrowKey === 'ArrowRight')
+                && (el === videoOverlay || (el && el.classList && el.classList.contains('video-controls-overlay')))) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (window.K7 && window.K7.beginSeekBarScrub)
+                    window.K7.beginSeekBarScrub(arrowKey === 'ArrowLeft' ? -1 : 1);
+                return;
+            }
             if (el && el.closest('[data-carousel]') && handleCarouselNav(el, arrowKey)) {
                 e.preventDefault();
                 e.stopPropagation();
+                return;
+            }
+            // Virtual browse grids: keep Up/Down inside the grid (placeholders / next row).
+            // Right still reaches the jump-index via SpatialNavigation.
+            if ((arrowKey === 'ArrowDown' || arrowKey === 'ArrowUp')
+                && window.K7 && typeof window.K7.handleVirtualBrowseArrow === 'function'
+                && window.K7.handleVirtualBrowseArrow(arrowKey, el)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 return;
             }
             if ((arrowKey === 'ArrowDown' || arrowKey === 'ArrowUp') && window.K7 && window.K7.TvDetailScroll) {
@@ -1491,6 +1782,15 @@ var SpatialNav = (function () {
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
+                // Seekbar: drive scrub via JS->.NET so TV key-repeat does not wait on Blazor @onkeydown.
+                if (el.classList.contains('seekbar-container')
+                    && (arrowKey === 'ArrowLeft' || arrowKey === 'ArrowRight')) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (window.K7 && window.K7.scrubSeekBar)
+                        window.K7.scrubSeekBar(arrowKey === 'ArrowLeft' ? -1 : 1);
+                    return;
+                }
                 // Don't preventDefault on native range inputs - browser handles arrow keys
                 if (el.tagName !== 'INPUT' || el.type !== 'range') {
                     e.preventDefault();
@@ -1923,6 +2223,34 @@ var SpatialNav = (function () {
         return true;
     }
 
+    // Close playback settings one level: detail -> root menu, root menu -> closed.
+    // Returns true when a level was closed (caller must not hide the video overlay).
+    function tryClosePlaybackSettingsLevel() {
+        var menu = document.querySelector('.playback-settings-menu--open');
+        if (!menu) return false;
+
+        if (menu.classList.contains('playback-settings-menu--detail')) {
+            var backBtn = menu.querySelector('.playback-settings-panel--detail .playback-settings-back');
+            if (backBtn) {
+                var backStyle = window.getComputedStyle(backBtn);
+                if (backStyle.display !== 'none' && backStyle.visibility !== 'hidden') {
+                    backBtn.click();
+                    return true;
+                }
+            }
+            var activeNav = menu.querySelector('.playback-settings-nav-item--active');
+            if (activeNav) {
+                activeNav.click();
+                return true;
+            }
+            return true;
+        }
+
+        var closeBtn = menu.querySelector('.playback-settings-close');
+        if (closeBtn) closeBtn.click();
+        return true;
+    }
+
     function cancelEditingIn(rootSelector) {
         var root = rootSelector ? document.querySelector(rootSelector) : document;
         if (!root) return;
@@ -1949,7 +2277,13 @@ var SpatialNav = (function () {
     function hasEditingIn(rootSelector) {
         var root = rootSelector ? document.querySelector(rootSelector) : document;
         if (!root) return false;
-        return !!root.querySelector('[data-sn-editing]');
+        if (root.querySelector('[data-sn-editing]')) return true;
+        // JS-local seekbar scrub may run briefly before data-sn-editing is set.
+        if (root.querySelector('.seekbar-container.scrubbing')) return true;
+        if (window.K7 && K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el
+            && root.contains(K7.SeekBar._scrub.el))
+            return true;
+        return false;
     }
 
     // Init
@@ -2141,6 +2475,250 @@ var SpatialNav = (function () {
 
         window.K7 = window.K7 || {};
         window.K7.onTvRemoteSelect = handleTvRemoteSelect;
+        window.K7.cancelVideoSeekOrEdit = cancelVideoSeekBarScrubIfAny;
+        // Native Activity Back while video is up - never wait on Blazor JSRuntime.
+        window.K7.handleVideoTvBack = function () {
+            if (window.K7.tvDpadHoldStop) K7.tvDpadHoldStop();
+            var cancel = cancelVideoSeekBarScrubIfAny();
+            if (cancel === 'soft') {
+                return 'soft';
+            }
+            if (cancel === 'hard') {
+                return 'hard';
+            }
+
+            // Close playback settings menu / submenu one level at a time (do not hide overlay).
+            if (tryClosePlaybackSettingsLevel()) {
+                return 'menu';
+            }
+
+            var overlay = document.querySelector('.video-controls-overlay');
+            if (overlay && !overlay.classList.contains('controls-hidden')) {
+                if (window.K7.hideVideoControlsOverlay) K7.hideVideoControlsOverlay();
+                invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayHidden');
+                return 'hide';
+            }
+
+            // Close player via native JavascriptInterface (K7.tvNativeClosePlayer may be missing
+            // if SpatialNav init raced the bridge inject).
+            var closed = false;
+            try {
+                if (window.K7TvVideo && typeof K7TvVideo.closePlayer === 'function') {
+                    K7TvVideo.closePlayer();
+                    closed = true;
+                } else if (window.K7 && typeof K7.tvNativeClosePlayer === 'function') {
+                    K7.tvNativeClosePlayer();
+                    closed = true;
+                }
+            } catch (exNative) { }
+            if (closed) {
+                return 'close';
+            }
+            if (_videoPlayerBackCallback) {
+                try {
+                    if (_videoPlayerBackCallback.invokeMethod)
+                        _videoPlayerBackCallback.invokeMethod('OnLayerClosed');
+                    else if (_videoPlayerBackCallback.invokeMethodAsync)
+                        _videoPlayerBackCallback.invokeMethodAsync('OnLayerClosed');
+                } catch (exClose) { }
+            }
+            return 'close';
+        };
+        // Native Activity forwards DPAD here when ExoPlayer stole WebView focus after seek.
+        window.K7.dispatchTvArrowKey = function (arrowKey, action, keyCode, repeat) {
+            var fake = {
+                key: arrowKey || '',
+                code: arrowKey || '',
+                keyCode: keyCode || 0,
+                which: keyCode || 0,
+                repeat: !!repeat,
+                target: document.activeElement,
+                preventDefault: function () { },
+                stopImmediatePropagation: function () { },
+                stopPropagation: function () { }
+            };
+            if (action === 'keyup') {
+                handleKeyUp(fake);
+            } else {
+                handleKeyDown(fake);
+            }
+        };
+
+        // Short press L/R (chrome hidden): configured skip prefs. Long press: overlay scrub.
+        // While seekbar editing: hold-scrub. While chrome visible: SpatialNav.move + fallback.
+        window.K7.navigateVideoOverlay = function (arrowKey) {
+            var overlay = document.querySelector('.video-controls-overlay');
+            if (!overlay || overlay.classList.contains('controls-hidden')) return false;
+
+            var snDir = arrowKey === 'ArrowLeft' ? 'left'
+                : arrowKey === 'ArrowRight' ? 'right'
+                : arrowKey === 'ArrowUp' ? 'up'
+                : arrowKey === 'ArrowDown' ? 'down'
+                : '';
+            if (!snDir) return false;
+
+            var before = document.activeElement;
+            if (window.SpatialNavigation) {
+                try { SpatialNavigation.resume(); } catch (exResume) { }
+                try { SpatialNavigation.makeFocusable(); } catch (exMf) { }
+                try {
+                    SpatialNavigation.move(snDir);
+                } catch (exMove) { }
+            }
+
+            var after = document.activeElement;
+            if (after && after !== before && overlay.contains(after)) {
+                return true;
+            }
+
+            // SpatialNav.move often no-ops with injected keys / pause / 0-size siblings.
+            // Fall back to geometric focus among visible .focusable controls in the overlay.
+            var items = Array.prototype.slice.call(overlay.querySelectorAll('.focusable')).filter(function (el) {
+                return el.offsetWidth > 0 && el.offsetHeight > 0 && !el.hasAttribute('disabled');
+            });
+            if (!items.length) return false;
+
+            var cur = (before && overlay.contains(before)) ? before : items[0];
+            if (items.indexOf(cur) < 0) cur = items[0];
+            var curRect = cur.getBoundingClientRect();
+            var curCx = curRect.left + curRect.width / 2;
+            var curCy = curRect.top + curRect.height / 2;
+            var best = null;
+            var bestScore = Infinity;
+            for (var i = 0; i < items.length; i++) {
+                var el = items[i];
+                if (el === cur) continue;
+                var r = el.getBoundingClientRect();
+                var cx = r.left + r.width / 2;
+                var cy = r.top + r.height / 2;
+                var dx = cx - curCx;
+                var dy = cy - curCy;
+                var primary = 0;
+                var secondary = 0;
+                if (snDir === 'left') {
+                    if (dx >= -2) continue;
+                    primary = -dx;
+                    secondary = Math.abs(dy);
+                } else if (snDir === 'right') {
+                    if (dx <= 2) continue;
+                    primary = dx;
+                    secondary = Math.abs(dy);
+                } else if (snDir === 'up') {
+                    if (dy >= -2) continue;
+                    primary = -dy;
+                    secondary = Math.abs(dx);
+                } else {
+                    if (dy <= 2) continue;
+                    primary = dy;
+                    secondary = Math.abs(dx);
+                }
+                var score = primary * 1000 + secondary;
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = el;
+                }
+            }
+
+            if (!best) {
+                return false;
+            }
+
+            try { best.focus({ preventScroll: true }); } catch (exFocus) { }
+            if (window.SpatialNavigation && SpatialNavigation.focus) {
+                try { SpatialNavigation.focus(best, true); } catch (exSnFocus) { }
+            }
+            return true;
+        };
+
+        window.K7.tvDpadHoldStop = function (isKeyUp) {
+            var hold = window.K7._tvDpadHold;
+            window.K7._tvDpadHold = null;
+            if (!hold) return;
+
+            if (hold.longTimer) clearTimeout(hold.longTimer);
+            if (hold.timer) clearInterval(hold.timer);
+
+            // Short press released before long-press threshold.
+            if (isKeyUp && hold.mode === 'pending' && hold.dir) {
+                var delta = window.K7.getTvSkipDelta
+                    ? window.K7.getTvSkipDelta(hold.dir)
+                    : (hold.dir < 0 ? -10 : 10);
+                var nativeOk = false;
+                try {
+                    if (window.K7TvVideo && typeof K7TvVideo.skip === 'function') {
+                        K7TvVideo.skip(hold.dir);
+                        nativeOk = true;
+                    } else if (window.K7TvVideo && typeof K7TvVideo.seekBy === 'function') {
+                        K7TvVideo.seekBy(delta);
+                        nativeOk = true;
+                    }
+                } catch (exBy) { }
+                // Native already seeked - only ask Blazor for HUD. Otherwise full skip via DotNet.
+                if (nativeOk)
+                    invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipHud', delta);
+                else
+                    invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', hold.dir);
+            }
+            // mode === 'scrub': interval stopped; leave scrub session for Select commit.
+        };
+        window.K7.tvDpadHoldStart = function (arrowKey, keyCode) {
+            var arrow = arrowKey || '';
+            var overlay = document.querySelector('.video-controls-overlay');
+            var seekbar = overlay && overlay.querySelector('.seekbar-container');
+            var editing = !!(seekbar && seekbar.hasAttribute('data-sn-editing'));
+            var hidden = !!(overlay && overlay.classList.contains('controls-hidden'));
+            var isHorizontal = arrow === 'ArrowLeft' || arrow === 'ArrowRight';
+            var dir = arrow === 'ArrowLeft' ? -1 : 1;
+
+            // Chrome visible: navigate controls (all directions). Fake keydown never reaches
+            // SpatialNavigation's own listener - move() + geometric fallback.
+            if (overlay && !hidden && !(editing || (seekbar && seekbar.classList.contains('scrubbing')))) {
+                window.K7.tvDpadHoldStop(false);
+                if (!window.K7.navigateVideoOverlay(arrow))
+                    window.K7.dispatchTvArrowKey(arrow, 'keydown', keyCode || 0, false);
+                return;
+            }
+
+            if (!isHorizontal) {
+                window.K7.tvDpadHoldStop(false);
+                window.K7.dispatchTvArrowKey(arrow, 'keydown', keyCode || 0, false);
+                return;
+            }
+
+            // Already scrubbing (seekbar edit): accelerate with hold interval.
+            if (editing || (seekbar && seekbar.classList.contains('scrubbing'))) {
+                if (window.K7._tvDpadHold && window.K7._tvDpadHold.dir === dir
+                    && window.K7._tvDpadHold.mode === 'scrub')
+                    return;
+                window.K7.tvDpadHoldStop(false);
+                if (window.K7.beginSeekBarScrub) window.K7.beginSeekBarScrub(dir);
+                window.K7._tvDpadHold = {
+                    dir: dir,
+                    mode: 'scrub',
+                    timer: setInterval(function () {
+                        if (window.K7.beginSeekBarScrub) window.K7.beginSeekBarScrub(dir);
+                    }, 90)
+                };
+                return;
+            }
+
+            // Chrome hidden: arm short-skip vs long-scrub.
+            window.K7.tvDpadHoldStop(false);
+            window.K7._tvDpadHold = {
+                dir: dir,
+                mode: 'pending',
+                longTimer: setTimeout(function () {
+                    var h = window.K7._tvDpadHold;
+                    if (!h || h.dir !== dir || h.mode !== 'pending') return;
+                    h.mode = 'scrub';
+                    h.longTimer = null;
+                    if (window.K7.beginSeekBarScrub) window.K7.beginSeekBarScrub(dir);
+                    h.timer = setInterval(function () {
+                        if (window.K7.beginSeekBarScrub) window.K7.beginSeekBarScrub(dir);
+                    }, 90);
+                }, 400)
+            };
+        };
 
         watchBlazorErrorUi();
     }
@@ -2230,6 +2808,8 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+    };
+}
 
 // Hero snap / focus-scroll is for keyboard and TV remotes only.
 // Mouse and touch must not move the page when focusing or dragging carousels.
@@ -3277,27 +3857,379 @@ K7.RatingStars = {
 
 K7.SeekBar = {
     _instances: new WeakMap(),
+    _scrub: null,
+    _afterScrubCommitBusy: false,
+    directChild: function (el, className) {
+        if (!el || !el.children) return null;
+        for (var i = 0; i < el.children.length; i++) {
+            var child = el.children[i];
+            if (child && child.classList && child.classList.contains(className))
+                return child;
+        }
+        return null;
+    },
+    removeDirectChildren: function (el, className) {
+        if (!el || !el.children) return;
+        for (var i = el.children.length - 1; i >= 0; i--) {
+            var child = el.children[i];
+            if (child && child.classList && child.classList.contains(className))
+                child.remove();
+        }
+    },
     init: function (el, dotNetRef) {
         if (!el || typeof el.addEventListener !== 'function') return;
         var handlers = {
-            start: function () { dotNetRef.invokeMethodAsync('OnEditStart'); },
-            commit: function () { dotNetRef.invokeMethodAsync('OnEditCommit'); },
-            cancel: function () { dotNetRef.invokeMethodAsync('OnEditCancel'); }
+            start: function () {
+                try {
+                    if (dotNetRef.invokeMethod) dotNetRef.invokeMethod('OnEditStart');
+                    else dotNetRef.invokeMethodAsync('OnEditStart');
+                } catch (ex) { }
+                // Do not initLocalScrub until the first L/R step. OK-only edit must leave
+                // _scrub null so Escape can soft-cancel without afterScrubCommit / hide.
+            },
+            commit: function () {
+                var scrubTime = K7.SeekBar.getScrubTime(el);
+                K7.SeekBar.clearLocalScrub(el);
+                try {
+                    if (dotNetRef.invokeMethodAsync)
+                        dotNetRef.invokeMethodAsync('OnEditCommitAt', scrubTime);
+                    else
+                        dotNetRef.invokeMethodAsync('OnEditCommit');
+                } catch (ex) { }
+            },
+            cancel: function () {
+                K7.SeekBar.clearLocalScrub(el);
+                dotNetRef.invokeMethodAsync('OnEditCancel');
+            }
         };
         el.addEventListener('sn:editstart', handlers.start);
         el.addEventListener('sn:editcommit', handlers.commit);
         el.addEventListener('sn:editcancel', handlers.cancel);
-        K7.SeekBar._instances.set(el, handlers);
+        K7.SeekBar._instances.set(el, { handlers: handlers, dotNetRef: dotNetRef });
     },
     dispose: function (el) {
-        var h = K7.SeekBar._instances.get(el);
-        if (h) {
-            el.removeEventListener('sn:editstart', h.start);
-            el.removeEventListener('sn:editcommit', h.commit);
-            el.removeEventListener('sn:editcancel', h.cancel);
+        var inst = K7.SeekBar._instances.get(el);
+        if (inst && inst.handlers) {
+            el.removeEventListener('sn:editstart', inst.handlers.start);
+            el.removeEventListener('sn:editcommit', inst.handlers.commit);
+            el.removeEventListener('sn:editcancel', inst.handlers.cancel);
             K7.SeekBar._instances.delete(el);
         }
+        K7.SeekBar.clearLocalScrub(el);
+    },
+    initLocalScrub: function (el) {
+        if (!el) return;
+        var duration = parseFloat(el.getAttribute('aria-valuemax')) || 0;
+        var current = parseFloat(el.getAttribute('aria-valuenow')) || 0;
+        if (!isFinite(duration) || duration < 0) duration = 0;
+        if (!isFinite(current) || current < 0) current = 0;
+        current = Math.min(current, duration);
+        K7.SeekBar._scrub = {
+            el: el,
+            time: current,
+            duration: duration,
+            repeatCount: 0,
+            decayTimer: null
+        };
+        el.classList.add('scrubbing');
+        el.setAttribute('data-scrub-time', String(current));
+        var overlay = el.closest('.video-controls-overlay');
+        if (overlay) {
+            overlay.classList.add('seekbar-scrubbing');
+            overlay.classList.remove('controls-hidden');
+            overlay.classList.add('controls-visible');
+        }
+        // Drop any Blazor live-position preview nodes so only the scrub pair remains.
+        K7.SeekBar.removeDirectChildren(el, 'thumb');
+        K7.SeekBar.removeDirectChildren(el, 'thumbnail');
+        K7.SeekBar.ensurePreview(el);
+        K7.SeekBar.applyPreview(el, current, duration);
+    },
+    clearLocalScrub: function (el) {
+        if (K7.SeekBar._scrub && (!el || K7.SeekBar._scrub.el === el)) {
+            if (K7.SeekBar._scrub.decayTimer) clearTimeout(K7.SeekBar._scrub.decayTimer);
+            K7.SeekBar._scrub = null;
+        }
+        if (el) {
+            el.removeAttribute('data-scrub-time');
+            el.classList.remove('scrubbing');
+            K7.SeekBar.removeDirectChildren(el, 'thumb');
+            K7.SeekBar.removeDirectChildren(el, 'thumbnail');
+            var overlay = el.closest('.video-controls-overlay');
+            if (overlay) overlay.classList.remove('seekbar-scrubbing');
+        }
+    },
+    afterScrubCommit: function () {
+        if (K7.SeekBar._afterScrubCommitBusy) return;
+        K7.SeekBar._afterScrubCommitBusy = true;
+        try {
+            var overlay = document.querySelector('.video-controls-overlay');
+            var seekbar = overlay && overlay.querySelector('.seekbar-container');
+            if (seekbar) K7.SeekBar.clearLocalScrub(seekbar);
+            if (window.K7 && K7.hideVideoControlsOverlay)
+                K7.hideVideoControlsOverlay();
+            else if (overlay) {
+                overlay.classList.remove('seekbar-scrubbing', 'controls-visible');
+                overlay.classList.add('controls-hidden');
+                try { overlay.focus({ preventScroll: true }); } catch (ex) { }
+            }
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+        } finally {
+            setTimeout(function () { K7.SeekBar._afterScrubCommitBusy = false; }, 100);
+        }
+    },
+    getScrubTime: function (el) {
+        if (K7.SeekBar._scrub && K7.SeekBar._scrub.el === el)
+            return K7.SeekBar._scrub.time;
+        var attr = el && el.getAttribute('data-scrub-time');
+        var parsed = attr ? parseFloat(attr) : NaN;
+        if (isFinite(parsed)) return parsed;
+        return parseFloat(el && el.getAttribute('aria-valuenow')) || 0;
+    },
+    getStep: function (repeatCount) {
+        if (repeatCount <= 4) return 2;
+        if (repeatCount <= 10) return 5;
+        if (repeatCount <= 18) return 10;
+        if (repeatCount <= 28) return 20;
+        if (repeatCount <= 40) return 30;
+        return 60;
+    },
+    formatTime: function (seconds) {
+        var s = Math.max(0, Math.floor(seconds || 0));
+        var h = Math.floor(s / 3600);
+        var m = Math.floor((s % 3600) / 60);
+        var sec = s % 60;
+        var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+        return h > 0 ? h + ':' + pad(m) + ':' + pad(sec) : m + ':' + pad(sec);
+    },
+    ensurePreview: function (el) {
+        // Avoid :scope - older Android TV WebViews mishandle it and create duplicate nodes.
+        var thumb = K7.SeekBar.directChild(el, 'thumb');
+        if (thumb && !thumb.hasAttribute('data-scrub-preview')) {
+            thumb.remove();
+            thumb = null;
+        }
+        if (!thumb) {
+            thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            thumb.setAttribute('data-scrub-preview', 'true');
+            el.appendChild(thumb);
+        }
+        thumb.style.position = 'absolute';
+        thumb.style.top = '50%';
+        thumb.style.width = '16px';
+        thumb.style.height = '16px';
+        thumb.style.backgroundColor = '#fff';
+        thumb.style.borderRadius = '50%';
+        thumb.style.transform = 'translate(-50%, -50%)';
+        thumb.style.zIndex = '4';
+        thumb.style.pointerEvents = 'none';
+        thumb.style.display = '';
+        thumb.style.visibility = '';
+
+        var thumbnail = K7.SeekBar.directChild(el, 'thumbnail');
+        if (thumbnail && !thumbnail.hasAttribute('data-scrub-preview')) {
+            thumbnail.remove();
+            thumbnail = null;
+        }
+        if (!thumbnail) {
+            thumbnail = document.createElement('div');
+            thumbnail.className = 'thumbnail';
+            thumbnail.setAttribute('data-scrub-preview', 'true');
+            thumbnail.innerHTML = '<div class="thumbnail-image"></div><div class="thumbnail-time"></div>';
+            el.appendChild(thumbnail);
+        } else if (!thumbnail.querySelector('.thumbnail-image') && el.getAttribute('data-thumbnails-uri')) {
+            var img = document.createElement('div');
+            img.className = 'thumbnail-image';
+            thumbnail.insertBefore(img, thumbnail.firstChild);
+        }
+        thumbnail.style.position = 'absolute';
+        thumbnail.style.bottom = '30px';
+        thumbnail.style.transform = 'translateX(-50%)';
+        thumbnail.style.display = 'flex';
+        thumbnail.style.flexDirection = 'column';
+        thumbnail.style.alignItems = 'center';
+        thumbnail.style.pointerEvents = 'none';
+        thumbnail.style.zIndex = '100006';
+        thumbnail.style.visibility = '';
+
+        var track = el.querySelector('.seekbar-track');
+        if (track && !track.querySelector('.hover')) {
+            var hover = document.createElement('div');
+            hover.className = 'hover';
+            track.appendChild(hover);
+        }
+    },
+    applyPreview: function (el, time, duration) {
+        var pct = duration > 0 ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0;
+        var pctStr = pct.toFixed(4) + '%';
+        var thumb = K7.SeekBar.directChild(el, 'thumb');
+        var thumbnail = K7.SeekBar.directChild(el, 'thumbnail');
+        // Prefer the scrub-marked pair if a live-position Blazor node reappeared.
+        if (thumb && !thumb.hasAttribute('data-scrub-preview')) {
+            var scrubThumb = el.querySelector(':scope > .thumb[data-scrub-preview], .thumb[data-scrub-preview]');
+            if (scrubThumb) thumb = scrubThumb;
+        }
+        if (thumbnail && !thumbnail.hasAttribute('data-scrub-preview')) {
+            var scrubThumbNail = el.querySelector('.thumbnail[data-scrub-preview]');
+            if (scrubThumbNail) thumbnail = scrubThumbNail;
+        }
+        if (thumb) thumb.style.left = pctStr;
+        if (thumbnail) {
+            thumbnail.style.left = pctStr;
+            var timeEl = thumbnail.querySelector('.thumbnail-time');
+            if (timeEl) {
+                timeEl.textContent = K7.SeekBar.formatTime(time);
+                timeEl.style.marginTop = '4px';
+                timeEl.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                timeEl.style.color = '#fff';
+                timeEl.style.padding = '2px 6px';
+                timeEl.style.borderRadius = '4px';
+                timeEl.style.whiteSpace = 'nowrap';
+                timeEl.style.fontSize = '12px';
+            }
+            var img = thumbnail.querySelector('.thumbnail-image');
+            var uri = el.getAttribute('data-thumbnails-uri');
+            if (img && uri) {
+                var interval = parseInt(el.getAttribute('data-thumb-interval') || '30', 10);
+                var perRow = parseInt(el.getAttribute('data-thumbs-per-row') || '10', 10);
+                var tw = parseInt(el.getAttribute('data-thumb-width') || '320', 10);
+                var th = parseInt(el.getAttribute('data-thumb-height') || '180', 10);
+                var index = Math.floor(time / interval);
+                var col = index % perRow;
+                var row = Math.floor(index / perRow);
+                img.style.display = 'block';
+                img.style.boxSizing = 'border-box';
+                img.style.backgroundImage = 'url("' + uri + '")';
+                img.style.backgroundPosition = '-' + (col * tw) + 'px -' + (row * th) + 'px';
+                img.style.backgroundSize = (perRow * tw) + 'px auto';
+                img.style.backgroundRepeat = 'no-repeat';
+                img.style.width = tw + 'px';
+                img.style.height = th + 'px';
+                img.style.overflow = 'hidden';
+                img.style.borderRadius = '4px';
+                img.style.border = '1px solid #fff';
+                img.style.flexShrink = '0';
+            }
+        }
+        var hover = el.querySelector('.seekbar-track .hover');
+        if (hover) hover.style.width = pctStr;
+    },
+    stepLocal: function (el, direction) {
+        if (!el) return;
+        if (!K7.SeekBar._scrub || K7.SeekBar._scrub.el !== el)
+            K7.SeekBar.initLocalScrub(el);
+
+        var s = K7.SeekBar._scrub;
+        if (!s) return;
+
+        if (s.decayTimer) clearTimeout(s.decayTimer);
+        s.decayTimer = setTimeout(function () {
+            if (K7.SeekBar._scrub === s) s.repeatCount = 0;
+        }, 400);
+
+        s.repeatCount += 1;
+        var step = K7.SeekBar.getStep(s.repeatCount);
+        if (direction < 0) s.time = Math.max(0, s.time - step);
+        else s.time = Math.min(s.duration, s.time + step);
+
+        el.setAttribute('data-scrub-time', String(s.time));
+        // Hide any Blazor live-position pair that re-rendered after our last cleanup.
+        K7.SeekBar.hideLivePositionPreviews(el);
+        K7.SeekBar.ensurePreview(el);
+        K7.SeekBar.applyPreview(el, s.time, s.duration);
+    },
+    hideLivePositionPreviews: function (el) {
+        if (!el || !el.children) return;
+        for (var i = 0; i < el.children.length; i++) {
+            var child = el.children[i];
+            if (!child || !child.classList) continue;
+            if ((child.classList.contains('thumb') || child.classList.contains('thumbnail'))
+                && !child.hasAttribute('data-scrub-preview')) {
+                child.style.display = 'none';
+                child.style.visibility = 'hidden';
+            }
+        }
     }
+};
+
+K7.hideVideoControlsOverlay = function () {
+    if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+    var overlay = document.querySelector('.video-controls-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('seekbar-scrubbing', 'controls-visible');
+    overlay.classList.add('controls-hidden');
+    var seekbar = overlay.querySelector('.seekbar-container');
+    if (seekbar && window.K7 && K7.SeekBar)
+        K7.SeekBar.clearLocalScrub(seekbar);
+    try { overlay.focus({ preventScroll: true }); } catch (ex) { }
+    if (window.SpatialNavigation) SpatialNavigation.resume();
+};
+
+// Synced from VideoPlayerControlsOverlay (SkipBackSeconds / SkipForwardSeconds prefs).
+K7.setTvSkipSeconds = function (backSeconds, forwardSeconds) {
+    window.K7 = window.K7 || {};
+    K7.tvSkipBackSeconds = Math.max(1, parseInt(backSeconds, 10) || 10);
+    K7.tvSkipForwardSeconds = Math.max(1, parseInt(forwardSeconds, 10) || 10);
+};
+
+K7.getTvSkipDelta = function (dir) {
+    var back = (window.K7 && K7.tvSkipBackSeconds) || 10;
+    var fwd = (window.K7 && K7.tvSkipForwardSeconds) || 10;
+    return dir < 0 ? -back : fwd;
+};
+
+K7.scrubSeekBar = function (direction) {
+    // Prefer beginSeekBarScrub (OnEditStart once + stepLocal).
+    if (window.K7 && K7.beginSeekBarScrub) {
+        K7.beginSeekBarScrub(direction);
+        return;
+    }
+    var seekbar = document.querySelector('.video-controls-overlay .seekbar-container');
+    if (!seekbar) return;
+    K7.SeekBar.stepLocal(seekbar, direction);
+};
+
+K7.beginSeekBarScrub = function (direction) {
+    var overlay = document.querySelector('.video-controls-overlay');
+    var seekbar = overlay && overlay.querySelector('.seekbar-container');
+    if (!seekbar) {
+        return;
+    }
+
+    var starting = !seekbar.hasAttribute('data-sn-editing');
+
+    // Force controls visible immediately (Blazor StateHasChanged is async).
+    if (overlay) {
+        overlay.classList.add('seekbar-scrubbing');
+        overlay.classList.remove('controls-hidden');
+        overlay.classList.add('controls-visible');
+    }
+
+    try { seekbar.focus({ preventScroll: true }); } catch (ex) { }
+
+    var inst = K7.SeekBar._instances.get(seekbar);
+
+    if (starting) {
+        if (window.SpatialNav && window.SpatialNav.startEditing)
+            window.SpatialNav.startEditing(seekbar);
+        else {
+            seekbar.setAttribute('data-sn-editing', 'true');
+            if (window.SpatialNavigation) SpatialNavigation.pause();
+            seekbar.dispatchEvent(new CustomEvent('sn:editstart', { bubbles: false }));
+        }
+        // OnEditStart once per scrub session - never on every key repeat (kills Blazor batches).
+        try {
+            if (inst && inst.dotNetRef) {
+                if (inst.dotNetRef.invokeMethodAsync) inst.dotNetRef.invokeMethodAsync('OnEditStart');
+                else if (inst.dotNetRef.invokeMethod) inst.dotNetRef.invokeMethod('OnEditStart');
+            }
+        } catch (ex) { }
+    } else if (!K7.SeekBar._scrub || K7.SeekBar._scrub.el !== seekbar) {
+        K7.SeekBar.initLocalScrub(seekbar);
+    }
+
+    K7.SeekBar.stepLocal(seekbar, direction);
 };
 
 document.addEventListener('DOMContentLoaded', function () { SpatialNav.init(); });

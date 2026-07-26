@@ -1,15 +1,535 @@
 using AndroidX.Media3.Common;
 using AndroidX.Media3.DataSource;
+using AndroidX.Media3.ExoPlayer;
+using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.MAUI;
 
 public partial class BlazorPage
 {
+    private Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener? _videoFocusBounceListener;
+    private bool _videoFocusBounceAttached;
+
     partial void InitializePlayerPlatform()
     {
         _playerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
         _playerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
+    }
+
+    /// <summary>
+    /// While video is visible, always synthesize DPAD into the WebView JS context.
+    /// Native WebView key delivery can go quiet after scrub/seek even when the WebView has focus.
+    /// EvaluateJavascript bypasses that.
+    /// </summary>
+    internal bool TryForwardTvVideoDpad(Android.Views.KeyEvent e)
+    {
+        if (!_playerService.IsVisible)
+            return false;
+
+        NotifyTvRemoteDpad(e);
+        return true;
+    }
+
+    internal bool HasWebViewWindowFocus()
+    {
+        try
+        {
+            if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+                return false;
+            return webView.IsFocused || webView.HasFocus;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal void EnsureVideoSurfaceNotFocusable() => SuppressPlayerViewFocus();
+
+    internal bool TryEvaluateWebViewJs(string script)
+    {
+        try
+        {
+            if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+                return false;
+
+            webView.EvaluateJavascript(script, null);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private void NotifyTvRemoteDpad(Android.Views.KeyEvent e)
+    {
+        var arrow = e.KeyCode switch
+        {
+            Android.Views.Keycode.DpadLeft => "ArrowLeft",
+            Android.Views.Keycode.DpadRight => "ArrowRight",
+            Android.Views.Keycode.DpadUp => "ArrowUp",
+            Android.Views.Keycode.DpadDown => "ArrowDown",
+            _ => null
+        };
+        if (arrow is null)
+            return;
+
+        // Ignore native key-repeat: one down starts a JS hold interval, up stops it.
+        // Flooding EvaluateJavascript with repeats makes scrub continue long after release.
+        if (e.Action == Android.Views.KeyEventActions.Down && e.RepeatCount > 0)
+            return;
+
+        var keyCode = (int)e.KeyCode;
+        var arrowJson = System.Text.Json.JsonSerializer.Serialize(arrow);
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            string script;
+            if (e.Action == Android.Views.KeyEventActions.Up)
+            {
+                script = "try{if(window.K7&&K7.tvDpadHoldStop)K7.tvDpadHoldStop(true);}catch(e){}";
+            }
+            else
+            {
+                script =
+                    "try{if(window.K7&&K7.tvDpadHoldStart)K7.tvDpadHoldStart("
+                    + arrowJson
+                    + ","
+                    + keyCode
+                    + ");else if(window.K7&&K7.dispatchTvArrowKey)K7.dispatchTvArrowKey("
+                    + arrowJson
+                    + ",'keydown',"
+                    + keyCode
+                    + ",false);}catch(e){}";
+            }
+
+            if (!TryEvaluateWebViewJs(script))
+                return;
+        });
+    }
+
+    partial void ConfigureNativeVideoPlayerAfterOpen()
+    {
+        TryApplyPreviousSyncSeekParameters(UnwrapPlayer(GetPlayer(NativePlayer)));
+        SetVideoFocusOwnership(active: true);
+    }
+
+    partial void OnAfterNativeVideoSeek()
+    {
+        EnsureVideoSurfaceNotFocusable();
+        if (!HasWebViewWindowFocus())
+            BounceWindowFocusToWebView();
+    }
+
+    /// <summary>
+    /// Seek via ExoPlayer with PREVIOUS_SYNC + segment-aligned target. MediaElement.SeekTo uses
+    /// exact mid-GOP seeks; on HLS that leaves a frozen TextureView frame while audio plays
+    /// until the next independent segment.
+    /// </summary>
+    private Task SeekAndroidVideoAsync(double positionSeconds) =>
+        MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            var resumePlayback = _playerService.PlaybackState
+                is Server.Domain.Enums.PlaybackState.Playing
+                or Server.Domain.Enums.PlaybackState.Buffering;
+
+            var targetSeconds = Math.Max(0, positionSeconds);
+            var duration = _playerService.Duration > 0
+                ? _playerService.Duration
+                : NativePlayer.Duration.TotalSeconds;
+            if (duration > 0)
+                targetSeconds = Math.Min(targetSeconds, duration);
+
+            var requested = targetSeconds;
+            // Do not floor to a fake 6s grid: video playlists use keyframe-aligned EXTINF.
+            // PREVIOUS_SYNC + INDEPENDENT-SEGMENTS snaps to the real segment start.
+            RememberSeekTarget(targetSeconds);
+
+
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is null)
+            {
+                _ = SeekMediaElementAsync(
+                    NativePlayer,
+                    TimeSpan.FromSeconds(targetSeconds),
+                    () => _playerService.PlaybackState,
+                    t => _playerService.CurrentTime = t,
+                    () => OnAfterNativeVideoSeek());
+                return;
+            }
+
+            EnsureVideoSurfaceNotFocusable();
+            TryApplyPreviousSyncSeekParameters(player);
+
+            // Prefer MediaElement.SeekTo after SeekParameters are set on the real ExoPlayer.
+            // Direct IExoPlayerInvoker.SeekTo can exact-seek and leave TextureView frozen until
+            // the next independent segment while audio advances.
+            try
+            {
+                NativePlayer.SeekTo(TimeSpan.FromSeconds(targetSeconds));
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    player.SeekTo((long)(targetSeconds * 1000.0));
+                }
+                catch (Exception)
+                {
+                    _ = SeekMediaElementAsync(
+                        NativePlayer,
+                        TimeSpan.FromSeconds(targetSeconds),
+                        () => _playerService.PlaybackState,
+                        t => _playerService.CurrentTime = t,
+                        () => OnAfterNativeVideoSeek());
+                    return;
+                }
+            }
+
+            // Toolkit SeekTo can reset SeekParameters on some versions - re-apply before Play.
+            TryApplyPreviousSyncSeekParameters(player);
+
+            _playerService.CurrentTime = targetSeconds;
+
+            // Always resume when we interrupted play for scrub/resume. Checking CurrentState
+            // alone can skip Play() while ExoPlayer is paused mid-seek (frozen last frame).
+            if (resumePlayback)
+                NativePlayer.Play();
+
+            // Soft invalidate only - never null PlayerView.Player (mutes / freezes TextureView).
+            TryInvalidateVideoSurface();
+            OnAfterNativeVideoSeek();
+        });
+
+    private void TryInvalidateVideoSurface()
+    {
+        try
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+            if (platformView is null)
+                return;
+
+            var playerView = FindPlayerView(platformView);
+            playerView?.Invalidate();
+            platformView.Invalidate();
+        }
+        catch
+        {
+        }
+    }
+
+    private static IPlayer? UnwrapPlayer(IPlayer? player)
+    {
+        if (player is null)
+            return null;
+
+        try
+        {
+            if (player is not Java.Lang.Object javaObj)
+                return player;
+
+            // Always walk wrappers. IExoPlayerInvoker implements IExoPlayer but SeekParameters
+            // set on the invoker may not reach ExoPlayerImpl (frozen frame after seek).
+            for (var depth = 0; depth < 8; depth++)
+            {
+                var advanced = false;
+                var beforeType = player.GetType().Name;
+
+                foreach (var methodName in new[] { "getWrappedPlayer", "getPlayer", "getInternalPlayer" })
+                {
+                    Java.Lang.Reflect.Method? method = null;
+                    try
+                    {
+                        method = javaObj.Class.GetMethod(methodName);
+                    }
+                    catch (Java.Lang.NoSuchMethodException)
+                    {
+                    }
+
+                    if (method is null)
+                        continue;
+
+                    var wrapped = method.Invoke(javaObj);
+                    if (wrapped is IPlayer next && !ReferenceEquals(next, player))
+                    {
+                        player = next;
+                        if (next is Java.Lang.Object nextObj)
+                            javaObj = nextObj;
+                        advanced = true;
+                        break;
+                    }
+                }
+
+                if (!advanced)
+                {
+                    // Scan declared fields for nested IPlayer (Toolkit wrappers vary by version).
+                    for (var cls = javaObj.Class; cls is not null && !advanced; cls = cls.Superclass)
+                    {
+                        Java.Lang.Reflect.Field[]? fields;
+                        try
+                        {
+                            fields = cls.GetDeclaredFields();
+                        }
+                        catch
+                        {
+                            break;
+                        }
+
+                        if (fields is null)
+                            break;
+
+                        foreach (var field in fields)
+                        {
+                            try
+                            {
+                                field.Accessible = true;
+                                if (field.Get(javaObj) is IPlayer inner && !ReferenceEquals(inner, player))
+                                {
+                                    player = inner;
+                                    if (inner is Java.Lang.Object innerObj)
+                                        javaObj = innerObj;
+                                    advanced = true;
+                                    break;
+                                }
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                }
+
+                if (!advanced)
+                    break;
+            }
+        }
+        catch
+        {
+        }
+
+        return player;
+    }
+
+    private void SetVideoFocusOwnership(bool active)
+    {
+        EnsureVideoSurfaceNotFocusable();
+        if (active)
+        {
+            AttachVideoFocusBounceListener();
+            BounceWindowFocusToWebView();
+        }
+        else
+        {
+            DetachVideoFocusBounceListener();
+            BounceWindowFocusToWebView();
+        }
+    }
+
+    private void AttachVideoFocusBounceListener()
+    {
+        if (_videoFocusBounceAttached)
+            return;
+
+        try
+        {
+            var activity = Platform.CurrentActivity;
+            var decor = activity?.Window?.DecorView;
+            var observer = decor?.ViewTreeObserver;
+            if (observer is null || !observer.IsAlive)
+                return;
+
+            _videoFocusBounceListener ??= new VideoFocusBounceListener(this);
+            observer.AddOnGlobalFocusChangeListener(_videoFocusBounceListener);
+            _videoFocusBounceAttached = true;
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private void DetachVideoFocusBounceListener()
+    {
+        if (!_videoFocusBounceAttached)
+            return;
+
+        try
+        {
+            var activity = Platform.CurrentActivity;
+            var decor = activity?.Window?.DecorView;
+            var observer = decor?.ViewTreeObserver;
+            if (observer is not null && observer.IsAlive && _videoFocusBounceListener is not null)
+                observer.RemoveOnGlobalFocusChangeListener(_videoFocusBounceListener);
+        }
+        catch
+        {
+        }
+
+        _videoFocusBounceAttached = false;
+    }
+
+    private void OnVideoGlobalFocusChanged(Android.Views.View? oldFocus, Android.Views.View? newFocus)
+    {
+        if (!_playerService.IsVisible)
+            return;
+
+        if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+            return;
+
+        // Paint-only video: never allow PlayerView/TextureView (or anything else) to keep
+        // window focus while Blazor owns the HUD. Do not touch DOM focus.
+        if (newFocus is null || IsDescendantOf(webView, newFocus))
+            return;
+
+
+        EnsureVideoSurfaceNotFocusable();
+        BounceWindowFocusToWebView();
+    }
+
+    private static bool IsDescendantOf(Android.Views.View root, Android.Views.View? node)
+    {
+        var current = node;
+        while (current is not null)
+        {
+            if (ReferenceEquals(current, root))
+                return true;
+            current = current.Parent as Android.Views.View;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Restore Android window focus to the WebView without wiping document.activeElement
+    /// (never EvaluateJavascript overlay.focus - that breaks OK on close/play).
+    /// </summary>
+    private void BounceWindowFocusToWebView()
+    {
+        try
+        {
+            if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+                return;
+
+            webView.Focusable = true;
+            webView.FocusableInTouchMode = true;
+            if (!webView.IsFocused)
+                webView.RequestFocus();
+        }
+        catch
+        {
+        }
+    }
+
+    private void SuppressPlayerViewFocus()
+    {
+        try
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+            if (platformView is null)
+                return;
+
+            DisableFocusRecursive(platformView);
+            var playerView = FindPlayerView(platformView);
+            if (playerView is not null)
+            {
+                playerView.Focusable = false;
+                playerView.FocusableInTouchMode = false;
+                playerView.DescendantFocusability = Android.Views.DescendantFocusability.BlockDescendants;
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static void DisableFocusRecursive(Android.Views.View? view)
+    {
+        if (view is null)
+            return;
+
+        view.Focusable = false;
+        view.FocusableInTouchMode = false;
+        if (view is Android.Views.ViewGroup group)
+        {
+            group.DescendantFocusability = Android.Views.DescendantFocusability.BlockDescendants;
+            for (var i = 0; i < group.ChildCount; i++)
+                DisableFocusRecursive(group.GetChildAt(i));
+        }
+    }
+
+    private static bool TryApplyPreviousSyncSeekParameters(IPlayer? player)
+    {
+        try
+        {
+            player = UnwrapPlayer(player);
+            if (player is null)
+                return false;
+
+            // Prefer JNI setSeekParameters on the concrete Java type. Assigning
+            // IExoPlayer.SeekParameters on IExoPlayerInvoker can report success without
+            // updating ExoPlayerImpl (exact mid-GOP seek -> frozen TextureView + live audio).
+            if (player is Java.Lang.Object javaObj)
+            {
+                var seekParamsClass = Java.Lang.Class.ForName("androidx.media3.exoplayer.SeekParameters");
+                if (seekParamsClass is not null)
+                {
+                    var previous = seekParamsClass.GetField("PREVIOUS_SYNC")?.Get(null)
+                        ?? seekParamsClass.GetDeclaredField("PREVIOUS_SYNC")?.Get(null);
+                    if (previous is not null)
+                    {
+                        for (var cls = javaObj.Class; cls is not null; cls = cls.Superclass)
+                        {
+                            Java.Lang.Reflect.Method? method = null;
+                            try
+                            {
+                                method = cls.GetMethod("setSeekParameters", seekParamsClass);
+                            }
+                            catch (Java.Lang.NoSuchMethodException)
+                            {
+                            }
+
+                            if (method is null)
+                            {
+                                try
+                                {
+                                    method = cls.GetDeclaredMethod("setSeekParameters", seekParamsClass);
+                                }
+                                catch (Java.Lang.NoSuchMethodException)
+                                {
+                                }
+                            }
+
+                            if (method is null)
+                                continue;
+
+                            method.Accessible = true;
+                            method.Invoke(javaObj, previous);
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (player is IExoPlayer exo)
+            {
+                exo.SeekParameters = SeekParameters.PreviousSync;
+                return true;
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    private sealed class VideoFocusBounceListener(BlazorPage page)
+        : Java.Lang.Object, Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener
+    {
+        public void OnGlobalFocusChanged(Android.Views.View? oldFocus, Android.Views.View? newFocus)
+            => page.OnVideoGlobalFocusChanged(oldFocus, newFocus);
     }
 
     /// <summary>
@@ -165,6 +685,36 @@ public partial class BlazorPage
             parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
             parentView.SetBackgroundResource(0);
         }
+    }
+
+    /// <summary>
+    /// Escape/Stop can leave body.native-player-active set while MediaElement is already gone,
+    /// which hides all WebView chrome (visibility:hidden) and looks like a dead black screen.
+    /// </summary>
+    private void ClearNativePlayerActiveShell()
+    {
+        // Must not depend on the Blazor dispatcher - it can be stalled after scrub/seek, which
+        // leaves body.native-player-active set and looks like a dead black screen.
+        if (TryEvaluateWebViewJs(
+                "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);}catch(e){}"))
+        {
+            return;
+        }
+
+        _ = blazorWebView.TryDispatchAsync(async sp =>
+        {
+            try
+            {
+                var js = sp.GetRequiredService<IJSRuntime>();
+                await js.InvokeVoidAsync("K7.setNativePlayerActive", false, false);
+            }
+            catch (JSException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        });
     }
 
     private static void SetImmersiveMode(Android.App.Activity activity)

@@ -72,14 +72,22 @@
 }
 
 .playback-settings-close:hover,
-.playback-settings-close:focus-visible,
-.playback-settings-back:hover,
-.playback-settings-back:focus-visible {
+.playback-settings-back:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
 }
 
-.playback-settings-back--mobile {
+.playback-settings-close:focus,
+.playback-settings-close:focus-visible,
+.playback-settings-back:focus,
+.playback-settings-back:focus-visible {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.playback-settings-back--compact {
   display: none;
 }
 
@@ -108,11 +116,15 @@
 }
 
 .playback-settings-nav-item:hover,
-.playback-settings-nav-item:focus-visible,
 .playback-settings-nav-item--active {
   background: var(--color-surface-hover);
-  outline: none;
-  box-shadow: none;
+}
+
+.playback-settings-nav-item:focus,
+.playback-settings-nav-item:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .playback-settings-body ::deep .k7-menu-item {
@@ -121,11 +133,15 @@
   border-radius: var(--radius-sm);
 }
 
-.playback-settings-body ::deep .k7-menu-item:hover,
+.playback-settings-body ::deep .k7-menu-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.playback-settings-body ::deep .k7-menu-item:focus,
 .playback-settings-body ::deep .k7-menu-item:focus-visible {
   background: var(--color-surface-hover);
-  outline: none;
-  box-shadow: none;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .playback-settings-nav-label {
@@ -185,7 +201,7 @@
     display: none;
   }
 
-  .playback-settings-back--mobile {
+  .playback-settings-back--compact {
     display: inline-flex;
   }
 
@@ -203,6 +219,7 @@
   }
 
   .playback-settings-body ::deep .k7-menu-item:hover,
+  .playback-settings-body ::deep .k7-menu-item:focus,
   .playback-settings-body ::deep .k7-menu-item:focus-visible {
     border-radius: 0;
   }
@@ -251,4 +268,8 @@
   .playback-settings-menu:not(.playback-settings-menu--detail) .playback-settings-panel--detail {
     display: none;
   }
+}
+
+:global(html.platform-tv) .playback-settings-back--compact {
+  display: inline-flex;
 }

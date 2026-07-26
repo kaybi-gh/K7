@@ -2,6 +2,11 @@
 
 <div class="seekbar-container focusable @(_isScrubbing ? "scrubbing" : "")" tabindex="0" role="slider"
      data-sn-activatable
+     data-thumbnails-uri="@(ThumbnailsUri?.ToString() ?? "")"
+     data-thumb-interval="@IntervalSeconds"
+     data-thumbs-per-row="@ThumbsPerRow"
+     data-thumb-width="@ThumbWidth"
+     data-thumb-height="@ThumbHeight"
      aria-valuemin="0" aria-valuemax="@PlayerService.Duration.ToString(CultureInfo.InvariantCulture)"
      aria-valuenow="@PlayerService.CurrentTime.ToString(CultureInfo.InvariantCulture)"
      aria-label="Seek"
@@ -58,9 +63,11 @@
     }
 
     @{
-        var showPreview = IsHovering || _isScrubbing || _isFocused;
-        var previewPercent = IsHovering || _isScrubbing ? HoverPercent : CurrentPercent;
-        var previewTime = IsHovering || _isScrubbing ? HoverTime : PlayerService.CurrentTime;
+        // TV/desktop keyboard scrub is painted by K7.SeekBar JS. If Blazor also renders
+        // .thumbnail here, ensurePreview races and leaves a second sprite stuck on the bar.
+        var showPreview = !_isScrubbing && (IsHovering || _isFocused);
+        var previewPercent = IsHovering ? HoverPercent : CurrentPercent;
+        var previewTime = IsHovering ? HoverTime : PlayerService.CurrentTime;
     }
 
     @if (showPreview)

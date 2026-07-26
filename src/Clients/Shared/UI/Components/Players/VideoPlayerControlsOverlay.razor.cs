@@ -74,9 +74,13 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
     private DateTime _suppressOverlayShowUntil;
     private bool _wasSidebarOpen;
+    private bool _spatialNavInitialized;
+    private bool _pendingLayerSync = true;
     private bool _needsRender = true;
     private DateTime _lastProgressRenderUtc;
     private volatile bool _disposed;
+    private bool _isSeekBarScrubbing;
+    private DateTime _suppressPlayerCloseUntil = DateTime.MinValue;
 
     private enum SwipeSide { Left, Right }
 
@@ -126,6 +130,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             var settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _showChapterTicks = settings.ShowChapterTicks;
+            PlayerService.SetSkipBackSeconds(Math.Max(1, settings.SkipBackSeconds));
+            PlayerService.SetSkipForwardSeconds(Math.Max(1, settings.SkipForwardSeconds));
         }
         catch
         {
@@ -162,6 +168,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
         PlayerService.BackPressed += OnBackPressed;
         PlayerService.SourceChanged += OnSourceChanged;
+        PlayerService.PlayerUxSettingsChanged += OnVideoPlayerUxSettingsChanged;
         await EnsureMediaSegmentsLoadedAsync(PlayerService.Source?.MediaId);
         if (DeviceService.GetClientType() == ClientType.Web)
         {
@@ -176,23 +183,37 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         try
         {
-            await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerBack", _overlayCloseRef);
-            await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerRemote", _dotNetRef);
+            // Avoid re-registering / re-pushing the SpatialNav layer on every progress render
+            // (~250ms). That flood makes TV D-pad feel laggy and fights seekbar edit focus.
+            var sidebarChanged = SyncPlaySidebarOpen != _wasSidebarOpen;
+            if (!_spatialNavInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerBack", _overlayCloseRef);
+                await JSRuntime.InvokeVoidAsync("SpatialNav.registerVideoPlayerRemote", _dotNetRef);
+                await SyncTvSkipSecondsToJsAsync();
+                _spatialNavInitialized = true;
+                _pendingLayerSync = true;
+            }
 
-            if (SyncPlaySidebarOpen != _wasSidebarOpen)
+            if (sidebarChanged)
             {
                 _wasSidebarOpen = SyncPlaySidebarOpen;
                 if (SyncPlaySidebarOpen)
                     await SpatialNav.PopLayerAsync(_overlayRef);
                 else
                     await SpatialNav.PopLayerAsync(ContainerRef);
+                _pendingLayerSync = true;
             }
 
+            if (!_pendingLayerSync)
+                return;
+
+            _pendingLayerSync = false;
             var activeLayer = SyncPlaySidebarOpen ? ContainerRef : _overlayRef;
             await SpatialNav.PushLayerAsync(activeLayer, "overlay", new SpatialNavLayerOptions
             {
                 OnClose = _overlayCloseRef,
-                FocusSelector = _deviceType == DeviceType.TV ? ".seekbar-container" : ".play-pause-btn"
+                FocusSelector = ".play-pause-btn"
             });
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
@@ -213,9 +234,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
-                PerformBackStep();
-                _ = ReattachLayerCallbackAsync();
-                StateHasChanged();
+                HandleBack();
                 return;
             case "MediaStop":
                 OnCloseButtonClick();
@@ -251,12 +270,22 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             switch (code)
             {
                 case "ArrowLeft":
-                    AccumulateSeek(-10);
-                    RequestSeekHudRender();
+                    if (UsesSeekBarScrubOnArrow())
+                        _ = BeginSeekBarScrubAsync(-1);
+                    else
+                    {
+                        AccumulateSeek(-GetSkipBackSeconds());
+                        RequestSeekHudRender();
+                    }
                     return;
                 case "ArrowRight":
-                    AccumulateSeek(10);
-                    RequestSeekHudRender();
+                    if (UsesSeekBarScrubOnArrow())
+                        _ = BeginSeekBarScrubAsync(1);
+                    else
+                    {
+                        AccumulateSeek(GetSkipForwardSeconds());
+                        RequestSeekHudRender();
+                    }
                     return;
                 case "ArrowUp":
                     AdjustVolume(0.1);
@@ -271,7 +300,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnKeyUp(KeyboardEventArgs e)
     {
-        if (_showOverlay || _isMenuOpen || !_isSeeking)
+        // Phone/Tablet keyboard accumulate-seek commits on keyup. TV/Desktop uses seekbar edit.
+        if (_showOverlay || _isMenuOpen || !_isSeeking || UsesSeekBarScrubOnArrow())
             return;
 
         var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
@@ -280,6 +310,25 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         CommitSeek();
         RequestSeekHudRender(force: true);
+    }
+
+    private bool UsesSeekBarScrubOnArrow() =>
+        _deviceType is not (DeviceType.Phone or DeviceType.Tablet);
+
+    private async Task BeginSeekBarScrubAsync(int direction)
+    {
+        if (_disposed || _isMenuOpen)
+            return;
+
+        _showOverlay = true;
+        ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("K7.beginSeekBarScrub", direction);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
     private static bool IsSelectKey(KeyboardEventArgs e)
@@ -299,20 +348,35 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         try
         {
-            var selector = _deviceType == DeviceType.TV ? ".seekbar-container" : ".play-pause-btn";
-            await SpatialNav.FocusFirstAsync(selector);
+            // Prefer play/pause so DPAD can leave the control. Focusing the seekbar first
+            // often left SpatialNav paused / edit-sticky on Android TV.
+            await SpatialNav.FocusFirstAsync(".play-pause-btn");
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
-    private void HideOverlay()
+    private void HideOverlay(bool syncDom = true)
     {
         _showOverlay = false;
+        _isSeekBarScrubbing = false;
         _overlayVisibleTimer?.Stop();
         _suppressOverlayShowUntil = DateTime.UtcNow.AddMilliseconds(500);
         _isMouseOverControlsBar = false;
+        if (syncDom)
+            _ = SyncOverlayHiddenInDomAsync();
         _ = CancelSeekBarEditingAsync();
         _ = _overlayRef.FocusAsync();
+    }
+
+    private async Task SyncOverlayHiddenInDomAsync()
+    {
+        try
+        {
+            // JS may have forced controls-visible during scrub; sync DOM with Blazor state
+            // so Escape does not "stop video while chrome stays painted".
+            await JSRuntime.InvokeVoidAsync("K7.hideVideoControlsOverlay");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
     private async Task CancelSeekBarEditingAsync()
@@ -324,10 +388,19 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
+    private async Task SoftCancelSeekBarEditingAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeAsync<string>("K7.cancelVideoSeekOrEdit");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
     private bool ShouldIgnoreMouseOverlayShow() =>
         _deviceType == DeviceType.TV || DateTime.UtcNow < _suppressOverlayShowUntil;
 
-    private void AccumulateSeek(double offset, bool startIdleCommit = true)
+    private void AccumulateSeek(double offset, bool startIdleCommit = true, bool showHud = true)
     {
         if (!_isSeeking)
         {
@@ -337,9 +410,13 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         _seekOffset += offset;
         _seekTarget = Math.Clamp(_seekBaseTime + _seekOffset, 0, PlayerService.Duration);
         _isSeeking = true;
-        _hudIcon = _seekOffset >= 0 ? Phosphor.FastForward : Phosphor.Rewind;
-        _hudScale = 1.0 + Math.Min(Math.Abs(_seekOffset) / 200.0, 0.35);
-        ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
+
+        if (showHud)
+        {
+            _hudIcon = _seekOffset >= 0 ? Phosphor.FastForward : Phosphor.Rewind;
+            _hudScale = 1.0 + Math.Min(Math.Abs(_seekOffset) / 200.0, 0.35);
+            ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
+        }
 
         // Preview only while holding / tapping - Seek runs on keyup or idle end of burst.
         if (startIdleCommit)
@@ -373,49 +450,152 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     public void OnRemoteSelect()
     {
         if (_disposed) return;
+        if (_isMenuOpen) return;
 
-        InvokeAsync(() =>
+        if (!_showOverlay)
         {
-            if (_isMenuOpen) return;
-
-            if (!_showOverlay)
-            {
-                ShowOverlay();
-                StateHasChanged();
-            }
-        });
+            ShowOverlay();
+            RequestRender();
+        }
     }
 
+    /// <summary>Short-press skip when native seekBy already moved the player - HUD only.</summary>
     [JSInvokable]
-    public void OnRemoteSeekLeft() => OnRemoteSeekAccumulate(-10);
+    public void OnRemoteSkipHud(double deltaSeconds)
+    {
+        if (_disposed || _isMenuOpen) return;
+        _hudIcon = deltaSeconds >= 0 ? Phosphor.FastForward : Phosphor.Rewind;
+        _hudScale = 1.15;
+        ShowHud($"{(deltaSeconds >= 0 ? "+" : "")}{(int)deltaSeconds}s");
+        RequestSeekHudRender(force: true);
+    }
 
+    /// <summary>Short-press skip using configured SkipBack/SkipForward preferences (dir -1 or +1).</summary>
     [JSInvokable]
-    public void OnRemoteSeekRight() => OnRemoteSeekAccumulate(10);
+    public void OnRemoteSkipDirection(int direction)
+    {
+        if (_disposed || _isMenuOpen) return;
+        if (_showOverlay) return;
 
+        var delta = direction < 0 ? -GetSkipBackSeconds() : GetSkipForwardSeconds();
+        OnRemoteSkipSeconds(delta);
+    }
+
+    /// <summary>Short-press +/- Ns when the native bridge is unavailable.</summary>
     [JSInvokable]
-    public void OnRemoteSeekAccumulate(double offset)
+    public void OnRemoteSkipSeconds(double deltaSeconds)
+    {
+        if (_disposed || _isMenuOpen) return;
+        if (_showOverlay) return;
+
+        var target = Math.Clamp(
+            PlayerService.CurrentTime + deltaSeconds,
+            0,
+            Math.Max(0, PlayerService.Duration));
+        PlayerService.Seek(target);
+        OnRemoteSkipHud(deltaSeconds);
+    }
+
+    private int GetSkipBackSeconds() =>
+        Math.Max(1, PlayerService.SkipBackSeconds);
+
+    private int GetSkipForwardSeconds() =>
+        Math.Max(1, PlayerService.SkipForwardSeconds);
+
+    private async Task SyncTvSkipSecondsToJsAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "K7.setTvSkipSeconds",
+                GetSkipBackSeconds(),
+                GetSkipForwardSeconds());
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    private void OnVideoPlayerUxSettingsChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(SyncTvSkipSecondsToJsAsync);
+    }
+
+    /// <summary>
+    /// JS soft-cancelled seekbar edit (OK then Back, no scrub). Keep overlay visible.
+    /// </summary>
+    [JSInvokable]
+    public void OnRemoteSeekEditCancelled()
+    {
+        if (_disposed) return;
+        _isSeekBarScrubbing = false;
+        ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// JS already hid chrome (tvBack / scrub commit). Sync Blazor flags without another JS round-trip.
+    /// </summary>
+    [JSInvokable]
+    public void OnRemoteOverlayHidden()
     {
         if (_disposed) return;
 
-        InvokeAsync(() =>
+        _showOverlay = false;
+        _isSeekBarScrubbing = false;
+        _overlayVisibleTimer?.Stop();
+        _suppressOverlayShowUntil = DateTime.UtcNow.AddMilliseconds(500);
+        _isMouseOverControlsBar = false;
+        _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// JS already scrubbed via K7.beginSeekBarScrub. Only sync Blazor chrome visibility
+    /// (do not call beginSeekBarScrub again - that doubled work and flooded render batches).
+    /// </summary>
+    [JSInvokable]
+    public void OnRemoteOverlayShown()
+    {
+        if (_disposed || _isMenuOpen)
+            return;
+
+        if (_showOverlay)
         {
-            if (_showOverlay || _isMenuOpen) return;
-            AccumulateSeek(offset);
-            RequestSeekHudRender();
-        });
+            ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+            return;
+        }
+
+        _showOverlay = true;
+        ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnRemoteOpenSeekBarScrub(int direction)
+    {
+        if (_disposed || _isMenuOpen)
+            return;
+
+        if (!UsesSeekBarScrubOnArrow())
+        {
+            if (_showOverlay)
+                return;
+
+            AccumulateSeek(direction < 0 ? -GetSkipBackSeconds() : GetSkipForwardSeconds());
+            RequestSeekHudRender(force: true);
+            return;
+        }
+
+        // TV path: JS owns scrub stepping. Keep Blazor overlay flags in sync only.
+        OnRemoteOverlayShown();
     }
 
     [JSInvokable]
     public void OnRemoteSeekCommit()
     {
         if (_disposed) return;
-
-        InvokeAsync(() =>
-        {
-            if (_showOverlay || _isMenuOpen) return;
-            CommitSeek();
-            RequestSeekHudRender(force: true);
-        });
+        if (_showOverlay || _isMenuOpen || UsesSeekBarScrubOnArrow()) return;
+        CommitSeek();
+        RequestSeekHudRender(force: true);
     }
 
     [JSInvokable]
@@ -428,13 +608,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     public void OnRemoteVolumeStep(double delta)
     {
         if (_disposed) return;
-
-        InvokeAsync(() =>
-        {
-            if (_showOverlay || _isMenuOpen) return;
-            AdjustVolume(delta);
-            StateHasChanged();
-        });
+        if (_showOverlay || _isMenuOpen) return;
+        AdjustVolume(delta);
+        RequestRender();
     }
 
     private void AdjustVolume(double delta)
@@ -484,7 +660,10 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                     ResetOverlayTimeout();
                     return;
                 }
-                _showOverlay = false;
+
+                // Use HideOverlay so seekbar edit mode is cancelled (do not leave
+                // data-sn-editing + orphan JS thumbnails while controls are hidden).
+                HideOverlay();
                 StateHasChanged();
                 if (!SyncPlaySidebarOpen)
                     await _overlayRef.FocusAsync();
@@ -531,6 +710,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnCloseButtonClick()
     {
+        HideOverlay();
         PlayerService.Stop();
         PlayerService.HideAsync();
     }
@@ -547,9 +727,33 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             return;
         }
 
+        // Seekbar edit without L/R scrub: cancel via JS soft path in HandleBack.
+        // Do not HideOverlay here - that was quitting playback when a second Back raced.
+        if (_isSeekBarScrubbing)
+        {
+            _isSeekBarScrubbing = false;
+            _ = SoftCancelSeekBarEditingAsync();
+            return;
+        }
+
         if (_showOverlay)
         {
             HideOverlay();
+            // Swallow a second Back that races from native + Blazor on the same press.
+            _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
+            return;
+        }
+
+        if (DateTime.UtcNow < _suppressPlayerCloseUntil)
+            return;
+
+        // Empty/stuck overlay after Stop: still allow leaving the player shell.
+        if (PlayerService.PlaybackState is PlaybackState.Idle
+            or PlaybackState.Ended
+            or PlaybackState.Unknown)
+        {
+            HideOverlay();
+            PlayerService.HideAsync();
             return;
         }
 
@@ -562,6 +766,30 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         InvokeAsync(async () =>
         {
+            try
+            {
+                var cancelResult = await JSRuntime.InvokeAsync<string>("K7.cancelVideoSeekOrEdit");
+                if (cancelResult == "soft")
+                {
+                    // OK then Escape: leave edit mode, keep chrome / playback.
+                    _isSeekBarScrubbing = false;
+                    await ReattachLayerCallbackAsync();
+                    StateHasChanged();
+                    return;
+                }
+
+                if (cancelResult == "hard")
+                {
+                    // Scrub cancel: DotNet OnEditCancel already hides via OnDragChanged.
+                    _isSeekBarScrubbing = false;
+                    _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
+                    await ReattachLayerCallbackAsync();
+                    StateHasChanged();
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+
             PerformBackStep();
             await ReattachLayerCallbackAsync();
             StateHasChanged();
@@ -731,7 +959,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void HandleDoubleTap(bool isRightHalf)
     {
-        var seekStep = isRightHalf ? 10.0 : -10.0;
+        var seekStep = isRightHalf ? GetSkipForwardSeconds() : -GetSkipBackSeconds();
         _doubleTapSide = isRightHalf ? "right" : "left";
 
         // Same model as keyboard hold: accumulate offset, seek once when the burst ends.
@@ -769,11 +997,28 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         });
     }
 
-    private void OnSeekBarDragChanged(bool draging)
+    private void OnSeekBarDragChanged(bool dragging)
     {
-        if (draging)
+        if (dragging)
         {
+            _isSeekBarScrubbing = true;
+            _showOverlay = true;
             ResetOverlayTimeout();
+            RequestRender();
+            return;
+        }
+
+        var wasScrubbing = _isSeekBarScrubbing;
+        _isSeekBarScrubbing = false;
+
+        // After keyboard scrub seek/cancel, dismiss chrome. DOM is already synced by
+        // K7.SeekBar.afterScrubCommit from OnEditCommitAt - avoid a second JS round-trip
+        // that can stall the Blazor dispatcher on Android TV.
+        if (wasScrubbing)
+        {
+            HideOverlay(syncDom: false);
+            _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
+            RequestRender();
         }
     }
 
@@ -1041,6 +1286,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
         PlayerService.BackPressed -= OnBackPressed;
         PlayerService.SourceChanged -= OnSourceChanged;
+        PlayerService.PlayerUxSettingsChanged -= OnVideoPlayerUxSettingsChanged;
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);

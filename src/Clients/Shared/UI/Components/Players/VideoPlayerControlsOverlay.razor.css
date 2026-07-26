@@ -144,11 +144,19 @@
     transition: opacity 0.3s ease-in-out;
     pointer-events: auto;
     z-index: 100005;
+    overflow: visible;
 }
 
     .video-controls-overlay.controls-hidden .controls-bar {
         opacity: 0;
         pointer-events: none;
+    }
+
+    /* While seekbar scrub is active, keep the bottom bar painted even if Blazor has not
+       flipped controls-visible yet (JS forces the class; avoid opacity:0 scrub previews). */
+    .video-controls-overlay.controls-hidden.seekbar-scrubbing .controls-bar.bottom {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .controls-bar.top {
@@ -290,6 +298,7 @@
 .controls-bar-seek {
     flex: 1;
     min-width: 0;
+    overflow: visible;
 }
 
 /* K7Slider range input (.k7-range, from K7Slider.razor): rotated and repositioned to act as

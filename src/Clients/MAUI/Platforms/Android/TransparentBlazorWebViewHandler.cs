@@ -29,6 +29,37 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
 
         ApplyTvScalingIfNeeded(platformView);
         SetupSafeAreaInsets(platformView);
+        AttachTvVideoBridges(platformView);
+    }
+
+    private static void AttachTvVideoBridges(global::Android.Webkit.WebView webView)
+    {
+        try
+        {
+#pragma warning disable CA1416 // JavascriptInterface is API 17+; min SDK is 26
+            webView.AddJavascriptInterface(new TvVideoControlJsBridge(), TvVideoControlJsBridge.InterfaceName);
+#pragma warning restore CA1416
+
+            webView.EvaluateJavascript(
+                "(function(){window.K7=window.K7||{};"
+                + "window.K7.tvNativeSeek=function(t){try{"
+                + "if(window.K7TvVideo&&K7TvVideo.seek)K7TvVideo.seek(+t);"
+                + "}catch(e){}};"
+                + "window.K7.tvNativeSeekBy=function(d){try{"
+                + "if(window.K7TvVideo&&K7TvVideo.seekBy)K7TvVideo.seekBy(+d);"
+                + "}catch(e){}};"
+                + "window.K7.tvNativeSkip=function(dir){try{"
+                + "if(window.K7TvVideo&&K7TvVideo.skip)K7TvVideo.skip(+dir);"
+                + "}catch(e){}};"
+                + "window.K7.tvNativeClosePlayer=function(){try{"
+                + "if(window.K7TvVideo&&K7TvVideo.closePlayer)K7TvVideo.closePlayer();"
+                + "}catch(e){}};})();",
+                null);
+        }
+        catch (Exception)
+        {
+            // Control bridge - never block WebView connect.
+        }
     }
 
     protected override void DisconnectHandler(global::Android.Webkit.WebView platformView)

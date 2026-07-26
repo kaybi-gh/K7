@@ -43,6 +43,7 @@ public class MainActivity : MauiAppCompatActivity
         var serviceIntent = new Intent(this, typeof(K7MediaLibraryService));
         StartService(serviceIntent);
     }
+
     public override bool DispatchKeyEvent(KeyEvent? e)
     {
         if (e is { Action: KeyEventActions.Down })
@@ -76,18 +77,27 @@ public class MainActivity : MauiAppCompatActivity
             }
         }
 
+        // While video is up, deliver DPAD via EvaluateJavascript (not WebView key routing).
+        // Native pass-through can go quiet after scrub/seek even when the WebView has focus.
+        if (e is not null && IsDpadNavigationKey(e.KeyCode))
+        {
+            var dpadPage = GetBlazorPage();
+            if (dpadPage?.TryForwardTvVideoDpad(e) == true)
+                return true;
+        }
+
         if (e is not null && IsSelectKeyCode(e.KeyCode))
         {
             var selectPage = GetBlazorPage();
-            if (selectPage is not null)
-            {
-                if (TryHandleTvSelectKey(e, selectPage))
-                    return true;
-            }
+            if (selectPage is not null && TryHandleTvSelectKey(e, selectPage))
+                return true;
         }
 
         return base.DispatchKeyEvent(e);
     }
+
+    private static bool IsDpadNavigationKey(Keycode keyCode) =>
+        keyCode is Keycode.DpadLeft or Keycode.DpadRight or Keycode.DpadUp or Keycode.DpadDown;
 
     private bool TryHandleTvSelectKey(KeyEvent e, BlazorPage page)
     {
@@ -115,6 +125,14 @@ public class MainActivity : MauiAppCompatActivity
 
             case KeyEventActions.Up:
                 var heldMs = e.EventTime - _selectDownTime;
+                // Unpaired up (process sleep / cold start) produced heldMs~4e8 and weird clicks.
+                if (_selectDownTime <= 0 || heldMs < 0 || heldMs > 60_000)
+                {
+                    _selectDownTime = 0;
+                    _selectLongPressFired = false;
+                    return true;
+                }
+
                 var phase = _selectLongPressFired ? "long-up" : "up";
                 page.NotifyTvRemoteSelect(phase, (int)e.KeyCode, heldMs);
                 return true;
