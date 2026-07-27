@@ -59,25 +59,25 @@ public partial class LibraryBrowseRowActions : IDisposable
         }
 
         var hasValidMediaId = Guid.TryParse(Model.Id, out _);
-        var capabilitiesKey = $"{Model.Id}|{Model.Kind}|{Model.MediaType}|{WatchStateMenuEnabled}";
+        // Key by kind/type/flags only - not media Id - so remounts reuse resolved flags.
+        var capabilitiesKey = $"{Model.Kind}|{Model.MediaType}|{WatchStateMenuEnabled}|{hasValidMediaId}";
         if (_menuCapabilitiesKey == capabilitiesKey)
             return;
 
         _menuCapabilitiesKey = capabilitiesKey;
 
+        var shared = await MediaCardMenuCapabilities.GetAsync(FeatureAccess);
+        var mediaType = MediaCardMenuActions.InferMediaType(Model);
+
         _watchStateMenuVisible = hasValidMediaId
             && WatchStateMenuEnabled
             && WatchStateActions.SupportsWatchState(Model.Kind)
-            && await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+            && shared.CanSetWatchState;
 
-        var canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
-        var canCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
-        var mediaType = MediaCardMenuActions.InferMediaType(Model);
-
-        _showRating = hasValidMediaId && canRate;
-        _showReview = hasValidMediaId && canRate && MediaCardMenuActions.SupportsReview(mediaType);
-        _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
-        _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
+        _showRating = hasValidMediaId && shared.CanRate;
+        _showReview = hasValidMediaId && shared.CanRate && MediaCardMenuActions.SupportsReview(mediaType);
+        _showPlaylist = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
+        _showCollection = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }
 
     private void OnContextMenuServiceChanged()

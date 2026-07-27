@@ -11,6 +11,8 @@ public partial class MediaCardContextMenuHost : IDisposable
     private MediaCardContextMenuRequest? _request;
     private bool _open;
 
+    private string? MenuTitle => _request?.Title ?? _request?.Model?.Title;
+
     protected override void OnInitialized()
     {
         ContextMenuService.Changed += OnServiceChanged;

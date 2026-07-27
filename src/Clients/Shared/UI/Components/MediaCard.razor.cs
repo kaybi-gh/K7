@@ -1,14 +1,12 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
-using System.Runtime.CompilerServices;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -75,15 +73,6 @@ public partial class MediaCard : IDisposable
     private bool _longPressRegistered;
 
     // Role-scoped menu flags shared across remounted cards (Virtualize recycle).
-    private static readonly ConditionalWeakTable<IFeatureAccessService, SharedMenuCapabilities> SharedCapabilities = new();
-
-    private sealed class SharedMenuCapabilities
-    {
-        public string? Role;
-        public bool CanRate;
-        public bool CanCreateLibrary;
-        public bool CanSetWatchState;
-    }
 
     private bool LongPressEnabled =>
         ContextMenuEnabled
@@ -132,7 +121,7 @@ public partial class MediaCard : IDisposable
 
         _menuCapabilitiesKey = capabilitiesKey;
 
-        var shared = await EnsureSharedCapabilitiesAsync();
+        var shared = await MediaCardMenuCapabilities.GetAsync(FeatureAccess);
         var mediaType = MediaCardMenuActions.InferMediaType(Model);
 
         _watchStateMenuVisible = hasValidMediaId
@@ -144,20 +133,6 @@ public partial class MediaCard : IDisposable
         _showReview = hasValidMediaId && shared.CanRate && MediaCardMenuActions.SupportsReview(mediaType);
         _showPlaylist = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
         _showCollection = hasValidMediaId && shared.CanCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
-    }
-
-    private async Task<SharedMenuCapabilities> EnsureSharedCapabilitiesAsync()
-    {
-        var shared = SharedCapabilities.GetOrCreateValue(FeatureAccess);
-        var role = await FeatureAccess.GetRoleAsync();
-        if (shared.Role == role)
-            return shared;
-
-        shared.CanRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
-        shared.CanCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
-        shared.CanSetWatchState = role is Roles.User or Roles.Administrator;
-        shared.Role = role;
-        return shared;
     }
 
     private async Task OnFocusInAsync()

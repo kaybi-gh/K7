@@ -8,53 +8,16 @@
 @inject IK7DialogService DialogService
 @inject IMusicIntelligenceClientService MusicIntelligence
 @inject IServerPreferencesService ServerPreferences
+@inject IMediaCardContextMenuService ContextMenuService
 @inject IStringLocalizer<TrackContextMenu> L
 @inject IStringLocalizer<SharedResource> S
+@implements IDisposable
 
-<span @onclick:stopPropagation="true">
-    <K7Menu Title="@L["ActionsTitle"]">
-        <ActivatorContent>
-            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="@L["Menu"]"><i class="ph ph-dots-three-vertical"></i></button>
-        </ActivatorContent>
-        <ChildContent>
-        @if (_canRate)
-        {
-            <div class="track-context-rating" @onclick:stopPropagation="true">
-                <RatingStars MediaId="Track.MediaId" Value="UserRating" Size="sm" />
-            </div>
-        }
-        <K7MenuItem Icon="play-circle" OnClick="PlayNext">@L["PlayNext"]</K7MenuItem>
-        <K7MenuItem Icon="queue" OnClick="AddToQueue">@L["AddToQueue"]</K7MenuItem>
-        @if (_canCreatePlaylist)
-        {
-            <hr class="k7-divider" />
-            <K7MenuItem Icon="plus-circle" OnClick="AddToPlaylist">@L["AddToPlaylist"]</K7MenuItem>
-        }
-        @if (DeviceService.GetClientType() != ClientType.Web)
-        {
-            <hr class="k7-divider" />
-            <K7MenuItem Icon="download-simple" OnClick="DownloadOffline">@L["DownloadOffline"]</K7MenuItem>
-        }
-        @if (!string.IsNullOrEmpty(Track.Artist) || !string.IsNullOrEmpty(Track.Genre) || _musicIntelligenceAvailable)
-        {
-            <hr class="k7-divider" />
-            @if (_musicIntelligenceAvailable)
-            {
-                <K7MenuItem Icon="waves" OnClick="RadioSonic">@string.Format(L["RadioSonic"], Track.Title)</K7MenuItem>
-            }
-            @if (!string.IsNullOrEmpty(Track.Artist))
-            {
-                <K7MenuItem Icon="radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</K7MenuItem>
-            }
-            @if (!string.IsNullOrEmpty(Track.Genre))
-            {
-                <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
-            }
-            @if (_musicIntelligenceAvailable)
-            {
-                <K7MenuItem Icon="magic-wand" OnClick="PlaySimilar">@L["PlaySimilar"]</K7MenuItem>
-            }
-        }
-        </ChildContent>
-    </K7Menu>
+<span @ref="_triggerRef" class="track-context-menu" @onclick:stopPropagation="true">
+    <button type="button"
+            class="k7-icon-btn k7-icon-btn--sm focusable track-context-menu__trigger"
+            aria-label="@L["Menu"]"
+            @onclick="OpenSharedMenuAsync">
+        <i class="ph ph-dots-three-vertical"></i>
+    </button>
 </span>

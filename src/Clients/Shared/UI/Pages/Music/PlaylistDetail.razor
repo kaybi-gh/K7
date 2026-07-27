@@ -166,7 +166,7 @@
                             <div class="library-table-title">
                                 @if (item.CoverUrl is not null)
                                 {
-                                    <K7Image Src="@item.CoverUrl" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+                                    <K7Image Src="@item.CoverUrl" Width="40" ObjectFit="cover" Class="rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
                                 }
                                 else
                                 {
@@ -240,7 +240,7 @@
 
                         {
 
-                            <K7Image Src="@item.CoverUrl" Alt="@item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" loading="lazy" />
+                            <K7Image Src="@item.CoverUrl" Alt="@item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
 
                         }
 

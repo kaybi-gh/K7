@@ -125,7 +125,7 @@
                                 @if (context.CoverUrl is not null)
                                 {
                                     <K7Image Src="@context.CoverUrl" Width="36"
-                                              ObjectFit="cover" Class="rounded" loading="lazy" />
+                                              ObjectFit="cover" Class="rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
                                 }
                                 <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
                                     @context.Title

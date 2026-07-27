@@ -11,11 +11,18 @@ public enum MediaCardContextMenuAnchorKind
 public sealed class MediaCardContextMenuRequest
 {
     public required Guid OwnerId { get; init; }
-    public required MediaCardViewModel Model { get; init; }
     public required ElementReference Anchor { get; init; }
     public MediaCardContextMenuAnchorKind AnchorKind { get; init; } = MediaCardContextMenuAnchorKind.Card;
-    public string? Href { get; init; }
     public string? Title { get; init; }
+
+    /// <summary>
+    /// When set, the shared host renders this content instead of MediaCard menu items.
+    /// Used by EpisodeListItem / TrackContextMenu.
+    /// </summary>
+    public RenderFragment? Content { get; init; }
+
+    public MediaCardViewModel? Model { get; init; }
+    public string? Href { get; init; }
     public bool ShowPlay { get; init; }
     public bool ShowRating { get; init; }
     public bool ShowReview { get; init; }

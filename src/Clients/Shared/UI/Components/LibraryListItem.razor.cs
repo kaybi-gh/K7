@@ -99,6 +99,7 @@ public partial class LibraryListItem
             builder.AddAttribute(seq++, "ObjectFit", "cover");
             builder.AddAttribute(seq++, "Class", "library-list-item-thumb rounded");
             builder.AddAttribute(seq++, "loading", "lazy");
+            builder.AddAttribute(seq++, "LoadingMode", K7ImageLoadingMode.Css);
             builder.CloseComponent();
         }
         else

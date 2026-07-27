@@ -1,15 +1,17 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
-public partial class TrackContextMenu
+public partial class TrackContextMenu : IDisposable
 {
     [Parameter, EditorRequired]
     public required AudioQueueItem Track { get; set; }
@@ -19,24 +21,129 @@ public partial class TrackContextMenu
 
     [Inject] private IMusicRadioPlaybackService MusicRadio { get; set; } = default!;
 
+    private readonly Guid _menuOwnerId = Guid.NewGuid();
+    private ElementReference _triggerRef;
+    private bool _menuOpen;
     private bool _canCreatePlaylist;
     private bool _canRate;
     private bool _musicIntelligenceAvailable;
+    private bool _capsLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized() =>
+        ContextMenuService.Changed += OnContextMenuServiceChanged;
+
+    private void OnContextMenuServiceChanged()
     {
-        _canCreatePlaylist = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
-        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        var open = ContextMenuService.Current?.OwnerId == _menuOwnerId;
+        if (open == _menuOpen)
+            return;
 
-        try
+        _menuOpen = open;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OpenSharedMenuAsync()
+    {
+        if (!_capsLoaded)
         {
-            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
-            _musicIntelligenceAvailable = status.IsAvailable;
+            var caps = await MediaCardMenuCapabilities.GetAsync(FeatureAccess);
+            _canCreatePlaylist = caps.CanCreateLibrary;
+            _canRate = caps.CanRate;
+            _musicIntelligenceAvailable = await MusicIntelligenceAvailabilityCache.GetAsync(ServerPreferences);
+            _capsLoaded = true;
         }
-        catch
+
+        ContextMenuService.Open(new MediaCardContextMenuRequest
         {
-            _musicIntelligenceAvailable = false;
+            OwnerId = _menuOwnerId,
+            Anchor = _triggerRef,
+            AnchorKind = MediaCardContextMenuAnchorKind.Activator,
+            Title = L["ActionsTitle"],
+            Content = BuildMenuContent
+        });
+    }
+
+    private void BuildMenuContent(RenderTreeBuilder builder)
+    {
+        var seq = 0;
+
+        if (_canRate)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "track-context-rating");
+            builder.OpenComponent<RatingStars>(seq++);
+            builder.AddAttribute(seq++, "MediaId", Track.MediaId);
+            builder.AddAttribute(seq++, "Value", UserRating);
+            builder.AddAttribute(seq++, "Size", "sm");
+            builder.CloseComponent();
+            builder.CloseElement();
         }
+
+        AddMenuItem(builder, ref seq, "play-circle", L["PlayNext"], PlayNext);
+        AddMenuItem(builder, ref seq, "queue", L["AddToQueue"], AddToQueue);
+
+        if (_canCreatePlaylist)
+        {
+            builder.OpenElement(seq++, "hr");
+            builder.AddAttribute(seq++, "class", "k7-divider");
+            builder.CloseElement();
+            AddMenuItem(builder, ref seq, "plus-circle", L["AddToPlaylist"], AddToPlaylist);
+        }
+
+        if (DeviceService.GetClientType() != ClientType.Web)
+        {
+            builder.OpenElement(seq++, "hr");
+            builder.AddAttribute(seq++, "class", "k7-divider");
+            builder.CloseElement();
+            AddMenuItem(builder, ref seq, "download-simple", L["DownloadOffline"], DownloadOffline);
+        }
+
+        if (string.IsNullOrEmpty(Track.Artist) && string.IsNullOrEmpty(Track.Genre) && !_musicIntelligenceAvailable)
+            return;
+
+        builder.OpenElement(seq++, "hr");
+        builder.AddAttribute(seq++, "class", "k7-divider");
+        builder.CloseElement();
+
+        if (_musicIntelligenceAvailable)
+            AddMenuItem(builder, ref seq, "waves", string.Format(L["RadioSonic"], Track.Title), RadioSonic);
+
+        if (!string.IsNullOrEmpty(Track.Artist))
+            AddMenuItem(builder, ref seq, "radio", string.Format(L["RadioArtist"], Track.Artist), RadioArtist);
+
+        if (!string.IsNullOrEmpty(Track.Genre))
+            AddMenuItem(builder, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
+
+        if (_musicIntelligenceAvailable)
+            AddMenuItem(builder, ref seq, "magic-wand", L["PlaySimilar"], PlaySimilar);
+    }
+
+    private void AddMenuItem(
+        RenderTreeBuilder builder,
+        ref int seq,
+        string icon,
+        string label,
+        Func<Task> onClick)
+    {
+        builder.OpenComponent<K7MenuItem>(seq++);
+        builder.AddAttribute(seq++, "Icon", icon);
+        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, onClick));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
+        builder.CloseComponent();
+    }
+
+    private void AddMenuItem(
+        RenderTreeBuilder builder,
+        ref int seq,
+        string icon,
+        string label,
+        Action onClick)
+    {
+        builder.OpenComponent<K7MenuItem>(seq++);
+        builder.AddAttribute(seq++, "Icon", icon);
+        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, onClick));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
+        builder.CloseComponent();
     }
 
     private void PlayNext()
@@ -181,7 +288,7 @@ public partial class TrackContextMenu
 
             var tracks = result?.Items?.OfType<LiteMusicTrackDto>()
                 .Where(t => t.IndexedFileId.HasValue)
-                .Select(t => ToQueueItem(t))
+                .Select(ToQueueItem)
                 .ToList();
 
             if (tracks is { Count: > 0 })
@@ -194,5 +301,12 @@ public partial class TrackContextMenu
         {
             Snackbar.Add(L["SimilarTracksError"], K7Severity.Error);
         }
+    }
+
+    public void Dispose()
+    {
+        ContextMenuService.Changed -= OnContextMenuServiceChanged;
+        if (_menuOpen)
+            ContextMenuService.Close();
     }
 }

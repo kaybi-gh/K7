@@ -1,10 +1,12 @@
 ﻿using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
@@ -25,6 +27,8 @@ public partial class EpisodeListItem : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ILogger<EpisodeListItem> Logger { get; set; } = default!;
+    [Inject] private IMediaCardContextMenuService ContextMenuService { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public required LiteSerieEpisodeDto Episode { get; set; }
@@ -41,7 +45,11 @@ public partial class EpisodeListItem : IDisposable
     [Parameter]
     public EventCallback<LiteSerieEpisodeDto> OnWatchStateChanged { get; set; }
 
+    private readonly Guid _menuOwnerId = Guid.NewGuid();
+    private ElementReference _menuTriggerRef;
     private bool _menuOpen;
+    private bool _canSetWatchState;
+    private bool _capsLoaded;
     private bool _longPressTriggered;
     private bool _preventNextClick;
     private bool _keyHeldDown;
@@ -52,6 +60,28 @@ public partial class EpisodeListItem : IDisposable
 
     private bool ShouldPreventLinkActivation =>
         _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen;
+
+    protected override void OnInitialized() =>
+        ContextMenuService.Changed += OnContextMenuServiceChanged;
+
+    private void OnContextMenuServiceChanged()
+    {
+        var open = ContextMenuService.Current?.OwnerId == _menuOwnerId;
+        if (open == _menuOpen)
+            return;
+
+        _menuOpen = open;
+        if (!open)
+        {
+            _longPressTriggered = false;
+            _preventNextClick = false;
+            _menuOpenedViaKeyboard = false;
+            _keyHeldDown = false;
+            CancelLongPress();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
 
     private Task PlayAsync() => OnPlay.HasDelegate
         ? OnPlay.InvokeAsync(Episode)
@@ -84,22 +114,7 @@ public partial class EpisodeListItem : IDisposable
             await OnWatchStateChanged.InvokeAsync(Episode);
     }
 
-    private async Task OnMenuOpenChangedAsync(bool open)
-    {
-        _menuOpen = open;
-        if (!open)
-        {
-            _longPressTriggered = false;
-            _preventNextClick = false;
-            _menuOpenedViaKeyboard = false;
-            _keyHeldDown = false;
-            CancelLongPress();
-        }
-
-        await Task.CompletedTask;
-    }
-
-    private async Task OpenMenuAsync()
+    private async Task OpenSharedMenuAsync()
     {
         _longPressTriggered = true;
         _preventNextClick = true;
@@ -117,11 +132,50 @@ public partial class EpisodeListItem : IDisposable
             }
         }
 
-        if (_menuOpen)
+        if (!_capsLoaded)
+        {
+            var caps = await MediaCardMenuCapabilities.GetAsync(FeatureAccess);
+            _canSetWatchState = caps.CanSetWatchState;
+            _capsLoaded = true;
+        }
+
+        ContextMenuService.Open(new MediaCardContextMenuRequest
+        {
+            OwnerId = _menuOwnerId,
+            Anchor = _menuTriggerRef,
+            AnchorKind = MediaCardContextMenuAnchorKind.Activator,
+            Title = Episode.Title ?? SharedStrings["Untitled"],
+            Content = BuildMenuContent
+        });
+    }
+
+    private void BuildMenuContent(RenderTreeBuilder builder)
+    {
+        var seq = 0;
+        builder.OpenComponent<K7MenuItem>(seq++);
+        builder.AddAttribute(seq++, "Icon", "play");
+        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, PlayAsync));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, SharedStrings["Play"])));
+        builder.CloseComponent();
+
+        if (Episode.IndexedFileId.HasValue && Href is not null)
+        {
+            builder.OpenComponent<K7MenuItem>(seq++);
+            builder.AddAttribute(seq++, "Icon", "download-simple");
+            builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, NavigateToDetailAsync));
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Download"])));
+            builder.CloseComponent();
+        }
+
+        if (!_canSetWatchState)
             return;
 
-        _menuOpen = true;
-        StateHasChanged();
+        var label = Episode.UserState?.IsCompleted == true ? L["MarkAsUnwatched"] : L["MarkAsWatched"];
+        builder.OpenComponent<K7MenuItem>(seq++);
+        builder.AddAttribute(seq++, "Icon", "check-circle");
+        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, ToggleWatchStateAsync));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
+        builder.CloseComponent();
     }
 
     private void OnLinkFocusIn(FocusEventArgs e) => SyncEpisodeAnchorInUrl();
@@ -141,7 +195,7 @@ public partial class EpisodeListItem : IDisposable
     {
         _longPressTriggered = true;
         _preventNextClick = true;
-        OpenMenuAsync().FireAndForget(Logger);
+        OpenSharedMenuAsync().FireAndForget(Logger);
     }
 
     private static bool IsEnterKey(KeyboardEventArgs e)
@@ -227,8 +281,6 @@ public partial class EpisodeListItem : IDisposable
         try
         {
             await Task.Delay(LongPressDelayMs, cancellationToken);
-            // Open on the renderer sync context so the menu paints immediately
-            // (not only after the next unrelated key event).
             await InvokeAsync(async () =>
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -243,7 +295,7 @@ public partial class EpisodeListItem : IDisposable
                     _keyHeldDown = false;
                 }
 
-                await OpenMenuAsync();
+                await OpenSharedMenuAsync();
             });
         }
         catch (TaskCanceledException)
@@ -272,5 +324,11 @@ public partial class EpisodeListItem : IDisposable
             : $"{ts.Minutes}min";
     }
 
-    public void Dispose() => CancelLongPress();
+    public void Dispose()
+    {
+        ContextMenuService.Changed -= OnContextMenuServiceChanged;
+        if (_menuOpen)
+            ContextMenuService.Close();
+        CancelLongPress();
+    }
 }

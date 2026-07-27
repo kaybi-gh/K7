@@ -3,11 +3,11 @@
         <K7Avatar Class="focusable">
             @if (ImageUrl is not null)
             {
-                <K7Image Src="@ImageUrl" Alt="@Alt" Fluid="true" ObjectFit="cover" loading="lazy" />
+                <K7Image Src="@ImageUrl" Alt="@Alt" Fluid="true" ObjectFit="cover" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
             }
             else
             {
-                <K7Image Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@Alt" Fluid="true" ObjectFit="cover" loading="lazy" />
+                <K7Image Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@Alt" Fluid="true" ObjectFit="cover" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
             }
         </K7Avatar>
 

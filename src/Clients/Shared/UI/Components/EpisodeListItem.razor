@@ -4,7 +4,7 @@
 @implements IDisposable
 @inject IStringLocalizer<SharedResource> S
 
-<div class="episode-card"
+<div class="episode-card @(_menuOpen ? "episode-card--menu-open" : null)"
      data-longpress="true"
      @ontouchstart="OnTouchStart"
      @ontouchmove="OnTouchMove"
@@ -28,6 +28,7 @@
                           Class="rounded-lg"
                           Style="width: 100%; height: 100%;"
                           ObjectFit="cover"
+                          LoadingMode="K7ImageLoadingMode.Css"
                           loading="lazy" />
             }
             else
@@ -71,29 +72,14 @@
         </div>
     </a>
 
-    <div class="episode-card-menu" data-longpress-target @onclick:stopPropagation="true">
-        <K7Menu Title="@(Episode.Title ?? S["Untitled"])"
-                Open="_menuOpen"
-                OpenChanged="OnMenuOpenChangedAsync">
-            <ActivatorContent>
-                <K7IconButton Icon="@Phosphor.DotsThreeVertical"
-                               Size="sm"
-                               AriaLabel="more-actions"
-                               Focusable="false"
-                               @onclick:preventDefault="true" />
-            </ActivatorContent>
-            <ChildContent>
-                <K7MenuItem Icon="play" OnClick="PlayAsync">@S["Play"]</K7MenuItem>
-                @if (Episode.IndexedFileId.HasValue && Href is not null)
-                {
-                    <K7MenuItem Icon="download-simple" OnClick="NavigateToDetailAsync">@L["Download"]</K7MenuItem>
-                }
-                <AuthorizeView Roles="User,Administrator">
-                    <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
-                        @(Episode.UserState?.IsCompleted == true ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
-                    </K7MenuItem>
-                </AuthorizeView>
-            </ChildContent>
-        </K7Menu>
+    <div class="episode-card-menu @(_menuOpen ? "episode-card-menu--open" : null)" data-longpress-target @onclick:stopPropagation="true">
+        <div @ref="_menuTriggerRef">
+            <K7IconButton Icon="@Phosphor.DotsThreeVertical"
+                           Size="sm"
+                           Class="episode-card-menu-trigger"
+                           AriaLabel="more-actions"
+                           Focusable="false"
+                           OnClick="OpenSharedMenuAsync" />
+        </div>
     </div>
 </div>
