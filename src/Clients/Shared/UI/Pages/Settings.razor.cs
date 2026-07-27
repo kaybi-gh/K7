@@ -20,6 +20,6 @@ public partial class Settings
 
         var me = await UserService.GetCurrentUserAsync();
         var defaultTab = me?.IsGuest == true ? "general" : "account";
-        NavigationManager.NavigateTo($"/settings/{defaultTab}?sidebar=open", replace: true);
+        NavigationManager.NavigateTo($"/settings/{defaultTab}", replace: true);
     }
 }

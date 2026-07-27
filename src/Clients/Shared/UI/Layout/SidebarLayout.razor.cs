@@ -54,12 +54,7 @@ public partial class SidebarLayout : IAsyncDisposable
         }
 
         UpdateSidebarContext();
-
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        if (uri.Query.Contains("sidebar=open", StringComparison.OrdinalIgnoreCase))
-        {
-            _sidebarOpen = true;
-        }
+        _sidebarOpen = UseMobileDrawer;
     }
 
     private string GetSidebarClass()

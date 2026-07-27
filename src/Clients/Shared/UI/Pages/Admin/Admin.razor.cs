@@ -10,7 +10,7 @@ public partial class Admin
 
     protected override void OnParametersSet()
     {
-        var target = string.IsNullOrEmpty(Tab) ? "/admin/dashboard?sidebar=open" : $"/admin/{Tab}";
+        var target = string.IsNullOrEmpty(Tab) ? "/admin/dashboard" : $"/admin/{Tab}";
         NavigationManager.NavigateTo(target, replace: true);
     }
 }
