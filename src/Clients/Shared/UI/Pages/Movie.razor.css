@@ -241,10 +241,23 @@
 }
 
 @media (max-width: 599.98px) {
+    .movie-main.media-hero-main {
+        height: var(--media-hero-available-height);
+        min-height: var(--media-hero-available-height);
+        max-height: var(--media-hero-available-height);
+        overflow: hidden;
+    }
+
     .media-hero.movie-hero {
         width: 100%;
         max-width: 100%;
-        flex: none;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+    }
+
+    .movie-actions {
+        margin-top: var(--space-3);
     }
 
     .movie-page-logo:not(.k7-img-wrap--custom-fallback) {

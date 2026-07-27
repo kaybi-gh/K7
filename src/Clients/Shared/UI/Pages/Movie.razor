@@ -212,12 +212,12 @@ else
             </div>
         </div>
 
-        @if ((_movie.PersonRoles?.Count ?? 0) > 0)
-        {
-            <div class="media-hero-scroll-hint" aria-hidden="true">
-                <K7Icon Icon="@Phosphor.CaretDown" />
-            </div>
-        }
+            @if ((_movie.PersonRoles?.Count ?? 0) > 0)
+            {
+                <div class="media-hero-scroll-hint" aria-hidden="true">
+                    <K7Icon Icon="@Phosphor.CaretDown" />
+                </div>
+            }
         </div>
 
         @if (HasTvBelowContent)

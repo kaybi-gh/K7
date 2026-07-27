@@ -111,16 +111,21 @@
     }
 
     .serie-main {
-        height: auto;
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: var(--media-hero-available-height);
+        min-height: var(--media-hero-available-height);
+        max-height: var(--media-hero-available-height);
         flex-shrink: 0;
         overflow: hidden;
     }
 
     .serie-hero {
-        flex: none;
+        flex: 1 1 auto;
+        min-height: 0;
         height: auto;
+    }
+
+    .serie-actions.mt-6 {
+        margin-top: var(--space-3);
     }
 
     .serie-page {

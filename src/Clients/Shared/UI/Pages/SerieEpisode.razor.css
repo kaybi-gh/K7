@@ -183,8 +183,17 @@
 }
 
 @media (max-width: 599.98px) {
+    .episode-main.media-hero-main {
+        height: var(--media-hero-available-height);
+        min-height: var(--media-hero-available-height);
+        max-height: var(--media-hero-available-height);
+        overflow: hidden;
+    }
+
     .episode-hero.media-hero {
-        flex: none;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
     }
 
     .episode-hero-content {

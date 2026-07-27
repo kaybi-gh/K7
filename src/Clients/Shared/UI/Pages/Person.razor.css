@@ -215,9 +215,9 @@
 
 @media (max-width: 599.98px) {
     .person-main {
-        height: auto;
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: var(--media-hero-available-height);
+        min-height: var(--media-hero-available-height);
+        max-height: var(--media-hero-available-height);
         overflow: hidden;
     }
 

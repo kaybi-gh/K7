@@ -1,6 +1,5 @@
 .media-page-backdrop {
     --media-scroll-fade: 0;
-    --media-backdrop-height: 100%;
     /* Absolute to the media page shell (not the scrolling child) so classic
        scrollbar gutters do not clip the wash and leave a --color-bg strip. */
     position: absolute;
@@ -120,13 +119,12 @@
 
 @media (max-width: 599.98px) {
     .media-page-backdrop {
-        --media-backdrop-height: 50vh;
-        --media-backdrop-height: 50dvh;
         inset: auto;
         top: 0;
         right: 0;
         left: 0;
-        height: var(--media-backdrop-height);
+        /* Prefer the page shell variable; keep a definite fallback so height never collapses. */
+        height: var(--media-backdrop-height, 50dvh);
         -webkit-mask-image: linear-gradient(
             to bottom,
             #000 0%,
