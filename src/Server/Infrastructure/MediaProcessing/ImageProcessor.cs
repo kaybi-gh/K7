@@ -25,7 +25,9 @@ public class ImageProcessor : IImageProcessor
         await FFMpegArguments
             .FromFileInput(inputPath, verifyExists: false)
             .OutputToFile(outputPath, overwrite: true, options => options
-                .WithCustomArgument($"-q:v {quality}"))
+                .WithCustomArgument("-c:v libwebp")
+                .WithCustomArgument($"-q:v {quality}")
+                .WithCustomArgument("-compression_level 4"))
             .CancellableThrough(cancellationToken)
             .ProcessAsynchronously(throwOnError: true)
             .ConfigureAwait(false);
@@ -45,8 +47,10 @@ public class ImageProcessor : IImageProcessor
         await FFMpegArguments
             .FromFileInput(inputPath, verifyExists: false)
             .OutputToFile(outputPath, overwrite: true, options => options
-                .WithCustomArgument($"-vf \"scale={maxWidth}:-1\"")
-                .WithCustomArgument($"-q:v {quality}"))
+                .WithCustomArgument($"-vf \"scale={maxWidth}:-1:flags=lanczos\"")
+                .WithCustomArgument($"-c:v libwebp")
+                .WithCustomArgument($"-q:v {quality}")
+                .WithCustomArgument("-compression_level 4"))
             .CancellableThrough(cancellationToken)
             .ProcessAsynchronously(throwOnError: true)
             .ConfigureAwait(false);

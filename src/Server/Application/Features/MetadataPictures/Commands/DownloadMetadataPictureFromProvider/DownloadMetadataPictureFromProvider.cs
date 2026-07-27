@@ -120,28 +120,18 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             file.Directory?.Create();
             await File.WriteAllBytesAsync(tempFilePath, imageData, cancellationToken);
 
+            // Keep the downloaded source as-is. GenerateMetadataPictureVariants converts
+            // the original to WebP after resizing variants from this file (single encode).
             var isSvg = _imageProcessor.IsSvgFile(tempFilePath)
                 || MetadataImageUrlHelper.IsVectorContentType(contentType);
-
-            if (isSvg)
+            if (isSvg && !string.Equals(downloadedExtension, ".svg", StringComparison.OrdinalIgnoreCase))
             {
-                entity.LocalPath = tempFilePath;
+                var svgPath = Path.Combine(directory, $"{entity.Id}.svg");
+                File.Move(tempFilePath, svgPath, overwrite: true);
+                tempFilePath = svgPath;
             }
-            else
-            {
-                var webpFilePath = Path.Combine(directory, $"{entity.Id}.webp");
-                if (!string.Equals(downloadedExtension, ".webp", StringComparison.OrdinalIgnoreCase))
-                {
-                    await _imageProcessor.ConvertToWebPAsync(tempFilePath, webpFilePath, cancellationToken: cancellationToken);
-                    File.Delete(tempFilePath);
-                }
-                else
-                {
-                    webpFilePath = tempFilePath;
-                }
 
-                entity.LocalPath = webpFilePath;
-            }
+            entity.LocalPath = tempFilePath;
 
             var dimensions = _imageProcessor.TryGetImageDimensions(entity.LocalPath);
             if (dimensions is not null)

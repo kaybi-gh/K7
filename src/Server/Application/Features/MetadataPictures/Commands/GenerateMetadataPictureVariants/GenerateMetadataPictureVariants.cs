@@ -56,27 +56,10 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             return;
         }
 
-        var isSvgOriginal = _imageProcessor.IsSvgFile(picture.LocalPath);
-
-        if (!isSvgOriginal && !picture.LocalPath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
-        {
-            var webpPath = Path.ChangeExtension(picture.LocalPath, ".webp");
-            try
-            {
-                await _imageProcessor.ConvertToWebPAsync(picture.LocalPath, webpPath, cancellationToken: cancellationToken);
-                File.Delete(picture.LocalPath);
-                picture.LocalPath = webpPath;
-                _logger.LogInformation("Converted original MetadataPicture {Id} to WebP", picture.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to convert MetadataPicture {Id} to WebP, continuing with original", picture.Id);
-            }
-        }
-
-        var directory = Path.GetDirectoryName(picture.LocalPath)!;
-        var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
         var sourcePath = picture.LocalPath;
+        var isSvgOriginal = _imageProcessor.IsSvgFile(sourcePath);
+        var directory = Path.GetDirectoryName(sourcePath)!;
+        var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
 
         if (picture.OriginalWidth is null || picture.OriginalHeight is null)
         {
@@ -88,6 +71,8 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             }
         }
 
+        // Generate variants from the source file before converting the original to WebP,
+        // so Medium/Small are not a second lossy pass over an already-encoded WebP.
         foreach (MetadataPictureSize size in Enum.GetValues<MetadataPictureSize>())
         {
             if (!MetadataPictureVariantRules.TryGetTargetWidth(picture.Type, size, out var maxWidth))
@@ -112,7 +97,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
 
             try
             {
-                if (_imageProcessor.IsSvgFile(sourcePath))
+                if (isSvgOriginal)
                 {
                     await _imageProcessor.RasterizeSvgToWebPAsync(sourcePath, variantPath, maxWidth, cancellationToken: cancellationToken);
                 }
@@ -142,6 +127,23 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
                 _logger.LogError(ex,
                     "Failed to generate {Size} variant for MetadataPicture {PictureId}",
                     size, picture.Id);
+            }
+        }
+
+        if (!isSvgOriginal && !sourcePath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+        {
+            var webpPath = Path.ChangeExtension(sourcePath, ".webp");
+            try
+            {
+                await _imageProcessor.ConvertToWebPAsync(sourcePath, webpPath, cancellationToken: cancellationToken);
+                File.Delete(sourcePath);
+                picture.LocalPath = webpPath;
+                sourcePath = webpPath;
+                _logger.LogInformation("Converted original MetadataPicture {Id} to WebP", picture.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to convert MetadataPicture {Id} to WebP, continuing with original", picture.Id);
             }
         }
 
