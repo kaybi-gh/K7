@@ -7,17 +7,15 @@ public static class MetadataPictureVariantRules
     private static readonly Dictionary<(MetadataPictureType, MetadataPictureSize), int> TargetWidths = new()
     {
         [(MetadataPictureType.Poster, MetadataPictureSize.Small)] = 200,
-        [(MetadataPictureType.Poster, MetadataPictureSize.Medium)] = 342,
+        [(MetadataPictureType.Poster, MetadataPictureSize.Medium)] = 400,
         [(MetadataPictureType.Cover, MetadataPictureSize.Small)] = 200,
-        [(MetadataPictureType.Cover, MetadataPictureSize.Medium)] = 342,
-        [(MetadataPictureType.Backdrop, MetadataPictureSize.Small)] = 780,
-        [(MetadataPictureType.Backdrop, MetadataPictureSize.Medium)] = 1280,
+        [(MetadataPictureType.Cover, MetadataPictureSize.Medium)] = 400,
         [(MetadataPictureType.Portrait, MetadataPictureSize.Small)] = 185,
-        [(MetadataPictureType.Portrait, MetadataPictureSize.Medium)] = 342,
-        [(MetadataPictureType.Logo, MetadataPictureSize.Small)] = 200,
+        [(MetadataPictureType.Portrait, MetadataPictureSize.Medium)] = 400,
         [(MetadataPictureType.Logo, MetadataPictureSize.Medium)] = 400,
-        [(MetadataPictureType.Still, MetadataPictureSize.Small)] = 640,
-        [(MetadataPictureType.Still, MetadataPictureSize.Medium)] = 1280,
+        [(MetadataPictureType.Backdrop, MetadataPictureSize.Medium)] = 1920,
+        [(MetadataPictureType.Still, MetadataPictureSize.Small)] = 320,
+        [(MetadataPictureType.Still, MetadataPictureSize.Medium)] = 640,
     };
 
     public static bool TryGetTargetWidth(
@@ -29,12 +27,19 @@ public static class MetadataPictureVariantRules
     public static bool ShouldGenerateVariant(MetadataPictureType pictureType, MetadataPictureSize size, int originalWidth) =>
         TryGetTargetWidth(pictureType, size, out var targetWidth) && originalWidth > targetWidth;
 
+    /// <summary>
+    /// True when serving the original for a requested size is the permanent answer
+    /// (no rule for this type/size, or original is not larger than the target).
+    /// </summary>
     public static bool IsPermanentVariantFallback(
         MetadataPictureType pictureType,
         MetadataPictureSize size,
         int? originalWidth)
     {
-        if (originalWidth is not > 0 || !TryGetTargetWidth(pictureType, size, out var targetWidth))
+        if (!TryGetTargetWidth(pictureType, size, out var targetWidth))
+            return true;
+
+        if (originalWidth is not > 0)
             return false;
 
         return originalWidth <= targetWidth;
