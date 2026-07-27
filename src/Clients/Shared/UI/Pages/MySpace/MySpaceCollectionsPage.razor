@@ -75,11 +75,7 @@ else
         </K7Button>
     </ToolbarContent>
     <EmptyContent>
-        <div class="d-flex flex-col pa-16">
-            <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
-            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
-            <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
-        </div>
+        <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["None"]" Subtitle="@L["EmptyHint"]" />
     </EmptyContent>
     <GridTemplate Context="collection">
         @{

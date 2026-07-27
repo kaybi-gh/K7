@@ -54,7 +54,7 @@ else
 
 {
 
-    <div class="playlist-detail-page page-scrollable">
+    <div class="playlist-detail-page">
 
         <div class="playlist-header">
 
@@ -149,15 +149,7 @@ else
                       OnColumnPickerRequested="OnColumnPickerRequested">
 
             <EmptyContent>
-
-                <div class="d-flex flex-col pa-16 align-center">
-
-                    <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 48px; opacity: 0.3;" />
-
-                    <p Color="secondary">@L["Empty"]</p>
-
-                </div>
-
+                <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["Empty"]" />
             </EmptyContent>
 
             <GridTemplate Context="row">

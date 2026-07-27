@@ -96,11 +96,7 @@ else
         </K7Menu>
     </ToolbarContent>
     <EmptyContent>
-        <div class="d-flex flex-col pa-16">
-            <K7Icon Icon="@Phosphor.Queue" Style="font-size: 64px; opacity: 0.3;" />
-            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
-            <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
-        </div>
+        <K7EmptyState Icon="@Phosphor.Queue" Title="@L["None"]" Subtitle="@L["EmptyHint"]" />
     </EmptyContent>
     <GridTemplate Context="playlist">
         @{

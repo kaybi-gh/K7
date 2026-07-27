@@ -1,6 +1,26 @@
 /* Shared by playlist, smart playlist, and collection detail pages. */
 .playlist-detail-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
     padding: var(--space-4);
+    padding-bottom: 0;
+    box-sizing: border-box;
+}
+
+.playlist-detail-page.page-scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: var(--space-4);
+}
+
+.playlist-detail-page > .browse-view {
+    flex: 1;
+    min-height: 0;
+    height: auto;
 }
 
 .playlist-header {
@@ -8,6 +28,7 @@
     gap: var(--space-6);
     margin-bottom: var(--space-6);
     align-items: flex-start;
+    flex-shrink: 0;
 }
 
 .playlist-header-cover {

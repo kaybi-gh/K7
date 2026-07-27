@@ -3,6 +3,8 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
+    flex: 1;
+    min-height: 0;
     position: relative;
 }
 
@@ -538,7 +540,11 @@
     justify-content: center;
     gap: 12px;
     flex: 1;
-    padding: 48px 16px;
+    width: 100%;
+    min-height: 0;
+    padding: 48px 24px;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .browse-view-simple-grid {
