@@ -13,7 +13,7 @@ public partial class LibraryItemCard
     [Parameter] public IReadOnlyList<string>? ImageUrls { get; set; }
     [Parameter] public bool PreferPreviewWhenEmpty { get; set; }
     [Parameter] public string PlaceholderIcon { get; set; } = Phosphor.Image;
-    [Parameter] public MetadataPictureSize PictureSize { get; set; } = MetadataPictureSize.Small;
+    [Parameter] public MetadataPictureSize PictureSize { get; set; } = MetadataPictureSize.Medium;
     [Parameter] public RenderFragment? HeaderEndContent { get; set; }
     [Parameter] public RenderFragment? FooterContent { get; set; }
     [Parameter] public string? Class { get; set; }

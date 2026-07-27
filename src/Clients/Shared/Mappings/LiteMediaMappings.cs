@@ -17,7 +17,7 @@ public static class LiteMediaMappings
         bool useParentTitle = false,
         bool preferEpisodeStill = false,
         bool episodeStillOnly = false,
-        MetadataPictureSize pictureSize = MetadataPictureSize.Small)
+        MetadataPictureSize pictureSize = MetadataPictureSize.Medium)
     {
         var kind = item switch
         {
@@ -76,7 +76,8 @@ public static class LiteMediaMappings
             Title = cardTitle,
             AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter, preferEpisodeStill),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(pictureSize)?.OriginalString)?.AbsoluteUri,
-            BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
+            BackdropUrl = apiClient.GetAbsoluteUri(
+                backdropPicture?.GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
             SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1,
@@ -142,7 +143,7 @@ public static class LiteMediaMappings
             Title = item.Title,
             AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
             PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient),
-            BackdropUrl = ResolveCardPictureUrl(backdropPicture, apiClient, MetadataPictureSize.Medium),
+            BackdropUrl = ResolveHeroPictureUrl(backdropPicture, apiClient),
             Watched = item.Watched,
             Progress = item.Progress,
             GroupCount = item.GroupCount,
@@ -170,7 +171,7 @@ public static class LiteMediaMappings
     {
         var backdropPicture = ResolveHeroBackdropPictureFromMedia(media);
         var backdropUrl = backdropPicture is not null
-            ? ResolveCardPictureUrl(backdropPicture, apiClient, MetadataPictureSize.Medium)
+            ? ResolveHeroPictureUrl(backdropPicture, apiClient)
             : source.BackdropUrl;
 
         return source with
@@ -261,7 +262,7 @@ public static class LiteMediaMappings
     private static string? ResolveCardPictureUrl(
         MetadataPictureDto? picture,
         IK7ServerService apiClient,
-        MetadataPictureSize preferredSize = MetadataPictureSize.Small)
+        MetadataPictureSize preferredSize = MetadataPictureSize.Medium)
     {
         if (picture?.Uri is null)
             return null;
@@ -270,6 +271,21 @@ public static class LiteMediaMappings
             picture,
             preferredSize,
             MetadataPictureSize.Medium);
+        var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
+        return MediaPictureUrlHelper.WithCacheBuster(uri, DateTimeOffset.UtcNow);
+    }
+
+    private static string? ResolveHeroPictureUrl(
+        MetadataPictureDto? picture,
+        IK7ServerService apiClient)
+    {
+        if (picture?.Uri is null)
+            return null;
+
+        // TV / card heroes: cap backdrops at Medium; stills/covers stay original.
+        var size = picture.Type == MetadataPictureType.Backdrop
+            ? MetadataPictureDisplayHelper.SizeForHeroBackdrop()
+            : MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero);
         var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
         return MediaPictureUrlHelper.WithCacheBuster(uri, DateTimeOffset.UtcNow);
     }

@@ -1050,7 +1050,7 @@ public partial class LibraryGroupView : IDisposable
             apiClient,
             n => string.Format(S["SeasonNumber"], n),
             episodeStillOnly: _selectedMediaType == MediaType.SerieEpisode,
-            pictureSize: _selectedMediaType == MediaType.SerieEpisode ? MetadataPictureSize.Medium : MetadataPictureSize.Small);
+            pictureSize: MetadataPictureSize.Medium);
         if (vm is not null)
             _viewModelCache[item.Id] = vm;
         return vm;
@@ -1060,7 +1060,7 @@ public partial class LibraryGroupView : IDisposable
         item.ToCardViewModel(
             apiClient,
             n => string.Format(S["SeasonNumber"], n),
-            pictureSize: _selectedMediaType == MediaType.SerieEpisode ? MetadataPictureSize.Medium : MetadataPictureSize.Small);
+            pictureSize: MetadataPictureSize.Medium);
 
     private static string? GetGridPlaceholderIcon(LiteMediaDto item) =>
         item is LiteSerieEpisodeDto ? Phosphor.Image : null;

@@ -1,11 +1,61 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Helpers;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Helpers;
 
+public enum ImageDisplayRole
+{
+    Thumb,
+    Card,
+    Hero
+}
+
 public static class MetadataPictureDisplayHelper
 {
+    /// <summary>
+    /// Max CSS pixels * DPR before a hero backdrop upgrades from Medium to original.
+    /// </summary>
+    public const int HeroBackdropPixelBudget = 1920;
+
+    public static MetadataPictureSize? SizeFor(ImageDisplayRole role) => role switch
+    {
+        ImageDisplayRole.Thumb => MetadataPictureSize.Small,
+        ImageDisplayRole.Card => MetadataPictureSize.Medium,
+        ImageDisplayRole.Hero => null,
+        _ => MetadataPictureSize.Small
+    };
+
+    /// <summary>
+    /// Capped backdrop for typical windows; pair with original via
+    /// <see cref="ResolveAdaptiveBackdropUrls"/> when the source is larger.
+    /// </summary>
+    public static MetadataPictureSize? SizeForHeroBackdrop() => MetadataPictureSize.Medium;
+
+    public static (string? DisplayUrl, string? HighResUrl) ResolveAdaptiveBackdropUrls(
+        MetadataPictureDto? picture,
+        IK7ServerService apiClient,
+        DateTimeOffset? cacheVersion = null)
+    {
+        if (picture?.Uri is null || picture.Type != MetadataPictureType.Backdrop)
+            return (null, null);
+
+        var displayUri = apiClient.GetAbsoluteUri(
+            picture.GetUri(SizeForHeroBackdrop())?.OriginalString)?.AbsoluteUri;
+        var displayUrl = MediaPictureUrlHelper.WithCacheBuster(displayUri, cacheVersion);
+
+        if (picture.OriginalWidth is not > HeroBackdropPixelBudget)
+            return (displayUrl, null);
+
+        var highResUri = apiClient.GetAbsoluteUri(picture.GetUri()?.OriginalString)?.AbsoluteUri;
+        var highResUrl = MediaPictureUrlHelper.WithCacheBuster(highResUri, cacheVersion);
+        if (string.Equals(displayUrl, highResUrl, StringComparison.Ordinal))
+            return (displayUrl, null);
+
+        return (displayUrl, highResUrl);
+    }
+
     public static MetadataPictureSize? GetBestDisplaySize(
         MetadataPictureDto picture,
         params MetadataPictureSize[] preferredSizes)
@@ -30,16 +80,14 @@ public static class MetadataPictureDisplayHelper
             return false;
 
         if (picture.OriginalWidth is > 0
-            && picture.OriginalHeight is > 0
-            && MetadataPictureThresholds.MeetsHdStillThreshold(picture.OriginalWidth.Value, picture.OriginalHeight.Value))
-            return true;
+            && picture.OriginalHeight is > 0)
+        {
+            return MetadataPictureThresholds.MeetsHdStillThreshold(
+                picture.OriginalWidth.Value,
+                picture.OriginalHeight.Value);
+        }
 
-        if (picture.AvailableSizes.Contains(MetadataPictureSize.Medium))
-            return true;
-
-        if (picture.OriginalWidth is > 0 && picture.OriginalHeight is > 0)
-            return false;
-
+        // Unknown dimensions: assume usable until proven otherwise.
         return true;
     }
 }

@@ -104,7 +104,7 @@ public partial class MusicArtistDetail : IDisposable
                             apiClient.GetAbsoluteUri(
                                 (album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                                     ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+                                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
                             pictureCacheVersion)
                     })
                     .ToList();
@@ -128,7 +128,7 @@ public partial class MusicArtistDetail : IDisposable
                     PictureUrl = apiClient.GetAbsoluteUri(
                         (album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                             ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                            .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                            .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
                 })
                 .ToList();
 

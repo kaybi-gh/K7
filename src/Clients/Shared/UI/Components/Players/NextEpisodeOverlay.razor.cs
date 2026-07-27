@@ -130,7 +130,7 @@ public partial class NextEpisodeOverlay : IDisposable
                 };
                 _currentStillUrl = ApiClient.GetAbsoluteUri(
                     currentDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
-                        .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+                        .GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri;
             }
         }
         catch { }
@@ -148,7 +148,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
         _stillUrl = ApiClient.GetAbsoluteUri(
             _nextEpisode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
-                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+                .GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri;
 
         _visible = true;
 
