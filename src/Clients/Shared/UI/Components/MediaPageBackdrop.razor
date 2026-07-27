@@ -4,17 +4,17 @@
      class="media-page-backdrop @Class"
      style="@StyleAttribute"
      aria-hidden="true">
-    @if (ImageUrl is not null)
+    @if (_resolvedImageUrl is not null)
     {
         <div class="media-page-backdrop__image"
-             style="background-image: url('@ImageUrl')" />
+             style="background-image: url('@_resolvedImageUrl')" />
     }
 
-    @if (SecondaryImageUrl is not null)
+    @if (_resolvedSecondaryImageUrl is not null)
     {
-        <div class="media-page-backdrop__image media-page-backdrop__image--secondary"
-             style="background-image: url('@SecondaryImageUrl')"
-             @key="SecondaryImageKey" />
+        <div class="media-page-backdrop__image"
+             style="background-image: url('@_resolvedSecondaryImageUrl')"
+             @key="@($"secondary-{SecondaryImageKey}")" />
     }
 
     <div class="media-page-backdrop__scrim-side" />

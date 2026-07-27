@@ -36,6 +36,7 @@ public partial class Movie : IAsyncDisposable
     private static MovieDto? _movie;
     private static MediaCardViewModel? _mediaCard;
     private string? _backdropUrl;
+    private string? _backdropHighResUrl;
     private string? _dominantColor;
     private string? _logoUrl;
     private string? _posterSmallUrl;
@@ -118,9 +119,10 @@ public partial class Movie : IAsyncDisposable
                 : _movie.LastMetadataRefreshedAt;
 
             var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Backdrop);
-            var backdropUri = apiClient.GetAbsoluteUri(
-                backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-            _backdropUrl = MediaPictureUrlHelper.WithCacheBuster(backdropUri, cacheVersion);
+            (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
+                backdropPicture,
+                apiClient,
+                cacheVersion);
             _dominantColor = backdropPicture?.DominantColor;
 
             var logoUri = apiClient.GetAbsoluteUri(
@@ -130,7 +132,7 @@ public partial class Movie : IAsyncDisposable
 
             var posterUri = apiClient.GetAbsoluteUri(
                 _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?
-                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _posterSmallUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
 
             _mediaCard = new MediaCardViewModel()

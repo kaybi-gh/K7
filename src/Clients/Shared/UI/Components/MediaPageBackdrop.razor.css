@@ -12,22 +12,19 @@
 .media-page-backdrop__image {
     position: absolute;
     inset: 0;
+    z-index: 0;
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
     transform: translateZ(0);
 }
 
-.media-page-backdrop__image--secondary {
-    animation: media-backdrop-fade-in 0.5s ease forwards;
-}
-
-/* Two separate scrim layers (not stacked backgrounds) to avoid compositing banding.
-   Left weight keeps copy readable; light right fade keeps the scrollbar gutter on the
-   same darkened image instead of a raw bright edge. */
+/* Scrims must stay above every image layer (including temporary fades).
+   A higher z-index on the image made Medium/original look more saturated. */
 .media-page-backdrop__scrim-side {
     position: absolute;
     inset: 0;
+    z-index: 1;
     background:
         linear-gradient(
             to right,
@@ -49,6 +46,7 @@
 .media-page-backdrop__scrim-bottom {
     position: absolute;
     inset: 0;
+    z-index: 1;
     background: linear-gradient(
         to top,
         rgba(0, 0, 0, 0.62) 0%,
@@ -62,14 +60,10 @@
 .media-page-backdrop__scroll-fade {
     position: absolute;
     inset: 0;
+    z-index: 2;
     background: var(--media-wash-color, var(--color-bg));
     opacity: calc(var(--media-scroll-fade) * 0.92);
     will-change: opacity;
-}
-
-@keyframes media-backdrop-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 .media-page-backdrop--soft-still .media-page-backdrop__image {
@@ -108,6 +102,7 @@
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 1;
     background: radial-gradient(
         ellipse 90% 75% at 50% 28%,
         transparent 18%,

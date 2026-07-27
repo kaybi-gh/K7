@@ -13,6 +13,20 @@ function getInstance(backdropEl) {
     return instance;
 }
 
+export function pickHeroImageUrl(cappedUrl, highResUrl, pixelBudget) {
+    if (!cappedUrl) {
+        return highResUrl || null;
+    }
+
+    if (!highResUrl || highResUrl === cappedUrl) {
+        return cappedUrl;
+    }
+
+    var budget = typeof pixelBudget === 'number' && pixelBudget > 0 ? pixelBudget : 1920;
+    var need = (window.innerWidth || 0) * (window.devicePixelRatio || 1);
+    return need > budget ? highResUrl : cappedUrl;
+}
+
 function updateSoftStillBlur(backdropEl) {
     var instance = _instances.get(backdropEl);
     if (!instance || !instance.imageWidth || !instance.imageHeight) {
@@ -73,6 +87,54 @@ function loadSoftStillDimensions(backdropEl, imageUrl, fallbackWidth, fallbackHe
         updateSoftStillBlur(backdropEl);
     };
     img.src = imageUrl;
+}
+
+export function attachHeroImagePicker(backdropEl, dotNetRef, pixelBudget) {
+    if (!backdropEl || !dotNetRef) {
+        return false;
+    }
+
+    var instance = getInstance(backdropEl);
+
+    if (instance.heroPickOnResize) {
+        window.removeEventListener('resize', instance.heroPickOnResize);
+    }
+
+    if (instance.heroPickResizeTimer) {
+        clearTimeout(instance.heroPickResizeTimer);
+        instance.heroPickResizeTimer = null;
+    }
+
+    function onResize() {
+        if (instance.heroPickResizeTimer) {
+            clearTimeout(instance.heroPickResizeTimer);
+        }
+
+        instance.heroPickResizeTimer = setTimeout(function () {
+            instance.heroPickResizeTimer = null;
+            dotNetRef.invokeMethodAsync('OnHeroViewportChangedAsync');
+        }, 250);
+    }
+
+    instance.heroPickOnResize = onResize;
+    instance.heroPickDotNetRef = dotNetRef;
+    instance.heroPickPixelBudget = pixelBudget;
+    window.addEventListener('resize', onResize, { passive: true });
+    return true;
+}
+
+export function preloadImage(url) {
+    return new Promise(function (resolve) {
+        if (!url) {
+            resolve(false);
+            return;
+        }
+
+        var img = new Image();
+        img.onload = function () { resolve(true); };
+        img.onerror = function () { resolve(false); };
+        img.src = url;
+    });
 }
 
 export function attachScrollFade(scrollRoot, backdropEl) {
@@ -145,6 +207,15 @@ export function dispose(backdropEl) {
 
     if (instance.onResize) {
         window.removeEventListener('resize', instance.onResize);
+    }
+
+    if (instance.heroPickOnResize) {
+        window.removeEventListener('resize', instance.heroPickOnResize);
+    }
+
+    if (instance.heroPickResizeTimer) {
+        clearTimeout(instance.heroPickResizeTimer);
+        instance.heroPickResizeTimer = null;
     }
 
     if (instance.resizeObserver) {

@@ -28,8 +28,8 @@ public partial class Serie : IAsyncDisposable
     public required string Id { get; set; }
 
     private SerieDto? _serie;
-    private string? _posterUrl;
     private string? _backdropUrl;
+    private string? _backdropHighResUrl;
     private string? _dominantColor;
     private string? _logoUrl;
     private List<LiteSerieSeasonDto> _seasons = [];
@@ -107,17 +107,13 @@ public partial class Serie : IAsyncDisposable
                 ? DateTimeOffset.UtcNow
                 : serie.LastMetadataRefreshedAt;
 
-            var posterUri = apiClient.GetAbsoluteUri(
-                serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-            _posterUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
+            var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+            (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
+                backdropPicture,
+                apiClient,
+                cacheVersion);
 
-            var backdropUri = apiClient.GetAbsoluteUri(
-                serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?
-                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-            _backdropUrl = MediaPictureUrlHelper.WithCacheBuster(backdropUri, cacheVersion);
-
-            _dominantColor = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?.DominantColor;
+            _dominantColor = backdropPicture?.DominantColor;
 
             var logoUri = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)?

@@ -25,6 +25,7 @@ public partial class SerieSeason : IAsyncDisposable
 
     private SerieSeasonDto? _season;
     private string? _backdropUrl;
+    private string? _backdropHighResUrl;
     private string? _dominantColor;
     private string? _logoUrl;
     private List<LiteSerieEpisodeDto> _episodes = [];
@@ -77,8 +78,9 @@ public partial class SerieSeason : IAsyncDisposable
             DeviceStorageService);
 
         var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
-        _backdropUrl = apiClient.GetAbsoluteUri(
-            backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
+            backdropPicture,
+            apiClient);
         _dominantColor = backdropPicture?.DominantColor;
 
         _logoUrl = apiClient.GetAbsoluteUri(
@@ -131,7 +133,7 @@ public partial class SerieSeason : IAsyncDisposable
             _focusedEpisode = (targetEpNumber is not null
                 ? _episodes.FirstOrDefault(e => e.EpisodeNumber == targetEpNumber)
                 : null) ?? _episodes[0];
-            _focusedStillUrl = GetEpisodeStillUrl(_focusedEpisode, MetadataPictureSize.Medium);
+            _focusedStillUrl = GetEpisodeStillUrl(_focusedEpisode, size: null);
             if (_episodeCastCache.TryGetValue(_focusedEpisode.Id, out var cached))
                 ApplyFocusedEpisodeCast(cached);
             else
@@ -203,7 +205,7 @@ public partial class SerieSeason : IAsyncDisposable
         return null;
     }
 
-    private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode, MetadataPictureSize size = MetadataPictureSize.Small)
+    private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode, MetadataPictureSize? size = MetadataPictureSize.Medium)
     {
         if (episode.StillImageId is null) return null;
         return apiClient.GetAbsoluteUri(
@@ -218,7 +220,7 @@ public partial class SerieSeason : IAsyncDisposable
 
         _focusedEpisode = episode;
         _previousStillUrl = _focusedStillUrl;
-        _focusedStillUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Medium);
+        _focusedStillUrl = GetEpisodeStillUrl(episode, size: null);
 
         if (_episodeCastCache.TryGetValue(episode.Id, out var cached))
             ApplyFocusedEpisodeCast(cached);
@@ -325,7 +327,7 @@ public partial class SerieSeason : IAsyncDisposable
                 indexedFile.Id);
 
             var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
-            var coverUrl = GetEpisodeStillUrl(episode);
+            var coverUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Small);
 
             await PlayerService.PlayIndexedFileAsync(
                 indexedFile.Id,
@@ -352,7 +354,7 @@ public partial class SerieSeason : IAsyncDisposable
             Guid.Parse(SerieId));
 
         var epTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
-        var cover = GetEpisodeStillUrl(episode);
+        var cover = GetEpisodeStillUrl(episode, MetadataPictureSize.Small);
 
         var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
         var remoteVideoMetadata = details?.FileMetadata as VideoFileMetadataDto;

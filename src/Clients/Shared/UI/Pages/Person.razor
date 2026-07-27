@@ -27,7 +27,9 @@ else if (_person is not null)
     <div class="person-page"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)">
         <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
+                           HighResImageUrl="@ActiveBackdropHighResUrl"
                            SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
+                           SecondaryHighResImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropHighResUrl : null)"
                            SecondaryImageKey="@ActiveBackdropUrl"
                            ScrollTarget="@_tvScrollRoot"
                            Class="media-page-backdrop--soft-still"

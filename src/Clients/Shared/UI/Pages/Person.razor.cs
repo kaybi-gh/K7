@@ -44,6 +44,9 @@ public partial class Person : IAsyncDisposable
 
     private string? ActiveBackdropUrl => _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].Url : null;
 
+    private string? ActiveBackdropHighResUrl =>
+        _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].HighResUrl : null;
+
     private string? ActiveDominantColor => _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].DominantColor : null;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -86,9 +89,11 @@ public partial class Person : IAsyncDisposable
             {
                 var backdropPicture = role.Media?.Pictures
                     ?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
-                var backdropUri = backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString;
-                if (apiClient.GetAbsoluteUri(backdropUri)?.AbsoluteUri is { } url)
-                    _backdrops.Add(new PersonBackdropSlide(url, backdropPicture?.DominantColor));
+                var (url, highResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
+                    backdropPicture,
+                    apiClient);
+                if (url is not null)
+                    _backdrops.Add(new PersonBackdropSlide(url, highResUrl, backdropPicture?.DominantColor));
             }
 
             AddFilmographyRole(role, seenSeries);
@@ -246,7 +251,7 @@ public partial class Person : IAsyncDisposable
             ?? episode.SeriePictures?.FirstOrDefault();
 
         var posterUrl = seriePoster is not null
-            ? apiClient.GetAbsoluteUri(seriePoster.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+            ? apiClient.GetAbsoluteUri(seriePoster.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
             : card.PictureUrl;
 
         return card with
@@ -289,9 +294,10 @@ public partial class Person : IAsyncDisposable
             ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
 
         if (_backdrops.Count < 5
-            && apiClient.GetAbsoluteUri(coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is { } coverUrl)
+            && apiClient.GetAbsoluteUri(
+                coverUri?.GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri is { } coverUrl)
         {
-            _backdrops.Add(new PersonBackdropSlide(coverUrl, coverUri?.DominantColor));
+            _backdrops.Add(new PersonBackdropSlide(coverUrl, null, coverUri?.DominantColor));
         }
 
         _discography.Add(new MediaCardViewModel
@@ -303,7 +309,7 @@ public partial class Person : IAsyncDisposable
             Title = album.Title,
             AdditionalInformations = album.ReleaseDate?.Year.ToString(),
             PictureUrl = apiClient.GetAbsoluteUri(
-                coverUri?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
         });
     }
 
@@ -382,5 +388,5 @@ public partial class Person : IAsyncDisposable
             await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
     }
 
-    private readonly record struct PersonBackdropSlide(string Url, string? DominantColor);
+    private readonly record struct PersonBackdropSlide(string Url, string? HighResUrl, string? DominantColor);
 }

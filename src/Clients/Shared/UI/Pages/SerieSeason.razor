@@ -34,7 +34,9 @@ else if (_season is not null && _isTv)
     <div class="season-tv"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
         <MediaPageBackdrop ImageUrl="@(_previousStillUrl ?? _backdropUrl)"
+                           HighResImageUrl="@(_previousStillUrl is null ? _backdropHighResUrl : null)"
                            SecondaryImageUrl="@(_focusedStillUrl ?? _backdropUrl)"
+                           SecondaryHighResImageUrl="@(_focusedStillUrl is null ? _backdropHighResUrl : null)"
                            SecondaryImageKey="@_focusedStillUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_seasonTvRoot" />
