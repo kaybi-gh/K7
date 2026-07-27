@@ -10,20 +10,25 @@
 {
     @if (_isDownloaded)
     {
-        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn k7-download-btn--done focusable" aria-label="@L["Downloaded"]" @onclick="RemoveDownloadAsync" @onclick:stopPropagation="true">
-            <i class="ph-fill ph-check-circle"></i>
-        </button>
+        <K7IconButton Class="k7-download-btn k7-download-btn--done"
+                       AriaLabel="@L["Downloaded"]"
+                       OnClick="RemoveDownloadAsync">
+            <K7Icon Icon="@Phosphor.Fill.CheckCircle" />
+        </K7IconButton>
     }
     else if (_isDownloading)
     {
-        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn k7-download-btn--active focusable" aria-label="@L["Downloading"]" disabled @onclick:stopPropagation="true">
-            <i class="ph ph-circle-notch k7-spin"></i>
-        </button>
+        <K7IconButton Class="k7-download-btn k7-download-btn--active"
+                       AriaLabel="@L["Downloading"]"
+                       Disabled="true">
+            <K7Icon Icon="@Phosphor.CircleNotch" Class="k7-spin" />
+        </K7IconButton>
     }
     else
     {
-        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn focusable" aria-label="@L["DownloadOffline"]" @onclick="StartDownloadAsync" @onclick:stopPropagation="true">
-            <i class="ph ph-download-simple"></i>
-        </button>
+        <K7IconButton Icon="@Phosphor.DownloadSimple"
+                       Class="k7-download-btn"
+                       AriaLabel="@L["DownloadOffline"]"
+                       OnClick="StartDownloadAsync" />
     }
 }
