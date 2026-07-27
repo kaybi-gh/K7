@@ -247,8 +247,16 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
                 _dotNetRef ??= DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("K7.SeekBar.init", _seekBarRef, _dotNetRef);
             }
-            catch (JSException) { }
-            catch (InvalidOperationException) { }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
+                // Keep _dotNetRef if we already had one from a prior successful init;
+                // only clear when first-render init never succeeded.
+                if (firstRender)
+                {
+                    _dotNetRef?.Dispose();
+                    _dotNetRef = null;
+                }
+            }
         }
     }
 
@@ -317,19 +325,20 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         SyncPlay.GroupUpdated -= OnSyncPlayUpdated;
         SyncPlay.CommandReceived -= OnSyncPlayCommandReceived;
 
-        try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
-        catch (JSDisconnectedException) { }
-        catch (InvalidOperationException) { }
+        if (_dotNetRef is not null)
+        {
+            try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        }
 
         if (_visualizerEnabled)
         {
             try { await JS.InvokeVoidAsync("K7.Visualizer.stop"); }
-            catch (JSException) { }
-            catch (JSDisconnectedException) { }
-            catch (InvalidOperationException) { }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
         }
 
         _dotNetRef?.Dispose();
+        _dotNetRef = null;
     }
 
     private void Close() => Audio.ToggleFullScreen();

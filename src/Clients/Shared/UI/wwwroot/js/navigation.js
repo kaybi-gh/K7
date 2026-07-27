@@ -2808,8 +2808,6 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
-    };
-}
 
 // Hero snap / focus-scroll is for keyboard and TV remotes only.
 // Mouse and touch must not move the page when focusing or dragging carousels.

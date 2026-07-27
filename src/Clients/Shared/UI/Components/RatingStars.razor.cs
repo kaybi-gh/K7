@@ -85,8 +85,11 @@ public partial class RatingStars : IAsyncDisposable
             _dotNetRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("K7.RatingStars.init", _element, _dotNetRef);
         }
-        catch (JSException) { }
-        catch (InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+            _dotNetRef?.Dispose();
+            _dotNetRef = null;
+        }
     }
 
     protected override void OnParametersSet()
@@ -199,10 +202,11 @@ public partial class RatingStars : IAsyncDisposable
             {
                 await JS.InvokeVoidAsync("K7.RatingStars.dispose", _element);
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
             }
             _dotNetRef.Dispose();
+            _dotNetRef = null;
         }
     }
 }

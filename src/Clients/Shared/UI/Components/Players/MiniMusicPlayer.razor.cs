@@ -94,8 +94,11 @@ public partial class MiniMusicPlayer : IAsyncDisposable
                 _dotNetRef = DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("K7.SeekBar.init", _progressBarRef, _dotNetRef);
             }
-            catch (JSException) { }
-            catch (InvalidOperationException) { }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
+                _dotNetRef?.Dispose();
+                _dotNetRef = null;
+            }
         }
     }
 
@@ -116,10 +119,18 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsVisibleChanged -= OnVisibilityChanged;
 
-        try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _progressBarRef); }
-        catch (JSDisconnectedException) { }
-        catch (InvalidOperationException) { }
-        _dotNetRef?.Dispose();
+        if (_dotNetRef is not null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.SeekBar.dispose", _progressBarRef);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+            _dotNetRef.Dispose();
+            _dotNetRef = null;
+        }
     }
 
     private void TogglePlayPause()
