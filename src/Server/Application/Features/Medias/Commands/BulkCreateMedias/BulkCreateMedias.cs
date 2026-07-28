@@ -46,7 +46,7 @@ public class BulkCreateMediasCommandHandler(
         {
             foreach (var (provider, value) in item.ExternalIds)
             {
-                if (externalIdLookup.TryGetValue((provider, value), out var mediaId))
+                if (externalIdLookup.TryGetValue((provider.ToLowerInvariant(), value), out var mediaId))
                 {
                     resultMap.TryAdd(item.Key, (mediaId, false));
                     break;
@@ -106,6 +106,23 @@ public class BulkCreateMediasCommandHandler(
             }
         }
 
+        var unmatchedSeries = request.Items
+            .Where(i => i.MediaType == "serie" && !resultMap.ContainsKey(i.Key))
+            .ToList();
+
+        if (unmatchedSeries.Count > 0)
+        {
+            var serieLookup = await identityLookup.LookupSeriesByTitleYearAsync(unmatchedSeries, cancellationToken);
+            foreach (var item in unmatchedSeries)
+            {
+                var titleKey = MediaIdentityKeys.NormalizeSerieTitle(item.Title, item.Year);
+                if (serieLookup.TryGetValue(titleKey, out var mediaId))
+                {
+                    resultMap.TryAdd(item.Key, (mediaId, false));
+                }
+            }
+        }
+
         if (!request.CreateMissing)
         {
             return new BulkCreateMediasResponse
@@ -134,6 +151,7 @@ public class BulkCreateMediasCommandHandler(
         await CreateMoviesAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
         await CreateMusicAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
         await CreateEpisodesAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
+        await CreateSeriesAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
 
         if (request.FetchMetadata && newEnrichableMediaIds.Count > 0)
         {
@@ -176,6 +194,44 @@ public class BulkCreateMediasCommandHandler(
             AddExternalIds(movie, representative.ExternalIds);
             context.Medias.Add(movie);
             pending.Add((movie, group));
+
+            if (pending.Count >= SaveBatchSize)
+            {
+                await context.SaveChangesAsync(cancellationToken);
+                newEnrichableMediaIds.AddRange(pending.Select(p => p.Entity.Id));
+                FlushPending(pending, resultMap);
+            }
+        }
+
+        if (pending.Count > 0)
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            newEnrichableMediaIds.AddRange(pending.Select(p => p.Entity.Id));
+            FlushPending(pending, resultMap);
+        }
+    }
+
+    private async Task CreateSeriesAsync(
+        List<BatchGroup> batchGroups,
+        Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        List<Guid> newEnrichableMediaIds,
+        CancellationToken cancellationToken)
+    {
+        var serieGroups = batchGroups.Where(g => g.MediaType == "serie").ToList();
+        var pending = new List<(Serie Entity, BatchGroup Group)>();
+
+        foreach (var group in serieGroups)
+        {
+            var representative = group.Items[0];
+            var serie = new Serie
+            {
+                Title = representative.Title,
+                SortTitle = ResolveSortTitle(representative),
+                ReleaseDate = representative.Year.HasValue ? new DateOnly(representative.Year.Value, 1, 1) : null
+            };
+            AddExternalIds(serie, representative.ExternalIds);
+            context.Medias.Add(serie);
+            pending.Add((serie, group));
 
             if (pending.Count >= SaveBatchSize)
             {
@@ -531,11 +587,12 @@ public class BulkCreateMediasCommandHandler(
                     Language = "fr",
                     FallbackLanguage = "en"
                 },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = media.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 3,
-                ConcurrencyGroup = externalId.ProviderName
+                Lane = BackgroundTaskLane.Metadata,
+                WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+                TriggeredBy = BackgroundTaskTriggeredBy.User,
+                MaxAttempts = 3
             }, cancellationToken);
         }
     }
@@ -595,6 +652,14 @@ public class BulkCreateMediasCommandHandler(
                 else if (item.MediaType == "music" &&
                          string.Equals(MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title),
                                        MediaIdentityKeys.NormalizeMusicTitle(other.ArtistName, other.Title),
+                                       StringComparison.OrdinalIgnoreCase))
+                {
+                    group.Items.Add(other);
+                    assigned.Add(other.Key);
+                }
+                else if (item.MediaType is "movie" or "serie" &&
+                         string.Equals(MediaIdentityKeys.NormalizeMovieTitle(item.Title, item.Year),
+                                       MediaIdentityKeys.NormalizeMovieTitle(other.Title, other.Year),
                                        StringComparison.OrdinalIgnoreCase))
                 {
                     group.Items.Add(other);

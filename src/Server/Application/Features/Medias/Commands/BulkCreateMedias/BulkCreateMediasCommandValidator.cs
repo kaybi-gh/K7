@@ -9,8 +9,8 @@ public class BulkCreateMediasCommandValidator : AbstractValidator<BulkCreateMedi
         {
             item.RuleFor(x => x.Key).NotEmpty();
             item.RuleFor(x => x.MediaType).NotEmpty()
-                .Must(t => t is "movie" or "music" or "episode")
-                .WithMessage("MediaType must be 'movie', 'music', or 'episode'");
+                .Must(t => t is "movie" or "music" or "episode" or "serie")
+                .WithMessage("MediaType must be 'movie', 'music', 'episode', or 'serie'");
             item.RuleFor(x => x.Title).NotEmpty();
         });
     }

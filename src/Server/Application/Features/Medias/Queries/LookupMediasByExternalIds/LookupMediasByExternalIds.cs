@@ -26,14 +26,17 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
         {
             // Build an OR predicate: (provider == "x" && value == "1") || (provider == "y" && value == "2") || ...
             // EF Core can't translate .Any() with in-memory complex objects, so we build the expression manually.
+            // Provider comparison is case-insensitive via ToLower.
             var parameter = Expression.Parameter(typeof(ExternalId), "e");
             Expression? predicate = null;
+            var providerProperty = Expression.Property(parameter, nameof(ExternalId.ProviderName));
+            var toLower = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
 
             foreach (var item in batch)
             {
                 var providerEqual = Expression.Equal(
-                    Expression.Property(parameter, nameof(ExternalId.ProviderName)),
-                    Expression.Constant(item.Provider));
+                    Expression.Call(providerProperty, toLower),
+                    Expression.Constant(item.Provider.ToLowerInvariant()));
                 var valueEqual = Expression.Equal(
                     Expression.Property(parameter, nameof(ExternalId.Value)),
                     Expression.Constant(item.Value));
@@ -44,7 +47,7 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
 
             var mediaIdNotNull = Expression.NotEqual(
                 Expression.Property(parameter, nameof(ExternalId.MediaId)),
-                Expression.Constant(null, typeof(int?)));
+                Expression.Constant(null, typeof(Guid?)));
 
             var fullPredicate = Expression.AndAlso(mediaIdNotNull, predicate!);
             var lambda = Expression.Lambda<Func<ExternalId, bool>>(fullPredicate, parameter);
@@ -55,7 +58,7 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
                 .ToListAsync(cancellationToken);
 
             var matchLookup = matches
-                .GroupBy(m => (m.ProviderName, m.Value))
+                .GroupBy(m => (Provider: m.ProviderName.ToLowerInvariant(), m.Value))
                 .ToDictionary(g => g.Key, g => g.First().MediaId);
 
             foreach (var item in batch)
@@ -64,7 +67,7 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
                 {
                     Provider = item.Provider,
                     Value = item.Value,
-                    MediaId = matchLookup.GetValueOrDefault((item.Provider, item.Value))
+                    MediaId = matchLookup.GetValueOrDefault((item.Provider.ToLowerInvariant(), item.Value))
                 });
             }
         }

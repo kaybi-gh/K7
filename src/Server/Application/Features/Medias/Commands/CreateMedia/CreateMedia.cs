@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Application.Helpers;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -36,6 +37,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
     private readonly MediaIdentityLookupService _identityLookup;
+    private readonly IMediaIdentityLock _identityLock;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
@@ -44,7 +46,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         IAudioTagReader audioTagReader,
         IOptions<PathsConfiguration> pathsConfiguration,
         IMediaMetadataTagSyncService metadataTagSyncService,
-        MediaIdentityLookupService identityLookup)
+        MediaIdentityLookupService identityLookup,
+        IMediaIdentityLock identityLock)
     {
         _context = context;
         _sender = sender;
@@ -53,6 +56,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _pathsConfiguration = pathsConfiguration.Value;
         _metadataTagSyncService = metadataTagSyncService;
         _identityLookup = identityLookup;
+        _identityLock = identityLock;
     }
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
@@ -64,6 +68,13 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var indexedFiles = await _context.IndexedFiles
             .Where(f => request.IndexedFileIds.Contains(f.Id))
             .ToListAsync(cancellationToken);
+
+        // Serialize on the media identity: finding an existing media then creating it is a
+        // check-then-insert, and nothing in the database prevents a duplicate. Two commands for the same
+        // album, serie or movie can legitimately be queued at once (two scan batches, a watcher flush
+        // racing a scheduled scan), and both would otherwise miss the lookup and insert.
+        var identityKey = MediaIdentityKey.Build(request.MediaType, request.LibraryId, indexedFiles);
+        await using var identityGuard = await _identityLock.AcquireAsync(identityKey, cancellationToken);
 
         return request.MediaType switch
         {
@@ -155,11 +166,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     Language = library.MetadataLanguage,
                     FallbackLanguage = library.MetadataFallbackLanguage
                 },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = movie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 3,
-                ConcurrencyGroup = library.MetadataProviderName
+                Lane = BackgroundTaskLane.Metadata,
+                WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 3
             }, cancellationToken);
         }
 
@@ -247,11 +259,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                         Language = library.MetadataLanguage,
                         FallbackLanguage = library.MetadataFallbackLanguage
                     },
-                    Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = album.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxAttempts = 3,
-                    ConcurrencyGroup = library.MetadataProviderName
+                    Lane = BackgroundTaskLane.Metadata,
+                    WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+                    TriggeredBy = BackgroundTaskTriggeredBy.System,
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
         }
@@ -373,11 +386,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             await _sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new AnalyzeMusicTrackAudioCommand { TrackId = trackId },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = trackId,
                 TargetEntityTypeName = nameof(MusicTrack),
-                MaxAttempts = 2,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.MediaAnalysis,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 2
             }, cancellationToken);
         }
     }
@@ -489,11 +503,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     Language = library.MetadataLanguage,
                     FallbackLanguage = library.MetadataFallbackLanguage
                 },
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = serie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 3,
-                ConcurrencyGroup = library.MetadataProviderName
+                Lane = BackgroundTaskLane.Metadata,
+                WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 3
             }, cancellationToken);
         }
 
@@ -604,11 +619,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         await _sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = picture.Id },
-            Priority = BackgroundTaskPriority.Lowest,
             TargetEntityId = picture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            MaxAttempts = 3,
-            ConcurrencyGroup = "image-processing"
+            Lane = BackgroundTaskLane.ImageProcessing,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 3
         }, cancellationToken);
     }
 

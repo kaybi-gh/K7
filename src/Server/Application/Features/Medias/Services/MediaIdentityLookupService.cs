@@ -27,8 +27,10 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             foreach (var (provider, value) in batch)
             {
                 var providerEqual = Expression.Equal(
-                    Expression.Property(parameter, nameof(ExternalId.ProviderName)),
-                    Expression.Constant(provider));
+                    Expression.Call(
+                        Expression.Property(parameter, nameof(ExternalId.ProviderName)),
+                        typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!),
+                    Expression.Constant(provider.ToLowerInvariant()));
                 var valueEqual = Expression.Equal(
                     Expression.Property(parameter, nameof(ExternalId.Value)),
                     Expression.Constant(value));
@@ -52,9 +54,54 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             {
                 if (match.MediaId.HasValue)
                 {
-                    result.TryAdd((match.ProviderName, match.Value), match.MediaId.Value);
+                    result.TryAdd((match.ProviderName.ToLowerInvariant(), match.Value), match.MediaId.Value);
                 }
             }
+        }
+
+        return result;
+    }
+
+    public async Task<Dictionary<string, Guid>> LookupSeriesByTitleYearAsync(
+        List<BulkCreateMediasRequest.BulkCreateMediaItem> items,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
+        var titles = items
+            .Select(i => i.Title)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (titles.Count == 0) return result;
+
+        var titlesLower = titles.Select(t => t.ToLowerInvariant()).ToList();
+
+        var series = await context.Medias
+            .OfType<Serie>()
+            .Where(s => s.Title != null && titlesLower.Contains(s.Title.ToLower()))
+            .Select(s => new { s.Id, s.Title, s.ReleaseDate })
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+        {
+            var key = MediaIdentityKeys.NormalizeSerieTitle(item.Title, item.Year);
+            if (result.ContainsKey(key)) continue;
+
+            var match = series.FirstOrDefault(s =>
+            {
+                if (!string.Equals(s.Title, item.Title, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                if (item.Year is null || s.ReleaseDate is null)
+                    return true;
+
+                return s.ReleaseDate.Value.Year == item.Year.Value;
+            });
+
+            if (match is not null)
+                result.TryAdd(key, match.Id);
         }
 
         return result;

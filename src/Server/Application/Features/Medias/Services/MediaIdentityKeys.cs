@@ -7,6 +7,9 @@ public static partial class MediaIdentityKeys
     public static string NormalizeMovieTitle(string title, int? year) =>
         year is null ? title : $"{title}|{year.Value}";
 
+    public static string NormalizeSerieTitle(string title, int? year) =>
+        NormalizeMovieTitle(title, year);
+
     public static string NormalizeEpisodeKey(string? seriesTitle, int? seasonNumber, int? episodeNumber, string title) =>
         $"{seriesTitle ?? "Unknown Series"}|S{seasonNumber ?? 0}|E{episodeNumber ?? 0}|{title}";
 
