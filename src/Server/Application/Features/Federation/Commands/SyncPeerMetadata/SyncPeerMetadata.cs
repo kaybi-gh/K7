@@ -1,10 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
@@ -15,7 +13,6 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Federation.Commands.SyncPeerMetadata;
 
-[Authorize(Roles = Roles.Administrator)]
 public record SyncPeerMetadataCommand(Guid PeerId) : IRequest;
 
 public class SyncPeerMetadataCommandHandler(
@@ -85,7 +82,7 @@ public class SyncPeerMetadataCommandHandler(
                     PeerServerId = peer.Id,
                     LibraryId = localLibrary.Id,
                     Direction = ShareDirection.Inbound,
-                    IsEnabled = true
+                    IsEnabled = peer.AutoAddNewLibraries
                 };
                 context.PeerShareAgreements.Add(agreement);
             }
@@ -238,11 +235,13 @@ public class SyncPeerMetadataCommandHandler(
                         Language = localLibrary.MetadataLanguage,
                         FallbackLanguage = localLibrary.MetadataFallbackLanguage
                     },
-                    Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = localMedia.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxAttempts = 3,
-                    ConcurrencyGroup = $"federation:{peer.Id}"
+                    Lane = BackgroundTaskLane.Federation,
+                    WorkClass = BackgroundTaskWorkClass.Polish,
+                    TriggeredBy = BackgroundTaskTriggeredBy.Federation,
+                    FederationPeerId = peer.Id,
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
             else if (!federationIdsOnMedia.Contains(federationValue))

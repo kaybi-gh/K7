@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Application.Helpers;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -16,6 +17,7 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using K7.Server.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
@@ -218,17 +220,42 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private async Task HandleMusicAlbumAsync(RefreshMediaMetadatasCommand request, MusicAlbum album, CancellationToken cancellationToken)
     {
         var provider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(request.MetadataProviderName);
-        var metadata = await provider.FetchMetadata(
-            request.MetadataProviderExternalId, request.Language, cancellationToken);
+
+        await _context.Entry(album).Collection(a => a.Tracks).Query()
+            .Include(t => t.ExternalIds)
+            .Include(t => t.ArtistCredits)
+            .Include(t => t.IndexedFiles)
+            .LoadAsync(cancellationToken);
+
+        MusicAlbumReleaseHints? releaseHints = null;
+        if (provider is IMusicAlbumReleaseAwareMetadataProvider)
+        {
+            var candidateTracks = album.Tracks
+                .Where(t => t.IndexedFiles.Count > 0)
+                .ToList();
+            if (candidateTracks.Count == 0)
+                candidateTracks = album.Tracks.ToList();
+
+            releaseHints = new MusicAlbumReleaseHints
+            {
+                ExpectedTrackCount = candidateTracks.Count > 0 ? candidateTracks.Count : null,
+                ExpectedTrackTitles = candidateTracks
+                    .Where(t => !string.IsNullOrWhiteSpace(t.Title))
+                    .Select(t => t.Title!)
+                    .ToList(),
+                PreferredReleaseId = album.ExternalIds
+                    .FirstOrDefault(e => e.ProviderName == "musicbrainz-release")?.Value
+            };
+        }
+
+        var metadata = provider is IMusicAlbumReleaseAwareMetadataProvider releaseAware
+            ? await releaseAware.FetchMetadata(request.MetadataProviderExternalId, request.Language, releaseHints, cancellationToken)
+            : await provider.FetchMetadata(request.MetadataProviderExternalId, request.Language, cancellationToken);
 
         if (metadata != null)
         {
-            await _context.Entry(album).Collection(a => a.Tracks).Query()
-                .Include(t => t.ExternalIds)
-                .Include(t => t.ArtistCredits)
-                .LoadAsync(cancellationToken);
-
             album.ApplyMetadata(metadata);
+            UpsertAlbumReleaseExternalId(album, metadata);
             await _metadataTagSyncService.ApplyTagsAsync(
                 album,
                 MetadataTagBuilder.FromMusicAlbumMetadata(metadata, album),
@@ -292,6 +319,27 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             await PersistTrackExternalIdsAsync(album, metadata, cancellationToken);
             await SyncTrackArtistCreditsAsync(album, metadata, cancellationToken);
         }
+    }
+
+    private static void UpsertAlbumReleaseExternalId(MusicAlbum album, ExternalMusicAlbumMetadata metadata)
+    {
+        if (album.IsFieldLocked(nameof(MusicAlbum.ExternalIds)))
+            return;
+
+        var releaseId = metadata.ExternalIds?
+            .FirstOrDefault(e => e.ProviderName == "musicbrainz-release")?.Value;
+        if (string.IsNullOrWhiteSpace(releaseId))
+            return;
+
+        var existing = album.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz-release");
+        if (existing is not null)
+        {
+            existing.Value = releaseId;
+            foreach (var duplicate in album.ExternalIds.Where(e => e.ProviderName == "musicbrainz-release" && e != existing).ToList())
+                album.ExternalIds.Remove(duplicate);
+        }
+        else
+            album.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz-release", Value = releaseId, MediaId = album.Id });
     }
 
     private async Task HandleMusicArtistAsync(RefreshMediaMetadatasCommand request, MusicArtist artist, CancellationToken cancellationToken)
@@ -595,8 +643,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             if (track.IsFieldLocked(nameof(MusicTrack.ExternalIds))) continue;
 
             var metadataTrack = metadata.Tracks.FirstOrDefault(mt =>
-                string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase)
-                || mt.TrackNumber == track.TrackNumber);
+                    mt.DiscNumber == track.DiscNumber && mt.TrackNumber == track.TrackNumber)
+                ?? metadata.Tracks.FirstOrDefault(mt =>
+                    mt.TrackNumber == track.TrackNumber
+                    && string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase))
+                ?? metadata.Tracks.FirstOrDefault(mt =>
+                    string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase));
 
             if (metadataTrack is null) continue;
 
@@ -882,11 +934,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                         ProviderId = member.MusicBrainzArtistId,
                         Language = language
                     },
-                    Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = person.Id,
                     TargetEntityTypeName = nameof(Person),
-                    MaxAttempts = 3,
-                    ConcurrencyGroup = "musicbrainz"
+                    Lane = BackgroundTaskLane.Metadata,
+                    WorkClass = BackgroundTaskWorkClass.Polish,
+                    TriggeredBy = BackgroundTaskTriggeredBy.System,
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
         }
@@ -957,11 +1010,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     ProviderId = tmdbId,
                     Language = language
                 },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = person.Id,
                 TargetEntityTypeName = nameof(Person),
-                MaxAttempts = 3,
-                ConcurrencyGroup = "tmdb"
+                Lane = BackgroundTaskLane.Metadata,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 3
             }, cancellationToken);
         }
     }
@@ -1043,11 +1097,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         await _sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new GenerateEpisodeStillFromSourceCommand { MediaId = episode.Id },
-            Priority = BackgroundTaskPriority.Low,
             TargetEntityId = episode.Id,
             TargetEntityTypeName = nameof(SerieEpisode),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.ImageExtract,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 2
         }, cancellationToken);
     }
 }

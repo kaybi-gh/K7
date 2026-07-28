@@ -58,11 +58,12 @@ public static class ChapterExtractionHelper
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new ExtractChaptersCommand { Id = indexedFileId },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = indexedFileId,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 3,
-            ConcurrencyGroup = "ffprobe"
+            Lane = BackgroundTaskLane.Probe,
+            WorkClass = BackgroundTaskWorkClass.Prepare,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 3
         }, cancellationToken);
     }
 }

@@ -26,29 +26,32 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
             DiagnosticFixAction.AnalyzeMusicTrackAudio => entityIds.Select(trackId => new CreateBackgroundTasksBatchItem
             {
                 Request = new AnalyzeMusicTrackAudioCommand { TrackId = trackId },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = trackId,
                 TargetEntityTypeName = nameof(MusicTrack),
-                MaxAttempts = 2,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.MediaAnalysis,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                MaxAttempts = 2
             }).ToList(),
             DiagnosticFixAction.ComputeHlsSegments => entityIds.Select(fileId => new CreateBackgroundTasksBatchItem
             {
                 Request = new ComputeHlsSegmentsCommand { Id = fileId, SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs) },
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = fileId,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 1,
-                ConcurrencyGroup = "hls-segments"
+                Lane = BackgroundTaskLane.FfmpegPrepare,
+                WorkClass = BackgroundTaskWorkClass.Prepare,
+                TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                MaxAttempts = 1
             }).ToList(),
             DiagnosticFixAction.ExtractChapters => entityIds.Select(fileId => new CreateBackgroundTasksBatchItem
             {
                 Request = new ExtractChaptersCommand { Id = fileId },
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = fileId,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 3,
-                ConcurrencyGroup = "ffprobe"
+                Lane = BackgroundTaskLane.Probe,
+                WorkClass = BackgroundTaskWorkClass.Prepare,
+                TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                MaxAttempts = 3
             }).ToList(),
             DiagnosticFixAction.ExtractSerieThemeSong => await BuildExtractSerieThemeSongItemsAsync(entityIds, cancellationToken),
             DiagnosticFixAction.DetectMediaSegments => await BuildDetectMediaSegmentsItemsFromEpisodesAsync(entityIds, cancellationToken),
@@ -81,11 +84,12 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
                 items.Add(new CreateBackgroundTasksBatchItem
                 {
                     Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
-                    Priority = BackgroundTaskPriority.Lowest,
                     TargetEntityId = serieId,
                     TargetEntityTypeName = nameof(Serie),
-                    MaxAttempts = 2,
-                    ConcurrencyGroup = "ffmpeg"
+                    Lane = BackgroundTaskLane.MediaAnalysis,
+                    WorkClass = BackgroundTaskWorkClass.Polish,
+                    TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                    MaxAttempts = 2
                 });
                 continue;
             }
@@ -123,11 +127,12 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
         new()
         {
             Request = new DetectMediaSegmentsCommand { SeasonId = seasonId },
-            Priority = BackgroundTaskPriority.Low,
             TargetEntityId = seasonId,
             TargetEntityTypeName = nameof(SerieSeason),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.MediaAnalysis,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            MaxAttempts = 2
         };
 
     private async Task<List<CreateBackgroundTasksBatchItem>> BuildExtractFileMetadataItemsAsync(
@@ -154,11 +159,12 @@ public class DiagnosticFixBatchBuilder(IApplicationDbContext context, OrphanInde
                 Id = f.Id,
                 FileType = f.LibraryMediaType == LibraryMediaType.Music ? FileType.Audio : FileType.Video
             },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = f.Id,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 1,
-            ConcurrencyGroup = "file-metadata"
+            Lane = BackgroundTaskLane.Probe,
+            WorkClass = BackgroundTaskWorkClass.CriticalProbe,
+            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            MaxAttempts = 1
         }).ToList();
     }
 }

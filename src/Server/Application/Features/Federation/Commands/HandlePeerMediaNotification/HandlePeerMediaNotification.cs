@@ -61,11 +61,13 @@ public class HandlePeerMediaNotificationCommandHandler(
                     Language = library?.MetadataLanguage ?? "en",
                     FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
                 },
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = existingMedia.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 3,
-                ConcurrencyGroup = $"federation:{peer.Id}"
+                Lane = BackgroundTaskLane.Federation,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.Federation,
+                FederationPeerId = peer.Id,
+                MaxAttempts = 3
             }, cancellationToken);
         }
         else if (body.Type == PeerMediaNotificationType.Added)

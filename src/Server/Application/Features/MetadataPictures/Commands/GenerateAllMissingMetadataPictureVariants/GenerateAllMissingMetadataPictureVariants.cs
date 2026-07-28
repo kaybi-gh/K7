@@ -45,11 +45,12 @@ public class GenerateAllMissingMetadataPictureVariantsCommandHandler
                 {
                     MetadataPictureId = pictureId
                 },
-                Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = pictureId,
                 TargetEntityTypeName = nameof(MetadataPicture),
-                MaxAttempts = 3,
-                ConcurrencyGroup = "image-processing"
+                Lane = BackgroundTaskLane.ImageProcessing,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 3
             }, cancellationToken);
         }
 

@@ -93,10 +93,11 @@ public class PrepareDownloadCommandHandler : IRequestHandler<PrepareDownloadComm
             {
                 Request = new TranscodeDownloadCommand { DownloadId = download.Id },
                 TargetEntityId = download.Id,
-                Priority = BackgroundTaskPriority.High,
+                Lane = BackgroundTaskLane.DownloadTranscode,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.User,
                 MaxAttempts = 2,
-                TimeoutSeconds = (int)TimeSpan.FromHours(2).TotalSeconds,
-                ConcurrencyGroup = "download-transcode"
+                TimeoutSeconds = (int)TimeSpan.FromHours(2).TotalSeconds
             }, cancellationToken);
         }
         else

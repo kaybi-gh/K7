@@ -89,10 +89,11 @@ public class UploadSharedProfileAvatarCommandHandler(
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = picture.Id },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = picture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            ConcurrencyGroup = "image-processing"
+            Lane = BackgroundTaskLane.ImageProcessing,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.User
         }, cancellationToken);
     }
 }

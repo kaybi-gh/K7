@@ -69,11 +69,12 @@ public class FixDiagnosticItemsCommandHandler(
                         await sender.Send(new CreateBackgroundTaskCommand
                         {
                             Request = new ComputeHlsSegmentsCommand { Id = entityId, SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs) },
-                            Priority = BackgroundTaskPriority.Normal,
                             TargetEntityId = entityId,
                             TargetEntityTypeName = nameof(IndexedFile),
-                            MaxAttempts = 1,
-                            ConcurrencyGroup = "hls-segments"
+                            Lane = BackgroundTaskLane.FfmpegPrepare,
+                            WorkClass = BackgroundTaskWorkClass.Prepare,
+                            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                            MaxAttempts = 1
                         }, cancellationToken);
                         break;
 
@@ -81,11 +82,12 @@ public class FixDiagnosticItemsCommandHandler(
                         await sender.Send(new CreateBackgroundTaskCommand
                         {
                             Request = new ExtractChaptersCommand { Id = entityId },
-                            Priority = BackgroundTaskPriority.Normal,
                             TargetEntityId = entityId,
                             TargetEntityTypeName = nameof(IndexedFile),
-                            MaxAttempts = 3,
-                            ConcurrencyGroup = "ffprobe"
+                            Lane = BackgroundTaskLane.Probe,
+                            WorkClass = BackgroundTaskWorkClass.Prepare,
+                            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                            MaxAttempts = 3
                         }, cancellationToken);
                         break;
 
@@ -101,11 +103,12 @@ public class FixDiagnosticItemsCommandHandler(
                         await sender.Send(new CreateBackgroundTaskCommand
                         {
                             Request = new AnalyzeMusicTrackAudioCommand { TrackId = entityId },
-                            Priority = BackgroundTaskPriority.Low,
                             TargetEntityId = entityId,
                             TargetEntityTypeName = nameof(MusicTrack),
-                            MaxAttempts = 2,
-                            ConcurrencyGroup = "ffmpeg"
+                            Lane = BackgroundTaskLane.MediaAnalysis,
+                            WorkClass = BackgroundTaskWorkClass.Polish,
+                            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                            MaxAttempts = 2
                         }, cancellationToken);
                         break;
                 }
@@ -129,11 +132,12 @@ public class FixDiagnosticItemsCommandHandler(
             await sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
-                Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = serieId,
                 TargetEntityTypeName = nameof(Serie),
-                MaxAttempts = 2,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.MediaAnalysis,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                MaxAttempts = 2
             }, cancellationToken);
             return;
         }
@@ -145,11 +149,12 @@ public class FixDiagnosticItemsCommandHandler(
             await sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new DetectMediaSegmentsCommand { SeasonId = seasonId },
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = seasonId,
                 TargetEntityTypeName = nameof(SerieSeason),
-                MaxAttempts = 2,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.MediaAnalysis,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+                MaxAttempts = 2
             }, cancellationToken);
         }
     }
@@ -169,11 +174,12 @@ public class FixDiagnosticItemsCommandHandler(
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new DetectMediaSegmentsCommand { SeasonId = seasonId.Value },
-            Priority = BackgroundTaskPriority.Low,
             TargetEntityId = seasonId.Value,
             TargetEntityTypeName = nameof(SerieSeason),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.MediaAnalysis,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            MaxAttempts = 2
         }, cancellationToken);
     }
 
@@ -192,11 +198,12 @@ public class FixDiagnosticItemsCommandHandler(
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new CreateFileMetadatasCommand { Id = indexedFileId, FileType = fileType },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = indexedFileId,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 1,
-            ConcurrencyGroup = "file-metadata"
+            Lane = BackgroundTaskLane.Probe,
+            WorkClass = BackgroundTaskWorkClass.CriticalProbe,
+            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            MaxAttempts = 1
         }, cancellationToken);
     }
 }

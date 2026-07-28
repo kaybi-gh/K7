@@ -91,9 +91,11 @@ public class ImportMediaPictureFromUrlCommandHandler : IRequestHandler<ImportMed
         await _sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = picture.Id },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = picture.Id,
-            TargetEntityTypeName = nameof(MetadataPicture)
+            TargetEntityTypeName = nameof(MetadataPicture),
+            Lane = BackgroundTaskLane.ImageProcessing,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.User
         }, cancellationToken);
 
         return picture.Id;

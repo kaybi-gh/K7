@@ -70,11 +70,12 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
                 Language = library.MetadataLanguage,
                 FallbackLanguage = library.MetadataFallbackLanguage
             },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 1,
-            ConcurrencyGroup = providerName
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 1
         }, cancellationToken);
     }
 }

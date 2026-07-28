@@ -79,9 +79,11 @@ public sealed class CoverPictureUploadService(
         return sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new GenerateMetadataPictureVariantsCommand { MetadataPictureId = metadataPictureId },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = metadataPictureId,
-            TargetEntityTypeName = nameof(MetadataPicture)
+            TargetEntityTypeName = nameof(MetadataPicture),
+            Lane = BackgroundTaskLane.ImageProcessing,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System
         }, cancellationToken);
     }
 }

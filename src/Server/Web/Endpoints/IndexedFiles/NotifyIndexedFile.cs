@@ -39,12 +39,13 @@ public class NotifyIndexedFile : IEndpoint
                     await sender.Send(new CreateBackgroundTaskCommand
                     {
                         Request = new IndexLibraryPathsCommand(matchingLibrary.Id, [body.Path]),
-                        Priority = BackgroundTaskPriority.Normal,
                         TargetEntityId = matchingLibrary.Id,
                         TargetEntityTypeName = nameof(Domain.Entities.Library),
+                        Lane = BackgroundTaskLane.LibraryScan,
+                        WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                        TriggeredBy = BackgroundTaskTriggeredBy.User,
                         MaxAttempts = 1,
-                        TimeoutSeconds = 3600,
-                        ConcurrencyGroup = "library-scan"
+                        TimeoutSeconds = 3600
                     }, cancellationToken);
                     break;
 

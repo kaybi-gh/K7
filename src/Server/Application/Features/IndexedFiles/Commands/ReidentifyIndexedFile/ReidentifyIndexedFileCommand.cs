@@ -254,11 +254,12 @@ public class ReidentifyIndexedFileCommandHandler(
                 Language = library.MetadataLanguage,
                 FallbackLanguage = library.MetadataFallbackLanguage
             },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = mediaId,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 1,
-            ConcurrencyGroup = providerName
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 1
         }, cancellationToken);
 
     private async Task QueueAudioAnalysisForIndexedFileAsync(
@@ -289,11 +290,12 @@ public class ReidentifyIndexedFileCommandHandler(
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new AnalyzeMusicTrackAudioCommand { TrackId = trackId.Value },
-            Priority = BackgroundTaskPriority.Low,
             TargetEntityId = trackId.Value,
             TargetEntityTypeName = nameof(MusicTrack),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.MediaAnalysis,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 2
         }, cancellationToken);
     }
 }

@@ -29,11 +29,12 @@ public class QueueDetectMediaSegmentsCommandHandler(IApplicationDbContext contex
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new DetectMediaSegmentsCommand { SeasonId = request.SeasonId },
-            Priority = BackgroundTaskPriority.Low,
             TargetEntityId = request.SeasonId,
             TargetEntityTypeName = nameof(SerieSeason),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.MediaAnalysis,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 2
         }, cancellationToken);
     }
 }

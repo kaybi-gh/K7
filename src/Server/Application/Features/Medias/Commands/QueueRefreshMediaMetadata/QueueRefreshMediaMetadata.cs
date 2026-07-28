@@ -66,11 +66,6 @@ public class QueueRefreshMediaMetadataCommandHandler(
             ]);
         }
 
-        var concurrencyGroup = library.MetadataProviderName == "federation"
-            && externalId.Value.Split(':') is [var peerId, ..]
-            ? $"federation:{peerId}"
-            : library.MetadataProviderName;
-
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new RefreshMediaMetadatasCommand
@@ -81,11 +76,12 @@ public class QueueRefreshMediaMetadataCommandHandler(
                 Language = library.MetadataLanguage,
                 FallbackLanguage = library.MetadataFallbackLanguage
             },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 3,
-            ConcurrencyGroup = concurrencyGroup
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 3
         }, cancellationToken);
     }
 }

@@ -109,11 +109,12 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             await _sender.Send(new CreateBackgroundTaskCommand()
             {
                 Request = new IndexLibraryFilesCommand(entity.Id),
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = entity.Id,
                 TargetEntityTypeName = nameof(Library),
-                TimeoutSeconds = 3600,
-                ConcurrencyGroup = "library-scan"
+                Lane = BackgroundTaskLane.LibraryScan,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                TimeoutSeconds = 3600
             }, cancellationToken);
         }
 

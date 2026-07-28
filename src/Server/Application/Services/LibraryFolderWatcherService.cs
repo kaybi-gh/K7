@@ -292,12 +292,13 @@ public sealed class LibraryFolderWatcherService(
             await sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new IndexLibraryPathsCommand(libraryId, paths),
-                Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = libraryId,
                 TargetEntityTypeName = nameof(Library),
+                Lane = BackgroundTaskLane.LibraryScan,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.Watcher,
                 MaxAttempts = 1,
-                TimeoutSeconds = 3600,
-                ConcurrencyGroup = "library-scan"
+                TimeoutSeconds = 3600
             }, _stoppingToken);
         }
         catch (OperationCanceledException) when (_stoppingToken.IsCancellationRequested)

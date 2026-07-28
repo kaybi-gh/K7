@@ -86,12 +86,13 @@ public sealed class LibraryScanSchedulerService(
             await sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new IndexLibraryFilesCommand(library.Id),
-                Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = library.Id,
                 TargetEntityTypeName = nameof(Library),
+                Lane = BackgroundTaskLane.LibraryScan,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.Scheduler,
                 MaxAttempts = 1,
-                TimeoutSeconds = 3600,
-                ConcurrencyGroup = "library-scan"
+                TimeoutSeconds = 3600
             }, cancellationToken);
         }
     }

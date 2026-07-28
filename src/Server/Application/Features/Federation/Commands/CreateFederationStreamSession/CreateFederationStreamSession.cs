@@ -101,11 +101,12 @@ public class CreateFederationStreamSessionCommandHandler(
                         Id = indexedFile.Id,
                         SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
                     },
-                    Priority = BackgroundTaskPriority.High,
                     TargetEntityId = indexedFile.Id,
                     TargetEntityTypeName = nameof(IndexedFile),
-                    MaxAttempts = 5,
-                    ConcurrencyGroup = "ffmpeg"
+                    Lane = BackgroundTaskLane.FfmpegPrepare,
+                    WorkClass = BackgroundTaskWorkClass.Prepare,
+                    TriggeredBy = BackgroundTaskTriggeredBy.Federation,
+                    MaxAttempts = 5
                 }, cancellationToken);
             }
 

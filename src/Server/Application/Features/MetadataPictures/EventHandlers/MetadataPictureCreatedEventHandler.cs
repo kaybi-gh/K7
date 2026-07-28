@@ -4,7 +4,6 @@ using K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataP
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.MetadataPictures.EventHandlers;
@@ -36,15 +35,16 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             return;
         }
 
-        var priority = notification.MetadataPicture.Type switch
+        var workClass = notification.MetadataPicture.Type switch
         {
-            MetadataPictureType.Backdrop => BackgroundTaskPriority.VeryLow,
-            MetadataPictureType.Logo => BackgroundTaskPriority.VeryLow,
-            MetadataPictureType.Poster or MetadataPictureType.Cover => BackgroundTaskPriority.Low,
-            _ => BackgroundTaskPriority.Lowest
+            MetadataPictureType.Poster or MetadataPictureType.Cover => BackgroundTaskWorkClass.CriticalEnrich,
+            _ => BackgroundTaskWorkClass.Polish
         };
 
-        var concurrencyGroup = await GetProviderGroupAsync(notification.MetadataPicture.OriginalRemoteUri, cancellationToken);
+        // Artwork belonging to a media served by a peer is fetched from that peer, so it belongs to the
+        // federation lane and is isolated per peer: an unreachable peer must not occupy the Metadata lane
+        // slots that provider downloads need.
+        var peerServerId = await GetOwningPeerServerIdAsync(notification.MetadataPicture.MediaId, cancellationToken);
 
         await _sender.Send(new CreateBackgroundTaskCommand()
         {
@@ -52,37 +52,25 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             {
                 Id = notification.MetadataPicture.Id
             },
-            Priority = priority,
             TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            MaxAttempts = 5,
-            ConcurrencyGroup = concurrencyGroup
+            Lane = peerServerId is null ? BackgroundTaskLane.Metadata : BackgroundTaskLane.Federation,
+            WorkClass = workClass,
+            TriggeredBy = peerServerId is null ? BackgroundTaskTriggeredBy.System : BackgroundTaskTriggeredBy.Federation,
+            FederationPeerId = peerServerId,
+            MaxAttempts = 5
         }, cancellationToken);
     }
 
-    private async Task<string> GetProviderGroupAsync(Uri? uri, CancellationToken cancellationToken)
+    private async Task<Guid?> GetOwningPeerServerIdAsync(Guid? mediaId, CancellationToken cancellationToken)
     {
-        if (uri is null)
-            return "image-download";
+        if (mediaId is null)
+            return null;
 
-        var group = uri.Host switch
-        {
-            "image.tmdb.org" => "tmdb",
-            "coverartarchive.org" or "archive.org" => "musicbrainz",
-            "upload.wikimedia.org" or "commons.wikimedia.org" => "wikimedia",
-            _ => (string?)null
-        };
-
-        if (group is not null)
-            return group;
-
-        if (uri.AbsolutePath.Contains("/api/metadata-pictures/"))
-        {
-            var peer = await _context.PeerServers
-                .FirstOrDefaultAsync(p => p.BaseUrl.Contains(uri.Host), cancellationToken);
-            return peer is not null ? $"federation:{peer.Id}" : $"federation:{uri.Host}";
-        }
-
-        return "image-download";
+        return await _context.Medias
+            .AsNoTracking()
+            .Where(m => m.Id == mediaId.Value)
+            .Select(m => m.PeerServerId)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -136,11 +136,12 @@ public static class HlsSegmentHelper
                 Id = indexedFileId,
                 SegmentsDuration = TimeSpan.FromMilliseconds(TargetSegmentDurationMs)
             },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = indexedFileId,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 5,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.FfmpegPrepare,
+            WorkClass = BackgroundTaskWorkClass.Prepare,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 5
         }, cancellationToken);
     }
 }

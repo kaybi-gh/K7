@@ -29,11 +29,12 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
                 Id = notification.IndexedFile.Id,
                 FileType = notification.FileType
             },
-            Priority = BackgroundTaskPriority.VeryHigh,
             TargetEntityId = notification.IndexedFile.Id,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 5,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.Probe,
+            WorkClass = BackgroundTaskWorkClass.CriticalProbe,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 5
         }, cancellationToken);
     }
 }

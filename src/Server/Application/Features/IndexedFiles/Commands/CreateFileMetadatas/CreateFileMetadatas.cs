@@ -18,6 +18,7 @@ public class CreateFileMetadatasCommandHandler(
     IApplicationDbContext context,
     IMediaAnalysisService mediaAnalysisService,
     ISender sender,
+    ILibraryNotifier libraryNotifier,
     ILogger<CreateFileMetadatasCommandHandler> logger) : IRequestHandler<CreateFileMetadatasCommand>
 {
     public async Task Handle(CreateFileMetadatasCommand request, CancellationToken cancellationToken)
@@ -87,5 +88,12 @@ public class CreateFileMetadatasCommandHandler(
         indexedFile.FileMetadata = fileMetadata;
         indexedFile.AddDomainEvent(new FileMetadataCreatedEvent(indexedFile, request.FileType));
         await context.SaveChangesAsync(cancellationToken);
+
+        // The media only becomes playable now. Tell the clients so a page showing "being prepared" can
+        // refresh on its own instead of leaving the user to guess when to press play again.
+        if (indexedFile.MediaId is Guid mediaId)
+        {
+            await libraryNotifier.NotifyMediaIndexedFilesUpdatedAsync(mediaId, indexedFile.LibraryId, cancellationToken);
+        }
     }
 }

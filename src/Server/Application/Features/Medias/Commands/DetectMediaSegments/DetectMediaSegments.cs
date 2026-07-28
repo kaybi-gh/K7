@@ -1,3 +1,4 @@
+using K7.Server.Domain.Constants;
 using System.Numerics;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -141,11 +142,12 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         await _sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new ExtractSerieThemeSongCommand { SerieId = serieId },
-            Priority = BackgroundTaskPriority.Lowest,
             TargetEntityId = serieId,
             TargetEntityTypeName = nameof(Serie),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
+            Lane = BackgroundTaskLane.MediaAnalysis,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 2
         }, cancellationToken);
     }
 

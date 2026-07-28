@@ -152,11 +152,12 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     {
                         MetadataPictureId = entity.Id
                     },
-                    Priority = BackgroundTaskPriority.Lowest,
                     TargetEntityId = entity.Id,
                     TargetEntityTypeName = nameof(MetadataPicture),
-                    MaxAttempts = 3,
-                    ConcurrencyGroup = "image-processing"
+                    Lane = BackgroundTaskLane.ImageProcessing,
+                    WorkClass = BackgroundTaskWorkClass.Polish,
+                    TriggeredBy = BackgroundTaskTriggeredBy.System,
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
         }

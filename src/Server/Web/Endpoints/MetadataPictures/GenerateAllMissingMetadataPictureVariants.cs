@@ -18,7 +18,9 @@ public class GenerateAllMissingMetadataPictureVariants : IEndpoint
             await sender.Send(new CreateBackgroundTaskCommand
             {
                 Request = new GenerateAllMissingMetadataPictureVariantsCommand(),
-                Priority = BackgroundTaskPriority.Low,
+                Lane = BackgroundTaskLane.ImageProcessing,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.User,
             }, cancellationToken);
             return Results.Accepted();
         })

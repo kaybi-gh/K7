@@ -186,11 +186,12 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                 MediaType = mediaType,
                 LibraryId = libraryId
             },
-            Priority = BackgroundTaskPriority.Normal,
             TargetEntityId = targetEntityId ?? indexedFileIds[0],
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 5,
-            ConcurrencyGroup = metadataProviderName
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalLink,
+            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            MaxAttempts = 5
         };
 
     private sealed class OrphanIndexedFileRow

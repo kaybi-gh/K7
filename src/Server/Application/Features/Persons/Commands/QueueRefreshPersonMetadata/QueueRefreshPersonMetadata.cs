@@ -50,11 +50,12 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
                 ProviderId = externalId.Value,
                 Language = library?.MetadataLanguage ?? MetadataProviderNames.DefaultLanguage
             },
-            Priority = BackgroundTaskPriority.High,
             TargetEntityId = person.Id,
             TargetEntityTypeName = nameof(Person),
-            MaxAttempts = 1,
-            ConcurrencyGroup = externalId.ProviderName
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.User,
+            MaxAttempts = 1
         }, cancellationToken);
     }
 }

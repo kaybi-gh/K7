@@ -1,7 +1,8 @@
-﻿using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
@@ -18,11 +19,12 @@ public class IndexLibraryFiles : IEndpoint
             await sender.Send(new CreateBackgroundTaskCommand()
             {
                 Request = new IndexLibraryFilesCommand(id),
-                Priority = Domain.Enums.BackgroundTaskPriority.Normal,
                 TargetEntityId = id,
                 TargetEntityTypeName = nameof(Library),
-                TimeoutSeconds = 3600,
-                ConcurrencyGroup = "library-scan"
+                Lane = BackgroundTaskLane.LibraryScan,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.User,
+                TimeoutSeconds = 3600
             }, cancellationToken);
             return Results.NoContent();
         })
