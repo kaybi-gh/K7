@@ -1,5 +1,6 @@
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Users;
+using K7.Shared.Security;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
@@ -16,11 +17,13 @@ public partial class ResetPasswordDialog
     private string _newPassword = "";
     private bool _isSubmitting;
 
+    private bool CanSubmit => PasswordPolicy.IsSatisfiedBy(_newPassword);
+
     private void Cancel() => Dialog.Cancel();
 
     private async Task Submit()
     {
-        if (string.IsNullOrWhiteSpace(_newPassword)) return;
+        if (!CanSubmit) return;
 
         _isSubmitting = true;
         try

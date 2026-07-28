@@ -1,3 +1,5 @@
+using K7.Server.Application.Common.Validation;
+
 namespace K7.Server.Application.Features.Users.Commands.ResetUserPassword;
 
 public class ResetUserPasswordCommandValidator : AbstractValidator<ResetUserPasswordCommand>
@@ -5,6 +7,6 @@ public class ResetUserPasswordCommandValidator : AbstractValidator<ResetUserPass
     public ResetUserPasswordCommandValidator()
     {
         RuleFor(x => x.UserId).NotEmpty();
-        RuleFor(x => x.NewPassword).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.NewPassword).MustSatisfyPasswordPolicy().MaximumLength(200);
     }
 }

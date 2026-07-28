@@ -40,6 +40,7 @@
   <data name="RemovePassword" xml:space="preserve"><value>Retirer le mot de passe</value></data>
   <data name="SetPassword" xml:space="preserve"><value>Definir un mot de passe</value></data>
   <data name="NoPasswordSet" xml:space="preserve"><value>Aucun mot de passe défini. Vous pouvez en définir un pour vous connecter sans SSO.</value></data>
+  <data name="LocalSignInDisabledNoPassword" xml:space="preserve"><value>La connexion par mot de passe est desactivee sur ce serveur. Demandez a un administrateur de l'activer pour pouvoir definir un mot de passe local.</value></data>
   <data name="PasswordFieldsRequired" xml:space="preserve"><value>Tous les champs mot de passe sont requis.</value></data>
   <data name="PasswordMismatch" xml:space="preserve"><value>Les mots de passe ne correspondent pas.</value></data>
   <data name="PasswordChanged" xml:space="preserve"><value>Mot de passe modifie.</value></data>

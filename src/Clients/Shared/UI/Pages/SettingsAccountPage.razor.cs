@@ -43,6 +43,7 @@ public partial class SettingsAccountPage
     // Password
     private bool _hasPassword;
     private bool _canRemovePassword;
+    private bool _localSignInEnabled = true;
     private string? _passwordError;
     private string? _passwordSuccess;
 
@@ -111,6 +112,7 @@ public partial class SettingsAccountPage
             _loginMethods = await UserService.GetLoginMethodsAsync();
             _hasPassword = _loginMethods.HasPassword;
             _canRemovePassword = _loginMethods.CanRemovePassword;
+            _localSignInEnabled = _loginMethods.LocalSignInEnabled;
             _twoFactorEnabled = _loginMethods.TwoFactorEnabled;
             _recoveryCodesLeft = _loginMethods.RecoveryCodesLeft;
             _canShowLinkOidc = _loginMethods.CanLinkOidc

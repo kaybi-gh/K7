@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
+@inject IStringLocalizer<SharedResource> S
 
 <div class="k7-field @Class" style="@(string.IsNullOrEmpty(Style) ? null : Style)">
     @if (!string.IsNullOrEmpty(Label))
@@ -32,8 +33,8 @@
         <div class="k7-input-wrap">
             <input id="@_id"
                    @ref="_inputRef"
-                   class="k7-input focusable @(_hasError ? "k7-input--error" : "") @(!string.IsNullOrEmpty(AdornmentIcon) ? "k7-input--has-adornment" : "")"
-                   type="@Type"
+                   class="k7-input focusable @(_hasError ? "k7-input--error" : "") @(HasAdornment ? "k7-input--has-adornment" : "")"
+                   type="@EffectiveInputType"
                    placeholder="@Placeholder"
                    disabled="@Disabled"
                    readonly="@ReadOnly"
@@ -48,13 +49,20 @@
                    @onkeydown="OnKeyDown"
                    @onkeyup="OnKeyUp"
                    @onclick="OnClick" />
-            @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
+            @if (ShowPasswordToggleButton)
             {
-                <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />
+                <K7IconButton Icon="@(_passwordRevealed ? Phosphor.Eye : Phosphor.EyeClosed)"
+                               Class="k7-input-adornment"
+                               OnClick="TogglePasswordReveal"
+                               AriaLabel="@(_passwordRevealed ? S["HidePassword"] : S["ShowPassword"])" />
             }
-            @if (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
+            else if (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
             {
                 <K7IconButton Icon="@Phosphor.X" Class="k7-input-adornment k7-input-clear" OnClick="ClearAsync" AriaLabel="clear" />
+            }
+            else if (!string.IsNullOrEmpty(AdornmentIcon))
+            {
+                <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />
             }
         </div>
     }

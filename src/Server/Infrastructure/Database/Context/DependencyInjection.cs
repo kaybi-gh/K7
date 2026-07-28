@@ -10,6 +10,7 @@ using K7.Server.Infrastructure.Database.Context.Data.Interceptors;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using K7.Server.Infrastructure.Database.Context.Services;
 using K7.Server.Infrastructure.Database.Context.Notifications;
+using K7.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -48,12 +49,12 @@ public static class DependencyInjection
 
         services.AddIdentityCore<ApplicationUser>(options =>
         {
-            options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 10;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = true;
-            options.Password.RequireLowercase = true;
-            options.Password.RequiredUniqueChars = 4;
+            options.Password.RequireDigit = PasswordPolicy.RequireDigit;
+            options.Password.RequiredLength = PasswordPolicy.RequiredLength;
+            options.Password.RequireNonAlphanumeric = PasswordPolicy.RequireNonAlphanumeric;
+            options.Password.RequireUppercase = PasswordPolicy.RequireUppercase;
+            options.Password.RequireLowercase = PasswordPolicy.RequireLowercase;
+            options.Password.RequiredUniqueChars = PasswordPolicy.RequiredUniqueChars;
             options.Lockout.AllowedForNewUsers = true;
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);

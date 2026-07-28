@@ -26,7 +26,8 @@ public class GetLoginMethods : IEndpoint
             return Results.Ok(result with
             {
                 CanLinkOidc = oidc.Enabled && !hasOidcLogin,
-                OidcDisplayName = oidc.Enabled ? oidc.DisplayName : null
+                OidcDisplayName = oidc.Enabled ? oidc.DisplayName : null,
+                LocalSignInEnabled = authConfig.Value.Local.SignInEnabled
             });
         })
         .RequireAuthorization(Policies.GuestOrAbove)

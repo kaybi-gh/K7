@@ -89,10 +89,17 @@
     @* Password Section *@
     <section class="settings-section mb-4">
         <h6 class="mb-2">@L["Password"]</h6>
-        <p class="text-sm mb-2">@(_hasPassword ? L["PasswordSet"] : L["NoPasswordSet"])</p>
-        <K7Button Variant="outlined" OnClick="OpenPasswordDialog">
-            @(_hasPassword ? L["ChangePassword"] : L["SetPassword"])
-        </K7Button>
+        @if (!_hasPassword && !_localSignInEnabled)
+        {
+            <K7Alert Severity="K7Severity.Info" Variant="outlined">@L["LocalSignInDisabledNoPassword"]</K7Alert>
+        }
+        else
+        {
+            <p class="text-sm mb-2">@(_hasPassword ? L["PasswordSet"] : L["NoPasswordSet"])</p>
+            <K7Button Variant="outlined" OnClick="OpenPasswordDialog">
+                @(_hasPassword ? L["ChangePassword"] : L["SetPassword"])
+            </K7Button>
+        }
         @if (_passwordError is not null)
         {
             <K7Alert Severity="K7Severity.Error" Class="mt-2">@_passwordError</K7Alert>

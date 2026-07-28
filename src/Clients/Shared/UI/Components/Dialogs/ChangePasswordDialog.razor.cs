@@ -1,3 +1,4 @@
+using K7.Shared.Security;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -23,13 +24,19 @@ public partial class ChangePasswordDialog
     }
 
     private bool CanSubmit =>
-        !string.IsNullOrWhiteSpace(_newPassword) &&
+        PasswordPolicy.IsSatisfiedBy(_newPassword) &&
         _newPassword == _confirmPassword &&
         (!_hasPassword || !string.IsNullOrWhiteSpace(_currentPassword));
 
     private void Submit()
     {
         _error = null;
+
+        if (!PasswordPolicy.IsSatisfiedBy(_newPassword))
+        {
+            _error = L["PasswordPolicyNotMet"];
+            return;
+        }
 
         if (_newPassword != _confirmPassword)
         {

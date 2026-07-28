@@ -1,4 +1,6 @@
-﻿using K7.Server.Application.Common.Interfaces;
+﻿using FluentValidation.Results;
+using K7.Server.Application.Common.Exceptions;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Infrastructure.Database.Context.Identity;
 
@@ -31,9 +34,8 @@ public class IdentityService : IIdentityService
 
     public async Task<string?> GetUserNameAsync(string userId)
     {
-        var user = await _userManager.Users.FirstAsync(u => u.Id == userId);
-
-        return user.UserName;
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return user?.UserName;
     }
 
     public async Task<IReadOnlyDictionary<string, string?>> GetUserNamesAsync(IEnumerable<string> userIds)
@@ -174,12 +176,7 @@ public class IdentityService : IIdentityService
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
-
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to reset password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
+        EnsurePasswordSucceeded(result, nameof(newPassword));
     }
 
     public async Task<bool> HasPasswordAsync(string userId)
@@ -204,12 +201,7 @@ public class IdentityService : IIdentityService
             ?? throw new NotFoundException(userId, "Identity user");
 
         var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
-
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
+        EnsurePasswordSucceeded(result, nameof(newPassword));
     }
 
     public async Task SetPasswordAsync(string userId, string newPassword)
@@ -218,12 +210,7 @@ public class IdentityService : IIdentityService
             ?? throw new NotFoundException(userId, "Identity user");
 
         var result = await _userManager.AddPasswordAsync(user, newPassword);
-
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to set password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
+        EnsurePasswordSucceeded(result, nameof(newPassword));
     }
 
     public async Task RemovePasswordAsync(string userId)
@@ -232,12 +219,7 @@ public class IdentityService : IIdentityService
             ?? throw new NotFoundException(userId, "Identity user");
 
         var result = await _userManager.RemovePasswordAsync(user);
-
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to remove password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
+        EnsurePasswordSucceeded(result, "Password");
     }
 
     public async Task UpdateEmailAsync(string userId, string newEmail)
@@ -410,5 +392,14 @@ public class IdentityService : IIdentityService
             UrlEncoder.Default.Encode("K7"),
             UrlEncoder.Default.Encode(email),
             unformattedKey);
+    }
+
+    private static void EnsurePasswordSucceeded(IdentityResult result, string propertyName)
+    {
+        if (result.Succeeded)
+            return;
+
+        throw new ValidationException(
+            result.Errors.Select(e => new ValidationFailure(propertyName, e.Description)));
     }
 }

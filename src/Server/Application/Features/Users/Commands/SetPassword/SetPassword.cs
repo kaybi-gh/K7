@@ -22,7 +22,8 @@ public class SetPasswordCommandHandler(
         Guard.Against.NullOrEmpty(currentUser.IdentityId);
 
         if (!authSettings.LocalSignInEnabled)
-            throw new ForbiddenAccessException();
+            throw new ValidationException([
+                new ValidationFailure("NewPassword", "Local sign-in is disabled on this server. Ask an administrator to enable username/password sign-in.")]);
 
         var user = await context.Users
             .AsNoTracking()

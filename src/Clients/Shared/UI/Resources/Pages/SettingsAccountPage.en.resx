@@ -40,6 +40,7 @@
   <data name="RemovePassword" xml:space="preserve"><value>Remove password</value></data>
   <data name="SetPassword" xml:space="preserve"><value>Set a password</value></data>
   <data name="NoPasswordSet" xml:space="preserve"><value>No password set. You can set one to sign in without SSO.</value></data>
+  <data name="LocalSignInDisabledNoPassword" xml:space="preserve"><value>Username/password sign-in is disabled on this server. Ask an administrator to enable it before you can set a local password.</value></data>
   <data name="PasswordFieldsRequired" xml:space="preserve"><value>All password fields are required.</value></data>
   <data name="PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
   <data name="PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>

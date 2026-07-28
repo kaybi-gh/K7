@@ -25,6 +25,7 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public string Adornment { get; set; } = "";
     [Parameter] public string AdornmentIcon { get; set; } = "";
     [Parameter] public EventCallback OnAdornmentClick { get; set; }
+    [Parameter] public bool PasswordToggle { get; set; } = true;
     [Parameter] public int DebounceInterval { get; set; }
     [Parameter] public EventCallback<TValue?> OnDebounceIntervalElapsed { get; set; }
     [Parameter] public string Style { get; set; } = "";
@@ -49,6 +50,20 @@ public partial class K7TextField<TValue> : IDisposable
     private string _errorText = "";
     private Timer? _debounceTimer;
     private bool _disposed;
+    private bool _passwordRevealed;
+
+    private bool IsPasswordField =>
+        string.Equals(Type, "password", StringComparison.OrdinalIgnoreCase);
+
+    private bool ShowPasswordToggleButton => IsPasswordField && PasswordToggle && Lines <= 1;
+
+    private string EffectiveInputType =>
+        ShowPasswordToggleButton && _passwordRevealed ? "text" : Type;
+
+    private bool HasAdornment =>
+        ShowPasswordToggleButton
+        || (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
+        || !string.IsNullOrEmpty(AdornmentIcon);
 
     private string? SpatialActivatable =>
         !Disabled && (!ReadOnly || ForceSpatialActivatable) && !DisableSpatialActivatable ? "" : null;
@@ -151,6 +166,8 @@ public partial class K7TextField<TValue> : IDisposable
         _disposed = true;
         _debounceTimer?.Dispose();
     }
+
+    private void TogglePasswordReveal() => _passwordRevealed = !_passwordRevealed;
 
     private async Task ClearAsync()
     {

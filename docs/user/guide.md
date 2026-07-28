@@ -35,6 +35,10 @@ Outcomes:
 
 OIDC sign-in never attaches itself to an existing local account by email. Linking is always an explicit action from Settings (web client). Native apps do not offer this link button yet.
 
+### Add a local password to an OIDC account
+
+If you signed in with OIDC and the server also allows username/password sign-in, open **Settings -> Account** and choose **Set a password**. Passwords must be at least 10 characters and include uppercase, lowercase, a digit, and at least 4 distinct characters. If username/password sign-in is disabled (OIDC-only), the page explains that an administrator must enable it first.
+
 Guest mode is limited: many Settings sections and personal features (My Space, offline, and similar) are hidden, and playback progress is not kept like a full account.
 
 ### Two-factor authentication (2FA)
@@ -143,7 +147,7 @@ Playlist views can include a "show shared" option. What others see of your playl
 
 ## Privacy and visibility
 
-Sharing is **opt-in**. By default, social content scopes are **Nobody**: nothing is shared until **you** widen a scope. The administrator **cannot force you to share** (there is no server-wide "everyone must share history/reviews" switch). They can still limit which libraries or profiles you may access - that is access control, not forced social opt-in.
+Social sharing is **opt-in**. By default, social content scopes are **Nobody**: nothing is shared until **you** widen a scope. The administrator **cannot force you to share** (there is no server-wide "everyone must share history/reviews" switch). They can still limit which libraries or profiles you may access - that is access control, not forced social opt-in. Admin federation social policy and per-peer social toggles only open the pipe; each user must still set **Settings -> Social** (Share and View) to Federation (or Specific people) for reviews and other social content to cross peers.
 
 Configure this under **Settings -> Social**. K7 separates **what you share** from **what you want to see**, for reviews, collections, playlists, smart playlists, and playback history. You can also blur reviews until you have watched the media.
 
@@ -205,6 +209,7 @@ When on: similar / ambiance radios and sonic paths under **Music -> Radio**, int
 | Problem | What to try |
 |---|---|
 | Playback will not start or buffers a lot | Lower quality in the player; check network; on native apps, confirm the saved server address; ask the admin if the file needs transcoding |
+| "This media is still being prepared" | The file is indexed but not analyzed yet, which is normal shortly after it was added or during a first library scan. Asking to play it moves it to the front of the queue, and the page unblocks on its own once analysis finishes |
 | No subtitles | Pick a track in the player; check track-selection settings; the file may have no subtitle streams |
 | Progress missing | Guests do not keep progress like full users; offline sync needs a later connection; with a shared profile, confirm you used the right profile |
 | 2FA code rejected | Check the phone's clock; use a recovery code |

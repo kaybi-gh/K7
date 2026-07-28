@@ -1,3 +1,5 @@
+using K7.Server.Application.Common.Validation;
+
 namespace K7.Server.Application.Features.Users.Commands.ChangePassword;
 
 public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCommand>
@@ -5,6 +7,6 @@ public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCo
     public ChangePasswordCommandValidator()
     {
         RuleFor(v => v.CurrentPassword).NotEmpty();
-        RuleFor(v => v.NewPassword).NotEmpty().MinimumLength(6);
+        RuleFor(v => v.NewPassword).MustSatisfyPasswordPolicy();
     }
 }

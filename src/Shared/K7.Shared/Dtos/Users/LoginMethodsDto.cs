@@ -9,6 +9,7 @@ public sealed record LoginMethodsDto
     public required IReadOnlyList<ExternalLoginDto> ExternalLogins { get; init; }
     public bool CanLinkOidc { get; init; }
     public string? OidcDisplayName { get; init; }
+    public bool LocalSignInEnabled { get; init; } = true;
 }
 
 public sealed record ExternalLoginDto
