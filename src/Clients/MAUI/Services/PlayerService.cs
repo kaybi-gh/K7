@@ -303,7 +303,7 @@ internal class PlayerService(
         QualityChanged?.Invoke(_selectedQuality);
     }
 
-    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
+    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = null;
         _audioTracks = audioTracks.ToList();
@@ -349,6 +349,7 @@ internal class PlayerService(
             MimeType = session.Source.MimeType,
             Title = title,
             CoverUrl = coverUrl,
+            ThumbnailsUrl = thumbnailsUrl,
             PendingSeekTime = startPosition is > 0 ? startPosition : null
         };
 
@@ -369,21 +370,41 @@ internal class PlayerService(
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
     {
-        if (_currentIndexedFileId is null)
-        {
+        if (_baseManifestUrl is null)
             return Task.CompletedTask;
-        }
 
         if (!_audioTracks.Contains(track))
-        {
             return Task.CompletedTask;
-        }
 
         _selectedAudioTrack = track;
         AudioTrackChanged?.Invoke(track);
 
         var trackName = track.Name ?? $"Track {track.Index}";
         SwitchAudioTrackRequested?.Invoke(trackName);
+
+        var seekTime = CurrentTime;
+        var previousDuration = Duration;
+        var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, track.Index);
+        newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
+        newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
+        _baseManifestUrl = newUrl;
+
+        Source = new PlayerSource
+        {
+            MediaId = Source.MediaId,
+            StreamSessionId = Source.StreamSessionId,
+            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
+            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
+            Title = Source.Title,
+            CoverUrl = Source.CoverUrl,
+            PendingSeekTime = seekTime > 0 ? seekTime : null
+        };
+
+        if (seekTime > 0)
+        {
+            CurrentTime = seekTime;
+            Duration = previousDuration;
+        }
 
         return Task.CompletedTask;
     }
@@ -400,22 +421,26 @@ internal class PlayerService(
             return Task.CompletedTask;
         }
 
-        if (_currentIndexedFileId is null || _baseManifestUrl is null)
-        {
+        if (_baseManifestUrl is null)
             return Task.CompletedTask;
-        }
 
         var seekTime = CurrentTime;
         var previousDuration = Duration;
 
         var newUrl = BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, track);
         newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
+        if (_selectedAudioTrack is not null)
+            newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
         _baseManifestUrl = newUrl;
 
         Source = new PlayerSource
         {
+            MediaId = Source.MediaId,
+            StreamSessionId = Source.StreamSessionId,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = "application/vnd.apple.mpegurl",
+            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
+            Title = Source.Title,
+            CoverUrl = Source.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
@@ -433,10 +458,8 @@ internal class PlayerService(
     /// </summary>
     public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
     {
-        if (_currentIndexedFileId is null || _baseManifestUrl is null)
-        {
+        if (_baseManifestUrl is null)
             return Task.CompletedTask;
-        }
 
         // Explicit user quality changes reset Windows Video.js recovery budget for the new selection.
         _playbackStartRecoveryAttempts = 0;
@@ -448,11 +471,18 @@ internal class PlayerService(
 
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
+        if (_selectedAudioTrack is not null)
+            newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
+        _baseManifestUrl = newUrl;
 
         Source = new PlayerSource
         {
+            MediaId = Source.MediaId,
+            StreamSessionId = Source.StreamSessionId,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = "application/vnd.apple.mpegurl",
+            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
+            Title = Source.Title,
+            CoverUrl = Source.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
@@ -655,6 +685,14 @@ internal class PlayerService(
             return $"{url}{separator}DefaultSubtitleTrackIndex={track.Index}";
 
         return $"{url}{separator}SubtitleBurnInStreamIndex={track.Index}";
+    }
+
+    private static string BuildManifestUrlWithAudioTrack(string baseUrl, int audioTrackIndex)
+    {
+        var url = System.Text.RegularExpressions.Regex.Replace(
+            baseUrl, @"[&?]DefaultAudioTrackIndex=[^&]*", "");
+        var separator = url.Contains('?') ? "&" : "?";
+        return $"{url}{separator}DefaultAudioTrackIndex={audioTrackIndex}";
     }
 
     /// <summary>

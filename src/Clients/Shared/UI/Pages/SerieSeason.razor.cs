@@ -4,12 +4,13 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
-using K7.Shared.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.PersonRoles;
+using K7.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -17,6 +18,8 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SerieSeason : IAsyncDisposable
 {
+    [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+
     [Parameter]
     public required string SerieId { get; set; }
 
@@ -50,6 +53,24 @@ public partial class SerieSeason : IAsyncDisposable
     private Guid? _castLoadEpisodeId;
 
     private bool HasDisplayableCast => _focusedEpisodeDisplayableCast.Count > 0;
+
+    protected override void OnInitialized()
+    {
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+    }
+
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        if (_season is null)
+            return;
+
+        if (mediaId != _season.Id && !_episodes.Any(e => e.Id == mediaId))
+            return;
+
+        // An episode file was just probed: silently reload the season so playback
+        // becomes available without user action.
+        InvokeAsync(() => ReloadSeasonAsync(bypassCache: true)).FireAndForget();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -319,7 +340,12 @@ public partial class SerieSeason : IAsyncDisposable
         if (indexedFile is not null)
         {
             var videoMetadata = indexedFile.FileMetadata as VideoFileMetadataDto;
-            if (videoMetadata is null) return;
+            if (videoMetadata is null)
+            {
+                // The file is indexed but not probed yet: tell the user instead of ignoring the click.
+                Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
+                return;
+            }
 
             PlaybackProgressTracker.StartTracking(episode.Id,
                 await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
@@ -329,19 +355,27 @@ public partial class SerieSeason : IAsyncDisposable
             var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
             var coverUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Small);
 
-            await PlayerService.PlayIndexedFileAsync(
-                indexedFile.Id,
-                videoMetadata.AudioTracks ?? [],
-                videoMetadata.SubtitleTracks,
-                videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                videoMetadata.VideoResolution,
-                videoMetadata.Thumbnails?.Uri?.ToString(),
-                episode.Id,
-                episodeTitle,
-                coverUrl,
-                startPosition,
-                videoMetadata.Chapters);
+            try
+            {
+                await PlayerService.PlayIndexedFileAsync(
+                    indexedFile.Id,
+                    videoMetadata.AudioTracks ?? [],
+                    videoMetadata.SubtitleTracks,
+                    videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                    videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                    videoMetadata.VideoResolution,
+                    videoMetadata.Thumbnails?.Uri?.ToString(),
+                    episode.Id,
+                    episodeTitle,
+                    coverUrl,
+                    startPosition,
+                    videoMetadata.Chapters);
+            }
+            catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
+            {
+                // Cached metadata said the file was playable, but the server has not probed it yet.
+                Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
+            }
             return;
         }
 
@@ -366,6 +400,7 @@ public partial class SerieSeason : IAsyncDisposable
             remoteVideoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             remoteVideoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             remoteVideoMetadata?.VideoResolution,
+            remoteVideoMetadata?.Thumbnails?.Uri?.ToString(),
             episode.Id,
             epTitle,
             cover,
@@ -492,12 +527,12 @@ public partial class SerieSeason : IAsyncDisposable
         StateHasChanged();
     }
 
-    private async Task ReloadSeasonAsync()
+    private async Task ReloadSeasonAsync(bool bypassCache = false)
     {
         if (_season is null)
             return;
 
-        var media = await k7ServerService.GetMediaAsync(_season.Id);
+        var media = await k7ServerService.GetMediaAsync(_season.Id, bypassCache: bypassCache);
         if (media is SerieSeasonDto season)
         {
             _season = season;
@@ -516,6 +551,8 @@ public partial class SerieSeason : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+
         if (!_seasonTvScrollInitialized)
             return;
 

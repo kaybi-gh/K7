@@ -25,6 +25,8 @@
   <data name="Shuffle" xml:space="preserve"><value>Aléatoire</value></data>
   <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="ShowPassword" xml:space="preserve"><value>Afficher le mot de passe</value></data>
+  <data name="HidePassword" xml:space="preserve"><value>Masquer le mot de passe</value></data>
   <data name="Confirm" xml:space="preserve"><value>Valider</value></data>
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="Remove" xml:space="preserve"><value>Retirer</value></data>
@@ -79,6 +81,7 @@
   <data name="Duration" xml:space="preserve"><value>Durée</value></data>
   <data name="About" xml:space="preserve"><value>À propos</value></data>
   <data name="DurationHoursMinutes" xml:space="preserve"><value>{0} h {1} min</value></data>
+  <data name="MediaPreparingPlayback" xml:space="preserve"><value>Ce media est en cours de preparation, la lecture sera disponible dans un instant.</value></data>
   <data name="DurationMinutes" xml:space="preserve"><value>{0} min</value></data>
   <data name="TrackNumber" xml:space="preserve"><value>#</value></data>
   <data name="MediaTypeMovies" xml:space="preserve"><value>Films</value></data>

@@ -9,6 +9,21 @@ using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.UI.Helpers;
 
+/// <summary>
+/// Outcome of an episode playback attempt.
+/// </summary>
+internal enum EpisodePlaybackResult
+{
+    /// <summary>Playback started.</summary>
+    Started,
+
+    /// <summary>No local or remote file is attached to the episode.</summary>
+    NotPlayable,
+
+    /// <summary>A local file exists but has not been probed yet, so codecs are unknown.</summary>
+    AwaitingProbe
+}
+
 internal static class SeriePlaybackHelper
 {
     public static async Task<LiteSerieEpisodeDto?> ResolveEpisodeToPlayAsync(
@@ -34,7 +49,7 @@ internal static class SeriePlaybackHelper
         return nextUnwatched ?? allEpisodes[0];
     }
 
-    public static async Task PlayEpisodeAsync(
+    public static async Task<EpisodePlaybackResult> PlayEpisodeAsync(
         LiteSerieEpisodeDto episode,
         Guid serieId,
         IMediaService mediaService,
@@ -47,7 +62,7 @@ internal static class SeriePlaybackHelper
     {
         var episodeMedia = await mediaService.GetMediaAsync(episode.Id, cancellationToken, bypassCache: true);
         if (episodeMedia is not SerieEpisodeDto episodeDto)
-            return;
+            return EpisodePlaybackResult.NotPlayable;
 
         double? startPosition = null;
         if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
@@ -61,7 +76,7 @@ internal static class SeriePlaybackHelper
         {
             var videoMetadata = indexedFile.FileMetadata as VideoFileMetadataDto;
             if (videoMetadata is null)
-                return;
+                return EpisodePlaybackResult.AwaitingProbe;
 
             progressTracker.StartTracking(
                 episode.Id,
@@ -72,26 +87,34 @@ internal static class SeriePlaybackHelper
             var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
             var coverUrl = GetEpisodeStillUrl(episode, apiClient);
 
-            await playerService.PlayIndexedFileAsync(
-                indexedFile.Id,
-                videoMetadata.AudioTracks ?? [],
-                videoMetadata.SubtitleTracks,
-                videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                videoMetadata.VideoResolution,
-                videoMetadata.Thumbnails?.Uri?.ToString(),
-                episode.Id,
-                episodeTitle,
-                coverUrl,
-                startPosition,
-                videoMetadata.Chapters);
+            try
+            {
+                await playerService.PlayIndexedFileAsync(
+                    indexedFile.Id,
+                    videoMetadata.AudioTracks ?? [],
+                    videoMetadata.SubtitleTracks,
+                    videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                    videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                    videoMetadata.VideoResolution,
+                    videoMetadata.Thumbnails?.Uri?.ToString(),
+                    episode.Id,
+                    episodeTitle,
+                    coverUrl,
+                    startPosition,
+                    videoMetadata.Chapters);
+            }
+            catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
+            {
+                // Cached metadata said the file was playable, but the server has not probed it yet.
+                return EpisodePlaybackResult.AwaitingProbe;
+            }
 
-            return;
+            return EpisodePlaybackResult.Started;
         }
 
         var remoteFile = episodeDto.RemoteIndexedFiles?.FirstOrDefault();
         if (remoteFile is null)
-            return;
+            return EpisodePlaybackResult.NotPlayable;
 
         progressTracker.StartTracking(
             episode.Id,
@@ -111,10 +134,13 @@ internal static class SeriePlaybackHelper
             remoteVideoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             remoteVideoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             remoteVideoMetadata?.VideoResolution,
+            remoteVideoMetadata?.Thumbnails?.Uri?.ToString(),
             episode.Id,
             epTitle,
             cover,
             startPosition);
+
+        return EpisodePlaybackResult.Started;
     }
 
     private static async Task<List<LiteSerieEpisodeDto>> LoadPlayableEpisodesAsync(

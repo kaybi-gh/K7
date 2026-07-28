@@ -1,18 +1,18 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
-using K7.Shared.Enums;
+using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
-using K7.Clients.Shared.UI.Components.Dialogs;
-using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -64,6 +64,17 @@ public partial class Movie : IAsyncDisposable
     protected override void OnInitialized()
     {
         _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+    }
+
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        if (_movie is null || mediaId != _movie.Id)
+            return;
+
+        // A file of this movie was just probed: silently refetch so the play button
+        // becomes functional without user action (isPicturesRefresh reuses the silent path).
+        InvokeAsync(() => LoadMovieAsync(isPicturesRefresh: true)).FireAndForget();
     }
 
     private bool HasTvBelowContent =>
@@ -141,7 +152,7 @@ public partial class Movie : IAsyncDisposable
                 Title = _movie.Title,
                 PictureUrl = _posterSmallUrl
             };
-            
+
             _selectedFile = _movie.IndexedFiles?.FirstOrDefault();
             _selectedRemoteFile = _selectedFile is null
                 ? _movie.RemoteIndexedFiles?.FirstOrDefault()
@@ -239,9 +250,11 @@ public partial class Movie : IAsyncDisposable
         var indexedFileId = _selectedFile.Id;
         if (_selectedFile.FileMetadata is not VideoFileMetadataDto videoMetadata)
         {
+            // The file is indexed but not probed yet: tell the user instead of ignoring the click.
+            Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
             return;
         }
-        
+
         var audioTracks = videoMetadata.AudioTracks;
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
@@ -262,7 +275,15 @@ public partial class Movie : IAsyncDisposable
             startPosition = _movie.UserState.LastPlaybackPosition;
         }
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters);
+        try
+        {
+            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters);
+        }
+        catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
+        {
+            // Cached metadata said the file was playable, but the server has not probed it yet.
+            Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
+        }
     }
 
     private async Task RefreshMovieUserStateAsync()
@@ -307,6 +328,7 @@ public partial class Movie : IAsyncDisposable
             _selectedAudioFileTrack?.Index ?? videoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             _selectedSubtitleFileTrack?.Index ?? videoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata?.VideoResolution,
+            videoMetadata?.Thumbnails?.Uri?.ToString(),
             _movie.Id,
             VideoPlayerTitleHelper.FormatMovie(_movie),
             coverUrl,
@@ -339,7 +361,7 @@ public partial class Movie : IAsyncDisposable
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
-        
+
         var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(L["TracksSelection"], parameters, options);
         var result = await dialog.Result;
 
@@ -348,7 +370,7 @@ public partial class Movie : IAsyncDisposable
             _selectedFile = optionsResult.SelectedFile;
             _selectedAudioFileTrack = optionsResult.AudioTrack;
             _selectedSubtitleFileTrack = optionsResult.SubtitleTrack;
-            
+
             await PlayAsync();
         }
     }
@@ -617,6 +639,7 @@ public partial class Movie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

@@ -1,15 +1,15 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
-using K7.Shared.Enums;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -49,10 +49,28 @@ public partial class Serie : IAsyncDisposable
     private List<SerieStudioNetworkChip> _studioNetworkChips = [];
     private MediaReviewsSection? _reviewsSection;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+    private Timer? _indexedFilesDebounceTimer;
 
     protected override void OnInitialized()
     {
         _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+        K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+    }
+
+    private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
+    {
+        // Episode probe events carry the episode id, which this page does not track:
+        // match on the serie itself or its library, debounce (probes come in bursts
+        // during imports), then silently reload so playback state stays fresh.
+        if (_serie is null || (mediaId != _serie.Id && libraryId != _serie.LibraryId))
+            return;
+
+        _indexedFilesDebounceTimer?.Dispose();
+        _indexedFilesDebounceTimer = new Timer(
+            _ => InvokeAsync(() => LoadSerieAsync(isPicturesRefresh: true)).FireAndForget(),
+            null,
+            TimeSpan.FromMilliseconds(500),
+            Timeout.InfiniteTimeSpan);
     }
 
     private bool HasTvBelowContent =>
@@ -197,7 +215,7 @@ public partial class Serie : IAsyncDisposable
 
         await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
-        await SeriePlaybackHelper.PlayEpisodeAsync(
+        var result = await SeriePlaybackHelper.PlayEpisodeAsync(
             episode,
             Guid.Parse(Id),
             k7ServerService,
@@ -206,6 +224,12 @@ public partial class Serie : IAsyncDisposable
             FeatureAccess,
             FederationService,
             apiClient);
+
+        if (result == EpisodePlaybackResult.AwaitingProbe)
+        {
+            // The file is indexed but not probed yet: tell the user instead of ignoring the click.
+            Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
+        }
     }
 
     private async Task OpenMediaReIdentifyDialogAsync()
@@ -487,6 +511,8 @@ public partial class Serie : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        _indexedFilesDebounceTimer?.Dispose();
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

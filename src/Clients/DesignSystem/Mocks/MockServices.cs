@@ -608,7 +608,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<bool> VerifyUserPinAsync(Guid userId, string pin, CancellationToken cancellationToken = default) => Task.FromResult(true);
-    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [], CanLinkOidc = false });
+    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [], CanLinkOidc = false, LocalSignInEnabled = true });
     public Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorStatusDto { IsEnabled = false, HasAuthenticator = false, RecoveryCodesLeft = 0 });
     public Task<TwoFactorSetupDto> BeginTwoFactorSetupAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorSetupDto { SharedKey = "abcd efgh", AuthenticatorUri = "otpauth://totp/K7:user?secret=abcdefgh&issuer=K7&digits=6" });
@@ -705,11 +705,17 @@ public sealed class MockSocialUserService : ISocialUserService
 
 public sealed class MockBackgroundTaskService : IBackgroundTaskService
 {
-    public Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<BackgroundTaskDto>());
+    public Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, IReadOnlyCollection<BackgroundTaskTriggeredBy>? triggeredBy = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<BackgroundTaskDto>());
     public Task<BackgroundTaskDto> GetBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskDto { Id = Guid.Empty, Name = "" });
     public Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSettingsDto { WorkerCount = 1, ConcurrencyGroups = [] });
+    public Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSettingsDto
+    {
+        WorkerCount = 1,
+        Lanes = Enum.GetValues<BackgroundTaskLane>()
+            .Select(lane => new LaneLimitDto { Lane = lane, Limit = 1, ActiveCount = 0, PendingCount = 0 })
+            .ToList()
+    });
     public Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<BackgroundTaskSummaryDto> GetSummaryAsync(
         IReadOnlyCollection<BackgroundTaskStatus>? statusFilter = null,
