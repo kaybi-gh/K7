@@ -233,6 +233,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             extraMethods: TvEpisodeMethods.Images | TvEpisodeMethods.ExternalIds | TvEpisodeMethods.Credits,
             cancellationToken: cancellationToken);
 
+        if (episode is null)
+        {
+            throw new InvalidOperationException(
+                $"TMDb returned null for series {tmdbId} season {seasonNumber} episode {episodeNumber}.");
+        }
+
         string? stillUrl = null;
         if (!string.IsNullOrEmpty(episode.StillPath))
         {
