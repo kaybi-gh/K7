@@ -1,8 +1,8 @@
 using K7.Clients.Shared.Helpers;
-using K7.Clients.Shared.Models;
-using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -21,10 +21,13 @@ public partial class SmartPlaylistDetail
 
     private SmartPlaylistDto? _smartPlaylist;
     private List<SmartPlaylistItemViewModel> _items = [];
+    private IReadOnlyList<string> _headerPreviewUrls = [];
     private string? _rulesDescription;
     private bool _loading = true;
     private bool _loadingItems = true;
     private bool _evaluating;
+
+    private bool _showHeaderPlaceholder => _items.Count == 0;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -44,6 +47,12 @@ public partial class SmartPlaylistDetail
         var playlistId = Guid.Parse(Id);
         var result = await K7ServerService.GetPlaylistItemsAsync(playlistId, 1, 200);
         _items = result?.Items?.Select(ToViewModel).ToList() ?? [];
+        _headerPreviewUrls = _items
+            .Select(i => i.CoverUrl)
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Cast<string>()
+            .Take(4)
+            .ToList();
         _loadingItems = false;
     }
 
@@ -227,53 +236,39 @@ public partial class SmartPlaylistDetail
         var items = sp.RuleFilter.Items.OfType<ConditionRuleItemDto>().ToList();
         if (items.Count == 0) return L["NoRules"];
 
-        var condition = sp.RuleFilter.MatchCondition == RuleMatchCondition.All ? " ET " : " OU ";
+        var condition = sp.RuleFilter.MatchCondition == RuleMatchCondition.All
+            ? L["MatchAnd"].Value
+            : L["MatchOr"].Value;
         var rules = items.Select(r =>
         {
-            var field = Enum.TryParse<SmartPlaylistField>(r.Field, out var f) ? GetFieldLabel(f) : r.Field;
+            var field = RuleFieldLocalization.GetFieldLabel(r.Field, FieldL, FieldL);
             var op = GetOperatorLabel(r.Operator);
-            return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} � {r.Value} �";
+            return string.IsNullOrEmpty(r.Value)
+                ? $"{field} {op}"
+                : string.Format(L["RuleWithValue"], field, op, r.Value);
         });
 
         var desc = string.Join(condition, rules);
-        if (sp.Limit.HasValue) desc += $" (max {sp.Limit})";
+        if (sp.Limit.HasValue)
+            desc += string.Format(L["LimitSuffix"], sp.Limit);
         return desc;
     }
 
-    private static string GetFieldLabel(SmartPlaylistField field) => field switch
+    private string GetOperatorLabel(RuleOperator op) => op switch
     {
-        SmartPlaylistField.Title => "Titre",
-        SmartPlaylistField.Genre => "Genre",
-        SmartPlaylistField.Year => "Ann�e",
-        SmartPlaylistField.Rating => "Note",
-        SmartPlaylistField.PlayCount => "Nb lectures",
-        SmartPlaylistField.DateAdded => "Date d'ajout",
-        SmartPlaylistField.LastPlayed => "Derni�re lecture",
-        SmartPlaylistField.IsCompleted => "Termin�",
-        SmartPlaylistField.ArtistName => "Artiste",
-        SmartPlaylistField.AlbumTitle => "Album",
-        SmartPlaylistField.TrackNumber => "N� piste",
-        SmartPlaylistField.DiscNumber => "N� disque",
-        SmartPlaylistField.Duration => "Dur�e",
-        SmartPlaylistField.OriginalLanguage => "Langue",
-        _ => field.ToString()
-    };
-
-    private static string GetOperatorLabel(RuleOperator op) => op switch
-    {
-        RuleOperator.Equals => "est",
-        RuleOperator.NotEquals => "n'est pas",
-        RuleOperator.Contains => "contient",
-        RuleOperator.NotContains => "ne contient pas",
-        RuleOperator.GreaterThan => ">",
-        RuleOperator.LessThan => "<",
-        RuleOperator.GreaterThanOrEqual => ">=",
-        RuleOperator.LessThanOrEqual => "<=",
-        RuleOperator.BeginsWith => "commence par",
-        RuleOperator.EndsWith => "finit par",
-        RuleOperator.InLast => "dans les derniers",
-        RuleOperator.IsEmpty => "est vide",
-        RuleOperator.IsNotEmpty => "n'est pas vide",
+        RuleOperator.Equals => OpL["OpEquals"],
+        RuleOperator.NotEquals => OpL["OpNotEquals"],
+        RuleOperator.Contains => OpL["OpContains"],
+        RuleOperator.NotContains => OpL["OpNotContains"],
+        RuleOperator.GreaterThan => OpL["OpGreaterThan"],
+        RuleOperator.LessThan => OpL["OpLessThan"],
+        RuleOperator.GreaterThanOrEqual => OpL["OpGreaterThanOrEqual"],
+        RuleOperator.LessThanOrEqual => OpL["OpLessThanOrEqual"],
+        RuleOperator.BeginsWith => OpL["OpBeginsWith"],
+        RuleOperator.EndsWith => OpL["OpEndsWith"],
+        RuleOperator.InLast => OpL["OpInLast"],
+        RuleOperator.IsEmpty => OpL["OpIsEmpty"],
+        RuleOperator.IsNotEmpty => OpL["OpIsNotEmpty"],
         _ => op.ToString()
     };
 
@@ -286,13 +281,13 @@ public partial class SmartPlaylistDetail
             : $"{ts.Minutes:0}:{ts.Seconds:00}";
     }
 
-    private static string FormatRelativeTime(DateTimeOffset dateTime)
+    private string FormatRelativeTime(DateTimeOffset dateTime)
     {
         var diff = DateTimeOffset.UtcNow - dateTime;
-        if (diff.TotalMinutes < 1) return "� l'instant";
-        if (diff.TotalMinutes < 60) return $"il y a {(int)diff.TotalMinutes} min";
-        if (diff.TotalHours < 24) return $"il y a {(int)diff.TotalHours} h";
-        return $"il y a {(int)diff.TotalDays} j";
+        if (diff.TotalMinutes < 1) return L["RelativeJustNow"];
+        if (diff.TotalMinutes < 60) return string.Format(L["RelativeMinutes"], (int)diff.TotalMinutes);
+        if (diff.TotalHours < 24) return string.Format(L["RelativeHours"], (int)diff.TotalHours);
+        return string.Format(L["RelativeDays"], (int)diff.TotalDays);
     }
 
     internal sealed record SmartPlaylistItemViewModel

@@ -88,9 +88,11 @@
 
                                OnClick="PlayAll"
 
-                               Disabled="@(_items.Count == 0)">
+                               Disabled="@(_items.Count == 0)"
 
-                        @S["PlayAll"]
+                               AriaLabel="@S["PlayAll"]">
+
+                        <span class="playlist-action-label">@S["PlayAll"]</span>
 
                     </K7Button>
 
@@ -102,9 +104,11 @@
 
                                OnClick="ShuffleAll"
 
-                               Disabled="@(_items.Count == 0)">
+                               Disabled="@(_items.Count == 0)"
 
-                        @S["Shuffle"]
+                               AriaLabel="@S["Shuffle"]">
+
+                        <span class="playlist-action-label">@S["Shuffle"]</span>
 
                     </K7Button>
 

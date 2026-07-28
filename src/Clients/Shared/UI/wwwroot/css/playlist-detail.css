@@ -54,6 +54,11 @@
     margin-top: var(--space-3);
 }
 
+.playlist-header-actions > .k7-btn,
+.playlist-header-actions > .k7-icon-btn {
+    flex: 0 0 auto;
+}
+
 .playlist-cover-placeholder-large {
     width: 180px;
     height: 180px;
@@ -77,5 +82,27 @@
     .playlist-cover-placeholder-large {
         width: 140px;
         height: 140px;
+    }
+
+    .playlist-header-actions {
+        gap: var(--space-2);
+        row-gap: var(--space-2);
+    }
+
+    /* Icon-only secondary actions on small screens; keep Play label. */
+    .playlist-header-actions > .k7-btn:not(.k7-btn--filled) {
+        min-width: 40px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .playlist-header-actions > .k7-btn:not(.k7-btn--filled) .playlist-action-label {
+        display: none;
+    }
+
+    .playlist-header-actions > .k7-btn--filled .playlist-action-label {
+        display: inline;
     }
 }

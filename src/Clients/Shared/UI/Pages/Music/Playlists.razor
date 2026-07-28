@@ -1,4 +1,5 @@
 @page "/playlists"
+@using K7.Clients.Shared.Mappings
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IPlaylistService K7ServerService
 @inject IK7ServerService ApiClient
@@ -11,15 +12,18 @@
               Items="_playlists"
               Loading="_loading"
               PersistenceKey="playlists"
-              DefaultItemWidth="200"
-              DefaultSpacing="8"
-              GridItemAspectRatio="1.3f">
+              Class="playlists-browse"
+              DefaultItemWidth="160"
+              DefaultSpacing="24"
+              GridItemAspectRatio="1f">
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
         <K7Menu Disabled="@(!_canCreate)">
             <ActivatorContent>
-                <K7Button Variant="outlined" Color="primary" StartIcon="lightbulb" Disabled="@(!_canCreate)">@L["Presets"]</K7Button>
+                <K7Button Variant="outlined" Color="primary" StartIcon="@Phosphor.Lightbulb" Disabled="@(!_canCreate)" AriaLabel="@L["Presets"]">
+                    <span class="playlists-toolbar-label">@L["Presets"]</span>
+                </K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</K7MenuItem>
@@ -29,9 +33,11 @@
                 <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</K7MenuItem>
             </ChildContent>
         </K7Menu>
-        <K7Menu Disabled="@(!_canCreate)">
+        <K7Menu Class="playlists-toolbar-new" Disabled="@(!_canCreate)">
             <ActivatorContent>
-                <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["NewMenu"]</K7Button>
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" Disabled="@(!_canCreate)" AriaLabel="@L["NewMenu"]">
+                    <span class="playlists-toolbar-label">@L["NewMenu"]</span>
+                </K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
@@ -40,41 +46,28 @@
         </K7Menu>
     </ToolbarContent>
     <EmptyContent>
-        <div class="d-flex flex-col pa-16">
-            <K7Icon Name="music-notes-simple" Style="font-size: 64px; opacity: 0.3;" />
-            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
-            <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
-        </div>
+        <K7EmptyState Icon="@Phosphor.Queue" Title="@L["None"]" Subtitle="@L["EmptyHint"]" />
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <div class="k7-card k7-card--outlined playlist-card" tabindex="0" role="button" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
-            <div class="k7-card-content">
-                <div class="d-flex flex-col">
-                    @if (playlist.CoverPicture is not null)
-                    {
-                        <K7Image Src="@GetCoverUrl(playlist)"
-                                  Width="120"
-                                  ObjectFit="cover"
-                                  Class="rounded"
-                                  loading="lazy" />
-                    }
-                    else
-                    {
-                        <div class="playlist-cover-placeholder">
-                            <K7Icon Name="@(playlist.IsSmartPlaylist ? "sparkle" : "music-notes-simple")"
-                                     Style="font-size: 48px; opacity: 0.3;" />
-                        </div>
-                    }
-                    <div class="d-flex align-center">
-                        <p class="text-subtitle1 playlist-title text-center">@playlist.Title</p>
-                        @if (playlist.IsSmartPlaylist)
-                        {
-                            <K7Icon Name="sparkle"  IconSize="@K7IconSize.Sm" Color="secondary" />
-                        }
-                    </div>
-                    <span class="text-caption" Color="secondary">@playlist.ItemCount @S["Tracks"]</span>
-                </div>
-            </div>
-        </div>
+        @{
+            var vm = playlist.ToCardViewModel(ApiClient, GetPlaylistSubtitle(playlist));
+            var placeholderIcon = playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
+        }
+        <MediaCard Model="vm"
+                   Href="@GetPlaylistHref(playlist)"
+                   Variant="MediaCardVariant.Cover"
+                   FooterVisible="true"
+                   ContextMenuEnabled="false"
+                   HoverOverlayEnabled="true"
+                   PlaceholderIcon="@placeholderIcon">
+            <CoverContent>
+                <K7CoverMosaic CoverPicture="playlist.CoverPicture"
+                               PreviewPictures="playlist.PreviewPictures"
+                               PlaceholderIcon="@placeholderIcon"
+                               PictureSize="MetadataPictureSize.Medium"
+                               Alt="@playlist.Title"
+                               Class="media-card-mosaic" />
+            </CoverContent>
+        </MediaCard>
     </GridTemplate>
 </BrowseView>

@@ -64,7 +64,13 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             {
                 _containerWidth = initialWidth;
                 UpdateEstimatedRowHeight();
-                _lastColumnCount = CalculateColumnCount();
+                // Rows were chunked with the width=0 fallback (4 cols). Rebuild once we know the real width
+                // so CSS column count and item chunking stay in sync. ResizeObserver may report the same
+                // width and early-return without rebuilding.
+                if (Items is not null)
+                    RebuildRows();
+                else
+                    _lastColumnCount = CalculateColumnCount();
                 StateHasChanged();
             }
 

@@ -5,7 +5,6 @@ using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -71,19 +70,13 @@ public partial class Playlists
         }
     }
 
-    private void GoToPlaylist(LitePlaylistDto playlist)
-    {
-        var url = playlist.IsSmartPlaylist
+    private string GetPlaylistHref(LitePlaylistDto playlist) =>
+        playlist.IsSmartPlaylist
             ? $"/smart-playlists/{playlist.Id}"
             : $"/playlists/{playlist.Id}";
-        NavigationManager.NavigateTo(url);
-    }
 
-    private string? GetCoverUrl(LitePlaylistDto playlist)
-    {
-        return ApiClient.GetAbsoluteUri(
-            playlist.CoverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-    }
+    private string GetPlaylistSubtitle(LitePlaylistDto playlist) =>
+        $"{playlist.ItemCount} {S["Tracks"]}";
 
     private static CreateSmartPlaylistRequest BuildPresetRequest(Preset preset) => preset switch
     {

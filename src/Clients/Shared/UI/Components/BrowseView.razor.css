@@ -454,6 +454,20 @@
         padding: 0 var(--space-2);
         font-size: var(--text-xs);
     }
+
+    .playlists-browse ::deep .playlists-toolbar-label {
+        display: none;
+    }
+
+    .playlists-browse ::deep .browse-view-toolbar-start > .k7-menu .k7-btn {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+        justify-content: center;
+        gap: 0;
+    }
 }
 
 .browse-view-grid {

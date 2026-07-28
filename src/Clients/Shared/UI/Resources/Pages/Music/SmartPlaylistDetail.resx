@@ -32,5 +32,15 @@
   <data name="NoRules" xml:space="preserve"><value>Aucune règle définie</value></data>
   <data name="BrowseInLibrary" xml:space="preserve"><value>Parcourir en bibliothèque</value></data>
   <data name="BrowseInLibraryUnavailable" xml:space="preserve"><value>Aucun groupe de bibliothèque disponible pour ce type de média</value></data>
+  <data name="RulesCount" xml:space="preserve"><value>{0} règle(s)</value></data>
+  <data name="EvaluatedRelative" xml:space="preserve"><value>Évalué {0}</value></data>
+  <data name="MatchAnd" xml:space="preserve"><value> ET </value></data>
+  <data name="MatchOr" xml:space="preserve"><value> OU </value></data>
+  <data name="RuleWithValue" xml:space="preserve"><value>{0} {1} « {2} »</value></data>
+  <data name="LimitSuffix" xml:space="preserve"><value> (max {0})</value></data>
+  <data name="RelativeJustNow" xml:space="preserve"><value>à l'instant</value></data>
+  <data name="RelativeMinutes" xml:space="preserve"><value>il y a {0} min</value></data>
+  <data name="RelativeHours" xml:space="preserve"><value>il y a {0} h</value></data>
+  <data name="RelativeDays" xml:space="preserve"><value>il y a {0} j</value></data>
 </root>
 
