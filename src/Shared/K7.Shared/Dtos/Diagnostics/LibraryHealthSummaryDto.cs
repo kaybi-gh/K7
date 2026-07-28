@@ -26,6 +26,9 @@ public sealed record LibraryHealthSummaryDto
 
     public required int MissingAudioAnalysisCount { get; init; }
 
+    public required int DuplicateExternalIdCount { get; init; }
+    public required int SuspectedDuplicateMediaCount { get; init; }
+
     public required int InaccessiblePathCount { get; init; }
 
     public required int PendingBackgroundTaskCount { get; init; }

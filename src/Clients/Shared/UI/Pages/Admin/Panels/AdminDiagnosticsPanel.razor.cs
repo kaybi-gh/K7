@@ -48,7 +48,7 @@ public partial class AdminDiagnosticsPanel
     private DiagnosticEntityType? _filterEntityType;
     private DiagnosticIssue? _filterIssue;
 
-    private HashSet<DiagnosticItemDto> _selectedItems = [];
+    private readonly HashSet<DiagnosticItemDto> _selectedItems = [];
 
     private int _totalIssueCount;
     private int _errorCount;
@@ -373,8 +373,8 @@ public partial class AdminDiagnosticsPanel
     private static IReadOnlyCollection<DiagnosticIssue>? GetSeverityIssues(string? severity) => severity switch
     {
         "error" => [DiagnosticIssue.OrphanFile, DiagnosticIssue.MissingFiles, DiagnosticIssue.MissingFileMetadata],
-        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingChapters, DiagnosticIssue.MissingThemeSong, DiagnosticIssue.MissingIntroOutro, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.MissingExternalId, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
-        "info" => [DiagnosticIssue.MissingAudioAnalysis],
+        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingChapters, DiagnosticIssue.MissingThemeSong, DiagnosticIssue.MissingIntroOutro, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.MissingExternalId, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath, DiagnosticIssue.DuplicateExternalId],
+        "info" => [DiagnosticIssue.MissingAudioAnalysis, DiagnosticIssue.SuspectedDuplicateMedia],
         _ => null
     };
 
@@ -663,6 +663,8 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingFiles => L["MissingFiles"],
         DiagnosticIssue.InaccessiblePath => L["InaccessiblePath"],
         DiagnosticIssue.MissingMembers => L["MissingMembers"],
+        DiagnosticIssue.DuplicateExternalId => L["DuplicateExternalId"],
+        DiagnosticIssue.SuspectedDuplicateMedia => L["SuspectedDuplicateMedia"],
         _ => issue.ToString()
     };
 
@@ -670,7 +672,8 @@ public partial class AdminDiagnosticsPanel
     {
         DiagnosticIssue.OrphanFile or DiagnosticIssue.MissingFiles or DiagnosticIssue.MissingFileMetadata
             => "error",
-        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingMembers => "info",
+        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingMembers
+            or DiagnosticIssue.SuspectedDuplicateMedia => "info",
         DiagnosticIssue.InaccessiblePath => "warning",
         _ => "warning"
     };

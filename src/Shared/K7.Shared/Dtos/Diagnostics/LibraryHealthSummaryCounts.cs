@@ -38,12 +38,14 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.MissingMetadata,
         DiagnosticIssue.MissingExternalId,
         DiagnosticIssue.StaleMetadata,
-        DiagnosticIssue.InaccessiblePath
+        DiagnosticIssue.InaccessiblePath,
+        DiagnosticIssue.DuplicateExternalId
     ];
 
     public static readonly DiagnosticIssue[] InfoIssues =
     [
-        DiagnosticIssue.MissingAudioAnalysis
+        DiagnosticIssue.MissingAudioAnalysis,
+        DiagnosticIssue.SuspectedDuplicateMedia
     ];
 
     public static int SumErrors(IEnumerable<LibraryHealthSummaryDto> summaries) =>
@@ -53,10 +55,10 @@ public static class LibraryHealthSummaryCounts
         summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount + l.MissingChaptersCount
             + l.MissingThemeSongCount + l.MissingIntroOutroCount
             + l.MediaMissingPicturesCount + l.MediaMissingExternalIdCount + l.MediaMissingMetadataCount
-            + l.StaleMetadataCount + l.InaccessiblePathCount);
+            + l.StaleMetadataCount + l.InaccessiblePathCount + l.DuplicateExternalIdCount);
 
     public static int SumInfo(IEnumerable<LibraryHealthSummaryDto> summaries) =>
-        summaries.Sum(l => l.MissingAudioAnalysisCount);
+        summaries.Sum(l => l.MissingAudioAnalysisCount + l.SuspectedDuplicateMediaCount);
 
     public static int SumTotal(IEnumerable<LibraryHealthSummaryDto> summaries) =>
         SumErrors(summaries) + SumWarnings(summaries) + SumInfo(summaries);
@@ -67,7 +69,8 @@ public static class LibraryHealthSummaryCounts
         + summary.MissingIntroOutroCount
         + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
         + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
-        + summary.MissingAudioAnalysisCount + summary.InaccessiblePathCount;
+        + summary.MissingAudioAnalysisCount + summary.InaccessiblePathCount
+        + summary.DuplicateExternalIdCount + summary.SuspectedDuplicateMediaCount;
 
     public static int SumIssue(IEnumerable<LibraryHealthSummaryDto> summaries, DiagnosticIssue issue) =>
         summaries.Sum(s => CountIssue(s, issue));
@@ -158,7 +161,8 @@ public static class LibraryHealthSummaryCounts
         DiagnosticEntityType.Media => issue is DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingExternalId
             or DiagnosticIssue.MissingMetadata or DiagnosticIssue.MissingFiles or DiagnosticIssue.StaleMetadata
             or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingThemeSong
-            or DiagnosticIssue.MissingIntroOutro,
+            or DiagnosticIssue.MissingIntroOutro or DiagnosticIssue.DuplicateExternalId
+            or DiagnosticIssue.SuspectedDuplicateMedia,
         DiagnosticEntityType.Library => issue is DiagnosticIssue.InaccessiblePath,
         _ => false
     };
@@ -178,6 +182,8 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.StaleMetadata => summary.StaleMetadataCount,
         DiagnosticIssue.MissingAudioAnalysis => summary.MissingAudioAnalysisCount,
         DiagnosticIssue.MissingFiles => summary.MediaWithoutFilesCount,
+        DiagnosticIssue.DuplicateExternalId => summary.DuplicateExternalIdCount,
+        DiagnosticIssue.SuspectedDuplicateMedia => summary.SuspectedDuplicateMediaCount,
         DiagnosticIssue.InaccessiblePath => summary.InaccessiblePathCount,
         _ => 0
     };
@@ -188,7 +194,8 @@ public static class LibraryHealthSummaryCounts
             + summary.MissingFileMetadataCount + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount,
         DiagnosticEntityType.Media => summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
             + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
-            + summary.MissingAudioAnalysisCount + summary.MissingThemeSongCount + summary.MissingIntroOutroCount,
+            + summary.MissingAudioAnalysisCount + summary.MissingThemeSongCount + summary.MissingIntroOutroCount
+            + summary.DuplicateExternalIdCount + summary.SuspectedDuplicateMediaCount,
         DiagnosticEntityType.Library => summary.InaccessiblePathCount,
         _ => 0
     };

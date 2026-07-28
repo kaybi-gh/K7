@@ -306,6 +306,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         DiagnosticIssue.OrphanFile or DiagnosticIssue.MissingFiles or DiagnosticIssue.MissingFileMetadata
             => DiagnosticSeverity.Error,
         DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingMembers
+            or DiagnosticIssue.SuspectedDuplicateMedia
             => DiagnosticSeverity.Info,
         _ => DiagnosticSeverity.Warning
     };
@@ -471,6 +472,14 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             : await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodeIdsAsync(
                 _context, request.LibraryId, episodeIds, cancellationToken);
 
+        // Duplicate detection is a signal-only safety net: media creation is a find-or-create
+        // over a fuzzy identity, so duplicates cannot be prevented by construction. See
+        // DuplicateMediaDiagnosticHelper for the rationale and the two heuristics.
+        var duplicateExternalIdMediaIds = await DuplicateMediaDiagnosticHelper.GetDuplicateExternalIdMediaIdsAsync(
+            _context, mediaIds, cancellationToken);
+        var suspectedDuplicateMediaIds = await DuplicateMediaDiagnosticHelper.GetSuspectedDuplicateMediaIdsAsync(
+            _context, request.LibraryId, mediaIds, cancellationToken);
+
         return medias.Select(m =>
         {
             var libraryId = mediaToLibrary.GetValueOrDefault(m.Id);
@@ -511,6 +520,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             if (m.Type == MediaType.SerieEpisode && missingIntroOutroEpisodeIds.Contains(m.Id))
                 issues.Add(DiagnosticIssue.MissingIntroOutro);
 
+            if (duplicateExternalIdMediaIds.Contains(m.Id))
+                issues.Add(DiagnosticIssue.DuplicateExternalId);
+
+            if (suspectedDuplicateMediaIds.Contains(m.Id))
+                issues.Add(DiagnosticIssue.SuspectedDuplicateMedia);
+
             if (issues.Count == 0) return null;
 
             episodeNavById.TryGetValue(m.Id, out var episodeNav);
@@ -523,6 +538,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                     || issues.Contains(DiagnosticIssue.MissingExternalId)
                     || issues.Contains(DiagnosticIssue.MissingThemeSong)
                     || issues.Contains(DiagnosticIssue.MissingIntroOutro)
+                    || issues.Contains(DiagnosticIssue.DuplicateExternalId)
                     ? DiagnosticSeverity.Warning
                     : DiagnosticSeverity.Info;
 
@@ -579,6 +595,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (request.LibraryId.HasValue)
             availability = availability.Where(a => a.LibraryId == request.LibraryId.Value);
 
+        var duplicateExternalIdMediaIds = DuplicateMediaDiagnosticHelper.QueryDuplicateExternalIdMediaIds(_context);
+        var suspectedDuplicateMediaIds = DuplicateMediaDiagnosticHelper.QuerySuspectedDuplicateMediaIds(_context, request.LibraryId);
+
         var candidateIds = _context.Medias
             .AsNoTracking()
             .Where(m => availability.Any(a => a.MediaId == m.Id))
@@ -611,6 +630,8 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                                 f.MediaId == m.Id
                                 && _context.Libraries.Any(l =>
                                     l.Id == f.LibraryId && l.IntroDetectionEnabled))
+                        || duplicateExternalIdMediaIds.Contains(m.Id)
+                        || suspectedDuplicateMediaIds.Contains(m.Id)
                         || availability.Join(
                                 _context.Libraries,
                                 a => a.LibraryId,
@@ -718,7 +739,9 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         or DiagnosticIssue.StaleMetadata
         or DiagnosticIssue.MissingAudioAnalysis
         or DiagnosticIssue.MissingThemeSong
-        or DiagnosticIssue.MissingIntroOutro;
+        or DiagnosticIssue.MissingIntroOutro
+        or DiagnosticIssue.DuplicateExternalId
+        or DiagnosticIssue.SuspectedDuplicateMedia;
 
     private static IReadOnlyList<MetadataPictureType> GetExpectedPictureTypes(MediaType type) => type switch
     {

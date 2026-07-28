@@ -31,6 +31,11 @@
     padding: 0;
 }
 
+.diagnostics-page .data-page-body ::deep .k7-empty-state {
+    flex: 1;
+    width: 100%;
+}
+
 .diagnostics-page .data-page-body ::deep .k7-data-table-el {
     table-layout: auto;
     min-width: 100%;

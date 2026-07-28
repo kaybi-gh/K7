@@ -56,6 +56,10 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         var missingIntroOutroCounts = await IntroOutroDiagnosticHelper.GetMissingIntroOutroCountsByLibraryAsync(
             _context, cancellationToken);
         var inaccessiblePathCounts = await GetInaccessiblePathCountsAsync(cancellationToken);
+        var duplicateExternalIdCounts = await DuplicateMediaDiagnosticHelper.GetDuplicateExternalIdCountsByLibraryAsync(
+            _context, cancellationToken);
+        var suspectedDuplicateCounts = await DuplicateMediaDiagnosticHelper.GetSuspectedDuplicateCountsByLibraryAsync(
+            _context, cancellationToken);
         var mediaWithoutFilesCounts = await GetMediaWithoutFilesCountsAsync(cancellationToken);
 
         var musicLibraryIds = libraries
@@ -85,6 +89,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             inaccessiblePathCounts.TryGetValue(library.Id, out var inaccessiblePathCount);
             mediaWithoutFilesCounts.TryGetValue(library.Id, out var mediaWithoutFilesCount);
             missingAudioAnalysisCounts.TryGetValue(library.Id, out var missingAudioAnalysisCount);
+            duplicateExternalIdCounts.TryGetValue(library.Id, out var duplicateExternalIdCount);
+            suspectedDuplicateCounts.TryGetValue(library.Id, out var suspectedDuplicateMediaCount);
 
             result.Add(new LibraryHealthSummaryDto
             {
@@ -106,6 +112,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MissingThemeSongCount = missingThemeSongCount,
                 MissingIntroOutroCount = missingIntroOutroCount,
                 MissingAudioAnalysisCount = missingAudioAnalysisCount,
+                DuplicateExternalIdCount = duplicateExternalIdCount,
+                SuspectedDuplicateMediaCount = suspectedDuplicateMediaCount,
                 InaccessiblePathCount = inaccessiblePathCount,
                 PendingBackgroundTaskCount = backgroundTaskStats.PendingCount,
                 FailedBackgroundTaskCount = backgroundTaskStats.FailedCount

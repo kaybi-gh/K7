@@ -26,6 +26,8 @@
   <data name="SeverityWarnings" xml:space="preserve"><value>Warnings</value></data>
   <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
   <data name="NoData" xml:space="preserve"><value>No data available.</value></data>
+  <data name="Empty" xml:space="preserve"><value>No issues</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Everything looks fine, or nothing matches your filters.</value></data>
   <data name="MediaSection" xml:space="preserve"><value>Media</value></data>
   <data name="TotalMedia" xml:space="preserve"><value>Total</value></data>
   <data name="MissingPictures" xml:space="preserve"><value>Missing pictures</value></data>
@@ -44,6 +46,8 @@
   <data name="MissingThemeSong" xml:space="preserve"><value>Theme song not generated</value></data>
   <data name="ActionExtractThemeSong" xml:space="preserve"><value>Generate theme song</value></data>
   <data name="MissingIntroOutro" xml:space="preserve"><value>Intro/outro missing</value></data>
+  <data name="DuplicateExternalId" xml:space="preserve"><value>Duplicate (shared external id)</value></data>
+  <data name="SuspectedDuplicateMedia" xml:space="preserve"><value>Suspected duplicate (same title and year)</value></data>
   <data name="ActionDetectIntroOutro" xml:space="preserve"><value>Detect intros/outros</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Missing audio analysis</value></data>
   <data name="MissingMembers" xml:space="preserve"><value>Missing members</value></data>

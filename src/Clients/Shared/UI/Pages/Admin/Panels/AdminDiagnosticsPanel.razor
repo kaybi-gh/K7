@@ -89,9 +89,9 @@
         {
             <K7ProgressBar Indeterminate="true" />
         }
-        else if (_summaries is null or { Count: 0 })
+        else if (_summaries is null || _totalIssueCount == 0)
         {
-            <p class="text-sm pa-4 text-center" style="color: var(--color-text-muted);">@L["NoData"]</p>
+            <K7EmptyState Icon="@Phosphor.CheckCircle" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
         }
         else
         {

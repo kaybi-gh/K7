@@ -16,5 +16,7 @@ public enum DiagnosticIssue
     MissingMembers,
     MissingChapters,
     MissingThemeSong,
-    MissingIntroOutro
+    MissingIntroOutro,
+    DuplicateExternalId,
+    SuspectedDuplicateMedia
 }
