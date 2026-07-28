@@ -98,10 +98,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("CompletedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<bool>("CancellationRequested")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("ConcurrencyGroup")
+                    b.Property<string>("CompletedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Created")
@@ -113,6 +113,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<string>("ErrorDetails")
                         .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("FederationPeerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Lane")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModified")
                         .IsRequired()
@@ -132,6 +138,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReclaimCount")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("RequestData")
@@ -157,16 +166,27 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("TimeoutSeconds")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("TriggeredBy")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkClass")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ConcurrencyGroup")
-                        .HasDatabaseName("IX_BackgroundTasks_ConcurrencyGroup");
+                    b.HasIndex("Lane")
+                        .HasDatabaseName("IX_BackgroundTasks_Lane");
 
                     b.HasIndex("TargetEntityId")
                         .HasDatabaseName("IX_BackgroundTasks_TargetEntityId");
 
-                    b.HasIndex("Status", "Priority", "Created")
-                        .HasDatabaseName("IX_BackgroundTasks_Status_Priority_Created");
+                    b.HasIndex("Name", "TargetEntityId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BackgroundTasks_Name_TargetEntityId_Active")
+                        .HasFilter("\"Status\" IN (0, 1, 2)");
+
+                    b.HasIndex("Status", "WorkClass", "Priority", "Created")
+                        .HasDatabaseName("IX_BackgroundTasks_Status_WorkClass_Priority_Created");
 
                     b.ToTable("BackgroundTasks");
                 });
@@ -3579,6 +3599,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("MediaId", "UserId")
+                        .IsUnique()
                         .HasDatabaseName("IX_Ratings_MediaId_UserId");
 
                     b.HasDiscriminator().HasValue(2);
