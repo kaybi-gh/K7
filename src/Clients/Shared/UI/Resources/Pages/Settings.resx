@@ -60,6 +60,8 @@
   <data name="LibrariesPageTitle" xml:space="preserve"><value>Bibliothèques</value></data>
   <data name="LibrariesPageDescription" xml:space="preserve"><value>Choisissez les bibliothèques à masquer de votre espace.</value></data>
   <data name="LibrariesPageEmpty" xml:space="preserve"><value>Aucune bibliothèque disponible.</value></data>
+  <data name="EmptyStateTitle" xml:space="preserve"><value>Rien à afficher</value></data>
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre bibliothèque est vide, ou aucun contenu ne vous est accessible.</value></data>
   <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Bibliothèques mises à jour.</value></data>
   <data name="HomePageTitle" xml:space="preserve"><value>Accueil</value></data>
   <data name="HomePageDescription" xml:space="preserve"><value>Votre page d'accueil est personnalisée. Réinitialisez-la pour revenir à la disposition par défaut.</value></data>

@@ -35,6 +35,8 @@
   <data name="TopTracks" xml:space="preserve"><value>Top morceaux</value></data>
   <data name="Plays" xml:space="preserve"><value>Lectures</value></data>
   <data name="NoLibraryGroups" xml:space="preserve"><value>Aucun m&#233;dia</value></data>
+  <data name="EmptyStateTitle" xml:space="preserve"><value>Rien &#224; afficher</value></data>
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre biblioth&#232;que est vide, ou aucun contenu ne vous est accessible.</value></data>
   <data name="NoMovies" xml:space="preserve"><value>Aucune biblioth&#232;que de films</value></data>
   <data name="NoSeries" xml:space="preserve"><value>Aucune biblioth&#232;que de s&#233;ries</value></data>
   <data name="NoMusic" xml:space="preserve"><value>Aucune biblioth&#232;que musicale</value></data>

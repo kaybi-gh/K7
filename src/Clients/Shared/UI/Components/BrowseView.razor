@@ -44,17 +44,17 @@
     }
     else if (IsEmpty)
     {
-        @if (EmptyContent is not null)
-        {
-            @EmptyContent
-        }
-        else
-        {
-            <div class="browse-view-empty">
+        <div class="browse-view-empty">
+            @if (EmptyContent is not null)
+            {
+                @EmptyContent
+            }
+            else
+            {
                 <K7Icon Icon="@Phosphor.MagnifyingGlass" Style="font-size: 48px; opacity: 0.3;" />
                 <p class="text-secondary">@S["NoResults"]</p>
-            </div>
-        }
+            }
+        </div>
     }
     else
     {

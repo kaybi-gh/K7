@@ -72,6 +72,10 @@
 
   <data name="NoLibraryGroups" xml:space="preserve"><value>No media</value></data>
 
+  <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
+
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>
+
   <data name="NoMovies" xml:space="preserve"><value>No movie libraries</value></data>
 
   <data name="NoSeries" xml:space="preserve"><value>No series libraries</value></data>

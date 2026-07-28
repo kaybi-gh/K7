@@ -30,4 +30,7 @@
   <data name="TypeSeries" xml:space="preserve"><value>Series</value></data>
   <data name="TypeMusic" xml:space="preserve"><value>Musique</value></data>
   <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Empty" xml:space="preserve"><value>Aucun groupe</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Les groupes sont créés automatiquement lorsque vous ajoutez une bibliothèque.</value></data>
+  <data name="CreateLibrary" xml:space="preserve"><value>Créer une bibliothèque</value></data>
 </root>

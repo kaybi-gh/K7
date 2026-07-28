@@ -11,12 +11,6 @@
     margin: 0;
 }
 
-.settings-libraries__empty {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    margin: 0;
-}
-
 .settings-libraries__groups {
     display: flex;
     flex-direction: column;

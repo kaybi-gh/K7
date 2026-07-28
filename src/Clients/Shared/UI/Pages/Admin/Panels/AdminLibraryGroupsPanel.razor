@@ -50,4 +50,13 @@
             </div>
         </K7Paper>
     </GridTemplate>
+    <EmptyContent>
+        <K7EmptyState Icon="@Phosphor.Folders" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]">
+            <ActionContent>
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="GoToLibraries">
+                    @L["CreateLibrary"]
+                </K7Button>
+            </ActionContent>
+        </K7EmptyState>
+    </EmptyContent>
 </BrowseView>

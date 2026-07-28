@@ -39,21 +39,3 @@
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
-
-::deep .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 4rem 1rem;
-}
-
-::deep .empty-state__title {
-    opacity: 0.5;
-}
-
-::deep .empty-state__hint {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-}

@@ -10,18 +10,17 @@
 
 <div class="settings-form-page">
     <div class="settings-form-page__body settings-libraries">
-        <p class="settings-libraries__description">@L["LibrariesPageDescription"]</p>
-
         @if (_loading)
         {
             <K7ProgressBar Indeterminate="true" />
         }
         else if (_libraries.Count == 0)
         {
-            <p class="settings-libraries__empty">@L["LibrariesPageEmpty"]</p>
+            <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
         }
         else
         {
+            <p class="settings-libraries__description">@L["LibrariesPageDescription"]</p>
             <div class="settings-libraries__groups">
                 @foreach (var group in _groups)
                 {

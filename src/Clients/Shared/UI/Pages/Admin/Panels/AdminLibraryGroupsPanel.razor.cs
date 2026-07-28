@@ -12,6 +12,7 @@ public partial class AdminLibraryGroupsPanel
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<LibraryGroupDto>? _groups;
@@ -32,6 +33,8 @@ public partial class AdminLibraryGroupsPanel
         _libraries = await librariesTask;
         _isLoading = false;
     }
+
+    private void GoToLibraries() => NavigationManager.NavigateTo("/admin/libraries");
 
     private async Task OpenEditDialog(LibraryGroupDto group)
     {

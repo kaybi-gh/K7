@@ -1,7 +1,7 @@
-using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Helpers;
-using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
@@ -157,7 +157,8 @@ public partial class AdminLibrariesPanel : IDisposable
 
     private async Task OpenCreateDialog()
     {
-        var options = new K7DialogOptions {
+        var options = new K7DialogOptions
+        {
             MaxWidth = K7DialogMaxWidth.Medium,
             FullWidth = true,
             CloseOnEscapeKey = true
