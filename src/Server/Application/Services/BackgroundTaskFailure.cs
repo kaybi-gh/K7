@@ -27,7 +27,13 @@ public static class BackgroundTaskFailure
             return;
         }
 
-        var delay = TimeSpan.FromSeconds(Math.Min(30 * Math.Pow(2, task.AttemptCount), maxBackoff.TotalSeconds));
+        var backoffSeconds = Math.Min(30 * Math.Pow(2, task.AttemptCount), maxBackoff.TotalSeconds);
+
+        // Full jitter. Without it, every task that failed on the same provider outage retries at the
+        // same instant and reproduces the outage as a self-inflicted burst.
+        var jitteredSeconds = backoffSeconds * (0.5 + (Random.Shared.NextDouble() * 0.5));
+
+        var delay = TimeSpan.FromSeconds(jitteredSeconds);
         task.Status = BackgroundTaskStatus.WaitingForRetry;
         task.NextRetryAfter = DateTimeOffset.UtcNow.Add(delay);
         task.StartedAt = null;

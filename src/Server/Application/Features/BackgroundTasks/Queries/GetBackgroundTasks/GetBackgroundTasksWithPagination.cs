@@ -12,7 +12,9 @@ public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<Bac
     public Guid[]? Ids { get; init; }
     public string[]? Names { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskStatus>? Status { get; init; }
-    public EnumHashSetQueryParam<BackgroundTaskPriority>? Priority { get; init; }
+    public EnumHashSetQueryParam<BackgroundTaskLane>? Lane { get; init; }
+    public EnumHashSetQueryParam<BackgroundTaskWorkClass>? WorkClass { get; init; }
+    public EnumHashSetQueryParam<BackgroundTaskTriggeredBy>? TriggeredBy { get; init; }
     public string? SortBy { get; init; }
     public bool? SortDescending { get; init; }
     public required int PageNumber { get; init; } = 1;
@@ -54,9 +56,19 @@ public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetB
             query = query.Where(x => request.Status.Contains(x.Status));
         }
 
-        if (request.Priority?.Count > 0)
+        if (request.Lane?.Count > 0)
         {
-            query = query.Where(x => request.Priority.Contains(x.Priority));
+            query = query.Where(x => request.Lane.Contains(x.Lane));
+        }
+
+        if (request.WorkClass?.Count > 0)
+        {
+            query = query.Where(x => request.WorkClass.Contains(x.WorkClass));
+        }
+
+        if (request.TriggeredBy?.Count > 0)
+        {
+            query = query.Where(x => request.TriggeredBy.Contains(x.TriggeredBy));
         }
 
         return query;

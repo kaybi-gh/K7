@@ -6,9 +6,10 @@ public class CreateBackgroundTaskCommandValidator : AbstractValidator<CreateBack
     {
         RuleFor(x => x.Request).NotNull();
         RuleFor(x => x.TargetEntityTypeName).MaximumLength(500);
-        RuleFor(x => x.Priority).IsInEnum();
+        RuleFor(x => x.Lane).IsInEnum();
+        RuleFor(x => x.WorkClass).IsInEnum();
+        RuleFor(x => x.TriggeredBy).IsInEnum();
         RuleFor(x => x.MaxAttempts).GreaterThanOrEqualTo(0);
         RuleFor(x => x.TimeoutSeconds).GreaterThan(0).When(x => x.TimeoutSeconds.HasValue);
-        RuleFor(x => x.ConcurrencyGroup).MaximumLength(500);
     }
 }

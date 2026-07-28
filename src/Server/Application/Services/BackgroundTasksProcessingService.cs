@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
@@ -14,7 +15,6 @@ namespace K7.Server.Application.Services;
 
 public class BackgroundTasksProcessingService : BackgroundService
 {
-    private const int DefaultConcurrencyLimit = 1;
     private static readonly TimeSpan SupervisionInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OrphanPollInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
@@ -27,12 +27,13 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly IBackgroundTaskQueue _taskQueue;
     private readonly BackgroundTaskTypeRegistry _typeRegistry;
     private readonly IBackgroundTaskNotifier _notifier;
-    private readonly ConcurrentDictionary<string, int> _activeCountByGroup = new();
+    private readonly IBackgroundTaskCancellationRegistry _cancellationRegistry;
+    private readonly ConcurrentDictionary<string, int> _activeCountByLaneKey = new();
     private readonly ConcurrentDictionary<Guid, byte> _executingTaskIds = new();
     private readonly List<WorkerHandle> _workers = [];
     private readonly Lock _workersLock = new();
     private int _cachedWorkerCount = 1;
-    private Dictionary<string, int> _cachedConcurrencyLimits = new();
+    private Dictionary<BackgroundTaskLane, int> _cachedLaneLimits = new();
     private readonly Lock _settingsCacheLock = new();
 
     public BackgroundTasksProcessingService(
@@ -40,13 +41,15 @@ public class BackgroundTasksProcessingService : BackgroundService
         IServiceProvider serviceProvider,
         IBackgroundTaskQueue taskQueue,
         BackgroundTaskTypeRegistry typeRegistry,
-        IBackgroundTaskNotifier notifier)
+        IBackgroundTaskNotifier notifier,
+        IBackgroundTaskCancellationRegistry cancellationRegistry)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _taskQueue = taskQueue;
         _typeRegistry = typeRegistry;
         _notifier = notifier;
+        _cancellationRegistry = cancellationRegistry;
     }
 
     public int ActiveWorkerCount
@@ -60,12 +63,12 @@ public class BackgroundTasksProcessingService : BackgroundService
         }
     }
 
-    public IReadOnlyDictionary<string, int> ActiveCountByGroup => _activeCountByGroup;
+    public IReadOnlyDictionary<string, int> ActiveCountByLaneKey => _activeCountByLaneKey;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var desiredCount = await ReadWorkerCountAsync(stoppingToken);
-        UpdateSettingsCache(desiredCount, await ReadConcurrencyLimitsAsync(stoppingToken));
+        UpdateSettingsCache(desiredCount, await ReadLaneLimitsAsync(stoppingToken));
         _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", desiredCount);
 
         await RecoverStuckTasksAsync(stoppingToken);
@@ -89,19 +92,32 @@ public class BackgroundTasksProcessingService : BackgroundService
         _logger.LogInformation("BackgroundTasksProcessingService stopped");
     }
 
-    private void UpdateSettingsCache(int workerCount, Dictionary<string, int> concurrencyLimits)
+    private void UpdateSettingsCache(int workerCount, Dictionary<BackgroundTaskLane, int> laneLimits)
     {
         lock (_settingsCacheLock)
         {
             _cachedWorkerCount = workerCount;
-            _cachedConcurrencyLimits = concurrencyLimits;
+            _cachedLaneLimits = laneLimits;
         }
     }
 
-    private Dictionary<string, int> GetCachedConcurrencyLimits()
+    private Dictionary<BackgroundTaskLane, int> GetCachedLaneLimits()
     {
         lock (_settingsCacheLock)
-            return _cachedConcurrencyLimits;
+            return _cachedLaneLimits;
+    }
+
+    /// <summary>
+    /// Resolves the limit of a gate key, which is a lane name optionally suffixed with a peer id.
+    /// </summary>
+    private static int ResolveLimitForKey(string key, Dictionary<BackgroundTaskLane, int> limits)
+    {
+        var separatorIndex = key.IndexOf(':', StringComparison.Ordinal);
+        var laneName = separatorIndex < 0 ? key : key[..separatorIndex];
+
+        return Enum.TryParse<BackgroundTaskLane>(laneName, out var lane)
+            ? limits.GetValueOrDefault(lane, BackgroundTaskScheduling.GetDefaultLimit(lane))
+            : BackgroundTaskScheduling.DefaultLaneLimit;
     }
 
     private async Task<int> ReadWorkerCountAsync(CancellationToken cancellationToken)
@@ -118,11 +134,11 @@ public class BackgroundTasksProcessingService : BackgroundService
             _taskQueue.Enqueue(Guid.Empty);
     }
 
-    private async Task<Dictionary<string, int>> ReadConcurrencyLimitsAsync(CancellationToken cancellationToken)
+    private async Task<Dictionary<BackgroundTaskLane, int>> ReadLaneLimitsAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
-        return await settings.GetAsync(ServerSettingKeys.BackgroundTaskConcurrencyLimits, cancellationToken) ?? new();
+        return await settings.GetAsync(ServerSettingKeys.BackgroundTaskLaneLimits, cancellationToken) ?? new();
     }
 
     private void SpawnWorkers(int count, CancellationToken stoppingToken)
@@ -157,7 +173,7 @@ public class BackgroundTasksProcessingService : BackgroundService
                 }
 
                 var desired = await ReadWorkerCountAsync(stoppingToken);
-                UpdateSettingsCache(desired, await ReadConcurrencyLimitsAsync(stoppingToken));
+                UpdateSettingsCache(desired, await ReadLaneLimitsAsync(stoppingToken));
                 int currentActive;
 
                 lock (_workersLock)
@@ -204,20 +220,18 @@ public class BackgroundTasksProcessingService : BackgroundService
             .Where(t => t.Status == BackgroundTaskStatus.InProgress)
             .ToListAsync(cancellationToken);
 
+        if (stuckTasks.Count == 0)
+            return;
+
+        var now = DateTimeOffset.UtcNow;
         foreach (var task in stuckTasks)
         {
-            task.Status = BackgroundTaskStatus.Pending;
-            task.StartedAt = null;
-            task.CompletedAt = null;
-            _logger.LogWarning("Recovered stuck task {TaskId} ({TaskName})", task.Id, task.Name);
+            ApplyOrphanRecovery(task, now, "startup recovery");
         }
 
-        if (stuckTasks.Count > 0)
-        {
-            await context.SaveChangesAsync(cancellationToken);
-            await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
-            _logger.LogInformation("Recovered {Count} stuck tasks from previous run", stuckTasks.Count);
-        }
+        await context.SaveChangesAsync(cancellationToken);
+        await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
+        _logger.LogInformation("Recovered {Count} stuck tasks from previous run", stuckTasks.Count);
     }
 
     private async Task RequeueEligibleTasksAsync(CancellationToken cancellationToken)
@@ -229,7 +243,8 @@ public class BackgroundTasksProcessingService : BackgroundService
         var pendingIds = await context.BackgroundTasks
             .Where(t => t.Status == BackgroundTaskStatus.Pending
                 || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)))
-            .OrderByDescending(t => t.Priority)
+            .OrderByDescending(t => t.WorkClass)
+            .ThenByDescending(t => t.Priority)
             .ThenBy(t => t.Created)
             .Select(t => t.Id)
             .ToListAsync(cancellationToken);
@@ -285,42 +300,59 @@ public class BackgroundTasksProcessingService : BackgroundService
             var executionContext = scope.ServiceProvider.GetRequiredService<IBackgroundTaskExecutionContext>();
             executionContext.Reset();
 
-            var limits = GetCachedConcurrencyLimits();
-            var saturatedGroups = _activeCountByGroup
-                .Where(kvp => kvp.Value >= limits.GetValueOrDefault(kvp.Key, DefaultConcurrencyLimit))
+            var limits = GetCachedLaneLimits();
+            var saturatedKeys = _activeCountByLaneKey
+                .Where(kvp => kvp.Value >= ResolveLimitForKey(kvp.Key, limits))
                 .Select(kvp => kvp.Key)
-                .ToHashSet();
+                .ToHashSet(StringComparer.Ordinal);
 
             var now = DateTimeOffset.UtcNow;
-            var query = context.BackgroundTasks
+
+            // Fetch several candidates rather than one: a lane can saturate between this query and the
+            // gate acquisition, and giving up on the single best row would stall every worker on the
+            // same head of line until the next wake-up.
+            var candidates = await context.BackgroundTasks
                 .Where(t => t.Status == BackgroundTaskStatus.Pending
-                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)));
-
-            if (saturatedGroups.Count > 0)
-            {
-                query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
-            }
-
-            var candidate = await query
-                .OrderByDescending(t => t.Priority)
+                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)))
+                .OrderByDescending(t => t.WorkClass)
+                .ThenByDescending(t => t.Priority)
                 .ThenBy(t => t.Created)
-                .Select(t => new { t.Id, t.ConcurrencyGroup })
-                .FirstOrDefaultAsync(stoppingToken);
+                .Select(t => new { t.Id, t.Lane, t.FederationPeerId })
+                .Take(BackgroundTaskScheduling.CandidateFetchCount)
+                .ToListAsync(stoppingToken);
 
-            if (candidate is null)
+            if (candidates.Count == 0)
             {
                 return;
             }
 
-            var groupLimit = candidate.ConcurrencyGroup is null
-                ? DefaultConcurrencyLimit
-                : limits.GetValueOrDefault(candidate.ConcurrencyGroup, DefaultConcurrencyLimit);
-            if (!BackgroundTaskConcurrencyGate.TryAcquire(_activeCountByGroup, candidate.ConcurrencyGroup, groupLimit))
+            string? acquiredKey = null;
+            Guid claimedCandidateId = Guid.Empty;
+
+            foreach (var option in candidates)
+            {
+                var key = BackgroundTaskConcurrencyGate.BuildKey(option.Lane, option.FederationPeerId);
+                if (saturatedKeys.Contains(key))
+                    continue;
+
+                var laneLimit = limits.GetValueOrDefault(option.Lane, BackgroundTaskScheduling.GetDefaultLimit(option.Lane));
+                if (!BackgroundTaskConcurrencyGate.TryAcquire(_activeCountByLaneKey, key, laneLimit))
+                {
+                    saturatedKeys.Add(key);
+                    continue;
+                }
+
+                acquiredKey = key;
+                claimedCandidateId = option.Id;
+                break;
+            }
+
+            if (acquiredKey is null)
             {
                 return;
             }
 
-            var acquiredGroup = candidate.ConcurrencyGroup;
+            var candidate = new { Id = claimedCandidateId };
 
             // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
             // This prevents duplicate execution when multiple workers race on the same task.
@@ -338,7 +370,7 @@ public class BackgroundTasksProcessingService : BackgroundService
 
             if (claimed == 0)
             {
-                BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
+                BackgroundTaskConcurrencyGate.Release(_activeCountByLaneKey, acquiredKey);
                 _taskQueue.Enqueue(Guid.Empty);
                 return;
             }
@@ -348,7 +380,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             var task = await context.BackgroundTasks.FindAsync([candidate.Id], stoppingToken);
             if (task is null)
             {
-                BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
+                BackgroundTaskConcurrencyGate.Release(_activeCountByLaneKey, acquiredKey);
                 _taskQueue.Enqueue(Guid.Empty);
                 return;
             }
@@ -357,12 +389,20 @@ public class BackgroundTasksProcessingService : BackgroundService
             var sw = Stopwatch.StartNew();
             var outcomePersisted = false;
 
+            // Declared here so the outer handlers can tell an operator cancellation from a timeout.
+            using var userCts = new CancellationTokenSource();
+
             try
             {
                 try
                 {
-                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                    // Two sources on purpose: a cancellation asked for by an operator must not be
+                    // reported as a timeout. Only userCts is registered, and the linked token carries
+                    // both it and the timeout to the handler.
+                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, userCts.Token);
                     timeoutCts.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, task.TimeoutSeconds)));
+
+                    _cancellationRegistry.Register(task.Id, userCts);
 
                     var requestType = _typeRegistry.Resolve(task.RequestType);
                     if (requestType is null)
@@ -401,16 +441,49 @@ public class BackgroundTasksProcessingService : BackgroundService
                     catch (TimeoutException) when (!sendTask.IsCompleted)
                     {
                         sw.Stop();
-                        task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
-                        BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
-                        LogTaskFailureOutcome(task);
-                        task.AttemptCount++;
+                        // WaitAsync only watches the host token + wall clock. An operator cancel that
+                        // the handler ignores therefore surfaces here once the timeout elapses; treat
+                        // it as a cancellation, not a retryable timeout.
+                        if (userCts.IsCancellationRequested || task.CancellationRequested)
+                        {
+                            task.ErrorDetails = "Cancelled by user";
+                            BackgroundTaskFailure.MarkCancelled(task);
+                            await PersistTaskStateAsync(context, task, stoppingToken);
+                            outcomePersisted = true;
+                            await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                            _logger.LogWarning(
+                                "Task {TaskId} ({TaskName}) cancelled by user after {ElapsedMs}ms (handler ignored cancellation token)",
+                                task.Id, task.Name, sw.ElapsedMilliseconds);
+                        }
+                        else
+                        {
+                            task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
+                            BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
+                            LogTaskFailureOutcome(task);
+                            task.AttemptCount++;
+                            await PersistTaskStateAsync(context, task, stoppingToken);
+                            outcomePersisted = true;
+                            await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+                            _logger.LogError(
+                                "Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s and was abandoned to free the worker slot",
+                                task.Id, task.Name, task.TimeoutSeconds);
+                        }
+
+                        scopeOwnedByAbandonedTask = true;
+                        _ = ObserveAbandonedTaskAsync(sendTask, scope, task.Id, task.Name);
+                        return;
+                    }
+                    catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested && !sendTask.IsCompleted && userCts.IsCancellationRequested)
+                    {
+                        sw.Stop();
+                        task.ErrorDetails = "Cancelled by user";
+                        BackgroundTaskFailure.MarkCancelled(task);
                         await PersistTaskStateAsync(context, task, stoppingToken);
                         outcomePersisted = true;
                         await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
-                        _logger.LogError(
-                            "Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s and was abandoned to free the worker slot",
-                            task.Id, task.Name, task.TimeoutSeconds);
+                        _logger.LogWarning(
+                            "Task {TaskId} ({TaskName}) cancelled by user after {ElapsedMs}ms",
+                            task.Id, task.Name, sw.ElapsedMilliseconds);
 
                         scopeOwnedByAbandonedTask = true;
                         _ = ObserveAbandonedTaskAsync(sendTask, scope, task.Id, task.Name);
@@ -461,6 +534,15 @@ public class BackgroundTasksProcessingService : BackgroundService
                     BackgroundTaskFailure.Handle(task, new TimeoutException(task.ErrorDetails), MaxBackoff);
                     LogTaskFailureOutcome(task);
                 }
+                catch (OperationCanceledException) when (userCts.IsCancellationRequested)
+                {
+                    sw.Stop();
+                    task.ErrorDetails = "Cancelled by user";
+                    BackgroundTaskFailure.MarkCancelled(task);
+                    _logger.LogWarning(
+                        "Task {TaskId} ({TaskName}) cancelled by user after {ElapsedMs}ms",
+                        task.Id, task.Name, sw.ElapsedMilliseconds);
+                }
                 catch (OperationCanceledException)
                 {
                     sw.Stop();
@@ -479,11 +561,8 @@ public class BackgroundTasksProcessingService : BackgroundService
                 }
                 finally
                 {
-                    if (acquiredGroup is not null)
-                    {
-                        BackgroundTaskConcurrencyGate.Release(_activeCountByGroup, acquiredGroup);
-                        _taskQueue.Enqueue(Guid.Empty);
-                    }
+                    BackgroundTaskConcurrencyGate.Release(_activeCountByLaneKey, acquiredKey);
+                    _taskQueue.Enqueue(Guid.Empty);
                 }
 
                 if (!outcomePersisted)
@@ -494,8 +573,8 @@ public class BackgroundTasksProcessingService : BackgroundService
                     if (task.Status == BackgroundTaskStatus.Completed)
                     {
                         _logger.LogInformation(
-                            "Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
-                            task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
+                            "Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, lane {Lane})",
+                            task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount, task.MaxAttempts, task.Lane);
                     }
                     else if (task.Status == BackgroundTaskStatus.Cancelled)
                     {
@@ -510,6 +589,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             finally
             {
                 _executingTaskIds.TryRemove(task.Id, out _);
+                _cancellationRegistry.Unregister(task.Id);
             }
         }
         finally
@@ -644,16 +724,8 @@ public class BackgroundTasksProcessingService : BackgroundService
                 continue;
             }
 
-            // Same recovery as startup: no worker owns this InProgress row past its timeout.
-            task.Status = BackgroundTaskStatus.Pending;
-            task.StartedAt = null;
-            task.CompletedAt = null;
-            task.ErrorDetails = TruncateErrorDetails(
-                $"Reclaimed orphaned InProgress task after {task.TimeoutSeconds}s with no active worker");
+            ApplyOrphanRecovery(task, now, "orphan poller");
             reclaimed++;
-            _logger.LogWarning(
-                "Reclaimed orphaned InProgress task {TaskId} ({TaskName}) after timeout with no active worker",
-                task.Id, task.Name);
         }
 
         if (reclaimed == 0)
@@ -710,6 +782,50 @@ public class BackgroundTasksProcessingService : BackgroundService
                 _logger.LogError(ex, "Cleanup encountered an error");
             }
         }
+    }
+
+    /// <summary>
+    /// Resolves an <see cref="BackgroundTaskStatus.InProgress"/> row whose worker is gone (process
+    /// restart or orphan timeout). Honours operator cancellation and counts reclaim attempts so a
+    /// crash-looping task cannot be requeued forever.
+    /// </summary>
+    private void ApplyOrphanRecovery(BackgroundTask task, DateTimeOffset now, string source)
+    {
+        if (task.CancellationRequested)
+        {
+            BackgroundTaskFailure.MarkCancelled(task);
+            task.ErrorDetails = "Cancelled by user";
+            _logger.LogWarning(
+                "Task {TaskId} ({TaskName}) marked cancelled during {Source} (operator had requested cancellation)",
+                task.Id, task.Name, source);
+            return;
+        }
+
+        // Count the reclaim: a task that kills the process (OOM during ffmpeg, for instance) would
+        // otherwise be requeued forever without ever incrementing AttemptCount, and so never reach
+        // MaxAttempts.
+        task.ReclaimCount++;
+        task.StartedAt = null;
+        task.CompletedAt = null;
+
+        if (task.ReclaimCount > BackgroundTaskScheduling.MaxReclaims)
+        {
+            task.Status = BackgroundTaskStatus.Failed;
+            task.CompletedAt = now;
+            task.ErrorDetails = TruncateErrorDetails(
+                $"Failed after being reclaimed {task.ReclaimCount} times without completing; the task most likely crashes the process");
+            _logger.LogError(
+                "Task {TaskId} ({TaskName}) failed after {ReclaimCount} reclaims without completing ({Source})",
+                task.Id, task.Name, task.ReclaimCount, source);
+            return;
+        }
+
+        task.Status = BackgroundTaskStatus.Pending;
+        task.ErrorDetails = TruncateErrorDetails(
+            $"Reclaimed InProgress task with no active worker ({source}, reclaim {task.ReclaimCount} of {BackgroundTaskScheduling.MaxReclaims})");
+        _logger.LogWarning(
+            "Reclaimed InProgress task {TaskId} ({TaskName}) via {Source}, reclaim {ReclaimCount} of {MaxReclaims}",
+            task.Id, task.Name, source, task.ReclaimCount, BackgroundTaskScheduling.MaxReclaims);
     }
 
     private sealed class WorkerHandle

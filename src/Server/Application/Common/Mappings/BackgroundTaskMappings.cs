@@ -14,7 +14,11 @@ public static class BackgroundTaskMappings
             TargetEntityType = domain.TargetEntityType,
             TargetEntityId = domain.TargetEntityId,
             Status = domain.Status,
+            Lane = domain.Lane,
+            WorkClass = domain.WorkClass,
             Priority = domain.Priority,
+            TriggeredBy = domain.TriggeredBy,
+            FederationPeerId = domain.FederationPeerId,
             AttemptCount = domain.AttemptCount,
             MaxAttempts = domain.MaxAttempts,
             Created = domain.Created,
@@ -23,7 +27,8 @@ public static class BackgroundTaskMappings
             CompletedAt = domain.CompletedAt,
             NextRetryAfter = domain.NextRetryAfter,
             TimeoutSeconds = domain.TimeoutSeconds,
-            ConcurrencyGroup = domain.ConcurrencyGroup,
+            ReclaimCount = domain.ReclaimCount,
+            CancellationRequested = domain.CancellationRequested,
             ErrorDetails = domain.ErrorDetails
         };
     }

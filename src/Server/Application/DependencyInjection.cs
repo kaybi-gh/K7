@@ -57,6 +57,8 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundTaskQueue>();
         services.AddSingleton<IBackgroundTaskQueue>(sp => sp.GetRequiredService<BackgroundTaskQueue>());
         services.AddSingleton<BackgroundTaskTypeRegistry>();
+        services.AddSingleton<IBackgroundTaskCancellationRegistry, BackgroundTaskCancellationRegistry>();
+        services.AddSingleton<IMediaIdentityLock, MediaIdentityLock>();
         services.AddSingleton<BackgroundTasksProcessingService>();
         services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
         services.AddHostedService<MetadataRefreshSchedulerService>();
@@ -104,6 +106,7 @@ public static class DependencyInjection
         services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();
         services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
         services.AddScoped<IStreamPlaybackService, StreamPlaybackService>();
+        services.AddScoped<IPlaybackBoostService, PlaybackBoostService>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaIdentityLookupService>();
         services.AddScoped<MediaExternalIdResolver>();

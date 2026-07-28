@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,21 @@ public record CreateBackgroundTasksBatchItem
     public required IBaseRequest Request { get; init; }
     public string? TargetEntityTypeName { get; init; }
     public Guid? TargetEntityId { get; init; }
-    public BackgroundTaskPriority Priority { get; init; } = BackgroundTaskPriority.Lowest;
+
+    /// <summary>Local resource the task competes for.</summary>
+    public BackgroundTaskLane Lane { get; init; } = BackgroundTaskLane.Metadata;
+
+    /// <summary>Scheduling band: what the task contributes to on the critical path.</summary>
+    public BackgroundTaskWorkClass WorkClass { get; init; } = BackgroundTaskWorkClass.Polish;
+
+    /// <summary>Provenance. A <see cref="BackgroundTaskTriggeredBy.User"/> task gets an interactive boost.</summary>
+    public BackgroundTaskTriggeredBy TriggeredBy { get; init; } = BackgroundTaskTriggeredBy.System;
+
+    /// <summary>Peer owning the task, for <see cref="BackgroundTaskLane.Federation"/>.</summary>
+    public Guid? FederationPeerId { get; init; }
+
     public int MaxAttempts { get; init; } = 1;
     public int? TimeoutSeconds { get; init; }
-    public string? ConcurrencyGroup { get; init; }
 }
 
 public record CreateBackgroundTasksBatchCommand(List<CreateBackgroundTasksBatchItem> Items) : IRequest;
@@ -95,14 +107,83 @@ public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBa
                 RequestData = JsonSerializer.Serialize(item.Request, requestType),
                 TargetEntityType = item.TargetEntityTypeName,
                 TargetEntityId = item.TargetEntityId,
-                Priority = item.Priority,
+                Lane = item.Lane,
+                WorkClass = item.WorkClass,
+                TriggeredBy = item.TriggeredBy,
+                Priority = item.TriggeredBy == BackgroundTaskTriggeredBy.User
+                    ? BackgroundTaskScheduling.InteractiveBoost
+                    : 0,
+                FederationPeerId = item.FederationPeerId,
                 MaxAttempts = item.MaxAttempts,
                 TimeoutSeconds = item.TimeoutSeconds ?? 300,
-                ConcurrencyGroup = item.ConcurrencyGroup,
                 Status = BackgroundTaskStatus.Pending
             };
 
             newTasks.Add(entity);
+        }
+
+        if (newTasks.Count == 0)
+        {
+            if (deduplicatedCount > 0)
+            {
+                _logger.LogWarning("Background tasks batch: {DeduplicatedCount} tasks deduplicated out of {TotalCount}", deduplicatedCount, request.Items.Count);
+            }
+
+            return;
+        }
+
+        _context.BackgroundTasks.AddRange(newTasks);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Same race as CreateBackgroundTask: progressive scan + watcher can collide on the unique
+            // active-task index. Detach the batch and fall back to one-by-one so a single conflict
+            // does not discard the rest of the enqueue.
+            foreach (var task in newTasks)
+            {
+                var entry = _context.Entry(task);
+                if (entry.State != EntityState.Detached)
+                    entry.State = EntityState.Detached;
+            }
+
+            var created = new List<BackgroundTask>();
+            foreach (var task in newTasks)
+            {
+                if (task.TargetEntityId is Guid targetId
+                    && await FindActiveTaskIdAsync(task.Name, targetId, cancellationToken) is not null)
+                {
+                    deduplicatedCount++;
+                    continue;
+                }
+
+                _context.BackgroundTasks.Add(task);
+                try
+                {
+                    await _context.SaveChangesAsync(cancellationToken);
+                    created.Add(task);
+                }
+                catch (DbUpdateException)
+                {
+                    var entry = _context.Entry(task);
+                    if (entry.State != EntityState.Detached)
+                        entry.State = EntityState.Detached;
+
+                    if (task.TargetEntityId is Guid racedTarget
+                        && await FindActiveTaskIdAsync(task.Name, racedTarget, cancellationToken) is not null)
+                    {
+                        deduplicatedCount++;
+                        continue;
+                    }
+
+                    throw;
+                }
+            }
+
+            newTasks = created;
         }
 
         if (deduplicatedCount > 0)
@@ -112,8 +193,6 @@ public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBa
 
         if (newTasks.Count == 0) return;
 
-        _context.BackgroundTasks.AddRange(newTasks);
-        await _context.SaveChangesAsync(cancellationToken);
         await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
 
         foreach (var task in newTasks)
@@ -123,4 +202,14 @@ public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBa
 
         _logger.LogInformation("Background tasks batch: created {Count} tasks", newTasks.Count);
     }
+
+    private async Task<Guid?> FindActiveTaskIdAsync(string taskName, Guid targetEntityId, CancellationToken cancellationToken)
+        => await _context.BackgroundTasks
+            .Where(t => t.Name == taskName
+                && t.TargetEntityId == targetEntityId
+                && (t.Status == BackgroundTaskStatus.Pending
+                    || t.Status == BackgroundTaskStatus.InProgress
+                    || t.Status == BackgroundTaskStatus.WaitingForRetry))
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 }

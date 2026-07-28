@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,21 @@ public record CreateBackgroundTaskCommand : IRequest<Guid>
     public required IBaseRequest Request { get; set; }
     public string? TargetEntityTypeName { get; set; }
     public Guid? TargetEntityId { get; set; }
-    public BackgroundTaskPriority Priority { get; set; } = BackgroundTaskPriority.Lowest;
+
+    /// <summary>Local resource the task competes for.</summary>
+    public BackgroundTaskLane Lane { get; set; } = BackgroundTaskLane.Metadata;
+
+    /// <summary>Scheduling band: what the task contributes to on the critical path.</summary>
+    public BackgroundTaskWorkClass WorkClass { get; set; } = BackgroundTaskWorkClass.Polish;
+
+    /// <summary>Provenance. A <see cref="BackgroundTaskTriggeredBy.User"/> task gets an interactive boost.</summary>
+    public BackgroundTaskTriggeredBy TriggeredBy { get; set; } = BackgroundTaskTriggeredBy.System;
+
+    /// <summary>Peer owning the task, for <see cref="BackgroundTaskLane.Federation"/>.</summary>
+    public Guid? FederationPeerId { get; set; }
+
     public int MaxAttempts { get; set; } = 1;
     public int? TimeoutSeconds { get; set; }
-    public string? ConcurrencyGroup { get; set; }
 }
 
 public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskQueue taskQueue, IBackgroundTaskNotifier notifier, ILogger<CreateBackgroundTaskCommandHandler> logger)
@@ -31,15 +43,7 @@ public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, I
         var requestType = request.Request.GetType();
         var taskName = requestType.Name;
 
-        var existingTaskId = await _context.BackgroundTasks
-            .Where(t => t.Name == taskName
-                && t.TargetEntityId == request.TargetEntityId
-                && (t.Status == BackgroundTaskStatus.Pending
-                    || t.Status == BackgroundTaskStatus.InProgress
-                    || t.Status == BackgroundTaskStatus.WaitingForRetry))
-            .Select(t => (Guid?)t.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
+        var existingTaskId = await FindActiveTaskIdAsync(taskName, request.TargetEntityId, cancellationToken);
         if (existingTaskId is not null)
         {
             _logger.LogWarning("Background task deduplicated: {TaskName} with TargetEntityId={TargetEntityId} already exists as {ExistingTaskId}",
@@ -54,19 +58,55 @@ public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, I
             RequestData = JsonSerializer.Serialize(request.Request, requestType),
             TargetEntityType = request.TargetEntityTypeName,
             TargetEntityId = request.TargetEntityId,
-            Priority = request.Priority,
+            Lane = request.Lane,
+            WorkClass = request.WorkClass,
+            TriggeredBy = request.TriggeredBy,
+            Priority = GetInitialPriority(request.TriggeredBy),
+            FederationPeerId = request.FederationPeerId,
             MaxAttempts = request.MaxAttempts,
             TimeoutSeconds = request.TimeoutSeconds ?? 300,
-            ConcurrencyGroup = request.ConcurrencyGroup,
             Status = BackgroundTaskStatus.Pending
         };
 
         _context.BackgroundTasks.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // The unique filtered index on (Name, TargetEntityId) over active statuses turns a
+            // concurrent enqueue into a conflict instead of a duplicate. Losing the race is normal
+            // (a watcher event and a scheduled scan can fire together), so resolve to the winner.
+            _context.BackgroundTasks.Remove(entity);
+
+            var winnerId = await FindActiveTaskIdAsync(taskName, request.TargetEntityId, cancellationToken);
+            if (winnerId is null)
+                throw;
+
+            _logger.LogInformation("Background task enqueue lost the race for {TaskName} on {TargetEntityId}, reusing {WinnerId}",
+                taskName, request.TargetEntityId, winnerId.Value);
+            return winnerId.Value;
+        }
+
         await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
 
         _taskQueue.Enqueue(entity.Id);
 
         return entity.Id;
     }
+
+    private async Task<Guid?> FindActiveTaskIdAsync(string taskName, Guid? targetEntityId, CancellationToken cancellationToken)
+        => await _context.BackgroundTasks
+            .Where(t => t.Name == taskName
+                && t.TargetEntityId == targetEntityId
+                && (t.Status == BackgroundTaskStatus.Pending
+                    || t.Status == BackgroundTaskStatus.InProgress
+                    || t.Status == BackgroundTaskStatus.WaitingForRetry))
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    private static int GetInitialPriority(BackgroundTaskTriggeredBy triggeredBy)
+        => triggeredBy == BackgroundTaskTriggeredBy.User ? BackgroundTaskScheduling.InteractiveBoost : 0;
 }
