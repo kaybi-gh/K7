@@ -37,11 +37,12 @@ public class FileMetadataCreatedEventHandler(
                     Id = notification.IndexedFile.Id,
                     SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
                 },
-                Priority = BackgroundTaskPriority.High,
                 TargetEntityId = notification.IndexedFile.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 5,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.FfmpegPrepare,
+                WorkClass = BackgroundTaskWorkClass.Prepare,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 5
             }, cancellationToken);
         }
 
@@ -53,11 +54,12 @@ public class FileMetadataCreatedEventHandler(
                 {
                     Id = notification.IndexedFile.Id
                 },
-                Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = notification.IndexedFile.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 1,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.ImageExtract,
+                WorkClass = BackgroundTaskWorkClass.Polish,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 1
             }, cancellationToken);
         }
 
@@ -69,42 +71,14 @@ public class FileMetadataCreatedEventHandler(
 
     private async Task TriggerIntroDetectionIfEligibleAsync(IndexedFile indexedFile, CancellationToken cancellationToken)
     {
+        // The media may not exist yet: probes are enqueued during the scan while media creation runs
+        // afterwards. MediaCreatedIntroDetectionEventHandler covers that ordering.
         if (indexedFile.MediaId is null)
         {
-            logger.LogDebug("Intro detection skipped: file {FileId} has no MediaId", indexedFile.Id);
+            logger.LogDebug("Intro detection deferred to media creation: file {FileId} has no MediaId", indexedFile.Id);
             return;
         }
 
-        var episode = await context.Medias
-            .OfType<SerieEpisode>()
-            .FirstOrDefaultAsync(e => e.Id == indexedFile.MediaId, cancellationToken);
-
-        if (episode is null)
-        {
-            logger.LogDebug("Intro detection skipped: media {MediaId} is not a SerieEpisode", indexedFile.MediaId);
-            return;
-        }
-
-        var episodeCount = await context.Medias
-            .OfType<SerieEpisode>()
-            .CountAsync(e => e.SeasonId == episode.SeasonId, cancellationToken);
-
-        if (episodeCount < 2)
-        {
-            logger.LogDebug("Intro detection skipped: season {SeasonId} has only {Count} episode(s)", episode.SeasonId, episodeCount);
-            return;
-        }
-
-        logger.LogInformation("Queuing intro detection for season {SeasonId} ({EpisodeCount} episodes)", episode.SeasonId, episodeCount);
-
-        await sender.Send(new CreateBackgroundTaskCommand
-        {
-            Request = new DetectMediaSegmentsCommand { SeasonId = episode.SeasonId },
-            Priority = BackgroundTaskPriority.Low,
-            TargetEntityId = episode.SeasonId,
-            TargetEntityTypeName = nameof(SerieSeason),
-            MaxAttempts = 2,
-            ConcurrencyGroup = "ffmpeg"
-        }, cancellationToken);
+        await IntroDetectionQueueHelper.TryQueueForEpisodeAsync(context, sender, indexedFile.MediaId.Value, logger, cancellationToken);
     }
 }
