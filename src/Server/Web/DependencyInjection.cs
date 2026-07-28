@@ -129,8 +129,16 @@ public static class DependencyInjection
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
         services.AddHostedService<StreamSessionCleanupService>();
 
+        services.AddScoped<K7DialogService>();
+        services.AddScoped<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+        services.AddScoped<ISpatialNavService, SpatialNavService>();
+        services.AddScoped<ISoftKeyboardService, NoOpSoftKeyboardService>();
+        services.AddScoped<SoftKeyboardJsBridge>();
+        services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
+        services.AddScoped<MediaCardContextMenuService>();
+        services.AddScoped<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
         services.AddSignalR();
         services.AddHttpContextAccessor();
         services.AddScoped<IdentityUserAccessor>();
