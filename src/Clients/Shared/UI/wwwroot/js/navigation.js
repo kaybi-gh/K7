@@ -611,10 +611,13 @@ var SpatialNav = (function () {
         }
     }
 
-    // Long-press helpers for spatial navigation on media cards
+    // Long-press helpers for spatial navigation on media cards.
+    // Android KEYCODE_ENTER is 66; desktop KeyB is also 66. Prefer key/code when present
+    // so typing "b" in activatable inputs is not treated as OK/Enter (which exits edit mode).
     function isEnterKey(key, code, keyCode) {
         key = key || '';
         code = code || '';
+        if (key === 'b' || key === 'B' || code === 'KeyB') return false;
         if (keyCode === 13 || keyCode === 23 || keyCode === 66) return true;
         if (key === 'Enter' || key === 'NumpadEnter' || key === 'Select' || key === 'DpadCenter') return true;
         if (code === 'Enter' || code === 'NumpadEnter' || code === 'Select' || code === 'DpadCenter') return true;
