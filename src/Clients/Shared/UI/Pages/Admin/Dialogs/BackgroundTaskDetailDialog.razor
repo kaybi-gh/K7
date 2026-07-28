@@ -21,14 +21,33 @@
                     </td>
                 </tr>
                 <tr>
+                    <td><strong>@L["Lane"]</strong></td>
+                    <td><K7Chip Size="sm" Color="default">@BackgroundTaskLabelHelper.GetLaneLabel(TaskTypesL, BackgroundTask.Lane)</K7Chip></td>
+                </tr>
+                <tr>
+                    <td><strong>@L["WorkClass"]</strong></td>
+                    <td>@BackgroundTaskLabelHelper.GetWorkClassLabel(TaskTypesL, BackgroundTask.WorkClass)</td>
+                </tr>
+                <tr>
+                    <td><strong>@L["TriggeredBy"]</strong></td>
+                    <td>@BackgroundTaskLabelHelper.GetTriggeredByLabel(TaskTypesL, BackgroundTask.TriggeredBy)</td>
+                </tr>
+                <tr>
                     <td><strong>@L["Priority"]</strong></td>
                     <td>@BackgroundTask.Priority</td>
                 </tr>
-                @if (BackgroundTask.ConcurrencyGroup is not null)
+                @if (BackgroundTask.FederationPeerId is not null)
                 {
                     <tr>
-                        <td><strong>@L["ConcurrencyGroup"]</strong></td>
-                        <td><K7Chip Size="sm" Color="default">@BackgroundTask.ConcurrencyGroup</K7Chip></td>
+                        <td><strong>@L["FederationPeer"]</strong></td>
+                        <td><code>@BackgroundTask.FederationPeerId</code></td>
+                    </tr>
+                }
+                @if (BackgroundTask.ReclaimCount > 0)
+                {
+                    <tr>
+                        <td><strong>@L["ReclaimCount"]</strong></td>
+                        <td>@BackgroundTask.ReclaimCount</td>
                     </tr>
                 }
                 <tr>

@@ -1,17 +1,58 @@
-.background-task-settings__group-row {
+.background-task-settings {
     display: flex;
-    align-items: center;
-    gap: var(--space-2);
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: min(100%, 20rem);
 }
 
-.background-task-settings__group-name {
-    min-width: 140px;
+.background-task-settings__lanes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }
 
-.background-task-settings__group-limit {
-    max-width: 100px;
+.background-task-settings__lanes-title {
+    margin: 0;
 }
 
-.background-task-settings__group-active {
+.background-task-settings__hint {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.background-task-settings__lane {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+}
+
+.background-task-settings ::deep .background-task-settings__number {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+}
+
+.background-task-settings ::deep .background-task-settings__number .k7-input {
+    text-align: center;
+}
+
+.background-task-settings__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 0 0 auto;
+    padding-bottom: 0.55rem;
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+@media (min-width: 600px) {
+    .background-task-settings {
+        min-width: 22rem;
+    }
 }

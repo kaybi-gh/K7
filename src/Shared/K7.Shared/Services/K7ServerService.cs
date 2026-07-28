@@ -18,8 +18,8 @@ using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Search;
-using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.SharedProfiles;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Enums;
 using K7.Shared.Extensions;
 using K7.Shared.Interfaces;
@@ -190,7 +190,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"Creating stream session failed with status {response.StatusCode}: {content}");
+            // Propagate the status code so callers can map 422 (media indexed but not probed yet)
+            // to a friendly "media preparing" message instead of a raw error.
+            throw new HttpRequestException($"Creating stream session failed with status {response.StatusCode}: {content}", inner: null, statusCode: response.StatusCode);
         }
 
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
@@ -202,7 +204,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"Creating remote stream session failed with status {response.StatusCode}: {content}");
+            throw new HttpRequestException($"Creating remote stream session failed with status {response.StatusCode}: {content}", inner: null, statusCode: response.StatusCode);
         }
 
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
@@ -1253,7 +1255,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
     }
 
-    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, IReadOnlyCollection<BackgroundTaskTriggeredBy>? triggeredBy = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default)
     {
         var uri = $"api/background-tasks?pageNumber={pageNumber}&pageSize={pageSize}";
         if (statuses is { Count: > 0 })
@@ -1268,6 +1270,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             foreach (var name in names)
             {
                 uri += $"&names={Uri.EscapeDataString(name)}";
+            }
+        }
+        if (triggeredBy is { Count: > 0 })
+        {
+            foreach (var origin in triggeredBy)
+            {
+                uri += $"&triggeredBy={origin}";
             }
         }
         if (sortBy is not null)

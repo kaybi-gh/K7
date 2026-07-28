@@ -159,8 +159,15 @@ Federation links two K7 instances so friends can share and stream remote media w
 1. Requester admin: Admin -> Federation -> request peering with the remote base URL.
 2. K7 POSTs to the remote peer-request endpoint and stores a pending peer + token.
 3. Remote admin accepts or rejects.
-4. On accept: OpenIddict peer credentials, share agreements, library discovery.
+4. On accept: OpenIddict peer credentials, share agreements, library discovery. Optional **Automatically share new libraries** stores `AutoAddNewLibraries` on the peer.
 5. To disconnect: revoke / delete the peer (best-effort notify + local cleanup).
+
+### Library sharing
+
+Outbound share agreements control which local libraries a peer can list via `GET /api/federation/libraries`.
+
+- **Manual**: peer settings -> shared libraries.
+- **Auto-share**: with `AutoAddNewLibraries` enabled on a peer, creating a **local** library creates an outbound agreement for that peer and best-effort `share-update` notify when outbound credentials exist. The consumer syncs (webhook, scheduled sync, or Admin -> Sync) and, with the same flag, enables the new inbound library automatically.
 
 Back up `Paths:Config` - federation identity material lives with OpenIddict keys. User-level share/view scopes are separate - see [Using K7 - Privacy](../user/guide.md#privacy-and-visibility).
 
@@ -184,14 +191,151 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 ### Background tasks
 
 - List / cancel / summary: `/api/background-tasks`
-- Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3; per-group concurrency for metadata, `ffmpeg`, `library-scan`, federation, etc.)
+- Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3; per-group concurrency for metadata, `probe`, `ffmpeg`, `hls-segments`, `library-scan`, federation, etc.)
 - Library scans use the `library-scan` concurrency group (default limit 1). Workers reserve a group slot before claiming a task so the configured limit is not bypassed under parallel dequeue.
-- Task completion/failure is persisted with `ExecuteUpdate` (not only change-tracker `SaveChanges`), and the "completed" log is written after a successful persist - so UI cannot stay `InProgress` when the handler already finished.
-- `InProgress` rows past `TimeoutSeconds` with no worker in this process are reclaimed to `Pending` (same as startup recovery), so zombie library-scan tasks do not need a restart to clear.
-- Library indexing skips hung NAS paths: directory enumeration and file hash/metadata reads use per-operation timeouts (30s / 15s); timed-out paths are recorded as inaccessible and the scan continues.
-- Indexing trusts the filesystem scan for add/remove detection (no full-catalog `File.Exists` re-sweep, which commonly hangs on SMB).
-- Realtime folder monitoring registers per-directory watches and skips NAS/system folders (`@eaDir`, `.@__thumb`, `@tmp`, `#recycle`, `@Recycle`, `.synology`, `.Trash-*`) so Synology metadata dirs are never attached to inotify.
-- Task timeouts abandon the in-flight handler when sync filesystem I/O ignores cancellation, so the worker slot is released instead of staying zombie `InProgress`.
+
+#### Lanes and time-to-usable
+
+Scheduling has three axes, deliberately separated:
+
+- **Lane** answers *which local resource does this saturate*. It is the only axis an operator
+  configures, because it is the only one that maps onto hardware.
+- **Work class** answers *what does this contribute to, and at which stage*. It is product policy, fixed
+  in code and not configurable.
+- **Priority** carries dynamic urgency (a user action, or a media someone just asked to play).
+
+Selection order is work class descending, then priority descending, then creation date. Work class
+values are the scheduling weights themselves, so the order is served directly by
+`IX_BackgroundTasks_Status_WorkClass_Priority_Created`.
+
+There is no time-based aging: deferring polish while critical work remains is intended, and once a scan
+drains there is nothing critical left. Creation date as the last key keeps the order fair inside a class.
+
+| Lane | Default | Work |
+|---|---|---|
+| `Probe` | 4 | `ffprobe` container reads: file metadata and chapter extraction. IO seek bound, safe to parallelize. |
+| `LibraryScan` | 1 | Filesystem indexing. |
+| `FfmpegPrepare` | 1 | Keyframe extraction for transmuxing, stream preparation. CPU bound. |
+| `MediaAnalysis` | 1 | Intro/outro detection, audio analysis, theme song extraction. |
+| `ImageExtract` | 1 | Seekbar thumbnails and stills extracted with ffmpeg. |
+| `ImageProcessing` | 2 | Local image variant generation. |
+| `Metadata` | 2 | Identification, metadata refresh, provider downloads. |
+| `Federation` | 1 | Peer synchronization, isolated per peer. |
+| `DownloadTranscode` | 1 | Transcoding when preparing offline downloads that cannot direct-play. |
+
+Setting a lane to `0` pauses that category, which is useful to stop polish during a large import.
+
+| Work class | Meaning |
+|---|---|
+| `CriticalProbe` | Container probe: makes a media playable. Ranks **above** `CriticalLink`. |
+| `CriticalLink` | Media creation and file linking: makes a media visible and navigable. |
+| `CriticalEnrich` | Metadata refresh and main poster: makes a visible media presentable. |
+| `Prepare` | Keyframes and other work that only improves an already playable media. |
+| `Polish` | Thumbnails, intro detection, image variants, content hashing. |
+
+Why `Probe` is separate and parallel: playback negotiation needs the container and codecs of a file, so a
+media stays unplayable until its probe has run. Probes used to share a single `ffmpeg` group limited to 1
+and were therefore serialized behind transcoding, which made a first scan of a large library probe files
+one at a time. Keeping `Probe` at or above the worker count also means the probes enqueued for a scan
+batch drain before the media creation tasks of the same batch obtain a worker, so a media is normally
+already playable by the time it becomes visible.
+
+Probing ranks above linking on purpose: the probes of a scan batch drain before the media creation tasks
+of the same batch obtain a worker, so a media is normally already playable by the time it becomes visible.
+The reverse order lets a media appear while its probe is still queued, which is the ghost-page state this
+scheduling exists to avoid. The trade-off is accepted knowingly: the first media appears slightly later,
+and everything that appears is real.
+
+During a scan, both probe and media creation tasks are enqueued as their files get persisted, rather than
+in a single batch at the end, so the queue works while the scan is still walking the filesystem.
+Identification still runs once over the whole library so grouping stays correct - an album or a serie
+spans several save batches and must yield a single task - and a media creation task is only released once
+every file it groups has been saved.
+
+#### Duplicate media protection
+
+Creating a media is a check-then-insert: look it up by external id, then by title, then insert. Nothing in
+the database prevents a duplicate, since `Medias` has no unique constraint on identity and `ExternalIds`
+is indexed but not unique. Two commands resolving to the same album, serie or movie can legitimately be
+queued at once (two scan batches, a watcher flush racing a scheduled scan, two files of one movie), and
+running concurrently on the `Metadata` lane they would both miss the lookup and both insert. K7 has no
+merge tooling, so a duplicate media is a manual cleanup.
+
+Media creation is therefore serialized per media identity, on a key built from the library, the media type
+and the same criteria the lookup uses (album plus artist plus year, serie title, movie title plus year).
+Like the concurrency gate, this lock is held in-process, consistent with running a single instance.
+
+The lock reduces the probability of a duplicate; it cannot remove it, because two different identity keys
+can designate the same media (a renamed folder, a file named differently, a provider changing its mind).
+Two read-only diagnostics therefore report duplicates instead of trying to prevent them, under
+Admin -> Diagnostics:
+
+| Diagnostic | Severity | Signal |
+|---|---|---|
+| Duplicate (shared external id) | Warning | Two medias share the same provider id. Reliable. A local media and its federated copy may legitimately share one, so only medias with the same peer are compared. |
+| Suspected duplicate (same title and year) | Info | Two medias of one type share a normalized title and release year in one library. Noisier: homonym movies do exist. |
+
+Detection only: neither offers a fix action. Merging two medias means re-pointing indexed files, playback
+progress, playlist entries, ratings, reviews, collections, external ids and artwork, and deciding what to do
+with conflicting progress - a feature of its own, not yet implemented.
+
+Provider concurrency is no longer configurable: provider clients are already capped in code and HTTP
+pacing is owned by the outbound rate limiter (MusicBrainz 1.1s and so on). Everything that talks to a
+metadata provider shares the `Metadata` lane.
+
+#### Provenance
+
+Each task records who created it: `User`, `Scheduler`, `Watcher`, `System`, `Federation` or
+`Diagnostics`. This is observability, not priority; the scheduler never orders on it. It does set the
+initial priority, so an explicit user action starts ahead of a backlog. The task list can be
+filtered by provenance.
+
+#### On-demand boost
+
+Asking to play a media that has not been probed yet returns 422 with the
+`https://k7.media/problems/media-not-ready` problem type, an `indexedFileId` extension member,
+and raises the priority of that media's pending tasks, then wakes the workers. The update is
+scoped to one or two target entity ids and backed by `IX_BackgroundTasks_TargetEntityId`. Scores are
+otherwise only ever set at enqueue time: a broad re-scoring pass would churn the scheduling index,
+contend with the scan writer on SQLite and risk update-update deadlocks on Postgres.
+
+Clients are told when a probe completes (`ReceiveMediaIndexedFilesUpdated`), so a page showing "being
+prepared" recovers on its own.
+
+#### Reliability
+
+- Enqueue deduplication is atomic, enforced by a unique filtered index on
+  `(Name, TargetEntityId)` over the active statuses. A watcher event and a scheduled scan racing on the
+  same media now resolve to one task instead of two.
+- Retry backoff is exponential (30s doubling, capped at 15 minutes) **with full jitter**, so tasks that
+  failed together during a provider outage do not retry in a synchronized burst.
+- An `InProgress` row past its timeout with no worker in this process is reclaimed to `Pending`, and the
+  reclaim is **counted**. After 3 reclaims without completing, the task is failed instead of requeued:
+  a task that kills the process (an OOM during ffmpeg) used to loop forever without ever incrementing
+  its attempt count.
+- Cancelling a running task now signals the handler through its cancellation token instead of only
+  writing a status while the work kept running and held its lane slot. A cancellation asked for by an
+  operator is reported as cancelled, not as a timeout.
+
+#### Single instance
+
+Concurrency counters and the cancellation registry live in the process. **K7 must run as a single
+instance against a given database.** Two instances would each enforce the limits locally (doubling
+every lane), and each would reclaim the other's in-flight tasks as orphans. Supporting several instances
+would mean moving the counters into the database; Postgres advisory locks would serve, but SQLite has no
+equivalent, so it would be a Postgres-only capability.
+
+#### Upgrading from concurrency groups
+
+The `BackgroundTaskConcurrencyLimits` setting (a free-form dictionary keyed by group name) is replaced by
+`BackgroundTaskLaneLimits`, keyed by lane. **Previously configured limits are not carried over**; re-apply
+them on the corresponding lanes. The former `file-metadata` and `ffprobe` groups are both folded into
+`Probe`, and per-provider groups (`tmdb`, `musicbrainz`, ...) into `Metadata`.
+
+The migration backfills existing rows: lane from the old group name, work class from the task name (a
+better signal than the old priority, which mixed kind of work and urgency), and provenance defaults to
+`System`. Duplicate active tasks are removed before the unique index is created, keeping the oldest of
+each set.
 
 ### Outgoing notifications (webhooks)
 
@@ -219,4 +363,4 @@ When disabled, AI discovery stays hidden; basic radios still work. User features
 
 ### Import from other servers
 
-[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - Plex, Jellyfin, Spotify, and more.
+[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - Plex, Jellyfin, Spotify, and more. Back up the database first; there is no import undo (see [Backup and troubleshooting](backup-and-troubleshooting.md)).

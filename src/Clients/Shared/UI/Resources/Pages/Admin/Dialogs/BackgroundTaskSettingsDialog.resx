@@ -20,7 +20,9 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Nombre de workers</value></data>
-  <data name="ConcurrencyGroupsTitle" xml:space="preserve"><value>Groupes de concurrence</value></data>
-  <data name="GroupLimit" xml:space="preserve"><value>Limite</value></data>
-  <data name="GroupActive" xml:space="preserve"><value>Actifs</value></data>
+  <data name="LanesTitle" xml:space="preserve"><value>Files d'exécution</value></data>
+  <data name="LaneLimitHint" xml:space="preserve"><value>Limite de parallélisme par file (0 à 32, 0 = file en pause).</value></data>
+  <data name="LaneLimit" xml:space="preserve"><value>Limite</value></data>
+  <data name="ActiveCount" xml:space="preserve"><value>Actives</value></data>
+  <data name="PendingCount" xml:space="preserve"><value>En attente</value></data>
 </root>

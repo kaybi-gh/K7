@@ -1,4 +1,4 @@
-﻿using K7.Server.Domain.Enums;
+using K7.Server.Domain.Enums;
 
 namespace K7.Shared.Dtos.Entities;
 
@@ -9,7 +9,11 @@ public sealed record BackgroundTaskDto
     public string? TargetEntityType { get; init; }
     public Guid? TargetEntityId { get; init; }
     public BackgroundTaskStatus Status { get; init; }
-    public BackgroundTaskPriority Priority { get; init; }
+    public BackgroundTaskLane Lane { get; init; }
+    public BackgroundTaskWorkClass WorkClass { get; init; }
+    public int Priority { get; init; }
+    public BackgroundTaskTriggeredBy TriggeredBy { get; init; }
+    public Guid? FederationPeerId { get; init; }
     public int AttemptCount { get; init; }
     public int MaxAttempts { get; init; }
     public DateTimeOffset Created { get; init; }
@@ -18,7 +22,8 @@ public sealed record BackgroundTaskDto
     public DateTimeOffset? CompletedAt { get; init; }
     public DateTimeOffset? NextRetryAfter { get; init; }
     public int TimeoutSeconds { get; init; }
-    public string? ConcurrencyGroup { get; init; }
+    public int ReclaimCount { get; init; }
+    public bool CancellationRequested { get; init; }
     public string? ErrorDetails { get; init; }
 
     public TimeSpan? Duration => CompletedAt is not null && StartedAt is not null

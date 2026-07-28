@@ -21,8 +21,12 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Name" xml:space="preserve"><value>Name</value></data>
   <data name="Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Priority" xml:space="preserve"><value>Priority</value></data>
-  <data name="ConcurrencyGroup" xml:space="preserve"><value>Concurrency Group</value></data>
+  <data name="Lane" xml:space="preserve"><value>Lane</value></data>
+  <data name="WorkClass" xml:space="preserve"><value>Work Class</value></data>
+  <data name="TriggeredBy" xml:space="preserve"><value>Origin</value></data>
+  <data name="Priority" xml:space="preserve"><value>Schedule Score</value></data>
+  <data name="FederationPeer" xml:space="preserve"><value>Federation Peer</value></data>
+  <data name="ReclaimCount" xml:space="preserve"><value>Reclaims</value></data>
   <data name="Attempts" xml:space="preserve"><value>Attempts</value></data>
   <data name="Timeout" xml:space="preserve"><value>Timeout</value></data>
   <data name="TargetType" xml:space="preserve"><value>Target Type</value></data>

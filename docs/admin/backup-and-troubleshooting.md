@@ -4,6 +4,8 @@
 
 K7 has no built-in backup feature. Back up the database and persistent paths yourself.
 
+Take a fresh database backup **before** running [K7.Import](../../tools/K7.Import/README.md): that tool has no undo, so a restore is the reliable rollback if the import fails or pollutes user data.
+
 ### What to back up
 
 | Item | Location | Required? |

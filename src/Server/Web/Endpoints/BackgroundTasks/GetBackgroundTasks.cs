@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTasksWithPagination;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;

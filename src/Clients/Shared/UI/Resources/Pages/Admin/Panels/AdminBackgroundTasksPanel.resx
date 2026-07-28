@@ -22,10 +22,6 @@
   <data name="SettingsTitle" xml:space="preserve"><value>Configuration</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Nombre de workers</value></data>
-  <data name="ConcurrencyGroupsTitle" xml:space="preserve"><value>Groupes de concurrence</value></data>
-  <data name="GroupName" xml:space="preserve"><value>Groupe</value></data>
-  <data name="GroupLimit" xml:space="preserve"><value>Limite</value></data>
-  <data name="GroupActive" xml:space="preserve"><value>Actifs</value></data>
   <data name="SettingsSaved" xml:space="preserve"><value>Configuration enregistrée.</value></data>
   <data name="TasksTitle" xml:space="preserve"><value>Tâches en arrière-plan</value></data>
   <data name="Refresh" xml:space="preserve"><value>Rafraîchir</value></data>
@@ -38,10 +34,33 @@
   <data name="StatusFailed" xml:space="preserve"><value>Échouée</value></data>
   <data name="StatusCancelled" xml:space="preserve"><value>Annulée</value></data>
   <data name="NoTasks" xml:space="preserve"><value>Aucune tâche.</value></data>
+  <data name="Empty" xml:space="preserve"><value>Aucune tâche</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Aucune tâche en file d'attente pour le moment, ou aucun élément ne correspond aux filtres.</value></data>
   <data name="ColName" xml:space="preserve"><value>Nom</value></data>
   <data name="ColStatus" xml:space="preserve"><value>Statut</value></data>
-  <data name="ColPriority" xml:space="preserve"><value>Priorité</value></data>
-  <data name="ColGroup" xml:space="preserve"><value>Groupe</value></data>
+  <data name="ColLane" xml:space="preserve"><value>File</value></data>
+  <data name="ColTriggeredBy" xml:space="preserve"><value>Origine</value></data>
+  <data name="FilterTriggeredBy" xml:space="preserve"><value>Origine</value></data>
+  <data name="Lane_LibraryScan" xml:space="preserve"><value>Analyse de bibliothèque</value></data>
+  <data name="Lane_Probe" xml:space="preserve"><value>Analyse de conteneur</value></data>
+  <data name="Lane_FfmpegPrepare" xml:space="preserve"><value>Préparation ffmpeg</value></data>
+  <data name="Lane_MediaAnalysis" xml:space="preserve"><value>Analyse de média</value></data>
+  <data name="Lane_ImageExtract" xml:space="preserve"><value>Extraction d'images</value></data>
+  <data name="Lane_ImageProcessing" xml:space="preserve"><value>Traitement d'images</value></data>
+  <data name="Lane_Metadata" xml:space="preserve"><value>Métadonnées</value></data>
+  <data name="Lane_Federation" xml:space="preserve"><value>Fédération</value></data>
+  <data name="Lane_DownloadTranscode" xml:space="preserve"><value>Téléchargements hors ligne</value></data>
+  <data name="TriggeredBy_System" xml:space="preserve"><value>Système</value></data>
+  <data name="TriggeredBy_User" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="TriggeredBy_Scheduler" xml:space="preserve"><value>Planificateur</value></data>
+  <data name="TriggeredBy_Watcher" xml:space="preserve"><value>Surveillance de fichiers</value></data>
+  <data name="TriggeredBy_Federation" xml:space="preserve"><value>Fédération</value></data>
+  <data name="TriggeredBy_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="WorkClass_Polish" xml:space="preserve"><value>Finition</value></data>
+  <data name="WorkClass_Prepare" xml:space="preserve"><value>Préparation</value></data>
+  <data name="WorkClass_CriticalEnrich" xml:space="preserve"><value>Enrichissement critique</value></data>
+  <data name="WorkClass_CriticalProbe" xml:space="preserve"><value>Analyse critique</value></data>
+  <data name="WorkClass_CriticalLink" xml:space="preserve"><value>Liaison critique</value></data>
   <data name="ColAttempts" xml:space="preserve"><value>Tentatives</value></data>
   <data name="ColDate" xml:space="preserve"><value>Date</value></data>
   <data name="ColDuration" xml:space="preserve"><value>Durée</value></data>

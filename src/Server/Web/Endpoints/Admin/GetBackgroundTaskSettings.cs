@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -22,33 +23,37 @@ public class GetBackgroundTaskSettings : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var workerCount = await settings.GetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, cancellationToken);
-            var limits = await settings.GetAsync(ServerSettingKeys.BackgroundTaskConcurrencyLimits, cancellationToken) ?? new();
-            var activeCounts = processingService.ActiveCountByGroup;
+            var limits = await settings.GetAsync(ServerSettingKeys.BackgroundTaskLaneLimits, cancellationToken) ?? new();
+            var activeCounts = processingService.ActiveCountByLaneKey;
 
-            var knownGroups = await context.BackgroundTasks
-                .Where(t => t.ConcurrencyGroup != null)
-                .Select(t => (string)t.ConcurrencyGroup!)
-                .Distinct()
+            var pendingByLane = await context.BackgroundTasks
+                .Where(t => t.Status == BackgroundTaskStatus.Pending
+                    || t.Status == BackgroundTaskStatus.WaitingForRetry)
+                .GroupBy(t => t.Lane)
+                .Select(g => new { Lane = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);
 
-            var allGroupNames = knownGroups
-                .Union(limits.Keys)
-                .Union(activeCounts.Keys)
-                .Distinct()
-                .Order()
-                .ToList();
+            var pendingLookup = pendingByLane.ToDictionary(x => x.Lane, x => x.Count);
 
-            var groups = allGroupNames.Select(name => new ConcurrencyGroupDto
-            {
-                Name = name,
-                Limit = limits.GetValueOrDefault(name, 1),
-                ActiveCount = activeCounts.GetValueOrDefault(name, 0)
-            }).ToList();
+            // The lane set is fixed, so always return every lane: an operator must be able to configure
+            // a lane before any task has ever used it.
+            var lanes = Enum.GetValues<BackgroundTaskLane>()
+                .Select(lane => new LaneLimitDto
+                {
+                    Lane = lane,
+                    Limit = limits.GetValueOrDefault(lane, BackgroundTaskScheduling.GetDefaultLimit(lane)),
+                    // Federation keys carry a peer suffix, so sum every key belonging to the lane.
+                    ActiveCount = activeCounts
+                        .Where(kvp => kvp.Key == lane.ToString() || kvp.Key.StartsWith($"{lane}:", StringComparison.Ordinal))
+                        .Sum(kvp => kvp.Value),
+                    PendingCount = pendingLookup.GetValueOrDefault(lane, 0)
+                })
+                .ToList();
 
             return Results.Ok(new BackgroundTaskSettingsDto
             {
                 WorkerCount = workerCount,
-                ConcurrencyGroups = groups
+                Lanes = lanes
             });
         })
         .RequireAuthorization(Policies.AdminOnly)

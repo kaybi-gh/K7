@@ -127,6 +127,8 @@ Pin a semver tag in production. Breaking changes are called out in GitHub Releas
 
 Use the import tool: [tools/K7.Import/README.md](../../tools/K7.Import/README.md).
 
+**Back up the database first.** The import tool has no rollback; a failed or unwanted import is recovered by restoring that backup (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
+
 ## Non-Docker installs
 
 **Supported production path: Docker (or another container runtime) using the published image.**

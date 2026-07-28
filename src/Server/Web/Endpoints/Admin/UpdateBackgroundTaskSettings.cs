@@ -20,16 +20,23 @@ public class UpdateBackgroundTaskSettings : IEndpoint
         {
             if (request.WorkerCount.HasValue)
             {
-                var count = Math.Clamp(request.WorkerCount.Value, 1, 32);
+                var count = Math.Clamp(
+                    request.WorkerCount.Value,
+                    1,
+                    BackgroundTaskScheduling.MaxWorkerCount);
                 await settings.SetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, count, cancellationToken);
             }
 
-            if (request.ConcurrencyLimits is not null)
+            if (request.LaneLimits is not null)
             {
-                var sanitized = request.ConcurrencyLimits
-                    .Where(kvp => !string.IsNullOrWhiteSpace(kvp.Key))
-                    .ToDictionary(kvp => kvp.Key, kvp => Math.Max(0, kvp.Value));
-                await settings.SetAsync(ServerSettingKeys.BackgroundTaskConcurrencyLimits, sanitized, cancellationToken);
+                // Unknown enum values are dropped rather than persisted: the lane set is fixed and a
+                // stale client must not be able to write a limit nothing will ever read.
+                var sanitized = request.LaneLimits
+                    .Where(kvp => Enum.IsDefined(kvp.Key))
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => Math.Clamp(kvp.Value, 0, BackgroundTaskScheduling.MaxLaneLimit));
+                await settings.SetAsync(ServerSettingKeys.BackgroundTaskLaneLimits, sanitized, cancellationToken);
             }
 
             return Results.NoContent();
