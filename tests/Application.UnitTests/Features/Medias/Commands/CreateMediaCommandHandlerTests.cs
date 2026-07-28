@@ -3,6 +3,7 @@ using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTa
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -88,7 +89,8 @@ public class CreateMediaCommandHandlerTests
             tagReader,
             paths,
             tagSync,
-            new MediaIdentityLookupService(_context));
+            new MediaIdentityLookupService(_context),
+            new MediaIdentityLock());
     }
 
     [TearDown]

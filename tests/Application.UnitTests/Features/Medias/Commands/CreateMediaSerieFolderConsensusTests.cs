@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -86,7 +87,8 @@ public class CreateMediaSerieFolderConsensusTests
             Substitute.For<IAudioTagReader>(),
             Options.Create(new PathsConfiguration { Metadatas = Path.GetTempPath() }),
             Substitute.For<IMediaMetadataTagSyncService>(),
-            new MediaIdentityLookupService(_context));
+            new MediaIdentityLookupService(_context),
+            new MediaIdentityLock());
     }
 
     [TearDown]

@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using MediatR;
@@ -41,7 +42,8 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
-            Priority = BackgroundTaskPriority.High,
+            Lane = BackgroundTaskLane.Probe,
+            WorkClass = BackgroundTaskWorkClass.CriticalProbe,
             MaxAttempts = 3,
             TargetEntityTypeName = "TestEntity",
             TargetEntityId = Guid.NewGuid()
@@ -53,7 +55,8 @@ public class CreateBackgroundTaskCommandHandlerTests
         // Assert
         _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
             t.Status == BackgroundTaskStatus.Pending
-            && t.Priority == BackgroundTaskPriority.High
+            && t.Lane == BackgroundTaskLane.Probe
+            && t.WorkClass == BackgroundTaskWorkClass.CriticalProbe
             && t.MaxAttempts == 3
             && t.TargetEntityType == "TestEntity"
         ));
@@ -98,14 +101,37 @@ public class CreateBackgroundTaskCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ShouldStoreConcurrencyGroup()
+    public async Task Handle_ShouldStoreLaneAndFederationPeerId()
+    {
+        // Arrange
+        var peerId = Guid.NewGuid();
+        var command = new CreateBackgroundTaskCommand
+        {
+            Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MaxAttempts = 1,
+            Lane = BackgroundTaskLane.Federation,
+            FederationPeerId = peerId
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
+            t.Lane == BackgroundTaskLane.Federation
+            && t.FederationPeerId == peerId
+        ));
+    }
+
+    [Test]
+    public async Task Handle_ShouldApplyInteractiveBoost_WhenTriggeredByUser()
     {
         // Arrange
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
             MaxAttempts = 1,
-            ConcurrencyGroup = "tmdb"
+            TriggeredBy = BackgroundTaskTriggeredBy.User
         };
 
         // Act
@@ -113,18 +139,20 @@ public class CreateBackgroundTaskCommandHandlerTests
 
         // Assert
         _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
-            t.ConcurrencyGroup == "tmdb"
+            t.TriggeredBy == BackgroundTaskTriggeredBy.User
+            && t.Priority == BackgroundTaskScheduling.InteractiveBoost
         ));
     }
 
     [Test]
-    public async Task Handle_ShouldAllowNullConcurrencyGroup()
+    public async Task Handle_ShouldLeavePriorityAtZero_WhenTriggeredBySystem()
     {
         // Arrange
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
-            MaxAttempts = 1
+            MaxAttempts = 1,
+            TriggeredBy = BackgroundTaskTriggeredBy.System
         };
 
         // Act
@@ -132,7 +160,8 @@ public class CreateBackgroundTaskCommandHandlerTests
 
         // Assert
         _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
-            t.ConcurrencyGroup == null
+            t.TriggeredBy == BackgroundTaskTriggeredBy.System
+            && t.Priority == 0
         ));
     }
 

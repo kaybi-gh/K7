@@ -13,7 +13,7 @@ namespace K7.Server.Application.UnitTests.Helpers;
 public class HlsSegmentHelperTests
 {
     [Test]
-    public async Task QueueSegmentComputationIfMissingAsync_ShouldEnqueueHighPriorityFfmpegTask()
+    public async Task QueueSegmentComputationIfMissingAsync_ShouldEnqueuePrepareKeyframeTask()
     {
         var sender = Substitute.For<ISender>();
         var logger = Substitute.For<ILogger>();
@@ -26,9 +26,9 @@ public class HlsSegmentHelperTests
             sender, indexedFileId, logger, CancellationToken.None);
 
         captured.Should().NotBeNull();
-        captured!.Priority.Should().Be(BackgroundTaskPriority.High);
+        captured!.Lane.Should().Be(BackgroundTaskLane.FfmpegPrepare);
+        captured.WorkClass.Should().Be(BackgroundTaskWorkClass.Prepare);
         captured.TargetEntityId.Should().Be(indexedFileId);
-        captured.ConcurrencyGroup.Should().Be("ffmpeg");
         captured.Request.Should().BeOfType<ComputeHlsSegmentsCommand>();
         ((ComputeHlsSegmentsCommand)captured.Request).Id.Should().Be(indexedFileId);
         ((ComputeHlsSegmentsCommand)captured.Request).SegmentsDuration.Should().Be(
