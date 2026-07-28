@@ -193,10 +193,22 @@ public class FileIndexer : IFileIndexer
 
             await ProcessRemovedFilesAsync(removedFiles, cancellationToken);
 
-            IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
-            ProcessAddedFiles(library, addedFiles, backgroundTasks);
-            ProcessAddedFiles(library, modifiedAsNew, backgroundTasks);
-            await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, backgroundTasks, cancellationToken);
+            // Both probe and media creation tasks are enqueued as their files get persisted, so the queue
+            // starts working during the scan instead of after it. Identification still runs once over the
+            // whole library so grouping stays correct, and a media creation task is only released once every
+            // file it groups has been saved.
+            var deferredProbeTasks = new List<CreateBackgroundTasksBatchItem>();
+            var pendingMediaTasks = new List<PendingMediaTask>();
+
+            // Files that are not new are already rows in the database, so they never gate a media task.
+            var persistedFileIds = toBeIdentifiedFiles
+                .Select(f => f.Id)
+                .Except(addedFiles.Select(f => f.Id))
+                .ToHashSet();
+
+            IdentifyFiles(library, toBeIdentifiedFiles, pendingMediaTasks);
+            ProcessAddedFiles(library, modifiedAsNew, deferredProbeTasks);
+            await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, deferredProbeTasks, cancellationToken);
             ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
             if (unchangedToReIdentify.Count > 0)
@@ -220,17 +232,35 @@ public class FileIndexer : IFileIndexer
                 _context.IndexedFiles.AddRange(batch);
                 await _context.SaveChangesAsync(cancellationToken);
                 ClearChangeTracker();
+
+                var batchProbeTasks = new List<CreateBackgroundTasksBatchItem>();
+                ProcessAddedFiles(library, batch, batchProbeTasks);
+                await EnqueueBackgroundTasksAsync(batchProbeTasks, cancellationToken);
+
+                foreach (var file in batch)
+                {
+                    persistedFileIds.Add(file.Id);
+                }
+
+                await EnqueueReadyMediaTasksAsync(pendingMediaTasks, persistedFileIds, cancellationToken);
             }
 
             await _context.SaveChangesAsync(cancellationToken);
             ClearChangeTracker();
 
+            await EnqueueBackgroundTasksAsync(deferredProbeTasks, cancellationToken);
+
             await _mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
 
-            if (backgroundTasks.Count > 0)
-            {
-                await _sender.Send(new CreateBackgroundTasksBatchCommand(backgroundTasks), cancellationToken);
-            }
+            // Anything still pending references a file that was never part of a save batch; every row is
+            // committed by now, so release the remainder unconditionally.
+            await EnqueueBackgroundTasksAsync(
+                pendingMediaTasks.Select(pending => pending.Item).ToList(),
+                cancellationToken);
+            pendingMediaTasks.Clear();
+
+            // Renamed files produce their media tasks in ProcessRenamedFiles.
+            await EnqueueBackgroundTasksAsync(backgroundTasks, cancellationToken);
 
             await _progressReporter.ReportProgressAsync(library.Id, scannedEntries.Count, scannedEntries.Count, "completed", cancellationToken);
 
@@ -339,7 +369,7 @@ public class FileIndexer : IFileIndexer
         return existingFile;
     }
 
-    private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
+    private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<PendingMediaTask> pendingMediaTasks)
     {
         if (toBeIdentifiedFiles.Count == 0) return;
 
@@ -351,7 +381,7 @@ public class FileIndexer : IFileIndexer
                     if (file.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                     {
                         file.Identification = movieIdentification;
-                        backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
+                        pendingMediaTasks.Add(new PendingMediaTask(new CreateBackgroundTasksBatchItem()
                         {
                             Request = new CreateMediaCommand()
                             {
@@ -359,12 +389,13 @@ public class FileIndexer : IFileIndexer
                                 MediaType = MediaType.Movie,
                                 LibraryId = library.Id
                             },
-                            Priority = BackgroundTaskPriority.Normal,
                             TargetEntityId = file.Id,
                             TargetEntityTypeName = nameof(BaseMedia),
-                            MaxAttempts = 5,
-                            ConcurrencyGroup = library.MetadataProviderName
-                        });
+                            Lane = BackgroundTaskLane.Metadata,
+                            WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                            TriggeredBy = BackgroundTaskTriggeredBy.System,
+                            MaxAttempts = 5
+                        }, [file.Id]));
                     }
                 }
                 break;
@@ -388,20 +419,22 @@ public class FileIndexer : IFileIndexer
                     .GroupBy(f => (f.Identification!.AlbumName ?? f.ParentDirectory, f.Identification.ArtistName)))
                 {
                     var albumFiles = albumGroup.ToList();
-                    backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
+                    var albumFilesIds = albumFiles.Select(f => f.Id).ToList();
+                    pendingMediaTasks.Add(new PendingMediaTask(new CreateBackgroundTasksBatchItem()
                     {
                         Request = new CreateMediaCommand()
                         {
-                            IndexedFileIds = albumFiles.Select(f => f.Id).ToList(),
+                            IndexedFileIds = albumFilesIds,
                             MediaType = MediaType.MusicAlbum,
                             LibraryId = library.Id
                         },
-                        Priority = BackgroundTaskPriority.Normal,
                         TargetEntityId = albumFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
-                        MaxAttempts = 5,
-                        ConcurrencyGroup = library.MetadataProviderName
-                    });
+                        Lane = BackgroundTaskLane.Metadata,
+                        WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                        TriggeredBy = BackgroundTaskTriggeredBy.System,
+                        MaxAttempts = 5
+                    }, albumFilesIds));
                 }
                 break;
 
@@ -420,20 +453,22 @@ public class FileIndexer : IFileIndexer
                     .GroupBy(f => f.Identification!.SeriesTitle, StringComparer.OrdinalIgnoreCase))
                 {
                     var serieFiles = serieGroup.ToList();
-                    backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
+                    var serieFilesIds = serieFiles.Select(f => f.Id).ToList();
+                    pendingMediaTasks.Add(new PendingMediaTask(new CreateBackgroundTasksBatchItem()
                     {
                         Request = new CreateMediaCommand()
                         {
-                            IndexedFileIds = serieFiles.Select(f => f.Id).ToList(),
+                            IndexedFileIds = serieFilesIds,
                             MediaType = MediaType.Serie,
                             LibraryId = library.Id
                         },
-                        Priority = BackgroundTaskPriority.Normal,
                         TargetEntityId = serieFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
-                        MaxAttempts = 5,
-                        ConcurrencyGroup = library.MetadataProviderName
-                    });
+                        Lane = BackgroundTaskLane.Metadata,
+                        WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                        TriggeredBy = BackgroundTaskTriggeredBy.System,
+                        MaxAttempts = 5
+                    }, serieFilesIds));
                 }
                 break;
         }
@@ -458,13 +493,57 @@ public class FileIndexer : IFileIndexer
                     Id = file.Id,
                     FileType = fileType
                 },
-                Priority = BackgroundTaskPriority.VeryHigh,
                 TargetEntityId = file.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 5,
-                ConcurrencyGroup = "ffmpeg"
+                Lane = BackgroundTaskLane.Probe,
+                WorkClass = BackgroundTaskWorkClass.CriticalProbe,
+                TriggeredBy = BackgroundTaskTriggeredBy.System,
+                MaxAttempts = 5
             });
         }
+    }
+
+    /// <summary>
+    /// A media creation task plus the files it needs persisted before it can run.
+    /// </summary>
+    private sealed record PendingMediaTask(CreateBackgroundTasksBatchItem Item, IReadOnlyList<Guid> RequiredFileIds);
+
+    /// <summary>
+    /// Enqueues every media creation task whose files are all persisted, and drops it from the pending set.
+    /// </summary>
+    /// <remarks>
+    /// Identification runs once over the whole library so grouping stays correct (an album or a serie spans
+    /// several save batches, and must yield a single task). Releasing a task only once its last file is
+    /// saved gives progressive enqueue without ever producing two tasks for the same group.
+    /// </remarks>
+    private async Task EnqueueReadyMediaTasksAsync(
+        List<PendingMediaTask> pendingMediaTasks,
+        HashSet<Guid> persistedFileIds,
+        CancellationToken cancellationToken)
+    {
+        if (pendingMediaTasks.Count == 0)
+            return;
+
+        var ready = new List<CreateBackgroundTasksBatchItem>();
+        for (var i = pendingMediaTasks.Count - 1; i >= 0; i--)
+        {
+            var pending = pendingMediaTasks[i];
+            if (!pending.RequiredFileIds.All(persistedFileIds.Contains))
+                continue;
+
+            ready.Add(pending.Item);
+            pendingMediaTasks.RemoveAt(i);
+        }
+
+        await EnqueueBackgroundTasksAsync(ready, cancellationToken);
+    }
+
+    private async Task EnqueueBackgroundTasksAsync(List<CreateBackgroundTasksBatchItem> backgroundTasks, CancellationToken cancellationToken)
+    {
+        if (backgroundTasks.Count == 0)
+            return;
+
+        await _sender.Send(new CreateBackgroundTasksBatchCommand(backgroundTasks), cancellationToken);
     }
 
     private async Task ProcessUnchangedFilesMissingMetadataAsync(Library library, IEnumerable<IndexedFile> unchangedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks, CancellationToken cancellationToken)
@@ -569,11 +648,12 @@ public class FileIndexer : IFileIndexer
                         MediaType = MediaType.Movie,
                         LibraryId = library.Id
                     },
-                    Priority = BackgroundTaskPriority.Normal,
                     TargetEntityId = oldFile.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxAttempts = 5,
-                    ConcurrencyGroup = library.MetadataProviderName
+                    Lane = BackgroundTaskLane.Metadata,
+                    WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                    TriggeredBy = BackgroundTaskTriggeredBy.System,
+                    MaxAttempts = 5
                 });
             }
 
