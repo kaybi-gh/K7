@@ -14,6 +14,7 @@ public partial class FolderBrowserDialog
     public string? InitialPath { get; set; }
 
     private string? _currentPath;
+    private string? _parentPath;
     private List<DirectoryEntryDto>? _directories;
     private DirectoryEntryDto? _selectedEntry;
     private bool _isLoading;
@@ -36,6 +37,7 @@ public partial class FolderBrowserDialog
             if (result is not null)
             {
                 _currentPath = result.Path;
+                _parentPath = result.ParentPath;
                 _directories = result.Directories.ToList();
             }
         }
@@ -67,11 +69,8 @@ public partial class FolderBrowserDialog
 
     private async Task NavigateUp()
     {
-        if (string.IsNullOrEmpty(_currentPath))
-            return;
-
-        var parent = System.IO.Path.GetDirectoryName(_currentPath);
-        await LoadDirectories(parent);
+        // ParentPath comes from the server so navigation stays correct across OS/WASM path rules.
+        await LoadDirectories(_parentPath);
     }
 
     private string? GetSelectedPath()

@@ -31,6 +31,7 @@ public class GetDirectories : IEndpoint
                 return Results.Ok(new DirectoryContentDto
                 {
                     Path = "",
+                    ParentPath = null,
                     Directories = drives
                 });
             }
@@ -67,6 +68,7 @@ public class GetDirectories : IEndpoint
                 return Results.Ok(new DirectoryContentDto
                 {
                     Path = fullPath,
+                    ParentPath = GetBrowsableParentPath(fullPath, allowedRoots),
                     Directories = directories
                 });
             }
@@ -80,6 +82,18 @@ public class GetDirectories : IEndpoint
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
+    }
+
+    private static string? GetBrowsableParentPath(string fullPath, IReadOnlyList<string> allowedRoots)
+    {
+        var parent = Directory.GetParent(fullPath);
+        if (parent is null)
+            return null;
+
+        var parentPath = parent.FullName;
+        return PathContainmentHelper.IsPathContained(parentPath, allowedRoots)
+            ? parentPath
+            : null;
     }
 
     private static IReadOnlyList<string> GetBrowsableRoots() =>
