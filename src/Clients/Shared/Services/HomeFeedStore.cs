@@ -1,4 +1,5 @@
 using System.Net.Http;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
@@ -23,6 +24,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private readonly List<HomeFeedRow> _rows = [];
     private readonly object _sync = new();
     private CancellationTokenSource? _picturesRefreshCts;
+    private CancellationTokenSource? _membershipRefreshCts;
     private CancellationTokenSource? _continueWatchingRefreshCts;
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
@@ -158,6 +160,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         UnregisterHubHandlers();
         _picturesRefreshCts?.Cancel();
         _picturesRefreshCts?.Dispose();
+        _membershipRefreshCts?.Cancel();
+        _membershipRefreshCts?.Dispose();
         _continueWatchingRefreshCts?.Cancel();
         _continueWatchingRefreshCts?.Dispose();
     }
@@ -469,9 +473,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (!_isLoaded || IsLoading || IsOffline)
             return;
 
-        Interlocked.Increment(ref _catalogRefreshGeneration);
-        InvalidateCache();
-        _ = RefreshNonContinueWatchingRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
+        // New catalog membership: debounce so rapid CreateMedia batches coalesce into one refresh.
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -479,9 +482,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (!_isLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
             return;
 
-        Interlocked.Increment(ref _catalogRefreshGeneration);
-        InvalidateCache();
-        _ = RefreshAllRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: true);
     }
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
@@ -489,9 +490,34 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (!_isLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
             return;
 
-        Interlocked.Increment(ref _catalogRefreshGeneration);
-        InvalidateCache();
-        _ = RefreshNonContinueWatchingRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
+    }
+
+    private void ScheduleCatalogMembershipRefresh(bool refreshContinueWatching)
+    {
+        _membershipRefreshCts?.Cancel();
+        _membershipRefreshCts?.Dispose();
+        _membershipRefreshCts = new CancellationTokenSource();
+        var token = _membershipRefreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500, token);
+                Interlocked.Increment(ref _catalogRefreshGeneration);
+                InvalidateCache();
+                if (refreshContinueWatching)
+                    await RefreshAllRowsAsync();
+                else
+                    await RefreshNonContinueWatchingRowsAsync();
+                if (!token.IsCancellationRequested)
+                    NotifyChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, token);
     }
 
     private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
@@ -581,7 +607,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     }
 
     /// <summary>
-    /// Reuses existing card view-models by id so UI keys stay stable and images do not reload.
+    /// Reuses existing card view-models by id so UI keys stay stable and images do not blink
+    /// when only progress/watched changed. Replaces the instance when catalog visuals change
+    /// (e.g. poster became available after MediaPicturesUpdated).
     /// </summary>
     private static void ApplyRowItems(List<MediaCardViewModel> target, List<MediaCardViewModel> items)
     {
@@ -589,10 +617,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             && target.Zip(items, (existing, next) => existing.Id == next.Id).All(same => same))
         {
             for (var i = 0; i < target.Count; i++)
-            {
-                target[i].Progress = items[i].Progress;
-                target[i].Watched = items[i].Watched;
-            }
+                target[i] = MergeCard(target[i], items[i]);
 
             return;
         }
@@ -602,19 +627,53 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         foreach (var item in items)
         {
             if (existingById.TryGetValue(item.Id, out var existing))
-            {
-                existing.Progress = item.Progress;
-                existing.Watched = item.Watched;
-                merged.Add(existing);
-            }
+                merged.Add(MergeCard(existing, item));
             else
-            {
                 merged.Add(item);
-            }
         }
 
         target.Clear();
         target.AddRange(merged);
+    }
+
+    private static MediaCardViewModel MergeCard(MediaCardViewModel existing, MediaCardViewModel next)
+    {
+        if (!HasCatalogVisualChanges(existing, next))
+        {
+            existing.Progress = next.Progress;
+            existing.Watched = next.Watched;
+            existing.GroupCount = next.GroupCount;
+            return existing;
+        }
+
+        return next;
+    }
+
+    private static bool HasCatalogVisualChanges(MediaCardViewModel existing, MediaCardViewModel next) =>
+        !MediaPictureUrlHelper.SameResourceUrl(existing.PictureUrl, next.PictureUrl)
+        || !MediaPictureUrlHelper.SameResourceUrl(existing.BackdropUrl, next.BackdropUrl)
+        || existing.Title != next.Title
+        || existing.AdditionalInformations != next.AdditionalInformations
+        || existing.Overview != next.Overview
+        || existing.TagLine != next.TagLine
+        || existing.ContentRating != next.ContentRating
+        || existing.RuntimeMinutes != next.RuntimeMinutes
+        || existing.Rating != next.Rating
+        || existing.ReleaseYear != next.ReleaseYear
+        || existing.SerieSeasonCount != next.SerieSeasonCount
+        || existing.SerieReleaseYear != next.SerieReleaseYear
+        || existing.NavigationTarget != next.NavigationTarget
+        || !SameGenres(existing.Genres, next.Genres);
+
+    private static bool SameGenres(IReadOnlyList<string>? left, IReadOnlyList<string>? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null)
+            return left is null && right is null;
+
+        return left.SequenceEqual(right);
     }
 
     private async Task<List<MediaCardViewModel>?> FetchRowAsync(GetHomeFeedQuery query)

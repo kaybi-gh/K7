@@ -86,7 +86,7 @@ else
 
 @{ RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {
-    return @<Carousel Title="@GetRowTitle(row.Title)">
+    return @<Carousel Title="@GetRowTitle(row.Title)" ContentKey="@GetCarouselContentKey(items)">
         @for (var cardIndex = 0; cardIndex < items.Count; cardIndex++)
         {
             var item = items[cardIndex];

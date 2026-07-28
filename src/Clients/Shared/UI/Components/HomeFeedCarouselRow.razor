@@ -13,7 +13,7 @@
 }
 else if (_items.Count > 0)
 {
-    <Carousel Title="@Title">
+    <Carousel Title="@Title" ContentKey="@string.Join(',', _items.Select(i => i.Id))">
         @foreach (var item in _items)
         {
             <CarouselItem @key="item.Id" ItemId="@GetCardElementId(item.Id)">

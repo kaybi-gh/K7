@@ -361,6 +361,10 @@ public partial class HomeView : IAsyncDisposable
         _ => MediaCardVariant.Poster
     };
 
+    private static string GetCarouselContentKey(IReadOnlyList<MediaCardViewModel> items) =>
+        string.Join(',', items.Select(i => i.Id));
+
+
     private async Task DismissFromContinueWatching(MediaCardViewModel model)
     {
         try

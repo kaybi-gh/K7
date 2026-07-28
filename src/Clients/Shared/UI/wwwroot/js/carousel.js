@@ -122,8 +122,41 @@ export function scrollToIndex(rootElement, index) {
 }
 
 export function reInit(rootElement) {
-    if (rootElement && rootElement.__embla) {
-        rootElement.__embla.reInit();
+    if (!rootElement || !rootElement.__embla) return;
+
+    var embla = rootElement.__embla;
+    var slides = embla.slideNodes();
+    var selectedIndex = embla.selectedScrollSnap();
+    var atStart = selectedIndex <= 0;
+
+    // User is browsing mid-carousel: keep the same media card in view after inserts.
+    // User is at the start: stay on snap 0 so newly prepended cards (FIFO) become visible.
+    var anchorId = null;
+    if (!atStart) {
+        for (var i = selectedIndex; i >= 0; i--) {
+            var slide = slides[i];
+            if (slide && !slide.hasAttribute('data-carousel-loop-back') && slide.id) {
+                anchorId = slide.id;
+                break;
+            }
+        }
+    }
+
+    embla.reInit();
+
+    if (atStart) {
+        embla.scrollTo(0, true);
+        return;
+    }
+
+    if (!anchorId) return;
+
+    var nextSlides = embla.slideNodes();
+    for (var j = 0; j < nextSlides.length; j++) {
+        if (nextSlides[j].id === anchorId) {
+            embla.scrollTo(j, true);
+            return;
+        }
     }
 }
 

@@ -18,11 +18,29 @@ public partial class Carousel : IAsyncDisposable
     [Parameter] public bool ShowLoopBack { get; set; } = true;
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>
+    /// Fingerprint of slide ids. Blazor inserts/removes <see cref="CarouselItem"/> nodes via @key
+    /// (feed stays FIFO within its page size). When this changes, Embla picks up the new DOM slides:
+    /// at snap 0 new cards become visible; mid-carousel the current card stays anchored.
+    /// </summary>
+    [Parameter] public string? ContentKey { get; set; }
+
+    private string? _lastContentKey;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (firstRender)
+        {
+            _lastContentKey = ContentKey;
+            await EnsureInitializedAsync();
+            return;
+        }
 
-        await EnsureInitializedAsync();
+        if (ContentKey == _lastContentKey)
+            return;
+
+        _lastContentKey = ContentKey;
+        await NotifyItemsChangedAsync();
     }
 
     public async Task EnsureInitializedAsync()
