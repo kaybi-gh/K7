@@ -24,8 +24,30 @@ public sealed class SecurityHeadersMiddleware(
         AuthenticationConfiguration auth,
         IWebHostEnvironment environment)
     {
-        var scriptSources = new List<string> { "'self'", "'wasm-unsafe-eval'", "'unsafe-inline'", "https://www.gstatic.com" };
-        var connectSources = new List<string> { "'self'", "ws:", "wss:" };
+        // Chromecast sender (App.razor) loads cast_sender.js + cast_framework from gstatic,
+        // then talks to Google discovery endpoints. Cast framework historically needs unsafe-eval.
+        var scriptSources = new List<string>
+        {
+            "'self'",
+            "'wasm-unsafe-eval'",
+            "'unsafe-eval'",
+            "'unsafe-inline'",
+            "https://www.gstatic.com",
+            "https://*.gstatic.com",
+            "https://www.google.com"
+        };
+        var connectSources = new List<string>
+        {
+            "'self'",
+            "ws:",
+            "wss:",
+            "https://www.gstatic.com",
+            "https://*.gstatic.com",
+            "https://www.google.com",
+            "https://*.google.com",
+            "https://*.googleapis.com",
+            "wss://*.google.com"
+        };
         var formActions = new List<string> { "'self'" };
 
         if (auth.Oidc.Enabled
@@ -47,8 +69,9 @@ public sealed class SecurityHeadersMiddleware(
         return string.Join("; ",
             "default-src 'self'",
             $"script-src {string.Join(' ', scriptSources)}",
+            $"script-src-elem {string.Join(' ', scriptSources)}",
             "script-src-attr 'unsafe-inline'",
-            "worker-src 'self' blob:",
+            "worker-src 'self' blob: https://www.gstatic.com https://*.gstatic.com",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: https://image.tmdb.org https://artworks.thetvdb.com https://coverartarchive.org https://*.archive.org",
             "font-src 'self' data:",
