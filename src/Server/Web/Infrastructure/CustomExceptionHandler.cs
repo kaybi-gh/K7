@@ -1,4 +1,4 @@
-﻿using Ardalis.GuardClauses;
+using Ardalis.GuardClauses;
 using K7.Server.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -135,7 +135,28 @@ public class CustomExceptionHandler : IExceptionHandler
     private static Task HandleUnprocessableEntityException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
-        return Task.CompletedTask;
+
+        // A media awaiting its probe gets its own problem type: it is a transient, expected state that a
+        // client should surface as "being prepared" and retry, unlike a genuine unprocessable request.
+        if (ex is MediaNotReadyException mediaNotReady)
+        {
+            return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Type = MediaNotReadyException.ProblemType,
+                Title = "Media is not ready for playback yet.",
+                Detail = mediaNotReady.Message,
+                Extensions = { ["indexedFileId"] = mediaNotReady.IndexedFileId }
+            }, cancellationToken);
+        }
+
+        return httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Status = StatusCodes.Status422UnprocessableEntity,
+            Type = "https://tools.ietf.org/html/rfc4918#section-11.2",
+            Title = "Unprocessable entity",
+            Detail = ex.Message
+        }, cancellationToken);
     }
 
     private static Task HandleBadRequestException(HttpContext httpContext, Exception ex, CancellationToken cancellationToken)

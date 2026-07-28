@@ -1,4 +1,5 @@
 using K7.Server.Application.Common;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
@@ -24,6 +25,7 @@ public sealed class StreamPlaybackService(
     IActiveStreamTracker activeStreamTracker,
     ITranscodeJobManager transcodeJobManager,
     IFfmpegCapabilitiesService ffmpegCapabilitiesService,
+    IPlaybackBoostService playbackBoostService,
     ILogger<StreamPlaybackService> logger) : IStreamPlaybackService
 {
     public async Task<IndexedFileStreamUri> GetStreamUriAsync(
@@ -49,10 +51,18 @@ public sealed class StreamPlaybackService(
             return uri;
         }
 
+        if (indexedFile.FileMetadata is null)
+        {
+            // Indexed but not probed yet: an expected transient state, not a server fault. Raise the
+            // priority of the pending probe so that what a user asked for overtakes the backlog.
+            await playbackBoostService.BoostPendingWorkAsync(indexedFile.Id, indexedFile.MediaId, cancellationToken);
+            throw new MediaNotReadyException(indexedFile.Id);
+        }
+
         if (indexedFile.FileMetadata is not VideoFileMetadata videoFileMetadata)
         {
             throw new InvalidOperationException(
-                $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata?.GetType().Name ?? "null"}'.");
+                $"Indexed file '{indexedFile.Id}' has unsupported metadata type '{indexedFile.FileMetadata.GetType().Name}'.");
         }
 
         await context.Entry(videoFileMetadata).Collection(v => v.AudioTracks).LoadAsync(cancellationToken);
