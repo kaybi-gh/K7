@@ -34,6 +34,8 @@
   <data name="SortOldest" xml:space="preserve"><value>Oldest first</value></data>
   <data name="SortReleaseDateDesc" xml:space="preserve"><value>Release date (newest)</value></data>
   <data name="SortReleaseDateAsc" xml:space="preserve"><value>Release date (oldest)</value></data>
+  <data name="SortLocalRatingDesc" xml:space="preserve"><value>Highest rated</value></data>
+  <data name="SortLocalRatingAsc" xml:space="preserve"><value>Lowest rated</value></data>
   <data name="SortRecentActivity" xml:space="preserve"><value>Recent activity</value></data>
   <data name="SortOldestActivity" xml:space="preserve"><value>Oldest activity</value></data>
   <data name="SortLastListenedRecent" xml:space="preserve"><value>Last listened</value></data>

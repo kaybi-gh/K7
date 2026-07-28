@@ -91,22 +91,44 @@ internal sealed class HomeFeedTopLevelStrategy(
                 MediaOrderingOption.TitleDesc => ordered?.ThenByDescending(x => x.SortTitle ?? x.Title) ?? queryable.OrderByDescending(x => x.SortTitle ?? x.Title),
                 MediaOrderingOption.ReleaseDateAsc => ordered?.ThenBy(x => x.ReleaseDate) ?? queryable.OrderBy(x => x.ReleaseDate),
                 MediaOrderingOption.ReleaseDateDesc => ordered?.ThenByDescending(x => x.ReleaseDate) ?? queryable.OrderByDescending(x => x.ReleaseDate),
-                MediaOrderingOption.LocalRatingAsc => ordered?.ThenBy(x => x.Ratings
-                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
-                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                    .Select(r => (double?)r.Value).FirstOrDefault())
-                    ?? queryable.OrderBy(x => x.Ratings
-                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
-                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                    .Select(r => (double?)r.Value).FirstOrDefault()),
-                MediaOrderingOption.LocalRatingDesc => ordered?.ThenByDescending(x => x.Ratings
-                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
-                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                    .Select(r => (double?)r.Value).FirstOrDefault())
-                    ?? queryable.OrderByDescending(x => x.Ratings
-                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
-                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                    .Select(r => (double?)r.Value).FirstOrDefault()),
+                MediaOrderingOption.LocalRatingAsc => ordered is null
+                    ? queryable
+                        .OrderBy(x => !x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenBy(x => x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault())
+                    : ordered
+                        .ThenBy(x => !x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenBy(x => x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault()),
+                MediaOrderingOption.LocalRatingDesc => ordered is null
+                    ? queryable
+                        .OrderBy(x => !x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenByDescending(x => x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault())
+                    : ordered
+                        .ThenBy(x => !x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenByDescending(x => x.Ratings
+                            .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault()),
                 _ => ordered ?? queryable.OrderByDescending(x => x.Id)
             };
         }

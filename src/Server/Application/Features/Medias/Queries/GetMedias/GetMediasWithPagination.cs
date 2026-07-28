@@ -364,27 +364,43 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                         .Select(s => s.LastInteractedAt)
                         .FirstOrDefault()),
                 MediaOrderingOption.LocalRatingAsc => orderedQueryable == null ?
-                    queryable.OrderBy(x => x.Ratings
-                        .OfType<UserRating>()
-                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                        .Select(r => (double?)r.Value)
-                        .FirstOrDefault())
-                    : orderedQueryable.ThenBy(x => x.Ratings
-                        .OfType<UserRating>()
-                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                        .Select(r => (double?)r.Value)
-                        .FirstOrDefault()),
+                    queryable
+                        .OrderBy(x => !x.Ratings
+                            .OfType<UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenBy(x => x.Ratings
+                            .OfType<UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault())
+                    : orderedQueryable
+                        .ThenBy(x => !x.Ratings
+                            .OfType<UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenBy(x => x.Ratings
+                            .OfType<UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault()),
                 MediaOrderingOption.LocalRatingDesc => orderedQueryable == null ?
-                    queryable.OrderByDescending(x => x.Ratings
-                        .OfType<UserRating>()
-                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                        .Select(r => (double?)r.Value)
-                        .FirstOrDefault())
-                    : orderedQueryable.ThenByDescending(x => x.Ratings
-                        .OfType<UserRating>()
-                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
-                        .Select(r => (double?)r.Value)
-                        .FirstOrDefault()),
+                    queryable
+                        .OrderBy(x => !x.Ratings
+                            .OfType<UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenByDescending(x => x.Ratings
+                            .OfType<UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault())
+                    : orderedQueryable
+                        .ThenBy(x => !x.Ratings
+                            .OfType<UserRating>()
+                            .Any(r => !userId.HasValue || r.UserId == userId.Value))
+                        .ThenByDescending(x => x.Ratings
+                            .OfType<UserRating>()
+                            .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                            .Select(r => (double?)r.Value)
+                            .FirstOrDefault()),
                 MediaOrderingOption.OriginalTitleAsc => orderedQueryable == null ?
                     queryable.OrderBy(x => x.OriginalTitle)
                     : orderedQueryable.ThenBy(x => x.OriginalTitle),

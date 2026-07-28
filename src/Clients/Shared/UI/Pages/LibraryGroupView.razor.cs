@@ -122,7 +122,9 @@ public partial class LibraryGroupView : IDisposable
         MediaOrderingOption.CreatedDesc,
         MediaOrderingOption.CreatedAsc,
         MediaOrderingOption.ReleaseDateDesc,
-        MediaOrderingOption.ReleaseDateAsc
+        MediaOrderingOption.ReleaseDateAsc,
+        MediaOrderingOption.LocalRatingDesc,
+        MediaOrderingOption.LocalRatingAsc
     ];
 
     private float GridAspectRatio => _selectedMediaType switch
@@ -1120,6 +1122,8 @@ public partial class LibraryGroupView : IDisposable
             MediaOrderingOption.ReleaseDateDesc => ("releaseDate", K7SortDirection.Descending),
             MediaOrderingOption.CreatedAsc => ("created", K7SortDirection.Ascending),
             MediaOrderingOption.CreatedDesc => ("created", K7SortDirection.Descending),
+            MediaOrderingOption.LocalRatingAsc => ("localRating", K7SortDirection.Ascending),
+            MediaOrderingOption.LocalRatingDesc => ("localRating", K7SortDirection.Descending),
             _ => ("title", K7SortDirection.Ascending)
         };
 
@@ -1131,6 +1135,8 @@ public partial class LibraryGroupView : IDisposable
         MediaOrderingOption.CreatedAsc => L["SortOldest"],
         MediaOrderingOption.ReleaseDateDesc => L["SortReleaseDateDesc"],
         MediaOrderingOption.ReleaseDateAsc => L["SortReleaseDateAsc"],
+        MediaOrderingOption.LocalRatingDesc => L["SortLocalRatingDesc"],
+        MediaOrderingOption.LocalRatingAsc => L["SortLocalRatingAsc"],
         _ => option.ToString()
     };
 
