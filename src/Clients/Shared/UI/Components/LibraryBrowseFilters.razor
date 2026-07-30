@@ -94,6 +94,24 @@
                         }
                     </div>
                     break;
+                case QuickFilterSubmenu.ContentSource:
+                    <div class="library-browse-filters__section-label">@L["FilterSource"]</div>
+                    <div class="library-browse-filters__menu">
+                        @foreach (var opt in ContentSourceOptions)
+                        {
+                            var selected = SelectedContentSource == opt.Value;
+                            <button type="button"
+                                    class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
+                                    @onclick="() => SetContentSourceAsync(opt.Value)">
+                                <span class="library-browse-filters__option-label">@opt.Label</span>
+                                @if (selected)
+                                {
+                                    <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
+                                }
+                            </button>
+                        }
+                    </div>
+                    break;
                 case QuickFilterSubmenu.Genres:
                     <div class="library-browse-filters__section-label">@L["FilterGenres"]</div>
                     <div class="library-browse-filters__menu">
@@ -183,6 +201,15 @@
                 <hr class="k7-menu-divider" />
             }
             <div class="library-browse-filters__menu">
+                @if (ShowContentSourceFilter)
+                {
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.ContentSource)">
+                        <span class="library-browse-filters__option-label">@GetContentSourceMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                }
                 @if (ShowVideoMetadataQuickFilters)
                 {
                     <button type="button"

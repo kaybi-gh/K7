@@ -9,7 +9,8 @@ public sealed record BackgroundTasksFilterState(
     string? TaskType,
     BackgroundTaskOrderingOption Sort = BackgroundTaskOrderingOption.None,
     string? SortBy = null,
-    bool SortDescending = true);
+    bool SortDescending = true,
+    BackgroundTaskTriggeredBy? TriggeredBy = null);
 
 public sealed record DiagnosticsFilterState(
     string? Severity,

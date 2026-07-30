@@ -56,4 +56,6 @@
   <data name="SonicSearchPlaceholder" xml:space="preserve"><value>calm piano, upbeat indie pop...</value></data>
   <data name="LyricsSearchPlaceholder" xml:space="preserve"><value>amour perdu, dancing in the rain...</value></data>
   <data name="ApplySearch" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="FilterSource" xml:space="preserve"><value>Source</value></data>
+  <data name="FilterSourceSelected" xml:space="preserve"><value>Source : {0}</value></data>
 </root>

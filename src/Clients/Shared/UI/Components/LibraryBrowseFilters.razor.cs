@@ -28,6 +28,10 @@ public partial class LibraryBrowseFilters
     [Parameter] public EventCallback<IntelligentSearchRequest?> IntelligentSearchChanged { get; set; }
     [Parameter] public MediaType MediaType { get; set; }
     [Parameter] public bool ShowWatchFilters { get; set; }
+    [Parameter] public bool ShowContentSourceFilter { get; set; }
+    [Parameter] public IReadOnlyList<(string Value, string Label)> ContentSourceOptions { get; set; } = [];
+    [Parameter] public string SelectedContentSource { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string?> ContentSourceChanged { get; set; }
     [Parameter] public string Class { get; set; } = string.Empty;
 
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -50,8 +54,13 @@ public partial class LibraryBrowseFilters
 
     private string? SelectedArtist => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName));
 
+    private bool HasActiveContentSource =>
+        ShowContentSourceFilter && !string.IsNullOrEmpty(SelectedContentSource);
+
     private bool HasActiveFilters =>
-        !MediaBrowseFilterPresets.IsEmpty(Filter) || ActiveIntelligentSearch is not null;
+        !MediaBrowseFilterPresets.IsEmpty(Filter)
+        || ActiveIntelligentSearch is not null
+        || HasActiveContentSource;
 
     private bool ShowIntelligentSearchFilters =>
         _musicIntelligenceAvailable
@@ -90,6 +99,15 @@ public partial class LibraryBrowseFilters
                 return L["WatchFilterUnwatched"];
 
             var parts = new List<string>();
+            if (HasActiveContentSource)
+            {
+                var sourceLabel = ContentSourceOptions
+                    .FirstOrDefault(o => o.Value == SelectedContentSource)
+                    .Label;
+                if (!string.IsNullOrWhiteSpace(sourceLabel))
+                    parts.Add(sourceLabel);
+            }
+
             if (!string.IsNullOrWhiteSpace(SelectedActor))
                 parts.Add(SelectedActor);
             if (!string.IsNullOrWhiteSpace(SelectedArtist))
@@ -167,6 +185,19 @@ public partial class LibraryBrowseFilters
             : string.Format(L["FilterContentRatingSelected"], count);
     }
 
+    private string GetContentSourceMenuLabel()
+    {
+        if (!HasActiveContentSource)
+            return L["FilterSource"];
+
+        var sourceLabel = ContentSourceOptions
+            .FirstOrDefault(o => o.Value == SelectedContentSource)
+            .Label;
+        return string.IsNullOrWhiteSpace(sourceLabel)
+            ? L["FilterSource"]
+            : string.Format(L["FilterSourceSelected"], sourceLabel);
+    }
+
     private void OnMenuOpenChanged(bool open)
     {
         _menuOpen = open;
@@ -233,6 +264,17 @@ public partial class LibraryBrowseFilters
 
         if (!MediaBrowseFilterPresets.IsEmpty(Filter))
             await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.Empty);
+
+        if (HasActiveContentSource)
+            await ContentSourceChanged.InvokeAsync(string.Empty);
+    }
+
+    private async Task SetContentSourceAsync(string value)
+    {
+        if (value == SelectedContentSource)
+            return;
+
+        await ContentSourceChanged.InvokeAsync(value);
     }
 
     private async Task ApplyIntelligentSearchAsync(IntelligentSearchKind kind)
@@ -291,6 +333,7 @@ public partial class LibraryBrowseFilters
         Artist,
         Studio,
         ContentRating,
+        ContentSource,
         Genres,
         SonicSearch,
         LyricsSearch

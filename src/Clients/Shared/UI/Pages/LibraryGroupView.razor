@@ -47,19 +47,6 @@
                         <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
                     }
                 </K7Select>
-                @if (_showContentSourceFilter)
-                {
-                    <K7Select TValue="string"
-                              Class="library-toolbar-source"
-                              Label="@L["ContentSourceFilter"]"
-                              Value="_selectedContentSource"
-                              ValueChanged="OnContentSourceChanged">
-                        @foreach (var opt in _contentSourceOptions)
-                        {
-                            <K7SelectItem Value="@opt.Value" Text="@opt.Label">@opt.Label</K7SelectItem>
-                        }
-                    </K7Select>
-                }
                 <LibraryBrowseFilters Tags="_tags"
                                        LibraryIds="_libraryIds?.ToArray()"
                                        LibraryGroupIds="_libraryGroupIds"
@@ -68,7 +55,11 @@
                                        ActiveIntelligentSearch="_intelligentSearch"
                                        IntelligentSearchChanged="OnIntelligentSearchChanged"
                                        MediaType="_selectedMediaType"
-                                       ShowWatchFilters="_showWatchFilters" />
+                                       ShowWatchFilters="_showWatchFilters"
+                                       ShowContentSourceFilter="_showContentSourceFilter"
+                                       ContentSourceOptions="_contentSourceOptions"
+                                       SelectedContentSource="_selectedContentSource"
+                                       ContentSourceChanged="OnContentSourceChanged" />
             </div>
         </div>
         <div class="library-toolbar-meta">
@@ -146,12 +137,8 @@
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Year"]" SortKey="releaseDate" Width="80px" VisibleOnMobile="false" Property="item => item.ReleaseDate?.Year" />
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Rating"]" SortKey="localRating" Width="120px" VisibleOnMobile="false">
                 <CellTemplate Context="item">
-                    <div class="library-table-stars">
-                        @{ var stars = item.UserRating is > 0 ? (int)Math.Ceiling(item.UserRating.Value / 2.0) : 0; }
-                        @for (var i = 1; i <= 5; i++)
-                        {
-                            <K7Icon Icon="@(i <= stars ? Phosphor.Fill.Star : Phosphor.Star)"  IconSize="@K7IconSize.Xs" Style="@(i <= stars ? "color: var(--color-accent);" : "color: var(--color-text-muted); opacity: 0.4;")" />
-                        }
+                    <div class="library-table-stars" @onclick:stopPropagation="true">
+                        <RatingStars MediaId="item.Id" Value="item.UserRating" Size="xs" ReadOnly="true" />
                     </div>
                 </CellTemplate>
             </K7DataColumn>
