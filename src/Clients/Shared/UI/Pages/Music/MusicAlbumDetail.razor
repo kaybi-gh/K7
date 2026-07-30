@@ -220,7 +220,7 @@
                             <RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
                         </td>
                         <td>
-                            <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" />
+                            <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" OnMetadataChanged="ReloadTracksAfterEditAsync" />
                         </td>
                     </RowTemplate>
                 </K7Table>

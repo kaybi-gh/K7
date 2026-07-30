@@ -313,6 +313,8 @@ public partial class MusicAlbumDetail : IDisposable
         }
     }
 
+    private Task ReloadTracksAfterEditAsync() => LoadAlbumAsync(isBackgroundRefresh: true);
+
     private async Task ResolveLibraryGroupIdAsync()
     {
         var libraryId = _album?.IndexedFiles?.FirstOrDefault()?.LibraryId;

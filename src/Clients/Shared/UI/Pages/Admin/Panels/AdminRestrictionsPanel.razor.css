@@ -50,7 +50,7 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    padding: 4rem 1rem;
+    text-align: center;
 }
 
 .empty-state__title {
@@ -60,4 +60,5 @@
 .empty-state__hint {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
+    max-width: 28rem;
 }
