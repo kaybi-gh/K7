@@ -18,7 +18,6 @@ public record UpdatePeerCommand : IRequest
     public int? MaxConcurrentStreams { get; init; }
     public bool? AutoAddNewLibraries { get; init; }
     public IReadOnlyList<PeerSocialAgreementDto>? SocialAgreements { get; init; }
-    public IReadOnlyList<Guid>? SharePlaybackHistoryLibraryIds { get; init; }
 }
 
 public class UpdatePeerCommandHandler(
@@ -61,23 +60,11 @@ public class UpdatePeerCommandHandler(
                     LibraryId = libraryId,
                     Direction = ShareDirection.Outbound,
                     MaxConcurrentStreams = request.MaxConcurrentStreams,
-                    IsEnabled = true,
-                    SharePlaybackHistory = request.SharePlaybackHistoryLibraryIds?.Contains(libraryId) ?? false
+                    IsEnabled = true
                 });
             }
 
             sharedLibrariesChanged = true;
-        }
-        else if (request.SharePlaybackHistoryLibraryIds is not null)
-        {
-            var outboundAgreements = await context.PeerShareAgreements
-                .Where(a => a.PeerServerId == peer.Id && a.Direction == ShareDirection.Outbound)
-                .ToListAsync(cancellationToken);
-
-            foreach (var agreement in outboundAgreements)
-            {
-                agreement.SharePlaybackHistory = request.SharePlaybackHistoryLibraryIds.Contains(agreement.LibraryId);
-            }
         }
 
         if (request.EnabledInboundAgreementIds is not null)

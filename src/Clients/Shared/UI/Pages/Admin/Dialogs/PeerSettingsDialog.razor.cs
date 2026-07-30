@@ -1,6 +1,8 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
@@ -9,6 +11,8 @@ public partial class PeerSettingsDialog
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Parameter] public PeerServerDto? Peer { get; set; }
+
+    [Inject] private IReviewService ReviewService { get; set; } = default!;
 
     private static readonly FederationContentType[] _socialContentTypes =
     [
@@ -25,9 +29,9 @@ public partial class PeerSettingsDialog
     private List<LibraryDto> _libraries = [];
     private List<PeerShareAgreementDto> _inboundAgreements = [];
     private HashSet<Guid> _selectedIds = [];
-    private HashSet<Guid> _shareHistoryIds = [];
     private HashSet<Guid> _enabledInboundIds = [];
     private readonly Dictionary<FederationContentType, PeerSocialAgreementDto> _socialAgreements = new();
+    private FederationSocialPolicyDto _socialPolicy = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -37,10 +41,6 @@ public partial class PeerSettingsDialog
             _autoAdd = Peer.AutoAddNewLibraries;
             _selectedIds = Peer.ShareAgreements
                 .Where(a => a.Direction == ShareDirection.Outbound)
-                .Select(a => a.LibraryId)
-                .ToHashSet();
-            _shareHistoryIds = Peer.ShareAgreements
-                .Where(a => a.Direction == ShareDirection.Outbound && a.SharePlaybackHistory)
                 .Select(a => a.LibraryId)
                 .ToHashSet();
             _enabledInboundIds = Peer.ShareAgreements
@@ -53,11 +53,20 @@ public partial class PeerSettingsDialog
                 var existing = Peer.SocialAgreements.FirstOrDefault(a => a.ContentType == contentType);
                 _socialAgreements[contentType] = existing ?? new PeerSocialAgreementDto
                 {
-                    Id = Guid.Empty,
+                    Id = Guid.NewGuid(),
                     ContentType = contentType,
                     AllowOutbound = true,
                     AllowInbound = true
                 };
+            }
+
+            try
+            {
+                _socialPolicy = await ReviewService.GetFederationSocialPolicyAsync();
+            }
+            catch
+            {
+                _socialPolicy = new FederationSocialPolicyDto();
             }
         }
 
@@ -96,14 +105,43 @@ public partial class PeerSettingsDialog
     private PeerSocialAgreementDto GetSocialAgreement(FederationContentType contentType) =>
         _socialAgreements[contentType];
 
+    private bool IsGlobalOutboundAllowed(FederationContentType contentType) =>
+        IsGlobalDirectionAllowed(contentType, outbound: true);
+
+    private bool IsGlobalInboundAllowed(FederationContentType contentType) =>
+        IsGlobalDirectionAllowed(contentType, outbound: false);
+
+    private bool IsGlobalDirectionAllowed(FederationContentType contentType, bool outbound)
+    {
+        if (!_socialPolicy.Enabled)
+            return false;
+
+        if (!_socialPolicy.Policies.TryGetValue(contentType, out var policy))
+            return false;
+
+        return outbound ? policy.Outbound : policy.Inbound;
+    }
+
+    private bool IsOutboundEffectivelyOn(FederationContentType contentType) =>
+        GetSocialAgreement(contentType).AllowOutbound && IsGlobalOutboundAllowed(contentType);
+
+    private bool IsInboundEffectivelyOn(FederationContentType contentType) =>
+        GetSocialAgreement(contentType).AllowInbound && IsGlobalInboundAllowed(contentType);
+
     private void SetSocialOutbound(FederationContentType contentType, bool value)
     {
+        if (!IsGlobalOutboundAllowed(contentType))
+            return;
+
         var current = _socialAgreements[contentType];
         _socialAgreements[contentType] = current with { AllowOutbound = value };
     }
 
     private void SetSocialInbound(FederationContentType contentType, bool value)
     {
+        if (!IsGlobalInboundAllowed(contentType))
+            return;
+
         var current = _socialAgreements[contentType];
         _socialAgreements[contentType] = current with { AllowInbound = value };
     }
@@ -122,14 +160,6 @@ public partial class PeerSettingsDialog
     {
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
-        else
-            _shareHistoryIds.Remove(id);
-    }
-
-    private void ToggleShareHistory(Guid id)
-    {
-        if (!_shareHistoryIds.Remove(id))
-            _shareHistoryIds.Add(id);
     }
 
     private void ToggleInbound(Guid agreementId)
@@ -146,7 +176,6 @@ public partial class PeerSettingsDialog
         {
             BaseUrl = _baseUrl,
             SharedLibraryIds = Peer?.IsProvider == true ? _selectedIds.ToList() : null,
-            SharePlaybackHistoryLibraryIds = Peer?.IsProvider == true ? _shareHistoryIds.ToList() : null,
             EnabledInboundAgreementIds = Peer?.IsProvider != true ? _enabledInboundIds.ToList() : null,
             AutoAddNewLibraries = _autoAdd,
             SocialAgreements = _socialAgreements.Values.ToList()

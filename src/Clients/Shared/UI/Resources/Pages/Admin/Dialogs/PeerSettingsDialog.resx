@@ -20,12 +20,13 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="BaseUrlLabel" xml:space="preserve"><value>URL du serveur pair</value></data>
-  <data name="AutoAddNewLibraries" xml:space="preserve"><value>Ajouter automatiquement les nouvelles bibliothèques partagées</value></data>
-  <data name="SharedLibrariesLabel" xml:space="preserve"><value>Bibliothèques partagées avec ce pair</value></data>
-  <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliothèque disponible</value></data>
-  <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Bibliothèques a intégrer localement</value></data>
-  <data name="SharePlaybackHistory" xml:space="preserve"><value>Partager l'historique de lecture</value></data>
+  <data name="AutoAddNewLibraries" xml:space="preserve"><value>Ajouter automatiquement les nouvelles biblioth&#232;ques partag&#233;es</value></data>
+  <data name="SharedLibrariesLabel" xml:space="preserve"><value>Biblioth&#232;ques partag&#233;es avec ce pair</value></data>
+  <data name="NoLibraries" xml:space="preserve"><value>Aucune biblioth&#232;que disponible</value></data>
+  <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Biblioth&#232;ques a int&#233;grer localement</value></data>
   <data name="SocialAgreementsLabel" xml:space="preserve"><value>Partage social avec ce pair</value></data>
+  <data name="SocialDisabledGlobally" xml:space="preserve"><value>Le partage social est d&#233;sactiv&#233; au niveau global. Ces options sont indisponibles.</value></data>
+  <data name="SocialUserPrivacyHint" xml:space="preserve"><value>Les utilisateurs doivent aussi autoriser le partage / la visualisation dans Param&#232;tres - Social (opt-in, d&#233;sactiv&#233; par d&#233;faut).</value></data>
   <data name="Outbound" xml:space="preserve"><value>Sortant</value></data>
   <data name="Inbound" xml:space="preserve"><value>Entrant</value></data>
   <data name="ContentReviews" xml:space="preserve"><value>Avis</value></data>

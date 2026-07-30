@@ -25,13 +25,8 @@ public class UpdatePeerCommandValidator : AbstractValidator<UpdatePeerCommand>
             .NotEmpty()
             .When(v => v.EnabledInboundAgreementIds is not null);
 
-        RuleForEach(v => v.SharePlaybackHistoryLibraryIds)
-            .NotEmpty()
-            .When(v => v.SharePlaybackHistoryLibraryIds is not null);
-
         RuleForEach(v => v.SocialAgreements).ChildRules(item =>
         {
-            item.RuleFor(i => i.Id).NotEmpty();
             item.RuleFor(i => i.ContentType).IsInEnum();
         }).When(v => v.SocialAgreements is not null);
     }

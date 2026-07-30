@@ -10,5 +10,4 @@ public sealed record UpdatePeerRequest
     public int? MaxConcurrentStreams { get; init; }
     public bool? AutoAddNewLibraries { get; init; }
     public IReadOnlyList<PeerSocialAgreementDto>? SocialAgreements { get; init; }
-    public IReadOnlyList<Guid>? SharePlaybackHistoryLibraryIds { get; init; }
 }

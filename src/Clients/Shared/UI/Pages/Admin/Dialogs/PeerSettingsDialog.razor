@@ -35,23 +35,12 @@
         }
         else
         {
-            <div class="peer-settings__list">
-                @foreach (var library in _libraries)
-                {
-                    <div class="peer-settings__list-row">
-                        <K7Switch Value="_selectedIds.Contains(library.Id)"
-                                  ValueChanged="_ => ToggleLibrary(library.Id)"
-                                  Label="@library.Title" />
-                        @if (_selectedIds.Contains(library.Id))
-                        {
-                            <K7Switch Class="peer-settings__sub-row"
-                                      Value="_shareHistoryIds.Contains(library.Id)"
-                                      ValueChanged="_ => ToggleShareHistory(library.Id)"
-                                      Label="@L["SharePlaybackHistory"]" />
-                        }
-                    </div>
-                }
-            </div>
+            <K7CheckboxList TItem="LibraryDto"
+                            Items="_libraries"
+                            IsChecked="@(l => _selectedIds.Contains(l.Id))"
+                            CheckedChanged="@(e => ToggleLibrary(e.Item.Id))"
+                            ItemLabel="@(l => l.Title)"
+                            Class="peer-settings__list" />
         }
     </div>
     }
@@ -83,16 +72,35 @@
     {
     <div class="peer-settings__section">
         <span class="peer-settings__label">@L["SocialAgreementsLabel"]</span>
-        <div class="peer-settings__social-grid">
-            <span></span>
-            <span class="peer-settings__social-col">@L["Outbound"]</span>
-            <span class="peer-settings__social-col">@L["Inbound"]</span>
+        @if (!_socialPolicy.Enabled)
+        {
+            <span class="peer-settings__hint">@L["SocialDisabledGlobally"]</span>
+        }
+        else
+        {
+            <span class="peer-settings__hint">@L["SocialUserPrivacyHint"]</span>
+        }
+        <div class="federation-social-policy @(!_socialPolicy.Enabled ? "federation-social-policy--disabled" : null)">
+            <div class="federation-social-policy__header">
+                <span class="federation-social-policy__label-col"></span>
+                <span class="federation-social-policy__check-col">@L["Outbound"]</span>
+                <span class="federation-social-policy__check-col">@L["Inbound"]</span>
+            </div>
             @foreach (var contentType in _socialContentTypes)
             {
-                var agreement = GetSocialAgreement(contentType);
-                <span>@GetContentTypeLabel(contentType)</span>
-                <K7Switch Value="agreement.AllowOutbound" ValueChanged="v => SetSocialOutbound(contentType, v)" />
-                <K7Switch Value="agreement.AllowInbound" ValueChanged="v => SetSocialInbound(contentType, v)" />
+                <div class="federation-social-policy__row">
+                    <span class="federation-social-policy__label-col">@GetContentTypeLabel(contentType)</span>
+                    <div class="federation-social-policy__check">
+                        <K7Switch Value="IsOutboundEffectivelyOn(contentType)"
+                                  ValueChanged="v => SetSocialOutbound(contentType, v)"
+                                  Disabled="@(!IsGlobalOutboundAllowed(contentType))" />
+                    </div>
+                    <div class="federation-social-policy__check">
+                        <K7Switch Value="IsInboundEffectivelyOn(contentType)"
+                                  ValueChanged="v => SetSocialInbound(contentType, v)"
+                                  Disabled="@(!IsGlobalInboundAllowed(contentType))" />
+                    </div>
+                </div>
             }
         </div>
     </div>

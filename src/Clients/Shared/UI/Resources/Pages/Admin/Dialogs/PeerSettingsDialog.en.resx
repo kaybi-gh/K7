@@ -24,4 +24,14 @@
   <data name="SharedLibrariesLabel" xml:space="preserve"><value>Libraries shared with this peer</value></data>
   <data name="NoLibraries" xml:space="preserve"><value>No libraries available</value></data>
   <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Libraries to integrate locally</value></data>
+  <data name="SocialAgreementsLabel" xml:space="preserve"><value>Social sharing with this peer</value></data>
+  <data name="SocialDisabledGlobally" xml:space="preserve"><value>Social sharing is disabled globally. These options are unavailable.</value></data>
+  <data name="SocialUserPrivacyHint" xml:space="preserve"><value>Users must also allow sharing / viewing under Settings - Social (opt-in, off by default).</value></data>
+  <data name="Outbound" xml:space="preserve"><value>Outbound</value></data>
+  <data name="Inbound" xml:space="preserve"><value>Inbound</value></data>
+  <data name="ContentReviews" xml:space="preserve"><value>Reviews</value></data>
+  <data name="ContentCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="ContentPlaylists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="ContentSmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="ContentPlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
 </root>
