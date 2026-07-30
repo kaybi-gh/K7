@@ -26,6 +26,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     private bool _disposed;
     private bool _scrollToHighlighted;
     private bool _scrollIntoMenuView;
+    private bool _positionDropdown;
     private bool _editingListenerBound;
     private int _highlightedIndex = -1;
     private IReadOnlyList<string> _suggestions = [];
@@ -82,6 +83,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
         _loading = true;
         _open = true;
+        _positionDropdown = true;
         if (!_disposed)
             StateHasChanged();
 
@@ -95,6 +97,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             _highlightedIndex = _open ? 0 : -1;
             _scrollToHighlighted = _open;
             _scrollIntoMenuView = _open;
+            _positionDropdown = _open;
 
             if (!CommitOnSelectOnly)
             {
@@ -244,7 +247,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     {
         _editing = false;
         _suggestions = [];
-        CloseDropdown();
+        await CloseDropdownAsync();
         try
         {
             await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
@@ -260,7 +263,7 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 
     private async Task CloseDropdownAndResumeAsync()
     {
-        CloseDropdown();
+        await CloseDropdownAsync();
         try
         {
             await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
@@ -280,11 +283,23 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
     [JSInvokable]
     public Task OnSpatialEditEnded() => ExitSpatialEditAsync();
 
-    private void CloseDropdown()
+    private async Task CloseDropdownAsync()
     {
+        if (_open)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.detachSearchSelectPortal", _root, _dropdown);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
         _open = false;
         _highlightedIndex = -1;
         _scrollToHighlighted = false;
+        _positionDropdown = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -315,6 +330,18 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             }
         }
 
+        if (_positionDropdown && _open && !_disposed)
+        {
+            _positionDropdown = false;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.positionSearchSelectDropdown", _root, _dropdown);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
         if (!_scrollToHighlighted || _highlightedIndex < 0 || _disposed)
             return;
 
@@ -329,20 +356,20 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
         }
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _disposed = true;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
         try
         {
-            _ = JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
+            await JS.InvokeVoidAsync("K7.detachSearchSelectPortal", _root, _dropdown);
+            await JS.InvokeVoidAsync("K7.unbindSearchSelectMenuDismiss", _root);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {
         }
 
         _dotNetRef?.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

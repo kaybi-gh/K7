@@ -49,7 +49,7 @@
                                         OnDebouncedCommit="SetActorAsync"
                                         Variant="outlined"
                                         Placeholder="@L["SearchPlaceholderActor"]"
-                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(SmartPlaylistField.ActorName), text, ct)" />
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(DynamicPlaylistField.ActorName), text, ct)" />
                     </div>
                     break;
                 case QuickFilterSubmenu.Studio:
@@ -73,7 +73,7 @@
                                         OnDebouncedCommit="SetArtistAsync"
                                         Variant="outlined"
                                         Placeholder="@L["SearchPlaceholderArtist"]"
-                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(SmartPlaylistField.ArtistName), text, ct)" />
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(DynamicPlaylistField.ArtistName), text, ct)" />
                     </div>
                     break;
                 case QuickFilterSubmenu.ContentRating:
@@ -114,25 +114,34 @@
                     break;
                 case QuickFilterSubmenu.Genres:
                     <div class="library-browse-filters__section-label">@L["FilterGenres"]</div>
-                    <div class="library-browse-filters__menu">
-                        @foreach (var genre in GenreTags)
-                        {
-                            var selected = SelectedGenres.Contains(genre.DisplayName);
-                            <button type="button"
-                                    class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
-                                    @onclick="() => ToggleGenreAsync(genre.DisplayName)">
-                                <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
-                                @if (selected)
-                                {
-                                    <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
-                                }
-                            </button>
-                        }
+                    <div class="library-browse-filters__search">
+                        <K7SearchSelect Value="@(_genreDraft ?? "")"
+                                        ValueChanged="v => _genreDraft = v"
+                                        CommitOnSelectOnly="true"
+                                        MinSearchLength="0"
+                                        OnDebouncedCommit="ToggleGenreFromSearchAsync"
+                                        Variant="outlined"
+                                        Placeholder="@L["SearchPlaceholderGenre"]"
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(DynamicPlaylistField.Genre), text, ct)" />
                     </div>
+                    @if (SelectedGenres.Count > 0)
+                    {
+                        <div class="library-browse-filters__menu">
+                            @foreach (var genre in SelectedGenres.OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase))
+                            {
+                                <button type="button"
+                                        class="library-browse-filters__option focusable library-browse-filters__option--selected"
+                                        @onclick="() => ToggleGenreAsync(genre)">
+                                    <span class="library-browse-filters__option-label">@genre</span>
+                                    <K7Icon Icon="@Phosphor.Check" IconSize="@K7IconSize.Sm" />
+                                </button>
+                            }
+                        </div>
+                    }
                     break;
                 case QuickFilterSubmenu.SonicSearch:
                     <div class="library-browse-filters__section-label">@L["FilterSonicSearch"]</div>
-                    <p class="library-browse-filters__hint text-caption">@L["SonicSearchHint"]</p>
+                    <p class="library-browse-filters__hint">@L["SonicSearchHint"]</p>
                     <div class="library-browse-filters__search">
                         <K7TextField @bind-Value="_intelligentSearchDraft"
                                      Placeholder="@L["SonicSearchPlaceholder"]"
@@ -147,7 +156,7 @@
                     break;
                 case QuickFilterSubmenu.LyricsSearch:
                     <div class="library-browse-filters__section-label">@L["FilterLyricsSearch"]</div>
-                    <p class="library-browse-filters__hint text-caption">@L["LyricsSearchHint"]</p>
+                    <p class="library-browse-filters__hint">@L["LyricsSearchHint"]</p>
                     <div class="library-browse-filters__search">
                         <K7TextField @bind-Value="_intelligentSearchDraft"
                                      Placeholder="@L["LyricsSearchPlaceholder"]"
@@ -158,6 +167,19 @@
                                     OnClick="() => ApplyIntelligentSearchAsync(IntelligentSearchKind.Lyrics)">
                             @L["ApplySearch"]
                         </K7Button>
+                    </div>
+                    break;
+                case QuickFilterSubmenu.SimilarArtists:
+                    <div class="library-browse-filters__section-label">@L["FilterSimilarArtists"]</div>
+                    <p class="library-browse-filters__hint">@L["SimilarArtistsHint"]</p>
+                    <div class="library-browse-filters__search">
+                        <K7SearchSelect Value="@(_similarArtistDraft ?? "")"
+                                        ValueChanged="v => _similarArtistDraft = v"
+                                        CommitOnSelectOnly="true"
+                                        OnDebouncedCommit="ApplySimilarArtistsFilterAsync"
+                                        Variant="outlined"
+                                        Placeholder="@L["SearchPlaceholderArtist"]"
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(DynamicPlaylistField.ArtistName), text, ct)" />
                     </div>
                     break;
             }
@@ -264,6 +286,12 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.LyricsSearch)">
                         <span class="library-browse-filters__option-label">@L["FilterLyricsSearch"]</span>
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.SimilarArtists)">
+                        <span class="library-browse-filters__option-label">@L["FilterSimilarArtists"]</span>
                         <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                 }

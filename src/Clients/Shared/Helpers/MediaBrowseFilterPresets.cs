@@ -18,7 +18,7 @@ public static class MediaBrowseFilterPresets
         [
             new ConditionRuleItemDto
             {
-                Field = nameof(SmartPlaylistField.IsCompleted),
+                Field = nameof(DynamicPlaylistField.IsCompleted),
                 Operator = RuleOperator.Equals,
                 Value = "false"
             }
@@ -46,7 +46,7 @@ public static class MediaBrowseFilterPresets
         filter.MatchCondition == RuleMatchCondition.All
         && filter.Items.Count == 1
         && filter.Items[0] is ConditionRuleItemDto rule
-        && rule.Field == nameof(SmartPlaylistField.IsCompleted)
+        && rule.Field == nameof(DynamicPlaylistField.IsCompleted)
         && rule.Operator == RuleOperator.Equals
         && rule.Value == "false";
 
@@ -57,7 +57,7 @@ public static class MediaBrowseFilterPresets
         && rule.Field == "InProgress";
 
     public static IReadOnlySet<string> GetSelectedGenres(RuleGroupDto filter) =>
-        GetMultiSelectValues(filter, nameof(SmartPlaylistField.Genre));
+        GetMultiSelectValues(filter, nameof(DynamicPlaylistField.Genre));
 
     public static IReadOnlySet<string> GetSelectedContentRatings(RuleGroupDto filter) =>
         GetMultiSelectValues(filter, nameof(RestrictionField.ContentRating));
@@ -100,10 +100,10 @@ public static class MediaBrowseFilterPresets
     public static RuleGroupDto ToggleGenre(RuleGroupDto filter, string genreName)
     {
         var genreRules = filter.Items.OfType<ConditionRuleItemDto>()
-            .Where(r => r.Field == nameof(SmartPlaylistField.Genre) && r.Operator == RuleOperator.Equals)
+            .Where(r => r.Field == nameof(DynamicPlaylistField.Genre) && r.Operator == RuleOperator.Equals)
             .ToList();
         var otherRules = filter.Items.Where(i => i is not ConditionRuleItemDto rule
-            || rule.Field != nameof(SmartPlaylistField.Genre)
+            || rule.Field != nameof(DynamicPlaylistField.Genre)
             || rule.Operator != RuleOperator.Equals).ToList();
 
         if (genreRules.Any(r => string.Equals(r.Value, genreName, StringComparison.OrdinalIgnoreCase)))
@@ -111,7 +111,7 @@ public static class MediaBrowseFilterPresets
         else
             genreRules.Add(new ConditionRuleItemDto
             {
-                Field = nameof(SmartPlaylistField.Genre),
+                Field = nameof(DynamicPlaylistField.Genre),
                 Operator = RuleOperator.Equals,
                 Value = genreName
             });
@@ -174,9 +174,9 @@ public static class MediaBrowseFilterPresets
     }
 
     private static bool IsQuickFilterField(string fieldName) =>
-        fieldName is nameof(SmartPlaylistField.Genre)
-            or nameof(SmartPlaylistField.ActorName)
-            or nameof(SmartPlaylistField.ArtistName)
+        fieldName is nameof(DynamicPlaylistField.Genre)
+            or nameof(DynamicPlaylistField.ActorName)
+            or nameof(DynamicPlaylistField.ArtistName)
             or "Studio"
             or nameof(RestrictionField.ContentRating);
 

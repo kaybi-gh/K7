@@ -1,20 +1,28 @@
 .k7-search-select {
     position: relative;
-    min-width: 200px;
+    width: 100%;
+    min-width: 160px;
+    box-sizing: border-box;
+}
+
+.k7-search-select--open {
+    position: relative;
+    z-index: calc(var(--z-dialog, 1300) + 5);
 }
 
 .k7-search-select-dropdown {
-    position: absolute;
-    z-index: calc(var(--z-dialog) + 10);
-    top: calc(100% + var(--space-1));
-    left: 0;
-    right: 0;
+    position: fixed;
+    z-index: calc(var(--z-dialog, 1300) + 10);
     max-height: 240px;
     overflow-y: auto;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
+}
+
+.k7-search-select-dropdown--teleported {
+    z-index: calc(var(--z-dialog, 1300) + 10);
 }
 
 .k7-search-select-option {

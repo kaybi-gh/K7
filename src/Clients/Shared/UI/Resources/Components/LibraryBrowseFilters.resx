@@ -45,12 +45,18 @@
   <data name="SearchPlaceholderNetwork" xml:space="preserve"><value>Rechercher un diffuseur...</value></data>
   <data name="SearchPlaceholderActor" xml:space="preserve"><value>Rechercher un acteur...</value></data>
   <data name="SearchPlaceholderArtist" xml:space="preserve"><value>Rechercher un artiste...</value></data>
+  <data name="SearchPlaceholderGenre" xml:space="preserve"><value>Rechercher un genre...</value></data>
+  <data name="SearchPlaceholderTitle" xml:space="preserve"><value>Rechercher un titre...</value></data>
+  <data name="SearchPlaceholderAlbum" xml:space="preserve"><value>Rechercher un album...</value></data>
   <data name="BooleanTrue" xml:space="preserve"><value>Oui</value></data>
   <data name="BooleanFalse" xml:space="preserve"><value>Non</value></data>
   <data name="FilterSonicSearch" xml:space="preserve"><value>Recherche sonore</value></data>
   <data name="FilterLyricsSearch" xml:space="preserve"><value>Recherche paroles</value></data>
   <data name="FilterSonicSearchActive" xml:space="preserve"><value>Son : {0}</value></data>
   <data name="FilterLyricsSearchActive" xml:space="preserve"><value>Paroles : {0}</value></data>
+  <data name="FilterSimilarArtists" xml:space="preserve"><value>Artistes similaires</value></data>
+  <data name="FilterSimilarArtistsActive" xml:space="preserve"><value>Similaires à {0}</value></data>
+  <data name="SimilarArtistsHint" xml:space="preserve"><value>Choisissez un artiste pour parcourir les artistes similaires de votre bibliothèque.</value></data>
   <data name="SonicSearchHint" xml:space="preserve"><value>Anglais recommand&#233; (genre, instruments, ambiance).</value></data>
   <data name="LyricsSearchHint" xml:space="preserve"><value>Th&#232;me ou extrait de paroles, toutes langues.</value></data>
   <data name="SonicSearchPlaceholder" xml:space="preserve"><value>calm piano, upbeat indie pop...</value></data>

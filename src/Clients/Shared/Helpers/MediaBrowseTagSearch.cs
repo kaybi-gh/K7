@@ -16,7 +16,10 @@ public static class MediaBrowseTagSearch
         MediaType mediaType,
         CancellationToken cancellationToken)
     {
-        if (field is nameof(SmartPlaylistField.ActorName) or nameof(SmartPlaylistField.ArtistName))
+        if (field is nameof(DynamicPlaylistField.ActorName)
+            or nameof(DynamicPlaylistField.ArtistName)
+            or nameof(DynamicPlaylistField.Title)
+            or nameof(DynamicPlaylistField.AlbumTitle))
         {
             var results = await mediaService.GetMediaBrowseFilterSuggestionsAsync(
                 new GetMediaBrowseFilterSuggestionsQuery
@@ -44,7 +47,9 @@ public static class MediaBrowseTagSearch
                 MediaTypes = mediaType != default ? [mediaType] : null,
                 Kinds = [kind],
                 SearchText = searchText,
-                Limit = 20
+                Limit = 20,
+                PageSize = 20,
+                PageNumber = 1
             },
             cancellationToken);
 
@@ -56,7 +61,7 @@ public static class MediaBrowseTagSearch
         "Studio" => Set(MetadataTagKind.Studio, out kind),
         "Network" => Set(MetadataTagKind.Network, out kind),
         nameof(RestrictionField.ContentRating) => Set(MetadataTagKind.ContentRating, out kind),
-        nameof(SmartPlaylistField.Genre) or nameof(RestrictionField.Genre) => Set(MetadataTagKind.Genre, out kind),
+        nameof(DynamicPlaylistField.Genre) or nameof(RestrictionField.Genre) => Set(MetadataTagKind.Genre, out kind),
         _ => Set(default, out kind) && false
     };
 

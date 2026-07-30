@@ -2920,6 +2920,48 @@ K7.scrollSearchSelectOptionIntoView = function (dropdown, index) {
     if (option) option.scrollIntoView({ block: 'nearest' });
 };
 
+K7.attachSearchSelectPortal = function (root, dropdown) {
+    if (!root || !dropdown) return;
+    K7._teleportMenuElement(dropdown, root);
+    dropdown.classList.add('k7-search-select-dropdown--teleported');
+};
+
+K7.detachSearchSelectPortal = function (root, dropdown) {
+    if (!dropdown) return;
+    K7._restoreMenuElement(dropdown, root);
+    dropdown.classList.remove('k7-search-select-dropdown--teleported');
+};
+
+K7.positionSearchSelectDropdown = function (root, dropdown) {
+    if (!root || !dropdown) return;
+
+    // Escape dialog/rule-row stacking so hints paint above later controls.
+    K7.attachSearchSelectPortal(root, dropdown);
+
+    var rect = root.getBoundingClientRect();
+    var gap = 4;
+    var maxHeight = Math.min(240, Math.floor(window.innerHeight * 0.4));
+    var spaceBelow = window.innerHeight - rect.bottom - gap;
+    var spaceAbove = rect.top - gap;
+    var openUp = spaceBelow < 120 && spaceAbove > spaceBelow;
+    var z = String((parseInt(getComputedStyle(document.documentElement).getPropertyValue('--z-dialog'), 10) || 1300) + 10);
+
+    dropdown.style.position = 'fixed';
+    dropdown.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)) + 'px';
+    dropdown.style.width = Math.max(rect.width, 160) + 'px';
+    dropdown.style.right = 'auto';
+    dropdown.style.maxHeight = maxHeight + 'px';
+    dropdown.style.zIndex = z;
+
+    if (openUp) {
+        dropdown.style.top = 'auto';
+        dropdown.style.bottom = (window.innerHeight - rect.top + gap) + 'px';
+    } else {
+        dropdown.style.bottom = 'auto';
+        dropdown.style.top = (rect.bottom + gap) + 'px';
+    }
+};
+
 K7.scrollSearchSelectIntoMenuView = function (root) {
     if (!root || window.innerWidth >= 600) return;
     var menu = root.closest('.k7-menu-dropdown');

@@ -5,6 +5,7 @@ using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Pages;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Extensions;
 using K7.Shared.Dtos.Rules;
@@ -42,17 +43,19 @@ public partial class LibraryBrowseFilters
     private string? _actorDraft;
     private string? _studioDraft;
     private string? _artistDraft;
+    private string? _similarArtistDraft;
+    private string? _genreDraft;
     private string _intelligentSearchDraft = string.Empty;
 
     private IReadOnlySet<string> SelectedGenres => MediaBrowseFilterPresets.GetSelectedGenres(Filter);
 
     private IReadOnlySet<string> SelectedContentRatings => MediaBrowseFilterPresets.GetSelectedContentRatings(Filter);
 
-    private string? SelectedActor => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(SmartPlaylistField.ActorName));
+    private string? SelectedActor => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(DynamicPlaylistField.ActorName));
 
     private string? SelectedStudio => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, "Studio");
 
-    private string? SelectedArtist => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName));
+    private string? SelectedArtist => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(DynamicPlaylistField.ArtistName));
 
     private bool HasActiveContentSource =>
         ShowContentSourceFilter && !string.IsNullOrEmpty(SelectedContentSource);
@@ -131,9 +134,13 @@ public partial class LibraryBrowseFilters
 
             if (ActiveIntelligentSearch is { } intelligentSearch)
             {
-                return intelligentSearch.Kind == IntelligentSearchKind.Sonic
-                    ? string.Format(L["FilterSonicSearchActive"], intelligentSearch.Query)
-                    : string.Format(L["FilterLyricsSearchActive"], intelligentSearch.Query);
+                return intelligentSearch.Kind switch
+                {
+                    IntelligentSearchKind.Sonic => string.Format(L["FilterSonicSearchActive"], intelligentSearch.Query),
+                    IntelligentSearchKind.Lyrics => string.Format(L["FilterLyricsSearchActive"], intelligentSearch.Query),
+                    IntelligentSearchKind.SimilarArtists => string.Format(L["FilterSimilarArtistsActive"], intelligentSearch.Query),
+                    _ => L["Filters"]
+                };
             }
 
             return L["Filters"];
@@ -216,6 +223,10 @@ public partial class LibraryBrowseFilters
             _artistDraft = SelectedArtist;
         else if (submenu is QuickFilterSubmenu.SonicSearch or QuickFilterSubmenu.LyricsSearch)
             _intelligentSearchDraft = ActiveIntelligentSearch?.Query ?? string.Empty;
+        else if (submenu == QuickFilterSubmenu.SimilarArtists)
+            _similarArtistDraft = ActiveIntelligentSearch is { Kind: IntelligentSearchKind.SimilarArtists } search
+                ? search.Query
+                : null;
     }
 
     private async Task SetPresetAsync(RuleGroupDto preset)
@@ -232,6 +243,15 @@ public partial class LibraryBrowseFilters
         await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.ToggleGenre(Filter, genreName));
     }
 
+    private async Task ToggleGenreFromSearchAsync(string? genreName)
+    {
+        if (string.IsNullOrWhiteSpace(genreName))
+            return;
+
+        _genreDraft = null;
+        await ToggleGenreAsync(genreName.Trim());
+    }
+
     private async Task ToggleContentRatingAsync(string contentRating)
     {
         await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.ToggleContentRating(Filter, contentRating));
@@ -240,7 +260,7 @@ public partial class LibraryBrowseFilters
     private async Task SetActorAsync(string? value)
     {
         await FilterChanged.InvokeAsync(
-            MediaBrowseFilterPresets.SetSearchFieldValue(Filter, nameof(SmartPlaylistField.ActorName), value));
+            MediaBrowseFilterPresets.SetSearchFieldValue(Filter, nameof(DynamicPlaylistField.ActorName), value));
     }
 
     private async Task SetStudioAsync(string? value)
@@ -251,7 +271,7 @@ public partial class LibraryBrowseFilters
     private async Task SetArtistAsync(string? value)
     {
         await FilterChanged.InvokeAsync(
-            MediaBrowseFilterPresets.SetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName), value));
+            MediaBrowseFilterPresets.SetSearchFieldValue(Filter, nameof(DynamicPlaylistField.ArtistName), value));
     }
 
     private async Task ClearFiltersAsync()
@@ -284,6 +304,37 @@ public partial class LibraryBrowseFilters
             return;
 
         await IntelligentSearchChanged.InvokeAsync(new IntelligentSearchRequest(kind, query));
+        _menuOpen = false;
+        _submenu = QuickFilterSubmenu.None;
+    }
+
+    private async Task ApplySimilarArtistsFilterAsync(string? artistName)
+    {
+        if (string.IsNullOrWhiteSpace(artistName))
+            return;
+
+        var result = await MediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+        {
+            LibraryIds = LibraryIds,
+            LibraryGroupIds = LibraryGroupIds,
+            MediaTypes = [MediaType.MusicArtist],
+            SearchText = artistName,
+            PageNumber = 1,
+            PageSize = 20
+        });
+
+        var artist = result?.Items?
+            .OfType<LiteMusicArtistDto>()
+            .FirstOrDefault(a => string.Equals(a.Title, artistName, StringComparison.OrdinalIgnoreCase))
+            ?? result?.Items?.OfType<LiteMusicArtistDto>().FirstOrDefault();
+
+        if (artist is null)
+            return;
+
+        await IntelligentSearchChanged.InvokeAsync(new IntelligentSearchRequest(
+            IntelligentSearchKind.SimilarArtists,
+            artist.Title ?? artistName,
+            artist.Id));
         _menuOpen = false;
         _submenu = QuickFilterSubmenu.None;
     }
@@ -336,6 +387,7 @@ public partial class LibraryBrowseFilters
         ContentSource,
         Genres,
         SonicSearch,
-        LyricsSearch
+        LyricsSearch,
+        SimilarArtists
     }
 }
