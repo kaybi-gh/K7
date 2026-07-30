@@ -3,6 +3,7 @@ using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
+using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Domain.Constants;
@@ -126,6 +127,19 @@ public class GetFederationStreamContent : IEndpoint
                 var subtitleIndexQuery = new GetHlsSubtitleStreamIndexQuery(
                     indexedFileId, trackIndex, subStreamSessId);
                 return (await sender.Send(subtitleIndexQuery, cancellationToken)).ToIResult();
+            }
+
+            if (path.StartsWith("hls-stream/subtitles/") && path.Contains("/segments/") && path.EndsWith(".vtt"))
+            {
+                var segments = path.Split('/');
+                var trackIndex = int.Parse(segments[2]);
+                var segmentNumber = int.Parse(Path.GetFileNameWithoutExtension(segments[4]));
+                var query = httpContext.Request.Query;
+
+                var subSegStreamSessId = Guid.TryParse(query["streamSessionId"], out var subSegSsId) ? subSegSsId : sessionId;
+                var subtitleSegmentQuery = new GetHlsSubtitleStreamSegmentQuery(
+                    indexedFileId, trackIndex, segmentNumber, subSegStreamSessId);
+                return (await sender.Send(subtitleSegmentQuery, cancellationToken)).ToIResult();
             }
 
             return Results.NotFound();
