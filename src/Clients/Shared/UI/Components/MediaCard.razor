@@ -114,6 +114,11 @@ else
             {
             <div class="media-card-link">
                 @CoverVisual
+
+                @if (HoverOverlayEnabled || Selected)
+                {
+                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true"></div>
+                }
             </div>
             }
 

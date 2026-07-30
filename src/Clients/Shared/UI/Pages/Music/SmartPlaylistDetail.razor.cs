@@ -225,7 +225,7 @@ public partial class SmartPlaylistDetail
             {
                 await K7ServerService.DeleteSmartPlaylistAsync(Guid.Parse(Id));
                 Snackbar.Add(L["DeleteSuccess"], K7Severity.Success);
-                NavigationManager.NavigateTo("/playlists");
+                NavigationManager.NavigateTo("/my-space/playlists");
             }
             catch { Snackbar.Add(L["DeleteError"], K7Severity.Error); }
         }

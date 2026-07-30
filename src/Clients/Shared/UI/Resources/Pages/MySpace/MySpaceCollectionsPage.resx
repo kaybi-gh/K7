@@ -32,4 +32,14 @@
   <data name="ShowShared" xml:space="preserve"><value>Partagées avec moi</value></data>
   <data name="SharedTitle" xml:space="preserve"><value>Collections partagées</value></data>
   <data name="SharedEmpty" xml:space="preserve"><value>Aucune collection partagée avec vous.</value></data>
+  <data name="Select" xml:space="preserve"><value>Sélectionner</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Tout sélectionner</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Tout désélectionner</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} sélectionnée(s)</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Supprimer les collections</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Supprimer {0} collection(s) ? Cette action est irréversible.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} collection(s) supprimée(s)</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les collections sélectionnées</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimée(s), {1} en échec</value></data>
 </root>

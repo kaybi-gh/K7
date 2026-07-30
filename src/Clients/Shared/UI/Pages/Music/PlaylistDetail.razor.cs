@@ -348,7 +348,7 @@ public partial class PlaylistDetail
             {
                 await K7ServerService.DeletePlaylistAsync(Guid.Parse(Id));
                 Snackbar.Add(L["DeleteSuccess"], K7Severity.Success);
-                NavigationManager.NavigateTo("/playlists");
+                NavigationManager.NavigateTo("/my-space/playlists");
             }
             catch
             {

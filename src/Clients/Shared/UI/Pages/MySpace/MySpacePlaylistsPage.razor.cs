@@ -8,6 +8,7 @@ using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
 
@@ -25,10 +26,16 @@ public partial class MySpacePlaylistsPage
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastListenedDesc;
     private List<ButtonGroupOption<MediaType?>> _mediaTypeOptions = [];
     private bool _musicIntelligenceAvailable;
+    private bool _selectionMode;
+    private bool _deleting;
+    private readonly HashSet<Guid> _selectedIds = [];
     private BrowseView<LitePlaylistDto>? _browseView;
     private K7DataTable<LitePlaylistDto>? _dataTable;
     private string? _activeSortKey = "lastListened";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
+
+    private int SelectedCount => _selectedIds.Count;
+    private bool AllSelected => _playlists.Count > 0 && _selectedIds.Count == _playlists.Count;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -103,6 +110,7 @@ public partial class MySpacePlaylistsPage
 
     private async Task SetMediaTypeFilter(MediaType? mediaType)
     {
+        ExitSelectionMode();
         _mediaTypeFilter = mediaType;
         await PersistFiltersAsync();
         await LoadPlaylistsAsync();
@@ -113,6 +121,7 @@ public partial class MySpacePlaylistsPage
         if (value == _selectedSort)
             return;
 
+        ExitSelectionMode();
         _selectedSort = value;
         (_activeSortKey, _activeSortDirection) = MySpaceLibraryBrowseSort.MapPlaylistOrderingToSortKey(value);
         await PersistFiltersAsync();
@@ -139,8 +148,113 @@ public partial class MySpacePlaylistsPage
 
     private async Task OnShowSharedChanged(bool value)
     {
+        ExitSelectionMode();
         _showShared = value;
         await LoadPlaylistsAsync();
+    }
+
+    private void EnterSelectionMode()
+    {
+        _selectionMode = true;
+        _selectedIds.Clear();
+    }
+
+    private void ExitSelectionMode()
+    {
+        _selectionMode = false;
+        _selectedIds.Clear();
+    }
+
+    private void ToggleSelection(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (AllSelected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
+
+        _selectedIds.Clear();
+        foreach (var playlist in _playlists)
+            _selectedIds.Add(playlist.Id);
+    }
+
+    private bool IsSelected(Guid id) => _selectedIds.Contains(id);
+
+    private void OnSelectKeyDown(KeyboardEventArgs e, Guid id)
+    {
+        if (e.Key is not ("Enter" or " "))
+            return;
+
+        ToggleSelection(id);
+    }
+
+    private void OnPlaylistActivated(LitePlaylistDto playlist)
+    {
+        if (_selectionMode)
+            ToggleSelection(playlist.Id);
+        else
+            NavigateToPlaylist(playlist);
+    }
+
+    private async Task ConfirmDeleteSelectedAsync()
+    {
+        if (_selectedIds.Count == 0 || _deleting)
+            return;
+
+        var count = _selectedIds.Count;
+        var result = await DialogService.ShowMessageBoxAsync(
+            L["DeleteSelectedTitle"],
+            string.Format(L["DeleteSelectedMessage"], count),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (result != true)
+            return;
+
+        _deleting = true;
+        var failed = 0;
+
+        try
+        {
+            foreach (var id in _selectedIds.ToList())
+            {
+                var playlist = _playlists.FirstOrDefault(p => p.Id == id);
+                if (playlist is null)
+                    continue;
+
+                try
+                {
+                    if (playlist.IsSmartPlaylist)
+                        await K7ServerService.DeleteSmartPlaylistAsync(id);
+                    else
+                        await K7ServerService.DeletePlaylistAsync(id);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+
+        ExitSelectionMode();
+        await LoadPlaylistsAsync();
+
+        if (failed == 0)
+            Snackbar.Add(string.Format(L["DeleteSelectedSuccess"], count), K7Severity.Success);
+        else if (failed == count)
+            Snackbar.Add(L["DeleteSelectedError"], K7Severity.Error);
+        else
+            Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
     private void NavigateToPlaylist(LitePlaylistDto playlist) =>

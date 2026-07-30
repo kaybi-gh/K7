@@ -41,4 +41,14 @@
   <data name="ShowShared" xml:space="preserve"><value>Shared with me</value></data>
   <data name="SharedTitle" xml:space="preserve"><value>Shared playlists</value></data>
   <data name="SharedEmpty" xml:space="preserve"><value>No playlists have been shared with you.</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete playlists</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Delete {0} playlist(s)? This cannot be undone.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} playlist(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected playlists</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
 </root>

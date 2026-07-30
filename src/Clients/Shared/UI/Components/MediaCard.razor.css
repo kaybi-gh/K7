@@ -67,13 +67,15 @@
 
 .media-card:focus-within .media-card-progress-bar,
 .media-card-link:focus-visible .media-card-progress-bar,
-.media-card--menu-open .media-card-progress-bar {
+.media-card--menu-open .media-card-progress-bar,
+.media-card--selected .media-card-progress-bar {
     display: none;
 }
 
 .media-card:focus-within .media-card-overlay,
 .media-card-link:focus-visible .media-card-overlay,
-.media-card--menu-open .media-card-overlay {
+.media-card--menu-open .media-card-overlay,
+.media-card--selected .media-card-overlay {
     display: flex;
 }
 
@@ -245,15 +247,19 @@
 
 .media-card:hover .media-card-title,
 .media-card:focus-within .media-card-title,
+.media-card--selected .media-card-title,
 .media-card:hover .media-card-subtitle,
-.media-card:focus-within .media-card-subtitle {
+.media-card:focus-within .media-card-subtitle,
+.media-card--selected .media-card-subtitle {
     overflow: visible;
 }
 
 .media-card:hover .media-card-title-inner,
 .media-card:focus-within .media-card-title-inner,
+.media-card--selected .media-card-title-inner,
 .media-card:hover .media-card-subtitle-inner,
-.media-card:focus-within .media-card-subtitle-inner {
+.media-card:focus-within .media-card-subtitle-inner,
+.media-card--selected .media-card-subtitle-inner {
     display: inline-block;
     width: auto;
     overflow: visible;

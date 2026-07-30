@@ -20,6 +20,7 @@ public partial class MediaCard : IDisposable
     [Parameter] public string? Href { get; set; }
     [Parameter] public bool OverlayEnabled { get; set; }
     [Parameter] public bool HoverOverlayEnabled { get; set; }
+    [Parameter] public bool Selected { get; set; }
     [Parameter] public bool ContextMenuEnabled { get; set; } = true;
     [Parameter] public bool ProgressEnabled { get; set; }
     [Parameter] public bool WatchedStatusEnabled { get; set; }
@@ -85,6 +86,8 @@ public partial class MediaCard : IDisposable
             classes.Add("media-card--menu-open");
         if (OverlayEnabled && !ExcludeMenuEnabled)
             classes.Add("media-card--play-only");
+        if (Selected)
+            classes.Add("media-card--selected");
         return string.Join(" ", classes);
     }
 

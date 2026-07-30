@@ -281,9 +281,16 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
             return true;
         }
 
+        // First row: let SpatialNavigation leave the grid (toolbar / app navbar).
+        if (isUp && currentIndex < cols) {
+            _waitingForRow = false;
+            _desiredIndex = -1;
+            return false;
+        }
+
         const targetIndex = isDown
             ? currentIndex + cols
-            : Math.max(0, currentIndex - cols);
+            : currentIndex - cols;
 
         if (isUp) {
             _waitingForRow = false;

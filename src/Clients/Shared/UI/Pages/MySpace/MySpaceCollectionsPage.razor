@@ -61,18 +61,44 @@ else
               GridItemAspectRatio="1f"
               ListItemHeight="64">
     <ToolbarContent>
-        <h5>@L["PageTitle"]</h5>
-        <div class="flex-1"></div>
-        <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
-        <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
-            @foreach (var opt in MySpaceLibraryBrowseSort.CollectionOptions)
-            {
-                <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
-            }
-        </K7Select>
-        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)" Class="my-space-toolbar-new" AriaLabel="@L["New"]">
-            <span class="my-space-toolbar-new__label">@L["New"]</span>
-        </K7Button>
+        @if (_selectionMode)
+        {
+            <h5>@string.Format(L["SelectedCount"], SelectedCount)</h5>
+            <div class="flex-1"></div>
+            <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_collections.Count == 0 || _deleting)">
+                @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+            </K7Button>
+            <K7Button Variant="filled"
+                      Color="error"
+                      StartIcon="@Phosphor.Trash"
+                      OnClick="ConfirmDeleteSelectedAsync"
+                      Disabled="@(SelectedCount == 0 || _deleting)"
+                      AriaLabel="@L["DeleteSelected"]">
+                @L["DeleteSelected"]
+            </K7Button>
+            <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                @S["Cancel"]
+            </K7Button>
+        }
+        else
+        {
+            <h5>@L["PageTitle"]</h5>
+            <div class="flex-1"></div>
+            <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
+            <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
+                @foreach (var opt in MySpaceLibraryBrowseSort.CollectionOptions)
+                {
+                    <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+                }
+            </K7Select>
+            <K7IconButton Icon="@Phosphor.ListChecks"
+                          OnClick="EnterSelectionMode"
+                          Disabled="@(_collections.Count == 0)"
+                          AriaLabel="@L["Select"]" />
+            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)" Class="my-space-toolbar-new" AriaLabel="@L["New"]">
+                <span class="my-space-toolbar-new__label">@L["New"]</span>
+            </K7Button>
+        }
     </ToolbarContent>
     <EmptyContent>
         <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["None"]" Subtitle="@L["EmptyHint"]" />
@@ -80,23 +106,57 @@ else
     <GridTemplate Context="collection">
         @{
             var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(collection));
+            var selected = IsSelected(collection.Id);
         }
-        <MediaCard Model="vm"
-                   Href="@GetCollectionHref(collection)"
-                   Variant="MediaCardVariant.Cover"
-                   FooterVisible="true"
-                   ContextMenuEnabled="false"
-                   HoverOverlayEnabled="true"
-                   PlaceholderIcon="@Phosphor.BookmarkSimple">
-            <CoverContent>
-                <K7CoverMosaic CoverPicture="collection.CoverPicture"
-                               PreviewPictures="collection.PreviewPictures"
-                               PlaceholderIcon="@Phosphor.BookmarkSimple"
-                               PictureSize="MetadataPictureSize.Medium"
-                               Alt="@collection.Title"
-                               Class="media-card-mosaic" />
-            </CoverContent>
-        </MediaCard>
+        @if (_selectionMode)
+        {
+            <div class="my-space-select-item focusable @(selected ? "is-selected" : null)"
+                 role="checkbox"
+                 aria-checked="@selected.ToString().ToLowerInvariant()"
+                 tabindex="0"
+                 @onclick="@(() => ToggleSelection(collection.Id))"
+                 @onkeydown="@(e => OnSelectKeyDown(e, collection.Id))"
+                 @onkeydown:preventDefault="true">
+                <span class="my-space-select-item__check" aria-hidden="true">
+                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
+                </span>
+                <MediaCard Model="vm"
+                           Variant="MediaCardVariant.Cover"
+                           FooterVisible="true"
+                           ContextMenuEnabled="false"
+                           HoverOverlayEnabled="true"
+                           Selected="selected"
+                           PlaceholderIcon="@Phosphor.BookmarkSimple">
+                    <CoverContent>
+                        <K7CoverMosaic CoverPicture="collection.CoverPicture"
+                                       PreviewPictures="collection.PreviewPictures"
+                                       PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                       PictureSize="MetadataPictureSize.Medium"
+                                       Alt="@collection.Title"
+                                       Class="media-card-mosaic" />
+                    </CoverContent>
+                </MediaCard>
+            </div>
+        }
+        else
+        {
+            <MediaCard Model="vm"
+                       Href="@GetCollectionHref(collection)"
+                       Variant="MediaCardVariant.Cover"
+                       FooterVisible="true"
+                       ContextMenuEnabled="false"
+                       HoverOverlayEnabled="true"
+                       PlaceholderIcon="@Phosphor.BookmarkSimple">
+                <CoverContent>
+                    <K7CoverMosaic CoverPicture="collection.CoverPicture"
+                                   PreviewPictures="collection.PreviewPictures"
+                                   PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                   PictureSize="MetadataPictureSize.Medium"
+                                   Alt="@collection.Title"
+                                   Class="media-card-mosaic" />
+                </CoverContent>
+            </MediaCard>
+        }
     </GridTemplate>
     <TableContent>
         <K7DataTable TItem="LiteCollectionDto"
@@ -104,11 +164,20 @@ else
                      ActiveSortKey="@_activeSortKey"
                      ActiveSortDirection="@_activeSortDirection"
                      OnSortChanged="OnTableSortChanged"
-                     OnRowClick="NavigateToCollection"
+                     OnRowClick="OnCollectionActivated"
                      RowHeight="56"
                      ShowToolbar="false"
                      Surface="false"
                      @ref="_dataTable">
+            <K7DataColumn TItem="LiteCollectionDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
+                <CellTemplate Context="collection">
+                    <input type="checkbox"
+                           checked="@IsSelected(collection.Id)"
+                           aria-label="@collection.Title"
+                           @onchange="@(() => ToggleSelection(collection.Id))"
+                           @onclick:stopPropagation="true" />
+                </CellTemplate>
+            </K7DataColumn>
             <K7DataColumn TItem="LiteCollectionDto" Title="@S["Title"]" SortKey="title" Hideable="false">
                 <CellTemplate Context="collection">
                     <div class="library-table-title">
@@ -139,18 +208,43 @@ else
         </K7DataTable>
     </TableContent>
     <ListTemplate Context="collection">
+        @{
+            var selected = IsSelected(collection.Id);
+        }
         <LibraryBrowseListRow>
-            <a href="@GetCollectionHref(collection)" class="library-list-item focusable">
-                <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
-                                        PreviewPictures="collection.PreviewPictures"
-                                        PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
-                                        PlaceholderIcon="@Phosphor.BookmarkSimple"
-                                        Alt="@collection.Title" />
-                <div class="library-list-item-info">
-                    <p class="library-list-item-title">@collection.Title</p>
-                    <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
-                </div>
-            </a>
+            @if (_selectionMode)
+            {
+                <button type="button"
+                        class="library-list-item focusable my-space-select-list-item @(selected ? "is-selected" : null)"
+                        @onclick="@(() => ToggleSelection(collection.Id))">
+                    <span class="my-space-select-list-item__check" aria-hidden="true">
+                        <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                    </span>
+                    <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
+                                            PreviewPictures="collection.PreviewPictures"
+                                            PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                            PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                            Alt="@collection.Title" />
+                    <div class="library-list-item-info">
+                        <p class="library-list-item-title">@collection.Title</p>
+                        <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
+                    </div>
+                </button>
+            }
+            else
+            {
+                <a href="@GetCollectionHref(collection)" class="library-list-item focusable">
+                    <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
+                                            PreviewPictures="collection.PreviewPictures"
+                                            PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                            PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                            Alt="@collection.Title" />
+                    <div class="library-list-item-info">
+                        <p class="library-list-item-title">@collection.Title</p>
+                        <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
+                    </div>
+                </a>
+            }
         </LibraryBrowseListRow>
     </ListTemplate>
 </BrowseView>

@@ -8,6 +8,7 @@ using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
 
@@ -21,11 +22,17 @@ public partial class MySpaceCollectionsPage
     private bool _loading = true;
     private bool _showShared;
     private bool _canCreate;
+    private bool _selectionMode;
+    private bool _deleting;
+    private readonly HashSet<Guid> _selectedIds = [];
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastModifiedDesc;
     private BrowseView<LiteCollectionDto>? _browseView;
     private K7DataTable<LiteCollectionDto>? _dataTable;
     private string? _activeSortKey = "lastModified";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
+
+    private int SelectedCount => _selectedIds.Count;
+    private bool AllSelected => _collections.Count > 0 && _selectedIds.Count == _collections.Count;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -82,6 +89,7 @@ public partial class MySpaceCollectionsPage
         if (value == _selectedSort)
             return;
 
+        ExitSelectionMode();
         _selectedSort = value;
         (_activeSortKey, _activeSortDirection) = MySpaceLibraryBrowseSort.MapCollectionOrderingToSortKey(value);
         await PersistFiltersAsync();
@@ -108,8 +116,106 @@ public partial class MySpaceCollectionsPage
 
     private async Task OnShowSharedChanged(bool value)
     {
+        ExitSelectionMode();
         _showShared = value;
         await LoadCollectionsAsync();
+    }
+
+    private void EnterSelectionMode()
+    {
+        _selectionMode = true;
+        _selectedIds.Clear();
+    }
+
+    private void ExitSelectionMode()
+    {
+        _selectionMode = false;
+        _selectedIds.Clear();
+    }
+
+    private void ToggleSelection(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (AllSelected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
+
+        _selectedIds.Clear();
+        foreach (var collection in _collections)
+            _selectedIds.Add(collection.Id);
+    }
+
+    private bool IsSelected(Guid id) => _selectedIds.Contains(id);
+
+    private void OnSelectKeyDown(KeyboardEventArgs e, Guid id)
+    {
+        if (e.Key is not ("Enter" or " "))
+            return;
+
+        ToggleSelection(id);
+    }
+
+    private void OnCollectionActivated(LiteCollectionDto collection)
+    {
+        if (_selectionMode)
+            ToggleSelection(collection.Id);
+        else
+            NavigateToCollection(collection);
+    }
+
+    private async Task ConfirmDeleteSelectedAsync()
+    {
+        if (_selectedIds.Count == 0 || _deleting)
+            return;
+
+        var count = _selectedIds.Count;
+        var result = await DialogService.ShowMessageBoxAsync(
+            L["DeleteSelectedTitle"],
+            string.Format(L["DeleteSelectedMessage"], count),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (result != true)
+            return;
+
+        _deleting = true;
+        var failed = 0;
+
+        try
+        {
+            foreach (var id in _selectedIds.ToList())
+            {
+                try
+                {
+                    await K7ServerService.DeleteCollectionAsync(id);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+
+        ExitSelectionMode();
+        await LoadCollectionsAsync();
+
+        if (failed == 0)
+            Snackbar.Add(string.Format(L["DeleteSelectedSuccess"], count), K7Severity.Success);
+        else if (failed == count)
+            Snackbar.Add(L["DeleteSelectedError"], K7Severity.Error);
+        else
+            Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
     private void NavigateToCollection(LiteCollectionDto collection) =>

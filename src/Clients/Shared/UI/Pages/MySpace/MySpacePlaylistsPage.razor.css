@@ -11,3 +11,92 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
 }
+
+.my-space-select-item {
+    position: relative;
+    cursor: pointer;
+    border-radius: var(--radius-lg);
+}
+
+.my-space-select-item:focus {
+    outline: none;
+}
+
+.my-space-select-item:focus-visible {
+    outline: none;
+}
+
+.my-space-select-item:focus-visible ::deep .media-card-overlay,
+.my-space-select-item:focus-within ::deep .media-card-overlay {
+    display: flex;
+}
+
+.my-space-select-item:focus-visible ::deep .media-card-progress-bar,
+.my-space-select-item:focus-within ::deep .media-card-progress-bar {
+    display: none;
+}
+
+.my-space-select-item:focus-visible ::deep .media-card-title,
+.my-space-select-item:focus-within ::deep .media-card-title,
+.my-space-select-item:focus-visible ::deep .media-card-subtitle,
+.my-space-select-item:focus-within ::deep .media-card-subtitle {
+    overflow: visible;
+}
+
+.my-space-select-item:focus-visible ::deep .media-card-title-inner,
+.my-space-select-item:focus-within ::deep .media-card-title-inner,
+.my-space-select-item:focus-visible ::deep .media-card-subtitle-inner,
+.my-space-select-item:focus-within ::deep .media-card-subtitle-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    animation: media-card-title-scroll 3s linear 0.5s infinite alternate;
+}
+
+.my-space-select-item__check {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 3;
+    display: flex;
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.my-space-select-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.my-space-select-list-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.my-space-select-list-item.is-selected {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.my-space-select-list-item__check {
+    flex: 0 0 auto;
+    display: flex;
+    color: var(--color-text-secondary);
+}
+
+.my-space-select-list-item.is-selected .my-space-select-list-item__check {
+    color: var(--color-accent);
+}
