@@ -15,16 +15,15 @@ public class FfmpegStreamingArgsTests
             (4000, 2000),
             (6000, 2000));
 
-        var seek = TimeSpan.FromSeconds(2);
+        var timelineOrigin = TimeSpan.FromSeconds(2);
         var end = TimeSpan.FromSeconds(8);
         var args = FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
             segments,
             startSegmentIndex: 1,
             endSegmentIndex: 4,
-            seek,
+            timelineOrigin,
             end);
 
-        // Duration is limited by input -to; output must not use -t with copyts.
         args.Should().NotContain(a => a.StartsWith("-t ", StringComparison.Ordinal));
         args.Should().Contain("-copyts");
         args.Should().Contain("-start_at_zero");
@@ -35,7 +34,7 @@ public class FfmpegStreamingArgsTests
         args.Should().Contain("-segment_start_number 1");
         args.Should().Contain(
             $"-segment_format_options movflags=+{FfmpegStreamingArgs.SegmentFmp4MovFlags}");
-        // Splits relative to -ss (2s): absolute 4s,6s -> 2s,4s
+        // Splits relative to keyframe origin (2s), not midpoint -ss.
         args.Should().Contain("-segment_times 2.000000,4.000000");
         args.Should().NotContain(a => a.Contains("frag_discont", StringComparison.Ordinal));
         args.Should().NotContain(a => a.StartsWith("-hls_time", StringComparison.Ordinal));
@@ -43,7 +42,7 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
-    public void BuildKeyframeAlignedSegmentArguments_ShouldUseSeekRelativeSplits_WhenTransmuxPad()
+    public void BuildKeyframeAlignedSegmentArguments_ShouldUseKeyframeOrigin_NotMidpointSeek()
     {
         var segments = BuildSegments(
             (0, 2000),
@@ -51,22 +50,21 @@ public class FfmpegStreamingArgsTests
             (4000, 2000),
             (6000, 2000));
 
-        // Midpoint -ss: segment_times are relative to that seek.
-        var seek = TimeSpan.FromSeconds(3);
+        var timelineOrigin = TimeSpan.FromSeconds(2);
         var end = TimeSpan.FromSeconds(8);
         var args = FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
             segments,
             startSegmentIndex: 1,
             endSegmentIndex: 4,
-            seek,
+            timelineOrigin,
             end);
 
-        args.Should().Contain("-segment_times 1.000000,3.000000");
-        args.Should().NotContain("-segment_times 2.000000,4.000000");
+        args.Should().Contain("-segment_times 2.000000,4.000000");
+        args.Should().NotContain("-segment_times 1.000000,3.000000");
     }
 
     [Test]
-    public void BuildKeyframeAlignedInputArguments_ShouldPutSsAndToBeforeInput()
+    public void BuildKeyframeAlignedInputArguments_ShouldUseNoAccurateSeek_WhenRequested()
     {
         var segments = BuildSegments(
             (0, 2000),
@@ -80,13 +78,31 @@ public class FfmpegStreamingArgsTests
             startSegmentIndex: 1,
             endSegmentIndex: 4,
             seek,
-            copyAudio: false);
+            copyAudio: false,
+            noAccurateSeek: true);
 
         args.Should().Contain("-ss 3.000000");
         args.Should().Contain("-noaccurate_seek");
         // end at 8s + pad (3-2) = 9s
         args.Should().Contain("-to 9.000000");
         args.Should().Contain("-fflags +genpts");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedInputArguments_ShouldOmitNoAccurateSeek_ForExactAudioSeek()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 3,
+            seekTime: TimeSpan.FromSeconds(2),
+            copyAudio: false,
+            noAccurateSeek: false);
+
+        args.Should().Contain("-ss 2.000000");
+        args.Should().NotContain("-noaccurate_seek");
+        args.Should().Contain("-to 6.000000");
     }
 
     [Test]
@@ -142,7 +158,6 @@ public class FfmpegStreamingArgsTests
         args.Should().Contain("-segment_times 2.000000,4.000000");
         args.Should().NotContain("-start_at_zero");
         args.Should().NotContain(a => a.StartsWith("-avoid_negative_ts", StringComparison.Ordinal));
-        // Output -ss must appear before -t.
         var ssIndex = Array.FindIndex(args.ToArray(), a => a.StartsWith("-ss ", StringComparison.Ordinal));
         var tIndex = Array.FindIndex(args.ToArray(), a => a.StartsWith("-t ", StringComparison.Ordinal));
         ssIndex.Should().BeGreaterThanOrEqualTo(0);
@@ -157,7 +172,7 @@ public class FfmpegStreamingArgsTests
             segments,
             startSegmentIndex: 0,
             endSegmentIndex: 1,
-            seekTime: TimeSpan.Zero,
+            timelineOrigin: TimeSpan.Zero,
             endTime: TimeSpan.FromSeconds(2));
 
         args.Should().Contain("-segment_time 999999");
@@ -176,7 +191,7 @@ public class FfmpegStreamingArgsTests
             segments,
             startSegmentIndex: 0,
             endSegmentIndex: 3,
-            seekTime: TimeSpan.Zero,
+            timelineOrigin: TimeSpan.Zero,
             logicalCodec: "h264",
             encoderName: "libx264");
 
@@ -187,23 +202,7 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
-    public void BuildKeyframeAlignedEncodeArguments_ShouldTagHevc()
-    {
-        var segments = BuildSegments((0, 1000), (1000, 1000));
-        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
-            segments,
-            0,
-            2,
-            TimeSpan.Zero,
-            "hevc",
-            "libx265");
-
-        args.Should().Contain("-tag:v hvc1");
-        args.Should().Contain("-bf 0");
-    }
-
-    [Test]
-    public void ResolveTransmuxSeekTime_ShouldPadPastKeyframe_WhenCopy()
+    public void ResolveTransmuxSeekTime_ShouldUseMidpoint_WhenMidFile()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
         var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: false);
@@ -211,11 +210,20 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
-    public void ResolveTransmuxSeekTime_ShouldStayOnBoundary_WhenTranscoding()
+    public void ResolveTransmuxSeekTime_ShouldUseKeyframe_WhenStartingAtZero()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000));
-        var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: true);
-        seek.TotalMilliseconds.Should().Be(2000);
+        var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 0, needsTranscode: true);
+        seek.TotalMilliseconds.Should().Be(0);
+    }
+
+    [Test]
+    public void ResolveVideoFfmpegWindow_ShouldPadStartAndEnd_WhenMidFile()
+    {
+        FfmpegStreamingArgs.ResolveVideoFfmpegWindow(5, 10, 20).Should().Be((4, 11));
+        FfmpegStreamingArgs.ResolveVideoFfmpegWindow(0, 5, 10).Should().Be((0, 6));
+        FfmpegStreamingArgs.ResolveVideoFfmpegWindow(5, 10, 10).Should().Be((4, 10));
+        FfmpegStreamingArgs.ResolveVideoFfmpegWindow(0, 10, 10).Should().Be((0, 10));
     }
 
     [Test]

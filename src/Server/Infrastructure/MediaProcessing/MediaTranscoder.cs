@@ -140,23 +140,42 @@ public class MediaTranscoder : IMediaTranscoder
         string? videoResolutionIdentifier = null,
         int? subtitleBurnInStreamIndex = null)
     {
-        var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         Directory.CreateDirectory(outputDirectory);
 
         var hasBurnIn = subtitleBurnInStreamIndex.HasValue;
         // Burn-in forces a transcode (can't stream copy when overlaying subtitles)
         var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
-        // For stream-copy, seek slightly after the target keyframe so -ss does not pick the
-        // previous IDR; -segment_times then cuts precisely at the planned boundaries.
+        var (ffmpegStartIndex, ffmpegEndIndex) = FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
+            startSegmentIndex,
+            endSegmentIndex,
+            allSegments.Count);
+        var (_, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
+
         var seekTime = FfmpegStreamingArgs.ResolveTransmuxSeekTime(
             allSegments,
-            startSegmentIndex,
+            ffmpegStartIndex,
             needsTranscode);
+        var timelineOrigin = FfmpegStreamingArgs.ResolveTimelineOrigin(allSegments, ffmpegStartIndex);
+
+        DiscardWindowPaddingSegments(
+            outputDirectory,
+            ffmpegStartIndex,
+            startSegmentIndex,
+            endSegmentIndex,
+            ffmpegEndIndex);
 
         _logger.LogDebug(
-            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
-            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none");
+            "Starting video streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
+            inputFilePath,
+            outputDirectory,
+            startSegmentIndex,
+            endSegmentIndex,
+            ffmpegStartIndex,
+            ffmpegEndIndex,
+            videoCodec ?? "copy",
+            subtitleBurnInStreamIndex?.ToString() ?? "none");
 
         var stderrLines = new List<string>();
         var burnInFilterComplex = string.Empty;
@@ -260,13 +279,14 @@ public class MediaTranscoder : IMediaTranscoder
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
                 }
 
-                // Seek/duration before -i. Output -t + copyts empty mid-seek segments.
+                // Seek/duration before -i. Midpoint + noaccurate_seek snaps onto the window keyframe.
                 foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
                              allSegments,
-                             startSegmentIndex,
-                             endSegmentIndex,
+                             ffmpegStartIndex,
+                             ffmpegEndIndex,
                              seekTime,
-                             copyAudio: false))
+                             copyAudio: false,
+                             noAccurateSeek: ffmpegStartIndex > 0))
                 {
                     options.WithCustomArgument(arg);
                 }
@@ -313,9 +333,9 @@ public class MediaTranscoder : IMediaTranscoder
                         ApplyKeyframeAlignedEncodeFlags(
                             options,
                             allSegments,
-                            startSegmentIndex,
-                            endSegmentIndex,
-                            seekTime,
+                            ffmpegStartIndex,
+                            ffmpegEndIndex,
+                            timelineOrigin,
                             effectiveCodec,
                             resolvedEncoder?.EncoderName);
                     }
@@ -333,9 +353,9 @@ public class MediaTranscoder : IMediaTranscoder
                 ConfigureKeyframeAlignedSegmentOutput(
                     options,
                     allSegments,
-                    startSegmentIndex,
-                    endSegmentIndex,
-                    seekTime,
+                    ffmpegStartIndex,
+                    ffmpegEndIndex,
+                    timelineOrigin,
                     endTime);
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
@@ -344,6 +364,12 @@ public class MediaTranscoder : IMediaTranscoder
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        DiscardWindowPaddingSegments(
+            outputDirectory,
+            ffmpegStartIndex,
+            startSegmentIndex,
+            endSegmentIndex,
+            ffmpegEndIndex);
         if (!result)
         {
             var stderr = string.Join(Environment.NewLine, stderrLines);
@@ -352,6 +378,36 @@ public class MediaTranscoder : IMediaTranscoder
                 inputFilePath,
                 subtitleBurnInStreamIndex?.ToString() ?? "none",
                 stderr);
+        }
+    }
+
+    private static void DiscardWindowPaddingSegments(
+        string outputDirectory,
+        int ffmpegStartIndex,
+        int deliverStartIndex,
+        int deliverEndIndexExclusive,
+        int ffmpegEndIndexExclusive)
+    {
+        if (ffmpegStartIndex < deliverStartIndex)
+            TryDeleteSegmentFile(outputDirectory, ffmpegStartIndex);
+
+        if (ffmpegEndIndexExclusive > deliverEndIndexExclusive)
+            TryDeleteSegmentFile(outputDirectory, deliverEndIndexExclusive);
+    }
+
+    private static void TryDeleteSegmentFile(string outputDirectory, int segmentIndex)
+    {
+        var path = Path.Combine(outputDirectory, $"{segmentIndex}.m4s");
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
         }
     }
 
@@ -447,11 +503,21 @@ public class MediaTranscoder : IMediaTranscoder
         int audioTrackIndex,
         string? audioCodec = null)
     {
-        var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         Directory.CreateDirectory(outputDirectory);
 
         var needsTranscode = !string.IsNullOrEmpty(audioCodec);
         IReadOnlyList<string>? aacEncodeArgs = null;
+
+        // Match video's padded ffmpeg window for encode so deliver segments share keyframes.
+        // Bitstream-copy stays on the exact deliver range (no pad / no start_at_zero).
+        var (ffmpegStartIndex, ffmpegEndIndex) = needsTranscode
+            ? FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
+                startSegmentIndex,
+                endSegmentIndex,
+                allSegments.Count)
+            : (startSegmentIndex, endSegmentIndex);
+        var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
 
         if (needsTranscode && string.Equals(audioCodec, "aac", StringComparison.OrdinalIgnoreCase))
         {
@@ -463,11 +529,13 @@ public class MediaTranscoder : IMediaTranscoder
                 sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
 
             _logger.LogDebug(
-                "Starting audio streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, audioCodec={AudioCodec}, encoder={Encoder}, bitrate={Bitrate}, track={Track}",
+                "Starting audio streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, audioCodec={AudioCodec}, encoder={Encoder}, bitrate={Bitrate}, track={Track}",
                 inputFilePath,
                 outputDirectory,
                 startSegmentIndex,
                 endSegmentIndex,
+                ffmpegStartIndex,
+                ffmpegEndIndex,
                 audioCodec,
                 encoder,
                 FfmpegAudioEncoderResolver.FixedAacBitrateBps,
@@ -480,6 +548,16 @@ public class MediaTranscoder : IMediaTranscoder
                 inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, audioCodec ?? "copy", audioTrackIndex);
         }
 
+        if (needsTranscode)
+        {
+            DiscardWindowPaddingSegments(
+                outputDirectory,
+                ffmpegStartIndex,
+                startSegmentIndex,
+                endSegmentIndex,
+                ffmpegEndIndex);
+        }
+
         var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
@@ -488,13 +566,15 @@ public class MediaTranscoder : IMediaTranscoder
                 if (needsTranscode)
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
 
-                // Encode: input -to. Copy: seek only (duration via output -t).
+                // Encode: exact keyframe -ss (no -noaccurate_seek - that rewinds audio).
+                // Copy: seek only (duration via output -t).
                 foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
                              allSegments,
-                             startSegmentIndex,
-                             endSegmentIndex,
+                             ffmpegStartIndex,
+                             ffmpegEndIndex,
                              startTime,
-                             copyAudio: !needsTranscode))
+                             copyAudio: !needsTranscode,
+                             noAccurateSeek: false))
                 {
                     options.WithCustomArgument(arg);
                 }
@@ -516,19 +596,17 @@ public class MediaTranscoder : IMediaTranscoder
                         options.WithCustomArgument("-c:a libopus");
                     }
 
-                    // Encode path shares video's start_at_zero + segment_times contract.
                     ConfigureKeyframeAlignedSegmentOutput(
                         options,
                         allSegments,
-                        startSegmentIndex,
-                        endSegmentIndex,
+                        ffmpegStartIndex,
+                        ffmpegEndIndex,
                         startTime,
                         endTime);
                 }
                 else
                 {
                     options.WithCustomArgument("-c:a copy");
-                    // Audio copy: keep container timebase, offset absolute PTS, no start_at_zero.
                     foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedAudioCopySegmentArguments(
                                  allSegments,
                                  startSegmentIndex,
@@ -544,6 +622,16 @@ public class MediaTranscoder : IMediaTranscoder
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        if (needsTranscode)
+        {
+            DiscardWindowPaddingSegments(
+                outputDirectory,
+                ffmpegStartIndex,
+                startSegmentIndex,
+                endSegmentIndex,
+                ffmpegEndIndex);
+        }
+
         if (!result)
         {
             _logger.LogError(
@@ -580,14 +668,14 @@ public class MediaTranscoder : IMediaTranscoder
         List<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime,
+        TimeSpan timelineOrigin,
         TimeSpan endTime)
     {
         foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
                      allSegments,
                      startSegmentIndex,
                      endSegmentIndex,
-                     seekTime,
+                     timelineOrigin,
                      endTime))
         {
             options.WithCustomArgument(arg);
@@ -602,7 +690,7 @@ public class MediaTranscoder : IMediaTranscoder
         List<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime,
+        TimeSpan timelineOrigin,
         string logicalCodec,
         string? encoderName)
     {
@@ -610,7 +698,7 @@ public class MediaTranscoder : IMediaTranscoder
                      allSegments,
                      startSegmentIndex,
                      endSegmentIndex,
-                     seekTime,
+                     timelineOrigin,
                      logicalCodec,
                      encoderName))
         {

@@ -5,8 +5,9 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 /// <summary>
 /// Pure ffmpeg argument contracts for keyframe-aligned streaming (no process launch).
-/// Video transmux/transcode: input -ss/-to, output -copyts/-start_at_zero,
-/// -segment_times relative to the actual -ss value.
+/// Video mid-file: midpoint -ss + -noaccurate_seek snaps onto the window keyframe;
+/// -segment_times / force_key_frames stay relative to that keyframe (not the midpoint).
+/// Pad one segment before/after so a previous-IDR snap lands in a discarded file.
 /// </summary>
 internal static class FfmpegStreamingArgs
 {
@@ -18,10 +19,13 @@ internal static class FfmpegStreamingArgs
         int startSegmentIndex,
         bool needsTranscode)
     {
-        var startTime = TimeSpan.FromMilliseconds(allSegments[startSegmentIndex].StartTimestamp);
-        if (needsTranscode || startSegmentIndex <= 0)
+        _ = needsTranscode;
+        var startTime = ResolveTimelineOrigin(allSegments, startSegmentIndex);
+        if (startSegmentIndex <= 0)
             return startTime;
 
+        // Exact keyframe -ss often snaps to the PREVIOUS IDR (rewind into prior GOP).
+        // Seek halfway into this segment's GOP with -noaccurate_seek so demux lands here.
         var startMs = allSegments[startSegmentIndex].StartTimestamp;
         long nextMs;
         if (startSegmentIndex + 1 < allSegments.Count)
@@ -32,6 +36,30 @@ internal static class FfmpegStreamingArgs
         return TimeSpan.FromMilliseconds((startMs + nextMs) / 2.0);
     }
 
+    /// <summary>
+    /// Pad one segment before/after the deliver window so midpoint -ss + segment_times
+    /// cut on the requested keyframes. Padding files are discarded after ffmpeg exits.
+    /// </summary>
+    public static (int FfmpegStartIndex, int FfmpegEndIndexExclusive) ResolveVideoFfmpegWindow(
+        int deliverStartIndex,
+        int deliverEndIndexExclusive,
+        int segmentCount)
+    {
+        if (segmentCount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(segmentCount));
+        if (deliverStartIndex < 0 || deliverEndIndexExclusive > segmentCount
+            || deliverStartIndex >= deliverEndIndexExclusive)
+        {
+            throw new ArgumentException("Invalid deliver segment range");
+        }
+
+        var ffmpegStart = deliverStartIndex > 0 ? deliverStartIndex - 1 : 0;
+        var ffmpegEnd = deliverEndIndexExclusive < segmentCount
+            ? deliverEndIndexExclusive + 1
+            : deliverEndIndexExclusive;
+        return (ffmpegStart, ffmpegEnd);
+    }
+
     public static TimeSpan ResolveTimelineOrigin(
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex) =>
@@ -39,7 +67,7 @@ internal static class FfmpegStreamingArgs
 
     /// <summary>
     /// Absolute demux end time for input-side -to. When -ss seeks past the segment
-    /// keyframe, extend -to by the same pad so the window duration stays correct.
+    /// keyframe (midpoint), extend -to by the same pad so the window duration stays correct.
     /// </summary>
     public static TimeSpan ResolveInputEndTime(
         IReadOnlyList<HlsSegment> allSegments,
@@ -47,7 +75,6 @@ internal static class FfmpegStreamingArgs
         int endSegmentIndex,
         TimeSpan seekTime)
     {
-        // Exclusive end: use the start of endSegmentIndex when available, else end of last included.
         TimeSpan endRef;
         if (endSegmentIndex < allSegments.Count)
         {
@@ -70,11 +97,12 @@ internal static class FfmpegStreamingArgs
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime)
+        TimeSpan timelineOrigin)
     {
-        // segment_times = keyframe - actual -ss value.
+        // Cuts follow the post-seek output timeline. With -noaccurate_seek that origin
+        // is the keyframe (ResolveTimelineOrigin), NOT the midpoint -ss value.
         var splits = new List<double>();
-        var originSeconds = seekTime.TotalSeconds;
+        var originSeconds = timelineOrigin.TotalSeconds;
         for (var i = startSegmentIndex + 1; i < endSegmentIndex && i < allSegments.Count; i++)
         {
             var absoluteSeconds = allSegments[i].StartTimestamp / 1000.0;
@@ -94,20 +122,20 @@ internal static class FfmpegStreamingArgs
         int startSegmentIndex,
         int endSegmentIndex,
         TimeSpan seekTime,
-        bool copyAudio)
+        bool copyAudio,
+        bool noAccurateSeek = false)
     {
         var args = new List<string>();
 
         if (seekTime > TimeSpan.Zero)
         {
-            // -noaccurate_seek before -ss for video transmux mid-file.
-            if (!copyAudio && startSegmentIndex > 0)
+            if (noAccurateSeek && startSegmentIndex > 0)
                 args.Add("-noaccurate_seek");
 
             args.Add($"-ss {seekTime.TotalSeconds.ToString("F6", CultureInfo.InvariantCulture)}");
         }
 
-        // Audio copy uses output -t; video limits the demux window with input -to.
+        // Audio copy uses output -t; video/audio encode limit the demux window with input -to.
         if (!copyAudio)
         {
             var endRef = ResolveInputEndTime(allSegments, startSegmentIndex, endSegmentIndex, seekTime);
@@ -126,7 +154,7 @@ internal static class FfmpegStreamingArgs
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime,
+        TimeSpan timelineOrigin,
         TimeSpan endTime)
     {
         _ = endTime;
@@ -145,7 +173,7 @@ internal static class FfmpegStreamingArgs
             $"-segment_start_number {startSegmentIndex}"
         };
 
-        AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, seekTime);
+        AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
         return args;
     }
 
@@ -167,7 +195,6 @@ internal static class FfmpegStreamingArgs
 
         var args = new List<string>();
 
-        // Output-side -ss again after -i for audio copy (avoids A/V drift + empty segments).
         if (timelineOrigin > TimeSpan.Zero)
         {
             args.Add(
@@ -193,7 +220,6 @@ internal static class FfmpegStreamingArgs
         args.Add($"-segment_format_options movflags=+{SegmentFmp4MovFlags}");
         args.Add($"-segment_start_number {startSegmentIndex}");
 
-        // Audio copy: splits relative to segment keyframe (same as -ss for audio = segment start).
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
         return args;
     }
@@ -203,13 +229,13 @@ internal static class FfmpegStreamingArgs
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime)
+        TimeSpan timelineOrigin)
     {
         var splitTimes = BuildRelativeSplitTimes(
             allSegments,
             startSegmentIndex,
             endSegmentIndex,
-            seekTime);
+            timelineOrigin);
         if (splitTimes.Count > 0)
         {
             args.Add(
@@ -228,7 +254,7 @@ internal static class FfmpegStreamingArgs
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
-        TimeSpan seekTime,
+        TimeSpan timelineOrigin,
         string logicalCodec,
         string? encoderName)
     {
@@ -237,7 +263,7 @@ internal static class FfmpegStreamingArgs
                      allSegments,
                      startSegmentIndex,
                      endSegmentIndex,
-                     seekTime))
+                     timelineOrigin))
         {
             keyframeTimes.Add(split.ToString("F6", CultureInfo.InvariantCulture));
         }
