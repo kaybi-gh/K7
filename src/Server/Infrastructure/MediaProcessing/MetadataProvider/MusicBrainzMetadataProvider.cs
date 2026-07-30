@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo, IMetadataImageProvider, ISearchableMetadataProvider
+public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicAlbumReleaseAwareMetadataProvider, IMusicArtistMetadataProvider, IMetadataProviderInfo, IMetadataImageProvider, ISearchableMetadataProvider
 {
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
@@ -71,13 +71,20 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
     }
 
-    public async Task<ExternalMusicAlbumMetadata> FetchMetadata(string releaseGroupId, string language, CancellationToken cancellationToken = default)
+    public Task<ExternalMusicAlbumMetadata> FetchMetadata(string releaseGroupId, string language, CancellationToken cancellationToken = default) =>
+        FetchMetadata(releaseGroupId, language, hints: null, cancellationToken);
+
+    public async Task<ExternalMusicAlbumMetadata> FetchMetadata(
+        string releaseGroupId,
+        string language,
+        MusicAlbumReleaseHints? hints,
+        CancellationToken cancellationToken = default)
     {
         // 1. Fetch release-group for genres/tags
         var releaseGroup = await GetReleaseGroupAsync(releaseGroupId, cancellationToken);
 
-        // 2. Find the best release within the group (prefer the one with most tracks)
-        var releaseId = await FindBestReleaseIdAsync(releaseGroupId, cancellationToken);
+        // 2. Find the best release within the group (Lidarr-like scoring when hints are available)
+        var releaseId = await FindBestReleaseIdAsync(releaseGroupId, hints, cancellationToken);
 
         // 3. Fetch the full release with recordings
         var release = releaseId != null
@@ -89,6 +96,9 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             new() { ProviderName = "musicbrainz", Value = releaseGroupId }
         };
+
+        if (!string.IsNullOrEmpty(releaseId))
+            externalIds.Add(new ExternalId { ProviderName = "musicbrainz-release", Value = releaseId });
 
         if (releaseGroup?.Relations is not null)
         {
@@ -283,17 +293,25 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
     }
 
-    private async Task<string?> FindBestReleaseIdAsync(string releaseGroupId, CancellationToken cancellationToken)
+    private async Task<string?> FindBestReleaseIdAsync(
+        string releaseGroupId,
+        MusicAlbumReleaseHints? hints,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var url = $"{BaseUrl}/release?release-group={releaseGroupId}&inc=media&fmt=json&limit=10";
+            if (!string.IsNullOrWhiteSpace(hints?.PreferredReleaseId))
+                return hints.PreferredReleaseId;
+
+            var url = $"{BaseUrl}/release?release-group={releaseGroupId}&inc=media&fmt=json&limit=25";
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             var result = await _httpClient.GetFromJsonAsync<MbReleaseList>(url, JsonOptions, cancellationToken);
+            var releases = result?.Releases;
+            if (releases is null || releases.Count == 0)
+                return null;
 
-            // Prefer official releases, then by most tracks
-            return result?.Releases?
-                .OrderByDescending(r => r.Status == "Official" ? 1 : 0)
+            return releases
+                .OrderByDescending(r => ScoreRelease(r, hints))
                 .ThenByDescending(r => r.Media?.Sum(m => m.TrackCount) ?? 0)
                 .FirstOrDefault()?.Id;
         }
@@ -302,6 +320,50 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             _logger.LogWarning(ex, "Failed to find best release for release-group {Id}", releaseGroupId);
             return null;
         }
+    }
+
+    private static int ScoreRelease(MbReleaseSummary release, MusicAlbumReleaseHints? hints)
+    {
+        var score = 0;
+        if (string.Equals(release.Status, "Official", StringComparison.OrdinalIgnoreCase))
+            score += 100;
+
+        var formats = release.Media?
+            .Select(m => m.Format)
+            .Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => f!)
+            .ToList() ?? [];
+
+        if (formats.Any(f => f.Contains("Digital", StringComparison.OrdinalIgnoreCase)
+                             || f.Contains("File", StringComparison.OrdinalIgnoreCase)))
+            score += 25;
+        else if (formats.Any(f => f.Equals("CD", StringComparison.OrdinalIgnoreCase)))
+            score += 10;
+
+        var trackCount = release.Media?.Sum(m => m.TrackCount) ?? 0;
+        if (hints?.ExpectedTrackCount is int expected && expected > 0 && trackCount > 0)
+        {
+            var delta = Math.Abs(trackCount - expected);
+            score += Math.Max(0, 120 - delta * 15);
+        }
+        else
+        {
+            // Without on-disk hints, prefer richer tracklists moderately
+            score += Math.Min(trackCount, 40);
+        }
+
+        if (hints?.ExpectedTrackTitles is { Count: > 0 } titles && trackCount > 0)
+        {
+            // Title overlap needs full release payloads; approximate with count proximity only.
+            // Bonus when track counts align closely with expected title count.
+            var titleDelta = Math.Abs(trackCount - titles.Count);
+            if (titleDelta == 0)
+                score += 40;
+            else if (titleDelta <= 2)
+                score += 15;
+        }
+
+        return score;
     }
 
     private async Task<MbRelease?> GetReleaseAsync(string releaseId, CancellationToken cancellationToken)
@@ -821,6 +883,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private record MbMedium
     {
         public int Position { get; init; }
+        public string? Format { get; init; }
         [JsonPropertyName("track-count")]
         public int TrackCount { get; init; }
         public List<MbTrack>? Tracks { get; init; }
