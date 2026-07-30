@@ -46,6 +46,15 @@
                     <K7TextField TValue="string" Label="@L["ApiKey"]" Value="_settings.ApiKey" ValueChanged="v => _settings = _settings with { ApiKey = v }"
                                  Placeholder="audiomuse_..." Type="password" />
 
+                    <div class="d-flex flex-col gap-2">
+                        <K7Switch Label="@L["InstantPlaylistEnabled"]"
+                                  Value="_settings.InstantPlaylistEnabled"
+                                  ValueChanged="OnInstantPlaylistEnabledChanged" />
+                        <K7Alert Severity="K7Severity.Info" Variant="outlined">
+                            @L["InstantPlaylistCallout"]
+                        </K7Alert>
+                    </div>
+
                     <div class="d-flex align-center gap-2">
                         <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
                         <K7Button OnClick="TestConnection" Variant="K7ButtonVariant.Outlined" Disabled="_testing">

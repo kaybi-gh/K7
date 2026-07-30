@@ -27,6 +27,8 @@
   <data name="DisabledHint" xml:space="preserve"><value>Enable the integration to configure your AudioMuse server and unlock AI recommendations.</value></data>
   <data name="BaseUrl" xml:space="preserve"><value>Server URL</value></data>
   <data name="ApiKey" xml:space="preserve"><value>API Key</value></data>
+  <data name="InstantPlaylistEnabled" xml:space="preserve"><value>From-description playlists (Instant Playlist)</value></data>
+  <data name="InstantPlaylistCallout" xml:space="preserve"><value>Requires a third-party AI configured in AudioMuse (Ollama, OpenAI, Gemini, or Mistral). Without it, the Smart playlist « From description » mode will not work.</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="TestConnection" xml:space="preserve"><value>Test Connection</value></data>
   <data name="Connected" xml:space="preserve"><value>Connected</value></data>

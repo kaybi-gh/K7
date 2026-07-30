@@ -1,63 +1,57 @@
-@using K7.Server.Domain.Enums
-@using K7.Shared.Dtos.Rules
-@inject IPlaylistService K7ServerService
-@inject IMediaService MediaService
-@inject IK7Snackbar Snackbar
+@using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
 @inject IStringLocalizer<SmartPlaylistDialog> L
-@inject IStringLocalizer<LibraryBrowseFilters> BrowseL
+@inject IMusicIntelligenceClientService MusicIntelligence
+@inject IMediaService MediaService
+@inject IK7ServerService ApiClient
+@inject IAudioPlayerService Audio
+@inject IK7Snackbar Snackbar
 @inject IStringLocalizer<SharedResource> S
+@inject IServerPreferencesService ServerPreferences
 
-<div class="k7-dialog-content smart-playlist-dialog">
-    <div class="d-flex flex-col mt-2">
-        <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
-                      Required="true" RequiredError="@L["NameRequired"]" MaxLength="200" />
-        <K7TextField @bind-Value="_description" Label="@L["DescriptionOptional"]"
-                      Variant="outlined" Lines="2" MaxLength="2000" />
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-4 pa-4 ai-smart-playlist-dialog">
+        <K7Select TValue="AiPlaylistMode" Value="_mode" ValueChanged="OnModeChanged" Label="@L["ModeLabel"]" Variant="outlined">
+            @if (_instantPlaylistAvailable)
+            {
+                <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Prompt" Text="@L["ModePrompt"]">@L["ModePrompt"]</K7SelectItem>
+            }
+            <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
+            <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
+        </K7Select>
 
-        <hr class="k7-divider" />
+        <K7TextField @bind-Value="_prompt"
+                     Label="@L["Prompt"]"
+                     Placeholder="@GetPlaceholder()"
+                     HelperText="@GetHelperText()" />
 
-        <div class="smart-playlist-dialog__media-type">
-            <K7Select TValue="MediaType" Value="_mediaType" ValueChanged="OnMediaTypeChanged"
-                       Label="@L["MediaType"]" Variant="outlined">
-                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
-            </K7Select>
-        </div>
-
-        <K7RuleEditor Value="_ruleFilter"
-                      ValueChanged="OnRuleFilterChanged"
-                      FieldDescriptors="_fieldDescriptors"
-                      SearchSuggestionsAsync="SearchSuggestionsAsync" />
-
-        <hr class="k7-divider" />
-
-        <div class="smart-playlist-sort-row">
-            <K7Select TValue="SmartPlaylistOrderBy" @bind-Value="_orderBy" Label="@L["SortBy"]"
-                       Variant="outlined" Class="smart-playlist-sort-row__order">
-                @foreach (var order in _orderByOptions)
+        @if (_examples.Length > 0)
+        {
+            <div class="ai-smart-playlist-dialog__examples">
+                @foreach (var example in _examples)
                 {
-                    <K7SelectItem Value="@order" Text="@GetOrderByLabel(order)">@GetOrderByLabel(order)</K7SelectItem>
+                    <button type="button"
+                            class="ai-smart-playlist-dialog__chip"
+                            @onclick="() => UseExample(example)">
+                        @example
+                    </button>
                 }
-            </K7Select>
-            <div class="smart-playlist-sort-row__direction">
-                <K7Switch @bind-Value="_orderDescending" />
-                <label class="text-sm">@L["Descending"]</label>
             </div>
-            <K7TextField TValue="int?" Type="number" @bind-Value="_limit" Label="@L["Limit"]"
-                         Variant="outlined" Class="smart-playlist-sort-row__limit" Clearable="true" />
+        }
+
+        <div class="d-flex gap-2 justify-end">
+            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="Generate" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_prompt) || _loading">
+                @if (_loading)
+                {
+                    <K7Spinner Size="16" />
+                }
+                else
+                {
+                    @L["Generate"]
+                }
+            </K7Button>
         </div>
     </div>
-</div>
-<div class="k7-dialog-actions">
-    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
-               Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
-        @if (_isSubmitting)
-        {
-            <K7Spinner Size="sm" />
-            <span class="ms-2">@(_isEdit ? L["Saving"] : L["Creating"])</span>
-        }
-        else { <span>@(_isEdit ? S["Save"] : S["Create"])</span> }
-    </K7Button>
 </div>

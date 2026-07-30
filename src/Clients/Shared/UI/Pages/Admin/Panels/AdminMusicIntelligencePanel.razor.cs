@@ -34,6 +34,14 @@ public partial class AdminMusicIntelligencePanel
         _testResult = null;
     }
 
+    private void OnInstantPlaylistEnabledChanged(bool enabled)
+    {
+        if (_settings is null)
+            return;
+
+        _settings = _settings with { InstantPlaylistEnabled = enabled };
+    }
+
     private async Task SaveAsync()
     {
         if (_settings is null)
@@ -58,13 +66,16 @@ public partial class AdminMusicIntelligencePanel
 
     private async Task TestConnection()
     {
+        if (_settings is null)
+            return;
+
         _testing = true;
         _testResult = null;
         StateHasChanged();
 
         try
         {
-            _testResult = await MusicIntelligenceAdmin.TestConnectionAsync();
+            _testResult = await MusicIntelligenceAdmin.TestConnectionAsync(_settings);
         }
         catch (Exception ex)
         {
