@@ -1,5 +1,6 @@
 services:
   k7-peer-a:
+    container_name: k7-peer-a
     build: .
     ports:
       - "5080:8080"
@@ -14,11 +15,15 @@ services:
       - Paths__Transcoding=/data/transcoding-a
       - Authentication__Local__SignInEnabled=true
       - Authentication__Local__RegistrationEnabled=true
+      - Security__ApiKeys__HashSecret=toto
+      - Server__Name=k7-peer-a
+      - Security__Federation__AllowInsecurePeerHttp=true
     volumes:
-      - "${K7_FED_DATA:-./.federation}/peer-a/data:/data:rw"
-      - "${K7_FED_DATA:-./.federation}/media-a:/media:ro"
+      - "C:/k7/federation/data/peer-a/data:/data:rw"
+      - "C:/k7/federation/media-a:/media:ro"
 
   k7-peer-b:
+    container_name: k7-peer-b
     build: .
     ports:
       - "5081:8080"
@@ -33,6 +38,16 @@ services:
       - Paths__Transcoding=/data/transcoding-b
       - Authentication__Local__SignInEnabled=true
       - Authentication__Local__RegistrationEnabled=true
+      - Security__ApiKeys__HashSecret=toto
+      - Authentication__Oidc__Enabled=true
+      - Authentication__Oidc__AutomaticAccountCreation=true
+      - Authentication__Oidc__DisplayName=Authentik
+      - Authentication__Oidc__Authority=https://sso.kaybi.fr/application/o/k7/
+      - Authentication__Oidc__ClientId=7XRvIhIbenxupV7eP0Utp4Cj3H8mUyf5rZsZDnm7
+      - Authentication__Oidc__ClientSecret=vO0BlydKJmQhkdGUIcDqQZZK0vrtPSPXoCdepM9zWo2wfKU2ukB3uZpRKH4ZygbIDZ21cq9g5ni9KZPA2FExMRgzKHg1HOWMRWxASGwGmIiZjIHyNex0HOLUj5oNF0ip
+      - Authentication__Oidc__Scopes=openid,profile
+      - Server__Name=k7-peer-b
+      - Security__Federation__AllowInsecurePeerHttp=true
     volumes:
-      - "${K7_FED_DATA:-./.federation}/peer-b/data:/data:rw"
-      - "${K7_FED_DATA:-./.federation}/media-b:/media:ro"
+      - "C:/k7/federation/data/peer-b/data:/data:rw"
+      - "C:/k7/federation/media-b:/media:ro"
