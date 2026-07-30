@@ -39,4 +39,6 @@
   <data name="NoSimilarTracks" xml:space="preserve"><value>Aucun titre similaire trouvé</value></data>
   <data name="PlayingSimilar" xml:space="preserve"><value>Titres similaires à « {0} »</value></data>
   <data name="SimilarTracksError" xml:space="preserve"><value>Erreur lors de la recherche de titres similaires</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
+  <data name="EditMetadataError" xml:space="preserve"><value>Impossible d'ouvrir l'édition des métadonnées</value></data>
 </root>

@@ -19,6 +19,9 @@ public partial class TrackContextMenu : IDisposable
     [Parameter]
     public int? UserRating { get; set; }
 
+    [Parameter]
+    public EventCallback OnMetadataChanged { get; set; }
+
     [Inject] private IMusicRadioPlaybackService MusicRadio { get; set; } = default!;
 
     private readonly Guid _menuOwnerId = Guid.NewGuid();
@@ -26,6 +29,7 @@ public partial class TrackContextMenu : IDisposable
     private bool _menuOpen;
     private bool _canCreatePlaylist;
     private bool _canRate;
+    private bool _canEditMetadata;
     private bool _musicIntelligenceAvailable;
     private bool _capsLoaded;
 
@@ -49,6 +53,7 @@ public partial class TrackContextMenu : IDisposable
             var caps = await MediaCardMenuCapabilities.GetAsync(FeatureAccess);
             _canCreatePlaylist = caps.CanCreateLibrary;
             _canRate = caps.CanRate;
+            _canEditMetadata = caps.CanEditMetadata;
             _musicIntelligenceAvailable = await MusicIntelligenceAvailabilityCache.GetAsync(ServerPreferences);
             _capsLoaded = true;
         }
@@ -98,24 +103,36 @@ public partial class TrackContextMenu : IDisposable
             AddMenuItem(builder, ref seq, "download-simple", L["DownloadOffline"], DownloadOffline);
         }
 
-        if (string.IsNullOrEmpty(Track.Artist) && string.IsNullOrEmpty(Track.Genre) && !_musicIntelligenceAvailable)
-            return;
+        var hasRadioActions = _musicIntelligenceAvailable
+            || !string.IsNullOrEmpty(Track.Artist)
+            || !string.IsNullOrEmpty(Track.Genre);
 
-        builder.OpenElement(seq++, "hr");
-        builder.AddAttribute(seq++, "class", "k7-divider");
-        builder.CloseElement();
+        if (hasRadioActions)
+        {
+            builder.OpenElement(seq++, "hr");
+            builder.AddAttribute(seq++, "class", "k7-divider");
+            builder.CloseElement();
 
-        if (_musicIntelligenceAvailable)
-            AddMenuItem(builder, ref seq, "waves", string.Format(L["RadioSonic"], Track.Title), RadioSonic);
+            if (_musicIntelligenceAvailable)
+                AddMenuItem(builder, ref seq, "waves", string.Format(L["RadioSonic"], Track.Title), RadioSonic);
 
-        if (!string.IsNullOrEmpty(Track.Artist))
-            AddMenuItem(builder, ref seq, "radio", string.Format(L["RadioArtist"], Track.Artist), RadioArtist);
+            if (!string.IsNullOrEmpty(Track.Artist))
+                AddMenuItem(builder, ref seq, "radio", string.Format(L["RadioArtist"], Track.Artist), RadioArtist);
 
-        if (!string.IsNullOrEmpty(Track.Genre))
-            AddMenuItem(builder, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
+            if (!string.IsNullOrEmpty(Track.Genre))
+                AddMenuItem(builder, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
 
-        if (_musicIntelligenceAvailable)
-            AddMenuItem(builder, ref seq, "magic-wand", L["PlaySimilar"], PlaySimilar);
+            if (_musicIntelligenceAvailable)
+                AddMenuItem(builder, ref seq, "magic-wand", L["PlaySimilar"], PlaySimilar);
+        }
+
+        if (_canEditMetadata)
+        {
+            builder.OpenElement(seq++, "hr");
+            builder.AddAttribute(seq++, "class", "k7-divider");
+            builder.CloseElement();
+            AddMenuItem(builder, ref seq, "pencil-simple", L["EditMetadata"], OpenEditMetadataAsync);
+        }
     }
 
     private void AddMenuItem(
@@ -250,6 +267,39 @@ public partial class TrackContextMenu : IDisposable
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = t.Duration
     };
+
+    private async Task OpenEditMetadataAsync()
+    {
+        ContextMenuService.Close();
+        try
+        {
+            var media = await K7ServerService.GetMediaAsync(Track.MediaId);
+            if (media is not MusicTrackDto track)
+            {
+                Snackbar.Add(L["EditMetadataError"], K7Severity.Error);
+                return;
+            }
+
+            var parameters = new K7DialogParameters<Dialogs.EditMetadataDialog>
+            {
+                { x => x.Media, track }
+            };
+            var options = new K7DialogOptions
+            {
+                CloseOnEscapeKey = true,
+                MaxWidth = K7DialogMaxWidth.Medium,
+                FullWidth = true
+            };
+            var dialog = await DialogService.ShowAsync<Dialogs.EditMetadataDialog>(L["EditMetadata"], parameters, options);
+            var result = await dialog.Result;
+            if (result is { Canceled: false } && OnMetadataChanged.HasDelegate)
+                await OnMetadataChanged.InvokeAsync();
+        }
+        catch
+        {
+            Snackbar.Add(L["EditMetadataError"], K7Severity.Error);
+        }
+    }
 
     private async Task DownloadOffline()
     {

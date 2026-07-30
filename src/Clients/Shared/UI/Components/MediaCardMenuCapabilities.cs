@@ -19,6 +19,7 @@ internal static class MediaCardMenuCapabilities
         public bool CanRate;
         public bool CanCreateLibrary;
         public bool CanSetWatchState;
+        public bool CanEditMetadata;
     }
 
     public static async Task<Cache> GetAsync(IFeatureAccessService featureAccess)
@@ -31,6 +32,7 @@ internal static class MediaCardMenuCapabilities
         cache.CanRate = await featureAccess.HasCapabilityAsync(Capability.CanRate);
         cache.CanCreateLibrary = await featureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         cache.CanSetWatchState = role is Roles.User or Roles.Administrator;
+        cache.CanEditMetadata = role == Roles.Administrator;
         cache.Role = role;
         return cache;
     }
