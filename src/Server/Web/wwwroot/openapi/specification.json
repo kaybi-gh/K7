@@ -3272,7 +3272,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfLitePlaylistDto"
+                  "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIReadOnlyCollectionOfLitePlaylistDto"
                 }
               }
             }
@@ -10337,50 +10337,6 @@
           }
         }
       },
-      "AnonymousTypeOfintAndintAndintAndIEnumerableOfLitePlaylistDto": {
-        "required": [
-          "pageNumber",
-          "totalPages",
-          "totalCount",
-          "items"
-        ],
-        "type": "object",
-        "properties": {
-          "pageNumber": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "totalPages": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "totalCount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "items": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/LitePlaylistDto"
-            }
-          }
-        }
-      },
       "AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteSmartPlaylistDto": {
         "required": [
           "pageNumber",
@@ -10465,6 +10421,50 @@
             ],
             "items": {
               "$ref": "#/components/schemas/PlaylistItemDto"
+            }
+          }
+        }
+      },
+      "AnonymousTypeOfintAndintAndintAndIReadOnlyCollectionOfLitePlaylistDto": {
+        "required": [
+          "pageNumber",
+          "totalPages",
+          "totalCount",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePlaylistDto"
             }
           }
         }

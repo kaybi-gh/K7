@@ -1,5 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylists;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.SharedProfiles;
 using K7.Server.Domain.Entities.Users;
@@ -122,5 +124,99 @@ public class GetPlaylistsWithPaginationQueryHandlerTests
         result.Items.Should().HaveCount(2);
         result.Items.Should().Contain(p => p.Id == _ownedPlaylistId);
         result.Items.Should().Contain(p => p.Id == _otherUserPlaylistId);
+    }
+
+    [Test]
+    public async Task Handle_ShouldReturnItemCountAndLimitedPreviews_WhenPlaylistHasManyItems()
+    {
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
+
+        var pictureIds = new List<Guid>();
+        for (var i = 0; i < 12; i++)
+        {
+            var mediaId = Guid.NewGuid();
+            var pictureId = Guid.NewGuid();
+            pictureIds.Add(pictureId);
+
+            _context.Medias.Add(new Movie
+            {
+                Id = mediaId,
+                Title = $"Movie {i}"
+            });
+            _context.MetadataPictures.Add(new MetadataPicture
+            {
+                Id = pictureId,
+                Type = MetadataPictureType.Poster,
+                LocalPath = $"/covers/{pictureId}.jpg",
+                MediaId = mediaId
+            });
+            _context.PlaylistItems.Add(new PlaylistItem
+            {
+                Id = Guid.NewGuid(),
+                PlaylistId = _ownedPlaylistId,
+                MediaId = mediaId,
+                Order = i
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(
+            new GetPlaylistsWithPaginationQuery { PageNumber = 1, PageSize = 10 },
+            CancellationToken.None);
+
+        var playlist = result.Items.Should().ContainSingle(p => p.Id == _ownedPlaylistId).Subject;
+        playlist.ItemCount.Should().Be(12);
+        playlist.PreviewPictures.Should().HaveCount(4);
+        playlist.PreviewPictures.Select(p => p.Id).Should().Equal(pictureIds.Take(4));
+    }
+
+    [Test]
+    public async Task Handle_ShouldSkipPreviewLookup_WhenPlaylistHasCustomCover()
+    {
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
+
+        var coverId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var itemPictureId = Guid.NewGuid();
+
+        var cover = new MetadataPicture
+        {
+            Id = coverId,
+            Type = MetadataPictureType.Cover,
+            LocalPath = $"/covers/{coverId}.jpg",
+            PlaylistId = _ownedPlaylistId
+        };
+        _context.MetadataPictures.Add(cover);
+
+        var playlist = await _context.Playlists.SingleAsync(p => p.Id == _ownedPlaylistId);
+        playlist.CoverPicture = cover;
+
+        _context.Medias.Add(new Movie { Id = mediaId, Title = "Covered" });
+        _context.MetadataPictures.Add(new MetadataPicture
+        {
+            Id = itemPictureId,
+            Type = MetadataPictureType.Poster,
+            LocalPath = $"/covers/{itemPictureId}.jpg",
+            MediaId = mediaId
+        });
+        _context.PlaylistItems.Add(new PlaylistItem
+        {
+            Id = Guid.NewGuid(),
+            PlaylistId = _ownedPlaylistId,
+            MediaId = mediaId,
+            Order = 0
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(
+            new GetPlaylistsWithPaginationQuery { PageNumber = 1, PageSize = 10 },
+            CancellationToken.None);
+
+        var dto = result.Items.Should().ContainSingle(p => p.Id == _ownedPlaylistId).Subject;
+        dto.CoverPicture.Should().NotBeNull();
+        dto.CoverPicture!.Id.Should().Be(coverId);
+        dto.ItemCount.Should().Be(1);
+        dto.PreviewPictures.Should().BeEmpty();
     }
 }

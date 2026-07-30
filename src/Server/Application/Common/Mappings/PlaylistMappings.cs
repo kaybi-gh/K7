@@ -29,20 +29,25 @@ public static class PlaylistMappings
             VisibilityScope = domain.VisibilityScope
         };
 
-        public LitePlaylistDto ToLitePlaylistDto() => new()
-        {
-            Id = domain.Id,
-            Title = domain.Title,
-            Description = domain.Description,
-            IsSmartPlaylist = domain is SmartPlaylist,
-            MediaType = domain.MediaType,
-            CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
-            PreviewPictures = domain.ToPreviewPictureDtos(),
-            ItemCount = domain.Items.Count,
-            Created = domain.Created,
-            LastModified = domain.LastModified,
-            LastListenedAt = MapLastListenedAt(domain)
-        };
+        public LitePlaylistDto ToLitePlaylistDto() =>
+            domain.ToLitePlaylistDto(domain.Items.Count, domain.ToPreviewPictureDtos());
+
+        public LitePlaylistDto ToLitePlaylistDto(
+            int itemCount,
+            IReadOnlyList<MetadataPictureDto> previewPictures) => new()
+            {
+                Id = domain.Id,
+                Title = domain.Title,
+                Description = domain.Description,
+                IsSmartPlaylist = domain is SmartPlaylist,
+                MediaType = domain.MediaType,
+                CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
+                PreviewPictures = previewPictures,
+                ItemCount = itemCount,
+                Created = domain.Created,
+                LastModified = domain.LastModified,
+                LastListenedAt = MapLastListenedAt(domain)
+            };
     }
 
     private static DateTimeOffset? MapLastListenedAt(Playlist domain) =>
