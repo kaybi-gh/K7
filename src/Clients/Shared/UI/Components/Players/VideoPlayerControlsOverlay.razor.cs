@@ -341,6 +341,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         _showOverlay = true;
         ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+        RequestRender();
         _ = FocusPlayPauseAsync();
     }
 
@@ -814,17 +815,6 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         HandleBack();
     }
 
-    private void OnOverlayMouseMove(MouseEventArgs args)
-    {
-        if (ShouldIgnoreMouseOverlayShow() || _isMouseOverControlsBar || _isMenuOpen)
-        {
-            return;
-        }
-
-        _showOverlay = true;
-        ResetOverlayTimeout();
-    }
-
     private void OnFocusIn(FocusEventArgs args)
     {
         if (_showOverlay)
@@ -845,6 +835,27 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             _showOverlay = true;
             ResetOverlayTimeout(TimeSpan.FromSeconds(5));
         }
+
+        // ShouldRender is gated on _needsRender; without this, Blazor click never paints.
+        RequestRender();
+    }
+
+    private void OnOverlayMouseMove(MouseEventArgs args)
+    {
+        if (ShouldIgnoreMouseOverlayShow() || _isMouseOverControlsBar || _isMenuOpen)
+        {
+            return;
+        }
+
+        if (_showOverlay)
+        {
+            ResetOverlayTimeout();
+            return;
+        }
+
+        _showOverlay = true;
+        ResetOverlayTimeout();
+        RequestRender();
     }
 
     private async Task OnTouchStart(TouchEventArgs e)
@@ -1075,7 +1086,15 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
         _overlayVisibleTimer?.Stop();
         _isMouseOverControlsBar = true;
-        _showOverlay = true;
+        if (!_showOverlay)
+        {
+            _showOverlay = true;
+            RequestRender();
+        }
+        else
+        {
+            _showOverlay = true;
+        }
     }
 
     private void OnControlsBarMouseOut(MouseEventArgs args)

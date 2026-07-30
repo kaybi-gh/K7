@@ -20,7 +20,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Func<Task>? UnmuteRequest;
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
+#pragma warning disable CS0067 // Reserved for muxed/container audio track switching; demuxed HLS reloads the manifest instead.
     public event Action<string>? SwitchAudioTrackRequested;
+#pragma warning restore CS0067
     public event Action<string?>? SwitchSubtitleTrackRequested;
     public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
@@ -307,6 +309,14 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             if (session.SubtitleTracks is { Count: > 0 })
                 SetSubtitleTracks(session.SubtitleTracks);
 
+            if (session.AudioTracks is { Count: > 0 })
+            {
+                _audioTracks = session.AudioTracks.ToList();
+                SelectedAudioTrack = audioTrackIndex is int idxFromSession
+                    ? _audioTracks.FirstOrDefault(t => t.Index == idxFromSession)
+                    : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
+            }
+
             _baseManifestUrl = session.Source.Uri.OriginalString;
 
             Source = new PlayerSource
@@ -348,21 +358,20 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
     {
-        // Remote/federated playback leaves _currentIndexedFileId null; gate on the active manifest.
-        if (_baseManifestUrl is null)
+        if (_baseManifestUrl is null || Source is null)
             return Task.CompletedTask;
 
-        if (!_audioTracks.Contains(track))
+        var matched = _audioTracks.FirstOrDefault(t => t.Index == track.Index);
+        if (matched is null)
             return Task.CompletedTask;
 
-        SelectedAudioTrack = track;
-        AudioTrackChanged?.Invoke(track);
+        SelectedAudioTrack = matched;
+        AudioTrackChanged?.Invoke(matched);
 
-        var trackName = track.Name ?? $"Track {track.Index}";
-        SwitchAudioTrackRequested?.Invoke(trackName);
-
+        // Demuxed HLS: reload master with DefaultAudioTrackIndex. Do not also call
+        // switchAudioTrack (VHS label match is unreliable, especially over federation).
         var seekTime = CurrentTime;
-        var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, track.Index);
+        var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
         newUrl = BuildManifestUrlWithQuality(newUrl, SelectedQuality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, SelectedSubtitleTrack);
         _baseManifestUrl = newUrl;

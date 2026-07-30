@@ -334,6 +334,14 @@ internal class PlayerService(
         if (session.SubtitleTracks is { Count: > 0 })
             SetSubtitleTracks(session.SubtitleTracks);
 
+        if (session.AudioTracks is { Count: > 0 })
+        {
+            _audioTracks = session.AudioTracks.ToList();
+            _selectedAudioTrack = audioTrackIndex is int idxFromSession
+                ? _audioTracks.FirstOrDefault(t => t.Index == idxFromSession)
+                : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
+        }
+
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
         _lastQualityFallbackUtc = DateTime.MinValue;
@@ -370,21 +378,19 @@ internal class PlayerService(
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
     {
-        if (_baseManifestUrl is null)
+        if (_baseManifestUrl is null || Source is null)
             return Task.CompletedTask;
 
-        if (!_audioTracks.Contains(track))
+        var matched = _audioTracks.FirstOrDefault(t => t.Index == track.Index);
+        if (matched is null)
             return Task.CompletedTask;
 
-        _selectedAudioTrack = track;
-        AudioTrackChanged?.Invoke(track);
-
-        var trackName = track.Name ?? $"Track {track.Index}";
-        SwitchAudioTrackRequested?.Invoke(trackName);
+        _selectedAudioTrack = matched;
+        AudioTrackChanged?.Invoke(matched);
 
         var seekTime = CurrentTime;
         var previousDuration = Duration;
-        var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, track.Index);
+        var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
         newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
         _baseManifestUrl = newUrl;
@@ -397,6 +403,7 @@ internal class PlayerService(
             MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
             Title = Source.Title,
             CoverUrl = Source.CoverUrl,
+            ThumbnailsUrl = Source.ThumbnailsUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 

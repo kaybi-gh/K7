@@ -293,8 +293,7 @@ public partial class VideoPlayer : IAsyncDisposable
         SourceUri = playerSource.Url!;
         SourceMimeType = playerSource.MimeType!;
 
-        if (DeviceService.GetClientType() == ClientType.Native
-            && !string.IsNullOrEmpty(playerSource.ThumbnailsUrl)
+        if (!string.IsNullOrEmpty(playerSource.ThumbnailsUrl)
             && K7ServerService.HttpClient.BaseAddress is not null
             && Uri.TryCreate(playerSource.ThumbnailsUrl, UriKind.RelativeOrAbsolute, out var thumbUri)
             && !thumbUri.IsAbsoluteUri)
