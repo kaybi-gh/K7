@@ -34,6 +34,7 @@ public class GetFederationIndexedFileDetailsQueryHandler(
                 await entry.Collection("AudioTracks").LoadAsync(cancellationToken);
                 await entry.Collection("VideoTracks").LoadAsync(cancellationToken);
                 await entry.Collection("SubtitleTracks").LoadAsync(cancellationToken);
+                await entry.Reference("Thumbnails").LoadAsync(cancellationToken);
             }
             else if (indexedFile.FileMetadata is AudioFileMetadata)
             {

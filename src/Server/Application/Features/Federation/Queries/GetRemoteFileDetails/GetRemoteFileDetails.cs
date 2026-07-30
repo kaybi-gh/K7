@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.Features.Federation.Queries.GetRemoteFileDetails;
 
@@ -36,6 +37,22 @@ public class GetRemoteFileDetailsQueryHandler(
 
         if (fileDetails is null)
             throw new NotFoundException(remoteFile.RemoteFileId.ToString(), "RemoteIndexedFile");
+
+        // Peer returns /api/metadata-pictures/{id}; rewrite to a consumer proxy so the
+        // client never hits the peer base URL (and local /api/metadata-pictures would 404).
+        if (fileDetails.FileMetadata is VideoFileMetadataDto video
+            && video.Thumbnails is { Id: var pictureId, Uri: not null })
+        {
+            fileDetails.FileMetadata = video with
+            {
+                Thumbnails = video.Thumbnails with
+                {
+                    Uri = new Uri(
+                        $"/api/remote-indexed-files/{request.RemoteFileId}/metadata-pictures/{pictureId}",
+                        UriKind.Relative)
+                }
+            };
+        }
 
         return fileDetails;
     }
