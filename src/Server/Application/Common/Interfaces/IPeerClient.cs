@@ -16,6 +16,7 @@ public interface IPeerClient
     Task<IReadOnlyList<PeerMediaDto>> GetRemoteMediaAsync(string baseUrl, string accessToken, Guid libraryId, CancellationToken cancellationToken = default);
     Task<PeerFullMediaMetadataDto?> GetRemoteMediaMetadataAsync(string baseUrl, string accessToken, Guid mediaId, CancellationToken cancellationToken = default);
     Task<IndexedFileDto?> GetRemoteFileDetailsAsync(string baseUrl, string accessToken, Guid fileId, CancellationToken cancellationToken = default);
+    Task<HttpResponseMessage> GetRemoteMetadataPictureAsync(string baseUrl, string accessToken, Guid pictureId, MetadataPictureSize? size = null, CancellationToken cancellationToken = default);
     Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(string baseUrl, string accessToken, CreateFederationStreamSessionRequest request, CancellationToken cancellationToken = default);
     Task<HttpResponseMessage> ProxyStreamContentAsync(string baseUrl, string accessToken, Guid sessionId, string path, CancellationToken cancellationToken = default);
     Task NotifyMediaAsync(string baseUrl, string accessToken, Guid libraryId, Guid mediaId, PeerMediaNotificationType type, CancellationToken cancellationToken = default);

@@ -8,11 +8,17 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.ExternalServices.Federation;
 
-public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogger<PeerClient> logger) : IPeerClient
+public class PeerClient(
+    HttpClient httpClient,
+    IHttpClientFactory httpClientFactory,
+    PeerAccessTokenCache tokenCache,
+    IPeerUrlGuard peerUrlGuard,
+    ILogger<PeerClient> logger) : IPeerClient
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -49,25 +55,40 @@ public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogg
     public async Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default)
     {
         peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
-        var url = $"{baseUrl.TrimEnd('/')}/connect/token";
-        var content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["grant_type"] = "client_credentials",
-            ["client_id"] = clientId,
-            ["client_secret"] = clientSecret,
-            ["scope"] = "peer"
-        });
 
-        var response = await httpClient.PostAsync(url, content, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            logger.LogWarning("Token request to {Url} failed with {StatusCode}: {ErrorBody}", url, (int)response.StatusCode, errorBody);
-            return null;
-        }
+        if (tokenCache.TryGet(baseUrl, clientId, out var cached) && cached is not null)
+            return cached;
 
-        var result = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken);
-        return result?.AccessToken;
+        return await tokenCache.WithLockAsync(baseUrl, clientId, async ct =>
+        {
+            // Another waiter may have filled the cache while we queued.
+            if (tokenCache.TryGet(baseUrl, clientId, out var raced) && raced is not null)
+                return raced;
+
+            var url = $"{baseUrl.TrimEnd('/')}/connect/token";
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials",
+                ["client_id"] = clientId,
+                ["client_secret"] = clientSecret,
+                ["scope"] = "peer"
+            });
+
+            var response = await httpClient.PostAsync(url, content, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                logger.LogWarning("Token request to {Url} failed with {StatusCode}: {ErrorBody}", url, (int)response.StatusCode, errorBody);
+                return null;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<TokenResponse>(_jsonOptions, ct);
+            if (string.IsNullOrEmpty(result?.AccessToken))
+                return null;
+
+            tokenCache.Set(baseUrl, clientId, result.AccessToken, result.ExpiresIn ?? 3600);
+            return result.AccessToken;
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<PeerLibraryDto>> GetRemoteLibrariesAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default)
@@ -113,11 +134,14 @@ public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogg
 
     public async Task<HttpResponseMessage> ProxyStreamContentAsync(string baseUrl, string accessToken, Guid sessionId, string path, CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
         var url = $"{baseUrl.TrimEnd('/')}/api/federation/stream-sessions/{sessionId}/{path}";
         using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        return await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        var streamClient = httpClientFactory.CreateClient(
+            K7.Server.Infrastructure.ExternalServices.DependencyInjection.PeerStreamHttpClient);
+        return await streamClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     public async Task<PeerFullMediaMetadataDto?> GetRemoteMediaMetadataAsync(string baseUrl, string accessToken, Guid mediaId, CancellationToken cancellationToken = default)
@@ -154,6 +178,24 @@ public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogg
             return null;
 
         return await response.Content.ReadFromJsonAsync<IndexedFileDto>(_jsonOptions, cancellationToken);
+    }
+
+    public async Task<HttpResponseMessage> GetRemoteMetadataPictureAsync(
+        string baseUrl,
+        string accessToken,
+        Guid pictureId,
+        MetadataPictureSize? size = null,
+        CancellationToken cancellationToken = default)
+    {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
+        var url = $"{baseUrl.TrimEnd('/')}/api/metadata-pictures/{pictureId}";
+        if (size is not null)
+            url += $"?size={size}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     public async Task NotifyMediaAsync(string baseUrl, string accessToken, Guid libraryId, Guid mediaId, PeerMediaNotificationType type, CancellationToken cancellationToken = default)
@@ -319,5 +361,6 @@ public class PeerClient(HttpClient httpClient, IPeerUrlGuard peerUrlGuard, ILogg
     }
 
     private sealed record TokenResponse(
-        [property: JsonPropertyName("access_token")] string? AccessToken);
+        [property: JsonPropertyName("access_token")] string? AccessToken,
+        [property: JsonPropertyName("expires_in")] int? ExpiresIn);
 }
