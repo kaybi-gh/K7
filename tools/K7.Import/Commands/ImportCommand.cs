@@ -27,11 +27,18 @@ public sealed class ImportCommand
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify extended streaming history export folder (JSON files)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
+        var autoMapUsersOption = new Option<bool>("--auto-map-users") { Description = "Auto-map source users to K7 users with the same username (case-insensitive). Off by default; unmapped users get temp plex-/jellyfin-/... accounts" };
+        var includeSmartPlaylistsOption = new Option<bool>("--include-smart-playlists") { Description = "Import Plex smart/dynamic playlists as static snapshots (skipped by default; prefer recreating as K7 smart playlists)" };
         var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 - skip virtual media creation for unmatched items" };
         var fetchMetadataOption = new Option<bool>("--fetch-metadata") { Description = "Fetch rich metadata (posters, descriptions, etc.) for newly created media" };
         var playcountModeOption = new Option<string>("--playcount-mode") { Description = "PlayCount merge strategy: additive or max (default: additive)", DefaultValueFactory = _ => "additive" };
         var ratingModeOption = new Option<string>("--rating-mode") { Description = "Rating conflict strategy: keep or overwrite (default: keep)", DefaultValueFactory = _ => "keep" };
         var progressModeOption = new Option<string>("--progress-mode") { Description = "Progress conflict strategy: recent or overwrite (default: recent)", DefaultValueFactory = _ => "recent" };
+        var pathMapOption = new Option<string[]>("--path-map")
+        {
+            Description = "Map Plex file path prefix to K7 indexed path prefix (format: plexPrefix:k7Prefix or plexPrefix=>k7Prefix). Repeatable.",
+            AllowMultipleArgumentsPerToken = true
+        };
 
         var command = new RootCommand("K7 Import Tool - Import media data from Plex, Jellyfin, Tautulli, Tracearr, or Spotify into K7");
         command.Add(sourceOption);
@@ -42,11 +49,14 @@ public sealed class ImportCommand
         command.Add(includeOption);
         command.Add(spotifyDataDirOption);
         command.Add(userMappingOption);
+        command.Add(autoMapUsersOption);
+        command.Add(includeSmartPlaylistsOption);
         command.Add(onlyMatchExistingOption);
         command.Add(fetchMetadataOption);
         command.Add(playcountModeOption);
         command.Add(ratingModeOption);
         command.Add(progressModeOption);
+        command.Add(pathMapOption);
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
@@ -58,9 +68,12 @@ public sealed class ImportCommand
             var include = parseResult.GetValue(includeOption);
             var spotifyDataDir = parseResult.GetValue(spotifyDataDirOption);
             var userMapping = parseResult.GetValue(userMappingOption) ?? [];
+            var autoMapUsers = parseResult.GetValue(autoMapUsersOption);
+            var includeSmartPlaylists = parseResult.GetValue(includeSmartPlaylistsOption);
             var scope = ParseIncludeScope(include);
             var createMissing = !parseResult.GetValue(onlyMatchExistingOption);
             var fetchMetadata = parseResult.GetValue(fetchMetadataOption);
+            var pathMaps = parseResult.GetValue(pathMapOption) ?? [];
 
             var strategy = new MergeStrategy
             {
@@ -72,13 +85,13 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, createMissing, fetchMetadata, strategy, cancellationToken);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeSmartPlaylists, createMissing, fetchMetadata, strategy, pathMaps, cancellationToken);
         });
 
         return command;
     }
 
-    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool createMissing, bool fetchMetadata, MergeStrategy strategy, CancellationToken cancellationToken)
+    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool autoMapUsers, bool includeSmartPlaylists, bool createMissing, bool fetchMetadata, MergeStrategy strategy, string[] pathMapArgs, CancellationToken cancellationToken)
     {
 
         var sourceLower = source.ToLowerInvariant();
@@ -94,7 +107,7 @@ public sealed class ImportCommand
 
         ISourceClient sourceClient = sourceLower switch
         {
-            "plex" => new PlexClient(sourceUrl, sourceApiKey),
+            "plex" => new PlexClient(sourceUrl, sourceApiKey) { IncludeSmartPlaylists = includeSmartPlaylists },
             "jellyfin" => new JellyfinClient(sourceUrl, sourceApiKey),
             "tautulli" => new TautulliClient(sourceUrl, sourceApiKey),
             "tracearr" => new TracearrClient(sourceUrl, sourceApiKey),
@@ -122,7 +135,7 @@ public sealed class ImportCommand
         // 5. Resolve user mappings
         var parsedMappings = ParseUserMappings(userMappings);
         var userMap = await ResolveUserMappingsAsync(
-            sourceUsers, k7Users, parsedMappings, k7Client, source, dryRun, cancellationToken);
+            sourceUsers, k7Users, parsedMappings, k7Client, source, dryRun, autoMapUsers, cancellationToken);
 
         if (userMap.Count == 0)
         {
@@ -144,7 +157,8 @@ public sealed class ImportCommand
         }
 
         // 7. Collect items with interactions and match once
-        var matcher = new MediaMatcher(k7Client);
+        var pathMaps = MediaMatcher.ParsePathMaps(pathMapArgs);
+        var matcher = new MediaMatcher(k7Client, pathMaps);
         var deviceResolver = new ImportDeviceResolver(k7Client);
         var totalResult = new ImportResult();
 
@@ -182,6 +196,30 @@ public sealed class ImportCommand
                         }
                     }
 
+                    if (pathMaps.Count == 0)
+                    {
+                        var sampleItems = interactedItemsPerLibrary.Values
+                            .SelectMany(d => d.Values)
+                            .Where(i => i.FilePaths.Count > 0)
+                            .Take(500)
+                            .ToList();
+                        if (sampleItems.Count > 0)
+                        {
+                            ctx.Status("Auto-deducing path prefix maps...");
+                            var deduced = await matcher.AutoDeducePathMapsAsync(sampleItems, cancellationToken);
+                            if (deduced.Count > 0)
+                            {
+                                pathMaps = pathMaps.Concat(deduced).ToList();
+                                matcher = new MediaMatcher(k7Client, pathMaps);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var (plexPrefix, k7Prefix) in pathMaps)
+                            AnsiConsole.MarkupLine($"[dim]Path map: {Markup.Escape(plexPrefix)} => {Markup.Escape(k7Prefix)}[/]");
+                    }
+
                     foreach (var library in libraries)
                     {
                         if (!interactedItemsPerLibrary.TryGetValue(library.Id, out var interacted) || interacted.Count == 0)
@@ -206,6 +244,10 @@ public sealed class ImportCommand
 
                         libraryMatches[library.Id] = matches;
                     }
+
+                    totalResult.MatchedByExternalId = matcher.MatchedByExternalId;
+                    totalResult.MatchedByPath = matcher.MatchedByPath;
+                    totalResult.MatchedExistingByTitle = matcher.MatchedByTitleOrExisting;
                 });
         }
 
@@ -242,6 +284,7 @@ public sealed class ImportCommand
                                         IsCompleted = i.IsCompleted,
                                         LastInteractedAt = i.LastPlayedAt
                                     })
+                                    .DistinctBy(i => i.MediaId)
                                     .ToList();
 
                                 if (stateItems.Count > 0)
@@ -262,6 +305,7 @@ public sealed class ImportCommand
 
                             if (scope.Ratings)
                             {
+                                // DistinctBy MediaId: several Plex items can match the same K7 media.
                                 var ratingItems = items
                                     .Where(i => matches.ContainsKey(i.Id) && i.Rating is > 0)
                                     .Select(i => new BulkUpsertRatingsRequest.RatingItem
@@ -269,6 +313,7 @@ public sealed class ImportCommand
                                         MediaId = matches[i.Id],
                                         Value = i.Rating!.Value
                                     })
+                                    .DistinctBy(i => i.MediaId)
                                     .ToList();
 
                                 if (ratingItems.Count > 0)
@@ -284,6 +329,16 @@ public sealed class ImportCommand
                     {
                         ctx.Status("Fetching playlists...");
                         var playlists = await sourceClient.GetPlaylistsAsync(sourceUser.Id, cancellationToken);
+
+                        var smartCount = playlists.Count(p => p.IsSmart);
+                        if (!includeSmartPlaylists && smartCount > 0)
+                        {
+                            ctx.Status(
+                                $"Skipping {smartCount} smart/dynamic playlist(s) for {sourceUser.Name} " +
+                                "(recreate as K7 smart playlists, or use --include-smart-playlists)");
+                            playlists = playlists.Where(p => !p.IsSmart).ToList();
+                            totalResult.SkippedSmartPlaylists += smartCount;
+                        }
 
                         if (dryRun) return;
 
@@ -344,14 +399,26 @@ public sealed class ImportCommand
         var table = new Table();
         table.AddColumn("Metric");
         table.AddColumn("Count");
-        table.AddRow("Matched items", totalResult.MatchedItems.ToString());
+        table.AddRow("Matched items (total)", totalResult.MatchedItems.ToString());
+        table.AddRow("  via external ID", totalResult.MatchedByExternalId.ToString());
+        table.AddRow("  via file path", totalResult.MatchedByPath.ToString());
+        table.AddRow("  via title/identity (existing)", totalResult.MatchedExistingByTitle.ToString());
+        table.AddRow("Created virtual media", totalResult.CreatedMedias.ToString());
         table.AddRow("Unmatched items", totalResult.UnmatchedItems.ToString());
-        table.AddRow("Created media", totalResult.CreatedMedias.ToString());
         table.AddRow("Imported watch states", totalResult.ImportedWatchStates.ToString());
         table.AddRow("Imported playback sessions", totalResult.ImportedPlaybackSessions.ToString());
         table.AddRow("Imported ratings", totalResult.ImportedRatings.ToString());
         table.AddRow("Imported playlists", totalResult.ImportedPlaylists.ToString());
+        if (totalResult.SkippedSmartPlaylists > 0)
+            table.AddRow("Skipped smart playlists", totalResult.SkippedSmartPlaylists.ToString());
         AnsiConsole.Write(table);
+
+        if (totalResult.SkippedSmartPlaylists > 0)
+        {
+            AnsiConsole.MarkupLine(
+                "[dim]Plex smart/dynamic playlists were skipped. Recreate them as K7 smart playlists, " +
+                "or re-run with --include-smart-playlists for a static snapshot.[/]");
+        }
 
         var skipped = new List<string>();
         if (!scope.History) skipped.Add("history");
@@ -457,6 +524,7 @@ public sealed class ImportCommand
         K7ApiClient k7Client,
         string sourceType,
         bool dryRun,
+        bool autoMapUsers,
         CancellationToken cancellationToken)
     {
         var result = new Dictionary<SourceUser, Guid>();
@@ -481,6 +549,12 @@ public sealed class ImportCommand
 
         foreach (var sourceUser in sourceUsers)
         {
+            if (string.IsNullOrWhiteSpace(sourceUser.Name))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Skipping source user with empty name (id: {sourceUser.Id}).[/]");
+                continue;
+            }
+
             if (explicitMappings.TryGetValue(sourceUser.Name, out var k7Username))
             {
                 var k7User = k7Users.FirstOrDefault(u =>
@@ -498,6 +572,18 @@ public sealed class ImportCommand
             }
             else
             {
+                if (autoMapUsers)
+                {
+                    var exactMatch = k7Users.FirstOrDefault(u =>
+                        string.Equals(u.UserName, sourceUser.Name, StringComparison.OrdinalIgnoreCase));
+                    if (exactMatch is not null)
+                    {
+                        result[sourceUser] = exactMatch.Id;
+                        AnsiConsole.MarkupLine($"[green]Auto-mapped {sourceUser.Name} -> {exactMatch.UserName}[/]");
+                        continue;
+                    }
+                }
+
                 // Create temp user
                 var tempUsername = $"{sourceType}-{sourceUser.Name.ToLowerInvariant().Replace(' ', '-')}";
                 AnsiConsole.MarkupLine($"[dim]No mapping for {sourceUser.Name}, will use temp user '{tempUsername}'[/]");

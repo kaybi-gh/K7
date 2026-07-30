@@ -55,6 +55,58 @@ public sealed class K7ApiClient
         return (await response.Content.ReadFromJsonAsync<List<ExternalIdMatchResult>>(JsonOptions, cancellationToken)) ?? [];
     }
 
+    public async Task<List<PathMatchResult>> LookupMediasByPathsAsync(
+        IReadOnlyList<string> paths,
+        CancellationToken cancellationToken = default)
+    {
+        const int chunkSize = 500;
+        var all = new List<PathMatchResult>();
+        foreach (var chunk in paths.Chunk(chunkSize))
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/medias/by-paths",
+                new LookupMediasByPathsRequest { Paths = chunk.ToList() }, JsonOptions, cancellationToken);
+            await EnsureSuccessAsync(response, cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<List<PathMatchResult>>(JsonOptions, cancellationToken);
+            if (result is not null)
+                all.AddRange(result);
+        }
+
+        return all;
+    }
+
+    public async Task<Dictionary<string, List<string>>> LookupIndexedPathsByFileNamesAsync(
+        IReadOnlyList<string> fileNames,
+        CancellationToken cancellationToken = default)
+    {
+        const int chunkSize = 200;
+        var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var chunk in fileNames.Chunk(chunkSize))
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/medias/by-file-names",
+                new LookupIndexedPathsByFileNamesRequest { FileNames = chunk.ToList() }, JsonOptions, cancellationToken);
+            await EnsureSuccessAsync(response, cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<List<IndexedPathByFileNameResult>>(JsonOptions, cancellationToken);
+            if (result is null)
+                continue;
+
+            foreach (var item in result)
+            {
+                if (item.Paths.Count == 0)
+                    continue;
+
+                if (!map.TryGetValue(item.FileName, out var list))
+                {
+                    list = [];
+                    map[item.FileName] = list;
+                }
+
+                list.AddRange(item.Paths);
+            }
+        }
+
+        return map;
+    }
+
     public async Task<BulkCreateMediasResponse> BulkCreateMediasAsync(
         IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> items,
         bool fetchMetadata = false,
@@ -69,7 +121,7 @@ public sealed class K7ApiClient
             var response = await _httpClient.PostAsJsonAsync("api/medias/bulk-create",
                 new BulkCreateMediasRequest { Items = chunk, FetchMetadata = fetchMetadata, CreateMissing = createMissing },
                 JsonOptions, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessAsync(response, cancellationToken);
             var result = await response.Content.ReadFromJsonAsync<BulkCreateMediasResponse>(JsonOptions, cancellationToken);
             if (result?.Results is not null)
                 allResults.AddRange(result.Results);
@@ -206,6 +258,17 @@ public sealed class K7ApiClient
         var response = await _httpClient.PostAsJsonAsync($"api/playlists/{playlistId}/items",
             new AddPlaylistItemRequest(mediaId), cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        var detail = string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body;
+        throw new HttpRequestException(
+            $"K7 API {(int)response.StatusCode} {response.ReasonPhrase} for {response.RequestMessage?.RequestUri}: {detail}");
     }
 
     private sealed record AddPlaylistItemRequest(Guid MediaId);

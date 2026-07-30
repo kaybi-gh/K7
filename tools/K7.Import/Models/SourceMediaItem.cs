@@ -6,6 +6,7 @@ public sealed record SourceMediaItem
     public required string Title { get; init; }
     public int? Year { get; init; }
     public Dictionary<string, string> ProviderIds { get; init; } = [];
+    public List<string> FilePaths { get; init; } = [];
     public int PlayCount { get; init; }
     public double? LastPlaybackPosition { get; init; }
     public double? DurationSeconds { get; init; }

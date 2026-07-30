@@ -6,7 +6,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes | Per-user via accountID when available |
+| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via accountID when available. Smart/dynamic playlists are skipped unless `--include-smart-playlists` |
 | **Jellyfin** | No | Yes (like=10, dislike=1) | Yes | No per-play timestamps, use Tracearr for history |
 | **Tracearr** | Yes | No | No | Per-play history with timestamps and provider IDs |
 | **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata |
@@ -18,7 +18,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 |---|---|
 | **history** | Play count, last played position, completion status, last played date. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
-| **playlists** | Playlist titles and their items (matched by provider IDs). Re-import merges into existing playlists by title. |
+| **playlists** | Playlist titles and their items (matched by provider IDs). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
 
 You can select which data types to import with the `--include` option (see below).
 
@@ -27,10 +27,32 @@ You can select which data types to import with the `--include` option (see below
 - A K7 server instance running and accessible
 - An **administrator** account on K7
 - An API key or token from the source service
+- A **database backup** taken just before the import (see below)
+
+### Backup before import (strongly recommended)
+
+There is **no undo / rollback** for a finished or partial import. The tool writes watch states, ratings, playback sessions, playlists, temp users, and optionally virtual media directly into K7. Stopping the process mid-run only stops further writes; data already committed stays.
+
+Before a real import:
+
+1. Back up the database (and ideally `Paths:Config`) - see [Backup and troubleshooting](../../docs/admin/backup-and-troubleshooting.md)
+2. Optionally run with `--dry-run` to preview matching without writing
+3. Prefer `--only-match-existing` on a first pass if you want to avoid creating virtual media
+
+If an import goes wrong, restore that pre-import backup. Partial cleanup in the UI (delete temp `plex-*` users, playlists, virtual media) is possible but incomplete and error-prone compared to a restore.
 
 ### Getting Source API Keys
 
-- **Plex**: Settings > Account > Authorized Devices, or use your X-Plex-Token (found in the XML of any library request)
+- **Plex**: get an `X-Plex-Token` from the Plex Web App (not from Authorized Devices):
+  1. Sign in at https://app.plex.tv and open your server
+  2. Open any single media item (movie, episode, or track - not a collection)
+  3. Open the overflow menu (three dots) > **Get Info** > **View XML**
+  4. In the browser address bar, copy only the value after `X-Plex-Token=` (do not include the parameter name)
+  5. Pass that value to `--source-api-key`, and point `--source-url` at your PMS (e.g. `http://192.168.1.10:32400`)
+
+  Quick check: `http://YOUR_PMS:32400/?X-Plex-Token=YOURTOKEN` should return XML/JSON for the server. A 401 means the token is wrong or revoked.
+
+  See also: [Plex Support - Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 - **Jellyfin**: Dashboard > API Keys > Create
 - **Tautulli**: Settings > Web Interface > API Key
 - **Tracearr**: Settings > Generate API Key
@@ -79,11 +101,14 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
 | `--spotify-data-dir` | Path to Spotify extended streaming history export folder (for full listen history) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
+| `--auto-map-users` | Auto-map source users to K7 users with the same username (case-insensitive). Off by default |
+| `--include-smart-playlists` | Import Plex smart/dynamic playlists as **static** snapshots. Off by default |
 | `--only-match-existing` | Only import data for media that already exists in K7 - skip virtual media creation for unmatched items |
 | `--fetch-metadata` | Fetch rich metadata (posters, descriptions, etc.) for newly created media |
 | `--playcount-mode` | Play count merge strategy: `additive` (sum) or `max` (highest wins). Default: `additive` |
 | `--rating-mode` | Rating conflict strategy: `keep` (keep existing) or `overwrite`. Default: `keep` |
 | `--progress-mode` | Progress conflict strategy: `recent` (most recent wins) or `overwrite`. Default: `recent` |
+| `--path-map` | Map Plex path prefix to K7 indexed path prefix (`plex:k7` or `plex=>k7`). Repeatable. Auto-deduced when omitted |
 
 ### Examples
 
@@ -161,23 +186,72 @@ No API key or password is passed on the command line for K7.
 
 When no `--user-mapping` is provided, the tool creates **temporary users** on K7 (e.g. `plex-john`, `jellyfin-jane`). You can then merge these into real K7 users via the admin UI (Settings > Users > merge button).
 
+With `--auto-map-users`, source users whose name matches an existing K7 username (case-insensitive) are mapped automatically; remaining users still get temp accounts.
+
 With `--user-mapping`, data is imported directly into existing K7 users:
 
 ```bash
 --user-mapping "PlexUser:k7user" --user-mapping "AnotherUser:anotherk7user"
 ```
 
+## Plex Smart Playlists
+
+Plex smart (dynamic) playlists are **skipped by default**. Their filter rules do not map cleanly to K7, and importing the current item list would freeze a stale snapshot.
+
+**Recommended:** recreate them as K7 smart playlists (rules that refresh with the library) instead of importing a frozen list.
+
+If you still want a one-shot static copy of the current contents:
+
+```bash
+k7-import -s plex \
+  --source-url http://192.168.1.10:32400 \
+  --source-api-key "your-plex-token" \
+  --k7-url http://localhost:5000 \
+  --include-smart-playlists
+```
+
 ## Media Matching
 
-Items are matched between the source and K7 using external provider IDs (TMDb, IMDb, TVDb, MusicBrainz, ISRC). The matching priority is:
+Items are matched between the source and K7 in this order:
 
-1. TMDb
-2. IMDb
-3. TVDb
-4. MusicBrainz / ISRC
-5. Any other provider
+1. **External IDs** (TMDb, IMDb, TVDb, MusicBrainz recording / release-group, ISRC, then other providers)
+2. **File path** (Plex `Media.Part.file`, remapped with `--path-map` and/or auto-deduced mount prefixes)
+3. **Title / identity** via bulk create (links to an existing indexed media when identity matches, otherwise creates virtual media unless `--only-match-existing`)
 
-Unmatched items are listed in the summary at the end of the import.
+MusicBrainz notes: K7 albums use `musicbrainz` = release-group. Plex album/release MBIDs are imported as `musicbrainz-release` so they do not collide. Track MBIDs (recordings) keep the `musicbrainz` key and match K7 tracks after metadata refresh.
+
+### Path mapping
+
+When Plex and K7 see different mount points for the same files:
+
+```bash
+# Your typical Docker layout (Plex /data/media/... vs K7 /media/...)
+--path-map "/data/media/Videos=>/media" \
+--path-map "/data/media/Musiques=>/media/Musiques"
+
+# Or one map per library root
+--path-map "/data/media/Videos/Animes=>/media/Animes" \
+--path-map "/data/media/Videos/Series=>/media/Series" \
+--path-map "/data/media/Videos/Films=>/media/Films" \
+--path-map "/data/media/Musiques=>/media/Musiques"
+
+# Windows drive letters (prefer => to avoid ambiguity)
+--path-map "D:/PlexMedia=>E:/K7Media"
+```
+
+If `--path-map` is omitted, the tool samples Plex paths and matching K7 indexed filenames to deduce common prefix remaps automatically.
+
+### Import summary
+
+The summary separates:
+
+| Metric | Meaning |
+|---|---|
+| Matched via external ID / path / title | Existing K7 media found |
+| Created virtual media | New lightweight media created for unmatched source items |
+| Unmatched items | No match and virtual creation disabled or not applicable |
+
+Unmatched titles are listed at the end of the import.
 
 ## Merge Strategy
 
