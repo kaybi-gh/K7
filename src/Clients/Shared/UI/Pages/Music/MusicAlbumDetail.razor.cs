@@ -11,6 +11,7 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -40,6 +41,9 @@ public partial class MusicAlbumDetail : IDisposable
     [Inject]
     private K7HubClient K7HubClient { get; set; } = default!;
 
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -55,6 +59,7 @@ public partial class MusicAlbumDetail : IDisposable
     private Guid? _libraryGroupId;
     private MediaReviewsSection? _reviewsSection;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+    private string? _focusTrackFragment;
 
     protected override void OnInitialized()
     {
@@ -154,6 +159,12 @@ public partial class MusicAlbumDetail : IDisposable
             _totalDuration = _tracks.Sum(t => t.Duration);
 
             await ResolveLibraryGroupIdAsync();
+
+            if (!isBackgroundRefresh && !isPicturesRefresh)
+            {
+                var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+                _focusTrackFragment = !string.IsNullOrEmpty(uri.Fragment) ? uri.Fragment : null;
+            }
         }
         else
         {
@@ -167,6 +178,24 @@ public partial class MusicAlbumDetail : IDisposable
             Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
 
         StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusTrackFragment is null || _loading)
+            return;
+
+        var elementId = _focusTrackFragment.TrimStart('#');
+        _focusTrackFragment = null;
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+            await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
     }
 
     public void Dispose()

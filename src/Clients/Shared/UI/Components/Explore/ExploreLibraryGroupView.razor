@@ -61,9 +61,9 @@
             }
             break;
         case LibraryMediaType.Music:
+            <MusicRadioPresets Title="@L["Radios"]" LibraryGroupIds="_libraryGroupIds" />
             <HomeFeedCarouselRow Title="@L["RecentlyAddedMusic"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="CreatedOrder" />
             <MediasCarouselRow Title="@L["TrendingAlbums"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="TrendingOrder" />
-            <MusicRadioPresets Title="@L["Radios"]" LibraryGroupIds="_libraryGroupIds" />
             <ExploreTopTracksTable LibraryIds="_libraryIds" />
             break;
     }

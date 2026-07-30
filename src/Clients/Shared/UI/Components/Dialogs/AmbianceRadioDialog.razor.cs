@@ -93,9 +93,8 @@ public partial class AmbianceRadioDialog
 
     private string GetPresetLabel(MusicMoodPresetDto preset)
     {
-        var moodLabel = L[$"Mood_{preset.MoodKey}"];
-        return preset.CentroidIndex > 0
-            ? string.Format(L["MoodVariant"], moodLabel, preset.CentroidIndex + 1)
-            : moodLabel;
+        // One centroid is kept per mood; the AudioMuse index is still needed for playback
+        // but should not clutter the label (e.g. "Happy (3)").
+        return L[$"Mood_{preset.MoodKey}"];
     }
 }

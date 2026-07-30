@@ -1025,34 +1025,18 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         try
         {
-            var trackIds = await MusicIntelligence.GetSimilarTracksAsync(currentId);
-            if (trackIds.Count > 0)
+            var matches = await MusicIntelligence.GetSimilarTracksAsync(currentId);
+            if (matches.Count == 0)
             {
-                var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery
-                {
-                    MediaTypes = [MediaType.MusicTrack],
-                    Ids = trackIds.ToArray(),
-                    PageNumber = 1,
-                    PageSize = trackIds.Count
-                });
-
-                _similarTracks = result?.Items?.OfType<LiteMusicTrackDto>()
-                    .Where(t => t.IndexedFileId.HasValue)
-                    .Select(t => new AudioQueueItem
-                    {
-                        IndexedFileId = t.IndexedFileId!.Value,
-                        MediaId = t.Id,
-                        Title = t.Title ?? S["Untitled"],
-                        Artist = t.ArtistName,
-                        AlbumTitle = t.AlbumTitle,
-                        ArtistId = t.ArtistId,
-                        Genre = t.Genre,
-                        Duration = t.Duration
-                    })
-                    .ToList() ?? [];
+                // Keep the spinner visible while AudioMuse finishes warming / indexing.
+                await Task.Delay(1500);
+                matches = await MusicIntelligence.GetSimilarTracksAsync(currentId);
             }
 
-            _similarLoadedForTrackId = currentId;
+            _similarTracks = await HydrateMiTracksAsync(matches);
+
+            if (_similarTracks.Count > 0)
+                _similarLoadedForTrackId = currentId;
         }
         catch
         {
@@ -1076,40 +1060,22 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         try
         {
             var recentIds = Audio.Queue
-                .Take(Audio.CurrentIndex)
+                .Take(Audio.CurrentIndex + 1)
                 .Select(t => t.MediaId)
-                .Append(currentId)
                 .Distinct()
                 .ToList();
 
-            var trackIds = await MusicIntelligence.GetSuggestionsAsync(recentIds);
-            if (trackIds.Count > 0)
+            var matches = await MusicIntelligence.GetSuggestionsAsync(recentIds);
+            if (matches.Count == 0)
             {
-                var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery
-                {
-                    MediaTypes = [MediaType.MusicTrack],
-                    Ids = trackIds.ToArray(),
-                    PageNumber = 1,
-                    PageSize = trackIds.Count
-                });
-
-                _suggestionTracks = result?.Items?.OfType<LiteMusicTrackDto>()
-                    .Where(t => t.IndexedFileId.HasValue)
-                    .Select(t => new AudioQueueItem
-                    {
-                        IndexedFileId = t.IndexedFileId!.Value,
-                        MediaId = t.Id,
-                        Title = t.Title ?? S["Untitled"],
-                        Artist = t.ArtistName,
-                        AlbumTitle = t.AlbumTitle,
-                        ArtistId = t.ArtistId,
-                        Genre = t.Genre,
-                        Duration = t.Duration
-                    })
-                    .ToList() ?? [];
+                await Task.Delay(1500);
+                matches = await MusicIntelligence.GetSuggestionsAsync(recentIds);
             }
 
-            _suggestionsLoadedForTrackId = currentId;
+            _suggestionTracks = await HydrateMiTracksAsync(matches);
+
+            if (_suggestionTracks.Count > 0)
+                _suggestionsLoadedForTrackId = currentId;
         }
         catch
         {
@@ -1117,6 +1083,25 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         }
 
         _suggestionsLoading = false;
+    }
+
+    private async Task<List<AudioQueueItem>> HydrateMiTracksAsync(IReadOnlyList<MusicIntelligenceTrackMatchDto> matches)
+    {
+        if (matches.Count == 0)
+            return [];
+
+        var trackIds = matches.Select(m => m.ItemId).ToList();
+        var tracks = await IntelligentSearchHelper.LoadScopedTracksAsync(
+            Server,
+            trackIds,
+            libraryIds: null,
+            libraryGroupIds: null);
+
+        var matchMap = matches
+            .GroupBy(m => m.ItemId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return MusicTrackQueueMapper.ToQueueItems(tracks, ApiClient, matchMap, S["Untitled"]);
     }
 
     private async Task PlaySuggestionFromIndex(int index)

@@ -74,17 +74,25 @@
                                 <DownloadAllButton Items="GetDownloadRequests()" Label="@_artist.Title" />
                             }
                         }
-                        <AuthorizeView Roles="Administrator">
+                        @if (_musicIntelligenceAvailable || _isAdmin)
+                        {
                             <K7Menu Title="@L["MoreActions"]">
                                 <ActivatorContent>
                                     <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
                                 </ActivatorContent>
                                 <ChildContent>
-                                    <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                    <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                    @if (_musicIntelligenceAvailable)
+                                    {
+                                        <K7MenuItem Icon="users-three" OnClick="NavigateToSimilarArtistsAsync">@L["ViewSimilarArtists"]</K7MenuItem>
+                                    }
+                                    @if (_isAdmin)
+                                    {
+                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                    }
                                 </ChildContent>
                             </K7Menu>
-                        </AuthorizeView>
+                        }
                     </div>
                 </div>
             </div>

@@ -27,6 +27,8 @@
   <data name="PresetSonicDesc" xml:space="preserve"><value>Tracks that sound like what you listen to</value></data>
   <data name="PresetAmbiance" xml:space="preserve"><value>Ambiance</value></data>
   <data name="PresetAmbianceDesc" xml:space="preserve"><value>Pick a mood from those available on the server</value></data>
+  <data name="PresetGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="PresetGenreDesc" xml:space="preserve"><value>Play random tracks from a genre in your library</value></data>
   <data name="PresetSonicPath" xml:space="preserve"><value>Sonic path</value></data>
   <data name="PresetSonicPathDesc" xml:space="preserve"><value>A gradual transition between two tracks</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>

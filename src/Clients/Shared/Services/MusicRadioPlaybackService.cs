@@ -157,6 +157,7 @@ public sealed class MusicRadioPlaybackService : IMusicRadioPlaybackService, IDis
             seedArtistId: request.SeedArtistId,
             moodPreset: request.MoodPreset,
             moodCentroidIndex: request.MoodCentroidIndex,
+            genre: request.Genre,
             limit: limit,
             excludeIds: excludeIds.Length > 0 ? excludeIds : null,
             cancellationToken: cancellationToken);

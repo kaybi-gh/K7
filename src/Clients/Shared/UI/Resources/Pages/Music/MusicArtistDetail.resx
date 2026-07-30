@@ -33,6 +33,7 @@
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraîchissement des métadonnées lancé en tâche de fond.</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
+  <data name="ViewSimilarArtists" xml:space="preserve"><value>Voir les artistes similaires</value></data>
   <data name="TopTracks" xml:space="preserve"><value>Top morceaux</value></data>
 </root>
 

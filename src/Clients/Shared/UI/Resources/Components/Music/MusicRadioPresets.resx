@@ -27,6 +27,8 @@
   <data name="PresetSonicDesc" xml:space="preserve"><value>Morceaux au son proche de ce que vous &#233;coutez</value></data>
   <data name="PresetAmbiance" xml:space="preserve"><value>Ambiance</value></data>
   <data name="PresetAmbianceDesc" xml:space="preserve"><value>Choisissez une ambiance parmi celles disponibles</value></data>
+  <data name="PresetGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="PresetGenreDesc" xml:space="preserve"><value>Morceaux aleatoires d'un genre de votre bibliotheque</value></data>
   <data name="PresetSonicPath" xml:space="preserve"><value>Chemin sonore</value></data>
   <data name="PresetSonicPathDesc" xml:space="preserve"><value>Encha&#238;nement progressif entre deux morceaux</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>

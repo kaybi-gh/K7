@@ -38,10 +38,12 @@ public partial class IntelligentSearchDialog
 
     private async Task SubmitAsync()
     {
-        if (string.IsNullOrWhiteSpace(_query))
+        if (string.IsNullOrWhiteSpace(_query) || _loading)
             return;
 
         _loading = true;
+        await InvokeAsync(StateHasChanged);
+
         try
         {
             var request = new IntelligentSearchRequest(_kind, _query.Trim());
@@ -61,7 +63,7 @@ public partial class IntelligentSearchDialog
                 return;
             }
 
-            var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+            var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, ApiClient, S["Untitled"]);
             await Audio.PlayRadioAsync(queueItems, GetRadioTitle(request));
             Snackbar.Add(string.Format(L["Playing"], queueItems.Count), K7Severity.Info);
             Dialog.Close(K7DialogResult.Ok(true));
@@ -73,6 +75,7 @@ public partial class IntelligentSearchDialog
         finally
         {
             _loading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

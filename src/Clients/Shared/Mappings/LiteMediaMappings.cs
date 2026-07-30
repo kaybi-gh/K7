@@ -108,6 +108,10 @@ public static class LiteMediaMappings
         if (item is LiteMusicTrackDto { ArtistName: { Length: > 0 } trackArtistName })
             return trackArtistName;
 
+        if (item is LiteMusicArtistDto artist
+            && MusicIntelligenceScoreFormatter.Format(artist.IntelligenceScore, artist.IntelligenceScoreMetric) is { } scoreLabel)
+            return scoreLabel;
+
         return item.ReleaseDate?.Year.ToString();
     }
 

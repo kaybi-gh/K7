@@ -516,6 +516,15 @@
     font-variant-numeric: tabular-nums;
 }
 
+.queue-item-score {
+    font-size: 0.6875rem;
+    opacity: 0.65;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    min-width: 2.25rem;
+    text-align: end;
+}
+
 ::deep .queue-item-remove {
     opacity: 0;
     flex-shrink: 0;

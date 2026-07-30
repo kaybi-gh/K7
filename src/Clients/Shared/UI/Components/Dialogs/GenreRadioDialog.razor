@@ -1,0 +1,35 @@
+@using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<GenreRadioDialog> L
+@inject IMediaService MediaService
+@inject IMusicRadioPlaybackService MusicRadio
+@inject IK7Snackbar Snackbar
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-4 pa-4">
+        <K7SearchSelect Value="@(_selectedGenre ?? "")"
+                        ValueChanged="OnGenreChanged"
+                        CommitOnSelectOnly="true"
+                        MinSearchLength="0"
+                        OnDebouncedCommit="OnGenrePickedAsync"
+                        Variant="outlined"
+                        Placeholder="@L["SearchPlaceholder"]"
+                        SearchAsync="SearchGenresAsync" />
+
+        <div class="d-flex gap-2 justify-end">
+            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="PlayAsync" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_selectedGenre) || _playing">
+                @if (_playing)
+                {
+                    <K7Spinner Size="16" />
+                }
+                else
+                {
+                    @L["Play"]
+                }
+            </K7Button>
+        </div>
+    </div>
+</div>

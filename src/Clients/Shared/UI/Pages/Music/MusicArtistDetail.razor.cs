@@ -4,6 +4,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -36,6 +37,12 @@ public partial class MusicArtistDetail : IDisposable
     private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     [Inject]
+    private ILibraryService LibraryService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
     private K7HubClient K7HubClient { get; set; } = default!;
 
     private MusicArtistDto? _artist;
@@ -48,6 +55,8 @@ public partial class MusicArtistDetail : IDisposable
     private List<LitePersonRoleDto> _members = [];
     private bool _loading = true;
     private bool _canRate;
+    private bool _isAdmin;
+    private bool _musicIntelligenceAvailable;
     private int? _artistUserRating;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
 
@@ -75,7 +84,11 @@ public partial class MusicArtistDetail : IDisposable
             _loading = true;
 
         if (!isBackgroundRefresh && !isPicturesRefresh)
+        {
             _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+            var role = await FeatureAccess.GetRoleAsync();
+            _isAdmin = role == Roles.Administrator;
+        }
 
         var media = await k7ServerService.GetMediaAsync(
             Guid.Parse(Id),
@@ -190,10 +203,12 @@ public partial class MusicArtistDetail : IDisposable
     private async Task LoadSimilarArtistsAsync(Guid artistId)
     {
         _similarArtists = [];
+        _musicIntelligenceAvailable = false;
         try
         {
             var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
-            if (!status.IsAvailable)
+            _musicIntelligenceAvailable = status.IsAvailable;
+            if (!_musicIntelligenceAvailable)
                 return;
 
             var similar = await k7ServerService.GetSimilarMusicArtistsAsync(artistId);
@@ -207,12 +222,39 @@ public partial class MusicArtistDetail : IDisposable
         }
     }
 
+    private async Task NavigateToSimilarArtistsAsync()
+    {
+        if (_artist is null || !_musicIntelligenceAvailable)
+            return;
+
+        var groups = await LibraryService.GetLibraryGroupsAsync();
+        var groupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
+            groups,
+            libraryId: null,
+            LibraryMediaType.Music);
+        if (groupId is null)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(
+                groupId.Value,
+                new LibraryGroupBrowseUrlState(
+                    MediaType: MediaType.MusicArtist,
+                    IntelligentSearch: new IntelligentSearchRequest(
+                        IntelligentSearchKind.SimilarArtists,
+                        _artist.Title ?? string.Empty,
+                        _artist.Id))));
+    }
+
     private MediaCardViewModel MapArtistCard(LiteMusicArtistDto artist) => new()
     {
         Id = artist.Id.ToString(),
         Kind = MediaCardKind.Cover,
         MediaType = MediaType.MusicArtist,
         Title = artist.Title,
+        AdditionalInformations = MusicIntelligenceScoreFormatter.Format(
+            artist.IntelligenceScore,
+            artist.IntelligenceScoreMetric),
         PictureUrl = apiClient.GetAbsoluteUri(
             (artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                 ?? artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover))?

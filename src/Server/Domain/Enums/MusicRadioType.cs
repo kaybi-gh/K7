@@ -9,5 +9,6 @@ public enum MusicRadioType
     DiscoveryAi,
     TimeCapsule,
     Tempo,
-    RecentlyAdded
+    RecentlyAdded,
+    Genre
 }

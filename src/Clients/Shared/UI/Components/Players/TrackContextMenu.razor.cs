@@ -121,9 +121,6 @@ public partial class TrackContextMenu : IDisposable
 
             if (!string.IsNullOrEmpty(Track.Genre))
                 AddMenuItem(builder, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
-
-            if (_musicIntelligenceAvailable)
-                AddMenuItem(builder, ref seq, "magic-wand", L["PlaySimilar"], PlaySimilar);
         }
 
         if (_canEditMetadata)
@@ -247,7 +244,10 @@ public partial class TrackContextMenu : IDisposable
         });
 
         if (!started)
+        {
+            Snackbar.Add(L["RadioEmpty"], K7Severity.Warning);
             return;
+        }
 
         Snackbar.Add(radioTitle, K7Severity.Info);
     }
@@ -315,42 +315,6 @@ public partial class TrackContextMenu : IDisposable
             IsCacheItem = false
         });
         Snackbar.Add(string.Format(L["DownloadQueued"], Track.Title), K7Severity.Info);
-    }
-
-    private async Task PlaySimilar()
-    {
-        try
-        {
-            var trackIds = await MusicIntelligence.GetSimilarTracksAsync(Track.MediaId);
-            if (trackIds.Count == 0)
-            {
-                Snackbar.Add(L["NoSimilarTracks"], K7Severity.Warning);
-                return;
-            }
-
-            var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
-            {
-                MediaTypes = [MediaType.MusicTrack],
-                Ids = trackIds.ToArray(),
-                PageNumber = 1,
-                PageSize = trackIds.Count
-            });
-
-            var tracks = result?.Items?.OfType<LiteMusicTrackDto>()
-                .Where(t => t.IndexedFileId.HasValue)
-                .Select(ToQueueItem)
-                .ToList();
-
-            if (tracks is { Count: > 0 })
-            {
-                await Audio.PlayTracksAsync(tracks, 0);
-                Snackbar.Add(string.Format(L["PlayingSimilar"], Track.Title), K7Severity.Info);
-            }
-        }
-        catch
-        {
-            Snackbar.Add(L["SimilarTracksError"], K7Severity.Error);
-        }
     }
 
     public void Dispose()

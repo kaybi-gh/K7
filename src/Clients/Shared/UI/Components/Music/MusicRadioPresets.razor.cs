@@ -44,6 +44,7 @@ public partial class MusicRadioPresets : IAsyncDisposable
             new(L["PresetDiscovery"], L["PresetDiscoveryDesc"], Phosphor.Compass, "--radio-tone: var(--color-info);", MusicRadioType.Discovery),
             new(L["PresetTimeCapsule"], L["PresetTimeCapsuleDesc"], Phosphor.ClockCounterClockwise, "--radio-tone: #8B7AA8;", MusicRadioType.TimeCapsule),
             new(L["PresetRecentlyAdded"], L["PresetRecentlyAddedDesc"], Phosphor.Sparkle, "--radio-tone: var(--color-success);", MusicRadioType.RecentlyAdded),
+            new(L["PresetGenre"], L["PresetGenreDesc"], Phosphor.MusicNotes, "--radio-tone: #C4A35A;", Action: RadioPresetAction.Genre),
         };
 
         if (musicIntelligenceAvailable)
@@ -76,6 +77,9 @@ public partial class MusicRadioPresets : IAsyncDisposable
             case RadioPresetAction.Ambiance:
                 await OpenAmbianceDialogAsync();
                 return;
+            case RadioPresetAction.Genre:
+                await OpenGenreDialogAsync();
+                return;
             case RadioPresetAction.SonicPath:
                 await OpenSonicPathDialogAsync();
                 return;
@@ -97,6 +101,17 @@ public partial class MusicRadioPresets : IAsyncDisposable
         };
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AmbianceRadioDialog>(L["PresetAmbiance"], parameters, options);
+    }
+
+    private async Task OpenGenreDialogAsync()
+    {
+        var parameters = new K7DialogParameters<GenreRadioDialog>
+        {
+            { x => x.LibraryIds, LibraryIds },
+            { x => x.LibraryGroupIds, LibraryGroupIds }
+        };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<GenreRadioDialog>(L["PresetGenre"], parameters, options);
     }
 
     private async Task OpenSonicPathDialogAsync()
@@ -139,6 +154,7 @@ public partial class MusicRadioPresets : IAsyncDisposable
     {
         Play,
         Ambiance,
+        Genre,
         SonicPath,
         IntelligentSearch
     }

@@ -9,6 +9,7 @@
 @inject NavigationManager Navigation
 @inject IServerPreferencesService ServerPreferences
 @inject IMusicIntelligenceClientService MusicIntelligence
+@inject IK7ServerService ApiClient
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
@@ -305,6 +306,13 @@
                                             <span class="queue-item-title">@track.Title</span>
                                             <span class="queue-item-artist">@track.Artist</span>
                                         </div>
+                                        @{
+                                            var similarScore = MusicIntelligenceScoreFormatter.Format(track.IntelligenceScore, track.IntelligenceScoreMetric);
+                                        }
+                                        @if (similarScore is not null)
+                                        {
+                                            <span class="queue-item-score" title="@track.IntelligenceScoreMetric">@similarScore</span>
+                                        }
                                         <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
                                     </div>
                                 }
@@ -347,6 +355,13 @@
                                             <span class="queue-item-title">@track.Title</span>
                                             <span class="queue-item-artist">@track.Artist</span>
                                         </div>
+                                        @{
+                                            var suggestionScore = MusicIntelligenceScoreFormatter.Format(track.IntelligenceScore, track.IntelligenceScoreMetric);
+                                        }
+                                        @if (suggestionScore is not null)
+                                        {
+                                            <span class="queue-item-score" title="@track.IntelligenceScoreMetric">@suggestionScore</span>
+                                        }
                                         <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
                                     </div>
                                 }

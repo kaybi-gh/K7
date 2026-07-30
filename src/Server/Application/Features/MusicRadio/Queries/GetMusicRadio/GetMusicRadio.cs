@@ -19,6 +19,7 @@ public record GetMusicRadioQuery : IRequest<List<BaseMedia>>
     public Guid? SeedArtistId { get; init; }
     public string? MoodPreset { get; init; }
     public int? MoodCentroidIndex { get; init; }
+    public string? Genre { get; init; }
     public int Limit { get; init; } = 50;
     public Guid[]? ExcludeIds { get; init; }
 }
@@ -46,6 +47,7 @@ public class GetMusicRadioQueryHandler(
             MusicRadioType.TimeCapsule => await GetTimeCapsule(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
             MusicRadioType.Tempo => await GetTempoMix(request, userId, libraryIds, cancellationToken),
             MusicRadioType.RecentlyAdded => await GetRecentlyAdded(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
+            MusicRadioType.Genre => await GetGenreMix(request, userId, libraryIds, cancellationToken),
             _ => []
         };
     }
@@ -64,7 +66,8 @@ public class GetMusicRadioQueryHandler(
             return [];
 
         var fetchLimit = request.Limit + (request.ExcludeIds?.Length ?? 0);
-        var trackIds = await musicIntelligenceService.GetSimilarTracksAsync(seedId.Value, fetchLimit, ct);
+        var matches = await musicIntelligenceService.GetSimilarTracksAsync(seedId.Value, fetchLimit, cancellationToken: ct);
+        var trackIds = matches.Select(m => m.ItemId).ToList();
         var filteredIds = FilterExcluded(trackIds, request.ExcludeIds, request.Limit);
         return await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
     }
@@ -116,6 +119,33 @@ public class GetMusicRadioQueryHandler(
             .ToList();
 
         return await LoadTracksByIdsAsync(selectedIds, userId, libraryIds, ct);
+    }
+
+    private async Task<List<BaseMedia>> GetGenreMix(
+        GetMusicRadioQuery request,
+        Guid? userId,
+        Guid[]? libraryIds,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Genre))
+            return [];
+
+        var genre = request.Genre.Trim();
+        var query = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
+            .Where(t => t.MetadataTags.Any(mt =>
+                    mt.MetadataTag.Kind == MetadataTagKind.Genre
+                    && mt.MetadataTag.DisplayName == genre)
+                || t.Album.MetadataTags.Any(mt =>
+                    mt.MetadataTag.Kind == MetadataTagKind.Genre
+                    && mt.MetadataTag.DisplayName == genre));
+
+        var ids = await query
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .Take(request.Limit)
+            .ToListAsync(ct);
+
+        return await LoadTracksByIdsAsync(ids, userId, libraryIds, ct);
     }
 
     private async Task<List<BaseMedia>> GetMoodMix(

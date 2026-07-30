@@ -41,7 +41,9 @@ public class GetSimilarMusicArtistsQueryHandler(
         if (artist is null)
             return [];
 
-        var candidateCount = Math.Clamp(request.Count * 3, request.Count, 36);
+        // Over-fetch a bit so name/id resolution can drop unmatched rows.
+        // Clamp min must stay <= max (Count can be > 36 from browse filters).
+        var candidateCount = Math.Clamp(request.Count * 3, request.Count, Math.Max(request.Count, 72));
         var matches = await musicIntelligenceService.GetSimilarArtistsAsync(
             request.ArtistId,
             artist.Title,
@@ -87,7 +89,12 @@ public class GetSimilarMusicArtistsQueryHandler(
             if (resolved is null || !seen.Add(resolved.Id))
                 continue;
 
-            result.Add((LiteMusicArtistDto)resolved.ToLiteMediaDto());
+            var lite = (LiteMusicArtistDto)resolved.ToLiteMediaDto();
+            result.Add(lite with
+            {
+                IntelligenceScore = match.Divergence,
+                IntelligenceScoreMetric = match.Divergence is null ? null : "divergence"
+            });
             if (result.Count >= request.Count)
                 break;
         }

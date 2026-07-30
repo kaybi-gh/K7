@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -45,17 +46,18 @@ public partial class SonicPathDialog
 
             var ordered = trackIds
                 .Where(trackMap.ContainsKey)
-                .Select(id => ToQueueItem(trackMap[id]))
+                .Select(id => trackMap[id])
                 .ToList();
 
-            if (ordered.Count == 0)
+            var queueItems = MusicTrackQueueMapper.ToQueueItems(ordered, ApiClient, S["Untitled"]);
+            if (queueItems.Count == 0)
             {
                 Snackbar.Add(L["NoPath"], K7Severity.Warning);
                 return;
             }
 
-            await Audio.PlayTracksAsync(ordered, 0);
-            Snackbar.Add(string.Format(L["PlayingPath"], ordered.Count), K7Severity.Info);
+            await Audio.PlayTracksAsync(queueItems, 0);
+            Snackbar.Add(string.Format(L["PlayingPath"], queueItems.Count), K7Severity.Info);
             Dialog.Close(K7DialogResult.Ok(true));
         }
         catch
@@ -67,16 +69,4 @@ public partial class SonicPathDialog
             _loading = false;
         }
     }
-
-    private AudioQueueItem ToQueueItem(LiteMusicTrackDto t) => new()
-    {
-        IndexedFileId = t.IndexedFileId!.Value,
-        MediaId = t.Id,
-        Title = t.Title ?? S["Untitled"],
-        Artist = t.ArtistName,
-        ArtistId = t.ArtistId,
-        AlbumTitle = t.AlbumTitle,
-        Genre = t.Genre,
-        Duration = t.Duration
-    };
 }

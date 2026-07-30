@@ -10,4 +10,5 @@ public sealed record MusicRadioRequest
     public Guid? SeedArtistId { get; init; }
     public string? MoodPreset { get; init; }
     public int? MoodCentroidIndex { get; init; }
+    public string? Genre { get; init; }
 }

@@ -23,6 +23,7 @@ public class GetMusicRadio : IEndpoint
             [FromQuery] Guid? seedArtistId,
             [FromQuery] string? moodPreset,
             [FromQuery] int? moodCentroidIndex,
+            [FromQuery] string? genre,
             [FromQuery] int limit = 50,
             [FromQuery] Guid[]? excludeIds = null,
             CancellationToken cancellationToken = default) =>
@@ -36,6 +37,7 @@ public class GetMusicRadio : IEndpoint
                 SeedArtistId = seedArtistId,
                 MoodPreset = moodPreset,
                 MoodCentroidIndex = moodCentroidIndex,
+                Genre = genre,
                 Limit = limit,
                 ExcludeIds = excludeIds
             }, cancellationToken);

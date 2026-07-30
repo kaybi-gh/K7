@@ -1,0 +1,6 @@
+.intelligent-search-dialog ::deep .k7-field-helper,
+.intelligent-search-dialog ::deep .mud-input-helper-text {
+    font-size: 0.6875rem !important;
+    line-height: 1.3;
+    opacity: 0.85;
+}

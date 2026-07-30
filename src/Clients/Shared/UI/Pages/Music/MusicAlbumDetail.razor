@@ -165,7 +165,8 @@
                 <K7Table Items="discGroup.Value"
                           TItem="TrackViewModel"
                           OnRowClick="@(args => OnTrackClick(args))"
-                          RowClass="cursor-pointer">
+                          RowClass="cursor-pointer"
+                          RowId="@(t => $"track-{t.Id}")">
                     <HeaderContent>
                         <th class="col-track-number">#</th>
                         <th>@S["Title"]</th>

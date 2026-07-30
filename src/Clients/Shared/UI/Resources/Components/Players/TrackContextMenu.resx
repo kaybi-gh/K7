@@ -31,6 +31,7 @@
   <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioSonicSnackbar" xml:space="preserve"><value>Similaire à {0}</value></data>
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
+  <data name="RadioEmpty" xml:space="preserve"><value>Aucun titre jouable trouvé pour cette radio</value></data>
   <data name="DownloadOffline" xml:space="preserve"><value>Télécharger hors-ligne</value></data>
   <data name="DownloadQueued" xml:space="preserve"><value>« {0} » en file d'attente</value></data>
   <data name="Menu" xml:space="preserve"><value>Actions sur la piste</value></data>
