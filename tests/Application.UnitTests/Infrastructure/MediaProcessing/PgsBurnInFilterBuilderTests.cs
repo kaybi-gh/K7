@@ -19,7 +19,15 @@ public class PgsBurnInFilterBuilderTests
     }
 
     [Test]
-    public void ResolveDimensions_ShouldUseVideoSize_WhenSubtitleUnspecified()
+    public void ResolveDimensions_ShouldAssumeBluRayCanvas_WhenSubtitleUnspecifiedOnScopeVideo()
+    {
+        var dims = PgsBurnInFilterBuilder.ResolveDimensions(1920, 818, 0, 0);
+
+        dims.Should().Be((1920, 818, 1920, 1080));
+    }
+
+    [Test]
+    public void ResolveDimensions_ShouldKeepVideoSize_WhenSubtitleUnspecifiedOn16x9()
     {
         var dims = PgsBurnInFilterBuilder.ResolveDimensions(1920, 1080, 0, 0);
 
@@ -48,7 +56,16 @@ public class PgsBurnInFilterBuilderTests
     }
 
     [Test]
-    public void BuildFilterComplex_ShouldUseVideoCanvas_WhenSubtitleSizeIsZero()
+    public void BuildFilterComplex_ShouldPadScopeVideo_WhenSubtitleSizeIsZero()
+    {
+        var filter = PgsBurnInFilterBuilder.BuildFilterComplex(2, 1920, 818, 0, 0);
+
+        filter.Should().Contain("pad=1920:1080");
+        filter.Should().NotContain("scale2ref");
+    }
+
+    [Test]
+    public void BuildFilterComplex_ShouldUseScale2ref_WhenSubtitleSizeIsZeroOn16x9()
     {
         var filter = PgsBurnInFilterBuilder.BuildFilterComplex(2, 1920, 1080, 0, 0);
 

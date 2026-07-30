@@ -22,11 +22,24 @@ internal static class PgsBurnInFilterBuilder
         int subtitleWidth,
         int subtitleHeight)
     {
-        // Forced PGS often reports 0x0; use the video frame as the overlay canvas.
+        // PGS often reports 0x0. Blu-ray compositions are authored on a 16:9 canvas
+        // (typically 1920x1080). Scope/cropped video (e.g. 1920x818) must be padded into
+        // that canvas - otherwise bottom-aligned PGS land in the player's letterbox.
         if (subtitleWidth <= 0 || subtitleHeight <= 0)
         {
-            subtitleWidth = videoWidth;
-            subtitleHeight = videoHeight;
+            if (videoWidth > 0)
+            {
+                subtitleWidth = videoWidth;
+                var canvasHeight = (int)Math.Round(videoWidth * 9.0 / 16.0);
+                if ((canvasHeight & 1) != 0)
+                    canvasHeight++;
+                subtitleHeight = Math.Max(videoHeight, canvasHeight);
+            }
+            else
+            {
+                subtitleWidth = videoWidth;
+                subtitleHeight = videoHeight;
+            }
         }
 
         return (videoWidth, videoHeight, subtitleWidth, subtitleHeight);
