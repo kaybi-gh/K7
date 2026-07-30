@@ -356,8 +356,9 @@ categories. Notable Federation / Health events for ops monitoring:
 
 Optional self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI):
 
-- Admin -> Music intelligence (`/admin/music-intelligence`)
-- Settings: enabled, base URL, API key; test connection (stored as `AudioMuseAi`)
+1. In K7, create an API key with **Read** scope (Admin -> API keys). AudioMuse uses it as its mediaserver credential to scan your music library and download tracks for analysis. Write/Admin are not required for the K7 Music intelligence flow (K7 asks AudioMuse for track ids and creates playlists itself).
+2. In AudioMuse, set the media server type to **K7**, point it at your K7 base URL, and paste that Read key. Run analysis so AudioMuse builds embeddings for your library.
+3. In K7: Admin -> Music intelligence (`/admin/music-intelligence`) - enable, set AudioMuse base URL, optionally an AudioMuse API token if AudioMuse auth is enabled; test connection (stored as `AudioMuseAi`).
 
 When disabled, AI discovery stays hidden; basic radios still work. User features: [Using K7 - Music discovery](../user/guide.md#music-discovery-audiomuse).
 

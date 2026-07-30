@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="branding/logo.svg" alt="K7" width="160">
 </p>
 
@@ -55,7 +55,7 @@ Open `http://localhost:8080` and complete first-run setup. Install details: [doc
 
 **Your space**
 - **Playlists, collections, history, stats, reviews** - one place for "your" corner of the shelf, not buried in admin screens
-- **Smart playlists** - rule-based lists (genre, year, play count, artist, and more) that re-evaluate as your library grows, like a mixtape that updates itself
+- **Dynamic playlists** - rule-based lists (genre, year, play count, artist, and more) that re-evaluate as your library grows, like a mixtape that updates itself
 - **Offline downloads** - take media on native clients and sync progress when you are back online
 
 **Music discovery (AudioMuse AI)**
@@ -65,7 +65,7 @@ Open `http://localhost:8080` and complete first-run setup. Install details: [doc
 **Social**
 - **Sync Play** - watch or listen together remotely, as if you were on the same couch
 - **Shared profiles** - follow a series as a couple (or any group) with merged stats and history on each account
-- **Visibility controls** - separate what you **share** and what you **accept to see**, per content type (playback history, reviews, collections, playlists, smart playlists) from and to whoever you want: nobody, your local server, federated servers, specific people
+- **Visibility controls** - separate what you **share** and what you **accept to see**, per content type (playback history, reviews, collections, playlists, dynamic playlists) from and to whoever you want: nobody, your local server, federated servers, specific people
 
 **Administration**
 - **Dashboard, diagnostics, background tasks** - see what the server is doing without SSH

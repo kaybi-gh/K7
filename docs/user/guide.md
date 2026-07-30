@@ -138,7 +138,7 @@ Libraries are on Home (and library browse). What you see depends on admin librar
 
 | Area | Notes |
 |---|---|
-| Playlists | Manual lists and **smart playlists** (rules that refresh as the library grows). With AudioMuse, you can also build a playlist from a text prompt - see [Music discovery](#music-discovery-audiomuse). |
+| Playlists | Manual lists and **dynamic playlists** (rules that refresh as the library grows). With AudioMuse, you can also build a **smart playlist** from a text prompt - see [Music discovery](#music-discovery-audiomuse). |
 | Collections | Group titles your way |
 | Stats / History / Reviews | Your activity and ratings. Watch stats (and home "Recommended for you") only count plays that met your completion threshold; brief opens do not. History still lists incomplete sessions. |
 | Downloads | Native apps only - see [Offline](#offline-downloads) |
@@ -149,7 +149,7 @@ Playlist views can include a "show shared" option. What others see of your playl
 
 Social sharing is **opt-in**. By default, social content scopes are **Nobody**: nothing is shared until **you** widen a scope. The administrator **cannot force you to share** (there is no server-wide "everyone must share history/reviews" switch). They can still limit which libraries or profiles you may access - that is access control, not forced social opt-in. Admin federation social policy and per-peer social toggles only open the pipe; each user must still set **Settings -> Social** (Share and View) to Federation (or Specific people) for reviews and other social content to cross peers.
 
-Configure this under **Settings -> Social**. K7 separates **what you share** from **what you want to see**, for reviews, collections, playlists, smart playlists, and playback history. You can also blur reviews until you have watched the media.
+Configure this under **Settings -> Social**. K7 separates **what you share** from **what you want to see**, for reviews, collections, playlists, dynamic playlists, and playback history. You can also blur reviews until you have watched the media.
 
 | Scope | Meaning |
 |---|---|
@@ -202,7 +202,7 @@ While a shared profile is active:
 
 Optional. The admin connects a self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI) under Admin -> Music intelligence (**disabled by default**). When off, AI features are hidden.
 
-When on: similar / ambiance radios and sonic paths under **Music -> Radio**, intelligent search in the library, similar tracks in the music player, and AI smart playlists from a text prompt. Basic radios (random, time capsule, recently added) work without AudioMuse.
+When on: similar / ambiance radios and sonic paths under **Music -> Radio**, intelligent search in the library, similar tracks in the music player, and smart playlists from a text prompt. Basic radios (random, time capsule, recently added) work without AudioMuse.
 
 ## When something goes wrong
 
