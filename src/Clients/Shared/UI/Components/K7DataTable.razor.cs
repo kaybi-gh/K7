@@ -288,6 +288,9 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private string GetRowClass(IndexedRow row) =>
         $"{RowClass?.Invoke(row.Item)} {(Striped && row.Index % 2 == 1 ? "k7-data-table-row--alt" : "")}".Trim();
 
+    private object GetRowKey(IndexedRow row) =>
+        RowId?.Invoke(row.Item) is { Length: > 0 } id ? id : row.Index;
+
     private async Task OnHeaderClick(K7DataColumn<TItem> column)
     {
         if (column.SortKey is null) return;

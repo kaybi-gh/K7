@@ -99,7 +99,7 @@
                 {
                     <Virtualize TItem="IndexedRow" Items="_indexedItems" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
-                        <tr @key="row.Index" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                        <tr @key="GetRowKey(row)" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                             @onclick="() => OnRowClicked(row.Item)"
                             @onkeydown="e => OnRowKeyDown(e, row.Item)">
                             @foreach (var col in _visibleColumns)
@@ -117,7 +117,7 @@
                     <Virtualize TItem="IndexedRow" ItemsProvider="ProvideItemsAsync" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr @key="row.Index" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                            <tr @key="GetRowKey(row)" id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
                                 @onclick="() => OnRowClicked(row.Item)"
                                 @onkeydown="e => OnRowKeyDown(e, row.Item)">
                                 @foreach (var col in _visibleColumns)
