@@ -5122,6 +5122,29 @@
         }
       }
     },
+    "/api/medias/by-file-names": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "LookupIndexedPathsByFileNames",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupIndexedPathsByFileNamesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/by-external-ids": {
       "post": {
         "tags": [
@@ -5133,6 +5156,29 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LookupMediasByExternalIdsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/by-paths": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "LookupMediasByPaths",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupMediasByPathsRequest"
               }
             }
           },
@@ -7244,6 +7290,46 @@
         }
       }
     },
+    "/api/remote-indexed-files/{remoteFileId}/metadata-pictures/{pictureId}": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetRemoteMetadataPicture",
+        "parameters": [
+          {
+            "name": "remoteFileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pictureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataPictureSize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/federation/peers/request": {
       "post": {
         "tags": [
@@ -8940,7 +9026,21 @@
             }
           },
           {
-            "name": "Priority",
+            "name": "Lane",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "WorkClass",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "TriggeredBy",
             "in": "query",
             "schema": {
               "type": "string"
@@ -10629,8 +10729,29 @@
           "status": {
             "$ref": "#/components/schemas/BackgroundTaskStatus"
           },
+          "lane": {
+            "$ref": "#/components/schemas/BackgroundTaskLane"
+          },
+          "workClass": {
+            "$ref": "#/components/schemas/BackgroundTaskWorkClass"
+          },
           "priority": {
-            "$ref": "#/components/schemas/BackgroundTaskPriority"
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "triggeredBy": {
+            "$ref": "#/components/schemas/BackgroundTaskTriggeredBy"
+          },
+          "federationPeerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "attemptCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -10685,11 +10806,16 @@
             ],
             "format": "int32"
           },
-          "concurrencyGroup": {
+          "reclaimCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
-              "null",
+              "integer",
               "string"
-            ]
+            ],
+            "format": "int32"
+          },
+          "cancellationRequested": {
+            "type": "boolean"
           },
           "errorDetails": {
             "type": [
@@ -10706,7 +10832,7 @@
           }
         }
       },
-      "BackgroundTaskPriority": {
+      "BackgroundTaskLane": {
         "type": "integer"
       },
       "BackgroundTaskStatus": {
@@ -10741,6 +10867,12 @@
             }
           }
         }
+      },
+      "BackgroundTaskTriggeredBy": {
+        "type": "integer"
+      },
+      "BackgroundTaskWorkClass": {
+        "type": "integer"
       },
       "Browser": {
         "type": "integer"
@@ -12970,6 +13102,8 @@
           "missingThemeSongCount",
           "missingIntroOutroCount",
           "missingAudioAnalysisCount",
+          "duplicateExternalIdCount",
+          "suspectedDuplicateMediaCount",
           "inaccessiblePathCount",
           "pendingBackgroundTaskCount",
           "failedBackgroundTaskCount"
@@ -13099,6 +13233,22 @@
             "format": "int32"
           },
           "missingAudioAnalysisCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "duplicateExternalIdCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suspectedDuplicateMediaCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -14971,6 +15121,20 @@
           }
         }
       },
+      "LookupIndexedPathsByFileNamesRequest": {
+        "required": [
+          "fileNames"
+        ],
+        "type": "object",
+        "properties": {
+          "fileNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "LookupMediasByExternalIdsRequest": {
         "required": [
           "items"
@@ -14981,6 +15145,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExternalIdItem"
+            }
+          }
+        }
+      },
+      "LookupMediasByPathsRequest": {
+        "required": [
+          "paths"
+        ],
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -19481,7 +19659,7 @@
             ],
             "format": "int32"
           },
-          "concurrencyLimits": {
+          "laneLimits": {
             "type": [
               "null",
               "object"
@@ -20064,16 +20242,6 @@
             ],
             "items": {
               "$ref": "#/components/schemas/PeerSocialAgreementDto"
-            }
-          },
-          "sharePlaybackHistoryLibraryIds": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string",
-              "format": "uuid"
             }
           }
         }
