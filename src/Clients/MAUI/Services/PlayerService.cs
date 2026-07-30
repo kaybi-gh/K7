@@ -23,7 +23,9 @@ internal class PlayerService(
     public event Func<Task>? UnmuteRequest;
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
+#pragma warning disable CS0067 // Reserved for muxed/container audio track switching; demuxed HLS reloads the manifest instead.
     public event Action<string>? SwitchAudioTrackRequested;
+#pragma warning restore CS0067
     public event Action<string?>? SwitchSubtitleTrackRequested;
     public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
