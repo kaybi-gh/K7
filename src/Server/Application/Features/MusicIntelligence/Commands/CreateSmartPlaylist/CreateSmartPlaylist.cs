@@ -4,7 +4,7 @@ using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.MusicIntelligence.Commands.CreateSmartPlaylist;
 
-[Authorize(Roles = Roles.User)]
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record CreateSmartPlaylistCommand : IRequest<List<Guid>>
 {
     public required string Prompt { get; init; }

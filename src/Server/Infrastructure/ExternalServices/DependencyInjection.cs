@@ -20,11 +20,14 @@ public static class DependencyInjection
         services.AddHttpClient<AudioMuseMusicIntelligenceAdapter>()
             .AddStandardResilienceHandler(options =>
             {
-                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(3);
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-                options.CircuitBreaker.MinimumThroughput = 3;
-                options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(10);
+                // CLAP warmup + IVF pathfinding routinely exceed a few seconds on cold start.
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(90);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(180);
+                // SamplingDuration must be >= 2x AttemptTimeout for the standard handler.
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(180);
+                options.CircuitBreaker.MinimumThroughput = 8;
+                options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
+                options.Retry.MaxRetryAttempts = 2;
             });
         services.AddScoped<IMusicIntelligenceService, MusicIntelligenceService>();
 

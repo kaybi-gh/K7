@@ -14,9 +14,11 @@ public class MusicIntelligenceService(
 {
     private static readonly TimeSpan SimilarTracksCacheDuration = TimeSpan.FromMinutes(30);
 
-    public async Task<MusicIntelligenceConnectionResult> TestConnectionAsync(CancellationToken cancellationToken = default)
+    public async Task<MusicIntelligenceConnectionResult> TestConnectionAsync(
+        MusicIntelligenceSettingsDto? draftSettings = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await adapter.TestConnectionAsync(cancellationToken);
+        var result = await adapter.TestConnectionAsync(draftSettings, cancellationToken);
         if (result.Success)
             healthMonitor.MarkReachable();
         else
@@ -33,28 +35,60 @@ public class MusicIntelligenceService(
             return false;
 
         return await healthMonitor.GetReachableAsync(
-            async ct => (await adapter.TestConnectionAsync(ct)).Success,
+            async ct => (await adapter.TestConnectionAsync(cancellationToken: ct)).Success,
             cancellationToken);
     }
 
-    public async Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
+    public async Task<MusicIntelligenceStatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        if (!await IsAvailableAsync(cancellationToken))
+        var settings = await adapter.GetSettingsAsync(cancellationToken);
+        var isEnabled = settings is { Enabled: true } && !string.IsNullOrWhiteSpace(settings.BaseUrl);
+        var instantEnabled = settings?.InstantPlaylistEnabled ?? false;
+
+        // Instant playlist visibility is settings-only (no AudioMuse probe for LLM provider).
+        var instantAvailable = isEnabled && instantEnabled;
+
+        var isAvailable = isEnabled
+            && await healthMonitor.GetReachableAsync(
+                async ct => (await adapter.TestConnectionAsync(cancellationToken: ct)).Success,
+                cancellationToken);
+
+        return new MusicIntelligenceStatusDto
+        {
+            IsEnabled = isEnabled,
+            IsAvailable = isAvailable,
+            InstantPlaylistEnabled = instantEnabled,
+            InstantPlaylistAvailable = instantAvailable
+        };
+    }
+
+    public async Task<List<MusicIntelligenceTrackMatchDto>> GetSimilarTracksAsync(
+        Guid trackId,
+        int count = 20,
+        string? title = null,
+        string? artist = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsEnabledAsync(cancellationToken))
             return [];
 
         var cacheKey = $"mi:similar:{trackId}:{count}";
-        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out List<MusicIntelligenceTrackMatchDto>? cached) && cached is { Count: > 0 })
             return cached;
 
         try
         {
-            var ids = await adapter.GetSimilarTracksAsync(trackId, count, cancellationToken);
-            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
-            return ids;
+            var matches = await adapter.GetSimilarTracksAsync(trackId, count, title, artist, cancellationToken);
+            if (matches.Count > 0)
+            {
+                healthMonitor.MarkReachable();
+                cache.SetWithSize(cacheKey, matches, SimilarTracksCacheDuration);
+            }
+
+            return matches;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get similar tracks for {TrackId}", trackId);
             return [];
         }
@@ -96,16 +130,18 @@ public class MusicIntelligenceService(
 
     public async Task<List<Guid>> GetDiscoveryTracksAsync(int count = 50, CancellationToken cancellationToken = default)
     {
-        if (!await IsAvailableAsync(cancellationToken))
+        if (!await IsEnabledAsync(cancellationToken))
             return [];
 
         try
         {
-            return await adapter.GetDiscoveryTracksAsync(count, cancellationToken);
+            var ids = await adapter.GetDiscoveryTracksAsync(count, cancellationToken);
+            if (ids.Count > 0)
+                healthMonitor.MarkReachable();
+            return ids;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get discovery tracks");
             return [];
         }
@@ -113,16 +149,18 @@ public class MusicIntelligenceService(
 
     public async Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default)
     {
-        if (!await IsAvailableAsync(cancellationToken))
+        if (!await IsEnabledAsync(cancellationToken))
             return [];
 
         try
         {
-            return await adapter.GetSonicPathAsync(fromId, toId, cancellationToken);
+            var ids = await adapter.GetSonicPathAsync(fromId, toId, cancellationToken);
+            if (ids.Count > 0)
+                healthMonitor.MarkReachable();
+            return ids;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get sonic path from {FromId} to {ToId}", fromId, toId);
             return [];
         }
@@ -131,6 +169,10 @@ public class MusicIntelligenceService(
     public async Task<List<Guid>> CreatePlaylistFromPromptAsync(string prompt, int count = 30, CancellationToken cancellationToken = default)
     {
         if (!await IsAvailableAsync(cancellationToken))
+            return [];
+
+        var settings = await adapter.GetSettingsAsync(cancellationToken);
+        if (settings is not { InstantPlaylistEnabled: true })
             return [];
 
         try
@@ -161,12 +203,12 @@ public class MusicIntelligenceService(
         try
         {
             var matches = await adapter.GetSimilarArtistsAsync(artistId, artistName, count, cancellationToken);
-            cache.SetWithSize(cacheKey, matches, SimilarTracksCacheDuration);
+            if (matches.Count > 0)
+                cache.SetWithSize(cacheKey, matches, SimilarTracksCacheDuration);
             return matches;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to get similar artists for {ArtistId}", artistId);
             return [];
         }
@@ -174,22 +216,27 @@ public class MusicIntelligenceService(
 
     public async Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count = 50, CancellationToken cancellationToken = default)
     {
-        if (!await IsAvailableAsync(cancellationToken))
+        // User-triggered search should not be blocked by a stale "unreachable" cache.
+        if (!await IsEnabledAsync(cancellationToken))
             return [];
 
         var cacheKey = $"mi:search-sonic:{query}:{count}";
-        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is { Count: > 0 })
             return cached;
 
         try
         {
             var ids = await adapter.SearchTracksBySonicTextAsync(query, count, cancellationToken);
-            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
+            if (ids.Count > 0)
+            {
+                healthMonitor.MarkReachable();
+                cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
+            }
+
             return ids;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to search tracks by sonic text");
             return [];
         }
@@ -197,22 +244,26 @@ public class MusicIntelligenceService(
 
     public async Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count = 50, CancellationToken cancellationToken = default)
     {
-        if (!await IsAvailableAsync(cancellationToken))
+        if (!await IsEnabledAsync(cancellationToken))
             return [];
 
         var cacheKey = $"mi:search-lyrics:{query}:{count}";
-        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is { Count: > 0 })
             return cached;
 
         try
         {
             var ids = await adapter.SearchTracksByLyricsAsync(query, count, cancellationToken);
-            cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
+            if (ids.Count > 0)
+            {
+                healthMonitor.MarkReachable();
+                cache.SetWithSize(cacheKey, ids, SimilarTracksCacheDuration);
+            }
+
             return ids;
         }
         catch (Exception ex)
         {
-            healthMonitor.MarkUnreachable();
             logger.LogWarning(ex, "Failed to search tracks by lyrics");
             return [];
         }

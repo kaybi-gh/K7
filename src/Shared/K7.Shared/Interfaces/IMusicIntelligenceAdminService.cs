@@ -6,5 +6,7 @@ public interface IMusicIntelligenceAdminService
 {
     Task<MusicIntelligenceSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateSettingsAsync(MusicIntelligenceSettingsDto settings, CancellationToken cancellationToken = default);
-    Task<MusicIntelligenceConnectionResultDto> TestConnectionAsync(CancellationToken cancellationToken = default);
+    Task<MusicIntelligenceConnectionResultDto> TestConnectionAsync(
+        MusicIntelligenceSettingsDto? draftSettings = null,
+        CancellationToken cancellationToken = default);
 }

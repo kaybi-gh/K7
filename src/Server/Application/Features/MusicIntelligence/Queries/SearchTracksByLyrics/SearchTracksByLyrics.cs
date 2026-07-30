@@ -4,7 +4,7 @@ using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.MusicIntelligence.Queries.SearchTracksByLyrics;
 
-[Authorize(Roles = Roles.User)]
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record SearchTracksByLyricsQuery : IRequest<List<Guid>>
 {
     public required string Query { get; init; }

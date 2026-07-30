@@ -10,14 +10,8 @@ public record GetMusicIntelligenceStatusQuery : IRequest<MusicIntelligenceStatus
 public class GetMusicIntelligenceStatusQueryHandler(IMusicIntelligenceService musicIntelligenceService)
     : IRequestHandler<GetMusicIntelligenceStatusQuery, MusicIntelligenceStatusDto>
 {
-    public async Task<MusicIntelligenceStatusDto> Handle(GetMusicIntelligenceStatusQuery request, CancellationToken cancellationToken)
-    {
-        var isEnabled = await musicIntelligenceService.IsEnabledAsync(cancellationToken);
-        var isAvailable = await musicIntelligenceService.IsAvailableAsync(cancellationToken);
-        return new MusicIntelligenceStatusDto
-        {
-            IsEnabled = isEnabled,
-            IsAvailable = isAvailable
-        };
-    }
+    public Task<MusicIntelligenceStatusDto> Handle(
+        GetMusicIntelligenceStatusQuery request,
+        CancellationToken cancellationToken) =>
+        musicIntelligenceService.GetStatusAsync(cancellationToken);
 }

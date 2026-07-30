@@ -1,20 +1,25 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Shared.Dtos;
 
 namespace K7.Server.Application.Features.MusicIntelligence.Queries.GetTrackSuggestions;
 
-[Authorize(Roles = Roles.User)]
-public record GetTrackSuggestionsQuery(List<Guid> RecentTrackIds, int Count = 20) : IRequest<List<Guid>>;
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
+public record GetTrackSuggestionsQuery(List<Guid> RecentTrackIds, int Count = 20) : IRequest<List<MusicIntelligenceTrackMatchDto>>;
 
 public class GetTrackSuggestionsQueryHandler(IMusicIntelligenceService musicIntelligenceService)
-    : IRequestHandler<GetTrackSuggestionsQuery, List<Guid>>
+    : IRequestHandler<GetTrackSuggestionsQuery, List<MusicIntelligenceTrackMatchDto>>
 {
-    public async Task<List<Guid>> Handle(GetTrackSuggestionsQuery request, CancellationToken cancellationToken)
+    public async Task<List<MusicIntelligenceTrackMatchDto>> Handle(GetTrackSuggestionsQuery request, CancellationToken cancellationToken)
     {
-        if (request.RecentTrackIds.Count == 0 || request.RecentTrackIds.Count > 1)
-            return await musicIntelligenceService.GetDiscoveryTracksAsync(request.Count, cancellationToken);
-
-        return await musicIntelligenceService.GetSimilarTracksAsync(request.RecentTrackIds[0], request.Count, cancellationToken);
+        // Suggestions = discovery (fresh finds), distinct from Similar (neighbors of current track).
+        var discoveryIds = await musicIntelligenceService.GetDiscoveryTracksAsync(request.Count, cancellationToken);
+        var recent = request.RecentTrackIds.ToHashSet();
+        return discoveryIds
+            .Where(id => !recent.Contains(id))
+            .Select(id => new MusicIntelligenceTrackMatchDto { ItemId = id })
+            .Take(request.Count)
+            .ToList();
     }
 }

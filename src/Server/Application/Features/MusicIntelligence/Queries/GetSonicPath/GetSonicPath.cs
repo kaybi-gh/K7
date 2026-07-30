@@ -4,7 +4,7 @@ using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.MusicIntelligence.Queries.GetSonicPath;
 
-[Authorize(Roles = Roles.User)]
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record GetSonicPathQuery(Guid FromId, Guid ToId) : IRequest<List<Guid>>;
 
 public class GetSonicPathQueryHandler(IMusicIntelligenceService musicIntelligenceService)

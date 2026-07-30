@@ -20,6 +20,10 @@ public class AudioQueueItem
     public string? Genre { get; init; }
     public int? UserRating { get; set; }
 
+    /// <summary>Optional AudioMuse match score for MI-sourced queue rows.</summary>
+    public double? IntelligenceScore { get; init; }
+    public string? IntelligenceScoreMetric { get; init; }
+
     // Offline playback
     public string? LocalPath { get; init; }
 

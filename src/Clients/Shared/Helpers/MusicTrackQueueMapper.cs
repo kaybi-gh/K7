@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
@@ -43,7 +44,9 @@ public static class MusicTrackQueueMapper
     public static AudioQueueItem? ToQueueItem(
         LiteMusicTrackDto track,
         IK7ServerService api,
-        string? untitledLabel = null)
+        string? untitledLabel = null,
+        double? intelligenceScore = null,
+        string? intelligenceScoreMetric = null)
     {
         if (track.IndexedFileId is not { } indexedFileId)
             return null;
@@ -67,7 +70,9 @@ public static class MusicTrackQueueMapper
             track.FadeOutDuration,
             track.ReplayGainTrackGain,
             waveformPeaks: null,
-            untitledLabel);
+            untitledLabel,
+            intelligenceScore,
+            intelligenceScoreMetric);
     }
 
     public static List<AudioQueueItem> ToQueueItems(
@@ -76,6 +81,21 @@ public static class MusicTrackQueueMapper
         string? untitledLabel = null) =>
         tracks
             .Select(t => ToQueueItem(t, api, untitledLabel))
+            .Where(t => t is not null)
+            .Cast<AudioQueueItem>()
+            .ToList();
+
+    public static List<AudioQueueItem> ToQueueItems(
+        IEnumerable<LiteMusicTrackDto> tracks,
+        IK7ServerService api,
+        IReadOnlyDictionary<Guid, MusicIntelligenceTrackMatchDto> matches,
+        string? untitledLabel = null) =>
+        tracks
+            .Select(t =>
+            {
+                matches.TryGetValue(t.Id, out var match);
+                return ToQueueItem(t, api, untitledLabel, match?.Score, match?.ScoreMetric);
+            })
             .Where(t => t is not null)
             .Cast<AudioQueueItem>()
             .ToList();
@@ -96,7 +116,9 @@ public static class MusicTrackQueueMapper
         double? fadeOutDuration,
         double? replayGainTrackGain,
         float[]? waveformPeaks,
-        string? untitledLabel) => new()
+        string? untitledLabel,
+        double? intelligenceScore = null,
+        string? intelligenceScoreMetric = null) => new()
     {
         IndexedFileId = indexedFileId,
         MediaId = mediaId,
@@ -112,6 +134,8 @@ public static class MusicTrackQueueMapper
         FadeInDuration = fadeInDuration,
         FadeOutDuration = fadeOutDuration,
         ReplayGainTrackGain = replayGainTrackGain,
-        WaveformPeaks = waveformPeaks
+        WaveformPeaks = waveformPeaks,
+        IntelligenceScore = intelligenceScore,
+        IntelligenceScoreMetric = intelligenceScoreMetric
     };
 }

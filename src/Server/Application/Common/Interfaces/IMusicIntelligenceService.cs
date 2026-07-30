@@ -6,12 +6,15 @@ public record MusicIntelligenceConnectionResult(bool Success, string? Version = 
 
 public interface IMusicIntelligenceService
 {
-    Task<MusicIntelligenceConnectionResult> TestConnectionAsync(CancellationToken cancellationToken = default);
+    Task<MusicIntelligenceConnectionResult> TestConnectionAsync(
+        MusicIntelligenceSettingsDto? draftSettings = null,
+        CancellationToken cancellationToken = default);
     /// <summary>True when music intelligence is configured and enabled in settings.</summary>
     Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default);
     /// <summary>True when enabled and AudioMuse is currently reachable.</summary>
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
-    Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default);
+    Task<MusicIntelligenceStatusDto> GetStatusAsync(CancellationToken cancellationToken = default);
+    Task<List<MusicIntelligenceTrackMatchDto>> GetSimilarTracksAsync(Guid trackId, int count = 20, string? title = null, string? artist = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MusicMoodPresetDto>> GetMoodPresetsAsync(CancellationToken cancellationToken = default);
     Task<List<Guid>> GetMoodTracksAsync(string moodKey, int centroidIndex, int count = 50, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetDiscoveryTracksAsync(int count = 50, CancellationToken cancellationToken = default);

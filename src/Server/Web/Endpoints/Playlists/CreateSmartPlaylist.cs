@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
 
-public class CreateAiSmartPlaylist : IEndpoint
+public class CreateSmartPlaylist : IEndpoint
 {
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
