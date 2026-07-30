@@ -75,30 +75,30 @@ public static class RuleFieldCatalog
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> CommonFields =
     [
-        TextField(nameof(SmartPlaylistField.Title)),
-        TextField(nameof(SmartPlaylistField.Genre)),
-        NumberField(nameof(SmartPlaylistField.Year)),
-        NumberField(nameof(SmartPlaylistField.Rating)),
-        NumberField(nameof(SmartPlaylistField.PlayCount)),
-        DateField(nameof(SmartPlaylistField.DateAdded)),
-        DateField(nameof(SmartPlaylistField.LastPlayed)),
-        BooleanField(nameof(SmartPlaylistField.IsCompleted))
+        SearchField(nameof(DynamicPlaylistField.Title)),
+        SearchField(nameof(DynamicPlaylistField.Genre)),
+        NumberField(nameof(DynamicPlaylistField.Year)),
+        NumberField(nameof(DynamicPlaylistField.Rating)),
+        NumberField(nameof(DynamicPlaylistField.PlayCount)),
+        DateField(nameof(DynamicPlaylistField.DateAdded)),
+        DateField(nameof(DynamicPlaylistField.LastPlayed)),
+        BooleanField(nameof(DynamicPlaylistField.IsCompleted))
     ];
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MovieFields =
     [
         .. CommonFields,
-        LanguageField(nameof(SmartPlaylistField.OriginalLanguage)),
-        SearchField(nameof(SmartPlaylistField.ActorName)),
-        TextField(nameof(RestrictionField.ContentRating)),
+        LanguageField(nameof(DynamicPlaylistField.OriginalLanguage)),
+        SearchField(nameof(DynamicPlaylistField.ActorName)),
+        SearchField(nameof(RestrictionField.ContentRating)),
         SearchField("Studio")
     ];
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> SerieFields =
     [
         .. CommonFields,
-        SearchField(nameof(SmartPlaylistField.ActorName)),
-        TextField(nameof(RestrictionField.ContentRating)),
+        SearchField(nameof(DynamicPlaylistField.ActorName)),
+        SearchField(nameof(RestrictionField.ContentRating)),
         SearchField("Network"),
         SearchField("Studio")
     ];
@@ -106,48 +106,32 @@ public static class RuleFieldCatalog
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MusicTrackFields =
     [
         .. CommonFields,
-        TextField(nameof(SmartPlaylistField.ArtistName)),
-        TextField(nameof(SmartPlaylistField.AlbumTitle)),
-        NumberField(nameof(SmartPlaylistField.TrackNumber)),
-        NumberField(nameof(SmartPlaylistField.DiscNumber)),
-        NumberField(nameof(SmartPlaylistField.Duration))
+        SearchField(nameof(DynamicPlaylistField.ArtistName)),
+        SearchField(nameof(DynamicPlaylistField.AlbumTitle)),
+        NumberField(nameof(DynamicPlaylistField.TrackNumber)),
+        NumberField(nameof(DynamicPlaylistField.DiscNumber)),
+        NumberField(nameof(DynamicPlaylistField.Duration))
     ];
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MusicAlbumFields =
     [
-        TextField(nameof(SmartPlaylistField.Title)),
-        SearchField(nameof(SmartPlaylistField.ArtistName)),
-        TextField(nameof(SmartPlaylistField.Genre)),
-        NumberField(nameof(SmartPlaylistField.Year)),
-        NumberField(nameof(SmartPlaylistField.Rating)),
-        NumberField(nameof(SmartPlaylistField.PlayCount)),
-        DateField(nameof(SmartPlaylistField.DateAdded))
+        SearchField(nameof(DynamicPlaylistField.Title)),
+        SearchField(nameof(DynamicPlaylistField.ArtistName)),
+        SearchField(nameof(DynamicPlaylistField.Genre)),
+        NumberField(nameof(DynamicPlaylistField.Year)),
+        NumberField(nameof(DynamicPlaylistField.Rating)),
+        NumberField(nameof(DynamicPlaylistField.PlayCount)),
+        DateField(nameof(DynamicPlaylistField.DateAdded))
     ];
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MusicArtistFields =
     [
-        TextField(nameof(SmartPlaylistField.Title)),
-        SearchField(nameof(SmartPlaylistField.ArtistName)),
-        TextField(nameof(SmartPlaylistField.Genre)),
-        NumberField(nameof(SmartPlaylistField.PlayCount)),
-        DateField(nameof(SmartPlaylistField.DateAdded))
+        SearchField(nameof(DynamicPlaylistField.Title)),
+        SearchField(nameof(DynamicPlaylistField.ArtistName)),
+        SearchField(nameof(DynamicPlaylistField.Genre)),
+        NumberField(nameof(DynamicPlaylistField.PlayCount)),
+        DateField(nameof(DynamicPlaylistField.DateAdded))
     ];
-
-    private static RuleFieldDescriptorDto TextField(string fieldName) => new()
-    {
-        FieldName = fieldName,
-        DisplayName = fieldName,
-        ValueType = RuleFieldValueType.Text,
-        Operators =
-        [
-            RuleOperator.Equals,
-            RuleOperator.NotEquals,
-            RuleOperator.Contains,
-            RuleOperator.NotContains,
-            RuleOperator.IsEmpty,
-            RuleOperator.IsNotEmpty
-        ]
-    };
 
     private static RuleFieldDescriptorDto NumberField(string fieldName) => new()
     {

@@ -22,12 +22,12 @@ public sealed record FederatedPlaylistViewDto
     public IReadOnlyList<FederatedSocialItemViewDto> Items { get; init; } = [];
 }
 
-public sealed record FederatedSmartPlaylistViewDto
+public sealed record FederatedDynamicPlaylistViewDto
 {
     public required Guid PeerServerId { get; init; }
     public required string PeerName { get; init; }
     public required Guid OriginUserId { get; init; }
-    public required FederatedSmartPlaylistDto Playlist { get; init; }
+    public required FederatedDynamicPlaylistDto Playlist { get; init; }
     public required string AuthorName { get; init; }
     public IReadOnlyList<FederatedSocialItemViewDto> Items { get; init; } = [];
 }

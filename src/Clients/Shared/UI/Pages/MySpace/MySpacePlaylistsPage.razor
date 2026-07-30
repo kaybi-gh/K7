@@ -41,7 +41,7 @@
                         <button type="button" class="my-space-shared-card__link focusable" @onclick="@(() => NavigationManager.NavigateTo(SocialUserNavigation.GetProfileHref(item.Owner)))">
                             <h6>
                                 @item.Title
-                                @if (item.IsSmart)
+                                @if (item.IsDynamic)
                                 {
                                     <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
                                 }
@@ -112,10 +112,10 @@ else
                 </ActivatorContent>
                 <ChildContent>
                     <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
-                    <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+                    <K7MenuItem Icon="sparkle" OnClick="OpenCreateDynamicPlaylistDialog">@L["DynamicPlaylist"]</K7MenuItem>
                     @if (_musicIntelligenceAvailable)
                     {
-                        <K7MenuItem Icon="magic-wand" OnClick="OpenAiPlaylistDialog">@L["AiPlaylist"]</K7MenuItem>
+                        <K7MenuItem Icon="magic-wand" OnClick="OpenSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
                     }
                 </ChildContent>
             </K7Menu>
@@ -127,7 +127,7 @@ else
     <GridTemplate Context="playlist">
         @{
             var vm = playlist.ToCardViewModel(ApiClient, GetPlaylistSubtitle(playlist));
-            var placeholderIcon = playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
+            var placeholderIcon = playlist.IsDynamicPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
             var selected = IsSelected(playlist.Id);
         }
         @if (_selectionMode)
@@ -148,7 +148,8 @@ else
                            ContextMenuEnabled="false"
                            HoverOverlayEnabled="true"
                            Selected="selected"
-                           PlaceholderIcon="@placeholderIcon">
+                           PlaceholderIcon="@placeholderIcon"
+                           TypeBadgeIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : null)">
                     <CoverContent>
                         <K7CoverMosaic CoverPicture="playlist.CoverPicture"
                                        PreviewPictures="playlist.PreviewPictures"
@@ -168,7 +169,8 @@ else
                        FooterVisible="true"
                        ContextMenuEnabled="false"
                        HoverOverlayEnabled="true"
-                       PlaceholderIcon="@placeholderIcon">
+                       PlaceholderIcon="@placeholderIcon"
+                       TypeBadgeIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : null)">
                 <CoverContent>
                     <K7CoverMosaic CoverPicture="playlist.CoverPicture"
                                    PreviewPictures="playlist.PreviewPictures"
@@ -206,11 +208,11 @@ else
                         <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
                                                 PreviewPictures="playlist.PreviewPictures"
                                                 PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
-                                                PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                                PlaceholderIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
                                                 Alt="@playlist.Title" />
                         <p class="text-sm">
                             @playlist.Title
-                            @if (playlist.IsSmartPlaylist)
+                            @if (playlist.IsDynamicPlaylist)
                             {
                                 <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
                             }
@@ -246,12 +248,12 @@ else
                     <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
                                             PreviewPictures="playlist.PreviewPictures"
                                             PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
-                                            PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                            PlaceholderIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
                                             Alt="@playlist.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">
                             @playlist.Title
-                            @if (playlist.IsSmartPlaylist)
+                            @if (playlist.IsDynamicPlaylist)
                             {
                                 <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
                             }
@@ -266,12 +268,12 @@ else
                     <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
                                             PreviewPictures="playlist.PreviewPictures"
                                             PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
-                                            PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                            PlaceholderIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
                                             Alt="@playlist.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">
                             @playlist.Title
-                            @if (playlist.IsSmartPlaylist)
+                            @if (playlist.IsDynamicPlaylist)
                             {
                                 <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
                             }

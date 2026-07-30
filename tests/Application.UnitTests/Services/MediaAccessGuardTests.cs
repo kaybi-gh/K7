@@ -191,7 +191,7 @@ public class MediaAccessGuardTests
                 [
                     new ConditionRuleItem
                     {
-                        Field = nameof(SmartPlaylistField.Title),
+                        Field = nameof(DynamicPlaylistField.Title),
                         Operator = RuleOperator.Equals,
                         Value = blockedTitle
                     }

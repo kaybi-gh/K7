@@ -99,6 +99,22 @@
     border: 1px solid var(--color-border-subtle);
 }
 
+.media-card-type-badge {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: color-mix(in srgb, var(--color-overlay) 85%, var(--color-surface) 15%);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--color-border-subtle);
+    pointer-events: none;
+}
+
 .media-card-group-count {
     position: absolute;
     top: var(--space-1);

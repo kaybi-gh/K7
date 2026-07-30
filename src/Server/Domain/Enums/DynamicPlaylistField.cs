@@ -1,0 +1,25 @@
+namespace K7.Server.Domain.Enums;
+
+public enum DynamicPlaylistField
+{
+    // Common (all media types)
+    Title,
+    Genre,
+    Year,
+    Rating,
+    PlayCount,
+    DateAdded,
+    LastPlayed,
+    IsCompleted,
+
+    // MusicTrack
+    ArtistName,
+    AlbumTitle,
+    TrackNumber,
+    DiscNumber,
+    Duration,
+
+    // Movie / Serie
+    OriginalLanguage,
+    ActorName
+}

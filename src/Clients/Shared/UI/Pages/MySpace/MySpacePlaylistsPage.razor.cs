@@ -230,8 +230,8 @@ public partial class MySpacePlaylistsPage
 
                 try
                 {
-                    if (playlist.IsSmartPlaylist)
-                        await K7ServerService.DeleteSmartPlaylistAsync(id);
+                    if (playlist.IsDynamicPlaylist)
+                        await K7ServerService.DeleteDynamicPlaylistAsync(id);
                     else
                         await K7ServerService.DeletePlaylistAsync(id);
                 }
@@ -310,29 +310,29 @@ public partial class MySpacePlaylistsPage
             await LoadPlaylistsAsync();
     }
 
-    private async Task OpenCreateSmartPlaylistDialog()
+    private async Task OpenCreateDynamicPlaylistDialog()
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Nouvelle smart playlist", null, options);
+        var dialog = await DialogService.ShowAsync<DynamicPlaylistDialog>(L["DynamicPlaylist"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Guid id })
         {
-            try { await K7ServerService.EvaluateSmartPlaylistAsync(id); } catch { }
-            NavigationManager.NavigateTo($"/smart-playlists/{id}");
+            try { await K7ServerService.EvaluateDynamicPlaylistAsync(id); } catch { }
+            NavigationManager.NavigateTo($"/dynamic-playlists/{id}");
         }
     }
 
-    private async Task OpenAiPlaylistDialog()
+    private async Task OpenSmartPlaylistDialog()
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AiSmartPlaylistDialog>(L["AiPlaylist"], null, options);
+        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(L["SmartPlaylist"], null, options);
         await dialog.Result;
     }
 
     private string GetPlaylistHref(LitePlaylistDto playlist) =>
-        playlist.IsSmartPlaylist
-            ? $"/smart-playlists/{playlist.Id}"
+        playlist.IsDynamicPlaylist
+            ? $"/dynamic-playlists/{playlist.Id}"
             : $"/playlists/{playlist.Id}";
 
     private string GetPlaylistSubtitle(LitePlaylistDto playlist)

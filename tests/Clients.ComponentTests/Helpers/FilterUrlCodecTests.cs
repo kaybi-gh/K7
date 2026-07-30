@@ -20,7 +20,7 @@ public class FilterUrlCodecTests
             [
                 new ConditionRuleItemDto
                 {
-                    Field = nameof(SmartPlaylistField.Genre),
+                    Field = nameof(DynamicPlaylistField.Genre),
                     Operator = RuleOperator.Contains,
                     Value = "Sci-Fi"
                 },
@@ -31,7 +31,7 @@ public class FilterUrlCodecTests
                     [
                         new ConditionRuleItemDto
                         {
-                            Field = nameof(SmartPlaylistField.Year),
+                            Field = nameof(DynamicPlaylistField.Year),
                             Operator = RuleOperator.GreaterThan,
                             Value = "2020"
                         }
@@ -58,7 +58,7 @@ public class FilterUrlCodecTests
             [
                 new ConditionRuleItemDto
                 {
-                    Field = nameof(SmartPlaylistField.Genre),
+                    Field = nameof(DynamicPlaylistField.Genre),
                     Operator = RuleOperator.Equals,
                     Value = "Drama"
                 }

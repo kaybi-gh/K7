@@ -29,7 +29,7 @@ public interface IPeerClient
     Task<IReadOnlyList<FederatedReviewDto>> GetRemoteSocialReviewsAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedCollectionDto>> GetRemoteSocialCollectionsAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedPlaylistDto>> GetRemoteSocialPlaylistsAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<FederatedSmartPlaylistDto>> GetRemoteSocialSmartPlaylistsAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FederatedDynamicPlaylistDto>> GetRemoteSocialDynamicPlaylistsAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederationPlaybackEntryDto>> GetRemotePlaybackHistoryAsync(string baseUrl, string accessToken, string viewerAssertion, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedUserPlaybackEntryDto>> GetRemoteSocialPlaybackHistoryAsync(string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default);
 }

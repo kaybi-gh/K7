@@ -41,6 +41,13 @@ else
                @onkeyup="OnKeyUp">
                 @CoverVisual
 
+                @if (!string.IsNullOrEmpty(TypeBadgeIcon))
+                {
+                    <div class="media-card-type-badge" aria-hidden="true">
+                        <K7Icon Icon="@TypeBadgeIcon" IconSize="@K7IconSize.Sm" />
+                    </div>
+                }
+
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
@@ -84,6 +91,13 @@ else
                  @onkeyup="OnKeyUp">
                 @CoverVisual
 
+                @if (!string.IsNullOrEmpty(TypeBadgeIcon))
+                {
+                    <div class="media-card-type-badge" aria-hidden="true">
+                        <K7Icon Icon="@TypeBadgeIcon" IconSize="@K7IconSize.Sm" />
+                    </div>
+                }
+
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
@@ -114,6 +128,13 @@ else
             {
             <div class="media-card-link">
                 @CoverVisual
+
+                @if (!string.IsNullOrEmpty(TypeBadgeIcon))
+                {
+                    <div class="media-card-type-badge" aria-hidden="true">
+                        <K7Icon Icon="@TypeBadgeIcon" IconSize="@K7IconSize.Sm" />
+                    </div>
+                }
 
                 @if (HoverOverlayEnabled || Selected)
                 {

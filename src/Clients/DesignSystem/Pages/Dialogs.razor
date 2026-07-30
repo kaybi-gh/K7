@@ -1,4 +1,4 @@
-﻿@page "/dialogs"
+@page "/dialogs"
 @using K7.Clients.Shared.UI.Extensions
 @inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
@@ -73,10 +73,10 @@
     </section>
 
     <section id="smart-playlist" class="ds-section">
-        <h2>SmartPlaylistDialog</h2>
-        <p class="ds-description">Creates or edits a smart playlist with filter rules (genre, year, rating, etc.).</p>
+        <h2>DynamicPlaylistDialog</h2>
+        <p class="ds-description">Creates or edits a dynamic playlist with filter rules (genre, year, rating, etc.).</p>
         <div class="ds-preview ds-preview--bare">
-            <K7Button OnClick="ShowSmartPlaylistDialog">Create smart playlist</K7Button>
+            <K7Button OnClick="ShowDynamicPlaylistDialog">Create dynamic playlist</K7Button>
         </div>
     </section>
 
@@ -198,10 +198,10 @@
         await DialogService.ShowAsync<EditLibraryDialog>("Edit library", p);
     }
 
-    private async Task ShowSmartPlaylistDialog()
+    private async Task ShowDynamicPlaylistDialog()
     {
-        await DialogService.ShowAsync<SmartPlaylistDialog>(
-            "New smart playlist",
+        await DialogService.ShowAsync<DynamicPlaylistDialog>(
+            "New dynamic playlist",
             options: new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true });
     }
 

@@ -1,6 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Features.SmartPlaylists.Services;
+using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Enums;
@@ -13,7 +13,7 @@ public interface IFederationSocialConsumerService
 {
     Task<IReadOnlyList<FederatedCollectionViewDto>> GetCollectionsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedPlaylistViewDto>> GetPlaylistsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetSmartPlaylistsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FederatedDynamicPlaylistViewDto>> GetDynamicPlaylistsAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetPlaybackHistoryAsync(Guid viewerUserId, CancellationToken cancellationToken = default);
 }
 
@@ -114,19 +114,19 @@ public class FederationSocialConsumerService(
         return results;
     }
 
-    public async Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetSmartPlaylistsAsync(
+    public async Task<IReadOnlyList<FederatedDynamicPlaylistViewDto>> GetDynamicPlaylistsAsync(
         Guid viewerUserId,
         CancellationToken cancellationToken = default)
     {
         var viewerPrivacy = await privacyService.GetPrivacyAsync(viewerUserId, cancellationToken);
-        if (viewerPrivacy.View.SmartPlaylists == VisibilityScope.Nobody)
+        if (viewerPrivacy.View.DynamicPlaylists == VisibilityScope.Nobody)
             return [];
 
-        var results = new List<FederatedSmartPlaylistViewDto>();
+        var results = new List<FederatedDynamicPlaylistViewDto>();
         await foreach (var remoteUser in EnumerateRemoteUsersAsync(
-            viewerUserId, FederationContentType.SmartPlaylists, viewerPrivacy, cancellationToken))
+            viewerUserId, FederationContentType.DynamicPlaylists, viewerPrivacy, cancellationToken))
         {
-            var playlists = await peerClient.GetRemoteSocialSmartPlaylistsAsync(
+            var playlists = await peerClient.GetRemoteSocialDynamicPlaylistsAsync(
                 remoteUser.Peer.BaseUrl,
                 remoteUser.Token,
                 remoteUser.Assertion,
@@ -135,8 +135,8 @@ public class FederationSocialConsumerService(
 
             foreach (var playlist in playlists)
             {
-                var items = await EvaluateSmartPlaylistItemsAsync(playlist, viewerUserId, remoteUser.Peer.Id, cancellationToken);
-                results.Add(new FederatedSmartPlaylistViewDto
+                var items = await EvaluateDynamicPlaylistItemsAsync(playlist, viewerUserId, remoteUser.Peer.Id, cancellationToken);
+                results.Add(new FederatedDynamicPlaylistViewDto
                 {
                     PeerServerId = remoteUser.Peer.Id,
                     PeerName = remoteUser.Peer.Name,
@@ -166,38 +166,45 @@ public class FederationSocialConsumerService(
 
         foreach (var peer in peers)
         {
-            if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.PlaybackHistory, outbound: false, peer.Id, cancellationToken))
-                continue;
-
-            var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
-            if (token is null)
-                continue;
-
-            var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
-            var assertion = assertionService.CreateAssertion(new FederatedUserRef
+            try
             {
-                OriginUserId = viewerUserId,
-                DisplayName = viewer?.DisplayName
-            }, assertionSecret);
+                if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
+                    FederationContentType.PlaybackHistory, outbound: false, peer.Id, cancellationToken))
+                    continue;
 
-            var entries = await peerClient.GetRemotePlaybackHistoryAsync(peer.BaseUrl, token, assertion, cancellationToken);
-            foreach (var entry in entries)
-            {
-                var remoteFile = await context.RemoteIndexedFiles
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.PeerServerId == peer.Id && f.RemoteFileId == entry.FileId, cancellationToken);
+                var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
+                if (token is null)
+                    continue;
 
-                results.Add(new FederatedPlaybackHistoryViewDto
+                var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
+                var assertion = assertionService.CreateAssertion(new FederatedUserRef
                 {
-                    PeerServerId = peer.Id,
-                    PeerName = peer.Name,
-                    UserDisplayName = entry.UserDisplayName,
-                    LocalMediaId = remoteFile?.MediaId,
-                    MediaTitle = remoteFile?.Name,
-                    Position = TimeSpan.FromSeconds(entry.Position),
-                    EndedAt = entry.EndedAt
-                });
+                    OriginUserId = viewerUserId,
+                    DisplayName = viewer?.DisplayName
+                }, assertionSecret);
+
+                var entries = await peerClient.GetRemotePlaybackHistoryAsync(peer.BaseUrl, token, assertion, cancellationToken);
+                foreach (var entry in entries)
+                {
+                    var remoteFile = await context.RemoteIndexedFiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.PeerServerId == peer.Id && f.RemoteFileId == entry.FileId, cancellationToken);
+
+                    results.Add(new FederatedPlaybackHistoryViewDto
+                    {
+                        PeerServerId = peer.Id,
+                        PeerName = peer.Name,
+                        UserDisplayName = entry.UserDisplayName,
+                        LocalMediaId = remoteFile?.MediaId,
+                        MediaTitle = remoteFile?.Name,
+                        Position = TimeSpan.FromSeconds(entry.Position),
+                        EndedAt = entry.EndedAt
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                continue;
             }
         }
 
@@ -215,7 +222,7 @@ public class FederationSocialConsumerService(
             FederationContentType.Reviews => viewerPrivacy.View.Reviews,
             FederationContentType.Collections => viewerPrivacy.View.Collections,
             FederationContentType.Playlists => viewerPrivacy.View.Playlists,
-            FederationContentType.SmartPlaylists => viewerPrivacy.View.SmartPlaylists,
+            FederationContentType.DynamicPlaylists => viewerPrivacy.View.DynamicPlaylists,
             FederationContentType.PlaybackHistory => viewerPrivacy.View.PlaybackHistory,
             _ => VisibilityScope.Nobody
         };
@@ -228,22 +235,34 @@ public class FederationSocialConsumerService(
 
         foreach (var peer in peers)
         {
-            if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                contentType, outbound: false, peer.Id, cancellationToken))
-                continue;
-
-            var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
-            if (token is null)
-                continue;
-
-            var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
-            var assertion = assertionService.CreateAssertion(new FederatedUserRef
+            IReadOnlyList<FederatedUserRef> remoteUsers;
+            string token;
+            string assertion;
+            try
             {
-                OriginUserId = viewerUserId,
-                DisplayName = viewer?.DisplayName
-            }, assertionSecret);
+                if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
+                    contentType, outbound: false, peer.Id, cancellationToken))
+                    continue;
 
-            var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
+                var accessToken = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
+                if (accessToken is null)
+                    continue;
+
+                var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
+                assertion = assertionService.CreateAssertion(new FederatedUserRef
+                {
+                    OriginUserId = viewerUserId,
+                    DisplayName = viewer?.DisplayName
+                }, assertionSecret);
+
+                token = accessToken;
+                remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
             foreach (var remoteUser in remoteUsers)
             {
                 if (viewScope == VisibilityScope.SpecificPeople
@@ -256,13 +275,13 @@ public class FederationSocialConsumerService(
         }
     }
 
-    private async Task<IReadOnlyList<FederatedSocialItemViewDto>> EvaluateSmartPlaylistItemsAsync(
-        FederatedSmartPlaylistDto playlist,
+    private async Task<IReadOnlyList<FederatedSocialItemViewDto>> EvaluateDynamicPlaylistItemsAsync(
+        FederatedDynamicPlaylistDto playlist,
         Guid viewerUserId,
         Guid peerServerId,
         CancellationToken cancellationToken)
     {
-        var smartPlaylist = new SmartPlaylist
+        var dynamicPlaylist = new DynamicPlaylist
         {
             Title = playlist.Title,
             MediaType = playlist.MediaType,
@@ -274,7 +293,7 @@ public class FederationSocialConsumerService(
         };
 
         var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
-        query = SmartPlaylistEvaluator.ApplyRules(query, smartPlaylist, viewerUserId);
+        query = DynamicPlaylistEvaluator.ApplyRules(query, dynamicPlaylist, viewerUserId);
         var mediaIds = await query.Select(m => m.Id).ToListAsync(cancellationToken);
 
         var items = new List<FederatedSocialItemViewDto>();

@@ -109,7 +109,7 @@ public class GetFederationSocialUsersQueryHandler(
             FederationContentType.Reviews => await context.MediaReviews.AnyAsync(r => r.UserId == ownerUserId, cancellationToken),
             FederationContentType.Collections => await context.Collections.AnyAsync(c => c.UserId == ownerUserId && c.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             FederationContentType.Playlists => await context.Playlists.AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
-            FederationContentType.SmartPlaylists => await context.Playlists.OfType<SmartPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
+            FederationContentType.DynamicPlaylists => await context.Playlists.OfType<DynamicPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             _ => false
         };
     }
@@ -120,7 +120,7 @@ public class GetFederationSocialUsersQueryHandler(
             FederationContentType.Reviews => privacy.Share.Reviews,
             FederationContentType.Collections => privacy.Share.Collections,
             FederationContentType.Playlists => privacy.Share.Playlists,
-            FederationContentType.SmartPlaylists => privacy.Share.SmartPlaylists,
+            FederationContentType.DynamicPlaylists => privacy.Share.DynamicPlaylists,
             FederationContentType.PlaybackHistory => privacy.Share.PlaybackHistory,
             _ => VisibilityScope.Nobody
         };

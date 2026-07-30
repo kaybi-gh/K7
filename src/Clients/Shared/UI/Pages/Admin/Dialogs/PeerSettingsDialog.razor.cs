@@ -19,7 +19,7 @@ public partial class PeerSettingsDialog
         FederationContentType.Reviews,
         FederationContentType.Collections,
         FederationContentType.Playlists,
-        FederationContentType.SmartPlaylists,
+        FederationContentType.DynamicPlaylists,
         FederationContentType.PlaybackHistory
     ];
 
@@ -151,7 +151,7 @@ public partial class PeerSettingsDialog
         FederationContentType.Reviews => L["ContentReviews"],
         FederationContentType.Collections => L["ContentCollections"],
         FederationContentType.Playlists => L["ContentPlaylists"],
-        FederationContentType.SmartPlaylists => L["ContentSmartPlaylists"],
+        FederationContentType.DynamicPlaylists => L["ContentDynamicPlaylists"],
         FederationContentType.PlaybackHistory => L["ContentPlaybackHistory"],
         _ => contentType.ToString()
     };

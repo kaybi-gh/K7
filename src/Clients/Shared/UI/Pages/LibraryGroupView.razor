@@ -63,7 +63,7 @@
             </div>
         </div>
         <div class="library-toolbar-meta">
-            @if (_showMusicPlaybackActions || _showCreateSmartPlaylist)
+            @if (_showMusicPlaybackActions || _showCreateDynamicPlaylist)
             {
                 <div class="library-toolbar-trailing">
                     @if (_showMusicPlaybackActions)
@@ -81,13 +81,13 @@
                                           AriaLabel="@S["Shuffle"]" />
                         </div>
                     }
-                    @if (_showCreateSmartPlaylist)
+                    @if (_showCreateDynamicPlaylist)
                     {
                         <K7Button Variant="outlined"
                                   Class="library-toolbar-smart-playlist"
                                   StartIcon="@Phosphor.Sparkle"
-                                  OnClick="CreateSmartPlaylistFromBrowseAsync"
-                                  AdditionalAttributes="CreateSmartPlaylistButtonAttributes" />
+                                  OnClick="CreateDynamicPlaylistFromBrowseAsync"
+                                  AdditionalAttributes="CreateDynamicPlaylistButtonAttributes" />
                     }
                 </div>
             }

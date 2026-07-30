@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -27,7 +27,7 @@
   <data name="PresetHighlyRated" xml:space="preserve"><value>Mieux notés</value></data>
   <data name="PresetRecentlyPlayed" xml:space="preserve"><value>Écoutés récemment</value></data>
   <data name="NewMenu" xml:space="preserve"><value>Nouvelle playlist</value></data>
-  <data name="SmartPlaylist" xml:space="preserve"><value>Smart Playlist</value></data>
+  <data name="DynamicPlaylist" xml:space="preserve"><value>Playlist dynamique</value></data>
   <data name="None" xml:space="preserve"><value>Aucune playlist</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Créez votre première playlist pour organiser vos morceaux.</value></data>
 </root>

@@ -1,0 +1,166 @@
+@page "/dynamic-playlists/{Id}"
+@using K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Shared.Dtos.Entities.Playlists
+@inject IPlaylistService K7ServerService
+@inject ILibraryService LibraryService
+@inject IK7ServerService ApiClient
+@inject IStringLocalizer<DynamicPlaylistDetail> L
+@inject IStringLocalizer<SharedResource> S
+@inject IStringLocalizer<DynamicPlaylistDialog> FieldL
+@inject IStringLocalizer<K7RuleEditor> OpL
+<PageTitle>@(_dynamicPlaylist?.Title ?? "Dynamic Playlist")</PageTitle>
+
+@if (_dynamicPlaylist is not null)
+{
+    <div class="playlist-detail-page page-scrollable">
+        <div class="playlist-header">
+            <div class="playlist-header-cover">
+                <K7CoverMosaic CoverPicture="@(_showHeaderPlaceholder ? null : _dynamicPlaylist.CoverPicture)"
+                                ImageUrls="_headerPreviewUrls"
+                                PreferPreviewWhenEmpty="@_showHeaderPlaceholder"
+                                PlaceholderIcon="@Phosphor.Sparkle"
+                                PictureSize="MetadataPictureSize.Medium"
+                                Alt="@_dynamicPlaylist.Title" />
+            </div>
+            <div class="playlist-header-info">
+                <p class="text-overline">@L["Header"]</p>
+                <h4>@_dynamicPlaylist.Title</h4>
+
+                @if (!string.IsNullOrEmpty(_dynamicPlaylist.Description))
+                {
+                    <p class="text-sm mt-1" Color="secondary">@_dynamicPlaylist.Description</p>
+                }
+
+                <div class="d-flex mt-1">
+                    <p class="text-sm" Color="secondary">
+                        @string.Format(L["RulesCount"], _dynamicPlaylist.RuleFilter.Items.Count)
+                        · @_dynamicPlaylist.ItemCount @S["Tracks"]
+                    </p>
+                    @if (_dynamicPlaylist.LastEvaluatedAt.HasValue)
+                    {
+                        <p class="text-sm" Color="secondary">
+                            · @string.Format(L["EvaluatedRelative"], FormatRelativeTime(_dynamicPlaylist.LastEvaluatedAt.Value))
+                        </p>
+                    }
+                </div>
+
+                <div class="playlist-header-actions">
+                    <K7Button Variant="filled" Color="primary"
+                               StartIcon="@Phosphor.Play"
+                               OnClick="PlayAll" Disabled="@(_items.Count == 0)"
+                               AriaLabel="@S["PlayAll"]">
+                        <span class="playlist-action-label">@S["PlayAll"]</span>
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="primary"
+                               StartIcon="@Phosphor.Shuffle"
+                               OnClick="ShuffleAll" Disabled="@(_items.Count == 0)"
+                               AriaLabel="@S["Shuffle"]">
+                        <span class="playlist-action-label">@S["Shuffle"]</span>
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="secondary"
+                               StartIcon="@Phosphor.ArrowClockwise"
+                               OnClick="EvaluateAsync" Disabled="_evaluating"
+                               AriaLabel="@L["Reevaluate"]">
+                        @if (_evaluating)
+                        {
+                            <K7Spinner Size="sm" />
+                            <span class="playlist-action-label">@L["Evaluating"]</span>
+                        }
+                        else
+                        {
+                            <span class="playlist-action-label">@L["Reevaluate"]</span>
+                        }
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="secondary"
+                               StartIcon="@Phosphor.Funnel"
+                               OnClick="BrowseInLibraryAsync"
+                               Disabled="@(_dynamicPlaylist.RuleFilter.Items.Count == 0)"
+                               AriaLabel="@L["BrowseInLibrary"]">
+                        <span class="playlist-action-label">@L["BrowseInLibrary"]</span>
+                    </K7Button>
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" AriaLabel="@L["EditDialogTitle"]" />
+                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" AriaLabel="@L["DeleteDialogTitle"]" />
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_rulesDescription))
+        {
+            <div class="surface ma-4 pa-3">
+                <div class="d-flex gap-2">
+                    <K7Icon Name="funnel" IconSize="@K7IconSize.Sm" Color="secondary" />
+                    <p class="text-sm" Color="secondary">@_rulesDescription</p>
+                </div>
+            </div>
+        }
+
+        @if (_loadingItems)
+        {
+            <K7ProgressBar Indeterminate="true" />
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="d-flex flex-col pa-16">
+                <K7Icon Name="music-note" Style="font-size: 48px; opacity: 0.3;" />
+                <p Color="secondary">@L["NoResults"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="playlist-tracklist">
+                <K7Table Items="_items"
+                          TItem="DynamicPlaylistItemViewModel" OnRowClick="@(args => OnTrackClick(args))" RowClass="cursor-pointer">
+                    <HeaderContent>
+                        <th Style="width: 50px;">#</th>
+                        <th>@S["Title"]</th>
+                        <th>@S["Artist"]</th>
+                        <th>@S["Album"]</th>
+                        <th Style="width: 80px;"><K7Icon Name="clock" IconSize="@K7IconSize.Sm" /></th>
+                        <th Style="width: 130px;"></th>
+                        <th Style="width: 50px;"></th>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <td>
+                            @if (context.IsPlaying)
+                            {
+                                <K7Icon Name="equalizer" IconSize="@K7IconSize.Sm" Color="primary" />
+                            }
+                            else
+                            {
+                                <p class="text-sm" Color="secondary">@(context.Order + 1)</p>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex align-center gap-2">
+                                @if (context.CoverUrl is not null)
+                                {
+                                    <K7Image Src="@context.CoverUrl" Width="36"
+                                              ObjectFit="cover" Class="rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
+                                }
+                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
+                                    @context.Title
+                                </span>
+                            </div>
+                        </td>
+                        <td><p class="text-sm" Color="secondary">@context.ArtistName</p></td>
+                        <td><p class="text-sm" Color="secondary">@context.AlbumTitle</p></td>
+                        <td><p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p></td>
+                        <td>
+                            <RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="sm" />
+                        </td>
+                        <td>
+                            <TrackContextMenu Track="BuildQueueItem(context)" />
+                        </td>
+                    </RowTemplate>
+                </K7Table>
+            </div>
+        }
+    </div>
+}
+else if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}

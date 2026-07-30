@@ -17,7 +17,7 @@ public partial class AdminRestrictionsPanel
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-    [Inject] private IStringLocalizer<SmartPlaylistDialog> SpL { get; set; } = default!;
+    [Inject] private IStringLocalizer<DynamicPlaylistDialog> SpL { get; set; } = default!;
     [Inject] private IStringLocalizer<LibraryBrowseFilters> BrowseL { get; set; } = default!;
 
     private bool _loading = true;

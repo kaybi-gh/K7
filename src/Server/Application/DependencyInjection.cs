@@ -145,9 +145,9 @@ public static class DependencyInjection
         services.AddSingleton<INotificationEventDescriptor, DeviceDeletedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, CollectionCreatedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, CollectionDeletedEventDescriptor>();
-        services.AddSingleton<INotificationEventDescriptor, SmartPlaylistCreatedEventDescriptor>();
-        services.AddSingleton<INotificationEventDescriptor, SmartPlaylistUpdatedEventDescriptor>();
-        services.AddSingleton<INotificationEventDescriptor, SmartPlaylistDeletedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, DynamicPlaylistCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, DynamicPlaylistUpdatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, DynamicPlaylistDeletedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, DownloadReadyEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, IndexedFileCreatedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, IndexedFileDeletedEventDescriptor>();
@@ -175,9 +175,9 @@ public static class DependencyInjection
         services.AddTransient<INotificationHandler<DeviceDeletedEvent>, OutboundNotificationEventHandler<DeviceDeletedEvent>>();
         services.AddTransient<INotificationHandler<CollectionCreatedEvent>, OutboundNotificationEventHandler<CollectionCreatedEvent>>();
         services.AddTransient<INotificationHandler<CollectionDeletedEvent>, OutboundNotificationEventHandler<CollectionDeletedEvent>>();
-        services.AddTransient<INotificationHandler<SmartPlaylistCreatedEvent>, OutboundNotificationEventHandler<SmartPlaylistCreatedEvent>>();
-        services.AddTransient<INotificationHandler<SmartPlaylistUpdatedEvent>, OutboundNotificationEventHandler<SmartPlaylistUpdatedEvent>>();
-        services.AddTransient<INotificationHandler<SmartPlaylistDeletedEvent>, OutboundNotificationEventHandler<SmartPlaylistDeletedEvent>>();
+        services.AddTransient<INotificationHandler<DynamicPlaylistCreatedEvent>, OutboundNotificationEventHandler<DynamicPlaylistCreatedEvent>>();
+        services.AddTransient<INotificationHandler<DynamicPlaylistUpdatedEvent>, OutboundNotificationEventHandler<DynamicPlaylistUpdatedEvent>>();
+        services.AddTransient<INotificationHandler<DynamicPlaylistDeletedEvent>, OutboundNotificationEventHandler<DynamicPlaylistDeletedEvent>>();
         services.AddTransient<INotificationHandler<DownloadReadyEvent>, OutboundNotificationEventHandler<DownloadReadyEvent>>();
         services.AddTransient<INotificationHandler<IndexedFileCreatedEvent>, OutboundNotificationEventHandler<IndexedFileCreatedEvent>>();
         services.AddTransient<INotificationHandler<IndexedFileDeletedEvent>, OutboundNotificationEventHandler<IndexedFileDeletedEvent>>();

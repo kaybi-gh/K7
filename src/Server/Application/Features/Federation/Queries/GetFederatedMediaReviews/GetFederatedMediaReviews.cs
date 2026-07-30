@@ -47,55 +47,63 @@ public class GetFederatedMediaReviewsQueryHandler(
 
         foreach (var peer in peers)
         {
-            if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.Reviews, outbound: false, peer.Id, cancellationToken))
-                continue;
-
-            var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
-            if (token is null)
-                continue;
-
-            var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
-            var assertion = assertionService.CreateAssertion(new FederatedUserRef
+            try
             {
-                OriginUserId = viewerUserId,
-                DisplayName = viewerName
-            }, assertionSecret);
-
-            var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
-            foreach (var remoteUser in remoteUsers)
-            {
-                if (viewerPrivacy.View.Reviews == VisibilityScope.SpecificPeople
-                    && !FederationSocialConsumerHelper.MatchesViewGrants(
-                        FederationContentType.Reviews,
-                        viewerPrivacy.View.Reviews,
-                        viewerPrivacy.View.Grants,
-                        remoteUser,
-                        peer.Id))
+                if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
+                    FederationContentType.Reviews, outbound: false, peer.Id, cancellationToken))
                     continue;
 
-                var reviews = await peerClient.GetRemoteSocialReviewsAsync(
-                    peer.BaseUrl, token, assertion, remoteUser.OriginUserId, cancellationToken);
+                var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);
+                if (token is null)
+                    continue;
 
-                foreach (var review in reviews)
+                var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
+                var assertion = assertionService.CreateAssertion(new FederatedUserRef
                 {
-                    var resolution = await mediaResolver.ResolveAsync(peer.Id, review.Media, cancellationToken);
-                    if (resolution.LocalMediaId != request.MediaId)
+                    OriginUserId = viewerUserId,
+                    DisplayName = viewerName
+                }, assertionSecret);
+
+                var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
+                foreach (var remoteUser in remoteUsers)
+                {
+                    if (viewerPrivacy.View.Reviews == VisibilityScope.SpecificPeople
+                        && !FederationSocialConsumerHelper.MatchesViewGrants(
+                            FederationContentType.Reviews,
+                            viewerPrivacy.View.Reviews,
+                            viewerPrivacy.View.Grants,
+                            remoteUser,
+                            peer.Id))
                         continue;
 
-                    var authorName = !string.IsNullOrWhiteSpace(review.Author.DisplayName)
-                        ? review.Author.DisplayName
-                        : remoteUser.DisplayName;
+                    var reviews = await peerClient.GetRemoteSocialReviewsAsync(
+                        peer.BaseUrl, token, assertion, remoteUser.OriginUserId, cancellationToken);
 
-                    allReviews.Add(review with
+                    foreach (var review in reviews)
                     {
-                        Author = review.Author with
+                        var resolution = await mediaResolver.ResolveAsync(peer.Id, review.Media, cancellationToken);
+                        if (resolution.LocalMediaId != request.MediaId)
+                            continue;
+
+                        var authorName = !string.IsNullOrWhiteSpace(review.Author.DisplayName)
+                            ? review.Author.DisplayName
+                            : remoteUser.DisplayName;
+
+                        allReviews.Add(review with
                         {
-                            OriginPeerServerId = peer.Id,
-                            DisplayName = FederationSocialConsumerHelper.FormatAuthorName(authorName, peer.Name)
-                        }
-                    });
+                            Author = review.Author with
+                            {
+                                OriginPeerServerId = peer.Id,
+                                DisplayName = FederationSocialConsumerHelper.FormatAuthorName(authorName, peer.Name)
+                            }
+                        });
+                    }
                 }
+            }
+            catch (Exception)
+            {
+                // Unreachable / misconfigured peer must not fail the media page.
+                continue;
             }
         }
 

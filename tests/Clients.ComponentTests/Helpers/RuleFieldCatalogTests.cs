@@ -13,20 +13,35 @@ public class RuleFieldCatalogTests
         var descriptors = RuleFieldCatalog.GetDescriptors(MediaType.Movie);
         var byName = descriptors.ToDictionary(d => d.FieldName);
 
-        byName[nameof(SmartPlaylistField.IsCompleted)].ValueType.Should().Be(RuleFieldValueType.Boolean);
-        byName[nameof(SmartPlaylistField.IsCompleted)].Options.Should().NotBeNullOrEmpty();
+        byName[nameof(DynamicPlaylistField.IsCompleted)].ValueType.Should().Be(RuleFieldValueType.Boolean);
+        byName[nameof(DynamicPlaylistField.IsCompleted)].Options.Should().NotBeNullOrEmpty();
 
-        byName[nameof(SmartPlaylistField.OriginalLanguage)].ValueType.Should().Be(RuleFieldValueType.Language);
-        byName[nameof(SmartPlaylistField.ActorName)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.OriginalLanguage)].ValueType.Should().Be(RuleFieldValueType.Language);
+        byName[nameof(DynamicPlaylistField.ActorName)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.Genre)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.Title)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(RestrictionField.ContentRating)].ValueType.Should().Be(RuleFieldValueType.Search);
         byName["Studio"].ValueType.Should().Be(RuleFieldValueType.Search);
-        byName[nameof(SmartPlaylistField.Year)].ValueType.Should().Be(RuleFieldValueType.Number);
+        byName[nameof(DynamicPlaylistField.Year)].ValueType.Should().Be(RuleFieldValueType.Number);
+    }
+
+    [Test]
+    public void GetDescriptors_MusicTrack_ShouldExposeSearchableArtistAndGenre()
+    {
+        var byName = RuleFieldCatalog.GetDescriptors(MediaType.MusicTrack)
+            .ToDictionary(d => d.FieldName);
+
+        byName[nameof(DynamicPlaylistField.ArtistName)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.Genre)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.Title)].ValueType.Should().Be(RuleFieldValueType.Search);
+        byName[nameof(DynamicPlaylistField.AlbumTitle)].ValueType.Should().Be(RuleFieldValueType.Search);
     }
 
     [Test]
     public void GetDescriptors_Serie_ShouldIncludeActorName()
     {
         var descriptors = RuleFieldCatalog.GetDescriptors(MediaType.Serie);
-        descriptors.Select(d => d.FieldName).Should().Contain(nameof(SmartPlaylistField.ActorName));
+        descriptors.Select(d => d.FieldName).Should().Contain(nameof(DynamicPlaylistField.ActorName));
     }
 
     [Test]
@@ -34,7 +49,7 @@ public class RuleFieldCatalogTests
     {
         var descriptor = RuleFieldCatalog
             .GetDescriptors(MediaType.Movie)
-            .Single(d => d.FieldName == nameof(SmartPlaylistField.OriginalLanguage));
+            .Single(d => d.FieldName == nameof(DynamicPlaylistField.OriginalLanguage));
 
         descriptor.Operators.Should().NotContain(RuleOperator.Contains);
         descriptor.Operators.Should().Contain(RuleOperator.Equals);
@@ -44,8 +59,8 @@ public class RuleFieldCatalogTests
     public void GetDescriptors_Movie_ShouldNotIncludeMusicFields()
     {
         var descriptors = RuleFieldCatalog.GetDescriptors(MediaType.Movie);
-        descriptors.Select(d => d.FieldName).Should().NotContain(nameof(SmartPlaylistField.AlbumTitle));
-        descriptors.Select(d => d.FieldName).Should().NotContain(nameof(SmartPlaylistField.ArtistName));
+        descriptors.Select(d => d.FieldName).Should().NotContain(nameof(DynamicPlaylistField.AlbumTitle));
+        descriptors.Select(d => d.FieldName).Should().NotContain(nameof(DynamicPlaylistField.ArtistName));
     }
 
     [Test]
@@ -67,13 +82,13 @@ public class RuleFieldCatalogTests
             [
                 new ConditionRuleItemDto
                 {
-                    Field = nameof(SmartPlaylistField.AlbumTitle),
+                    Field = nameof(DynamicPlaylistField.AlbumTitle),
                     Operator = RuleOperator.Equals,
                     Value = "Test"
                 },
                 new ConditionRuleItemDto
                 {
-                    Field = nameof(SmartPlaylistField.Title),
+                    Field = nameof(DynamicPlaylistField.Title),
                     Operator = RuleOperator.Contains,
                     Value = "Movie"
                 }
@@ -87,6 +102,6 @@ public class RuleFieldCatalogTests
         var sanitized = RuleFieldCatalog.Sanitize(filter, allowed);
 
         sanitized.Items.Should().HaveCount(1);
-        ((ConditionRuleItemDto)sanitized.Items[0]).Field.Should().Be(nameof(SmartPlaylistField.Title));
+        ((ConditionRuleItemDto)sanitized.Items[0]).Field.Should().Be(nameof(DynamicPlaylistField.Title));
     }
 }

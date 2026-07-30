@@ -38,6 +38,8 @@ public partial class MediaCard : IDisposable
     [Parameter] public string? ElementId { get; set; }
     [Parameter] public RenderFragment? CoverContent { get; set; }
     [Parameter] public string? PlaceholderIcon { get; set; }
+    /// <summary>Optional top-right type badge icon (e.g. sparkle for dynamic playlists).</summary>
+    [Parameter] public string? TypeBadgeIcon { get; set; }
     /// <summary>Native img loading hint. Use "eager" for TV overscan rows so posters fetch before focus.</summary>
     [Parameter] public string ImageLoading { get; set; } = "lazy";
 

@@ -30,7 +30,7 @@ public class CommonMappingsTests
         dto.Description.Should().Be("Desc");
         dto.MediaType.Should().Be(MediaType.Movie);
         dto.ItemCount.Should().Be(1);
-        dto.IsSmartPlaylist.Should().BeFalse();
+        dto.IsDynamicPlaylist.Should().BeFalse();
         dto.VisibilityScope.Should().Be(VisibilityScope.LocalServer);
     }
 

@@ -53,41 +53,49 @@ public class SocialUserDirectoryService(
 
         foreach (var peer in peers)
         {
-            if (!await profileVisibilityService.HasAnyInboundSocialEnabledAsync(peer.Id, cancellationToken))
-                continue;
-
-            var token = await peerClient.GetAccessTokenAsync(
-                peer.BaseUrl,
-                peer.OutboundClientId!,
-                peer.OutboundClientSecret!,
-                cancellationToken);
-            if (token is null)
-                continue;
-
-            var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
-            var assertion = assertionService.CreateAssertion(new FederatedUserRef
+            try
             {
-                OriginUserId = viewerUserId,
-                DisplayName = viewer?.DisplayName
-            }, assertionSecret);
-
-            var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
-            foreach (var remoteUser in remoteUsers)
-            {
-                if (!profileVisibilityService.IsFederatedUserDiscoverableForViewer(viewerPrivacy, remoteUser, peer.Id))
+                if (!await profileVisibilityService.HasAnyInboundSocialEnabledAsync(peer.Id, cancellationToken))
                     continue;
 
-                results.Add(new SocialUserDirectoryEntryDto
+                var token = await peerClient.GetAccessTokenAsync(
+                    peer.BaseUrl,
+                    peer.OutboundClientId!,
+                    peer.OutboundClientSecret!,
+                    cancellationToken);
+                if (token is null)
+                    continue;
+
+                var assertionSecret = peer.FederationAssertionSecret ?? peer.OutboundClientSecret!;
+                var assertion = assertionService.CreateAssertion(new FederatedUserRef
                 {
-                    Identity = new SocialUserIdentityDto
+                    OriginUserId = viewerUserId,
+                    DisplayName = viewer?.DisplayName
+                }, assertionSecret);
+
+                var remoteUsers = await peerClient.GetRemoteSocialUsersAsync(peer.BaseUrl, token, assertion, cancellationToken);
+                foreach (var remoteUser in remoteUsers)
+                {
+                    if (!profileVisibilityService.IsFederatedUserDiscoverableForViewer(viewerPrivacy, remoteUser, peer.Id))
+                        continue;
+
+                    results.Add(new SocialUserDirectoryEntryDto
                     {
-                        IsFederated = true,
-                        PeerServerId = peer.Id,
-                        OriginUserId = remoteUser.OriginUserId,
-                        DisplayName = remoteUser.DisplayName ?? "?",
-                        PeerName = peer.Name
-                    }
-                });
+                        Identity = new SocialUserIdentityDto
+                        {
+                            IsFederated = true,
+                            PeerServerId = peer.Id,
+                            OriginUserId = remoteUser.OriginUserId,
+                            DisplayName = remoteUser.DisplayName ?? "?",
+                            PeerName = peer.Name
+                        }
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                // Unreachable peer must not fail social discovery for local navigation.
+                continue;
             }
         }
 
@@ -124,6 +132,6 @@ public class SocialUserDirectoryService(
         view.Reviews != VisibilityScope.Nobody
         || view.Collections != VisibilityScope.Nobody
         || view.Playlists != VisibilityScope.Nobody
-        || view.SmartPlaylists != VisibilityScope.Nobody
+        || view.DynamicPlaylists != VisibilityScope.Nobody
         || view.PlaybackHistory != VisibilityScope.Nobody;
 }

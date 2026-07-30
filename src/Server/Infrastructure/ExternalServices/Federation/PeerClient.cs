@@ -54,41 +54,59 @@ public class PeerClient(
 
     public async Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default)
     {
-        peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
+        try
+        {
+            peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Unresolvable / disallowed peer URL must not fail the whole request for
+            // multi-peer consumers (social discovery, federated reviews, etc.).
+            logger.LogWarning(ex, "Skipping peer token request for disallowed or unresolvable URL {BaseUrl}", baseUrl);
+            return null;
+        }
 
         if (tokenCache.TryGet(baseUrl, clientId, out var cached) && cached is not null)
             return cached;
 
-        return await tokenCache.WithLockAsync(baseUrl, clientId, async ct =>
+        try
         {
-            // Another waiter may have filled the cache while we queued.
-            if (tokenCache.TryGet(baseUrl, clientId, out var raced) && raced is not null)
-                return raced;
-
-            var url = $"{baseUrl.TrimEnd('/')}/connect/token";
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            return await tokenCache.WithLockAsync(baseUrl, clientId, async ct =>
             {
-                ["grant_type"] = "client_credentials",
-                ["client_id"] = clientId,
-                ["client_secret"] = clientSecret,
-                ["scope"] = "peer"
-            });
+                // Another waiter may have filled the cache while we queued.
+                if (tokenCache.TryGet(baseUrl, clientId, out var raced) && raced is not null)
+                    return raced;
 
-            var response = await httpClient.PostAsync(url, content, ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorBody = await response.Content.ReadAsStringAsync(ct);
-                logger.LogWarning("Token request to {Url} failed with {StatusCode}: {ErrorBody}", url, (int)response.StatusCode, errorBody);
-                return null;
-            }
+                var url = $"{baseUrl.TrimEnd('/')}/connect/token";
+                var content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"] = "client_credentials",
+                    ["client_id"] = clientId,
+                    ["client_secret"] = clientSecret,
+                    ["scope"] = "peer"
+                });
 
-            var result = await response.Content.ReadFromJsonAsync<TokenResponse>(_jsonOptions, ct);
-            if (string.IsNullOrEmpty(result?.AccessToken))
-                return null;
+                var response = await httpClient.PostAsync(url, content, ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(ct);
+                    logger.LogWarning("Token request to {Url} failed with {StatusCode}: {ErrorBody}", url, (int)response.StatusCode, errorBody);
+                    return null;
+                }
 
-            tokenCache.Set(baseUrl, clientId, result.AccessToken, result.ExpiresIn ?? 3600);
-            return result.AccessToken;
-        }, cancellationToken);
+                var result = await response.Content.ReadFromJsonAsync<TokenResponse>(_jsonOptions, ct);
+                if (string.IsNullOrEmpty(result?.AccessToken))
+                    return null;
+
+                tokenCache.Set(baseUrl, clientId, result.AccessToken, result.ExpiresIn ?? 3600);
+                return result.AccessToken;
+            }, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            logger.LogWarning(ex, "Peer token request to {BaseUrl} failed; treating peer as unreachable", baseUrl);
+            return null;
+        }
     }
 
     public async Task<IReadOnlyList<PeerLibraryDto>> GetRemoteLibrariesAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default)
@@ -318,10 +336,10 @@ public class PeerClient(
         return await response.Content.ReadFromJsonAsync<List<FederatedPlaylistDto>>(_jsonOptions, cancellationToken) ?? [];
     }
 
-    public async Task<IReadOnlyList<FederatedSmartPlaylistDto>> GetRemoteSocialSmartPlaylistsAsync(
+    public async Task<IReadOnlyList<FederatedDynamicPlaylistDto>> GetRemoteSocialDynamicPlaylistsAsync(
         string baseUrl, string accessToken, string viewerAssertion, Guid originUserId, CancellationToken cancellationToken = default)
     {
-        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/smart-playlists";
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/social/users/{originUserId}/dynamic-playlists";
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("X-K7-Federation-Viewer", viewerAssertion);
@@ -329,7 +347,7 @@ public class PeerClient(
         if (!response.IsSuccessStatusCode)
             return [];
 
-        return await response.Content.ReadFromJsonAsync<List<FederatedSmartPlaylistDto>>(_jsonOptions, cancellationToken) ?? [];
+        return await response.Content.ReadFromJsonAsync<List<FederatedDynamicPlaylistDto>>(_jsonOptions, cancellationToken) ?? [];
     }
 
     public async Task<IReadOnlyList<FederationPlaybackEntryDto>> GetRemotePlaybackHistoryAsync(

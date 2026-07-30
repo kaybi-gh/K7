@@ -8,7 +8,7 @@ public sealed record LitePlaylistDto
     public Guid Id { get; init; }
     public required string Title { get; init; }
     public string? Description { get; init; }
-    public bool IsSmartPlaylist { get; init; }
+    public bool IsDynamicPlaylist { get; init; }
     public MediaType MediaType { get; init; }
     public MetadataPictureDto? CoverPicture { get; init; }
     public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; init; } = [];

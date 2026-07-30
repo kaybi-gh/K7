@@ -1,0 +1,24 @@
+using System.Text.Json;
+using K7.Server.Domain.Entities.Playlists;
+using K7.Server.Domain.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace K7.Server.Infrastructure.Database.Context.Data.Configurations;
+
+public class DynamicPlaylistConfiguration : IEntityTypeConfiguration<DynamicPlaylist>
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public void Configure(EntityTypeBuilder<DynamicPlaylist> builder)
+    {
+        builder.Property(p => p.RuleFilter)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, JsonOptions),
+                v => JsonSerializer.Deserialize<RuleGroup>(v, JsonOptions)!);
+    }
+}

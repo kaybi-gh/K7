@@ -19,10 +19,10 @@ public interface IPlaylistService
     Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default);
     Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default);
     Task RecordPlaylistPlaybackAsync(Guid playlistId, CancellationToken cancellationToken = default);
-    Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default);
-    Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default);
-    Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default);
-    Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
-    Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PaginatedListDto<LiteDynamicPlaylistDto>?> GetDynamicPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default);
+    Task<DynamicPlaylistDto?> GetDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Guid> CreateDynamicPlaylistAsync(CreateDynamicPlaylistRequest request, CancellationToken cancellationToken = default);
+    Task UpdateDynamicPlaylistAsync(Guid id, UpdateDynamicPlaylistRequest request, CancellationToken cancellationToken = default);
+    Task DeleteDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task EvaluateDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
 }

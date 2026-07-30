@@ -5,7 +5,7 @@ public sealed record SourcePlaylist
     public required string Id { get; init; }
     public required string Title { get; init; }
     public string? MediaType { get; init; }
-    public bool IsSmart { get; init; }
+    public bool IsDynamic { get; init; }
     public List<SourcePlaylistItem> Items { get; init; } = [];
 }
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -49,8 +49,8 @@
   <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
   <data name="IntelligentSearchNoResults" xml:space="preserve"><value>No results for this search in this group.</value></data>
   <data name="IntelligentSearchError" xml:space="preserve"><value>Intelligent search failed.</value></data>
-  <data name="CreateSmartPlaylist" xml:space="preserve"><value>Create smart playlist</value></data>
-  <data name="CreateSmartPlaylistDialogTitle" xml:space="preserve"><value>Create smart playlist</value></data>
+  <data name="CreateDynamicPlaylist" xml:space="preserve"><value>Create dynamic playlist</value></data>
+  <data name="CreateDynamicPlaylistDialogTitle" xml:space="preserve"><value>Create dynamic playlist</value></data>
   <data name="ContentSourceFilter" xml:space="preserve"><value>Source</value></data>
   <data name="ContentSourceAll" xml:space="preserve"><value>All sources</value></data>
   <data name="ContentSourceLocal" xml:space="preserve"><value>Local</value></data>

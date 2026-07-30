@@ -6,7 +6,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via accountID when available. Smart/dynamic playlists are skipped unless `--include-smart-playlists` |
+| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via accountID when available. Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
 | **Jellyfin** | No | Yes (like=10, dislike=1) | Yes | No per-play timestamps, use Tracearr for history |
 | **Tracearr** | Yes | No | No | Per-play history with timestamps and provider IDs |
 | **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata |
@@ -102,7 +102,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--spotify-data-dir` | Path to Spotify extended streaming history export folder (for full listen history) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
 | `--auto-map-users` | Auto-map source users to K7 users with the same username (case-insensitive). Off by default |
-| `--include-smart-playlists` | Import Plex smart/dynamic playlists as **static** snapshots. Off by default |
+| `--include-dynamic-playlists` | Import Plex smart/dynamic playlists as **static** snapshots. Off by default |
 | `--only-match-existing` | Only import data for media that already exists in K7 - skip virtual media creation for unmatched items |
 | `--fetch-metadata` | Fetch rich metadata (posters, descriptions, etc.) for newly created media |
 | `--playcount-mode` | Play count merge strategy: `additive` (sum) or `max` (highest wins). Default: `additive` |
@@ -194,11 +194,11 @@ With `--user-mapping`, data is imported directly into existing K7 users:
 --user-mapping "PlexUser:k7user" --user-mapping "AnotherUser:anotherk7user"
 ```
 
-## Plex Smart Playlists
+## Plex Dynamic Playlists
 
 Plex smart (dynamic) playlists are **skipped by default**. Their filter rules do not map cleanly to K7, and importing the current item list would freeze a stale snapshot.
 
-**Recommended:** recreate them as K7 smart playlists (rules that refresh with the library) instead of importing a frozen list.
+**Recommended:** recreate them as K7 dynamic playlists (rules that refresh with the library) instead of importing a frozen list.
 
 If you still want a one-shot static copy of the current contents:
 
@@ -207,7 +207,7 @@ k7-import -s plex \
   --source-url http://192.168.1.10:32400 \
   --source-api-key "your-plex-token" \
   --k7-url http://localhost:5000 \
-  --include-smart-playlists
+  --include-dynamic-playlists
 ```
 
 ## Media Matching

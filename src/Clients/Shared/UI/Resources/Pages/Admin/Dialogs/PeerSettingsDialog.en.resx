@@ -32,6 +32,6 @@
   <data name="ContentReviews" xml:space="preserve"><value>Reviews</value></data>
   <data name="ContentCollections" xml:space="preserve"><value>Collections</value></data>
   <data name="ContentPlaylists" xml:space="preserve"><value>Playlists</value></data>
-  <data name="ContentSmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="ContentDynamicPlaylists" xml:space="preserve"><value>Dynamic playlists</value></data>
   <data name="ContentPlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
 </root>

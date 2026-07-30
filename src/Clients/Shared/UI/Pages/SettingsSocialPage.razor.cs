@@ -66,7 +66,7 @@ public partial class SettingsSocialPage
                 case FederationContentType.Reviews: _privacy.Share.Reviews = scope; break;
                 case FederationContentType.Collections: _privacy.Share.Collections = scope; break;
                 case FederationContentType.Playlists: _privacy.Share.Playlists = scope; break;
-                case FederationContentType.SmartPlaylists: _privacy.Share.SmartPlaylists = scope; break;
+                case FederationContentType.DynamicPlaylists: _privacy.Share.DynamicPlaylists = scope; break;
                 case FederationContentType.PlaybackHistory: _privacy.Share.PlaybackHistory = scope; break;
             }
         }
@@ -77,7 +77,7 @@ public partial class SettingsSocialPage
                 case FederationContentType.Reviews: _privacy.View.Reviews = scope; break;
                 case FederationContentType.Collections: _privacy.View.Collections = scope; break;
                 case FederationContentType.Playlists: _privacy.View.Playlists = scope; break;
-                case FederationContentType.SmartPlaylists: _privacy.View.SmartPlaylists = scope; break;
+                case FederationContentType.DynamicPlaylists: _privacy.View.DynamicPlaylists = scope; break;
                 case FederationContentType.PlaybackHistory: _privacy.View.PlaybackHistory = scope; break;
             }
         }

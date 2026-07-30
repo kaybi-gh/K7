@@ -28,7 +28,7 @@
   <data name="RecentReviews" xml:space="preserve"><value>Recent reviews</value></data>
   <data name="Collections" xml:space="preserve"><value>Collections</value></data>
   <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
-  <data name="SmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="DynamicPlaylists" xml:space="preserve"><value>Dynamic playlists</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
   <data name="CopyPlaylist" xml:space="preserve"><value>Copy to my playlists</value></data>
   <data name="PlaylistCopied" xml:space="preserve"><value>Playlist copied</value></data>

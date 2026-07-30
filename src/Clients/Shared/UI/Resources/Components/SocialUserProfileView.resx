@@ -9,7 +9,7 @@
   <data name="RecentReviews" xml:space="preserve"><value>Derniers avis</value></data>
   <data name="Collections" xml:space="preserve"><value>Collections</value></data>
   <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
-  <data name="SmartPlaylists" xml:space="preserve"><value>Playlists intelligentes</value></data>
+  <data name="DynamicPlaylists" xml:space="preserve"><value>Playlists dynamiques</value></data>
   <data name="Items" xml:space="preserve"><value>éléments</value></data>
   <data name="CopyPlaylist" xml:space="preserve"><value>Copier dans mes playlists</value></data>
   <data name="PlaylistCopied" xml:space="preserve"><value>Playlist copiée</value></data>

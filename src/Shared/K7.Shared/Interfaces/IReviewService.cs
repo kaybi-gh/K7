@@ -18,7 +18,7 @@ public interface IReviewService
     Task<IReadOnlyList<FederationGrantTargetDto>> GetFederationGrantTargetsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedCollectionViewDto>> GetFederatedCollectionsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedPlaylistViewDto>> GetFederatedPlaylistsAsync(CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetFederatedSmartPlaylistsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FederatedDynamicPlaylistViewDto>> GetFederatedDynamicPlaylistsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetFederatedPlaybackHistoryAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SocialUserReviewViewDto>> GetMyMediaReviewsAsync(CancellationToken cancellationToken = default);
     Task<int> GetMyMediaReviewCountAsync(CancellationToken cancellationToken = default);

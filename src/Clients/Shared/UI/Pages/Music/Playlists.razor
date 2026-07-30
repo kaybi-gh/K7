@@ -41,7 +41,7 @@
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
-                <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+                <K7MenuItem Icon="sparkle" OnClick="OpenCreateDynamicPlaylistDialog">@L["DynamicPlaylist"]</K7MenuItem>
             </ChildContent>
         </K7Menu>
     </ToolbarContent>
@@ -51,7 +51,7 @@
     <GridTemplate Context="playlist">
         @{
             var vm = playlist.ToCardViewModel(ApiClient, GetPlaylistSubtitle(playlist));
-            var placeholderIcon = playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
+            var placeholderIcon = playlist.IsDynamicPlaylist ? Phosphor.Sparkle : Phosphor.Queue;
         }
         <MediaCard Model="vm"
                    Href="@GetPlaylistHref(playlist)"
@@ -59,7 +59,8 @@
                    FooterVisible="true"
                    ContextMenuEnabled="false"
                    HoverOverlayEnabled="true"
-                   PlaceholderIcon="@placeholderIcon">
+                   PlaceholderIcon="@placeholderIcon"
+                   TypeBadgeIcon="@(playlist.IsDynamicPlaylist ? Phosphor.Sparkle : null)">
             <CoverContent>
                 <K7CoverMosaic CoverPicture="playlist.CoverPicture"
                                PreviewPictures="playlist.PreviewPictures"

@@ -2,7 +2,7 @@ using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Reviews;
-using K7.Server.Application.Features.SmartPlaylists.Services;
+using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
@@ -72,7 +72,7 @@ public class SocialUserProfileReader(
         var recentPlayback = await LoadLocalPlaybackAsync(owner.Id, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
         var collections = await LoadLocalCollectionsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
         var playlists = await LoadLocalPlaylistsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
-        var smartPlaylists = await LoadLocalSmartPlaylistsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
+        var dynamicPlaylists = await LoadLocalDynamicPlaylistsAsync(owner, viewerUserId, isSelf, privacy, viewerPrivacy, cancellationToken);
         var visibleSections = await profileVisibilityService.BuildLocalVisibleSectionsAsync(
             isSelf,
             viewerUserId,
@@ -89,7 +89,7 @@ public class SocialUserProfileReader(
             RecentPlayback = recentPlayback,
             Collections = collections,
             Playlists = playlists,
-            SmartPlaylists = smartPlaylists
+            DynamicPlaylists = dynamicPlaylists
         };
     }
 
@@ -141,7 +141,7 @@ public class SocialUserProfileReader(
         var recentPlayback = await LoadFederatedPlaybackAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
         var collections = await LoadFederatedCollectionsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
         var playlists = await LoadFederatedPlaylistsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
-        var smartPlaylists = await LoadFederatedSmartPlaylistsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
+        var dynamicPlaylists = await LoadFederatedDynamicPlaylistsAsync(peer, viewerUserId, viewerPrivacy, remoteUser, token, assertion, originUserId, cancellationToken);
         var visibleSections = await profileVisibilityService.BuildFederatedVisibleSectionsAsync(viewerPrivacy, remoteUser, peer.Id, cancellationToken);
 
         return new SocialUserProfileDto
@@ -152,7 +152,7 @@ public class SocialUserProfileReader(
             RecentPlayback = recentPlayback,
             Collections = collections,
             Playlists = playlists,
-            SmartPlaylists = smartPlaylists
+            DynamicPlaylists = dynamicPlaylists
         };
     }
 
@@ -242,7 +242,7 @@ public class SocialUserProfileReader(
         CancellationToken cancellationToken = default)
     {
         var viewerPrivacy = await privacyService.GetPrivacyAsync(viewerUserId, cancellationToken);
-        if (viewerPrivacy.View.Playlists == VisibilityScope.Nobody && viewerPrivacy.View.SmartPlaylists == VisibilityScope.Nobody)
+        if (viewerPrivacy.View.Playlists == VisibilityScope.Nobody && viewerPrivacy.View.DynamicPlaylists == VisibilityScope.Nobody)
             return [];
 
         var results = new List<SharedPlaylistBrowseDto>();
@@ -291,7 +291,7 @@ public class SocialUserProfileReader(
                         Title = playlist.Title,
                         Description = playlist.Description,
                         MediaType = playlist.MediaType,
-                        IsSmart = false,
+                        IsDynamic = false,
                         ItemCount = playlist.Items.Count
                     });
                 }
@@ -314,13 +314,13 @@ public class SocialUserProfileReader(
                     Title = entry.Playlist.Title,
                     Description = entry.Playlist.Description,
                     MediaType = entry.Playlist.MediaType,
-                    IsSmart = false,
+                    IsDynamic = false,
                     ItemCount = entry.Items.Count
                 });
             }
         }
 
-        if (viewerPrivacy.View.SmartPlaylists != VisibilityScope.Nobody)
+        if (viewerPrivacy.View.DynamicPlaylists != VisibilityScope.Nobody)
         {
             var localOwners = await context.Users
                 .AsNoTracking()
@@ -330,15 +330,15 @@ public class SocialUserProfileReader(
             foreach (var owner in localOwners)
             {
                 var ownerPrivacy = await privacyService.GetPrivacyAsync(owner.Id, cancellationToken);
-                if (ownerPrivacy.Share.SmartPlaylists == VisibilityScope.Nobody)
+                if (ownerPrivacy.Share.DynamicPlaylists == VisibilityScope.Nobody)
                     continue;
 
                 if (!await visibilityEvaluator.CanViewAsync(
-                    viewerUserId, owner.Id, FederationContentType.SmartPlaylists, ownerPrivacy.Share.SmartPlaylists, cancellationToken: cancellationToken))
+                    viewerUserId, owner.Id, FederationContentType.DynamicPlaylists, ownerPrivacy.Share.DynamicPlaylists, cancellationToken: cancellationToken))
                     continue;
 
-                var smartPlaylists = await context.Playlists
-                    .OfType<SmartPlaylist>()
+                var dynamicPlaylists = await context.Playlists
+                    .OfType<DynamicPlaylist>()
                     .AsNoTracking()
                     .Where(p => p.UserId == owner.Id && p.VisibilityScope != VisibilityScope.Nobody)
                     .ToListAsync(cancellationToken);
@@ -346,12 +346,12 @@ public class SocialUserProfileReader(
                 var avatarId = await GetAvatarPictureIdAsync(owner.Id, cancellationToken);
                 var ownerIdentity = await ToLocalIdentityAsync(owner, avatarId, cancellationToken);
 
-                foreach (var playlist in smartPlaylists)
+                foreach (var playlist in dynamicPlaylists)
                 {
                     if (!await visibilityEvaluator.CanViewAsync(
                         viewerUserId,
                         owner.Id,
-                        FederationContentType.SmartPlaylists,
+                        FederationContentType.DynamicPlaylists,
                         playlist.VisibilityScope,
                         playlistId: playlist.Id,
                         cancellationToken: cancellationToken))
@@ -364,13 +364,13 @@ public class SocialUserProfileReader(
                         Title = playlist.Title,
                         Description = playlist.Description,
                         MediaType = playlist.MediaType,
-                        IsSmart = true,
+                        IsDynamic = true,
                         ItemCount = 0
                     });
                 }
             }
 
-            var federatedSmart = await consumerService.GetSmartPlaylistsAsync(viewerUserId, cancellationToken);
+            var federatedSmart = await consumerService.GetDynamicPlaylistsAsync(viewerUserId, cancellationToken);
             foreach (var entry in federatedSmart)
             {
                 results.Add(new SharedPlaylistBrowseDto
@@ -387,7 +387,7 @@ public class SocialUserProfileReader(
                     Title = entry.Playlist.Title,
                     Description = entry.Playlist.Description,
                     MediaType = entry.Playlist.MediaType,
-                    IsSmart = true,
+                    IsDynamic = true,
                     ItemCount = entry.Items.Count
                 });
             }
@@ -446,7 +446,7 @@ public class SocialUserProfileReader(
             FederationContentType.Reviews => await context.MediaReviews.AnyAsync(r => r.UserId == ownerUserId, cancellationToken),
             FederationContentType.Collections => await context.Collections.AnyAsync(c => c.UserId == ownerUserId && c.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             FederationContentType.Playlists => await context.Playlists.AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
-            FederationContentType.SmartPlaylists => await context.Playlists.OfType<SmartPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
+            FederationContentType.DynamicPlaylists => await context.Playlists.OfType<DynamicPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             FederationContentType.PlaybackHistory => await context.MediaPlaybackSessions.AnyAsync(s => s.UserId == ownerUserId, cancellationToken),
             _ => false
         };
@@ -514,7 +514,7 @@ public class SocialUserProfileReader(
             PlaybackHistory = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.PlaybackHistory, cancellationToken),
             Collections = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.Collections, cancellationToken),
             Playlists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.Playlists, cancellationToken),
-            SmartPlaylists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.SmartPlaylists, cancellationToken)
+            DynamicPlaylists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.DynamicPlaylists, cancellationToken)
         };
 
     private async Task<bool> IsLocalSectionVisibleAsync(
@@ -555,7 +555,7 @@ public class SocialUserProfileReader(
             PlaybackHistory = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.PlaybackHistory, cancellationToken),
             Collections = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.Collections, cancellationToken),
             Playlists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.Playlists, cancellationToken),
-            SmartPlaylists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.SmartPlaylists, cancellationToken)
+            DynamicPlaylists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.DynamicPlaylists, cancellationToken)
         };
 
     private async Task<bool> IsFederatedSectionVisibleAsync(
@@ -920,7 +920,7 @@ public class SocialUserProfileReader(
                 Title = playlist.Title,
                 Description = playlist.Description,
                 MediaType = playlist.MediaType,
-                IsSmart = false,
+                IsDynamic = false,
                 CoverPictureId = playlist.CoverPicture?.Id,
                 ItemCount = playlist.Items.Count,
                 PreviewItems = previewItems
@@ -930,7 +930,7 @@ public class SocialUserProfileReader(
         return results;
     }
 
-    private async Task<IReadOnlyList<SocialUserPlaylistCardDto>> LoadLocalSmartPlaylistsAsync(
+    private async Task<IReadOnlyList<SocialUserPlaylistCardDto>> LoadLocalDynamicPlaylistsAsync(
         User owner,
         Guid viewerUserId,
         bool isSelf,
@@ -940,16 +940,16 @@ public class SocialUserProfileReader(
     {
         if (!isSelf && !SocialViewVisibilityHelper.CanViewerSeeLocalContent(
                 viewerPrivacy,
-                FederationContentType.SmartPlaylists,
+                FederationContentType.DynamicPlaylists,
                 owner.Id))
             return [];
 
-        if (!isSelf && (privacy.Share.SmartPlaylists == VisibilityScope.Nobody
-            || !await visibilityEvaluator.CanViewAsync(viewerUserId, owner.Id, FederationContentType.SmartPlaylists, privacy.Share.SmartPlaylists, cancellationToken: cancellationToken)))
+        if (!isSelf && (privacy.Share.DynamicPlaylists == VisibilityScope.Nobody
+            || !await visibilityEvaluator.CanViewAsync(viewerUserId, owner.Id, FederationContentType.DynamicPlaylists, privacy.Share.DynamicPlaylists, cancellationToken: cancellationToken)))
             return [];
 
         var playlists = await context.Playlists
-            .OfType<SmartPlaylist>()
+            .OfType<DynamicPlaylist>()
             .AsNoTracking()
             .Include(p => p.CoverPicture)
             .Where(p => p.UserId == owner.Id && (isSelf || p.VisibilityScope != VisibilityScope.Nobody))
@@ -959,11 +959,11 @@ public class SocialUserProfileReader(
         foreach (var playlist in playlists)
         {
             if (!isSelf && !await visibilityEvaluator.CanViewAsync(
-                viewerUserId, owner.Id, FederationContentType.SmartPlaylists, playlist.VisibilityScope, playlistId: playlist.Id, cancellationToken: cancellationToken))
+                viewerUserId, owner.Id, FederationContentType.DynamicPlaylists, playlist.VisibilityScope, playlistId: playlist.Id, cancellationToken: cancellationToken))
                 continue;
 
             var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
-            query = SmartPlaylistEvaluator.ApplyRules(query, playlist, viewerUserId);
+            query = DynamicPlaylistEvaluator.ApplyRules(query, playlist, viewerUserId);
             var mediaIds = await query.Select(m => m.Id).Take(PreviewItemLimit).ToListAsync(cancellationToken);
 
             var previewItems = new List<SocialUserMediaCardDto>();
@@ -989,7 +989,7 @@ public class SocialUserProfileReader(
                 Title = playlist.Title,
                 Description = playlist.Description,
                 MediaType = playlist.MediaType,
-                IsSmart = true,
+                IsDynamic = true,
                 CoverPictureId = playlist.CoverPicture?.Id,
                 ItemCount = previewItems.Count,
                 PreviewItems = previewItems
@@ -1182,7 +1182,7 @@ public class SocialUserProfileReader(
                 Title = playlist.Title,
                 Description = playlist.Description,
                 MediaType = playlist.MediaType,
-                IsSmart = false,
+                IsDynamic = false,
                 ItemCount = playlist.Items.Count,
                 PreviewItems = previewItems
             });
@@ -1191,7 +1191,7 @@ public class SocialUserProfileReader(
         return results;
     }
 
-    private async Task<IReadOnlyList<SocialUserPlaylistCardDto>> LoadFederatedSmartPlaylistsAsync(
+    private async Task<IReadOnlyList<SocialUserPlaylistCardDto>> LoadFederatedDynamicPlaylistsAsync(
         PeerServer peer,
         Guid viewerUserId,
         FederationPrivacySettingsDto viewerPrivacy,
@@ -1203,17 +1203,17 @@ public class SocialUserProfileReader(
     {
         if (!SocialViewVisibilityHelper.CanViewerSeeFederatedContent(
                 viewerPrivacy,
-                FederationContentType.SmartPlaylists,
+                FederationContentType.DynamicPlaylists,
                 remoteUser,
                 peer.Id))
             return [];
 
-        var playlists = await peerClient.GetRemoteSocialSmartPlaylistsAsync(peer.BaseUrl, token, assertion, originUserId, cancellationToken);
+        var playlists = await peerClient.GetRemoteSocialDynamicPlaylistsAsync(peer.BaseUrl, token, assertion, originUserId, cancellationToken);
         var results = new List<SocialUserPlaylistCardDto>();
 
         foreach (var playlist in playlists)
         {
-            var smartPlaylist = new SmartPlaylist
+            var dynamicPlaylist = new DynamicPlaylist
             {
                 Title = playlist.Title,
                 MediaType = playlist.MediaType,
@@ -1225,7 +1225,7 @@ public class SocialUserProfileReader(
             };
 
             var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
-            query = SmartPlaylistEvaluator.ApplyRules(query, smartPlaylist, viewerUserId);
+            query = DynamicPlaylistEvaluator.ApplyRules(query, dynamicPlaylist, viewerUserId);
             var mediaIds = await query.Select(m => m.Id).Take(PreviewItemLimit).ToListAsync(cancellationToken);
 
             var previewItems = new List<SocialUserMediaCardDto>();
@@ -1248,7 +1248,7 @@ public class SocialUserProfileReader(
                 Title = playlist.Title,
                 Description = playlist.Description,
                 MediaType = playlist.MediaType,
-                IsSmart = true,
+                IsDynamic = true,
                 ItemCount = previewItems.Count,
                 PreviewItems = previewItems
             });
@@ -1261,6 +1261,6 @@ public class SocialUserProfileReader(
         view.Reviews != VisibilityScope.Nobody
         || view.Collections != VisibilityScope.Nobody
         || view.Playlists != VisibilityScope.Nobody
-        || view.SmartPlaylists != VisibilityScope.Nobody
+        || view.DynamicPlaylists != VisibilityScope.Nobody
         || view.PlaybackHistory != VisibilityScope.Nobody;
 }

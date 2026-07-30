@@ -43,27 +43,27 @@ public static class BrowseSortUrlMapping
                 : MediaOrderingOption.TitleAsc
         };
 
-    public static (SmartPlaylistOrderBy OrderBy, bool Descending) ToSmartPlaylistOrder(
+    public static (DynamicPlaylistOrderBy OrderBy, bool Descending) ToDynamicPlaylistOrder(
         MediaOrderingOption sort,
         MediaType mediaType)
     {
         var (orderBy, descending) = sort switch
         {
-            MediaOrderingOption.TitleDesc => (SmartPlaylistOrderBy.Title, true),
-            MediaOrderingOption.TitleAsc => (SmartPlaylistOrderBy.Title, false),
-            MediaOrderingOption.CreatedAsc => (SmartPlaylistOrderBy.DateAdded, false),
-            MediaOrderingOption.CreatedDesc => (SmartPlaylistOrderBy.DateAdded, true),
-            MediaOrderingOption.ReleaseDateAsc => (SmartPlaylistOrderBy.Year, false),
-            MediaOrderingOption.ReleaseDateDesc => (SmartPlaylistOrderBy.Year, true),
-            MediaOrderingOption.LocalRatingAsc => (SmartPlaylistOrderBy.Rating, false),
-            MediaOrderingOption.LocalRatingDesc => (SmartPlaylistOrderBy.Rating, true),
-            MediaOrderingOption.PlayCountAsc => (SmartPlaylistOrderBy.PlayCount, false),
-            MediaOrderingOption.PlayCountDesc => (SmartPlaylistOrderBy.PlayCount, true),
-            MediaOrderingOption.LastInteractedAsc => (SmartPlaylistOrderBy.LastPlayed, false),
-            MediaOrderingOption.LastInteractedDesc => (SmartPlaylistOrderBy.LastPlayed, true),
-            _ => (SmartPlaylistOrderBy.DateAdded, true)
+            MediaOrderingOption.TitleDesc => (DynamicPlaylistOrderBy.Title, true),
+            MediaOrderingOption.TitleAsc => (DynamicPlaylistOrderBy.Title, false),
+            MediaOrderingOption.CreatedAsc => (DynamicPlaylistOrderBy.DateAdded, false),
+            MediaOrderingOption.CreatedDesc => (DynamicPlaylistOrderBy.DateAdded, true),
+            MediaOrderingOption.ReleaseDateAsc => (DynamicPlaylistOrderBy.Year, false),
+            MediaOrderingOption.ReleaseDateDesc => (DynamicPlaylistOrderBy.Year, true),
+            MediaOrderingOption.LocalRatingAsc => (DynamicPlaylistOrderBy.Rating, false),
+            MediaOrderingOption.LocalRatingDesc => (DynamicPlaylistOrderBy.Rating, true),
+            MediaOrderingOption.PlayCountAsc => (DynamicPlaylistOrderBy.PlayCount, false),
+            MediaOrderingOption.PlayCountDesc => (DynamicPlaylistOrderBy.PlayCount, true),
+            MediaOrderingOption.LastInteractedAsc => (DynamicPlaylistOrderBy.LastPlayed, false),
+            MediaOrderingOption.LastInteractedDesc => (DynamicPlaylistOrderBy.LastPlayed, true),
+            _ => (DynamicPlaylistOrderBy.DateAdded, true)
         };
 
-        return (SmartPlaylistOrderByCatalog.Normalize(orderBy, mediaType), descending);
+        return (DynamicPlaylistOrderByCatalog.Normalize(orderBy, mediaType), descending);
     }
 }

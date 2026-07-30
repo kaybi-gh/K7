@@ -42,16 +42,16 @@ public partial class Playlists
             await LoadPlaylistsAsync();
     }
 
-    private async Task OpenCreateSmartPlaylistDialog()
+    private async Task OpenCreateDynamicPlaylistDialog()
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Nouvelle smart playlist", null, options);
+        var dialog = await DialogService.ShowAsync<DynamicPlaylistDialog>(L["DynamicPlaylist"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Guid id })
         {
-            try { await K7ServerService.EvaluateSmartPlaylistAsync(id); } catch { }
-            NavigationManager.NavigateTo($"/smart-playlists/{id}");
+            try { await K7ServerService.EvaluateDynamicPlaylistAsync(id); } catch { }
+            NavigationManager.NavigateTo($"/dynamic-playlists/{id}");
         }
     }
 
@@ -60,9 +60,9 @@ public partial class Playlists
         var request = BuildPresetRequest(preset);
         try
         {
-            var id = await K7ServerService.CreateSmartPlaylistAsync(request);
-            try { await K7ServerService.EvaluateSmartPlaylistAsync(id); } catch { }
-            NavigationManager.NavigateTo($"/smart-playlists/{id}");
+            var id = await K7ServerService.CreateDynamicPlaylistAsync(request);
+            try { await K7ServerService.EvaluateDynamicPlaylistAsync(id); } catch { }
+            NavigationManager.NavigateTo($"/dynamic-playlists/{id}");
         }
         catch
         {
@@ -71,22 +71,22 @@ public partial class Playlists
     }
 
     private string GetPlaylistHref(LitePlaylistDto playlist) =>
-        playlist.IsSmartPlaylist
-            ? $"/smart-playlists/{playlist.Id}"
+        playlist.IsDynamicPlaylist
+            ? $"/dynamic-playlists/{playlist.Id}"
             : $"/playlists/{playlist.Id}";
 
     private string GetPlaylistSubtitle(LitePlaylistDto playlist) =>
         $"{playlist.ItemCount} {S["Tracks"]}";
 
-    private static CreateSmartPlaylistRequest BuildPresetRequest(Preset preset) => preset switch
+    private static CreateDynamicPlaylistRequest BuildPresetRequest(Preset preset) => preset switch
     {
         Preset.RecentlyAdded => new()
         {
             Title = "Ajouts recents",
             Description = "Medias ajoutes dans les 30 derniers jours",
             MediaType = MediaType.MusicTrack,
-            RuleFilter = BuildSingleRule(nameof(SmartPlaylistField.DateAdded), RuleOperator.InLast, "30"),
-            OrderBy = SmartPlaylistOrderBy.DateAdded,
+            RuleFilter = BuildSingleRule(nameof(DynamicPlaylistField.DateAdded), RuleOperator.InLast, "30"),
+            OrderBy = DynamicPlaylistOrderBy.DateAdded,
             OrderDescending = true,
             Limit = 100
         },
@@ -95,8 +95,8 @@ public partial class Playlists
             Title = "Les plus ecoutes",
             Description = "Morceaux les plus joues",
             MediaType = MediaType.MusicTrack,
-            RuleFilter = BuildSingleRule(nameof(SmartPlaylistField.PlayCount), RuleOperator.GreaterThan, "0"),
-            OrderBy = SmartPlaylistOrderBy.PlayCount,
+            RuleFilter = BuildSingleRule(nameof(DynamicPlaylistField.PlayCount), RuleOperator.GreaterThan, "0"),
+            OrderBy = DynamicPlaylistOrderBy.PlayCount,
             OrderDescending = true,
             Limit = 50
         },
@@ -105,8 +105,8 @@ public partial class Playlists
             Title = "Jamais ecoutes",
             Description = "Morceaux jamais joues",
             MediaType = MediaType.MusicTrack,
-            RuleFilter = BuildSingleRule(nameof(SmartPlaylistField.PlayCount), RuleOperator.Equals, "0"),
-            OrderBy = SmartPlaylistOrderBy.Random,
+            RuleFilter = BuildSingleRule(nameof(DynamicPlaylistField.PlayCount), RuleOperator.Equals, "0"),
+            OrderBy = DynamicPlaylistOrderBy.Random,
             OrderDescending = false,
             Limit = 50
         },
@@ -115,8 +115,8 @@ public partial class Playlists
             Title = "Mieux notes",
             Description = "Morceaux notes 8 ou plus",
             MediaType = MediaType.MusicTrack,
-            RuleFilter = BuildSingleRule(nameof(SmartPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8"),
-            OrderBy = SmartPlaylistOrderBy.Rating,
+            RuleFilter = BuildSingleRule(nameof(DynamicPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8"),
+            OrderBy = DynamicPlaylistOrderBy.Rating,
             OrderDescending = true,
             Limit = 100
         },
@@ -125,11 +125,11 @@ public partial class Playlists
             Title = "Ecoutes recemment",
             Description = "Morceaux ecoutes dans les 7 derniers jours",
             MediaType = MediaType.MusicTrack,
-            RuleFilter = BuildSingleRule(nameof(SmartPlaylistField.LastPlayed), RuleOperator.InLast, "7"),
-            OrderBy = SmartPlaylistOrderBy.LastPlayed,
+            RuleFilter = BuildSingleRule(nameof(DynamicPlaylistField.LastPlayed), RuleOperator.InLast, "7"),
+            OrderBy = DynamicPlaylistOrderBy.LastPlayed,
             OrderDescending = true
         },
-        _ => new() { Title = "Smart Playlist", MediaType = MediaType.MusicTrack }
+        _ => new() { Title = "Dynamic Playlist", MediaType = MediaType.MusicTrack }
     };
 
     private static RuleGroupDto BuildSingleRule(string field, RuleOperator op, string? value) => new()

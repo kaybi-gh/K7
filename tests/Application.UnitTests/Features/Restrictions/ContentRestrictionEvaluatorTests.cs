@@ -33,7 +33,7 @@ public class ContentRestrictionEvaluatorTests
                 [
                     new ConditionRuleItem
                     {
-                        Field = nameof(SmartPlaylistField.Title),
+                        Field = nameof(DynamicPlaylistField.Title),
                         Operator = RuleOperator.Equals,
                         Value = "Forbidden"
                     }
@@ -71,7 +71,7 @@ public class ContentRestrictionEvaluatorTests
                 [
                     new ConditionRuleItem
                     {
-                        Field = nameof(SmartPlaylistField.Title),
+                        Field = nameof(DynamicPlaylistField.Title),
                         Operator = RuleOperator.Equals,
                         Value = "Forbidden"
                     }

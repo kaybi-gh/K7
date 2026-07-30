@@ -108,12 +108,12 @@ else
         </section>
     }
 
-    @if (_profile.SmartPlaylists.Count > 0)
+    @if (_profile.DynamicPlaylists.Count > 0)
     {
         <section class="social-user-profile__section">
-            <h2 class="social-user-profile__section-title">@L["SmartPlaylists"]</h2>
+            <h2 class="social-user-profile__section-title">@L["DynamicPlaylists"]</h2>
             <div class="social-user-profile__media-grid">
-                @foreach (var playlist in _profile.SmartPlaylists)
+                @foreach (var playlist in _profile.DynamicPlaylists)
                 {
                     <SocialUserLibraryItemCard @key="playlist.Id"
                                                Model="@GetPlaylistCardModel(playlist)"

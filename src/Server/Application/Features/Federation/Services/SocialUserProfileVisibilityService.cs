@@ -96,7 +96,7 @@ public class SocialUserProfileVisibilityService(
             PlaybackHistory = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.PlaybackHistory, cancellationToken),
             Collections = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.Collections, cancellationToken),
             Playlists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.Playlists, cancellationToken),
-            SmartPlaylists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.SmartPlaylists, cancellationToken)
+            DynamicPlaylists = await IsLocalSectionVisibleAsync(isSelf, viewerUserId, ownerUserId, ownerPrivacy, viewerPrivacy, FederationContentType.DynamicPlaylists, cancellationToken)
         };
 
     public async Task<SocialUserProfileVisibleSectionsDto> BuildFederatedVisibleSectionsAsync(
@@ -110,7 +110,7 @@ public class SocialUserProfileVisibilityService(
             PlaybackHistory = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.PlaybackHistory, cancellationToken),
             Collections = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.Collections, cancellationToken),
             Playlists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.Playlists, cancellationToken),
-            SmartPlaylists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.SmartPlaylists, cancellationToken)
+            DynamicPlaylists = await IsFederatedSectionVisibleAsync(viewerPrivacy, remoteUser, peerServerId, FederationContentType.DynamicPlaylists, cancellationToken)
         };
 
     public async Task<bool> HasAnyInboundSocialEnabledAsync(Guid peerServerId, CancellationToken cancellationToken = default)
@@ -140,7 +140,7 @@ public class SocialUserProfileVisibilityService(
             FederationContentType.Reviews => await context.MediaReviews.AnyAsync(r => r.UserId == ownerUserId, cancellationToken),
             FederationContentType.Collections => await context.Collections.AnyAsync(c => c.UserId == ownerUserId && c.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             FederationContentType.Playlists => await context.Playlists.AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
-            FederationContentType.SmartPlaylists => await context.Playlists.OfType<SmartPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
+            FederationContentType.DynamicPlaylists => await context.Playlists.OfType<DynamicPlaylist>().AnyAsync(p => p.UserId == ownerUserId && p.VisibilityScope != VisibilityScope.Nobody, cancellationToken),
             FederationContentType.PlaybackHistory => await context.MediaPlaybackSessions.AnyAsync(s => s.UserId == ownerUserId, cancellationToken),
             _ => false
         };

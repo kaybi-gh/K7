@@ -33,7 +33,7 @@ public partial class AddToPlaylistDialog
     {
         _loading = true;
         var result = await K7ServerService.GetPlaylistsAsync(1, 100);
-        var playlists = result?.Items?.Where(playlist => !playlist.IsSmartPlaylist) ?? [];
+        var playlists = result?.Items?.Where(playlist => !playlist.IsDynamicPlaylist) ?? [];
 
         var targetMediaType = MediaPlaylistAddHelper.GetTargetPlaylistMediaType(SourceMediaType);
         if (targetMediaType.HasValue)

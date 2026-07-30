@@ -64,7 +64,7 @@ public sealed record SocialUserPlaylistCardDto
     public required string Title { get; init; }
     public string? Description { get; init; }
     public MediaType? MediaType { get; init; }
-    public bool IsSmart { get; init; }
+    public bool IsDynamic { get; init; }
     public Guid? CoverPictureId { get; init; }
     public int ItemCount { get; init; }
     public IReadOnlyList<SocialUserMediaCardDto> PreviewItems { get; init; } = [];
@@ -76,7 +76,7 @@ public sealed record SocialUserProfileVisibleSectionsDto
     public bool PlaybackHistory { get; init; }
     public bool Collections { get; init; }
     public bool Playlists { get; init; }
-    public bool SmartPlaylists { get; init; }
+    public bool DynamicPlaylists { get; init; }
 }
 
 public sealed record SocialUserProfileDto
@@ -87,7 +87,7 @@ public sealed record SocialUserProfileDto
     public IReadOnlyList<SocialUserPlaybackViewDto> RecentPlayback { get; init; } = [];
     public IReadOnlyList<SocialUserCollectionCardDto> Collections { get; init; } = [];
     public IReadOnlyList<SocialUserPlaylistCardDto> Playlists { get; init; } = [];
-    public IReadOnlyList<SocialUserPlaylistCardDto> SmartPlaylists { get; init; } = [];
+    public IReadOnlyList<SocialUserPlaylistCardDto> DynamicPlaylists { get; init; } = [];
 }
 
 public sealed record SharedCollectionBrowseDto
@@ -107,6 +107,6 @@ public sealed record SharedPlaylistBrowseDto
     public required string Title { get; init; }
     public string? Description { get; init; }
     public MediaType? MediaType { get; init; }
-    public bool IsSmart { get; init; }
+    public bool IsDynamic { get; init; }
     public int ItemCount { get; init; }
 }

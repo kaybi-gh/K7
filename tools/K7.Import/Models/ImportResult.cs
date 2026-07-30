@@ -12,6 +12,6 @@ public sealed record ImportResult
     public int ImportedPlaybackSessions { get; set; }
     public int ImportedRatings { get; set; }
     public int ImportedPlaylists { get; set; }
-    public int SkippedSmartPlaylists { get; set; }
+    public int SkippedDynamicPlaylists { get; set; }
     public List<string> UnmatchedTitles { get; set; } = [];
 }

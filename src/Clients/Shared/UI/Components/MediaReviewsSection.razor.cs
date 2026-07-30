@@ -28,7 +28,15 @@ public partial class MediaReviewsSection : ComponentBase
         try
         {
             var localReviews = await ReviewService.GetMediaReviewsAsync(MediaId);
-            var federatedReviews = await ReviewService.GetFederatedMediaReviewsAsync(MediaId);
+            IReadOnlyList<FederatedReviewDto> federatedReviews = [];
+            try
+            {
+                federatedReviews = await ReviewService.GetFederatedMediaReviewsAsync(MediaId);
+            }
+            catch
+            {
+                // Federation/social peer failures must not hide local reviews or break the page.
+            }
 
             _reviews.Clear();
             _reviews.AddRange(localReviews.Select(MediaReviewCardModel.FromLocal));
@@ -40,6 +48,10 @@ public partial class MediaReviewsSection : ComponentBase
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             _reviews.Clear();
+        }
+        catch
+        {
+            // Keep whatever we already have; do not throw into the error boundary.
         }
 
         await InvokeAsync(StateHasChanged);

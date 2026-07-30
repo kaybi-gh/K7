@@ -25,7 +25,7 @@
   <data name="FilterMovies" xml:space="preserve"><value>Movies</value></data>
   <data name="TVShows" xml:space="preserve"><value>TV Shows</value></data>
   <data name="New" xml:space="preserve"><value>New playlist</value></data>
-  <data name="SmartPlaylist" xml:space="preserve"><value>Smart Playlist</value></data>
+  <data name="DynamicPlaylist" xml:space="preserve"><value>Dynamic playlist</value></data>
   <data name="None" xml:space="preserve"><value>No playlists</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Create your first playlist to organize your media.</value></data>
   <data name="Tracks" xml:space="preserve"><value>tracks</value></data>
@@ -33,7 +33,7 @@
   <data name="Episodes" xml:space="preserve"><value>episodes</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
   <data name="ItemsColumn" xml:space="preserve"><value>Items</value></data>
-  <data name="AiPlaylist" xml:space="preserve"><value>AI Playlist</value></data>
+  <data name="SmartPlaylist" xml:space="preserve"><value>Smart playlist</value></data>
   <data name="LastListenedJustNow" xml:space="preserve"><value>Played just now</value></data>
   <data name="LastListenedMinutes" xml:space="preserve"><value>Played {0} min ago</value></data>
   <data name="LastListenedHours" xml:space="preserve"><value>Played {0} h ago</value></data>

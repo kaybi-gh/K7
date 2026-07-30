@@ -145,7 +145,7 @@ public partial class SocialUserProfileView
         $"/collections/{collection.Id}";
 
     private string GetPlaylistHref(SocialUserPlaylistCardDto playlist) =>
-        playlist.IsSmart ? $"/smart-playlists/{playlist.Id}" : $"/playlists/{playlist.Id}";
+        playlist.IsDynamic ? $"/dynamic-playlists/{playlist.Id}" : $"/playlists/{playlist.Id}";
 
     private string GetCollectionSubtitle(SocialUserCollectionCardDto collection) =>
         $"{collection.ItemCount} {L["Items"]}";

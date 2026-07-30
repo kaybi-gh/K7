@@ -274,7 +274,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
+    public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };
         if (libraryIds is { Length: > 0 })
@@ -291,6 +291,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
         if (!string.IsNullOrWhiteSpace(moodPreset)) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
         if (moodCentroidIndex.HasValue) queryParams.Add($"moodCentroidIndex={moodCentroidIndex.Value}");
+        if (!string.IsNullOrWhiteSpace(genre)) queryParams.Add($"genre={Uri.EscapeDataString(genre)}");
         if (limit != 50) queryParams.Add($"limit={limit}");
         if (excludeIds is { Length: > 0 })
         {
@@ -775,39 +776,39 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<LiteDynamicPlaylistDto>?> GetDynamicPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteSmartPlaylistDto>>(
-            $"api/smart-playlists?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteDynamicPlaylistDto>>(
+            $"api/dynamic-playlists?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
     }
 
-    public async Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<DynamicPlaylistDto?> GetDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<SmartPlaylistDto>($"api/smart-playlists/{id}", _serializerOptions, cancellationToken);
+        return await HttpClient.GetFromJsonAsync<DynamicPlaylistDto>($"api/dynamic-playlists/{id}", _serializerOptions, cancellationToken);
     }
 
-    public async Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default)
+    public async Task<Guid> CreateDynamicPlaylistAsync(CreateDynamicPlaylistRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsJsonAsync("api/smart-playlists", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PostAsJsonAsync("api/dynamic-playlists", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
-    public async Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default)
+    public async Task UpdateDynamicPlaylistAsync(Guid id, UpdateDynamicPlaylistRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync($"api/smart-playlists/{id}", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync($"api/dynamic-playlists/{id}", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.DeleteAsync($"api/smart-playlists/{id}", cancellationToken);
+        var response = await HttpClient.DeleteAsync($"api/dynamic-playlists/{id}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task EvaluateDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsync($"api/smart-playlists/{id}/evaluate", null, cancellationToken);
+        var response = await HttpClient.PostAsync($"api/dynamic-playlists/{id}/evaluate", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1953,18 +1954,24 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    async Task<MusicIntelligenceConnectionResultDto> IMusicIntelligenceAdminService.TestConnectionAsync(CancellationToken cancellationToken)
+    async Task<MusicIntelligenceConnectionResultDto> IMusicIntelligenceAdminService.TestConnectionAsync(
+        MusicIntelligenceSettingsDto? draftSettings,
+        CancellationToken cancellationToken)
     {
-        var response = await HttpClient.PostAsync("api/admin/music-intelligence/test", null, cancellationToken);
+        var response = await HttpClient.PostAsJsonAsync(
+            "api/admin/music-intelligence/test",
+            draftSettings,
+            _serializerOptions,
+            cancellationToken);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<MusicIntelligenceConnectionResultDto>(_serializerOptions, cancellationToken))!;
     }
 
     // IMusicIntelligenceClientService
 
-    public async Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
+    public async Task<List<MusicIntelligenceTrackMatchDto>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
     {
-        return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/{trackId}/similar?count={count}", _serializerOptions, cancellationToken))!;
+        return (await HttpClient.GetFromJsonAsync<List<MusicIntelligenceTrackMatchDto>>($"api/tracks/{trackId}/similar?count={count}", _serializerOptions, cancellationToken))!;
     }
 
     public async Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default)
@@ -1972,10 +1979,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/sonic-path?from={fromId}&to={toId}", _serializerOptions, cancellationToken))!;
     }
 
-    public async Task<List<Guid>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
+    public async Task<List<MusicIntelligenceTrackMatchDto>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
     {
         var ids = string.Join(",", recentTrackIds);
-        return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/suggestions?recentIds={ids}&count={count}", _serializerOptions, cancellationToken))!;
+        return (await HttpClient.GetFromJsonAsync<List<MusicIntelligenceTrackMatchDto>>($"api/tracks/suggestions?recentIds={ids}&count={count}", _serializerOptions, cancellationToken))!;
     }
 
     public async Task<List<Guid>> CreateSmartPlaylistAsync(string prompt, int count = 30, CancellationToken cancellationToken = default)
@@ -2069,9 +2076,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<FederatedPlaylistViewDto>>("api/federation/social/playlists", _serializerOptions, cancellationToken) ?? [];
     }
 
-    public async Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetFederatedSmartPlaylistsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<FederatedDynamicPlaylistViewDto>> GetFederatedDynamicPlaylistsAsync(CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<List<FederatedSmartPlaylistViewDto>>("api/federation/social/smart-playlists", _serializerOptions, cancellationToken) ?? [];
+        return await HttpClient.GetFromJsonAsync<List<FederatedDynamicPlaylistViewDto>>("api/federation/social/dynamic-playlists", _serializerOptions, cancellationToken) ?? [];
     }
 
     public async Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetFederatedPlaybackHistoryAsync(CancellationToken cancellationToken = default)

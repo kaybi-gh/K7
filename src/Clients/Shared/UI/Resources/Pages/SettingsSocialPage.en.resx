@@ -10,7 +10,7 @@
   <data name="Reviews" xml:space="preserve"><value>Reviews</value></data>
   <data name="Collections" xml:space="preserve"><value>Collections</value></data>
   <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
-  <data name="SmartPlaylists" xml:space="preserve"><value>Smart playlists</value></data>
+  <data name="DynamicPlaylists" xml:space="preserve"><value>Dynamic playlists</value></data>
   <data name="PlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
   <data name="ScopeNobody" xml:space="preserve"><value>Only my content</value></data>
   <data name="ScopeLocalServer" xml:space="preserve"><value>My server only</value></data>

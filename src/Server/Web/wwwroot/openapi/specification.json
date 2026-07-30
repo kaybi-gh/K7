@@ -1913,184 +1913,6 @@
         }
       }
     },
-    "/api/smart-playlists": {
-      "post": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "CreateSmartPlaylist",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSmartPlaylistRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "GetSmartPlaylists",
-        "parameters": [
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteSmartPlaylistDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/smart-playlists/{id}": {
-      "delete": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "DeleteSmartPlaylist",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "GetSmartPlaylist",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SmartPlaylistDto"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "UpdateSmartPlaylist",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSmartPlaylistRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/smart-playlists/{id}/evaluate": {
-      "post": {
-        "tags": [
-          "SmartPlaylists"
-        ],
-        "operationId": "EvaluateSmartPlaylist",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/shared-profiles": {
       "get": {
         "tags": [
@@ -3285,7 +3107,7 @@
         "tags": [
           "Playlists"
         ],
-        "operationId": "CreateAiSmartPlaylist",
+        "operationId": "CreateSmartPlaylist",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4090,6 +3912,13 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -7746,12 +7575,12 @@
         }
       }
     },
-    "/api/federation/social/smart-playlists": {
+    "/api/federation/social/dynamic-playlists": {
       "get": {
         "tags": [
           "Social"
         ],
-        "operationId": "GetFederationSocialSmartPlaylistsEndpoint",
+        "operationId": "GetFederationSocialDynamicPlaylistsEndpoint",
         "responses": {
           "200": {
             "description": "OK"
@@ -7791,6 +7620,30 @@
           "Social"
         ],
         "operationId": "GetFederationSocialCollections",
+        "parameters": [
+          {
+            "name": "originUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/social/users/{originUserId}/dynamic-playlists": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "GetFederationSocialDynamicPlaylists",
         "parameters": [
           {
             "name": "originUserId",
@@ -7881,15 +7734,97 @@
         }
       }
     },
-    "/api/federation/social/users/{originUserId}/smart-playlists": {
+    "/api/federation/social/users": {
       "get": {
         "tags": [
           "Social"
         ],
-        "operationId": "GetFederationSocialSmartPlaylists",
+        "operationId": "GetFederationSocialUsers",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/dynamic-playlists": {
+      "post": {
+        "tags": [
+          "DynamicPlaylists"
+        ],
+        "operationId": "CreateDynamicPlaylist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDynamicPlaylistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "DynamicPlaylists"
+        ],
+        "operationId": "GetDynamicPlaylists",
         "parameters": [
           {
-            "name": "originUserId",
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteDynamicPlaylistDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dynamic-playlists/{id}": {
+      "delete": {
+        "tags": [
+          "DynamicPlaylists"
+        ],
+        "operationId": "DeleteDynamicPlaylist",
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -7903,14 +7838,86 @@
             "description": "OK"
           }
         }
-      }
-    },
-    "/api/federation/social/users": {
+      },
       "get": {
         "tags": [
-          "Social"
+          "DynamicPlaylists"
         ],
-        "operationId": "GetFederationSocialUsers",
+        "operationId": "GetDynamicPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DynamicPlaylistDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "DynamicPlaylists"
+        ],
+        "operationId": "UpdateDynamicPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDynamicPlaylistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/dynamic-playlists/{id}/evaluate": {
+      "post": {
+        "tags": [
+          "DynamicPlaylists"
+        ],
+        "operationId": "EvaluateDynamicPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -10007,6 +10014,22 @@
           "Admin"
         ],
         "operationId": "TestMusicIntelligenceConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MusicIntelligenceSettingsDto"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -10337,7 +10360,7 @@
           }
         }
       },
-      "AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteSmartPlaylistDto": {
+      "AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteDynamicPlaylistDto": {
         "required": [
           "pageNumber",
           "totalPages",
@@ -10376,7 +10399,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/LiteSmartPlaylistDto"
+              "$ref": "#/components/schemas/LiteDynamicPlaylistDto"
             }
           }
         }
@@ -11528,6 +11551,45 @@
           }
         }
       },
+      "CreateDynamicPlaylistRequest": {
+        "required": [
+          "title",
+          "mediaType"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateFederationStreamSessionRequest": {
         "required": [
           "indexedFileId",
@@ -11810,45 +11872,6 @@
               "string"
             ],
             "format": "int32"
-          }
-        }
-      },
-      "CreateSmartPlaylistRequest": {
-        "required": [
-          "title",
-          "mediaType"
-        ],
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "mediaType": {
-            "$ref": "#/components/schemas/MediaType"
-          },
-          "ruleFilter": {
-            "$ref": "#/components/schemas/RuleGroupDto"
-          },
-          "limit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "orderBy": {
-            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
-          },
-          "orderDescending": {
-            "type": "boolean"
           }
         }
       },
@@ -12226,6 +12249,95 @@
         }
       },
       "DownloadStatus": {
+        "type": "integer"
+      },
+      "DynamicPlaylistDto": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
+          },
+          "coverPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "itemCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastEvaluatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastListenedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "DynamicPlaylistOrderBy": {
         "type": "integer"
       },
       "ExternalIdDto": {
@@ -13416,6 +13528,63 @@
           }
         }
       },
+      "LiteDynamicPlaylistDto": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "ruleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "coverPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "LiteMediaDto": {
         "required": [
           "$type"
@@ -13640,6 +13809,21 @@
             "items": {
               "$ref": "#/components/schemas/LiteMusicAlbumDto"
             }
+          },
+          "intelligenceScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "intelligenceScoreMetric": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "id": {
             "type": "string",
@@ -14736,7 +14920,7 @@
               "string"
             ]
           },
-          "isSmartPlaylist": {
+          "isDynamicPlaylist": {
             "type": "boolean"
           },
           "mediaType": {
@@ -15046,63 +15230,6 @@
               "string"
             ],
             "format": "int32"
-          }
-        }
-      },
-      "LiteSmartPlaylistDto": {
-        "required": [
-          "title"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "mediaType": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MediaType"
-              }
-            ]
-          },
-          "ruleCount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "coverPicture": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MetadataPictureDto"
-              }
-            ]
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -17079,6 +17206,9 @@
           },
           "apiKey": {
             "type": "string"
+          },
+          "instantPlaylistEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -18152,7 +18282,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "isSmartPlaylist": {
+          "isDynamicPlaylist": {
             "type": "boolean"
           },
           "mediaType": {
@@ -19027,95 +19157,6 @@
           }
         }
       },
-      "SmartPlaylistDto": {
-        "required": [
-          "title"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "mediaType": {
-            "$ref": "#/components/schemas/MediaType"
-          },
-          "ruleFilter": {
-            "$ref": "#/components/schemas/RuleGroupDto"
-          },
-          "limit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "orderBy": {
-            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
-          },
-          "orderDescending": {
-            "type": "boolean"
-          },
-          "coverPicture": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MetadataPictureDto"
-              }
-            ]
-          },
-          "itemCount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "lastEvaluatedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastListenedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
-      "SmartPlaylistOrderBy": {
-        "type": "integer"
-      },
       "StatusCountDto": {
         "required": [
           "status",
@@ -19814,6 +19855,45 @@
           }
         }
       },
+      "UpdateDynamicPlaylistRequest": {
+        "required": [
+          "title",
+          "mediaType"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateEmailRequest": {
         "required": [
           "email",
@@ -20463,45 +20543,6 @@
           }
         }
       },
-      "UpdateSmartPlaylistRequest": {
-        "required": [
-          "title",
-          "mediaType"
-        ],
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "mediaType": {
-            "$ref": "#/components/schemas/MediaType"
-          },
-          "ruleFilter": {
-            "$ref": "#/components/schemas/RuleGroupDto"
-          },
-          "limit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "orderBy": {
-            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
-          },
-          "orderDescending": {
-            "type": "boolean"
-          }
-        }
-      },
       "UpdateUserCapabilitiesRequest": {
         "required": [
           "overrides"
@@ -21036,9 +21077,6 @@
       "name": "Stats"
     },
     {
-      "name": "SmartPlaylists"
-    },
-    {
       "name": "SharedProfiles"
     },
     {
@@ -21097,6 +21135,9 @@
     },
     {
       "name": "Social"
+    },
+    {
+      "name": "DynamicPlaylists"
     },
     {
       "name": "Downloads"

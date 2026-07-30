@@ -18,7 +18,7 @@ public sealed record FederatedPlaylistItemDto
     public int Order { get; init; }
 }
 
-public sealed record FederatedSmartPlaylistDto
+public sealed record FederatedDynamicPlaylistDto
 {
     public required Guid Id { get; init; }
     public required string Title { get; init; }
@@ -26,6 +26,6 @@ public sealed record FederatedSmartPlaylistDto
     public MediaType MediaType { get; init; }
     public RuleGroupDto RuleFilter { get; init; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     public int? Limit { get; init; }
-    public SmartPlaylistOrderBy OrderBy { get; init; }
+    public DynamicPlaylistOrderBy OrderBy { get; init; }
     public bool OrderDescending { get; init; }
 }

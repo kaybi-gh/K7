@@ -5,6 +5,6 @@ public enum FederationContentType
     Reviews = 0,
     Collections = 1,
     Playlists = 2,
-    SmartPlaylists = 3,
+    DynamicPlaylists = 3,
     PlaybackHistory = 4
 }

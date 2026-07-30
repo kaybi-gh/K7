@@ -11,7 +11,7 @@ internal static class SocialViewVisibilityHelper
             FederationContentType.Reviews => privacy.View.Reviews,
             FederationContentType.Collections => privacy.View.Collections,
             FederationContentType.Playlists => privacy.View.Playlists,
-            FederationContentType.SmartPlaylists => privacy.View.SmartPlaylists,
+            FederationContentType.DynamicPlaylists => privacy.View.DynamicPlaylists,
             FederationContentType.PlaybackHistory => privacy.View.PlaybackHistory,
             _ => VisibilityScope.Nobody
         };
@@ -22,7 +22,7 @@ internal static class SocialViewVisibilityHelper
             FederationContentType.Reviews => privacy.Share.Reviews,
             FederationContentType.Collections => privacy.Share.Collections,
             FederationContentType.Playlists => privacy.Share.Playlists,
-            FederationContentType.SmartPlaylists => privacy.Share.SmartPlaylists,
+            FederationContentType.DynamicPlaylists => privacy.Share.DynamicPlaylists,
             FederationContentType.PlaybackHistory => privacy.Share.PlaybackHistory,
             _ => VisibilityScope.Nobody
         };

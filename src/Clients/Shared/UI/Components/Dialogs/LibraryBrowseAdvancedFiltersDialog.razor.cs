@@ -12,7 +12,7 @@ namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class LibraryBrowseAdvancedFiltersDialog
 {
-    [Inject] private IStringLocalizer<SmartPlaylistDialog> SpL { get; set; } = default!;
+    [Inject] private IStringLocalizer<DynamicPlaylistDialog> SpL { get; set; } = default!;
     [Inject] private IStringLocalizer<LibraryBrowseFilters> L { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
 

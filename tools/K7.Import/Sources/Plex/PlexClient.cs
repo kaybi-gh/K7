@@ -16,7 +16,7 @@ public sealed partial class PlexClient : ISourceClient
     private readonly HttpClient _httpClient;
     private Dictionary<string, string>? _libraryTypes;
 
-    public bool IncludeSmartPlaylists { get; init; }
+    public bool IncludeDynamicPlaylists { get; init; }
 
     public PlexClient(string serverUrl, string token)
     {
@@ -245,13 +245,13 @@ public sealed partial class PlexClient : ISourceClient
                  || (smartEl.ValueKind == JsonValueKind.Number && smartEl.GetInt32() == 1)
                  || (smartEl.ValueKind == JsonValueKind.String && smartEl.GetString() is "1" or "true"));
 
-            if (isSmart && !IncludeSmartPlaylists)
+            if (isSmart && !IncludeDynamicPlaylists)
             {
                 playlists.Add(new SourcePlaylist
                 {
                     Id = ratingKey,
                     Title = title,
-                    IsSmart = true,
+                    IsDynamic = true,
                     MediaType = playlistType switch
                     {
                         "audio" => "music",
@@ -287,7 +287,7 @@ public sealed partial class PlexClient : ISourceClient
             {
                 Id = ratingKey,
                 Title = title,
-                IsSmart = isSmart,
+                IsDynamic = isSmart,
                 MediaType = playlistType switch
                 {
                     "audio" => "music",

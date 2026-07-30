@@ -9,7 +9,7 @@ public sealed record PlaylistDto
     public required string Title { get; init; }
     public string? Description { get; init; }
     public Guid UserId { get; init; }
-    public bool IsSmartPlaylist { get; init; }
+    public bool IsDynamicPlaylist { get; init; }
     public MediaType MediaType { get; init; }
     public MetadataPictureDto? CoverPicture { get; init; }
     public int ItemCount { get; init; }

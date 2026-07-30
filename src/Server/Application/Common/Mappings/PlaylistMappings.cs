@@ -19,7 +19,7 @@ public static class PlaylistMappings
             Title = domain.Title,
             Description = domain.Description,
             UserId = domain.UserId,
-            IsSmartPlaylist = domain is SmartPlaylist,
+            IsDynamicPlaylist = domain is DynamicPlaylist,
             MediaType = domain.MediaType,
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
             ItemCount = domain.Items.Count,
@@ -39,7 +39,7 @@ public static class PlaylistMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 Description = domain.Description,
-                IsSmartPlaylist = domain is SmartPlaylist,
+                IsDynamicPlaylist = domain is DynamicPlaylist,
                 MediaType = domain.MediaType,
                 CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
                 PreviewPictures = previewPictures,
@@ -55,9 +55,9 @@ public static class PlaylistMappings
             ? new DateTimeOffset(DateTime.SpecifyKind(lastListened, DateTimeKind.Utc))
             : null;
 
-    extension(SmartPlaylist domain)
+    extension(DynamicPlaylist domain)
     {
-        public SmartPlaylistDto ToSmartPlaylistDto() => new()
+        public DynamicPlaylistDto ToDynamicPlaylistDto() => new()
         {
             Id = domain.Id,
             Title = domain.Title,
@@ -76,7 +76,7 @@ public static class PlaylistMappings
             LastListenedAt = MapLastListenedAt(domain)
         };
 
-        public LiteSmartPlaylistDto ToLiteSmartPlaylistDto() => new()
+        public LiteDynamicPlaylistDto ToLiteDynamicPlaylistDto() => new()
         {
             Id = domain.Id,
             Title = domain.Title,

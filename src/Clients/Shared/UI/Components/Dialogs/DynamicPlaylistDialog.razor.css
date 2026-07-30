@@ -1,0 +1,34 @@
+.smart-playlist-dialog__media-type {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-3);
+}
+
+.smart-playlist-dialog__media-type ::deep .k7-field {
+    width: 220px;
+}
+
+.smart-playlist-sort-row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.smart-playlist-sort-row__order {
+    flex: 0 1 220px;
+    min-width: 180px;
+}
+
+.smart-playlist-sort-row__direction {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 56px;
+    padding-bottom: var(--space-1);
+}
+
+.smart-playlist-sort-row__limit {
+    width: 120px;
+    flex-shrink: 0;
+}

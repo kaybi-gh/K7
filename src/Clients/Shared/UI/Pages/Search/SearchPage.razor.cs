@@ -125,7 +125,7 @@ public partial class SearchPage
         LiteSerieEpisodeDto episode => $"/series/{episode.SerieId}/seasons/{episode.SeasonNumber}/episodes/{episode.EpisodeNumber}",
         LiteMusicAlbumDto => $"/music/albums/{media.Id}",
         LiteMusicArtistDto => $"/music/artists/{media.Id}",
-        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}",
+        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}#track-{track.Id}",
         _ => "#"
     };
 

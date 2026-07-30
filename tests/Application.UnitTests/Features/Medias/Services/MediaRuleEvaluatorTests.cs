@@ -52,7 +52,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_ActorNameContains_ShouldReturnMatchingMovies()
     {
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "DiCaprio");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "DiCaprio");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -62,7 +62,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_ActorNameContains_ShouldBeCaseInsensitive()
     {
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "dicaprio");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "dicaprio");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -72,7 +72,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_ActorNameEquals_ShouldMatchExactName()
     {
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Equals, "Tom Hanks");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Equals, "Tom Hanks");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -82,7 +82,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_ActorNameOnEpisode_ShouldMatchSerieCast()
     {
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "Cranston");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "Cranston");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -135,7 +135,7 @@ public class MediaRuleEvaluatorTests
         _context.Medias.AddRange(radiohead, okComputer, coldplay, parachutes);
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.ArtistName), RuleOperator.Contains, "Radio");
+        var filter = Rule(nameof(DynamicPlaylistField.ArtistName), RuleOperator.Contains, "Radio");
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().BeEquivalentTo([radiohead.Id, okComputer.Id]);
@@ -175,7 +175,7 @@ public class MediaRuleEvaluatorTests
         _context.Medias.AddRange(artist, album, track);
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.ArtistName), RuleOperator.Contains, "Daft");
+        var filter = Rule(nameof(DynamicPlaylistField.ArtistName), RuleOperator.Contains, "Daft");
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().Contain(track.Id);
@@ -184,7 +184,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_OriginalLanguageEquals_ShouldMatchMovies()
     {
-        var filter = Rule(nameof(SmartPlaylistField.OriginalLanguage), RuleOperator.Equals, "en");
+        var filter = Rule(nameof(DynamicPlaylistField.OriginalLanguage), RuleOperator.Equals, "en");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -194,7 +194,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_RatingGreaterThanOrEqual_ShouldScopeToCurrentUser()
     {
-        var filter = Rule(nameof(SmartPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8");
+        var filter = Rule(nameof(DynamicPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8");
 
         var idsForUserA = await ApplyAndGetIdsAsync(filter, userId: _userA);
         var idsForUserB = await ApplyAndGetIdsAsync(filter, userId: _userB);
@@ -206,7 +206,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_IsCompletedTrue_ShouldScopeToCurrentUser()
     {
-        var filter = Rule(nameof(SmartPlaylistField.IsCompleted), RuleOperator.Equals, "true");
+        var filter = Rule(nameof(DynamicPlaylistField.IsCompleted), RuleOperator.Equals, "true");
 
         var idsForUserA = await ApplyAndGetIdsAsync(filter, userId: _userA);
         var idsForUserB = await ApplyAndGetIdsAsync(filter, userId: _userB);
@@ -225,13 +225,13 @@ public class MediaRuleEvaluatorTests
             [
                 new ConditionRuleItem
                 {
-                    Field = nameof(SmartPlaylistField.ActorName),
+                    Field = nameof(DynamicPlaylistField.ActorName),
                     Operator = RuleOperator.Contains,
                     Value = "DiCaprio"
                 },
                 new ConditionRuleItem
                 {
-                    Field = nameof(SmartPlaylistField.OriginalLanguage),
+                    Field = nameof(DynamicPlaylistField.OriginalLanguage),
                     Operator = RuleOperator.Equals,
                     Value = "en"
                 }
@@ -258,13 +258,13 @@ public class MediaRuleEvaluatorTests
                     [
                         new ConditionRuleItem
                         {
-                            Field = nameof(SmartPlaylistField.ActorName),
+                            Field = nameof(DynamicPlaylistField.ActorName),
                             Operator = RuleOperator.Equals,
                             Value = "Tom Hanks"
                         },
                         new ConditionRuleItem
                         {
-                            Field = nameof(SmartPlaylistField.Title),
+                            Field = nameof(DynamicPlaylistField.Title),
                             Operator = RuleOperator.Equals,
                             Value = "Inception"
                         }
@@ -286,8 +286,8 @@ public class MediaRuleEvaluatorTests
             MatchCondition = RuleMatchCondition.All,
             Items =
             [
-                Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "DiCaprio"),
-                Rule(nameof(SmartPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8")
+                Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "DiCaprio"),
+                Rule(nameof(DynamicPlaylistField.Rating), RuleOperator.GreaterThanOrEqual, "8")
             ]
         };
 
@@ -324,7 +324,7 @@ public class MediaRuleEvaluatorTests
         _context.Persons.Add(voiceActor);
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "Voice");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "Voice");
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().Contain(animated.Id);
@@ -368,7 +368,7 @@ public class MediaRuleEvaluatorTests
         _context.Medias.AddRange(recentMovie, oldMovie);
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.DateAdded), RuleOperator.InLast, "30");
+        var filter = Rule(nameof(DynamicPlaylistField.DateAdded), RuleOperator.InLast, "30");
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().Contain(recentMovie.Id);
@@ -378,7 +378,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_DateAddedInLast_WithNonNumericValue_ShouldFallBackToMatchingEverything()
     {
-        var filter = Rule(nameof(SmartPlaylistField.DateAdded), RuleOperator.InLast, "not-a-number");
+        var filter = Rule(nameof(DynamicPlaylistField.DateAdded), RuleOperator.InLast, "not-a-number");
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -415,7 +415,7 @@ public class MediaRuleEvaluatorTests
             });
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.LastPlayed), RuleOperator.InLast, "7");
+        var filter = Rule(nameof(DynamicPlaylistField.LastPlayed), RuleOperator.InLast, "7");
         var idsForUserA = await ApplyAndGetIdsAsync(filter, userId: _userA);
         var idsForUserB = await ApplyAndGetIdsAsync(filter, userId: _userB);
 
@@ -443,7 +443,7 @@ public class MediaRuleEvaluatorTests
         });
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.LastPlayed), RuleOperator.IsEmpty, null);
+        var filter = Rule(nameof(DynamicPlaylistField.LastPlayed), RuleOperator.IsEmpty, null);
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().Contain(neverInteracted.Id);
@@ -453,7 +453,7 @@ public class MediaRuleEvaluatorTests
     [Test]
     public async Task ApplyFilter_YearIsEmpty_ShouldMatchMediaWithoutReleaseDate()
     {
-        var filter = Rule(nameof(SmartPlaylistField.Year), RuleOperator.IsEmpty, null);
+        var filter = Rule(nameof(DynamicPlaylistField.Year), RuleOperator.IsEmpty, null);
 
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
@@ -496,7 +496,7 @@ public class MediaRuleEvaluatorTests
         _context.Persons.Add(director);
         await _context.SaveChangesAsync();
 
-        var filter = Rule(nameof(SmartPlaylistField.ActorName), RuleOperator.Contains, "Director");
+        var filter = Rule(nameof(DynamicPlaylistField.ActorName), RuleOperator.Contains, "Director");
         var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
 
         ids.Should().NotContain(movie.Id);

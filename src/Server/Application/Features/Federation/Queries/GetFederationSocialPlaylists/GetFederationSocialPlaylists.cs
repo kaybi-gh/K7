@@ -55,7 +55,7 @@ public class GetFederationSocialPlaylistsQueryHandler(
             .ToListAsync(cancellationToken);
 
         var dtos = new List<FederatedPlaylistDto>();
-        foreach (var playlist in playlists.Where(p => p is not SmartPlaylist))
+        foreach (var playlist in playlists.Where(p => p is not DynamicPlaylist))
         {
             if (!await visibilityEvaluator.CanViewFederatedAsync(
                     viewer.OriginUserId,

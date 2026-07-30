@@ -135,7 +135,7 @@ public partial class MediasCarouselRow : IDisposable
     {
         LiteMusicArtistDto artist => $"/music/artists/{artist.Id}",
         LiteMusicAlbumDto album => $"/music/albums/{album.Id}",
-        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}",
+        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}#track-{track.Id}",
         LiteSerieDto serie => $"/series/{serie.Id}",
         LiteSerieSeasonDto season => $"/series/{season.SerieId}/seasons/{season.SeasonNumber}",
         LiteSerieEpisodeDto ep => $"/series/{ep.SerieId}/seasons/{ep.SeasonNumber}#ep-{ep.EpisodeNumber}",

@@ -10,9 +10,9 @@ public class MediaBrowseFilterPresetsTests
     [Test]
     public void SetSearchFieldValue_ShouldReplaceExistingActorRule()
     {
-        var filter = MediaBrowseFilterPresets.SetSearchFieldValue(MediaBrowseFilterPresets.Empty, nameof(SmartPlaylistField.ActorName), "DiCaprio");
+        var filter = MediaBrowseFilterPresets.SetSearchFieldValue(MediaBrowseFilterPresets.Empty, nameof(DynamicPlaylistField.ActorName), "DiCaprio");
 
-        MediaBrowseFilterPresets.GetSearchFieldValue(filter, nameof(SmartPlaylistField.ActorName)).Should().Be("DiCaprio");
+        MediaBrowseFilterPresets.GetSearchFieldValue(filter, nameof(DynamicPlaylistField.ActorName)).Should().Be("DiCaprio");
     }
 
     [Test]
@@ -36,7 +36,7 @@ public class MediaBrowseFilterPresetsTests
         MediaBrowseFilterPresets.IsUnwatched(next).Should().BeFalse();
         next.Items.OfType<ConditionRuleItemDto>()
             .Should()
-            .ContainSingle(rule => rule.Field == nameof(SmartPlaylistField.IsCompleted) && rule.Value == "false");
+            .ContainSingle(rule => rule.Field == nameof(DynamicPlaylistField.IsCompleted) && rule.Value == "false");
         MediaBrowseFilterPresets.GetSearchFieldValue(next, "Studio").Should().Be("Warner Bros.");
         MediaBrowseFilterPresets.GetSelectedGenres(next).Should().BeEquivalentTo(["Action"]);
     }

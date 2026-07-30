@@ -41,7 +41,7 @@ public partial class AdminFederationPanel : IDisposable
         FederationContentType.Reviews,
         FederationContentType.Collections,
         FederationContentType.Playlists,
-        FederationContentType.SmartPlaylists,
+        FederationContentType.DynamicPlaylists,
         FederationContentType.PlaybackHistory
     ];
 
@@ -110,7 +110,7 @@ public partial class AdminFederationPanel : IDisposable
         FederationContentType.Reviews => L["SocialContentReviews"],
         FederationContentType.Collections => L["SocialContentCollections"],
         FederationContentType.Playlists => L["SocialContentPlaylists"],
-        FederationContentType.SmartPlaylists => L["SocialContentSmartPlaylists"],
+        FederationContentType.DynamicPlaylists => L["SocialContentDynamicPlaylists"],
         FederationContentType.PlaybackHistory => L["SocialContentPlaybackHistory"],
         _ => contentType.ToString()
     };

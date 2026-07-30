@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
@@ -88,13 +88,14 @@ public partial class LibraryGroupView : IDisposable
     private string _selectedContentSource = ContentSourceAll;
     private List<(string Value, string Label)> _contentSourceOptions = [];
     private bool _showContentSourceFilter => _contentSourceOptions.Count > 2;
-    private bool _showCreateSmartPlaylist => _intelligentSearch is null;
+    private bool _showCreateDynamicPlaylist => _intelligentSearch is null;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
 
     private bool _showMusicPlaybackActions =>
         _libraryMediaType == LibraryMediaType.Music
-        && (_intelligentSearch is not null || _selectedMediaType == MediaType.MusicTrack);
+        && ((_intelligentSearch is { Kind: IntelligentSearchKind.Sonic or IntelligentSearchKind.Lyrics })
+            || (_intelligentSearch is null && _selectedMediaType == MediaType.MusicTrack));
 
     private bool _canPlayMusic =>
         _totalCount > 0 && !_loading && !_intelligentSearchLoading;
@@ -109,10 +110,10 @@ public partial class LibraryGroupView : IDisposable
     private DebouncedActionRunner? _picturesRefreshRunner;
     private string? _initializedId;
 
-    private Dictionary<string, object> CreateSmartPlaylistButtonAttributes => new()
+    private Dictionary<string, object> CreateDynamicPlaylistButtonAttributes => new()
     {
-        ["aria-label"] = L["CreateSmartPlaylist"].Value,
-        ["title"] = L["CreateSmartPlaylist"].Value
+        ["aria-label"] = L["CreateDynamicPlaylist"].Value,
+        ["title"] = L["CreateDynamicPlaylist"].Value
     };
 
     private static readonly List<MediaOrderingOption> SortOptions =
@@ -311,13 +312,13 @@ public partial class LibraryGroupView : IDisposable
         await PersistFiltersAsync();
     }
 
-    private async Task CreateSmartPlaylistFromBrowseAsync()
+    private async Task CreateDynamicPlaylistFromBrowseAsync()
     {
         if (_intelligentSearch is not null)
             return;
 
-        var (orderBy, orderDescending) = BrowseSortUrlMapping.ToSmartPlaylistOrder(_selectedSort, _selectedMediaType);
-        var parameters = new K7DialogParameters<SmartPlaylistDialog>
+        var (orderBy, orderDescending) = BrowseSortUrlMapping.ToDynamicPlaylistOrder(_selectedSort, _selectedMediaType);
+        var parameters = new K7DialogParameters<DynamicPlaylistDialog>
         {
             { x => x.InitialMediaType, _selectedMediaType },
             { x => x.InitialRuleFilter, _filter },
@@ -325,14 +326,14 @@ public partial class LibraryGroupView : IDisposable
             { x => x.InitialOrderDescending, orderDescending }
         };
 
-        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(
-            L["CreateSmartPlaylistDialogTitle"],
+        var dialog = await DialogService.ShowAsync<DynamicPlaylistDialog>(
+            L["CreateDynamicPlaylistDialogTitle"],
             parameters,
             new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true });
 
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: Guid id })
-            Navigation.NavigateTo($"/smart-playlists/{id}");
+            Navigation.NavigateTo($"/dynamic-playlists/{id}");
     }
 
     private async ValueTask<ItemsProviderResult<LiteMediaDto>> ProvideMediasAsync(
@@ -775,14 +776,20 @@ public partial class LibraryGroupView : IDisposable
             return;
         }
 
-        if (_libraryMediaType == LibraryMediaType.Music)
-            _selectedMediaType = MediaType.MusicTrack;
-
         _intelligentSearchLoading = true;
         await InvokeAsync(StateHasChanged);
 
         try
         {
+            if (value.Kind == IntelligentSearchKind.SimilarArtists)
+            {
+                await ApplySimilarArtistsSearchAsync(value);
+                return;
+            }
+
+            if (_libraryMediaType == LibraryMediaType.Music)
+                _selectedMediaType = MediaType.MusicTrack;
+
             var trackIds = await IntelligentSearchHelper.SearchTrackIdsAsync(MusicIntelligence, value);
             if (trackIds.Count == 0)
             {
@@ -818,6 +825,39 @@ public partial class LibraryGroupView : IDisposable
         }
     }
 
+    private async Task ApplySimilarArtistsSearchAsync(IntelligentSearchRequest value)
+    {
+        if (_libraryMediaType == LibraryMediaType.Music)
+            _selectedMediaType = MediaType.MusicArtist;
+
+        if (value.SeedId is not { } seedId)
+        {
+            Snackbar.Add(L["IntelligentSearchNoResults"], K7Severity.Info);
+            _intelligentSearchResults = [];
+            _totalCount = 0;
+            _totalCountKnown = true;
+            return;
+        }
+
+        try
+        {
+            var artists = await k7ServerService.GetSimilarMusicArtistsAsync(seedId, count: 48);
+            _intelligentSearchResults = artists.Cast<LiteMediaDto>().ToList();
+            _totalCount = _intelligentSearchResults.Count;
+            _totalCountKnown = true;
+
+            if (_intelligentSearchResults.Count == 0)
+                Snackbar.Add(L["IntelligentSearchNoResults"], K7Severity.Info);
+        }
+        catch
+        {
+            Snackbar.Add(L["IntelligentSearchError"], K7Severity.Error);
+            _intelligentSearchResults = [];
+            _totalCount = 0;
+            _totalCountKnown = true;
+        }
+    }
+
     private ItemsProviderResult<LiteMediaDto> ProvideIntelligentSearchMedias(ItemsProviderRequest request)
     {
         var items = _intelligentSearchResults
@@ -831,7 +871,7 @@ public partial class LibraryGroupView : IDisposable
     private async Task PlayAllAsync()
     {
         var tracks = await GetPlayableTracksAsync();
-        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, apiClient, S["Untitled"]);
         if (queueItems.Count > 0)
             await Audio.PlayTracksAsync(queueItems, 0);
     }
@@ -839,7 +879,7 @@ public partial class LibraryGroupView : IDisposable
     private async Task ShuffleAllAsync()
     {
         var tracks = await GetPlayableTracksAsync();
-        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, apiClient, S["Untitled"]);
         if (queueItems.Count == 0)
             return;
 
@@ -1036,7 +1076,7 @@ public partial class LibraryGroupView : IDisposable
     {
         LiteMusicArtistDto artist => $"/music/artists/{artist.Id}",
         LiteMusicAlbumDto album => $"/music/albums/{album.Id}",
-        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}",
+        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}#track-{track.Id}",
         LiteSerieDto serie => $"/series/{serie.Id}",
         LiteSerieSeasonDto season => $"/series/{season.SerieId}/seasons/{season.SeasonNumber}",
         LiteSerieEpisodeDto ep => $"/series/{ep.SerieId}/seasons/{ep.SeasonNumber}#ep-{ep.EpisodeNumber}",

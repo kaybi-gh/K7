@@ -28,7 +28,7 @@ public sealed class ImportCommand
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify extended streaming history export folder (JSON files)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
         var autoMapUsersOption = new Option<bool>("--auto-map-users") { Description = "Auto-map source users to K7 users with the same username (case-insensitive). Off by default; unmapped users get temp plex-/jellyfin-/... accounts" };
-        var includeSmartPlaylistsOption = new Option<bool>("--include-smart-playlists") { Description = "Import Plex smart/dynamic playlists as static snapshots (skipped by default; prefer recreating as K7 smart playlists)" };
+        var includeDynamicPlaylistsOption = new Option<bool>("--include-dynamic-playlists") { Description = "Import Plex smart/dynamic playlists as static snapshots (skipped by default; prefer recreating as K7 dynamic playlists)" };
         var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 - skip virtual media creation for unmatched items" };
         var fetchMetadataOption = new Option<bool>("--fetch-metadata") { Description = "Fetch rich metadata (posters, descriptions, etc.) for newly created media" };
         var playcountModeOption = new Option<string>("--playcount-mode") { Description = "PlayCount merge strategy: additive or max (default: additive)", DefaultValueFactory = _ => "additive" };
@@ -50,7 +50,7 @@ public sealed class ImportCommand
         command.Add(spotifyDataDirOption);
         command.Add(userMappingOption);
         command.Add(autoMapUsersOption);
-        command.Add(includeSmartPlaylistsOption);
+        command.Add(includeDynamicPlaylistsOption);
         command.Add(onlyMatchExistingOption);
         command.Add(fetchMetadataOption);
         command.Add(playcountModeOption);
@@ -69,7 +69,7 @@ public sealed class ImportCommand
             var spotifyDataDir = parseResult.GetValue(spotifyDataDirOption);
             var userMapping = parseResult.GetValue(userMappingOption) ?? [];
             var autoMapUsers = parseResult.GetValue(autoMapUsersOption);
-            var includeSmartPlaylists = parseResult.GetValue(includeSmartPlaylistsOption);
+            var includeDynamicPlaylists = parseResult.GetValue(includeDynamicPlaylistsOption);
             var scope = ParseIncludeScope(include);
             var createMissing = !parseResult.GetValue(onlyMatchExistingOption);
             var fetchMetadata = parseResult.GetValue(fetchMetadataOption);
@@ -85,13 +85,13 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeSmartPlaylists, createMissing, fetchMetadata, strategy, pathMaps, cancellationToken);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeDynamicPlaylists, createMissing, fetchMetadata, strategy, pathMaps, cancellationToken);
         });
 
         return command;
     }
 
-    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool autoMapUsers, bool includeSmartPlaylists, bool createMissing, bool fetchMetadata, MergeStrategy strategy, string[] pathMapArgs, CancellationToken cancellationToken)
+    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool autoMapUsers, bool includeDynamicPlaylists, bool createMissing, bool fetchMetadata, MergeStrategy strategy, string[] pathMapArgs, CancellationToken cancellationToken)
     {
 
         var sourceLower = source.ToLowerInvariant();
@@ -107,7 +107,7 @@ public sealed class ImportCommand
 
         ISourceClient sourceClient = sourceLower switch
         {
-            "plex" => new PlexClient(sourceUrl, sourceApiKey) { IncludeSmartPlaylists = includeSmartPlaylists },
+            "plex" => new PlexClient(sourceUrl, sourceApiKey) { IncludeDynamicPlaylists = includeDynamicPlaylists },
             "jellyfin" => new JellyfinClient(sourceUrl, sourceApiKey),
             "tautulli" => new TautulliClient(sourceUrl, sourceApiKey),
             "tracearr" => new TracearrClient(sourceUrl, sourceApiKey),
@@ -330,14 +330,14 @@ public sealed class ImportCommand
                         ctx.Status("Fetching playlists...");
                         var playlists = await sourceClient.GetPlaylistsAsync(sourceUser.Id, cancellationToken);
 
-                        var smartCount = playlists.Count(p => p.IsSmart);
-                        if (!includeSmartPlaylists && smartCount > 0)
+                        var smartCount = playlists.Count(p => p.IsDynamic);
+                        if (!includeDynamicPlaylists && smartCount > 0)
                         {
                             ctx.Status(
                                 $"Skipping {smartCount} smart/dynamic playlist(s) for {sourceUser.Name} " +
-                                "(recreate as K7 smart playlists, or use --include-smart-playlists)");
-                            playlists = playlists.Where(p => !p.IsSmart).ToList();
-                            totalResult.SkippedSmartPlaylists += smartCount;
+                                "(recreate as K7 dynamic playlists, or use --include-dynamic-playlists)");
+                            playlists = playlists.Where(p => !p.IsDynamic).ToList();
+                            totalResult.SkippedDynamicPlaylists += smartCount;
                         }
 
                         if (dryRun) return;
@@ -409,15 +409,15 @@ public sealed class ImportCommand
         table.AddRow("Imported playback sessions", totalResult.ImportedPlaybackSessions.ToString());
         table.AddRow("Imported ratings", totalResult.ImportedRatings.ToString());
         table.AddRow("Imported playlists", totalResult.ImportedPlaylists.ToString());
-        if (totalResult.SkippedSmartPlaylists > 0)
-            table.AddRow("Skipped smart playlists", totalResult.SkippedSmartPlaylists.ToString());
+        if (totalResult.SkippedDynamicPlaylists > 0)
+            table.AddRow("Skipped dynamic playlists", totalResult.SkippedDynamicPlaylists.ToString());
         AnsiConsole.Write(table);
 
-        if (totalResult.SkippedSmartPlaylists > 0)
+        if (totalResult.SkippedDynamicPlaylists > 0)
         {
             AnsiConsole.MarkupLine(
-                "[dim]Plex smart/dynamic playlists were skipped. Recreate them as K7 smart playlists, " +
-                "or re-run with --include-smart-playlists for a static snapshot.[/]");
+                "[dim]Plex smart/dynamic playlists were skipped. Recreate them as K7 dynamic playlists, " +
+                "or re-run with --include-dynamic-playlists for a static snapshot.[/]");
         }
 
         var skipped = new List<string>();

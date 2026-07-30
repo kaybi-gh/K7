@@ -55,14 +55,14 @@ public class GetFederationSocialPlaylistsEndpoint : IEndpoint
     }
 }
 
-public class GetFederationSocialSmartPlaylistsEndpoint : IEndpoint
+public class GetFederationSocialDynamicPlaylistsEndpoint : IEndpoint
 {
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
         var type = GetType();
         var groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/federation/social/smart-playlists", async (
+        endpointRouteBuilder.MapGet("/api/federation/social/dynamic-playlists", async (
             [FromServices] IFederationSocialConsumerService consumerService,
             [FromServices] IUser currentUser,
             CancellationToken cancellationToken) =>
@@ -70,7 +70,7 @@ public class GetFederationSocialSmartPlaylistsEndpoint : IEndpoint
             if (currentUser.Id is not { } userId)
                 return Results.Unauthorized();
 
-            var playlists = await consumerService.GetSmartPlaylistsAsync(userId, cancellationToken);
+            var playlists = await consumerService.GetDynamicPlaylistsAsync(userId, cancellationToken);
             return Results.Ok(playlists);
         })
         .RequireAuthorization(Policies.GuestOrAbove)
