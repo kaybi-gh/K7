@@ -24,7 +24,7 @@ public class GetFederationSocialPlaybackHistoryQueryHandler(
         var (peer, viewer) = resolved!.Value;
 
         if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.PlaybackHistory, outbound: false, peer.Id, cancellationToken))
+                FederationContentType.PlaybackHistory, outbound: true, peer.Id, cancellationToken))
             return [];
 
         var owner = await context.Users

@@ -34,7 +34,16 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
 
             if (!string.IsNullOrEmpty(userId))
             {
-                userName = await _identityService.GetUserNameAsync(userId);
+                try
+                {
+                    userName = await _identityService.GetUserNameAsync(userId) ?? string.Empty;
+                }
+                catch (Exception ex)
+                {
+                    // Never fail the request because performance logging could not resolve a name
+                    // (e.g. federation peer client credentials have no AspNetUsers row).
+                    _logger.LogDebug(ex, "Could not resolve user name for long-running request {Name}", requestName);
+                }
             }
 
             _logger.LogWarning("K7.Server Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@UserId} {@UserName} {@Request}",

@@ -59,7 +59,8 @@ public class FederationSocialConsumerService(
                     PeerServerId = remoteUser.Peer.Id,
                     PeerName = remoteUser.Peer.Name,
                     OriginUserId = remoteUser.User.OriginUserId,
-                    AuthorName = $"{remoteUser.User.DisplayName} @ {remoteUser.Peer.Name}",
+                    AuthorName = FederationSocialConsumerHelper.FormatAuthorName(
+                        remoteUser.User.DisplayName, remoteUser.Peer.Name),
                     Collection = collection,
                     Items = items
                 });
@@ -102,7 +103,8 @@ public class FederationSocialConsumerService(
                     PeerServerId = remoteUser.Peer.Id,
                     PeerName = remoteUser.Peer.Name,
                     OriginUserId = remoteUser.User.OriginUserId,
-                    AuthorName = $"{remoteUser.User.DisplayName} @ {remoteUser.Peer.Name}",
+                    AuthorName = FederationSocialConsumerHelper.FormatAuthorName(
+                        remoteUser.User.DisplayName, remoteUser.Peer.Name),
                     Playlist = playlist,
                     Items = items
                 });
@@ -139,7 +141,8 @@ public class FederationSocialConsumerService(
                     PeerServerId = remoteUser.Peer.Id,
                     PeerName = remoteUser.Peer.Name,
                     OriginUserId = remoteUser.User.OriginUserId,
-                    AuthorName = $"{remoteUser.User.DisplayName} @ {remoteUser.Peer.Name}",
+                    AuthorName = FederationSocialConsumerHelper.FormatAuthorName(
+                        remoteUser.User.DisplayName, remoteUser.Peer.Name),
                     Playlist = playlist,
                     Items = items
                 });
@@ -165,15 +168,6 @@ public class FederationSocialConsumerService(
         {
             if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
                 FederationContentType.PlaybackHistory, outbound: false, peer.Id, cancellationToken))
-                continue;
-
-            var shareEnabled = await context.PeerShareAgreements
-                .AnyAsync(a => a.PeerServerId == peer.Id
-                    && a.Direction == ShareDirection.Inbound
-                    && a.IsEnabled
-                    && a.SharePlaybackHistory, cancellationToken);
-
-            if (!shareEnabled)
                 continue;
 
             var token = await peerClient.GetAccessTokenAsync(peer.BaseUrl, peer.OutboundClientId!, peer.OutboundClientSecret!, cancellationToken);

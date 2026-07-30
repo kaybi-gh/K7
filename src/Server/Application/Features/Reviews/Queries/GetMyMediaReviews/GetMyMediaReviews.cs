@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
@@ -31,7 +32,7 @@ public class GetMyMediaReviewsQueryHandler(IApplicationDbContext context, IUser 
             .Take(MaxItems)
             .ToListAsync(cancellationToken);
 
-        return reviews.Select(r => new SocialUserReviewViewDto
+        var results = reviews.Select(r => new SocialUserReviewViewDto
         {
             Id = r.Id,
             Text = r.Text,
@@ -40,5 +41,33 @@ public class GetMyMediaReviewsQueryHandler(IApplicationDbContext context, IUser 
             Created = r.Created,
             Media = r.Media!.ToSocialUserMediaCard(FederatedSocialItemStatus.ResolvedLocal)
         }).ToList();
+
+        var mediaIds = results
+            .Where(r => r.Media.LocalMediaId is not null && r.Media.CoverPictureId is null)
+            .Select(r => r.Media.LocalMediaId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (mediaIds.Count == 0)
+            return results;
+
+        var coverPictureIds = await MediaCoverPictureResolver.GetCoverPictureIdsByMediaIdAsync(
+            context,
+            mediaIds,
+            cancellationToken);
+
+        for (var i = 0; i < results.Count; i++)
+        {
+            var media = results[i].Media;
+            if (media.CoverPictureId is not null || media.LocalMediaId is not Guid mediaId)
+                continue;
+
+            if (!coverPictureIds.TryGetValue(mediaId, out var coverPictureId) || coverPictureId is null)
+                continue;
+
+            results[i] = results[i] with { Media = media with { CoverPictureId = coverPictureId } };
+        }
+
+        return results;
     }
 }

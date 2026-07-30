@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Domain.Entities.Playlists;
@@ -13,7 +14,8 @@ public class GetFederationSocialUsersQueryHandler(
     IPeerAuthorizationService peerAuthorization,
     IApplicationDbContext context,
     IUserFederationPrivacyService privacyService,
-    IContentVisibilityEvaluator visibilityEvaluator)
+    IContentVisibilityEvaluator visibilityEvaluator,
+    IIdentityService identityService)
     : IRequestHandler<GetFederationSocialUsersQuery, IReadOnlyList<FederatedUserRef>>
 {
     public async Task<IReadOnlyList<FederatedUserRef>> Handle(
@@ -28,6 +30,9 @@ public class GetFederationSocialUsersQueryHandler(
             .AsNoTracking()
             .Where(u => u.PeerServerId == null && u.IsActive && u.DeletedAt == null)
             .ToListAsync(cancellationToken);
+
+        var displayNames = await LocalUserDisplayNameHelper.ResolveManyAsync(
+            identityService, users, cancellationToken);
 
         var result = new List<FederatedUserRef>();
         foreach (var user in users)
@@ -46,7 +51,7 @@ public class GetFederationSocialUsersQueryHandler(
             result.Add(new FederatedUserRef
             {
                 OriginUserId = user.Id,
-                DisplayName = user.DisplayName,
+                DisplayName = displayNames.GetValueOrDefault(user.Id),
                 DiscoverableContentTypes = discoverableTypes
             });
         }
@@ -89,7 +94,7 @@ public class GetFederationSocialUsersQueryHandler(
         if (shareScope == VisibilityScope.Nobody)
             return false;
 
-        if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(contentType, outbound: false, peerServerId, cancellationToken))
+        if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(contentType, outbound: true, peerServerId, cancellationToken))
             return false;
 
         if (!await visibilityEvaluator.CanViewFederatedAsync(

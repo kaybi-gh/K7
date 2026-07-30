@@ -25,7 +25,7 @@ public class GetFederationSocialCollectionsQueryHandler(
         var (peer, viewer) = resolved!.Value;
 
         if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.Collections, outbound: false, peer.Id, cancellationToken))
+                FederationContentType.Collections, outbound: true, peer.Id, cancellationToken))
             return [];
 
         var owner = await context.Users

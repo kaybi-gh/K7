@@ -26,7 +26,7 @@ public class GetFederationSocialSmartPlaylistsQueryHandler(
         var (peer, viewer) = resolved!.Value;
 
         if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.SmartPlaylists, outbound: false, peer.Id, cancellationToken))
+                FederationContentType.SmartPlaylists, outbound: true, peer.Id, cancellationToken))
             return [];
 
         var owner = await context.Users

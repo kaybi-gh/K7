@@ -135,7 +135,7 @@ public class ContentVisibilityEvaluator(
         if (ownerScope == VisibilityScope.LocalServer)
             return false;
 
-        if (!await IsFederationSocialEnabledAsync(contentType, outbound: false, viewerPeerServerId, cancellationToken))
+        if (!await IsFederationSocialEnabledAsync(contentType, outbound: true, viewerPeerServerId, cancellationToken))
             return false;
 
         return ownerScope switch

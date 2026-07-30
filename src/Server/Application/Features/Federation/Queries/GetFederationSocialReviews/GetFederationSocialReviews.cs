@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Federation.Services;
@@ -13,7 +14,8 @@ public class GetFederationSocialReviewsQueryHandler(
     IPeerAuthorizationService peerAuthorization,
     IApplicationDbContext context,
     IUserFederationPrivacyService privacyService,
-    IContentVisibilityEvaluator visibilityEvaluator)
+    IContentVisibilityEvaluator visibilityEvaluator,
+    IIdentityService identityService)
     : IRequestHandler<GetFederationSocialReviewsQuery, IReadOnlyList<FederatedReviewDto>>
 {
     public async Task<IReadOnlyList<FederatedReviewDto>> Handle(
@@ -25,7 +27,7 @@ public class GetFederationSocialReviewsQueryHandler(
         var (peer, viewer) = resolved!.Value;
 
         if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
-                FederationContentType.Reviews, outbound: false, peer.Id, cancellationToken))
+                FederationContentType.Reviews, outbound: true, peer.Id, cancellationToken))
             return [];
 
         var owner = await context.Users
@@ -45,6 +47,9 @@ public class GetFederationSocialReviewsQueryHandler(
                 cancellationToken: cancellationToken))
             return [];
 
+        var authorDisplayName = await LocalUserDisplayNameHelper.ResolveAsync(
+            identityService, owner, cancellationToken);
+
         var reviews = await context.MediaReviews
             .AsNoTracking()
             .Include(r => r.UserRating)
@@ -60,7 +65,7 @@ public class GetFederationSocialReviewsQueryHandler(
             Author = new FederatedUserRef
             {
                 OriginUserId = owner.Id,
-                DisplayName = owner.DisplayName
+                DisplayName = authorDisplayName
             },
             Media = r.Media!.ToFederatedMediaRef(),
             Text = r.Text,

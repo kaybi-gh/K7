@@ -255,6 +255,97 @@ public class ContentVisibilityEvaluatorTests
         result.Should().BeTrue();
     }
 
+    [Test]
+    public async Task IsFederationSocialEnabledAsync_ShouldReturnFalse_WhenGlobalPolicyDisabled()
+    {
+        _policyService.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new FederationSocialPolicyDto { Enabled = false });
+
+        var result = await _evaluator.IsFederationSocialEnabledAsync(
+            FederationContentType.Reviews,
+            outbound: false,
+            _peerServerId);
+
+        result.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task IsFederationSocialEnabledAsync_ShouldReturnFalse_WhenGlobalInboundDisabled_EvenIfPeerAllows()
+    {
+        _policyService.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new FederationSocialPolicyDto
+            {
+                Enabled = true,
+                Policies = new Dictionary<FederationContentType, FederationContentTypePolicyDto>
+                {
+                    [FederationContentType.Reviews] = new() { Outbound = true, Inbound = false }
+                }
+            });
+
+        _context.PeerSocialAgreements.Add(new PeerSocialAgreement
+        {
+            Id = Guid.NewGuid(),
+            PeerServerId = _peerServerId,
+            ContentType = FederationContentType.Reviews,
+            AllowOutbound = true,
+            AllowInbound = true
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _evaluator.IsFederationSocialEnabledAsync(
+            FederationContentType.Reviews,
+            outbound: false,
+            _peerServerId);
+
+        result.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task IsFederationSocialEnabledAsync_ShouldReturnFalse_WhenPeerInboundDisabled()
+    {
+        ConfigureEnabledPolicy(FederationContentType.Reviews);
+
+        _context.PeerSocialAgreements.Add(new PeerSocialAgreement
+        {
+            Id = Guid.NewGuid(),
+            PeerServerId = _peerServerId,
+            ContentType = FederationContentType.Reviews,
+            AllowOutbound = true,
+            AllowInbound = false
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _evaluator.IsFederationSocialEnabledAsync(
+            FederationContentType.Reviews,
+            outbound: false,
+            _peerServerId);
+
+        result.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanViewFederatedAsync_ShouldReturnFalse_WhenGlobalOutboundDisabled()
+    {
+        _policyService.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new FederationSocialPolicyDto
+            {
+                Enabled = true,
+                Policies = new Dictionary<FederationContentType, FederationContentTypePolicyDto>
+                {
+                    [FederationContentType.Reviews] = new() { Outbound = false, Inbound = true }
+                }
+            });
+
+        var result = await _evaluator.CanViewFederatedAsync(
+            Guid.NewGuid(),
+            _peerServerId,
+            _ownerId,
+            FederationContentType.Reviews,
+            VisibilityScope.Federation);
+
+        result.Should().BeFalse();
+    }
+
     private void ConfigureEnabledPolicy(FederationContentType contentType)
     {
         _policyService.GetAsync(Arg.Any<CancellationToken>())

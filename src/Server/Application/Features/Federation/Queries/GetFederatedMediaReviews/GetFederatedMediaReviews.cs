@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Federation.Services;
@@ -18,10 +19,13 @@ public class GetFederatedMediaReviewsQueryHandler(
     IFederationViewerAssertionService assertionService,
     IUserFederationPrivacyService privacyService,
     IContentVisibilityEvaluator visibilityEvaluator,
-    IFederatedMediaResolver mediaResolver)
+    IFederatedMediaResolver mediaResolver,
+    IIdentityService identityService)
     : IRequestHandler<GetFederatedMediaReviewsQuery, IReadOnlyList<FederatedReviewDto>>
 {
-    public async Task<IReadOnlyList<FederatedReviewDto>> Handle(GetFederatedMediaReviewsQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<FederatedReviewDto>> Handle(
+        GetFederatedMediaReviewsQuery request,
+        CancellationToken cancellationToken)
     {
         if (currentUser.Id is not { } viewerUserId)
             return [];
@@ -37,7 +41,9 @@ public class GetFederatedMediaReviewsQueryHandler(
         var allReviews = new List<FederatedReviewDto>();
 
         var viewer = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == viewerUserId, cancellationToken);
-        var viewerName = viewer?.DisplayName;
+        var viewerName = viewer is null
+            ? null
+            : await LocalUserDisplayNameHelper.ResolveAsync(identityService, viewer, cancellationToken);
 
         foreach (var peer in peers)
         {
@@ -77,12 +83,16 @@ public class GetFederatedMediaReviewsQueryHandler(
                     if (resolution.LocalMediaId != request.MediaId)
                         continue;
 
+                    var authorName = !string.IsNullOrWhiteSpace(review.Author.DisplayName)
+                        ? review.Author.DisplayName
+                        : remoteUser.DisplayName;
+
                     allReviews.Add(review with
                     {
                         Author = review.Author with
                         {
                             OriginPeerServerId = peer.Id,
-                            DisplayName = $"{review.Author.DisplayName} @ {peer.Name}"
+                            DisplayName = FederationSocialConsumerHelper.FormatAuthorName(authorName, peer.Name)
                         }
                     });
                 }

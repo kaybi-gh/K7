@@ -635,6 +635,20 @@ public class SocialUserProfileReader(
         }
     }
 
+    private async Task EnrichReviewCoverPictureIdsAsync(
+        IList<SocialUserReviewViewDto> reviews,
+        CancellationToken cancellationToken)
+    {
+        if (reviews.Count == 0)
+            return;
+
+        var mediaCards = reviews.Select(r => r.Media).ToList();
+        await EnrichCoverPictureIdsAsync(mediaCards, cancellationToken);
+
+        for (var index = 0; index < reviews.Count; index++)
+            reviews[index] = reviews[index] with { Media = mediaCards[index] };
+    }
+
     private async Task<SocialUserIdentityDto> ToLocalIdentityAsync(
         User owner,
         Guid? avatarId,
@@ -683,7 +697,7 @@ public class SocialUserProfileReader(
             .Take(RecentLimit)
             .ToListAsync(cancellationToken);
 
-        return reviews.Select(r => new SocialUserReviewViewDto
+        var results = reviews.Select(r => new SocialUserReviewViewDto
         {
             Id = r.Id,
             Text = r.Text,
@@ -692,6 +706,9 @@ public class SocialUserProfileReader(
             Created = r.Created,
             Media = r.Media!.ToSocialUserMediaCard(FederatedSocialItemStatus.ResolvedLocal)
         }).ToList();
+
+        await EnrichReviewCoverPictureIdsAsync(results, cancellationToken);
+        return results;
     }
 
     private async Task<IReadOnlyList<SocialUserPlaybackViewDto>> LoadLocalPlaybackAsync(
@@ -1016,6 +1033,7 @@ public class SocialUserProfileReader(
             });
         }
 
+        await EnrichReviewCoverPictureIdsAsync(results, cancellationToken);
         return results;
     }
 

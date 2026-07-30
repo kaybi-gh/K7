@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Federation.Social;
 
@@ -8,7 +9,8 @@ public record GetFederationPlaybackHistoryQuery(string? ClientId) : IRequest<IRe
 
 public class GetFederationPlaybackHistoryQueryHandler(
     IPeerAuthorizationService peerAuthorization,
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IContentVisibilityEvaluator visibilityEvaluator)
     : IRequestHandler<GetFederationPlaybackHistoryQuery, IReadOnlyList<FederationPlaybackEntryDto>>
 {
     public async Task<IReadOnlyList<FederationPlaybackEntryDto>> Handle(
@@ -17,13 +19,11 @@ public class GetFederationPlaybackHistoryQueryHandler(
     {
         var peer = await peerAuthorization.RequireInboundPeerAsync(request.ClientId, cancellationToken);
 
-        var sharingEnabled = await context.PeerShareAgreements
-            .AnyAsync(a => a.PeerServerId == peer.Id
-                && a.Direction == ShareDirection.Outbound
-                && a.IsEnabled
-                && a.SharePlaybackHistory, cancellationToken);
-
-        if (!sharingEnabled)
+        if (!await visibilityEvaluator.IsFederationSocialEnabledAsync(
+                FederationContentType.PlaybackHistory,
+                outbound: true,
+                peer.Id,
+                cancellationToken))
             return [];
 
         return await context.StreamSessions

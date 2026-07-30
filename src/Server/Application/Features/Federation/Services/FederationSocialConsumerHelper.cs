@@ -55,4 +55,7 @@ internal static class FederationSocialConsumerHelper
             LocalMediaId = resolution.LocalMediaId,
             RemoteIndexedFileId = resolution.RemoteIndexedFileId
         };
+
+    public static string FormatAuthorName(string? displayName, string peerName) =>
+        string.IsNullOrWhiteSpace(displayName) ? peerName : $"{displayName} @ {peerName}";
 }
