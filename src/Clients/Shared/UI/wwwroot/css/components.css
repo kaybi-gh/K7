@@ -790,7 +790,7 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
 /* ── Menu ────────────────────────────────────────────────────────────────────── */
 .k7-menu { position: relative; display: inline-block; }
 .k7-menu-activator { display: contents; }
-.k7-menu-activator-inner { display: inline-block; }
+.k7-menu-activator-inner { display: inline-block; cursor: pointer; }
 .k7-menu--disabled > .k7-menu-activator > .k7-menu-activator-inner {
   cursor: not-allowed;
   pointer-events: none;
