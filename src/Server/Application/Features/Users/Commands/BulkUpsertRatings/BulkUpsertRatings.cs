@@ -15,7 +15,9 @@ public record BulkUpsertRatingsCommand : IRequest<int>
     public MergeStrategy? Strategy { get; init; }
 }
 
-public class BulkUpsertRatingsCommandHandler(IApplicationDbContext context)
+public class BulkUpsertRatingsCommandHandler(
+    IApplicationDbContext context,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<BulkUpsertRatingsCommand, int>
 {
     public async Task<int> Handle(BulkUpsertRatingsCommand request, CancellationToken cancellationToken)
@@ -25,10 +27,14 @@ public class BulkUpsertRatingsCommandHandler(IApplicationDbContext context)
 
         var mediaIds = request.Items.Select(i => i.MediaId).Distinct().ToList();
 
-        var existingRatings = await context.Ratings
-            .OfType<UserRating>()
-            .Where(r => r.UserId == request.UserId && mediaIds.Contains(r.MediaId))
-            .ToDictionaryAsync(r => r.MediaId, cancellationToken);
+        // One rating per (user, media). GroupBy is a safety net if MakeUserRatingMediaUserUnique
+        // has not been applied yet; BulkUpsertRatings also tracks in-batch inserts.
+        var existingRatings = (await context.Ratings
+                .OfType<UserRating>()
+                .Where(r => r.UserId == request.UserId && mediaIds.Contains(r.MediaId))
+                .ToListAsync(cancellationToken))
+            .GroupBy(r => r.MediaId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.LastModified).ThenByDescending(r => r.Id).First());
 
         var upsertedCount = 0;
         var strategy = request.Strategy ?? new MergeStrategy();
@@ -53,12 +59,17 @@ public class BulkUpsertRatingsCommandHandler(IApplicationDbContext context)
                     MaximumValue = 10
                 };
                 context.Ratings.Add(rating);
+                // Same pattern as BulkUpsertMediaStates: track inserts so duplicate MediaIds in
+                // one request (common after Plex match collapse) do not create extra rows.
+                existingRatings[item.MediaId] = rating;
             }
 
             upsertedCount++;
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        if (upsertedCount > 0)
+            cacheInvalidator.InvalidateAll();
         return upsertedCount;
     }
 }

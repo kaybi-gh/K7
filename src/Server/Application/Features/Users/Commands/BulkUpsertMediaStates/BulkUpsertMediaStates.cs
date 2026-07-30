@@ -15,7 +15,9 @@ public record BulkUpsertMediaStatesCommand : IRequest<int>
     public MergeStrategy? Strategy { get; init; }
 }
 
-public class BulkUpsertMediaStatesCommandHandler(IApplicationDbContext context)
+public class BulkUpsertMediaStatesCommandHandler(
+    IApplicationDbContext context,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<BulkUpsertMediaStatesCommand, int>
 {
     public async Task<int> Handle(BulkUpsertMediaStatesCommand request, CancellationToken cancellationToken)
@@ -25,9 +27,11 @@ public class BulkUpsertMediaStatesCommandHandler(IApplicationDbContext context)
 
         var mediaIds = request.Items.Select(i => i.MediaId).Distinct().ToList();
 
-        var existingStates = await context.UserMediaStates
-            .Where(s => s.UserId == request.UserId && mediaIds.Contains(s.MediaId))
-            .ToDictionaryAsync(s => s.MediaId, cancellationToken);
+        var existingStates = (await context.UserMediaStates
+                .Where(s => s.UserId == request.UserId && mediaIds.Contains(s.MediaId))
+                .ToListAsync(cancellationToken))
+            .GroupBy(s => s.MediaId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.LastInteractedAt).First());
 
         var upsertedCount = 0;
         var strategy = request.Strategy ?? new MergeStrategy();
@@ -88,6 +92,8 @@ public class BulkUpsertMediaStatesCommandHandler(IApplicationDbContext context)
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        if (upsertedCount > 0)
+            cacheInvalidator.InvalidateAll();
         return upsertedCount;
     }
 }

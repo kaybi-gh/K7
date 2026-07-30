@@ -267,16 +267,25 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 .Where(s => s.UserId == userId.Value && idSet.Contains(s.MediaId))
                 .ToListAsync(cancellationToken)
             : [];
-        var statesByMediaId = states.ToDictionary(s => s.MediaId, s => s.ToUserMediaStateDto());
+        var statesByMediaId = states
+            .GroupBy(s => s.MediaId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.LastInteractedAt).First().ToUserMediaStateDto());
         var ratings = userId.HasValue
             ? await context.Ratings
                 .OfType<UserRating>()
                 .AsNoTracking()
                 .Where(r => r.UserId == userId.Value && idSet.Contains(r.MediaId))
-                .Select(r => new { r.MediaId, r.Value })
+                .Select(r => new { r.MediaId, r.Value, r.LastModified, r.Id })
                 .ToListAsync(cancellationToken)
             : [];
-        var ratingsByMediaId = ratings.ToDictionary(r => r.MediaId, r => (int?)r.Value);
+        // One rating per (user, media) is enforced by IX_Ratings_MediaId_UserId after
+        // MakeUserRatingMediaUserUnique. GroupBy keeps QueryMedias safe if that migration
+        // has not been applied yet on a given environment.
+        var ratingsByMediaId = ratings
+            .GroupBy(r => r.MediaId)
+            .ToDictionary(
+                g => g.Key,
+                g => (int?)Math.Round(g.OrderByDescending(r => r.LastModified).ThenByDescending(r => r.Id).First().Value));
 
         var resultById = new Dictionary<Guid, LiteMediaDto>();
         foreach (var row in baseRows)

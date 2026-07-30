@@ -32,8 +32,13 @@ public class UserRatingConfiguration : IEntityTypeConfiguration<UserRating>
 {
     public void Configure(EntityTypeBuilder<UserRating> builder)
     {
+        // One local rating per user per media. Without uniqueness, concurrent RateMedia /
+        // UpsertMediaReview check-then-insert races create duplicate rows (same class of bug as
+        // CreateMedia without an identity lock). MetadataProviderRating rows share the Ratings
+        // TPH table with a null UserId and are unaffected by this filtered index.
         builder
             .HasIndex(r => new { r.MediaId, r.UserId })
+            .IsUnique()
             .HasDatabaseName("IX_Ratings_MediaId_UserId");
     }
 }

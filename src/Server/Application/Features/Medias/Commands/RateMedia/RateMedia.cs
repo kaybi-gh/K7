@@ -10,7 +10,11 @@ namespace K7.Server.Application.Features.Medias.Commands.RateMedia;
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record RateMediaCommand(Guid MediaId, int Value) : IRequest;
 
-public class RateMediaCommandHandler(IApplicationDbContext context, IUser currentUser, IMediaAccessGuard accessGuard)
+public class RateMediaCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IMediaAccessGuard accessGuard,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<RateMediaCommand>
 {
     public async Task Handle(RateMediaCommand request, CancellationToken cancellationToken)
@@ -42,5 +46,6 @@ public class RateMediaCommandHandler(IApplicationDbContext context, IUser curren
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateAll();
     }
 }
