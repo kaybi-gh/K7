@@ -44,7 +44,7 @@ public class GetMediaBrowseFilterSuggestionsTests
         var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
         var query = new GetMediaBrowseFilterSuggestionsQuery
         {
-            Field = nameof(SmartPlaylistField.ActorName),
+            Field = nameof(DynamicPlaylistField.ActorName),
             SearchText = "DiCaprio",
             Limit = 20
         };
@@ -60,7 +60,7 @@ public class GetMediaBrowseFilterSuggestionsTests
         var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
         var query = new GetMediaBrowseFilterSuggestionsQuery
         {
-            Field = nameof(SmartPlaylistField.ActorName),
+            Field = nameof(DynamicPlaylistField.ActorName),
             SearchText = "dicaprio",
             Limit = 20
         };
@@ -76,7 +76,7 @@ public class GetMediaBrowseFilterSuggestionsTests
         var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
         var query = new GetMediaBrowseFilterSuggestionsQuery
         {
-            Field = nameof(SmartPlaylistField.ArtistName),
+            Field = nameof(DynamicPlaylistField.ArtistName),
             SearchText = "Radio",
             Limit = 20
         };
@@ -87,12 +87,44 @@ public class GetMediaBrowseFilterSuggestionsTests
     }
 
     [Test]
+    public async Task Handle_TitleSearch_ShouldReturnDistinctMatches()
+    {
+        var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
+        var query = new GetMediaBrowseFilterSuggestionsQuery
+        {
+            Field = nameof(DynamicPlaylistField.Title),
+            SearchText = "Incep",
+            Limit = 20
+        };
+
+        var results = await handler.Handle(query, CancellationToken.None);
+
+        results.Should().BeEquivalentTo(["Inception"]);
+    }
+
+    [Test]
+    public async Task Handle_AlbumTitleSearch_ShouldReturnDistinctMatches()
+    {
+        var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
+        var query = new GetMediaBrowseFilterSuggestionsQuery
+        {
+            Field = nameof(DynamicPlaylistField.AlbumTitle),
+            SearchText = "OK",
+            Limit = 20
+        };
+
+        var results = await handler.Handle(query, CancellationToken.None);
+
+        results.Should().BeEquivalentTo(["OK Computer"]);
+    }
+
+    [Test]
     public async Task Handle_EmptySearch_ShouldReturnTopSuggestions()
     {
         var handler = new GetMediaBrowseFilterSuggestionsQueryHandler(_context, new TestUser());
         var query = new GetMediaBrowseFilterSuggestionsQuery
         {
-            Field = nameof(SmartPlaylistField.ActorName),
+            Field = nameof(DynamicPlaylistField.ActorName),
             SearchText = "",
             Limit = 20
         };

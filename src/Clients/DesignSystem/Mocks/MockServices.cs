@@ -464,8 +464,10 @@ public sealed class MockMediaService : IMediaService
     {
         string[] samples = query.Field switch
         {
-            nameof(SmartPlaylistField.ActorName) => ["Leonardo DiCaprio", "Tom Hanks", "Bryan Cranston"],
-            nameof(SmartPlaylistField.ArtistName) => ["Daft Punk", "Radiohead", "Bjork"],
+            nameof(DynamicPlaylistField.ActorName) => ["Leonardo DiCaprio", "Tom Hanks", "Bryan Cranston"],
+            nameof(DynamicPlaylistField.ArtistName) => ["Daft Punk", "Radiohead", "Bjork"],
+            nameof(DynamicPlaylistField.Title) => ["Inception", "OK Computer", "Breaking Bad"],
+            nameof(DynamicPlaylistField.AlbumTitle) => ["OK Computer", "Discovery", "Random Access Memories"],
             "Studio" => ["Warner Bros.", "Universal Pictures", "Paramount Pictures"],
             "Network" => ["HBO", "Netflix", "AMC"],
             _ => []
@@ -546,12 +548,12 @@ public sealed class MockPlaylistService : IPlaylistService
     public Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RecordPlaylistPlaybackAsync(Guid playlistId, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteSmartPlaylistDto>?>(null);
-    public Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<SmartPlaylistDto?>(null);
-    public Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
-    public Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<PaginatedListDto<LiteDynamicPlaylistDto>?> GetDynamicPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteDynamicPlaylistDto>?>(null);
+    public Task<DynamicPlaylistDto?> GetDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<DynamicPlaylistDto?>(null);
+    public Task<Guid> CreateDynamicPlaylistAsync(CreateDynamicPlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task UpdateDynamicPlaylistAsync(Guid id, UpdateDynamicPlaylistRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task EvaluateDynamicPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockStreamingService : IStreamingService
@@ -660,8 +662,8 @@ public sealed class MockReviewService : IReviewService
     public Task<IReadOnlyList<FederatedPlaylistViewDto>> GetFederatedPlaylistsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<FederatedPlaylistViewDto>>([]);
 
-    public Task<IReadOnlyList<FederatedSmartPlaylistViewDto>> GetFederatedSmartPlaylistsAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<FederatedSmartPlaylistViewDto>>([]);
+    public Task<IReadOnlyList<FederatedDynamicPlaylistViewDto>> GetFederatedDynamicPlaylistsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<FederatedDynamicPlaylistViewDto>>([]);
 
     public Task<IReadOnlyList<FederatedPlaybackHistoryViewDto>> GetFederatedPlaybackHistoryAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<FederatedPlaybackHistoryViewDto>>([]);
@@ -738,7 +740,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
-    public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
+    public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
@@ -1169,14 +1171,14 @@ public sealed class MockDownloadManager : IDownloadManager
 
 public sealed class MockMusicIntelligenceClientService : IMusicIntelligenceClientService
 {
-    public Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
-        => Task.FromResult(new List<Guid>());
+    public Task<List<MusicIntelligenceTrackMatchDto>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<MusicIntelligenceTrackMatchDto>());
 
     public Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default)
         => Task.FromResult(new List<Guid>());
 
-    public Task<List<Guid>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
-        => Task.FromResult(new List<Guid>());
+    public Task<List<MusicIntelligenceTrackMatchDto>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<MusicIntelligenceTrackMatchDto>());
 
     public Task<List<Guid>> CreateSmartPlaylistAsync(string prompt, int count = 30, CancellationToken cancellationToken = default)
         => Task.FromResult(new List<Guid>());

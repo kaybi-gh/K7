@@ -27,7 +27,11 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
         GetMediaBrowseFilterSuggestionsQuery request,
         CancellationToken cancellationToken)
     {
-        if (request.Field is not (nameof(SmartPlaylistField.ActorName) or nameof(SmartPlaylistField.ArtistName)))
+        if (request.Field is not (
+            nameof(DynamicPlaylistField.ActorName)
+            or nameof(DynamicPlaylistField.ArtistName)
+            or nameof(DynamicPlaylistField.Title)
+            or nameof(DynamicPlaylistField.AlbumTitle)))
             return [];
 
         var limit = Math.Clamp(request.Limit, 1, MaxLimit);
@@ -44,8 +48,10 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
         return request.Field switch
         {
-            nameof(SmartPlaylistField.ActorName) => await SearchActorNamesAsync(mediaIds, search, limit, cancellationToken),
-            nameof(SmartPlaylistField.ArtistName) => await SearchArtistNamesAsync(mediaIds, search, limit, cancellationToken),
+            nameof(DynamicPlaylistField.ActorName) => await SearchActorNamesAsync(mediaIds, search, limit, cancellationToken),
+            nameof(DynamicPlaylistField.ArtistName) => await SearchArtistNamesAsync(mediaIds, search, limit, cancellationToken),
+            nameof(DynamicPlaylistField.Title) => await SearchTitlesAsync(mediaIds, search, limit, cancellationToken),
+            nameof(DynamicPlaylistField.AlbumTitle) => await SearchAlbumTitlesAsync(mediaIds, search, limit, cancellationToken),
             _ => []
         };
     }
@@ -105,6 +111,55 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
             .Concat(trackArtists)
             .Distinct()
             .OrderBy(name => name)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<string>> SearchTitlesAsync(
+        IQueryable<Guid> mediaIds,
+        string? search,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var query = context.Medias.AsNoTracking()
+            .Where(m => mediaIds.Contains(m.Id) && m.Title != null);
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
+            query = query.Where(m => m.Title!.ToLower().Contains(term));
+        }
+
+        return await query
+            .Select(m => m.Title!)
+            .Distinct()
+            .OrderBy(title => title)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<string>> SearchAlbumTitlesAsync(
+        IQueryable<Guid> mediaIds,
+        string? search,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var term = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToLowerSearchTerm(search);
+
+        var albumTitles = context.Medias.OfType<MusicAlbum>().AsNoTracking()
+            .Where(a => mediaIds.Contains(a.Id) && a.Title != null
+                && (term == null || a.Title.ToLower().Contains(term)))
+            .Select(a => a.Title!);
+
+        var trackAlbumTitles = context.Medias.OfType<MusicTrack>().AsNoTracking()
+            .Where(t => mediaIds.Contains(t.Id) && t.Album.Title != null
+                && (term == null || t.Album.Title.ToLower().Contains(term)))
+            .Select(t => t.Album.Title!);
+
+        return await albumTitles
+            .Concat(trackAlbumTitles)
+            .Distinct()
+            .OrderBy(title => title)
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
