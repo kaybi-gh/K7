@@ -19,6 +19,10 @@ public interface ISpatialNavService
 
     Task RegisterHomeEscapeAsync<T>(DotNetObjectReference<T> callback, string? homePattern = null) where T : class;
 
+    Task RegisterSelectionModeAsync<T>(DotNetObjectReference<T> callback) where T : class;
+
+    Task UnregisterSelectionModeAsync();
+
     Task RefreshAsync();
 }
 

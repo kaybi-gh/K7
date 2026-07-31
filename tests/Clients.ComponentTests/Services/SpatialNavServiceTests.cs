@@ -108,4 +108,33 @@ public class SpatialNavServiceTests
             "SpatialNav.pushLayer",
             Arg.Is<object[]>(args => args.Length == 3));
     }
+
+    [Test]
+    public async Task RegisterSelectionModeAsync_ShouldCallJSInterop()
+    {
+        // Arrange
+        using var callback = DotNetObjectReference.Create(new SelectionModeTestCallback());
+
+        // Act
+        await _sut.RegisterSelectionModeAsync(callback);
+
+        // Assert
+        await _jsRuntime.Received(1).InvokeAsync<Microsoft.JSInterop.Infrastructure.IJSVoidResult>(
+            "SpatialNav.registerSelectionMode",
+            Arg.Is<object[]>(args => args.Length == 1));
+    }
+
+    [Test]
+    public async Task UnregisterSelectionModeAsync_ShouldCallJSInterop()
+    {
+        // Act
+        await _sut.UnregisterSelectionModeAsync();
+
+        // Assert
+        await _jsRuntime.Received(1).InvokeAsync<Microsoft.JSInterop.Infrastructure.IJSVoidResult>(
+            "SpatialNav.unregisterSelectionMode",
+            Arg.Any<object[]>());
+    }
+
+    private sealed class SelectionModeTestCallback;
 }

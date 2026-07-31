@@ -2,6 +2,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Federation.Social;
@@ -12,7 +13,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
 
-public partial class MySpaceCollectionsPage
+public partial class MySpaceCollectionsPage : IAsyncDisposable
 {
     private const string FilterStorageKey = "my-space-collections";
     private const int PageSize = 500;
@@ -30,6 +31,7 @@ public partial class MySpaceCollectionsPage
     private K7DataTable<LiteCollectionDto>? _dataTable;
     private string? _activeSortKey = "lastModified";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
+    private SelectionModeKeyboardBinder? _selectionKeys;
 
     private int SelectedCount => _selectedIds.Count;
     private bool AllSelected => _collections.Count > 0 && _selectedIds.Count == _collections.Count;
@@ -39,13 +41,25 @@ public partial class MySpaceCollectionsPage
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
     [Inject] private ISocialUserService SocialUserService { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
+        _selectionKeys = new SelectionModeKeyboardBinder(
+            SpatialNav,
+            onEscape: () => _ = InvokeAsync(OnSelectionEscape),
+            onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAll));
+
         _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadPersistedFiltersAsync();
         (_activeSortKey, _activeSortDirection) = MySpaceLibraryBrowseSort.MapCollectionOrderingToSortKey(_selectedSort);
         await LoadCollectionsAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selectionKeys is not null)
+            await _selectionKeys.DisposeAsync();
     }
 
     private async Task LoadCollectionsAsync()
@@ -125,12 +139,14 @@ public partial class MySpaceCollectionsPage
     {
         _selectionMode = true;
         _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
     private void ExitSelectionMode()
     {
         _selectionMode = false;
         _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
     private void ToggleSelection(Guid id)
@@ -147,9 +163,30 @@ public partial class MySpaceCollectionsPage
             return;
         }
 
+        SelectAll();
+    }
+
+    private void SelectAll()
+    {
         _selectedIds.Clear();
         foreach (var collection in _collections)
             _selectedIds.Add(collection.Id);
+    }
+
+    private void OnSelectionEscape()
+    {
+        if (_deleting)
+            return;
+
+        ExitSelectionMode();
+    }
+
+    private void OnSelectionSelectAll()
+    {
+        if (!_selectionMode || _deleting)
+            return;
+
+        SelectAll();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);

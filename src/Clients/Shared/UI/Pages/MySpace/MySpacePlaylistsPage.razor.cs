@@ -2,6 +2,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Federation.Social;
@@ -12,7 +13,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
 
-public partial class MySpacePlaylistsPage
+public partial class MySpacePlaylistsPage : IAsyncDisposable
 {
     private const string FilterStorageKey = "my-space-playlists";
     private const int PageSize = 500;
@@ -33,6 +34,7 @@ public partial class MySpacePlaylistsPage
     private K7DataTable<LitePlaylistDto>? _dataTable;
     private string? _activeSortKey = "lastListened";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
+    private SelectionModeKeyboardBinder? _selectionKeys;
 
     private int SelectedCount => _selectedIds.Count;
     private bool AllSelected => _playlists.Count > 0 && _selectedIds.Count == _playlists.Count;
@@ -42,9 +44,15 @@ public partial class MySpacePlaylistsPage
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
     [Inject] private ISocialUserService SocialUserService { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
+        _selectionKeys = new SelectionModeKeyboardBinder(
+            SpatialNav,
+            onEscape: () => _ = InvokeAsync(OnSelectionEscape),
+            onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAll));
+
         _mediaTypeOptions =
         [
             new(null, Label: L["All"]),
@@ -67,6 +75,12 @@ public partial class MySpacePlaylistsPage
         {
             _musicIntelligenceAvailable = false;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selectionKeys is not null)
+            await _selectionKeys.DisposeAsync();
     }
 
     private async Task LoadPlaylistsAsync()
@@ -157,12 +171,14 @@ public partial class MySpacePlaylistsPage
     {
         _selectionMode = true;
         _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
     private void ExitSelectionMode()
     {
         _selectionMode = false;
         _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
     private void ToggleSelection(Guid id)
@@ -179,9 +195,30 @@ public partial class MySpacePlaylistsPage
             return;
         }
 
+        SelectAll();
+    }
+
+    private void SelectAll()
+    {
         _selectedIds.Clear();
         foreach (var playlist in _playlists)
             _selectedIds.Add(playlist.Id);
+    }
+
+    private void OnSelectionEscape()
+    {
+        if (_deleting)
+            return;
+
+        ExitSelectionMode();
+    }
+
+    private void OnSelectionSelectAll()
+    {
+        if (!_selectionMode || _deleting)
+            return;
+
+        SelectAll();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);

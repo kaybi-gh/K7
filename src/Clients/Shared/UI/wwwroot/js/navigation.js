@@ -21,6 +21,7 @@ var SpatialNav = (function () {
     var _homeEscapeCallback = null;
     var _homeEscapeTimer = null;
     var _homePattern = /^\/$/;
+    var _selectionModeCallback = null;
     var _videoPlayerBackCallback = null;
     var _videoPlayerRemoteRef = null;
     var _refreshTimer = null;
@@ -1509,6 +1510,13 @@ var SpatialNav = (function () {
             return;
         }
 
+        if (_selectionModeCallback) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            invokeCallback(_selectionModeCallback, 'OnSelectionEscape');
+            return;
+        }
+
         e.preventDefault();
         e.stopImmediatePropagation();
         handleBackNav();
@@ -1831,6 +1839,18 @@ var SpatialNav = (function () {
         }
         if (key === 'Escape' || key === 'GoBack' || key === 'BrowserBack') { handleEscape(e); return; }
         if (key === 'Backspace' || key === 'XF86Back') { handleBackKey(e); return; }
+        if ((e.ctrlKey || e.metaKey) && (key === 'a' || key === 'A') && _selectionModeCallback) {
+            var layerForSelectAll = peekLayer();
+            if (layerForSelectAll && layerForSelectAll.type !== 'page')
+                return;
+            var activeForSelectAll = document.activeElement;
+            if (!(activeForSelectAll && isTextInput(activeForSelectAll))) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                invokeCallback(_selectionModeCallback, 'OnSelectionSelectAll');
+                return;
+            }
+        }
         if (key === ' ' && active && active.closest('.video-controls-overlay')) { e.preventDefault(); }
     }
 
@@ -2188,6 +2208,7 @@ var SpatialNav = (function () {
     }
 
     function onPageNavigated() {
+        _selectionModeCallback = null;
         resetPageFocusSettled();
         setTimeout(ensurePageFocus, 150);
     }
@@ -2197,6 +2218,14 @@ var SpatialNav = (function () {
     function registerHomeEscape(dotNetRef, homePattern) {
         _homeEscapeCallback = dotNetRef;
         if (homePattern) _homePattern = new RegExp(homePattern);
+    }
+
+    function registerSelectionMode(dotNetRef) {
+        _selectionModeCallback = dotNetRef;
+    }
+
+    function unregisterSelectionMode() {
+        _selectionModeCallback = null;
     }
 
     function isVideoPlayerActive() {
@@ -2796,6 +2825,8 @@ var SpatialNav = (function () {
         addSection: addSection,
         removeSection: removeSection,
         registerHomeEscape: registerHomeEscape,
+        registerSelectionMode: registerSelectionMode,
+        unregisterSelectionMode: unregisterSelectionMode,
         registerVideoPlayerBack: registerVideoPlayerBack,
         unregisterVideoPlayerBack: unregisterVideoPlayerBack,
         registerVideoPlayerRemote: registerVideoPlayerRemote,

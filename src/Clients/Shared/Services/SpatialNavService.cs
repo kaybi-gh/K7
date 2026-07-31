@@ -42,6 +42,12 @@ public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
     public Task RegisterHomeEscapeAsync<T>(DotNetObjectReference<T> callback, string? homePattern = null) where T : class =>
         InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.registerHomeEscape", callback, homePattern));
 
+    public Task RegisterSelectionModeAsync<T>(DotNetObjectReference<T> callback) where T : class =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.registerSelectionMode", callback));
+
+    public Task UnregisterSelectionModeAsync() =>
+        InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.unregisterSelectionMode"));
+
     public Task RefreshAsync() =>
         InvokeSafeAsync(() => jsRuntime.InvokeVoidAsync("SpatialNav.refresh"));
 
