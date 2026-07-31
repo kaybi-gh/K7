@@ -1,4 +1,4 @@
-using K7.Server.Domain.Enums;
+using K7.Server.Application.Common.QueryExtensions;
 
 namespace K7.Server.Application.Common.Services;
 
@@ -7,14 +7,11 @@ public static class MediaTextSearchHelper
     private const int PrefixSearchMaxLength = 3;
 
     public static string BuildContainsPattern(string query)
-    {
-        var trimmed = query.Trim().ToLowerInvariant();
-        return $"%{trimmed}%";
-    }
+        => EfLikeQueryExtensions.ToContainsPattern(query);
 
     public static string BuildTitlePattern(string query, bool supportsTrigramSearch)
     {
-        var trimmed = query.Trim().ToLowerInvariant();
+        var trimmed = EfLikeQueryExtensions.Normalize(query);
         if (supportsTrigramSearch || trimmed.Length > PrefixSearchMaxLength)
             return $"%{trimmed}%";
 

@@ -86,9 +86,9 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
 
         if (!string.IsNullOrEmpty(search))
         {
-            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
+            var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
             query = query.Where(mmt => mmt.MetadataTag.DisplayName != null
-                && mmt.MetadataTag.DisplayName.ToLower().Contains(term));
+                && EfLikeQueryExtensions.ILike(mmt.MetadataTag.DisplayName, pattern));
         }
 
         var values = await query
@@ -122,8 +122,8 @@ public class GetMediaTagsQueryHandler(IApplicationDbContext context, IUser curre
 
         if (!string.IsNullOrEmpty(search))
         {
-            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
-            pairsQuery = pairsQuery.Where(p => p.DisplayName.ToLower().Contains(term));
+            var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
+            pairsQuery = pairsQuery.Where(p => EfLikeQueryExtensions.ILike(p.DisplayName, pattern));
         }
 
         var groupedQuery = pairsQuery

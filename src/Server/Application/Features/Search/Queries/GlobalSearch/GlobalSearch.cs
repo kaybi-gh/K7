@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Restrictions.Services;
@@ -42,7 +43,7 @@ public class GlobalSearchQueryHandler(
             return new GlobalSearchResultDto();
 
         var term = MediaTextSearchHelper.BuildTitlePattern(request.Q, databaseCapabilities.SupportsTrigramSearch);
-        var rawQuery = request.Q.Trim().ToLower();
+        var rawQuery = EfLikeQueryExtensions.Normalize(request.Q);
         Guid? userId = currentUser.Id;
 
         var mediaQuery = BuildMediaSearchQuery(term, rawQuery, request.Studio);
@@ -100,8 +101,8 @@ public class GlobalSearchQueryHandler(
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
-            .Where(p => EF.Functions.Like(p.Name.ToLower(), term))
-            .OrderBy(p => EF.Functions.Like(p.Name.ToLower(), rawQuery) ? 0 : 1)
+            .Where(p => EfLikeQueryExtensions.ILike(p.Name, term))
+            .OrderBy(p => EfLikeQueryExtensions.ILike(p.Name, rawQuery) ? 0 : 1)
             .Take(PersonLimit)
             .AsNoTracking();
 
@@ -110,7 +111,7 @@ public class GlobalSearchQueryHandler(
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
             .Include(r => r.Media)
-            .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
+            .Where(r => EfLikeQueryExtensions.ILike(r.CharacterName, term))
             .Take(CharacterLimit)
             .AsNoTracking();
 
@@ -119,7 +120,7 @@ public class GlobalSearchQueryHandler(
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
             .Include(r => r.Media)
-            .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
+            .Where(r => EfLikeQueryExtensions.ILike(r.CharacterName, term))
             .Take(CharacterLimit)
             .AsNoTracking();
 
@@ -170,7 +171,7 @@ public class GlobalSearchQueryHandler(
     private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string rawQuery, string? studio)
     {
         var mediaQuery = context.Medias
-            .Where(m => EF.Functions.Like(m.Title!.ToLower(), term));
+            .Where(m => m.Title != null && EfLikeQueryExtensions.ILike(m.Title, term));
 
         if (!string.IsNullOrWhiteSpace(studio))
         {
@@ -181,7 +182,7 @@ public class GlobalSearchQueryHandler(
         else
         {
             mediaQuery = mediaQuery
-                .OrderBy(m => EF.Functions.Like(m.Title!.ToLower(), rawQuery) ? 0 : 1);
+                .OrderBy(m => m.Title != null && EfLikeQueryExtensions.ILike(m.Title, rawQuery) ? 0 : 1);
         }
 
         return mediaQuery;

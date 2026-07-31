@@ -69,8 +69,8 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
         if (!string.IsNullOrEmpty(search))
         {
-            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
-            query = query.Where(r => r.Person.Name!.ToLower().Contains(term));
+            var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
+            query = query.Where(r => EfLikeQueryExtensions.ILike(r.Person.Name!, pattern));
         }
 
         return await query
@@ -87,23 +87,23 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
         int limit,
         CancellationToken cancellationToken)
     {
-        var term = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToLowerSearchTerm(search);
+        var pattern = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToContainsPattern(search);
 
         var artistTitles = context.Medias.OfType<MusicArtist>().AsNoTracking()
             .Where(a => mediaIds.Contains(a.Id) && a.Title != null
-                && (term == null || a.Title.ToLower().Contains(term)))
+                && (pattern == null || EfLikeQueryExtensions.ILike(a.Title, pattern)))
             .Select(a => a.Title!);
 
         var albumArtists = context.Medias.OfType<MusicAlbum>().AsNoTracking()
             .Where(a => mediaIds.Contains(a.Id) && a.Artist != null && a.Artist.Title != null
-                && (term == null || a.Artist.Title.ToLower().Contains(term)))
+                && (pattern == null || EfLikeQueryExtensions.ILike(a.Artist.Title, pattern)))
             .Select(a => a.Artist!.Title!);
 
         var trackArtists = context.Medias.OfType<MusicTrack>().AsNoTracking()
             .Where(t => mediaIds.Contains(t.Id)
-                && ((t.Artist != null && t.Artist.Title != null && (term == null || t.Artist.Title.ToLower().Contains(term)))
+                && ((t.Artist != null && t.Artist.Title != null && (pattern == null || EfLikeQueryExtensions.ILike(t.Artist.Title, pattern)))
                     || (t.Artist == null && t.Album.Artist != null && t.Album.Artist.Title != null
-                        && (term == null || t.Album.Artist.Title.ToLower().Contains(term)))))
+                        && (pattern == null || EfLikeQueryExtensions.ILike(t.Album.Artist.Title, pattern)))))
             .Select(t => t.Artist != null ? t.Artist.Title! : t.Album.Artist!.Title!);
 
         return await artistTitles
@@ -126,8 +126,8 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
 
         if (!string.IsNullOrEmpty(search))
         {
-            var term = EfLikeQueryExtensions.ToLowerSearchTerm(search);
-            query = query.Where(m => m.Title!.ToLower().Contains(term));
+            var pattern = EfLikeQueryExtensions.ToContainsPattern(search);
+            query = query.Where(m => EfLikeQueryExtensions.ILike(m.Title!, pattern));
         }
 
         return await query
@@ -144,16 +144,16 @@ public class GetMediaBrowseFilterSuggestionsQueryHandler(IApplicationDbContext c
         int limit,
         CancellationToken cancellationToken)
     {
-        var term = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToLowerSearchTerm(search);
+        var pattern = string.IsNullOrEmpty(search) ? null : EfLikeQueryExtensions.ToContainsPattern(search);
 
         var albumTitles = context.Medias.OfType<MusicAlbum>().AsNoTracking()
             .Where(a => mediaIds.Contains(a.Id) && a.Title != null
-                && (term == null || a.Title.ToLower().Contains(term)))
+                && (pattern == null || EfLikeQueryExtensions.ILike(a.Title, pattern)))
             .Select(a => a.Title!);
 
         var trackAlbumTitles = context.Medias.OfType<MusicTrack>().AsNoTracking()
             .Where(t => mediaIds.Contains(t.Id) && t.Album.Title != null
-                && (term == null || t.Album.Title.ToLower().Contains(term)))
+                && (pattern == null || EfLikeQueryExtensions.ILike(t.Album.Title, pattern)))
             .Select(t => t.Album.Title!);
 
         return await albumTitles

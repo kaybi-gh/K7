@@ -282,7 +282,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (searchPattern is not null)
         {
-            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), searchPattern));
+            query = query.Where(x => x.Title != null && EfLikeQueryExtensions.ILike(x.Title, searchPattern));
         }
 
         if (request.UnwatchedOnly == true && userId.HasValue)

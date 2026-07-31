@@ -111,6 +111,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         new MetadataPictureConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPicture>());
         new MetadataPictureVariantConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPictureVariant>());
 
+        TextSearchModelConfiguration.Configure(builder, isPostgres: Database.IsNpgsql());
+
         // SQLite cannot ORDER BY DateTimeOffset natively.
         // Store as ISO 8601 TEXT which sorts lexicographically in chronological order.
         if (Database.IsSqlite())
