@@ -22,6 +22,7 @@ public partial class MergeUserDialog
     private PlayCountMergeMode _playCountMode = PlayCountMergeMode.Additive;
     private RatingConflictMode _ratingMode = RatingConflictMode.KeepExisting;
     private ProgressConflictMode _progressMode = ProgressConflictMode.MostRecent;
+    private PlaylistMergeMode _playlistMode = PlaylistMergeMode.Transfer;
 
     protected override void OnParametersSet()
     {
@@ -43,7 +44,8 @@ public partial class MergeUserDialog
             {
                 PlayCount = _playCountMode,
                 Rating = _ratingMode,
-                Progress = _progressMode
+                Progress = _progressMode,
+                Playlist = _playlistMode
             };
             await K7ServerService.MergeUsersAsync(SourceUser.Id, _targetUserId.Value, strategy);
             Dialog.Close(K7DialogResult.Ok(true));

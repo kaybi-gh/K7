@@ -47,11 +47,12 @@ public class BulkUpsertMediaStatesCommandHandler(
                     existing.PlayCount += item.PlayCount;
                     updated = true;
                 }
-                else if (item.PlayCount > existing.PlayCount)
+                else if (strategy.PlayCount is PlayCountMergeMode.Max && item.PlayCount > existing.PlayCount)
                 {
                     existing.PlayCount = item.PlayCount;
                     updated = true;
                 }
+                // Ignore: keep existing play count as-is
 
                 if (strategy.Progress is ProgressConflictMode.AlwaysOverwrite)
                 {

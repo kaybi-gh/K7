@@ -44,7 +44,7 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
 
         await MergeMediaStatesAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
         await MergeRatingsAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
-        await TransferPlaylistsAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
+        await MergePlaylistsAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
         await TransferPlaybackSessionsAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
 
         var sourceIdentityUserId = source.IdentityUserId;
@@ -79,10 +79,11 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
                 {
                     targetState.PlayCount += sourceState.PlayCount;
                 }
-                else if (sourceState.PlayCount > targetState.PlayCount)
+                else if (strategy.PlayCount is PlayCountMergeMode.Max && sourceState.PlayCount > targetState.PlayCount)
                 {
                     targetState.PlayCount = sourceState.PlayCount;
                 }
+                // Ignore: keep target play count as-is
 
                 if (strategy.Progress is ProgressConflictMode.AlwaysOverwrite)
                 {
@@ -160,8 +161,19 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
         }
     }
 
-    private async Task TransferPlaylistsAsync(Guid sourceUserId, Guid targetUserId, CancellationToken cancellationToken)
+    private async Task MergePlaylistsAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? mergeStrategy, CancellationToken cancellationToken)
     {
+        var strategy = mergeStrategy ?? new MergeStrategy();
+
+        if (strategy.Playlist is PlaylistMergeMode.Delete)
+        {
+            var sourcePlaylists = await context.Playlists
+                .Where(p => p.UserId == sourceUserId)
+                .ToListAsync(cancellationToken);
+            context.Playlists.RemoveRange(sourcePlaylists);
+            return;
+        }
+
         await context.Playlists
             .Where(p => p.UserId == sourceUserId)
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.UserId, targetUserId), cancellationToken);

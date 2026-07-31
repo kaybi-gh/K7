@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Users.Commands.MergeUsers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos.Requests;
 using Microsoft.Data.Sqlite;
@@ -116,5 +117,73 @@ public class MergeUsersCommandHandlerTests
         var targetState = await _context.UserMediaStates.SingleAsync(s => s.UserId == targetId && s.MediaId == mediaId);
         targetState.PlayCount.Should().Be(5);
         await _identityService.Received(1).DeleteUserAsync(sourceIdentity);
+    }
+
+    [Test]
+    public async Task Handle_ShouldIgnorePlayCounts_WhenIgnoreMode()
+    {
+        var sourceIdentity = "source";
+        var sourceId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+
+        _context.Users.Add(new User { Id = sourceId, IdentityUserId = sourceIdentity, DisplayName = "source" });
+        _context.Users.Add(new User { Id = targetId, IdentityUserId = "target", DisplayName = "target" });
+        _context.Medias.Add(new Domain.Entities.Medias.Movie { Id = mediaId, Title = "Film" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = sourceId,
+            MediaId = mediaId,
+            PlayCount = 9
+        });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = targetId,
+            MediaId = mediaId,
+            PlayCount = 2
+        });
+        await _context.SaveChangesAsync();
+
+        _currentUser.IdentityId.Returns("admin");
+        _identityService.GetRolesAsync(sourceIdentity).Returns([Roles.User]);
+
+        await _handler.Handle(new MergeUsersCommand(
+            sourceId,
+            targetId,
+            new MergeStrategy { PlayCount = PlayCountMergeMode.Ignore }), CancellationToken.None);
+
+        var targetState = await _context.UserMediaStates.SingleAsync(s => s.UserId == targetId && s.MediaId == mediaId);
+        targetState.PlayCount.Should().Be(2);
+    }
+
+    [Test]
+    public async Task Handle_ShouldDeleteSourcePlaylists_WhenDeleteMode()
+    {
+        var sourceIdentity = "source";
+        var sourceId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
+        var playlistId = Guid.NewGuid();
+
+        _context.Users.Add(new User { Id = sourceId, IdentityUserId = sourceIdentity, DisplayName = "source" });
+        _context.Users.Add(new User { Id = targetId, IdentityUserId = "target", DisplayName = "target" });
+        _context.Playlists.Add(new Domain.Entities.Playlists.Playlist
+        {
+            Id = playlistId,
+            UserId = sourceId,
+            Title = "Source playlist",
+            MediaType = MediaType.MusicTrack
+        });
+        await _context.SaveChangesAsync();
+
+        _currentUser.IdentityId.Returns("admin");
+        _identityService.GetRolesAsync(sourceIdentity).Returns([Roles.User]);
+
+        await _handler.Handle(new MergeUsersCommand(
+            sourceId,
+            targetId,
+            new MergeStrategy { Playlist = PlaylistMergeMode.Delete }), CancellationToken.None);
+
+        (await _context.Playlists.FindAsync(playlistId)).Should().BeNull();
+        (await _context.Users.FindAsync(sourceId)).Should().BeNull();
     }
 }

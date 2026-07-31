@@ -27,12 +27,16 @@
   <data name="PlayCount" xml:space="preserve"><value>Play count</value></data>
   <data name="PlayCountAdditive" xml:space="preserve"><value>Additive (sum)</value></data>
   <data name="PlayCountMax" xml:space="preserve"><value>Maximum (keep highest)</value></data>
+  <data name="PlayCountIgnore" xml:space="preserve"><value>Ignore</value></data>
   <data name="RatingConflict" xml:space="preserve"><value>Rating conflict</value></data>
   <data name="RatingKeepExisting" xml:space="preserve"><value>Keep existing</value></data>
   <data name="RatingOverwrite" xml:space="preserve"><value>Overwrite</value></data>
   <data name="ProgressConflict" xml:space="preserve"><value>Progress conflict</value></data>
   <data name="ProgressMostRecent" xml:space="preserve"><value>Most recent</value></data>
   <data name="ProgressAlwaysOverwrite" xml:space="preserve"><value>Always overwrite</value></data>
+  <data name="Playlist" xml:space="preserve"><value>Playlists</value></data>
+  <data name="PlaylistTransfer" xml:space="preserve"><value>Reassign to target user</value></data>
+  <data name="PlaylistDelete" xml:space="preserve"><value>Delete</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Merge" xml:space="preserve"><value>Merge</value></data>
 </root>

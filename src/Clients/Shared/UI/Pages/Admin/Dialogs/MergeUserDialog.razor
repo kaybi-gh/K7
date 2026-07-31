@@ -27,6 +27,7 @@
                        Variant="outlined">
                 <K7SelectItem Value="PlayCountMergeMode.Additive" Text="@L["PlayCountAdditive"]">@L["PlayCountAdditive"]</K7SelectItem>
                 <K7SelectItem Value="PlayCountMergeMode.Max" Text="@L["PlayCountMax"]">@L["PlayCountMax"]</K7SelectItem>
+                <K7SelectItem Value="PlayCountMergeMode.Ignore" Text="@L["PlayCountIgnore"]">@L["PlayCountIgnore"]</K7SelectItem>
             </K7Select>
 
             <K7Select TValue="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
@@ -39,6 +40,12 @@
                        Variant="outlined">
                 <K7SelectItem Value="ProgressConflictMode.MostRecent" Text="@L["ProgressMostRecent"]">@L["ProgressMostRecent"]</K7SelectItem>
                 <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite" Text="@L["ProgressAlwaysOverwrite"]">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
+            </K7Select>
+
+            <K7Select TValue="PlaylistMergeMode" @bind-Value="_playlistMode" Label="@L["Playlist"]"
+                       Variant="outlined">
+                <K7SelectItem Value="PlaylistMergeMode.Transfer" Text="@L["PlaylistTransfer"]">@L["PlaylistTransfer"]</K7SelectItem>
+                <K7SelectItem Value="PlaylistMergeMode.Delete" Text="@L["PlaylistDelete"]">@L["PlaylistDelete"]</K7SelectItem>
             </K7Select>
         </div>
     </div>
