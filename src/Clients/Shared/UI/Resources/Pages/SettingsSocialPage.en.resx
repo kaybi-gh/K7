@@ -12,9 +12,9 @@
   <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
   <data name="DynamicPlaylists" xml:space="preserve"><value>Dynamic playlists</value></data>
   <data name="PlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
-  <data name="ScopeNobody" xml:space="preserve"><value>Only my content</value></data>
-  <data name="ScopeLocalServer" xml:space="preserve"><value>My server only</value></data>
-  <data name="ScopeFederation" xml:space="preserve"><value>Federation</value></data>
+  <data name="ScopeNobody" xml:space="preserve"><value>Only me</value></data>
+  <data name="ScopeLocalServer" xml:space="preserve"><value>Only my server</value></data>
+  <data name="ScopeFederation" xml:space="preserve"><value>Federated servers</value></data>
   <data name="ScopeSpecificPeople" xml:space="preserve"><value>Specific people</value></data>
   <data name="FederationDirectPeersNote" xml:space="preserve"><value>Federated sharing applies only to directly connected servers, with no transitivity.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Preferences saved.</value></data>
