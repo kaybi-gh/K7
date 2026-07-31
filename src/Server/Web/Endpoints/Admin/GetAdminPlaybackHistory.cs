@@ -19,6 +19,9 @@ public class GetAdminPlaybackHistory : IEndpoint
             [FromQuery] int pageSize = PagingDefaults.HistoryPageSize,
             [FromQuery] MediaType? mediaType = null,
             [FromQuery] Guid? userId = null,
+            [FromQuery] string period = "all",
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default) =>
         {
             return await sender.Send(new GetPlaybackHistoryQuery
@@ -28,7 +31,10 @@ public class GetAdminPlaybackHistory : IEndpoint
                 MediaType = mediaType,
                 UserId = userId,
                 IncludeStreamQuality = true,
-                ShowAllUsers = true
+                ShowAllUsers = true,
+                Period = period,
+                From = from,
+                To = to
             }, cancellationToken);
         })
         .RequireAuthorization(Policies.AdminOnly)

@@ -35,6 +35,14 @@
   <data name="Quality" xml:space="preserve"><value>Qualité</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
   <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
+  <data name="Period" xml:space="preserve"><value>Période</value></data>
+  <data name="WeekShort" xml:space="preserve"><value>Sem.</value></data>
+  <data name="MonthShort" xml:space="preserve"><value>Mois</value></data>
+  <data name="YearShort" xml:space="preserve"><value>An</value></data>
+  <data name="AllTime" xml:space="preserve"><value>Tout</value></data>
+  <data name="CustomShort" xml:space="preserve"><value>Perso.</value></data>
+  <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
+  <data name="SelectEndDate" xml:space="preserve"><value>Sélectionnez la date de fin</value></data>
   <data name="SessionDetails" xml:space="preserve"><value>Détails de la session</value></data>
   <data name="Watched" xml:space="preserve"><value>Vu</value></data>
   <data name="Incomplete" xml:space="preserve"><value>Incomplet</value></data>

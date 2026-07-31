@@ -710,10 +710,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaylistDto>($"api/playlists/{id}", _serializerOptions, cancellationToken);
     }
 
-    public async Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, bool includeUnavailable = false, CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<PlaylistItemDto>>(
-            $"api/playlists/{playlistId}/items?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+            $"api/playlists/{playlistId}/items?pageNumber={pageNumber}&pageSize={pageSize}&includeUnavailable={includeUnavailable}", _serializerOptions, cancellationToken);
     }
 
     public async Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default)
@@ -940,11 +940,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<ServerMetricsHistoryDto>("api/admin/metrics", _serializerOptions, cancellationToken);
     }
 
-    public async Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default)
+    public async Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, string period = "all", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
-        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}", $"period={Uri.EscapeDataString(period)}" };
         if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
         if (userId.HasValue) queryParams.Add($"userId={userId.Value}");
+        if (from.HasValue) queryParams.Add($"from={from.Value:O}");
+        if (to.HasValue) queryParams.Add($"to={to.Value:O}");
         var url = $"api/admin/stats/history?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }

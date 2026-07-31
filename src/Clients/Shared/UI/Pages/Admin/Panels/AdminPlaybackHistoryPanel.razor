@@ -21,6 +21,13 @@
             }
         </K7Select>
 
+        <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
+        @if (_selectedPeriod == "custom")
+        {
+            <K7DateRangePicker From="_fromDate" To="_toDate" RangeChanged="OnDateRangeChanged"
+                               Label="@L["PickDates"]" HintSelectEnd="@L["SelectEndDate"]" />
+        }
+
         <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["MediaType"]" />
 
         <div class="data-page-toolbar__end">

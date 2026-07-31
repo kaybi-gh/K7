@@ -20,7 +20,10 @@ public sealed record DiagnosticsFilterState(
 
 public sealed record AdminPlaybackHistoryFilterState(
     Guid? UserId,
-    string MediaType);
+    string MediaType,
+    string Period = "all",
+    string? From = null,
+    string? To = null);
 
 public sealed record UserPlaybackHistoryFilterState(string MediaType, string Period, string? From = null, string? To = null);
 

@@ -538,7 +538,7 @@ public sealed class MockPlaylistService : IPlaylistService
 {
     public Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LitePlaylistDto>?>(null);
     public Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PlaylistDto?>(null);
-    public Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PlaylistItemDto>?>(null);
+    public Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, bool includeUnavailable = false, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PlaylistItemDto>?>(null);
     public Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task UpdatePlaylistAsync(Guid id, UpdatePlaylistRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeletePlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -782,7 +782,7 @@ public sealed class MockServerInfoService : IServerInfoService
 
         return Task.FromResult<ServerMetricsHistoryDto?>(new ServerMetricsHistoryDto { Snapshots = snapshots });
     }
-    public Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
+    public Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, string period = "all", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
 }
 
