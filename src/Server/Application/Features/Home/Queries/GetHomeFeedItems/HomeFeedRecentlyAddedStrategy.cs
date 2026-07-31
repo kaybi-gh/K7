@@ -282,8 +282,9 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
     {
         var first = episodes[0];
         var serie = first.Serie!;
-        var allWatched = episodes.All(e =>
-            e.UserMediaStates.Any(s => s.IsCompleted));
+        var watchState = SeasonWatchStateHelper.AggregateFromEpisodes(episodes);
+        var watched = watchState?.IsCompleted ?? false;
+        var progress = watchState?.ProgressPercentage ?? 0;
 
         var distinctSeasons = episodes.Select(e => e.Season?.SeasonNumber ?? 0).Distinct().ToList();
         var isSingleSeason = distinctSeasons.Count == 1;
@@ -294,6 +295,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             // Single episode (weekly) -- link to the episode anchor
             var ep = first;
             var pictures = EpisodePictureResolver.MergeHeroAndDisplayPictures(ep);
+            var epState = ep.UserMediaStates.FirstOrDefault();
             return new HomeFeedItemDto
             {
                 Id = serieId,
@@ -304,7 +306,8 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
                 AdditionalInfo = $"S{ep.Season?.SeasonNumber ?? 0:D2}E{ep.EpisodeNumber:D2}",
                 GroupCount = 1,
                 ReleaseDate = serie.ReleaseDate,
-                Watched = allWatched,
+                Watched = epState?.IsCompleted ?? false,
+                Progress = epState?.IsCompleted == true ? 100 : epState?.ProgressPercentage ?? 0,
                 Overview = detailed ? (serie.Overview ?? ep.Overview) : null,
                 Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
                 ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,
@@ -328,7 +331,8 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
                 AdditionalInfo = $"{episodes.Count} episodes",
                 GroupCount = episodes.Count,
                 ReleaseDate = serie.ReleaseDate,
-                Watched = allWatched,
+                Watched = watched,
+                Progress = progress,
                 Overview = detailed ? serie.Overview : null,
                 Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
                 ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,
@@ -347,7 +351,8 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             AdditionalInfo = $"{episodes.Count} episodes",
             GroupCount = episodes.Count,
             ReleaseDate = serie.ReleaseDate,
-            Watched = allWatched,
+            Watched = watched,
+            Progress = progress,
             Overview = detailed ? serie.Overview : null,
             Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
             ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,

@@ -11,13 +11,21 @@ internal static class SeasonWatchStateHelper
         if (episodes.Count == 0)
             return null;
 
+        return AggregateFromEpisodeStates(
+            episodes.Select(e => e.UserMediaStates.FirstOrDefault()).ToList());
+    }
+
+    public static UserMediaStateDto? AggregateFromEpisodeStates(IReadOnlyList<UserMediaState?> states)
+    {
+        if (states.Count == 0)
+            return null;
+
         var completedCount = 0;
         var totalProgress = 0.0;
         DateTime? lastInteractedAt = null;
 
-        foreach (var episode in episodes)
+        foreach (var state in states)
         {
-            var state = episode.UserMediaStates.FirstOrDefault();
             if (state?.IsCompleted == true)
             {
                 completedCount++;
@@ -35,8 +43,8 @@ internal static class SeasonWatchStateHelper
             }
         }
 
-        var allCompleted = completedCount == episodes.Count;
-        var progressPercentage = allCompleted ? 100 : totalProgress / episodes.Count;
+        var allCompleted = completedCount == states.Count;
+        var progressPercentage = allCompleted ? 100 : totalProgress / states.Count;
 
         if (!allCompleted && progressPercentage <= 0)
             return null;

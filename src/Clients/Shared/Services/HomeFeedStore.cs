@@ -26,15 +26,18 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private CancellationTokenSource? _picturesRefreshCts;
     private CancellationTokenSource? _membershipRefreshCts;
     private CancellationTokenSource? _continueWatchingRefreshCts;
+    private CancellationTokenSource? _watchStateRefreshCts;
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
     private int _loadGeneration;
     private bool _isLoaded;
     private bool _isTv;
     private bool _hubHandlersRegistered;
+    private bool _pendingRefresh;
     private Guid? _loadedSharedProfileId;
 
     private static readonly TimeSpan ContinueWatchingRefreshDelay = TimeSpan.FromSeconds(1.5);
+    private static readonly TimeSpan WatchStateRefreshDelay = TimeSpan.FromSeconds(1.5);
 
     public event Action? Changed;
 
@@ -164,6 +167,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _membershipRefreshCts?.Dispose();
         _continueWatchingRefreshCts?.Cancel();
         _continueWatchingRefreshCts?.Dispose();
+        _watchStateRefreshCts?.Cancel();
+        _watchStateRefreshCts?.Dispose();
     }
 
     private void OnActiveGroupChanged()
@@ -306,6 +311,15 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         CompleteLoad(loadGeneration, profileAtStart, offline: false);
         AppReadySignal.Signal();
+
+        if (_pendingRefresh)
+        {
+            _pendingRefresh = false;
+            Interlocked.Increment(ref _catalogRefreshGeneration);
+            InvalidateCache();
+            await RefreshAllRowsAsync();
+            NotifyChanged();
+        }
     }
 
     private bool IsLoadSuperseded(int loadGeneration, Guid? profileAtStart) =>
@@ -357,7 +371,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
     {
         if (!_isLoaded || IsLoading || IsOffline)
+        {
+            _pendingRefresh = true;
             return;
+        }
 
         // Music is never Keep Watching material; skip feed churn from audio progress ticks.
         if (mediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist)
@@ -388,10 +405,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         // Membership may still change (enter/leave Keep Watching). Debounce so progress ticks
         // only patch bars; a quiet period triggers one soft membership sync.
-        if (!GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
-            return;
+        if (GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
+            ScheduleContinueWatchingRefresh(isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay);
 
-        ScheduleContinueWatchingRefresh(isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay);
+        // Serie/season home cards use parent ids while progress is reported on episodes.
+        // Also refresh other rows so Watched badges catch up after completion or episode progress.
+        if (isCompleted || mediaType is MediaType.SerieEpisode or MediaType.SerieSeason or MediaType.Serie)
+            ScheduleWatchStateRefresh(isCompleted ? TimeSpan.Zero : WatchStateRefreshDelay);
     }
 
     private void ScheduleContinueWatchingRefresh(TimeSpan delay)
@@ -410,6 +430,31 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
                 InvalidateCache();
                 await RefreshContinueWatchingRowsAsync();
+                if (!token.IsCancellationRequested)
+                    NotifyChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, token);
+    }
+
+    private void ScheduleWatchStateRefresh(TimeSpan delay)
+    {
+        _watchStateRefreshCts?.Cancel();
+        _watchStateRefreshCts?.Dispose();
+        _watchStateRefreshCts = new CancellationTokenSource();
+        var token = _watchStateRefreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay, token);
+
+                InvalidateCache();
+                await RefreshNonContinueWatchingRowsAsync();
                 if (!token.IsCancellationRequested)
                     NotifyChanged();
             }
@@ -462,7 +507,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private void OnHomeFeedInvalidated()
     {
         if (!_isLoaded || IsLoading || IsOffline)
+        {
+            _pendingRefresh = true;
             return;
+        }
 
         Interlocked.Increment(ref _catalogRefreshGeneration);
         _ = RefreshAllRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);

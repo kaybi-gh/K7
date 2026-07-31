@@ -70,6 +70,9 @@ internal sealed class HomeFeedTopLevelStrategy(
             .Select(m => HomeFeedItemMapper.MapTopLevelItem(m, request.Detailed == true, pictureSizes))
             .ToList();
 
+        if (userId.HasValue)
+            await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, cancellationToken);
+
         return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
     }
 

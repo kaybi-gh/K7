@@ -48,6 +48,7 @@ internal sealed class HomeFeedRecommendedStrategy(
 
         var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, orderedItems, cancellationToken);
         var feedItems = orderedItems.Select(i => HomeFeedItemMapper.MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
+        await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, cancellationToken);
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 }

@@ -140,6 +140,19 @@ public class SetMediaWatchStateCommandHandler(
                     mediaType,
                     cancellationToken);
             }
+
+            // Home top-level cards use serie/season ids; also notify the scoped root so badges update.
+            if (notifications.Count > 0
+                && request.Scope is WatchStateScope.Serie or WatchStateScope.Season)
+            {
+                await progressNotifier.NotifyProgressUpdatedAsync(
+                    identityUserId,
+                    request.MediaId,
+                    request.Watched ? 100 : 0,
+                    request.Watched,
+                    media.Type,
+                    cancellationToken);
+            }
         }
 
         return new SetMediaWatchStateResult(notifications.Select(n => n.MediaId).ToList());
