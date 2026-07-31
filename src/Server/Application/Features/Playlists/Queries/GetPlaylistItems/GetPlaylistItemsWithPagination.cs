@@ -16,6 +16,7 @@ public record GetPlaylistItemsWithPaginationQuery : IRequest<PaginatedList<Playl
     public required Guid PlaylistId { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
+    public bool IncludeUnavailable { get; init; }
 }
 
 public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)
@@ -69,8 +70,20 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
                 .Select(e => e.MediaId);
 
             query = query
-                .Where(i => !excludedMediaIds.Contains(i.MediaId))
-                .Where(i => !i.Media.IndexedFiles.All(f => excludedLibraryIds.Contains(f.LibraryId)));
+                .Where(i => !excludedMediaIds.Contains(i.MediaId));
+
+            if (request.IncludeUnavailable)
+            {
+                // Show missing-file items, but keep library-exclusion semantics for files that exist.
+                query = query.Where(i =>
+                    !i.Media.IndexedFiles.Any()
+                    || i.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)));
+            }
+            else
+            {
+                query = query.Where(i =>
+                    i.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)));
+            }
 
             var restrictionProfile = await context.ContentRestrictionProfiles
                 .AsNoTracking()

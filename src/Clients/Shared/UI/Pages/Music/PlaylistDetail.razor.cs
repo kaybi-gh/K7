@@ -38,6 +38,7 @@ public partial class PlaylistDetail
     private bool _loadingItems = true;
     private bool _canTrackProgress;
     private bool _canSetWatchState;
+    private bool _showUnavailable;
     private BrowseView<PlaylistBrowseRow>? _browseView;
     private K7DataTable<PlaylistItemViewModel>? _dataTable;
     private string? _activeSortKey = "order";
@@ -70,7 +71,7 @@ public partial class PlaylistDetail
     private async Task LoadItemsAsync()
     {
         _loadingItems = true;
-        var result = await K7ServerService.GetPlaylistItemsAsync(Guid.Parse(Id), 1, 200);
+        var result = await K7ServerService.GetPlaylistItemsAsync(Guid.Parse(Id), 1, 500, _showUnavailable);
 
         _items = result?.Items?
             .Select(ToViewModel)
@@ -154,6 +155,7 @@ public partial class PlaylistDetail
         AlbumTitle = item.AlbumTitle,
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
+        IsUnavailable = !item.IndexedFileId.HasValue,
         CoverUrl = ApiClient.GetAbsoluteUri(
             (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
@@ -232,8 +234,21 @@ public partial class PlaylistDetail
         }
     }
 
+    private async Task OnShowUnavailableChanged(bool value)
+    {
+        _showUnavailable = value;
+        await LoadItemsAsync();
+        StateHasChanged();
+    }
+
+    private Task ToggleShowUnavailableAsync() =>
+        OnShowUnavailableChanged(!_showUnavailable);
+
     private async Task OnItemActivated(PlaylistItemViewModel item)
     {
+        if (item.IsUnavailable)
+            return;
+
         if (_isMusicPlaylist)
         {
             var queue = BuildQueueItems();
@@ -411,6 +426,7 @@ public partial class PlaylistDetail
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }
+        public bool IsUnavailable { get; init; }
         public string? CoverUrl { get; init; }
         public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }

@@ -28,5 +28,9 @@
   <data name="Movies" xml:space="preserve"><value>movies</value></data>
   <data name="Episodes" xml:space="preserve"><value>episodes</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="ShowUnavailable" xml:space="preserve"><value>Show unavailable titles</value></data>
+  <data name="HideUnavailable" xml:space="preserve"><value>Hide unavailable titles</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>More actions</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Unavailable</value></data>
 </root>
 

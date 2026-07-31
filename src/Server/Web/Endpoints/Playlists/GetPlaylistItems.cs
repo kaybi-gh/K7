@@ -14,13 +14,20 @@ public class GetPlaylistItems : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/playlists/{playlistId}/items", async ([FromServices] ISender sender, Guid playlistId, int pageNumber = 1, int pageSize = PagingDefaults.DefaultPageSize, CancellationToken cancellationToken = default) =>
+        endpointRouteBuilder.MapGet("/api/playlists/{playlistId}/items", async (
+            [FromServices] ISender sender,
+            Guid playlistId,
+            int pageNumber = 1,
+            int pageSize = PagingDefaults.DefaultPageSize,
+            bool includeUnavailable = false,
+            CancellationToken cancellationToken = default) =>
         {
             var result = await sender.Send(new GetPlaylistItemsWithPaginationQuery
             {
                 PlaylistId = playlistId,
                 PageNumber = pageNumber,
-                PageSize = pageSize
+                PageSize = pageSize,
+                IncludeUnavailable = includeUnavailable
             }, cancellationToken);
 
             return new

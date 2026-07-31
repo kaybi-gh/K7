@@ -88,7 +88,7 @@
 
                                OnClick="PlayAll"
 
-                               Disabled="@(_items.Count == 0)"
+                               Disabled="@(!_items.Any(i => !i.IsUnavailable))"
 
                                AriaLabel="@S["PlayAll"]">
 
@@ -104,7 +104,7 @@
 
                                OnClick="ShuffleAll"
 
-                               Disabled="@(_items.Count == 0)"
+                               Disabled="@(!_items.Any(i => !i.IsUnavailable))"
 
                                AriaLabel="@S["Shuffle"]">
 
@@ -114,9 +114,21 @@
 
                     <DownloadAllButton Items="GetDownloadRequests()" Label="@_playlist?.Title" />
 
-                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" AriaLabel="@L["EditDialogTitle"]" />
 
-                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" />
+                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" AriaLabel="@L["DeleteDialogTitle"]" />
+
+                    <K7Menu>
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
+                                        OnClick="ToggleShowUnavailableAsync">
+                                @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
+                            </K7MenuItem>
+                        </ChildContent>
+                    </K7Menu>
 
                 </div>
 
@@ -170,8 +182,12 @@
                                         <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
                                     </div>
                                 }
-                                <p class="text-sm" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">
+                                <p class="text-sm @(item.IsUnavailable ? "playlist-item-unavailable" : null)" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">
                                     @item.Title
+                                    @if (item.IsUnavailable)
+                                    {
+                                        <span class="text-muted text-xs ml-1">@L["Unavailable"]</span>
+                                    }
                                     @if (_isMusicPlaylist && item.IsPlaying)
                                     {
                                         <K7Icon Icon="@Phosphor.Waveform" IconSize="@K7IconSize.Sm" Color="primary" Class="ml-1" />
@@ -254,7 +270,13 @@
 
                         <div class="library-list-item-info">
 
-                            <p class="library-list-item-title" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">@item.Title</p>
+                            <p class="library-list-item-title @(item.IsUnavailable ? "playlist-item-unavailable" : null)" style="@(item.IsPlaying ? "color: var(--color-accent);" : "")">
+                                @item.Title
+                                @if (item.IsUnavailable)
+                                {
+                                    <span class="text-muted text-xs ml-1">@L["Unavailable"]</span>
+                                }
+                            </p>
 
                             @if (_isMusicPlaylist)
 

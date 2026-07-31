@@ -2995,6 +2995,14 @@
               "format": "int32",
               "default": 20
             }
+          },
+          {
+            "name": "includeUnavailable",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -9698,6 +9706,30 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           }
         ],
@@ -16949,6 +16981,9 @@
           },
           "progress": {
             "$ref": "#/components/schemas/ProgressConflictMode"
+          },
+          "playlist": {
+            "$ref": "#/components/schemas/PlaylistMergeMode"
           }
         }
       },
@@ -18411,6 +18446,9 @@
             }
           }
         }
+      },
+      "PlaylistMergeMode": {
+        "type": "integer"
       },
       "PrepareDownloadCommand": {
         "required": [
