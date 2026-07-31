@@ -10,6 +10,7 @@ public sealed record SourceMediaItem
     public int PlayCount { get; init; }
     public double? LastPlaybackPosition { get; init; }
     public double? DurationSeconds { get; init; }
+    public double? ProgressPercentage { get; init; }
     public DateTime? LastPlayedAt { get; init; }
     public bool IsCompleted { get; init; }
     public double? Rating { get; init; }

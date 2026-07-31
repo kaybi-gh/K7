@@ -7,10 +7,10 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
 | **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via accountID when available. Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
-| **Jellyfin** | No | Yes (like=10, dislike=1) | Yes | No per-play timestamps, use Tracearr for history |
+| **Jellyfin** | No | Yes (like=10, dislike=1) | Yes (incl. Liked Songs from favorites) | No per-play timestamps, use Tracearr for history. Heart favorites become a "Liked Songs" playlist (Audio) plus "Favoris" for movies/episodes |
 | **Tracearr** | Yes | No | No | Per-play history with timestamps and provider IDs |
 | **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata |
-| **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 | Yes | Use `--spotify-data-dir` for full history |
+| **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 (API) | Yes (API or `Playlist*.json` export) | Use `--spotify-data-dir` for history and/or account-data playlists |
 
 ### What gets imported
 
@@ -18,7 +18,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 |---|---|
 | **history** | Play count, last played position, completion status, last played date. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
-| **playlists** | Playlist titles and their items (matched by provider IDs). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
+| **playlists** | Playlist titles (prefixed with source, e.g. `Jellyfin - Liked Songs`) and their items (matched by provider IDs, file path, then title/artist identity). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
 
 You can select which data types to import with the `--include` option (see below).
 
@@ -58,17 +58,18 @@ If an import goes wrong, restore that pre-import backup. Partial cleanup in the 
 - **Tracearr**: Settings > Generate API Key
 - **Spotify**: Generate an access token at https://developer.spotify.com/console with `user-library-read`, `user-read-recently-played`, and `playlist-read-private` scopes
 
-### Spotify Full Listening History
+### Spotify Data Export
 
-The Spotify API only exposes the last 50 recently played tracks. For a **complete** listening history, request your data export from Spotify:
+Spotify offers two related downloads from https://www.spotify.com/account/privacy/ > "Request your data". Put the extracted JSON folder on `--spotify-data-dir`.
 
-1. Go to https://www.spotify.com/account/privacy/ > "Request your data"
-2. Select **Extended streaming history**
-3. Wait for the email (can take up to 30 days)
-4. Download and extract the ZIP
-5. Pass the folder path with `--spotify-data-dir`
+| Export | Files | What K7 Import uses |
+|---|---|---|
+| **Extended streaming history** | `endsong_*.json`, `StreamingHistory_*.json` | Full listen history (play counts + per-play sessions). Plays shorter than 30 seconds are skipped. |
+| **Account data** | `Playlist*.json` (`{ "playlists": [ ... ] }`) | Playlists (when no Spotify API token is provided). |
 
-The tool reads both `endsong_*.json` (extended format) and `StreamingHistory_music_*.json` (basic format). Plays shorter than 30 seconds are skipped.
+Without an API token, playlists are read from `Playlist*.json`. With `--source-api-key`, playlists come from the Spotify Web API instead. Liked songs / ratings still require the API (`saved-tracks`).
+
+`Playlist*.json` alone does **not** contain listen history - request **Extended streaming history** for that.
 
 ## Installation
 
@@ -99,7 +100,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--source-url` | Source server URL (required for plex, jellyfin, tautulli; not needed for spotify) |
 | `--dry-run` | Preview what would be imported without making any changes |
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
-| `--spotify-data-dir` | Path to Spotify extended streaming history export folder (for full listen history) |
+| `--spotify-data-dir` | Path to Spotify export folder (`endsong_*` / `StreamingHistory_*` for history, `Playlist*.json` for playlists) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
 | `--auto-map-users` | Auto-map source users to K7 users with the same username (case-insensitive). Off by default |
 | `--include-dynamic-playlists` | Import Plex smart/dynamic playlists as **static** snapshots. Off by default |

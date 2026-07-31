@@ -120,15 +120,24 @@ public sealed partial class PlexClient : ISourceClient
         return libraries;
     }
 
-    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, CancellationToken cancellationToken = default)
+    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         var typesToFetch = await ResolvePlexTypesToFetchAsync(libraryId, cancellationToken);
         if (typesToFetch.Count == 0)
             return [];
 
         var items = new List<SourceMediaItem>();
-        foreach (var plexType in typesToFetch)
-            items.AddRange(await FetchLibraryItemsOfTypeAsync(libraryId, userId, plexType, cancellationToken));
+        for (var typeIndex = 0; typeIndex < typesToFetch.Count; typeIndex++)
+        {
+            var plexType = typesToFetch[typeIndex];
+            var typeLabel = PlexTypeLabel(plexType);
+            var typePrefix = typesToFetch.Count > 1
+                ? $"{typeLabel} ({typeIndex + 1}/{typesToFetch.Count})"
+                : typeLabel;
+
+            items.AddRange(await FetchLibraryItemsOfTypeAsync(
+                libraryId, userId, plexType, typePrefix, progress, cancellationToken));
+        }
 
         return items;
     }
@@ -137,14 +146,30 @@ public sealed partial class PlexClient : ISourceClient
         string libraryId,
         string userId,
         int plexType,
+        string typePrefix,
+        IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
         var items = new List<SourceMediaItem>();
         var offset = 0;
         const int pageSize = 100;
+        var totalSize = 0;
+
+        progress?.Report($"{typePrefix} page 1...");
 
         while (true)
         {
+            var page = (offset / pageSize) + 1;
+            if (totalSize > 0)
+            {
+                var totalPages = Math.Max(1, (int)Math.Ceiling(totalSize / (double)pageSize));
+                progress?.Report($"{typePrefix} page {page}/{totalPages}...");
+            }
+            else if (page > 1)
+            {
+                progress?.Report($"{typePrefix} page {page}...");
+            }
+
             var accountQuery = !string.Equals(userId, "owner", StringComparison.OrdinalIgnoreCase)
                 ? $"&accountID={Uri.EscapeDataString(userId)}"
                 : string.Empty;
@@ -159,15 +184,21 @@ public sealed partial class PlexClient : ISourceClient
             if (!container.TryGetProperty("Metadata", out var metadata))
                 break;
 
+            var pageCount = 0;
             foreach (var item in metadata.EnumerateArray())
             {
+                pageCount++;
                 var parsed = ParseMediaItem(item);
                 // Leaf playables + show containers (for series-level ratings).
                 if (parsed.MediaType is "movie" or "episode" or "music" or "serie")
                     items.Add(parsed);
             }
 
-            var totalSize = container.TryGetProperty("totalSize", out var total) ? total.GetInt32() : items.Count;
+            totalSize = container.TryGetProperty("totalSize", out var total) ? total.GetInt32() : offset + pageCount;
+            var totalPagesDone = Math.Max(1, (int)Math.Ceiling(Math.Max(totalSize, 1) / (double)pageSize));
+            progress?.Report(
+                $"{typePrefix} page {page}/{totalPagesDone} ({Math.Min(offset + pageCount, totalSize)}/{totalSize} items, {items.Count} kept)");
+
             offset += pageSize;
             if (offset >= totalSize)
                 break;
@@ -175,6 +206,15 @@ public sealed partial class PlexClient : ISourceClient
 
         return items;
     }
+
+    private static string PlexTypeLabel(int plexType) => plexType switch
+    {
+        PlexTypeMovie => "movies",
+        PlexTypeShow => "shows",
+        PlexTypeEpisode => "episodes",
+        PlexTypeTrack => "tracks",
+        _ => $"type-{plexType}"
+    };
 
     private async Task<List<SourceLibrary>> LoadLibrariesAsync(CancellationToken cancellationToken)
     {
@@ -278,7 +318,26 @@ public sealed partial class PlexClient : ISourceClient
                     {
                         Id = item.GetProperty("ratingKey").GetString()!,
                         Title = item.GetProperty("title").GetString()!,
-                        ProviderIds = ParseGuids(item, itemType)
+                        ProviderIds = ParseGuids(item, itemType),
+                        FilePaths = ParseFilePaths(item),
+                        ArtistName = itemType == "track"
+                            ? (item.TryGetProperty("grandparentTitle", out var gpt) ? gpt.GetString() : null)
+                            : null,
+                        AlbumName = itemType == "track"
+                            ? (item.TryGetProperty("parentTitle", out var albumTitle) ? albumTitle.GetString() : null)
+                            : null,
+                        Year = item.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.Number
+                            ? y.GetInt32()
+                            : null,
+                        SeriesTitle = itemType == "episode"
+                            ? (item.TryGetProperty("grandparentTitle", out var series) ? series.GetString() : null)
+                            : null,
+                        SeasonNumber = itemType == "episode" && item.TryGetProperty("parentIndex", out var season) && season.ValueKind == JsonValueKind.Number
+                            ? season.GetInt32()
+                            : null,
+                        EpisodeNumber = itemType == "episode" && item.TryGetProperty("index", out var ep) && ep.ValueKind == JsonValueKind.Number
+                            ? ep.GetInt32()
+                            : null
                     });
                 }
             }

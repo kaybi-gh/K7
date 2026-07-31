@@ -60,20 +60,64 @@ public sealed class SpotifyClient : ISourceClient
     {
         if (_dataDir is null || !Directory.Exists(_dataDir)) return null;
 
-        var file = Directory.GetFiles(_dataDir, "*.json").FirstOrDefault();
-
-        if (file is null) return null;
-
-        var json = File.ReadAllText(file);
-        var entries = JsonSerializer.Deserialize<JsonElement>(json);
-
-        foreach (var entry in entries.EnumerateArray())
+        foreach (var file in Directory.GetFiles(_dataDir, "*.json"))
         {
-            if (entry.TryGetProperty("username", out var username) && username.ValueKind == JsonValueKind.String)
-                return username.GetString();
+            JsonElement root;
+            try
+            {
+                root = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(file));
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (root.ValueKind != JsonValueKind.Array) continue;
+
+            foreach (var entry in root.EnumerateArray())
+            {
+                if (entry.TryGetProperty("username", out var username) && username.ValueKind == JsonValueKind.String)
+                {
+                    var name = username.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        return name;
+                }
+            }
         }
 
         return null;
+    }
+
+    public bool HasStreamingHistoryExport()
+    {
+        if (_dataDir is null || !Directory.Exists(_dataDir)) return false;
+
+        foreach (var file in Directory.GetFiles(_dataDir, "*.json"))
+        {
+            JsonElement root;
+            try
+            {
+                root = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(file));
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0) continue;
+
+            var sample = root[0];
+            if (sample.TryGetProperty("ms_played", out _) || sample.TryGetProperty("msPlayed", out _))
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool HasPlaylistExport()
+    {
+        if (_dataDir is null || !Directory.Exists(_dataDir)) return false;
+        return Directory.GetFiles(_dataDir, "Playlist*.json").Length > 0;
     }
 
     public Task<List<SourceLibrary>> GetLibrariesAsync(CancellationToken cancellationToken = default)
@@ -95,19 +139,27 @@ public sealed class SpotifyClient : ISourceClient
         return Task.FromResult(libraries);
     }
 
-    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, CancellationToken cancellationToken = default)
+    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         return libraryId switch
         {
-            "saved-tracks" => await GetSavedTracksAsync(cancellationToken),
-            "saved-albums" => await GetSavedAlbumTracksAsync(cancellationToken),
-            "recently-played" => await GetRecentlyPlayedAsync(cancellationToken),
-            "streaming-history" => LoadStreamingHistoryFromExport(),
+            "saved-tracks" => await GetSavedTracksAsync(progress, cancellationToken),
+            "saved-albums" => await GetSavedAlbumTracksAsync(progress, cancellationToken),
+            "recently-played" => await GetRecentlyPlayedAsync(progress, cancellationToken),
+            "streaming-history" => LoadStreamingHistoryFromExport(progress),
             _ => []
         };
     }
 
     public async Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        if (_hasApiToken)
+            return await GetPlaylistsFromApiAsync(cancellationToken);
+
+        return LoadPlaylistsFromExport();
+    }
+
+    private async Task<List<SourcePlaylist>> GetPlaylistsFromApiAsync(CancellationToken cancellationToken)
     {
         var playlists = new List<SourcePlaylist>();
         var url = "v1/me/playlists?limit=50";
@@ -139,13 +191,122 @@ public sealed class SpotifyClient : ISourceClient
         return playlists;
     }
 
-    private async Task<List<SourceMediaItem>> GetSavedTracksAsync(CancellationToken cancellationToken)
+    private List<SourcePlaylist> LoadPlaylistsFromExport()
+    {
+        if (_dataDir is null || !Directory.Exists(_dataDir))
+            return [];
+
+        var playlists = new List<SourcePlaylist>();
+        var files = Directory.GetFiles(_dataDir, "Playlist*.json")
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in files)
+        {
+            JsonElement root;
+            try
+            {
+                root = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(file));
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            // Account data export: { "playlists": [ ... ] } or legacy root array [ ... ]
+            JsonElement playlistArray;
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("playlists", out var nested)
+                && nested.ValueKind == JsonValueKind.Array)
+            {
+                playlistArray = nested;
+            }
+            else if (root.ValueKind == JsonValueKind.Array)
+            {
+                playlistArray = root;
+            }
+            else
+            {
+                continue;
+            }
+
+            var fileIndex = 0;
+            foreach (var pl in playlistArray.EnumerateArray())
+            {
+                fileIndex++;
+                var title = pl.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String
+                    ? nameProp.GetString()
+                    : null;
+                if (string.IsNullOrWhiteSpace(title))
+                    continue;
+
+                if (!pl.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                var playlistItems = new List<SourcePlaylistItem>();
+                var trackIndex = 0;
+                foreach (var entry in itemsEl.EnumerateArray())
+                {
+                    trackIndex++;
+                    if (!entry.TryGetProperty("track", out var track) || track.ValueKind != JsonValueKind.Object)
+                        continue;
+
+                    var trackUri = track.TryGetProperty("trackUri", out var uriProp) && uriProp.ValueKind == JsonValueKind.String
+                        ? uriProp.GetString()
+                        : null;
+                    var trackName = track.TryGetProperty("trackName", out var tn) && tn.ValueKind == JsonValueKind.String
+                        ? tn.GetString()
+                        : null;
+                    var artistName = track.TryGetProperty("artistName", out var an) && an.ValueKind == JsonValueKind.String
+                        ? an.GetString()
+                        : null;
+
+                    if (string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(trackUri))
+                        continue;
+
+                    string? spotifyId = null;
+                    if (trackUri is not null && trackUri.StartsWith("spotify:track:", StringComparison.Ordinal))
+                        spotifyId = trackUri["spotify:track:".Length..];
+
+                    var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    if (spotifyId is not null)
+                        providerIds["spotify"] = spotifyId;
+
+                    playlistItems.Add(new SourcePlaylistItem
+                    {
+                        Id = spotifyId ?? $"{artistName}|{trackName}|{trackIndex}",
+                        Title = trackName ?? spotifyId ?? $"Track {trackIndex}",
+                        ProviderIds = providerIds,
+                        ArtistName = artistName,
+                        AlbumName = track.TryGetProperty("albumName", out var abn) && abn.ValueKind == JsonValueKind.String
+                            ? abn.GetString()
+                            : null
+                    });
+                }
+
+                var fileStem = Path.GetFileNameWithoutExtension(file);
+                playlists.Add(new SourcePlaylist
+                {
+                    Id = $"{fileStem}-{fileIndex}",
+                    Title = title,
+                    MediaType = "music",
+                    Items = playlistItems
+                });
+            }
+        }
+
+        return playlists;
+    }
+
+    private async Task<List<SourceMediaItem>> GetSavedTracksAsync(IProgress<string>? progress, CancellationToken cancellationToken)
     {
         var items = new List<SourceMediaItem>();
         var url = "v1/me/tracks?limit=50";
+        var page = 0;
 
         while (url is not null)
         {
+            page++;
+            progress?.Report($"saved tracks page {page} ({items.Count} so far)...");
             var doc = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
 
             foreach (var entry in doc.GetProperty("items").EnumerateArray())
@@ -153,6 +314,11 @@ public sealed class SpotifyClient : ISourceClient
                 var track = entry.GetProperty("track");
                 items.Add(ParseTrack(track, liked: true));
             }
+
+            var total = doc.TryGetProperty("total", out var totalProp) && totalProp.ValueKind == JsonValueKind.Number
+                ? totalProp.GetInt32()
+                : items.Count;
+            progress?.Report($"saved tracks page {page} ({items.Count}/{total})");
 
             url = doc.TryGetProperty("next", out var next) && next.ValueKind == JsonValueKind.String
                 ? next.GetString()
@@ -162,13 +328,16 @@ public sealed class SpotifyClient : ISourceClient
         return items;
     }
 
-    private async Task<List<SourceMediaItem>> GetSavedAlbumTracksAsync(CancellationToken cancellationToken)
+    private async Task<List<SourceMediaItem>> GetSavedAlbumTracksAsync(IProgress<string>? progress, CancellationToken cancellationToken)
     {
         var items = new List<SourceMediaItem>();
         var url = "v1/me/albums?limit=50";
+        var page = 0;
 
         while (url is not null)
         {
+            page++;
+            progress?.Report($"saved albums page {page} ({items.Count} tracks so far)...");
             var doc = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
 
             foreach (var entry in doc.GetProperty("items").EnumerateArray())
@@ -182,6 +351,11 @@ public sealed class SpotifyClient : ISourceClient
                 }
             }
 
+            var total = doc.TryGetProperty("total", out var totalProp) && totalProp.ValueKind == JsonValueKind.Number
+                ? totalProp.GetInt32()
+                : page;
+            progress?.Report($"saved albums page {page} ({items.Count} tracks, {total} albums)");
+
             url = doc.TryGetProperty("next", out var next) && next.ValueKind == JsonValueKind.String
                 ? next.GetString()
                 : null;
@@ -190,11 +364,12 @@ public sealed class SpotifyClient : ISourceClient
         return items;
     }
 
-    private async Task<List<SourceMediaItem>> GetRecentlyPlayedAsync(CancellationToken cancellationToken)
+    private async Task<List<SourceMediaItem>> GetRecentlyPlayedAsync(IProgress<string>? progress, CancellationToken cancellationToken)
     {
         var itemsByKey = new Dictionary<string, SourceMediaItem>();
         var url = "v1/me/player/recently-played?limit=50";
 
+        progress?.Report("recently played...");
         var doc = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
 
         foreach (var entry in doc.GetProperty("items").EnumerateArray())
@@ -241,10 +416,11 @@ public sealed class SpotifyClient : ISourceClient
             }
         }
 
+        progress?.Report($"recently played ({itemsByKey.Count} tracks)");
         return [.. itemsByKey.Values];
     }
 
-    private List<SourceMediaItem> LoadStreamingHistoryFromExport()
+    private List<SourceMediaItem> LoadStreamingHistoryFromExport(IProgress<string>? progress)
     {
         if (_dataDir is null || !Directory.Exists(_dataDir))
             return [];
@@ -253,9 +429,14 @@ public sealed class SpotifyClient : ISourceClient
 
         // Load all JSON files and filter by content (support all Spotify export naming conventions)
         var files = Directory.GetFiles(_dataDir, "*.json");
+        progress?.Report($"streaming history (0/{files.Length} files)...");
 
-        foreach (var file in files)
+        for (var fileIndex = 0; fileIndex < files.Length; fileIndex++)
         {
+            var file = files[fileIndex];
+            progress?.Report(
+                $"streaming history ({fileIndex + 1}/{files.Length} files, {itemsByUri.Count} tracks) - {Path.GetFileName(file)}");
+
             var json = File.ReadAllText(file);
             JsonElement entries;
 
@@ -362,6 +543,7 @@ public sealed class SpotifyClient : ISourceClient
             }
         }
 
+        progress?.Report($"streaming history done ({itemsByUri.Count} tracks)");
         return [.. itemsByUri.Values];
     }
 
@@ -385,11 +567,20 @@ public sealed class SpotifyClient : ISourceClient
 
                 if (string.IsNullOrEmpty(id)) continue;
 
+                var artistName = track.TryGetProperty("artists", out var artists) && artists.ValueKind == JsonValueKind.Array
+                    ? artists.EnumerateArray().FirstOrDefault().TryGetProperty("name", out var an) ? an.GetString() : null
+                    : null;
+                var albumName = track.TryGetProperty("album", out var albumEl) && albumEl.ValueKind == JsonValueKind.Object
+                    ? albumEl.TryGetProperty("name", out var abn) ? abn.GetString() : null
+                    : null;
+
                 items.Add(new SourcePlaylistItem
                 {
                     Id = id,
                     Title = name,
-                    ProviderIds = ParseTrackProviderIds(track)
+                    ProviderIds = ParseTrackProviderIds(track),
+                    ArtistName = artistName,
+                    AlbumName = albumName
                 });
             }
 

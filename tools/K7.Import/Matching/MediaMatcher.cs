@@ -52,6 +52,13 @@ public sealed class MediaMatcher
             Id = i.Id,
             Title = i.Title,
             ProviderIds = i.ProviderIds,
+            FilePaths = i.FilePaths,
+            ArtistName = i.ArtistName,
+            AlbumName = i.AlbumName,
+            Year = i.Year,
+            SeriesTitle = i.SeriesTitle,
+            SeasonNumber = i.SeasonNumber,
+            EpisodeNumber = i.EpisodeNumber,
             MediaType = defaultMediaType,
             PlayCount = 0,
             IsCompleted = false

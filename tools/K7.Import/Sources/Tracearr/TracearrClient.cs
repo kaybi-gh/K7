@@ -45,9 +45,20 @@ public sealed class TracearrClient : ISourceClient
                 var id = user.GetProperty("id").GetString()!;
                 var name = user.TryGetProperty("displayName", out var dn) ? dn.GetString() : null;
                 name ??= user.TryGetProperty("username", out var un) ? un.GetString() : null;
+                var serverName = user.TryGetProperty("serverName", out var sn) && sn.ValueKind == JsonValueKind.String
+                    ? sn.GetString()
+                    : null;
+                serverName ??= user.TryGetProperty("serverId", out var sid) && sid.ValueKind == JsonValueKind.String
+                    ? sid.GetString()
+                    : null;
 
                 if (!users.Exists(u => u.Id == id))
-                    users.Add(new SourceUser { Id = id, Name = name ?? "Unknown" });
+                    users.Add(new SourceUser
+                    {
+                        Id = id,
+                        Name = name ?? "Unknown",
+                        Detail = string.IsNullOrWhiteSpace(serverName) ? null : serverName
+                    });
             }
 
             var meta = doc.GetProperty("meta");
@@ -67,18 +78,27 @@ public sealed class TracearrClient : ISourceClient
         });
     }
 
-    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, CancellationToken cancellationToken = default)
+    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         // Tracearr's /history endpoint returns sessions per user (embedded in the response).
         // We paginate through all history and aggregate per media item.
         var itemsByKey = new Dictionary<string, SourceMediaItem>();
         var page = 1;
         const int pageSize = 100;
+        var sessionsProcessed = 0;
+        var totalSessions = 0;
+        var totalPages = 0;
+
+        progress?.Report("page 1...");
 
         while (true)
         {
             var doc = await _httpClient.GetFromJsonAsync<JsonElement>(
                 $"/api/v1/public/history?page={page}&pageSize={pageSize}&userId={Uri.EscapeDataString(userId)}", cancellationToken);
+
+            var meta = doc.GetProperty("meta");
+            totalSessions = meta.GetProperty("total").GetInt32();
+            totalPages = Math.Max(1, (int)Math.Ceiling(totalSessions / (double)pageSize));
 
             var data = doc.GetProperty("data");
             foreach (var session in data.EnumerateArray())
@@ -87,6 +107,8 @@ public sealed class TracearrClient : ISourceClient
                 var user = session.GetProperty("user");
                 var sessionUserId = user.GetProperty("id").GetString();
                 if (sessionUserId != userId) continue;
+
+                sessionsProcessed++;
 
                 var mediaTitle = session.TryGetProperty("mediaTitle", out var mt) ? mt.GetString() : null;
                 if (mediaTitle is null) continue;
@@ -185,10 +207,13 @@ public sealed class TracearrClient : ISourceClient
                 }
             }
 
-            var meta = doc.GetProperty("meta");
-            var total = meta.GetProperty("total").GetInt32();
-            if (page * pageSize >= total) break;
+            progress?.Report(
+                $"page {page}/{totalPages} ({sessionsProcessed}/{totalSessions} sessions, {itemsByKey.Count} medias)");
+
+            if (page * pageSize >= totalSessions)
+                break;
             page++;
+            progress?.Report($"page {page}/{totalPages}...");
         }
 
         return [.. itemsByKey.Values];

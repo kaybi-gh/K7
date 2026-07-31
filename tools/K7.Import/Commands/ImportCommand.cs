@@ -25,7 +25,7 @@ public sealed class ImportCommand
         var k7UrlOption = new Option<string>("--k7-url") { Description = "K7 server URL", Required = true };
         var dryRunOption = new Option<bool>("--dry-run") { Description = "Preview changes without applying them" };
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
-        var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify extended streaming history export folder (JSON files)" };
+        var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify export folder (streaming history and/or Playlist*.json account data)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
         var autoMapUsersOption = new Option<bool>("--auto-map-users") { Description = "Auto-map source users to K7 users with the same username (case-insensitive). Off by default; unmapped users get temp plex-/jellyfin-/... accounts" };
         var includeDynamicPlaylistsOption = new Option<bool>("--include-dynamic-playlists") { Description = "Import Plex smart/dynamic playlists as static snapshots (skipped by default; prefer recreating as K7 dynamic playlists)" };
@@ -120,6 +120,19 @@ public sealed class ImportCommand
         var serverInfo = await sourceClient.ValidateConnectionAsync(cancellationToken);
         AnsiConsole.MarkupLine($"[green]Connected to {serverInfo.Name} (v{serverInfo.Version})[/]");
 
+        if (sourceClient is SpotifyClient spotifyClient && !string.IsNullOrEmpty(spotifyDataDir))
+        {
+            if (scope.History && !spotifyClient.HasStreamingHistoryExport())
+            {
+                AnsiConsole.MarkupLine("[yellow]No streaming history JSON found in --spotify-data-dir (expected endsong_*/StreamingHistory_* with ms_played). History import will be empty. Playlist*.json alone is account data, not listen history.[/]");
+            }
+
+            if (scope.Playlists && string.IsNullOrEmpty(sourceApiKey) && !spotifyClient.HasPlaylistExport())
+            {
+                AnsiConsole.MarkupLine("[yellow]No Playlist*.json found in --spotify-data-dir and no API token provided. Playlist import will be empty.[/]");
+            }
+        }
+
         // 3. Authenticate with K7
         AnsiConsole.MarkupLine("[bold]Authenticating with K7...[/]");
         var authenticator = new DeviceCodeAuthenticator(k7Url);
@@ -178,8 +191,15 @@ public sealed class ImportCommand
 
                         foreach (var library in libraries)
                         {
-                            ctx.Status($"Fetching {library.Name} for {sourceUser.Name}...");
-                            var allItems = await sourceClient.GetLibraryItemsAsync(library.Id, sourceUser.Id, cancellationToken);
+                            var userLabel = Markup.Escape(sourceUser.DisplayName);
+                            var libraryLabel = Markup.Escape(library.Name);
+                            ctx.Status($"Fetching {library.Name} for {sourceUser.DisplayName}...");
+
+                            var progress = new Progress<string>(detail =>
+                                ctx.Status($"Fetching {library.Name} for {sourceUser.DisplayName} - {detail}"));
+
+                            var allItems = await sourceClient.GetLibraryItemsAsync(
+                                library.Id, sourceUser.Id, progress, cancellationToken);
 
                             var filtered = allItems.Where(i =>
                                 (scope.History && (i.PlayCount > 0 || i.IsCompleted || i.PlayHistory.Count > 0))
@@ -187,6 +207,8 @@ public sealed class ImportCommand
                             ).ToList();
 
                             userLibraryItems[sourceUser.Id][library.Id] = filtered;
+                            AnsiConsole.MarkupLine(
+                                $"[dim]Fetched {filtered.Count} interacted item(s) from {libraryLabel} for {userLabel}[/]");
 
                             if (!interactedItemsPerLibrary.ContainsKey(library.Id))
                                 interactedItemsPerLibrary[library.Id] = [];
@@ -254,7 +276,7 @@ public sealed class ImportCommand
         // 8. Import per user using pre-computed matches
         foreach (var (sourceUser, k7UserId) in userMap)
         {
-            AnsiConsole.MarkupLine($"\n[bold blue]Importing data for {sourceUser.Name}...[/]");
+            AnsiConsole.MarkupLine($"\n[bold blue]Importing data for {sourceUser.DisplayName}...[/]");
 
             await AnsiConsole.Status()
                 .StartAsync("Importing user data...", async ctx =>
@@ -329,6 +351,11 @@ public sealed class ImportCommand
                     {
                         ctx.Status("Fetching playlists...");
                         var playlists = await sourceClient.GetPlaylistsAsync(sourceUser.Id, cancellationToken);
+                        AnsiConsole.MarkupLine($"[dim]Found {playlists.Count} playlist(s) for {Markup.Escape(sourceUser.Name)}[/]");
+                        foreach (var preview in playlists.Take(20))
+                            AnsiConsole.MarkupLine($"  [dim]- {Markup.Escape(preview.Title)} ({preview.Items.Count} items)[/]");
+                        if (playlists.Count > 20)
+                            AnsiConsole.MarkupLine($"  [dim]...and {playlists.Count - 20} more[/]");
 
                         var smartCount = playlists.Count(p => p.IsDynamic);
                         if (!includeDynamicPlaylists && smartCount > 0)
@@ -374,7 +401,20 @@ public sealed class ImportCommand
                                 };
                             }
 
-                            ctx.Status($"Importing playlist '{playlist.Title}'...");
+                            var sourceLabel = sourceLower switch
+                            {
+                                "plex" => "Plex",
+                                "jellyfin" => "Jellyfin",
+                                "spotify" => "Spotify",
+                                "tautulli" => "Tautulli",
+                                "tracearr" => "Tracearr",
+                                _ => char.ToUpperInvariant(sourceLower[0]) + sourceLower[1..]
+                            };
+                            var playlistTitle = playlist.Title.StartsWith($"{sourceLabel} - ", StringComparison.OrdinalIgnoreCase)
+                                ? playlist.Title
+                                : $"{sourceLabel} - {playlist.Title}";
+
+                            ctx.Status($"Importing playlist '{playlistTitle}'...");
                             var mediaIds = playlist.Items
                                 .Where(i => playlistMatches.ContainsKey(i.Id))
                                 .Select(i => playlistMatches[i.Id])
@@ -382,7 +422,7 @@ public sealed class ImportCommand
 
                             var importResult = await k7Client.ImportUserPlaylistAsync(
                                 k7UserId,
-                                playlist.Title,
+                                playlistTitle,
                                 playlistMediaType.Value,
                                 mediaIds,
                                 cancellationToken);
@@ -497,8 +537,16 @@ public sealed class ImportCommand
         if (item.IsCompleted)
             return 100;
 
+        if (item.ProgressPercentage is > 0)
+            return Math.Clamp(item.ProgressPercentage.Value, 0, 99.9);
+
         if (item.DurationSeconds is > 0 && item.LastPlaybackPosition is > 0)
             return Math.Min(100.0, item.LastPlaybackPosition.Value / item.DurationSeconds.Value * 100.0);
+
+        // Tracearr/Tautulli often have play history without a resume position.
+        // Use a mid-progress value so incomplete items can enter Keep Watching.
+        if (item.PlayCount > 0 || item.LastPlayedAt is not null)
+            return 50;
 
         return 0;
     }
@@ -538,7 +586,7 @@ public sealed class ImportCommand
         AnsiConsole.MarkupLine($"\n[bold]Source users ({sourceUsers.Count}):[/]");
         foreach (var user in sourceUsers)
         {
-            AnsiConsole.MarkupLine($"  - {user.Name} (id: {user.Id})");
+            AnsiConsole.MarkupLine($"  - {user.DisplayName} (id: {user.Id})");
         }
 
         AnsiConsole.MarkupLine($"\n[bold]K7 users ({k7Users.Count}):[/]");
@@ -601,6 +649,7 @@ public sealed class ImportCommand
                     {
                         var created = await k7Client.CreateUserAsync(tempUsername, "User", cancellationToken);
                         result[sourceUser] = created.Id;
+                        k7Users.Add(created);
                         AnsiConsole.MarkupLine($"[green]Created temp K7 user '{tempUsername}'[/]");
                     }
                 }

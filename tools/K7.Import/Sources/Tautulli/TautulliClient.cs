@@ -70,21 +70,35 @@ public sealed partial class TautulliClient : ISourceClient
         return libraries;
     }
 
-    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, CancellationToken cancellationToken = default)
+    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         var itemsByKey = new Dictionary<string, SourceMediaItem>();
         var start = 0;
         const int pageSize = 100;
+        var totalCount = 0;
+        var totalPages = 0;
+        var rowsProcessed = 0;
+
+        progress?.Report("page 1...");
 
         while (true)
         {
+            var page = (start / pageSize) + 1;
+            if (totalPages > 0)
+                progress?.Report($"page {page}/{totalPages}...");
+            else if (page > 1)
+                progress?.Report($"page {page}...");
+
             var url = Endpoint("get_history") + $"&user_id={userId}&section_id={libraryId}&length={pageSize}&start={start}";
             var doc = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
             var response = doc.GetProperty("response").GetProperty("data");
             var data = response.GetProperty("data");
+            var pageRows = 0;
 
             foreach (var entry in data.EnumerateArray())
             {
+                pageRows++;
+                rowsProcessed++;
                 var ratingKey = entry.TryGetProperty("rating_key", out var rk) ? rk.ToString() : null;
                 if (ratingKey is null) continue;
 
@@ -95,42 +109,44 @@ public sealed partial class TautulliClient : ISourceClient
                     ? DateTimeOffset.FromUnixTimeSeconds(stopped.GetInt64()).UtcDateTime
                     : (DateTime?)null;
 
-                var watchedStatus = entry.TryGetProperty("watched_status", out var ws) && ws.ValueKind == JsonValueKind.Number
-                    ? ws.GetInt32() : 0;
+                var watchedStatus = ReadDouble(entry, "watched_status") ?? 0;
+                var isCompleted = watchedStatus >= 1.0;
+                var percentComplete = ReadInt(entry, "percent_complete") ?? 0;
 
                 var mediaType = entry.TryGetProperty("media_type", out var mt) ? mt.GetString() : null;
-                var playEntry = ParsePlayEntry(entry, watchedStatus);
+                var playEntry = ParsePlayEntry(entry, isCompleted, percentComplete);
 
                 if (itemsByKey.TryGetValue(ratingKey, out var existing))
                 {
                     if (playEntry is not null)
                         existing.PlayHistory.Add(playEntry);
 
+                    var nextProgress = Math.Max(existing.ProgressPercentage ?? 0, percentComplete);
                     itemsByKey[ratingKey] = existing with
                     {
                         PlayCount = existing.PlayCount + 1,
                         LastPlayedAt = lastPlayedAt > existing.LastPlayedAt ? lastPlayedAt : existing.LastPlayedAt,
-                        IsCompleted = existing.IsCompleted || watchedStatus == 1
+                        IsCompleted = existing.IsCompleted || isCompleted,
+                        ProgressPercentage = nextProgress > 0 ? nextProgress : existing.ProgressPercentage
                     };
                 }
                 else
                 {
                     var grandparentTitle = entry.TryGetProperty("grandparent_title", out var gpt) ? gpt.GetString() : null;
                     var parentTitle = entry.TryGetProperty("parent_title", out var pt) ? pt.GetString() : null;
-                    var parentMediaIndex = entry.TryGetProperty("parent_media_index", out var pmi) && pmi.ValueKind == JsonValueKind.Number
-                        ? pmi.GetInt32() : (int?)null;
-                    var mediaIndex = entry.TryGetProperty("media_index", out var mi) && mi.ValueKind == JsonValueKind.Number
-                        ? mi.GetInt32() : (int?)null;
+                    var parentMediaIndex = ReadInt(entry, "parent_media_index");
+                    var mediaIndex = ReadInt(entry, "media_index");
 
                     var item = new SourceMediaItem
                     {
                         Id = ratingKey,
                         Title = entry.TryGetProperty("full_title", out var ft) ? ft.GetString()! : entry.GetProperty("title").GetString()!,
-                        Year = entry.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.Number ? y.GetInt32() : null,
+                        Year = ReadInt(entry, "year"),
                         ProviderIds = providerIds,
                         PlayCount = 1,
                         LastPlayedAt = lastPlayedAt,
-                        IsCompleted = watchedStatus == 1,
+                        IsCompleted = isCompleted,
+                        ProgressPercentage = percentComplete > 0 ? percentComplete : null,
                         Rating = null,
                         MediaType = mediaType switch
                         {
@@ -153,10 +169,29 @@ public sealed partial class TautulliClient : ISourceClient
                 }
             }
 
-            var totalCount = response.TryGetProperty("recordsFiltered", out var rc) ? rc.GetInt32() : 0;
+            totalCount = ReadInt(response, "recordsFiltered")
+                ?? ReadInt(response, "recordsTotal")
+                ?? totalCount;
+            totalPages = totalCount > 0
+                ? Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize))
+                : Math.Max(page, totalPages);
+
+            var rowsLabel = totalCount > 0
+                ? $"{Math.Min(start + pageRows, totalCount)}/{totalCount}"
+                : $"{rowsProcessed}";
+            progress?.Report(
+                $"page {page}/{Math.Max(totalPages, page)} ({rowsLabel} rows, {itemsByKey.Count} medias)");
+
             start += pageSize;
-            if (start >= totalCount)
+            if (totalCount > 0)
+            {
+                if (start >= totalCount)
+                    break;
+            }
+            else if (pageRows < pageSize)
+            {
                 break;
+            }
         }
 
         return [.. itemsByKey.Values];
@@ -167,7 +202,7 @@ public sealed partial class TautulliClient : ISourceClient
         return Task.FromResult(new List<SourcePlaylist>());
     }
 
-    private static SourcePlayEntry? ParsePlayEntry(JsonElement entry, int watchedStatus)
+    private static SourcePlayEntry? ParsePlayEntry(JsonElement entry, bool isCompleted, int percentComplete)
     {
         var startedAt = ReadUnixTimestamp(entry, "date")
             ?? ReadDateTime(entry, "started");
@@ -182,14 +217,13 @@ public sealed partial class TautulliClient : ISourceClient
         if (watchedSeconds is null or <= 0 && stoppedAt is not null)
             watchedSeconds = Math.Max(0, (stoppedAt.Value - startedAt.Value).TotalSeconds);
 
-        var percentComplete = ReadInt(entry, "percent_complete") ?? 0;
-        var isCompleted = watchedStatus == 1 || percentComplete >= 90;
+        var completed = isCompleted || percentComplete >= 90;
 
         return new SourcePlayEntry
         {
             PlayedAt = startedAt.Value,
             DurationSeconds = watchedSeconds ?? 0,
-            IsCompleted = isCompleted,
+            IsCompleted = completed,
             IsTranscode = ReadString(entry, "transcode_decision") is { } transcode
                 ? !string.Equals(transcode, "direct play", StringComparison.OrdinalIgnoreCase)
                 : null,
@@ -248,8 +282,10 @@ public sealed partial class TautulliClient : ISourceClient
 
         return value.ValueKind switch
         {
-            JsonValueKind.Number => value.TryGetInt32(out var number) ? number : null,
+            JsonValueKind.Number when value.TryGetInt32(out var number) => number,
+            JsonValueKind.Number => (int)Math.Round(value.GetDouble()),
             JsonValueKind.String when int.TryParse(value.GetString(), out var parsed) => parsed,
+            JsonValueKind.String when double.TryParse(value.GetString(), out var parsedDouble) => (int)Math.Round(parsedDouble),
             _ => null
         };
     }
@@ -262,7 +298,10 @@ public sealed partial class TautulliClient : ISourceClient
         return value.ValueKind switch
         {
             JsonValueKind.Number => value.GetDouble(),
-            JsonValueKind.String when double.TryParse(value.GetString(), out var parsed) => parsed,
+            JsonValueKind.String when double.TryParse(value.GetString(),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsed) => parsed,
             _ => null
         };
     }
