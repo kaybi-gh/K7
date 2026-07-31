@@ -20,7 +20,7 @@
 
         <K7Select TValue="Guid?" Class="stats-user-select data-toolbar-field"
                   Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
-                  ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? L["AllUsers"])"
+                  ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? _users.FirstOrDefault(u => u.Id == id)?.UserName ?? L["AllUsers"])"
                   FullWidth="false">
             @foreach (var user in _users)
             {
