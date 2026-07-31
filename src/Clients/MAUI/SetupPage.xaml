@@ -7,7 +7,7 @@
         <Label Text="K7" FontSize="32" HorizontalOptions="Center" FontAttributes="Bold" />
         <Label Text="Enter your K7 server address:" />
         <Entry x:Name="BackendUrlEntry"
-               Placeholder="k7.example.com or http://192.168.1.10:5000"
+               Placeholder="k7.example.com or http://192.168.1.10:7080"
                Keyboard="Url"
                ReturnType="Go"
                Completed="OnValidateClicked" />

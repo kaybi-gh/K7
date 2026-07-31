@@ -49,7 +49,7 @@ RUN apt-get update \
         i965-va-driver \
     && (apt-get install -y --no-install-recommends intel-media-va-driver-non-free || true) \
     && rm -rf /var/lib/apt/lists/*
-EXPOSE 8080 8081
+EXPOSE 7080 7443
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
@@ -73,8 +73,9 @@ WORKDIR /k7
 COPY --from=build /publish .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-EXPOSE 8080
+ENV ASPNETCORE_HTTP_PORTS=7080
+EXPOSE 7080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+  CMD curl -fsS http://127.0.0.1:7080/health || exit 1
 LABEL org.opencontainers.image.source="https://github.com/kaybi-gh/K7"
 ENTRYPOINT ["/entrypoint.sh"]

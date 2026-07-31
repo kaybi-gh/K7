@@ -38,7 +38,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080/tcp"
+      - "7080:7080/tcp"
     # Hardware transcoding (optional). Stock image falls back to libx264/libx265.
     # Intel/AMD VAAPI - see docs/admin/operating.md#hardware-acceleration
     # devices:
@@ -65,7 +65,7 @@ services:
       Paths__Transcoding: /data/transcoding
       PUID: ${PUID:-911}
       PGID: ${PGID:-911}
-      # Sample stack is plain HTTP on :8080. Secure cookies (ForceHttps=true) break
+      # Sample stack is plain HTTP on :7080. Secure cookies (ForceHttps=true) break
       # antiforgery on /setup over HTTP. For a TLS reverse proxy, set true; private
       # Docker/LAN proxies are trusted by default - see docs/admin/configuration.md#reverse-proxy.
       Security__ForceHttps: ${SECURITY__FORCEHTTPS:-false}
@@ -74,7 +74,7 @@ services:
       # Optional display name used when inviting federation peers.
       # Server__Name: Home
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7080/health"]
       interval: 30s
       timeout: 5s
       retries: 3

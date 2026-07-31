@@ -16,7 +16,7 @@ dotnet run --project src/Shared/Aspire/AppHost
 dotnet run --project src/Server/Web
 ```
 
-Launch profiles: `src/Server/Web/Properties/launchSettings.json`. Typical HTTPS URL: `https://localhost:5001`. There is no supported standalone "WASM only against remote API" profile in-repo.
+Launch profiles: `src/Server/Web/Properties/launchSettings.json`. Typical HTTPS URL: `https://localhost:7443` (HTTP: `http://localhost:7080`). There is no supported standalone "WASM only against remote API" profile in-repo.
 
 ### MAUI (Blazor Hybrid)
 

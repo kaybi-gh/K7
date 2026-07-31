@@ -42,7 +42,7 @@ public partial class SetupPage : ContentPage
         var k7ServerUrl = NormalizeServerUrl(BackendUrlEntry.Text);
         if (k7ServerUrl is null)
         {
-            SetStatus("Please enter a valid address (for example k7.example.com or http://192.168.1.10:5000).", isError: true);
+            SetStatus("Please enter a valid address (for example k7.example.com or http://192.168.1.10:7080).", isError: true);
             return;
         }
 

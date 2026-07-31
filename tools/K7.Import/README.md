@@ -91,7 +91,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 |---|---|
 | `--source`, `-s` | Source type: `plex`, `jellyfin`, `tautulli`, `tracearr`, or `spotify` |
 | `--source-api-key` | API key or access token for the source (not needed for spotify with `--spotify-data-dir`) |
-| `--k7-url` | URL of your K7 server (e.g. `http://localhost:5000`) |
+| `--k7-url` | URL of your K7 server (e.g. `http://localhost:7080`) |
 
 ### Optional
 
@@ -118,7 +118,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 k7-import -s plex \
   --source-url http://192.168.1.10:32400 \
   --source-api-key "your-plex-token" \
-  --k7-url http://localhost:5000
+  --k7-url http://localhost:7080
 ```
 
 **Import from Jellyfin with user mapping:**
@@ -126,7 +126,7 @@ k7-import -s plex \
 k7-import -s jellyfin \
   --source-url http://192.168.1.10:8096 \
   --source-api-key "your-jellyfin-api-key" \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --user-mapping "john:john" --user-mapping "jane:jane"
 ```
 
@@ -135,7 +135,7 @@ k7-import -s jellyfin \
 k7-import -s tautulli \
   --source-url http://192.168.1.10:8181 \
   --source-api-key "your-tautulli-api-key" \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --dry-run
 ```
 
@@ -143,13 +143,13 @@ k7-import -s tautulli \
 ```bash
 k7-import -s spotify \
   --source-api-key "your-spotify-access-token" \
-  --k7-url http://localhost:5000
+  --k7-url http://localhost:7080
 ```
 
 **Import full Spotify listening history from data export (no API token needed):**
 ```bash
 k7-import -s spotify \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --spotify-data-dir ~/Downloads/my_spotify_data/Spotify\ Extended\ Streaming\ History \
   --include history
 ```
@@ -159,7 +159,7 @@ k7-import -s spotify \
 k7-import -s jellyfin \
   --source-url http://192.168.1.10:8096 \
   --source-api-key "your-jellyfin-api-key" \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --include playlists
 ```
 
@@ -168,7 +168,7 @@ k7-import -s jellyfin \
 k7-import -s tracearr \
   --source-url http://192.168.1.10:7878 \
   --source-api-key "your-tracearr-api-key" \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --include history
 ```
 
@@ -207,7 +207,7 @@ If you still want a one-shot static copy of the current contents:
 k7-import -s plex \
   --source-url http://192.168.1.10:32400 \
   --source-api-key "your-plex-token" \
-  --k7-url http://localhost:5000 \
+  --k7-url http://localhost:7080 \
   --include-dynamic-playlists
 ```
 
@@ -266,7 +266,7 @@ When importing watch states for items that already have data in K7, the merge st
 
 Example: import with additive play counts and overwrite ratings:
 ```bash
-k7-import -s spotify --k7-url http://localhost:5000 \
+k7-import -s spotify --k7-url http://localhost:7080 \
   --spotify-data-dir ~/spotify-data \
   --playcount-mode additive --rating-mode overwrite
 ```
@@ -279,10 +279,10 @@ Virtual media can later be enriched with metadata or linked to real media files 
 
 To automatically fetch rich metadata (posters, descriptions, ratings) for newly created media, use `--fetch-metadata`. This queues background metadata tasks for enrichable types (movies, albums, series) that have external IDs:
 ```bash
-k7-import -s tautulli --source-url http://localhost:8181 --source-api-key YOUR_KEY --k7-url http://localhost:5000 --fetch-metadata
+k7-import -s tautulli --source-url http://localhost:8181 --source-api-key YOUR_KEY --k7-url http://localhost:7080 --fetch-metadata
 ```
 
 To disable virtual media creation and only import data for items already in K7:
 ```bash
-k7-import -s spotify --k7-url http://localhost:5000 --only-match-existing
+k7-import -s spotify --k7-url http://localhost:7080 --only-match-existing
 ```

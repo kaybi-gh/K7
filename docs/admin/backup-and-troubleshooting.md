@@ -103,7 +103,7 @@ Symptom: Admin -> Transcoding **Test encoder** fails with `Cannot load libcuda.s
 
 Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the current request is not an SSL request` (often on `/setup`).
 
-- Local HTTP (`http://localhost:8080`): set `Security__ForceHttps=false` (sample compose already does)
+- Local HTTP (`http://localhost:7080`): set `Security__ForceHttps=false` (sample compose already does)
 - Behind a TLS reverse proxy: keep `Security__ForceHttps=true` and ensure the proxy sends `X-Forwarded-Proto: https` (private networks are trusted by default; set `Security__KnownProxies` only to override)
 
 ### HTTPS redirect loops

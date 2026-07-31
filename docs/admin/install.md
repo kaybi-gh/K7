@@ -22,7 +22,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open `http://localhost:8080` (or your reverse-proxy URL) and complete [first-run setup](#first-run-setup).
+Open `http://localhost:7080` (or your reverse-proxy URL) and complete [first-run setup](#first-run-setup).
 
 The sample sets `Security__ForceHttps=false` so the setup wizard works over plain HTTP. Behind a TLS reverse proxy, set `Security__ForceHttps=true` (and `BaseUrl`) - private Docker/LAN proxies are trusted by default. See [configuration.md](configuration.md#reverse-proxy).
 

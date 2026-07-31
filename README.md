@@ -25,7 +25,7 @@ cp .env.example .env   # set POSTGRES_PASSWORD
 docker compose up -d   # pulls ghcr.io/kaybi-gh/k7:latest
 ```
 
-Open `http://localhost:8080` and complete first-run setup. Install details: [docs/admin/install.md](docs/admin/install.md).
+Open `http://localhost:7080` and complete first-run setup. Install details: [docs/admin/install.md](docs/admin/install.md).
 
 ## Features
 

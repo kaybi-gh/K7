@@ -1,5 +1,5 @@
 ﻿# For more info on HTTP files go to https://aka.ms/vs/httpfile
-@Web_HostAddress = https://localhost:5001
+@Web_HostAddress = https://localhost:7443
 
 @Username=administrator@localhost
 @Password=Administrator1!

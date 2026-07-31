@@ -8,7 +8,7 @@ Install first: [install.md](install.md). Day-to-day features: [operating.md](ope
 
 | Key | Env | Default | Description |
 |---|---|---|---|
-| `BaseUrl` | `BaseUrl` | `https://localhost:5001` | Public URL of this instance. Must match what browsers and federation peers use. Required for OIDC redirects and peering. |
+| `BaseUrl` | `BaseUrl` | `https://localhost:7443` | Public URL of this instance. Must match what browsers and federation peers use. Required for OIDC redirects and peering. |
 | `Server:Name` | `Server__Name` | *(empty)* | Display name when initiating federation. Falls back to host of `BaseUrl`, then machine name. |
 | `Cors:Origins` | `Cors__Origins` | `[]` | Allowed CORS origins. Non-empty: only those. Empty + Development: loopback. Empty + Production: deny all. Needed if WASM is hosted on another origin. |
 | `AllowedHosts` | `AllowedHosts` | `*` | Standard ASP.NET host filtering. `*` disables host filtering; set explicit hostnames in production behind a known public URL. |
@@ -206,7 +206,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - API keys: header `X-Api-Key`; Admin CRUD at `/api/admin/api-keys`; least privilege; rotate unused keys. `Security:ApiKeys:HashSecret` is required at startup (env/file).
 - Enable federation only when needed; treat peering as trust.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
-- Behind a reverse proxy: prefer not publishing K7 `:8080` on the LAN while `TrustPrivateProxies` is true (default).
+- Behind a reverse proxy: prefer not publishing K7 `:7080` on the LAN while `TrustPrivateProxies` is true (default).
 
 There is no comprehensive in-app rate limiting documented; put abusive-traffic controls at the reverse proxy if you expose K7 broadly.
 
@@ -257,7 +257,7 @@ See [operating.md](operating.md).
 
 ## Reverse proxy
 
-Run K7 behind a reverse proxy for TLS. The app listens on **8080** inside the container.
+Run K7 behind a reverse proxy for TLS. The app listens on **7080** inside the container.
 
 | Setting | Guidance |
 |---|---|
@@ -269,7 +269,7 @@ Run K7 behind a reverse proxy for TLS. The app listens on **8080** inside the co
 
 By default K7 trusts private networks for `X-Forwarded-Proto`, so Traefik/Caddy/nginx on the same Docker network works without listing proxy IPs. Set `KnownProxies` only when you need a tighter or non-private allowlist (that list then **replaces** the private defaults). Misconfiguration still causes cookie/HTTPS mismatches or redirect loops.
 
-Do not publish K7 `:8080` on an untrusted LAN while trusting private proxies: a client on that network could spoof `X-Forwarded-Proto`. Prefer exposing only the reverse proxy.
+Do not publish K7 `:7080` on an untrusted LAN while trusting private proxies: a client on that network could spoof `X-Forwarded-Proto`. Prefer exposing only the reverse proxy.
 
 SignalR (remote control, Sync Play) needs WebSocket upgrade, reasonable timeouts, and the same host/proto headers.
 
@@ -277,7 +277,7 @@ SignalR (remote control, Sync Play) needs WebSocket upgrade, reasonable timeouts
 
 ```caddy
 k7.example.com {
-    reverse_proxy k7-server:8080
+    reverse_proxy k7-server:7080
 }
 ```
 
@@ -296,7 +296,7 @@ services:
       - traefik.http.routers.k7.entrypoints=websecure
       - traefik.http.routers.k7.tls=true
       - traefik.http.routers.k7.tls.certresolver=letsencrypt
-      - traefik.http.services.k7.loadbalancer.server.port=8080
+      - traefik.http.services.k7.loadbalancer.server.port=7080
 ```
 
 Set on the K7 container:
@@ -310,7 +310,7 @@ environment:
 
 `X-Forwarded-Proto` is set by Traefik automatically (`https` when TLS terminates there) - do not set it as a K7 env var.
 
-Prefer keeping K7 on the Traefik Docker network only (do not publish `:8080` to the host) so private-proxy trust cannot be abused from the LAN.
+Prefer keeping K7 on the Traefik Docker network only (do not publish `:7080` to the host) so private-proxy trust cannot be abused from the LAN.
 
 ### Sample: nginx
 
@@ -325,7 +325,7 @@ server {
     server_name k7.example.com;
 
     location / {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:7080;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
