@@ -47,5 +47,15 @@
   <data name="TemplateFamily12Desc" xml:space="preserve"><value>Blocks content rated 16+ / R+</value></data>
   <data name="TemplateTeen16Desc" xml:space="preserve"><value>Only blocks content rated 18 / NC-17</value></data>
   <data name="TemplateNoHorrorDesc" xml:space="preserve"><value>Blocks genres Horror and Thriller</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete profiles</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Delete {0} profile(s)? This cannot be undone.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} profile(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected profiles</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
 </root>
 

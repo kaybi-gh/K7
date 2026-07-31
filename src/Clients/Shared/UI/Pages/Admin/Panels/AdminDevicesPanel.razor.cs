@@ -1,4 +1,6 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Devices;
@@ -7,37 +9,46 @@ using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminDevicesPanel
+public partial class AdminDevicesPanel : IAsyncDisposable
 {
     [Inject] private IDeviceApiService K7ServerService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorageService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private bool _isLoading = true;
     private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
     private string? _currentDeviceId;
     private Guid? _focusedDeviceId;
     private bool _shouldScrollToFocused;
+    private bool _selectionMode;
+    private bool _deleting;
+    private readonly HashSet<Guid> _selectedIds = [];
+    private List<DeviceDto> _deviceItems = [];
+    private SelectionModeKeyboardBinder? _selectionKeys;
 
-    private IList<DeviceDto> _deviceItems => _devices?.Items?.ToList() ?? [];
+    private int SelectedCount => _selectedIds.Count;
+    private bool AllSelected => _deviceItems.Count > 0 && _selectedIds.Count == _deviceItems.Count;
 
     protected override async Task OnInitializedAsync()
     {
-        _currentDeviceId = DeviceStorageService.Get(PreferenceKeys.DEVICE_ID);
-        _isLoading = true;
-        try
-        {
-            _devices = await K7ServerService.GetDevicesAsync();
-        }
-        catch { }
-        finally
-        {
-            _isLoading = false;
-        }
+        _selectionKeys = new SelectionModeKeyboardBinder(
+            SpatialNav,
+            onEscape: () => _ = InvokeAsync(OnSelectionEscape),
+            onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAll));
 
+        _currentDeviceId = DeviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+        await LoadDevicesAsync();
         ParseFocusParam();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selectionKeys is not null)
+            await _selectionKeys.DisposeAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,6 +57,25 @@ public partial class AdminDevicesPanel
         {
             _shouldScrollToFocused = false;
             await JSRuntime.InvokeVoidAsync("K7.scrollToElement", $"device-{_focusedDeviceId}");
+        }
+    }
+
+    private async Task LoadDevicesAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _devices = await K7ServerService.GetDevicesAsync();
+            _deviceItems = _devices?.Items?.ToList() ?? [];
+        }
+        catch
+        {
+            _devices = null;
+            _deviceItems = [];
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -73,6 +103,62 @@ public partial class AdminDevicesPanel
             && device.Id.ToString().Equals(_currentDeviceId, StringComparison.OrdinalIgnoreCase);
     }
 
+    private void EnterSelectionMode()
+    {
+        _selectionMode = true;
+        _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(true);
+    }
+
+    private void ExitSelectionMode()
+    {
+        _selectionMode = false;
+        _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(false);
+    }
+
+    private void ToggleSelection(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (AllSelected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
+
+        SelectAll();
+    }
+
+    private void SelectAll()
+    {
+        _selectedIds.Clear();
+        foreach (var device in _deviceItems)
+            _selectedIds.Add(device.Id);
+    }
+
+    private void OnSelectionEscape()
+    {
+        if (_deleting)
+            return;
+
+        ExitSelectionMode();
+    }
+
+    private void OnSelectionSelectAll()
+    {
+        if (!_selectionMode || _deleting)
+            return;
+
+        SelectAll();
+    }
+
+    private bool IsSelected(Guid id) => _selectedIds.Contains(id);
+
     private async Task DeleteDeviceAsync(DeviceDto device)
     {
         var result = await DialogService.ShowMessageBoxAsync(
@@ -87,9 +173,57 @@ public partial class AdminDevicesPanel
         try
         {
             await K7ServerService.DeleteDeviceAsync(device.Id);
-            _devices = await K7ServerService.GetDevicesAsync();
+            await LoadDevicesAsync();
         }
         catch { }
+    }
+
+    private async Task ConfirmDeleteSelectedAsync()
+    {
+        if (_selectedIds.Count == 0 || _deleting)
+            return;
+
+        var count = _selectedIds.Count;
+        var result = await DialogService.ShowMessageBoxAsync(
+            L["DeleteSelectedTitle"],
+            string.Format(L["DeleteSelectedMessage"], count),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (result != true)
+            return;
+
+        _deleting = true;
+        var failed = 0;
+
+        try
+        {
+            foreach (var id in _selectedIds.ToList())
+            {
+                try
+                {
+                    await K7ServerService.DeleteDeviceAsync(id);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+
+        ExitSelectionMode();
+        await LoadDevicesAsync();
+
+        if (failed == 0)
+            Snackbar.Add(string.Format(L["DeleteSelectedSuccess"], count), K7Severity.Success);
+        else if (failed == count)
+            Snackbar.Add(L["DeleteSelectedError"], K7Severity.Error);
+        else
+            Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
     private static string GetDeviceIcon(DeviceType deviceType) => deviceType switch

@@ -47,5 +47,15 @@
   <data name="TemplateFamily12Desc" xml:space="preserve"><value>Bloque les contenus classifiés 16+ / R+</value></data>
   <data name="TemplateTeen16Desc" xml:space="preserve"><value>Bloque uniquement les contenus classifiés 18 / NC-17</value></data>
   <data name="TemplateNoHorrorDesc" xml:space="preserve"><value>Bloque les genres Horreur/Horror et Thriller</value></data>
+  <data name="Select" xml:space="preserve"><value>Sélectionner</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Tout sélectionner</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Tout désélectionner</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} sélectionné(s)</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Supprimer les profils</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Supprimer {0} profil(s) ? Cette action est irréversible.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} profil(s) supprimé(s)</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les profils sélectionnés</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimé(s), {1} en échec</value></data>
 </root>
 

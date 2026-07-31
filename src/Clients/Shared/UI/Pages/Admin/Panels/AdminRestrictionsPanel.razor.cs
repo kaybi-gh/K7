@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
@@ -8,24 +9,44 @@ using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminRestrictionsPanel
+public partial class AdminRestrictionsPanel : IAsyncDisposable
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<DynamicPlaylistDialog> SpL { get; set; } = default!;
     [Inject] private IStringLocalizer<LibraryBrowseFilters> BrowseL { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private bool _loading = true;
     private List<ContentRestrictionProfileDto> _profiles = [];
+    private bool _selectionMode;
+    private bool _deleting;
+    private readonly HashSet<Guid> _selectedIds = [];
+    private SelectionModeKeyboardBinder? _selectionKeys;
+
+    private int SelectedCount => _selectedIds.Count;
+    private bool AllSelected => _profiles.Count > 0 && _selectedIds.Count == _profiles.Count;
 
     protected override async Task OnInitializedAsync()
     {
+        _selectionKeys = new SelectionModeKeyboardBinder(
+            SpatialNav,
+            onEscape: () => _ = InvokeAsync(OnSelectionEscape),
+            onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAll));
+
         await LoadData();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selectionKeys is not null)
+            await _selectionKeys.DisposeAsync();
     }
 
     private async Task LoadData()
@@ -43,6 +64,70 @@ public partial class AdminRestrictionsPanel
         {
             _loading = false;
         }
+    }
+
+    private void EnterSelectionMode()
+    {
+        _selectionMode = true;
+        _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(true);
+    }
+
+    private void ExitSelectionMode()
+    {
+        _selectionMode = false;
+        _selectedIds.Clear();
+        _ = _selectionKeys?.SetEnabledAsync(false);
+    }
+
+    private void ToggleSelection(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (AllSelected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
+
+        SelectAll();
+    }
+
+    private void SelectAll()
+    {
+        _selectedIds.Clear();
+        foreach (var profile in _profiles)
+            _selectedIds.Add(profile.Id);
+    }
+
+    private void OnSelectionEscape()
+    {
+        if (_deleting)
+            return;
+
+        ExitSelectionMode();
+    }
+
+    private void OnSelectionSelectAll()
+    {
+        if (!_selectionMode || _deleting)
+            return;
+
+        SelectAll();
+    }
+
+    private bool IsSelected(Guid id) => _selectedIds.Contains(id);
+
+    private void OnSelectKeyDown(KeyboardEventArgs e, Guid id)
+    {
+        if (e.Key is not ("Enter" or " "))
+            return;
+
+        ToggleSelection(id);
     }
 
     private async Task OpenCreateDialog()
@@ -136,6 +221,54 @@ public partial class AdminRestrictionsPanel
                 Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
+    }
+
+    private async Task ConfirmDeleteSelectedAsync()
+    {
+        if (_selectedIds.Count == 0 || _deleting)
+            return;
+
+        var count = _selectedIds.Count;
+        var result = await DialogService.ShowMessageBoxAsync(
+            L["DeleteSelectedTitle"],
+            string.Format(L["DeleteSelectedMessage"], count),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (result != true)
+            return;
+
+        _deleting = true;
+        var failed = 0;
+
+        try
+        {
+            foreach (var id in _selectedIds.ToList())
+            {
+                try
+                {
+                    await K7ServerService.DeleteContentRestrictionProfileAsync(id);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+
+        ExitSelectionMode();
+        await LoadData();
+
+        if (failed == 0)
+            Snackbar.Add(string.Format(L["DeleteSelectedSuccess"], count), K7Severity.Success);
+        else if (failed == count)
+            Snackbar.Add(L["DeleteSelectedError"], K7Severity.Error);
+        else
+            Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
     private string FormatRule(ConditionRuleItemDto rule)

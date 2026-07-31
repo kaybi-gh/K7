@@ -48,6 +48,10 @@
     box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
+::deep tr.is-selected {
+    background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
 .user-inactive {
     opacity: 0.5;
 }
@@ -95,6 +99,41 @@
 .user-card-role {
     flex: 1;
     min-width: 0;
+}
+
+.users-select-card {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-3);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.users-select-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.users-select-card.is-selected ::deep .k7-paper {
+    border-color: var(--color-accent);
+    border-width: 2px;
+}
+
+.users-select-card__check {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-secondary);
+}
+
+.users-select-card.is-selected .users-select-card__check {
+    color: var(--color-accent);
 }
 
 ::deep .row-highlighted {

@@ -44,6 +44,43 @@
     margin-top: auto;
 }
 
+.restriction-select-item {
+    position: relative;
+    height: 100%;
+    cursor: pointer;
+    border-radius: var(--radius-lg);
+}
+
+.restriction-select-item:focus {
+    outline: none;
+}
+
+.restriction-select-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.restriction-select-item.is-selected ::deep .k7-paper {
+    border-color: var(--color-accent);
+    border-width: 2px;
+}
+
+.restriction-select-item__check {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    z-index: 3;
+    display: flex;
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.restriction-select-item.is-selected .restriction-select-item__check {
+    color: var(--color-accent);
+}
+
 .empty-state {
     display: flex;
     flex-direction: column;

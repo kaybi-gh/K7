@@ -11,21 +11,47 @@
             GridItemAspectRatio="0.7f" GridFooterHeight="60"
             SingleColumnOnMobile="true">
     <ToolbarContent>
-        <h6>@L["Title"]</h6>
-        <div style="flex:1"></div>
-        <K7Menu>
-            <ActivatorContent>
-                <K7Button Variant="outlined" Color="secondary" StartIcon="sparkle" EndIcon="caret-down">@L["CreateFromTemplate"]</K7Button>
-            </ActivatorContent>
-            <ChildContent>
-                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</K7MenuItem>
-                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</K7MenuItem>
-                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</K7MenuItem>
-                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</K7MenuItem>
-            </ChildContent>
-        </K7Menu>
-        <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
-                   OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
+        @if (_selectionMode)
+        {
+            <h6>@string.Format(L["SelectedCount"], SelectedCount)</h6>
+            <div style="flex:1"></div>
+            <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_profiles.Count == 0 || _deleting)">
+                @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+            </K7Button>
+            <K7Button Variant="filled"
+                      Color="error"
+                      StartIcon="@Phosphor.Trash"
+                      OnClick="ConfirmDeleteSelectedAsync"
+                      Disabled="@(SelectedCount == 0 || _deleting)"
+                      AriaLabel="@L["DeleteSelected"]">
+                @L["DeleteSelected"]
+            </K7Button>
+            <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                @S["Cancel"]
+            </K7Button>
+        }
+        else
+        {
+            <h6>@L["Title"]</h6>
+            <div style="flex:1"></div>
+            <K7IconButton Icon="@Phosphor.ListChecks"
+                          OnClick="EnterSelectionMode"
+                          Disabled="@(_profiles.Count == 0)"
+                          AriaLabel="@L["Select"]" />
+            <K7Menu>
+                <ActivatorContent>
+                    <K7Button Variant="outlined" Color="secondary" StartIcon="sparkle" EndIcon="caret-down">@L["CreateFromTemplate"]</K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</K7MenuItem>
+                    <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</K7MenuItem>
+                    <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</K7MenuItem>
+                    <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</K7MenuItem>
+                </ChildContent>
+            </K7Menu>
+            <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
+                       OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
+        }
     </ToolbarContent>
     <EmptyContent>
         <div class="empty-state">
@@ -35,37 +61,84 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="profile">
-        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
-            <div class="restriction-card__header">
-                <K7Icon Icon="@Phosphor.Prohibit"  IconSize="@K7IconSize.Lg" Color="primary" />
-                <div class="restriction-card__title">
-                    <h6>@profile.Name</h6>
-                    @if (!string.IsNullOrEmpty(profile.Description))
+        @{
+            var selected = IsSelected(profile.Id);
+        }
+        @if (_selectionMode)
+        {
+            <div class="restriction-select-item focusable @(selected ? "is-selected" : null)"
+                 role="checkbox"
+                 aria-checked="@selected.ToString().ToLowerInvariant()"
+                 tabindex="0"
+                 @onclick="@(() => ToggleSelection(profile.Id))"
+                 @onkeydown="@(e => OnSelectKeyDown(e, profile.Id))"
+                 @onkeydown:preventDefault="true">
+                <span class="restriction-select-item__check" aria-hidden="true">
+                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
+                </span>
+                <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
+                    <div class="restriction-card__header">
+                        <K7Icon Icon="@Phosphor.Prohibit"  IconSize="@K7IconSize.Lg" Color="primary" />
+                        <div class="restriction-card__title">
+                            <h6>@profile.Name</h6>
+                            @if (!string.IsNullOrEmpty(profile.Description))
+                            {
+                                <span class="restriction-card__description">@profile.Description</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="restriction-card__rules">
+                        <span class="restriction-card__condition">
+                            @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                        </span>
+                        @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
+                        {
+                            <K7Chip Size="sm" Color="default">
+                                @FormatRule(rule)
+                            </K7Chip>
+                        }
+                    </div>
+                    <span class="restriction-card__users">
+                        <K7Icon Name="users"  IconSize="@K7IconSize.Sm" />
+                        @string.Format(L["AttachedUsers"], profile.UserCount)
+                    </span>
+                </K7Paper>
+            </div>
+        }
+        else
+        {
+            <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
+                <div class="restriction-card__header">
+                    <K7Icon Icon="@Phosphor.Prohibit"  IconSize="@K7IconSize.Lg" Color="primary" />
+                    <div class="restriction-card__title">
+                        <h6>@profile.Name</h6>
+                        @if (!string.IsNullOrEmpty(profile.Description))
+                        {
+                            <span class="restriction-card__description">@profile.Description</span>
+                        }
+                    </div>
+                </div>
+                <div class="restriction-card__rules">
+                    <span class="restriction-card__condition">
+                        @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                    </span>
+                    @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
                     {
-                        <span class="restriction-card__description">@profile.Description</span>
+                        <K7Chip Size="sm" Color="default">
+                            @FormatRule(rule)
+                        </K7Chip>
                     }
                 </div>
-            </div>
-            <div class="restriction-card__rules">
-                <span class="restriction-card__condition">
-                    @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                <span class="restriction-card__users">
+                    <K7Icon Name="users"  IconSize="@K7IconSize.Sm" />
+                    @string.Format(L["AttachedUsers"], profile.UserCount)
                 </span>
-                @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
-                {
-                    <K7Chip Size="sm" Color="default">
-                        @FormatRule(rule)
-                    </K7Chip>
-                }
-            </div>
-            <span class="restriction-card__users">
-                <K7Icon Name="users"  IconSize="@K7IconSize.Sm" />
-                @string.Format(L["AttachedUsers"], profile.UserCount)
-            </span>
-            <div class="restriction-card__actions">
-                <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
-                <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
-                <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
-            </div>
-        </K7Paper>
+                <div class="restriction-card__actions">
+                    <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
+                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
+                </div>
+            </K7Paper>
+        }
     </GridTemplate>
 </BrowseView>

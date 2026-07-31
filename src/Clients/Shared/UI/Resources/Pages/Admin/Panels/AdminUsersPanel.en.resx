@@ -58,5 +58,15 @@
   <data name="AriaResetPassword" xml:space="preserve"><value>Reset password</value></data>
   <data name="ResetPasswordTitle" xml:space="preserve"><value>Reset password</value></data>
   <data name="PasswordReset" xml:space="preserve"><value>{0}'s password reset.</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete users</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Delete {0} user(s)? This cannot be undone.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} user(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected users</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
 </root>
 
