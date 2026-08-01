@@ -32,9 +32,12 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly ConcurrentDictionary<Guid, byte> _executingTaskIds = new();
     private readonly List<WorkerHandle> _workers = [];
     private readonly Lock _workersLock = new();
+    private readonly SemaphoreSlim _scaleLock = new(1, 1);
     private int _cachedWorkerCount = 1;
     private Dictionary<BackgroundTaskLane, int> _cachedLaneLimits = new();
     private readonly Lock _settingsCacheLock = new();
+    private CancellationToken _stoppingToken;
+    private volatile bool _started;
 
     public BackgroundTasksProcessingService(
         ILogger<BackgroundTasksProcessingService> logger,
@@ -65,8 +68,21 @@ public class BackgroundTasksProcessingService : BackgroundService
 
     public IReadOnlyDictionary<string, int> ActiveCountByLaneKey => _activeCountByLaneKey;
 
+    /// <summary>
+    /// Reloads persisted worker/lane settings and scales immediately. Called when an admin saves
+    /// settings so the change does not wait for the supervisor poll.
+    /// </summary>
+    public Task ApplySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_started || _stoppingToken.IsCancellationRequested)
+            return Task.CompletedTask;
+
+        return SyncWorkersToSettingsAsync(cancellationToken);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
         var desiredCount = await ReadWorkerCountAsync(stoppingToken);
         UpdateSettingsCache(desiredCount, await ReadLaneLimitsAsync(stoppingToken));
         _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", desiredCount);
@@ -75,6 +91,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         await RequeueEligibleTasksAsync(stoppingToken);
 
         SpawnWorkers(desiredCount, stoppingToken);
+        _started = true;
 
         var supervisorTask = RunSupervisorAsync(stoppingToken);
         var orphanTask = RunOrphanPollerAsync(stoppingToken);
@@ -166,39 +183,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             try
             {
                 await Task.Delay(SupervisionInterval, stoppingToken);
-
-                lock (_workersLock)
-                {
-                    _workers.RemoveAll(w => w.Task.IsCompleted);
-                }
-
-                var desired = await ReadWorkerCountAsync(stoppingToken);
-                UpdateSettingsCache(desired, await ReadLaneLimitsAsync(stoppingToken));
-                int currentActive;
-
-                lock (_workersLock)
-                {
-                    currentActive = _workers.Count(w => !w.ShouldStop);
-                }
-
-                if (desired > currentActive)
-                {
-                    _logger.LogInformation("Scaling up workers from {Current} to {Desired}", currentActive, desired);
-                    SpawnWorkers(desired, stoppingToken);
-                }
-                else if (desired < currentActive)
-                {
-                    _logger.LogInformation("Scaling down workers from {Current} to {Desired}", currentActive, desired);
-                    var toStop = currentActive - desired;
-
-                    lock (_workersLock)
-                    {
-                        foreach (var worker in _workers.Where(w => !w.ShouldStop).TakeLast(toStop))
-                        {
-                            worker.ShouldStop = true;
-                        }
-                    }
-                }
+                await SyncWorkersToSettingsAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -208,6 +193,60 @@ public class BackgroundTasksProcessingService : BackgroundService
             {
                 _logger.LogError(ex, "Supervisor encountered an error");
             }
+        }
+    }
+
+    private async Task SyncWorkersToSettingsAsync(CancellationToken cancellationToken)
+    {
+        if (!_started || _stoppingToken.IsCancellationRequested)
+            return;
+
+        await _scaleLock.WaitAsync(cancellationToken);
+        try
+        {
+            lock (_workersLock)
+            {
+                _workers.RemoveAll(w => w.Task.IsCompleted);
+            }
+
+            var desired = await ReadWorkerCountAsync(cancellationToken);
+            UpdateSettingsCache(desired, await ReadLaneLimitsAsync(cancellationToken));
+            int currentActive;
+
+            lock (_workersLock)
+            {
+                currentActive = _workers.Count(w => !w.ShouldStop);
+            }
+
+            if (desired > currentActive)
+            {
+                var toSpawn = desired - currentActive;
+                _logger.LogInformation("Scaling up workers from {Current} to {Desired}", currentActive, desired);
+                SpawnWorkers(desired, _stoppingToken);
+                // New workers block on an empty channel until signaled; wake them so pending
+                // work is picked up without waiting for the orphan poller.
+                SignalWorkers(toSpawn);
+            }
+            else if (desired < currentActive)
+            {
+                _logger.LogInformation("Scaling down workers from {Current} to {Desired}", currentActive, desired);
+                var toStop = currentActive - desired;
+
+                lock (_workersLock)
+                {
+                    foreach (var worker in _workers.Where(w => !w.ShouldStop).TakeLast(toStop))
+                    {
+                        worker.ShouldStop = true;
+                    }
+                }
+
+                // Wake marked workers so they observe ShouldStop instead of sitting on Dequeue.
+                SignalWorkers(toStop);
+            }
+        }
+        finally
+        {
+            _scaleLock.Release();
         }
     }
 

@@ -13,7 +13,7 @@
     else
     {
         <div class="background-task-settings">
-            <K7TextField TValue="int" Type="number" @bind-Value="_workerCount"
+            <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Immediate="true"
                          Label="@L["WorkerCountLabel"]"
                          Class="background-task-settings__number" />
 
@@ -25,7 +25,7 @@
                 {
                     var current = lane;
                     <div class="background-task-settings__lane">
-                        <K7TextField TValue="int" Type="number"
+                        <K7TextField TValue="int" Type="number" Immediate="true"
                                      Value="GetLaneLimit(current.Lane)"
                                      ValueChanged="@(v => SetLaneLimit(current.Lane, v))"
                                      Label="@GetLaneLabel(current.Lane)"

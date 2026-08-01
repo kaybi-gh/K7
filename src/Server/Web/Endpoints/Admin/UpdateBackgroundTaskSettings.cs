@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Settings;
 using K7.Shared.Dtos;
@@ -16,6 +17,7 @@ public class UpdateBackgroundTaskSettings : IEndpoint
         endpointRouteBuilder.MapPut("/api/admin/background-tasks/settings", async (
             [FromBody] UpdateBackgroundTaskSettingsRequest request,
             [FromServices] IServerSettingsService settings,
+            [FromServices] BackgroundTasksProcessingService processingService,
             CancellationToken cancellationToken) =>
         {
             if (request.WorkerCount.HasValue)
@@ -38,6 +40,8 @@ public class UpdateBackgroundTaskSettings : IEndpoint
                         kvp => Math.Clamp(kvp.Value, 0, BackgroundTaskScheduling.MaxLaneLimit));
                 await settings.SetAsync(ServerSettingKeys.BackgroundTaskLaneLimits, sanitized, cancellationToken);
             }
+
+            await processingService.ApplySettingsAsync(cancellationToken);
 
             return Results.NoContent();
         })
