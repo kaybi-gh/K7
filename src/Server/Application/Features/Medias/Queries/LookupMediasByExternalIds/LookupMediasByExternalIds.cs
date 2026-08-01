@@ -54,20 +54,32 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
 
             var matches = await context.ExternalIds
                 .Where(lambda)
-                .Select(e => new { e.ProviderName, e.Value, e.MediaId })
+                .Select(e => new
+                {
+                    e.ProviderName,
+                    e.Value,
+                    e.MediaId,
+                    HasIndexedFiles = e.Media != null && e.Media.IndexedFiles.Any()
+                })
                 .ToListAsync(cancellationToken);
 
+            // Prefer playable medias when the same external id exists on a virtual leftover.
             var matchLookup = matches
+                .Where(m => m.MediaId.HasValue)
                 .GroupBy(m => (Provider: m.ProviderName.ToLowerInvariant(), m.Value))
-                .ToDictionary(g => g.Key, g => g.First().MediaId);
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(x => x.HasIndexedFiles).ThenBy(x => x.MediaId).First());
 
             foreach (var item in batch)
             {
+                matchLookup.TryGetValue((item.Provider.ToLowerInvariant(), item.Value), out var match);
                 results.Add(new ExternalIdMatchResult
                 {
                     Provider = item.Provider,
                     Value = item.Value,
-                    MediaId = matchLookup.GetValueOrDefault((item.Provider.ToLowerInvariant(), item.Value))
+                    MediaId = match?.MediaId,
+                    HasIndexedFiles = match?.HasIndexedFiles ?? false
                 });
             }
         }

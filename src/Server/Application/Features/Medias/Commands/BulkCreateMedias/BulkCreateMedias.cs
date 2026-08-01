@@ -54,6 +54,32 @@ public class BulkCreateMediasCommandHandler(
             }
         }
 
+        // Music: an earlier import may have attached Spotify (etc.) ids to virtual file-less
+        // tracks. Do not let those block title matching against the real library copy.
+        if (resultMap.Count > 0)
+        {
+            var musicKeys = request.Items
+                .Where(i => i.MediaType == "music" && resultMap.ContainsKey(i.Key))
+                .Select(i => i.Key)
+                .ToList();
+
+            if (musicKeys.Count > 0)
+            {
+                var mediaIds = musicKeys.Select(k => resultMap[k].MediaId).Distinct().ToList();
+                var playableIds = (await context.Medias
+                    .Where(m => mediaIds.Contains(m.Id) && m.IndexedFiles.Any())
+                    .Select(m => m.Id)
+                    .ToListAsync(cancellationToken))
+                    .ToHashSet();
+
+                foreach (var key in musicKeys)
+                {
+                    if (!playableIds.Contains(resultMap[key].MediaId))
+                        resultMap.Remove(key);
+                }
+            }
+        }
+
         // 2. Title-based dedup for music items without ExternalId match
         var unmatchedMusic = request.Items
             .Where(i => i.MediaType == "music" && !resultMap.ContainsKey(i.Key))
@@ -314,8 +340,18 @@ public class BulkCreateMediasCommandHandler(
             .Where(a => a.Title != null && albumNamesLower.Contains(a.Title.ToLower()))
             .ToListAsync(cancellationToken);
 
-        // Load artist links for existing albums to match by artist+title
         var existingAlbumIds = existingAlbumsList.Select(a => a.Id).ToList();
+        var albumsWithPlayableTracks = existingAlbumIds.Count == 0
+            ? new HashSet<Guid>()
+            : (await context.Medias.OfType<MusicTrack>()
+                .Where(t => existingAlbumIds.Contains(t.AlbumId)
+                    && t.IndexedFiles.Any())
+                .Select(t => t.AlbumId)
+                .Distinct()
+                .ToListAsync(cancellationToken))
+                .ToHashSet();
+
+        // Load artist links for existing albums to match by artist+title
         var albumArtistLookup = existingAlbumsList
             .Where(a => a.ArtistId != null)
             .ToDictionary(a => a.Id, a => artistCache.Values.FirstOrDefault(ar => ar.Id == a.ArtistId)?.Title ?? "");
@@ -324,6 +360,10 @@ public class BulkCreateMediasCommandHandler(
 
         foreach (var album in existingAlbumsList)
         {
+            // Never attach newly created (virtual) tracks onto albums that already have files.
+            if (albumsWithPlayableTracks.Contains(album.Id))
+                continue;
+
             var artistName = albumArtistLookup.GetValueOrDefault(album.Id, "");
             var key = MediaIdentityKeys.NormalizeKey(artistName, album.Title!);
             existingAlbums.TryAdd(key, album);
@@ -345,10 +385,16 @@ public class BulkCreateMediasCommandHandler(
             }
             else
             {
+                // Keep virtual imports off playable albums: use a dedicated imported shell album.
+                var playableConflict = existingAlbumsList.Any(a =>
+                    string.Equals(a.Title, albumName, StringComparison.OrdinalIgnoreCase)
+                    && albumsWithPlayableTracks.Contains(a.Id));
+                var createTitle = playableConflict ? $"{albumName} (imported)" : albumName;
+
                 var album = new MusicAlbum
                 {
-                    Title = albumName,
-                    SortTitle = MediaSortTitleHelper.Compute(albumName)
+                    Title = createTitle,
+                    SortTitle = MediaSortTitleHelper.Compute(createTitle)
                 };
                 context.Medias.Add(album);
                 newAlbums.Add(album);
@@ -385,11 +431,12 @@ public class BulkCreateMediasCommandHandler(
             var representative = group.Items[0];
             var albumKey = MediaIdentityKeys.NormalizeKey(representative.ArtistName ?? "", representative.AlbumName ?? "Unknown Album");
             var album = albumCache[albumKey];
+            var title = MediaIdentityKeys.StripRedundantArtistFromTitle(representative.Title, representative.ArtistName);
 
             var track = new MusicTrack
             {
-                Title = representative.Title,
-                SortTitle = ResolveSortTitle(representative),
+                Title = title,
+                SortTitle = MediaSortTitleHelper.Compute(title),
                 AlbumId = album.Id
             };
             AddExternalIds(track, representative.ExternalIds);

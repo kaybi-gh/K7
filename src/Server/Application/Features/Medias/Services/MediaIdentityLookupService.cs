@@ -47,15 +47,19 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
 
             var matches = await context.ExternalIds
                 .Where(lambda)
-                .Select(e => new { e.ProviderName, e.Value, e.MediaId })
+                .Select(e => new
+                {
+                    e.ProviderName,
+                    e.Value,
+                    e.MediaId,
+                    HasIndexedFiles = e.Media != null && e.Media.IndexedFiles.Any()
+                })
                 .ToListAsync(cancellationToken);
 
-            foreach (var match in matches)
+            foreach (var match in matches.Where(m => m.MediaId.HasValue)
+                         .OrderByDescending(m => m.HasIndexedFiles))
             {
-                if (match.MediaId.HasValue)
-                {
-                    result.TryAdd((match.ProviderName.ToLowerInvariant(), match.Value), match.MediaId.Value);
-                }
+                result.TryAdd((match.ProviderName.ToLowerInvariant(), match.Value), match.MediaId!.Value);
             }
         }
 
@@ -119,12 +123,20 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var strippedTitles = trackTitles
-            .Select(MediaIdentityKeys.StripFeatureCredits)
+        var normalizedTitles = items
+            .Select(i => MediaIdentityKeys.StripRedundantArtistFromTitle(
+                MediaIdentityKeys.StripFeatureCredits(i.Title), i.ArtistName))
+            .Where(t => !string.IsNullOrEmpty(t))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var allTitles = trackTitles.Concat(strippedTitles)
+        var strippedTitles = trackTitles
+            .Select(MediaIdentityKeys.StripFeatureCredits)
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var allTitles = trackTitles.Concat(strippedTitles).Concat(normalizedTitles)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -132,10 +144,15 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
 
         var allTitlesLower = allTitles.Select(t => t.ToLowerInvariant()).ToList();
 
+        // Include DB titles that only differ by (feat./ft./with ...) or a trailing " - Artist".
         var tracks = await context.Medias
             .OfType<MusicTrack>()
-            .Where(t => t.Title != null && allTitlesLower.Contains(t.Title.ToLower()))
-            .Where(t => t.IndexedFiles.Any())
+            .Where(t => t.Title != null && t.IndexedFiles.Any())
+            .Where(t => allTitlesLower.Any(at =>
+                t.Title!.ToLower() == at
+                || t.Title.ToLower().StartsWith(at + " (")
+                || t.Title.ToLower().StartsWith(at + " [")
+                || t.Title.ToLower().StartsWith(at + " - ")))
             .Select(t => new
             {
                 t.Id,
@@ -150,23 +167,41 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             var key = MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title);
             if (result.ContainsKey(key)) continue;
 
-            var itemTitleStripped = MediaIdentityKeys.StripFeatureCredits(item.Title);
+            var itemTitleCore = MediaIdentityKeys.StripRedundantArtistFromTitle(
+                MediaIdentityKeys.StripFeatureCredits(item.Title), item.ArtistName);
+            var itemArtist = MediaIdentityKeys.NormalizePersonName(item.ArtistName);
+            var itemAlbum = MediaIdentityKeys.NormalizePersonName(item.AlbumName);
 
-            var match = tracks.FirstOrDefault(t =>
+            // Title core must match on both sides (so "When You Know - Puggy" == "When You Know"
+            // after stripping), then require artist and/or album - never title alone when artist is known.
+            var candidates = tracks.Where(t =>
             {
-                var dbTitleStripped = MediaIdentityKeys.StripFeatureCredits(t.Title!);
-                var titleMatch = string.Equals(t.Title, item.Title, StringComparison.OrdinalIgnoreCase)
-                              || string.Equals(dbTitleStripped, itemTitleStripped, StringComparison.OrdinalIgnoreCase);
-                if (!titleMatch) return false;
+                var dbTitleCore = MediaIdentityKeys.StripRedundantArtistFromTitle(
+                    MediaIdentityKeys.StripFeatureCredits(t.Title!), t.ArtistName);
+                return string.Equals(t.Title, item.Title, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(dbTitleCore, itemTitleCore, StringComparison.OrdinalIgnoreCase);
+            }).ToList();
 
-                return string.Equals(t.ArtistName, item.ArtistName, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(t.AlbumTitle, item.AlbumName, StringComparison.OrdinalIgnoreCase);
+            if (candidates.Count == 0)
+                continue;
+
+            var match = candidates.FirstOrDefault(t =>
+            {
+                var dbArtist = MediaIdentityKeys.NormalizePersonName(t.ArtistName);
+                var dbAlbum = MediaIdentityKeys.NormalizePersonName(t.AlbumTitle);
+                var artistMatch = itemArtist is not null && dbArtist is not null
+                    && string.Equals(dbArtist, itemArtist, StringComparison.OrdinalIgnoreCase);
+                var albumMatch = itemAlbum is not null && dbAlbum is not null
+                    && string.Equals(dbAlbum, itemAlbum, StringComparison.OrdinalIgnoreCase);
+                return artistMatch || albumMatch;
             });
 
+            // Only fall back to unique title when the source has no artist/album to compare.
+            if (match is null && itemArtist is null && itemAlbum is null && candidates.Count == 1)
+                match = candidates[0];
+
             if (match is not null)
-            {
                 result.TryAdd(key, match.Id);
-            }
         }
 
         return result;

@@ -18,7 +18,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 |---|---|
 | **history** | Play count, last played position, completion status, last played date. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
-| **playlists** | Playlist titles (prefixed with source, e.g. `Jellyfin - Liked Songs`) and their items (matched by provider IDs, file path, then title/artist identity). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
+| **playlists** | Playlist titles (prefixed with source, e.g. `Jellyfin - Liked Songs`) and their items (matched by provider IDs, file path, then title/artist identity). Unmatched items become virtual file-less medias unless `--only-match-existing` (show them via "Afficher les titres indisponibles"). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
 
 You can select which data types to import with the `--include` option (see below).
 
@@ -217,7 +217,7 @@ Items are matched between the source and K7 in this order:
 
 1. **External IDs** (TMDb, IMDb, TVDb, MusicBrainz recording / release-group, ISRC, then other providers)
 2. **File path** (Plex `Media.Part.file`, remapped with `--path-map` and/or auto-deduced mount prefixes)
-3. **Title / identity** via bulk create (links to an existing indexed media when identity matches, otherwise creates virtual media unless `--only-match-existing`)
+3. **Title / identity** via bulk create (links to an existing indexed media when identity matches, otherwise creates virtual media unless `--only-match-existing`). Playlist imports use the same rule and log `matched (N virtual) / unmatched` per playlist.
 
 MusicBrainz notes: K7 albums use `musicbrainz` = release-group. Plex album/release MBIDs are imported as `musicbrainz-release` so they do not collide. Track MBIDs (recordings) keep the `musicbrainz` key and match K7 tracks after metadata refresh.
 

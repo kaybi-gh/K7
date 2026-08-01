@@ -372,15 +372,22 @@ public sealed class ImportCommand
                         foreach (var playlist in playlists)
                         {
                             var defaultMediaType = playlist.MediaType ?? "music";
+                            // Same createMissing as history: virtual file-less tracks are allowed unless
+                            // --only-match-existing (they show up under "Afficher les titres indisponibles").
                             var (playlistMatches, playlistCreated) = await matcher.MatchPlaylistItemsAsync(
                                 playlist.Items,
                                 defaultMediaType,
                                 createMissing: createMissing && !dryRun,
-                                fetchMetadata,
+                                fetchMetadata: fetchMetadata && createMissing && !dryRun,
                                 cancellationToken);
 
                             totalResult.CreatedMedias += playlistCreated;
-                            if (playlistMatches.Count == 0) continue;
+                            var matchedCount = playlistMatches.Count;
+                            var unmatchedCount = Math.Max(0, playlist.Items.Count - matchedCount);
+                            AnsiConsole.MarkupLine(
+                                $"[dim]Playlist '{Markup.Escape(playlist.Title)}': {playlist.Items.Count} source, {matchedCount} matched ({playlistCreated} virtual), {unmatchedCount} unmatched[/]");
+
+                            if (matchedCount == 0) continue;
 
                             var playlistMediaType = playlist.MediaType switch
                             {
@@ -414,7 +421,7 @@ public sealed class ImportCommand
                                 ? playlist.Title
                                 : $"{sourceLabel} - {playlist.Title}";
 
-                            ctx.Status($"Importing playlist '{playlistTitle}'...");
+                            ctx.Status($"Importing playlist '{playlistTitle}' ({matchedCount}/{playlist.Items.Count})...");
                             var mediaIds = playlist.Items
                                 .Where(i => playlistMatches.ContainsKey(i.Id))
                                 .Select(i => playlistMatches[i.Id])

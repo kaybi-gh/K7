@@ -247,19 +247,27 @@ public sealed class MediaMatcher
         var matchLookup = results
             .Where(r => r.MediaId.HasValue)
             .GroupBy(r => (r.Provider.ToLowerInvariant(), r.Value))
-            .ToDictionary(g => g.Key, g => g.First().MediaId!.Value);
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(x => x.HasIndexedFiles).First());
 
         var matched = new Dictionary<string, Guid>();
         var providerPriority = new[] { "tmdb", "imdb", "tvdb", "musicbrainz", "isrc", "spotify" };
 
         foreach (var item in items)
         {
+            var isMusic = item.MediaType is "music";
+
             foreach (var provider in providerPriority)
             {
                 if (item.ProviderIds.TryGetValue(provider, out var value) &&
-                    matchLookup.TryGetValue((provider, value), out var mediaId))
+                    matchLookup.TryGetValue((provider, value), out var hit))
                 {
-                    matched[item.Id] = mediaId;
+                    // Skip file-less Spotify/etc. leftovers so title matching can find the real track.
+                    if (isMusic && !hit.HasIndexedFiles)
+                        continue;
+
+                    matched[item.Id] = hit.MediaId!.Value;
                     break;
                 }
             }
@@ -272,11 +280,14 @@ public sealed class MediaMatcher
                 if (kvp.Key is "musicbrainz-release" or "musicbrainz-track")
                     continue;
 
-                if (matchLookup.TryGetValue((kvp.Key.ToLowerInvariant(), kvp.Value), out var mediaId))
-                {
-                    matched[item.Id] = mediaId;
-                    break;
-                }
+                if (!matchLookup.TryGetValue((kvp.Key.ToLowerInvariant(), kvp.Value), out var hit))
+                    continue;
+
+                if (isMusic && !hit.HasIndexedFiles)
+                    continue;
+
+                matched[item.Id] = hit.MediaId!.Value;
+                break;
             }
         }
 
