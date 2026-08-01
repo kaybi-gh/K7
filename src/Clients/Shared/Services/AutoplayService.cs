@@ -66,6 +66,10 @@ public class AutoplayService : IDisposable
             if (!started)
                 return;
         }
+        catch
+        {
+            // Autoplay is best-effort; guests may not have MI status access on older servers.
+        }
         finally
         {
             _isLoading = false;

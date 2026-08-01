@@ -18,7 +18,7 @@ public class GetMusicIntelligenceStatus : IEndpoint
             var result = await sender.Send(new GetMusicIntelligenceStatusQuery(), cancellationToken);
             return Results.Ok(result);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

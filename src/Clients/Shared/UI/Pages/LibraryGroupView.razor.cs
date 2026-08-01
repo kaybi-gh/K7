@@ -7,6 +7,7 @@ using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
@@ -59,7 +60,9 @@ public partial class LibraryGroupView : IDisposable
     private bool _contentLoading;
     private bool _canSetWatchState;
     private bool _canExclude;
+    private bool _canCreateDynamicPlaylist;
     private bool _isAdmin;
+    private bool _isGuest;
     private bool _isTv;
     private bool _hubPageActive;
     private int _overscanCount = DefaultOverscanCount;
@@ -88,7 +91,8 @@ public partial class LibraryGroupView : IDisposable
     private string _selectedContentSource = ContentSourceAll;
     private List<(string Value, string Label)> _contentSourceOptions = [];
     private bool _showContentSourceFilter => _contentSourceOptions.Count > 2;
-    private bool _showCreateDynamicPlaylist => _intelligentSearch is null;
+    private bool _showCreateDynamicPlaylist =>
+        _canCreateDynamicPlaylist && _intelligentSearch is null;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
 
@@ -165,6 +169,9 @@ public partial class LibraryGroupView : IDisposable
         _overscanCount = _isTv ? TvOverscanCount : DefaultOverscanCount;
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+        _canCreateDynamicPlaylist = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+        var role = await FeatureAccess.GetRoleAsync();
+        _isGuest = role == Roles.Guest;
 
         var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
@@ -261,12 +268,26 @@ public partial class LibraryGroupView : IDisposable
             _browseViewMode = view;
 
         if (state.Filter is not null)
-            _filter = state.Filter;
+            _filter = SanitizeFilterForCurrentUser(state.Filter);
 
-        _intelligentSearch = state.IntelligentSearch;
+        // Guests cannot use music-intelligence search endpoints; ignore restored searches.
+        _intelligentSearch = _isGuest ? null : state.IntelligentSearch;
 
         if (!string.IsNullOrWhiteSpace(state.ContentSource))
             _selectedContentSource = state.ContentSource;
+    }
+
+    private RuleGroupDto SanitizeFilterForCurrentUser(RuleGroupDto filter)
+    {
+        // Watch-state presets are per-user. An In Progress filter restored from another
+        // profile (or shared URL) yields an empty library for guests with no history.
+        if (!_canSetWatchState
+            && (MediaBrowseFilterPresets.IsInProgress(filter) || MediaBrowseFilterPresets.IsUnwatched(filter)))
+        {
+            return MediaBrowseFilterPresets.Empty;
+        }
+
+        return filter;
     }
 
     private LibraryGroupBrowseUrlState BuildCurrentBrowseUrlState() =>
@@ -590,7 +611,10 @@ public partial class LibraryGroupView : IDisposable
         int pageSize,
         MediaOrderingOption? orderBy = null) => new()
     {
-        LibraryIds = _libraryIds?.ToArray(),
+        // Prefer library-group scope (same as Explore/Home) so server resolves membership
+        // then applies the current user's exclusions.
+        LibraryIds = _libraryGroupIds is { Length: > 0 } ? null : _libraryIds?.ToArray(),
+        LibraryGroupIds = _libraryGroupIds,
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
         Filter = _filter,
         OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
@@ -628,10 +652,11 @@ public partial class LibraryGroupView : IDisposable
 
             if (!string.IsNullOrWhiteSpace(state.FilterJson))
             {
-                _filter = JsonSerializer.Deserialize<RuleGroupDto>(state.FilterJson) ?? MediaBrowseFilterPresets.Empty;
+                var loaded = JsonSerializer.Deserialize<RuleGroupDto>(state.FilterJson) ?? MediaBrowseFilterPresets.Empty;
+                _filter = SanitizeFilterForCurrentUser(loaded);
             }
 
-            if (!string.IsNullOrWhiteSpace(state.IntelligentSearchJson))
+            if (!_isGuest && !string.IsNullOrWhiteSpace(state.IntelligentSearchJson))
             {
                 _intelligentSearch = JsonSerializer.Deserialize<IntelligentSearchRequest>(state.IntelligentSearchJson);
             }
@@ -812,10 +837,10 @@ public partial class LibraryGroupView : IDisposable
         }
         catch
         {
+            // Auth/availability failures (e.g. guest hitting UserOrAbove MI endpoints) should
+            // not leave the browse page stuck on an empty intelligent-search result set.
             Snackbar.Add(L["IntelligentSearchError"], K7Severity.Error);
-            _intelligentSearchResults = [];
-            _totalCount = 0;
-            _totalCountKnown = true;
+            await ClearIntelligentSearchAndBrowseAsync();
         }
         finally
         {
@@ -823,6 +848,16 @@ public partial class LibraryGroupView : IDisposable
             await PersistFiltersAsync();
             await RefreshAllAsync();
         }
+    }
+
+    private async Task ClearIntelligentSearchAndBrowseAsync()
+    {
+        _intelligentSearch = null;
+        _intelligentSearchResults = [];
+        _totalCount = 0;
+        _totalCountKnown = false;
+        InvalidateBrowseCaches();
+        await Task.CompletedTask;
     }
 
     private async Task ApplySimilarArtistsSearchAsync(IntelligentSearchRequest value)
