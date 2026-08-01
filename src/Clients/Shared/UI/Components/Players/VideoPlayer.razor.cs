@@ -243,10 +243,7 @@ public partial class VideoPlayer : IAsyncDisposable
             {
                 await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", false);
             }
-            catch (JSDisconnectedException)
-            {
-            }
-            catch (ObjectDisposedException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
             {
             }
         }
@@ -273,10 +270,7 @@ public partial class VideoPlayer : IAsyncDisposable
                 {
                     await JSRuntime.InvokeVoidAsync("disposeVideoJs", _lastPlayerId);
                 }
-                catch (JSDisconnectedException)
-                {
-                }
-                catch (ObjectDisposedException)
+                catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
                 {
                 }
             }

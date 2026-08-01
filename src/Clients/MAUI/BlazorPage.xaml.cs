@@ -333,10 +333,7 @@ public partial class BlazorPage : ContentPage
                     var js = sp.GetRequiredService<IJSRuntime>();
                     await js.InvokeVoidAsync("K7.onTvRemoteSelect", phase, keyCode, heldMs);
                 }
-                catch (JSException)
-                {
-                }
-                catch (InvalidOperationException)
+                catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
                 {
                 }
             });
@@ -516,6 +513,18 @@ public partial class BlazorPage : ContentPage
             };
 
             _playerService.PlaybackState = mapped;
+#if ANDROID
+            // ExoPlayer emits a transient Paused (dur=0) during open before Buffering.
+            // Unlocking see-through then clears the black shell over an empty TextureView
+            // (white/black flash). Only Playing means frames can show; stay see-through on
+            // later Paused without re-entering this branch.
+            if (_playerService.IsVisible && mediaState is MediaElementState.Playing)
+            {
+                ApplyAndroidWebViewShell(seeThroughForVideo: true);
+                _ = TryEvaluateWebViewJs(
+                    "try{if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(true);}catch(e){}");
+            }
+#endif
         }
 #endif
     }
@@ -559,7 +568,13 @@ public partial class BlazorPage : ContentPage
         NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
         // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
         ConfigureNativeVideoPlayerAfterOpen();
+#if ANDROID
+        // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
+        // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
+        BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
+#endif
         NativePlayer.Play();
+
         AttachPendingSeekHandler(source);
     }
 
@@ -596,10 +611,10 @@ public partial class BlazorPage : ContentPage
 
             if (_playerService.IsVisible)
             {
-                // Page chrome behind the player can be black; the WebView itself must stay
-                // transparent or it paints over MediaElement (classic audio-only black video).
+                // Black under MediaElement + opaque black WebView shell while HLS loads.
+                // Do not set the WebView Transparent yet - on Android TV that clears white
+                // over the still-empty TextureView (overlay-on-movie -> white -> black -> film).
                 BackgroundColor = Colors.Black;
-                blazorWebView.BackgroundColor = Colors.Transparent;
                 Padding = new Thickness(0);
 #if ANDROID || IOS
                 DeviceDisplay.Current.KeepScreenOn = true;
@@ -607,8 +622,15 @@ public partial class BlazorPage : ContentPage
                 SetLandscapeOrientation();
 #endif
 #if ANDROID
-                EnsureAndroidWebViewTransparent();
+                // Hide movie/page chrome immediately - do not wait for Blazor OnVisibilityChanged.
+                _ = TryEvaluateWebViewJs(
+                    "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,false);"
+                    + "if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(false);}catch(e){}");
+                // Opaque black until Playing/Paused (see OnNativePlayerPropertyChanged).
+                ApplyAndroidWebViewShell(seeThroughForVideo: false);
                 SetVideoFocusOwnership(active: true);
+#else
+                blazorWebView.BackgroundColor = Colors.Transparent;
 #endif
             }
             else
@@ -623,7 +645,8 @@ public partial class BlazorPage : ContentPage
                 RestoreOrientation();
 #endif
 #if ANDROID
-                // Video closed: drop focus bounce, clear native-player-active shell, keep WebView focused.
+                // Video closed: brand shell, drop focus bounce, clear native-player-active.
+                ApplyAndroidWebViewShellBrand();
                 SetVideoFocusOwnership(active: false);
                 ClearNativePlayerActiveShell();
 #endif
@@ -684,6 +707,27 @@ public partial class BlazorPage : ContentPage
             + "s Duration="
             + NativePlayer.Duration.TotalSeconds.ToString("F2")
             + "s";
+
+#if ANDROID
+        // Toolkit may race and re-apply the 8s HttpDataSource after our first bind.
+        if (_androidHttpTimeoutRetryCount < 2
+            && (detail.Contains("ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT", StringComparison.Ordinal)
+                || detail.Contains("SocketTimeoutException", StringComparison.Ordinal)))
+        {
+            var url = _playerService.Source?.Url;
+            if (!string.IsNullOrEmpty(url) && _playerService.IsVisible)
+            {
+                _androidHttpTimeoutRetryCount++;
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+                        return;
+                    BindAndroidExoPlayerWithLongHttpTimeouts(_playerService.Source.Url);
+                    NativePlayer.Play();
+                });
+            }
+        }
+#endif
 
 #if !WINDOWS
         ReportNativePlayerMediaFailedToServer(detail + stateDetail);

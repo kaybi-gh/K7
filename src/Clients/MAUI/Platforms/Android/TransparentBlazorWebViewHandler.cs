@@ -13,7 +13,10 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         base.ConnectHandler(platformView);
 
         AndroidWebViewAccessor.Current = platformView;
-        platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+        // Brand dark default (not WebView white). Video open paints an opaque black ColorDrawable
+        // (BlazorPage.ApplyAndroidWebViewShell), then clears it to TRANSPARENT once Playing.
+        var shell = global::Android.Graphics.Color.Rgb(13, 9, 7);
+        platformView.SetBackgroundColor(shell);
         platformView.SetBackgroundResource(0);
         platformView.Background = null;
 
@@ -23,7 +26,7 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
 
         if (platformView.Parent is global::Android.Views.View parentView)
         {
-            parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+            parentView.SetBackgroundColor(shell);
             parentView.SetBackgroundResource(0);
         }
 

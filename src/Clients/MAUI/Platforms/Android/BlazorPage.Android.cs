@@ -1,6 +1,7 @@
 using AndroidX.Media3.Common;
 using AndroidX.Media3.DataSource;
 using AndroidX.Media3.ExoPlayer;
+using AndroidX.Media3.ExoPlayer.Source;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using Microsoft.JSInterop;
@@ -11,6 +12,7 @@ public partial class BlazorPage
 {
     private Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener? _videoFocusBounceListener;
     private bool _videoFocusBounceAttached;
+    private int _androidHttpTimeoutRetryCount;
 
     partial void InitializePlayerPlatform()
     {
@@ -115,6 +117,111 @@ public partial class BlazorPage
     {
         TryApplyPreviousSyncSeekParameters(UnwrapPlayer(GetPlayer(NativePlayer)));
         SetVideoFocusOwnership(active: true);
+    }
+
+    /// <summary>
+    /// MediaElement's DefaultHttpDataSource uses 8s connect/read timeouts. K7 HLS init.m4s can
+    /// take much longer while ffmpeg seeks for mid-stream resume (server waits up to ~90s).
+    /// Rebind the real ExoPlayer with longer timeouts so TV/slow links do not fail at 0:00.
+    /// </summary>
+    private void BindAndroidExoPlayerWithLongHttpTimeouts(string url)
+    {
+        const int connectTimeoutMs = 60_000;
+        const int readTimeoutMs = 120_000;
+
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return;
+
+            var httpFactory = new DefaultHttpDataSource.Factory()!
+                .SetConnectTimeoutMs(connectTimeoutMs)!
+                .SetReadTimeoutMs(readTimeoutMs)!
+                .SetAllowCrossProtocolRedirects(true)!;
+
+            var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
+            if (authHeader is not null)
+            {
+                httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
+                {
+                    ["Authorization"] = authHeader.ToString()
+                });
+            }
+
+            var mediaItem = MediaItem.FromUri(url)!;
+#pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in bindings but is the Media3 API
+            var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
+            var mediaSource = mediaSourceFactory.CreateMediaSource(mediaItem);
+#pragma warning restore CS0618
+            if (mediaSource is null)
+                return;
+
+            exo.PlayWhenReady = true;
+            exo.SetMediaSource(mediaSource);
+            exo.Prepare();
+            TryApplyPreviousSyncSeekParameters(exo);
+            _androidHttpTimeoutRetryCount = 0;
+
+            // Toolkit PlatformUpdateSource is async and can overwrite this bind with the 8s factory.
+            if (NativePlayer.Handler?.PlatformView is Android.Views.View platformView)
+            {
+                platformView.PostDelayed(() =>
+                {
+                    if (!_playerService.IsVisible)
+                        return;
+                    if (!string.Equals(_playerService.Source?.Url, url, StringComparison.Ordinal))
+                        return;
+
+                    BindAndroidExoPlayerWithLongHttpTimeoutsCore(url, connectTimeoutMs, readTimeoutMs);
+                }, 150);
+            }
+        }
+        catch (Exception)
+        {
+            // Best-effort rebind - toolkit default timeouts remain if this fails.
+        }
+    }
+
+    private void BindAndroidExoPlayerWithLongHttpTimeoutsCore(string url, int connectTimeoutMs, int readTimeoutMs)
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return;
+
+            var httpFactory = new DefaultHttpDataSource.Factory()!
+                .SetConnectTimeoutMs(connectTimeoutMs)!
+                .SetReadTimeoutMs(readTimeoutMs)!
+                .SetAllowCrossProtocolRedirects(true)!;
+
+            var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
+            if (authHeader is not null)
+            {
+                httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
+                {
+                    ["Authorization"] = authHeader.ToString()
+                });
+            }
+
+            var mediaItem = MediaItem.FromUri(url)!;
+#pragma warning disable CS0618
+            var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
+            var mediaSource = mediaSourceFactory.CreateMediaSource(mediaItem);
+#pragma warning restore CS0618
+            if (mediaSource is null)
+                return;
+
+            exo.PlayWhenReady = true;
+            exo.SetMediaSource(mediaSource);
+            exo.Prepare();
+            TryApplyPreviousSyncSeekParameters(exo);
+        }
+        catch (Exception)
+        {
+            // Best-effort reassert - leave the previous bind in place.
+        }
     }
 
     partial void OnAfterNativeVideoSeek()
@@ -669,21 +776,63 @@ public partial class BlazorPage
         }
     }
 
-    private void EnsureAndroidWebViewTransparent()
+    private static readonly global::Android.Graphics.Color AndroidBrandShell =
+        global::Android.Graphics.Color.Rgb(13, 9, 7);
+
+    /// <summary>
+    /// WebView sits above MediaElement. Opaque black covers the TV white clear while HLS loads.
+    /// True TRANSPARENT is required for TextureView frames to show through; Color.Argb(1,0,0,0)
+    /// blocks video on some TV GPUs (black picture / audio-only).
+    /// Important: SetBackgroundResource(0) / Background=null clear any ColorDrawable - only use
+    /// those when intentionally see-through, never after painting opaque black.
+    /// </summary>
+    private void ApplyAndroidWebViewShell(bool seeThroughForVideo)
     {
-        // MAUI property mapper can re-apply an opaque BackgroundColor after the handler connects.
-        // Re-assert platform transparency whenever the native player becomes visible.
         if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView platformView)
             return;
 
-        platformView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
-        platformView.SetBackgroundResource(0);
-        platformView.Background = null;
+        if (seeThroughForVideo)
+        {
+            ApplyAndroidWebViewBackground(platformView, global::Android.Graphics.Color.Transparent, clearDrawable: true);
+            blazorWebView.BackgroundColor = Colors.Transparent;
+        }
+        else
+        {
+            // Keep the ColorDrawable - do not null it or TV clears white over MediaElement.
+            ApplyAndroidWebViewBackground(platformView, global::Android.Graphics.Color.Black, clearDrawable: false);
+            blazorWebView.BackgroundColor = Colors.Black;
+        }
+    }
+
+    private void ApplyAndroidWebViewShellBrand()
+    {
+        if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView platformView)
+            return;
+
+        ApplyAndroidWebViewBackground(platformView, AndroidBrandShell, clearDrawable: false);
+        blazorWebView.BackgroundColor = Color.FromRgb(13, 9, 7);
+    }
+
+    private static void ApplyAndroidWebViewBackground(
+        global::Android.Webkit.WebView platformView,
+        global::Android.Graphics.Color color,
+        bool clearDrawable)
+    {
+        platformView.SetBackgroundColor(color);
+        if (clearDrawable)
+        {
+            platformView.SetBackgroundResource(0);
+            platformView.Background = null;
+        }
 
         if (platformView.Parent is Android.Views.View parentView)
         {
-            parentView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
-            parentView.SetBackgroundResource(0);
+            parentView.SetBackgroundColor(color);
+            if (clearDrawable)
+            {
+                parentView.SetBackgroundResource(0);
+                parentView.Background = null;
+            }
         }
     }
 
@@ -708,10 +857,7 @@ public partial class BlazorPage
                 var js = sp.GetRequiredService<IJSRuntime>();
                 await js.InvokeVoidAsync("K7.setNativePlayerActive", false, false);
             }
-            catch (JSException)
-            {
-            }
-            catch (InvalidOperationException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
             {
             }
         });

@@ -12,11 +12,13 @@
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
         <!-- Native MediaElement (video) - Android/iOS/MacCatalyst only at runtime.
              TextureView on Android so the transparent BlazorWebView can composite HUD/controls
-             above the picture (SurfaceView ignores Z-order and can hide overlays). -->
+             above the picture (SurfaceView ignores Z-order and can hide overlays).
+             Black at launch avoids a white flash before the first decoded frame. -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
                               IsVisible="False"
                               ShouldAutoPlay="False"
+                              BackgroundColor="Black"
                               HorizontalOptions="Fill"
                               VerticalOptions="Fill"
                               ShouldShowPlaybackControls="False"

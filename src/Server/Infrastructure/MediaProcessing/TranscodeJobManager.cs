@@ -273,33 +273,35 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
                 job.FfmpegTask = null;
             }
 
+            // Prefer an existing media window, else the advertised target (mid-resume), else 0.
+            // Never "wait for media-driven ffmpeg": ExoPlayer fetches init.m4s before any
+            // media segment, so that wait deadlocks demuxed HLS (client 8s timeout -> HTTP 499).
             var currentIndex = job.GetCurrentSegmentIndex();
+            int startSegmentIndex;
             if (currentIndex >= 0)
             {
-                // Mid-file segments exist without a usable init (e.g. purge race). Restart near
-                // the current window - never force start at 0 solely because init was requested.
-                var startSegmentIndex = Math.Clamp(currentIndex - 5, 0, allSegments.Count - 1);
-await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
-                return;
+                startSegmentIndex = Math.Clamp(currentIndex - 5, 0, allSegments.Count - 1);
             }
-
-            // Cold start for init alone: do not launch ffmpeg from segment 0.
-            // Parallel media-segment requests set the real target and drive generation
-            // (init.m4s is a byproduct). Starting from 0 here races with mid-seek resume.
-            if (job.TargetSegmentIndex > job.BufferSize)
+            else if (job.TargetSegmentIndex > job.BufferSize)
             {
-                var startSegmentIndex = Math.Clamp(
+                startSegmentIndex = Math.Clamp(
                     job.TargetSegmentIndex - job.BufferSize,
                     0,
                     allSegments.Count - 1);
-await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
-                return;
+            }
+            else
+            {
+                startSegmentIndex = 0;
             }
 
-            logger.LogDebug(
-                "Job {JobId}: init.m4s not ready; waiting for media-driven ffmpeg (target={Target})",
+            logger.LogInformation(
+                "Job {JobId}: init.m4s not ready; starting ffmpeg at segment {Start} (target={Target}, current={Current})",
                 job.JobId,
-                job.TargetSegmentIndex);
+                startSegmentIndex,
+                job.TargetSegmentIndex,
+                currentIndex);
+
+            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
         }
         finally
         {

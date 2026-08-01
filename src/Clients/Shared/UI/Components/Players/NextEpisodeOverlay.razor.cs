@@ -80,7 +80,7 @@ public partial class NextEpisodeOverlay : IDisposable
                     await SpatialNav.RefreshAsync();
                 }
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
             {
             }
         }
@@ -292,7 +292,7 @@ public partial class NextEpisodeOverlay : IDisposable
         {
             await SpatialNav.PopLayerAsync(_overlayRef);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
         {
         }
 

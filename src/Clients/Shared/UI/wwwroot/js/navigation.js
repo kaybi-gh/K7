@@ -2894,6 +2894,8 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
     document.documentElement.classList.toggle('windows-web-video', useWindowsWebVideo);
     document.body.classList.toggle('windows-web-video', useWindowsWebVideo);
     if (!active) {
+        document.documentElement.classList.remove('native-player-playing');
+        document.body.classList.remove('native-player-playing');
         requestAnimationFrame(function () {
             var app = document.getElementById('app');
             if (app) app.style.removeProperty('visibility');
@@ -2905,6 +2907,12 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
             if (window.SpatialNav && window.SpatialNav.refresh) window.SpatialNav.refresh();
         });
     }
+};
+
+/** Android/iOS native MediaElement: unlock CSS/WebView see-through once frames can show. */
+K7.setNativePlayerPlaying = function (playing) {
+    document.documentElement.classList.toggle('native-player-playing', !!playing);
+    document.body.classList.toggle('native-player-playing', !!playing);
 };
 
 K7._updateBackgroundLock = function () {

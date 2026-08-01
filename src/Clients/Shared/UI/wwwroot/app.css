@@ -523,13 +523,21 @@ body.k7-overlay-locked .app-main {
 
 html.native-player-active,
 body.native-player-active {
+    background: #000 !important;
+}
+
+/* Keep #app clear too - body alone is not enough for Android WebView see-through.
+   Only after native-player-playing so load stays black (no TV white clear). */
+html.native-player-active.native-player-playing:not(.windows-web-video),
+body.native-player-active.native-player-playing:not(.windows-web-video),
+html.native-player-active.native-player-playing:not(.windows-web-video) #app,
+body.native-player-active.native-player-playing:not(.windows-web-video) #app {
     background: transparent !important;
 }
 
-/* Keep #app clear too - body alone is not enough for Android WebView see-through. */
-html.native-player-active:not(.windows-web-video) #app,
-body.native-player-active:not(.windows-web-video) #app {
-    background: transparent !important;
+html.native-player-active:not(.windows-web-video):not(.native-player-playing) #app,
+body.native-player-active:not(.windows-web-video):not(.native-player-playing) #app {
+    background: #000 !important;
 }
 
 html.native-player-active.windows-web-video,

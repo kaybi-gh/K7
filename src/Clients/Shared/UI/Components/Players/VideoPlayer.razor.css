@@ -62,6 +62,12 @@
 }
 
 .video-container.native-overlay {
+    /* Cover the detail page until MediaElement is Playing. Transparent too early shows the
+       Movie page through the HUD; leaving black after Playing covers TextureView (audio-only). */
+    background-color: #000;
+}
+
+body.native-player-playing .video-container.native-overlay {
     background-color: transparent;
 }
 

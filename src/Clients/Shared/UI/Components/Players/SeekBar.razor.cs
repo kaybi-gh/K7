@@ -81,7 +81,7 @@ public partial class SeekBar : IAsyncDisposable
                 _dotNetRef = DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("K7.SeekBar.init", SeekBarRef, _dotNetRef);
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
             {
                 _dotNetRef?.Dispose();
                 _dotNetRef = null;

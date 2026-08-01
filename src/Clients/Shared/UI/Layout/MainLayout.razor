@@ -29,11 +29,24 @@
     <AppNav />
 
     <main class="app-main">
-        <MediaPlayer />
-        <div class="mini-player-dock">
-            <MiniMusicPlayer />
-        </div>
-        <FullScreenMusicPlayer />
+        @* Players sit outside the page ErrorBoundary historically; keep a dedicated boundary so
+           render faults in MediaPlayer do not fall through to #blazor-error-ui. *@
+        <K7ErrorBoundary>
+            <ChildContent>
+                <MediaPlayer />
+                <div class="mini-player-dock">
+                    <MiniMusicPlayer />
+                </div>
+                <FullScreenMusicPlayer />
+            </ChildContent>
+            <ErrorContent>
+                <div class="error-state">
+                    <K7Icon Name="warning-circle" IconSize="@K7IconSize.Xl" class="error-icon" />
+                    <p class="error-state-title">@L["UnexpectedError"]</p>
+                    <p class="error-state-description">@L["UnexpectedErrorDescription"]</p>
+                </div>
+            </ErrorContent>
+        </K7ErrorBoundary>
         <SyncPlayListener />
         <div class="page-viewport">
             <FeedHubPageHost />

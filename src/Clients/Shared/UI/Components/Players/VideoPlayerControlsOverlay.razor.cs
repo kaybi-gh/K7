@@ -216,7 +216,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                 FocusSelector = ".play-pause-btn"
             });
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private void OnKeyDown(KeyboardEventArgs e)
@@ -328,7 +328,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             await JSRuntime.InvokeVoidAsync("K7.beginSeekBarScrub", direction);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private static bool IsSelectKey(KeyboardEventArgs e)
@@ -353,7 +353,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             // often left SpatialNav paused / edit-sticky on Android TV.
             await SpatialNav.FocusFirstAsync(".play-pause-btn");
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private void HideOverlay(bool syncDom = true)
@@ -377,7 +377,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             // so Escape does not "stop video while chrome stays painted".
             await JSRuntime.InvokeVoidAsync("K7.hideVideoControlsOverlay");
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private async Task CancelSeekBarEditingAsync()
@@ -386,7 +386,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             await JSRuntime.InvokeVoidAsync("SpatialNav.cancelEditingIn", ".video-controls-overlay");
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private async Task SoftCancelSeekBarEditingAsync()
@@ -395,7 +395,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         {
             await JSRuntime.InvokeAsync<string>("K7.cancelVideoSeekOrEdit");
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private bool ShouldIgnoreMouseOverlayShow() =>
@@ -512,7 +512,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                 GetSkipBackSeconds(),
                 GetSkipForwardSeconds());
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private void OnVideoPlayerUxSettingsChanged()
@@ -670,7 +670,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                     await _overlayRef.FocusAsync();
             }
             catch (ObjectDisposedException) { }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
         });
     }
 
@@ -765,41 +765,59 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         if (_disposed) return;
 
-        InvokeAsync(async () =>
+        // Observe the task: an unobserved exception here becomes #blazor-error-ui
+        // (ErrorBoundary does not cover event/dispose continuations).
+        _ = InvokeAsync(async () =>
         {
             try
             {
-                var cancelResult = await JSRuntime.InvokeAsync<string>("K7.cancelVideoSeekOrEdit");
-                if (cancelResult == "soft")
+                try
                 {
-                    // OK then Escape: leave edit mode, keep chrome / playback.
-                    _isSeekBarScrubbing = false;
-                    await ReattachLayerCallbackAsync();
-                    StateHasChanged();
-                    return;
+                    var cancelResult = await JSRuntime.InvokeAsync<string>("K7.cancelVideoSeekOrEdit");
+                    if (cancelResult == "soft")
+                    {
+                        // OK then Escape: leave edit mode, keep chrome / playback.
+                        _isSeekBarScrubbing = false;
+                        await ReattachLayerCallbackAsync();
+                        if (!_disposed)
+                            StateHasChanged();
+                        return;
+                    }
+
+                    if (cancelResult == "hard")
+                    {
+                        // Scrub cancel: DotNet OnEditCancel already hides via OnDragChanged.
+                        _isSeekBarScrubbing = false;
+                        _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
+                        await ReattachLayerCallbackAsync();
+                        if (!_disposed)
+                            StateHasChanged();
+                        return;
+                    }
+                }
+                catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+                {
                 }
 
-                if (cancelResult == "hard")
-                {
-                    // Scrub cancel: DotNet OnEditCancel already hides via OnDragChanged.
-                    _isSeekBarScrubbing = false;
-                    _suppressPlayerCloseUntil = DateTime.UtcNow.AddMilliseconds(450);
-                    await ReattachLayerCallbackAsync();
-                    StateHasChanged();
+                PerformBackStep();
+
+                // Close tears down this overlay - do not reattach / re-render a disposed tree.
+                if (_disposed || !PlayerService.IsVisible)
                     return;
-                }
+
+                await ReattachLayerCallbackAsync();
+                if (!_disposed)
+                    StateHasChanged();
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
-
-            PerformBackStep();
-            await ReattachLayerCallbackAsync();
-            StateHasChanged();
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+            {
+            }
         });
     }
 
     private async Task ReattachLayerCallbackAsync()
     {
-        if (_overlayCloseRef is null)
+        if (_disposed || _overlayCloseRef is null)
             return;
 
         try
@@ -807,7 +825,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             var activeLayer = SyncPlaySidebarOpen ? ContainerRef : _overlayRef;
             await SpatialNav.AttachLayerCallbackAsync(activeLayer, _overlayCloseRef);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private void OnBackPressed()
@@ -1277,19 +1295,19 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             await JSRuntime.InvokeVoidAsync("SpatialNav.unregisterVideoPlayerRemote");
             await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", false);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
 
         try
         {
             await SpatialNav.PopLayerAsync(_overlayRef);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
 
         try
         {
             await SpatialNav.PopLayerAsync(ContainerRef);
         }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
         _dotNetRef?.Dispose();
         _overlayCloseRef?.Dispose();
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
