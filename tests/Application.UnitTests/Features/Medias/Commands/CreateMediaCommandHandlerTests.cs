@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
@@ -15,6 +16,7 @@ using MediatR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.UnitTests.Features.Medias.Commands;
@@ -82,6 +84,11 @@ public class CreateMediaCommandHandlerTests
         var tagReader = Substitute.For<IAudioTagReader>();
         var tagSync = Substitute.For<IMediaMetadataTagSyncService>();
 
+        var availability = new MediaLibraryAvailabilityService(
+            _context,
+            Substitute.For<IMediaQueryCacheInvalidator>(),
+            Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
+
         _handler = new CreateMediaCommandHandler(
             _context,
             _sender,
@@ -90,7 +97,8 @@ public class CreateMediaCommandHandlerTests
             paths,
             tagSync,
             new MediaIdentityLookupService(_context),
-            new MediaIdentityLock());
+            new MediaIdentityLock(),
+            availability);
     }
 
     [TearDown]
@@ -121,12 +129,36 @@ public class CreateMediaCommandHandlerTests
         movie.ReleaseDate.Should().Be(new DateOnly(2010, 1, 1));
         movie.ExternalIds.Should().ContainSingle(e => e.Value == "tmdb-42" && e.ProviderName == "tmdb");
         movie.IndexedFiles.Should().ContainSingle(f => f.Id == indexedFile.Id);
+        (await _context.MediaLibraryAvailabilities.CountAsync(a =>
+            a.LibraryId == _libraryId && a.MediaId == mediaId)).Should().Be(1);
 
         capturedTask.Should().NotBeNull();
         capturedTask!.Request.Should().BeOfType<RefreshMediaMetadatasCommand>();
         var refresh = (RefreshMediaMetadatasCommand)capturedTask.Request;
         refresh.MediaId.Should().Be(mediaId);
         refresh.MetadataProviderExternalId.Should().Be("tmdb-42");
+    }
+
+    [Test]
+    public async Task Handle_ShouldEnsureLibraryAvailability_WhenAttachingFileToExistingMovie()
+    {
+        var existingId = Guid.NewGuid();
+        var existing = new Movie { Id = existingId, Title = "Existing" };
+        existing.ExternalIds.Add(new ExternalId { ProviderName = "tmdb", Value = "tmdb-42" });
+        _context.Medias.Add(existing);
+        await _context.SaveChangesAsync();
+
+        var indexedFile = await SeedMovieIndexedFileAsync("Different Title", 2010);
+
+        await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Movie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [indexedFile.Id]
+        }, CancellationToken.None);
+
+        (await _context.MediaLibraryAvailabilities.CountAsync(a =>
+            a.LibraryId == _libraryId && a.MediaId == existingId)).Should().Be(1);
     }
 
     [Test]

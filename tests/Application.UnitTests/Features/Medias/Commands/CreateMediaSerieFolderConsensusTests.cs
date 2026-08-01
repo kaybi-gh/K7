@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Features.Medias.Services;
@@ -14,6 +15,7 @@ using MediatR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.UnitTests.Features.Medias.Commands;
@@ -80,6 +82,11 @@ public class CreateMediaSerieFolderConsensusTests
         _sender.Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Guid.NewGuid()));
 
+        var availability = new MediaLibraryAvailabilityService(
+            _context,
+            Substitute.For<IMediaQueryCacheInvalidator>(),
+            Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
+
         _handler = new CreateMediaCommandHandler(
             _context,
             _sender,
@@ -88,7 +95,8 @@ public class CreateMediaSerieFolderConsensusTests
             Options.Create(new PathsConfiguration { Metadatas = Path.GetTempPath() }),
             Substitute.For<IMediaMetadataTagSyncService>(),
             new MediaIdentityLookupService(_context),
-            new MediaIdentityLock());
+            new MediaIdentityLock(),
+            availability);
     }
 
     [TearDown]

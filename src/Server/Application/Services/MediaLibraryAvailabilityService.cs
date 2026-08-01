@@ -8,6 +8,7 @@ namespace K7.Server.Application.Services;
 
 public sealed class MediaLibraryAvailabilityService(
     IApplicationDbContext context,
+    IMediaQueryCacheInvalidator cacheInvalidator,
     ILogger<MediaLibraryAvailabilityService> logger) : IMediaLibraryAvailabilityService
 {
     private const int InsertBatchSize = 1000;
@@ -23,7 +24,7 @@ public sealed class MediaLibraryAvailabilityService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        await InsertPairsAsync(pairs, cancellationToken);
+        await InsertPairsAsync(pairs, clearChangeTracker: true, cancellationToken);
 
         logger.LogDebug("Rebuilt media library availability for library {LibraryId} ({Count} pairs)", libraryId, pairs.Count);
     }
@@ -36,7 +37,7 @@ public sealed class MediaLibraryAvailabilityService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        await InsertPairsAsync(pairs, cancellationToken);
+        await InsertPairsAsync(pairs, clearChangeTracker: true, cancellationToken);
 
         logger.LogInformation("Rebuilt media library availability for all libraries ({Count} pairs)", pairs.Count);
     }
@@ -50,7 +51,54 @@ public sealed class MediaLibraryAvailabilityService(
         await RebuildAllAsync(cancellationToken);
     }
 
-    private async Task InsertPairsAsync(IReadOnlyList<MediaLibraryPairProjection> pairs, CancellationToken cancellationToken)
+    public async Task EnsureFromIndexedFilesAsync(
+        Guid libraryId,
+        IReadOnlyList<Guid> indexedFileIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (indexedFileIds.Count == 0)
+            return;
+
+        var pairs = await MediaLibraryLinkageHelper
+            .SelectMediaLibraryPairsForIndexedFiles(context, libraryId, indexedFileIds)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (pairs.Count == 0)
+            return;
+
+        var mediaIds = pairs.Select(p => p.MediaId).Distinct().ToList();
+        var existingMediaIds = await context.MediaLibraryAvailabilities
+            .AsNoTracking()
+            .Where(a => a.LibraryId == libraryId && mediaIds.Contains(a.MediaId))
+            .Select(a => a.MediaId)
+            .ToListAsync(cancellationToken);
+
+        var existingSet = existingMediaIds.ToHashSet();
+        var missing = pairs
+            .Where(p => !existingSet.Contains(p.MediaId))
+            .GroupBy(p => p.MediaId)
+            .Select(g => g.First())
+            .ToList();
+
+        if (missing.Count == 0)
+            return;
+
+        // Do not clear the change tracker: CreateMedia still holds tracked entities on this context.
+        await InsertPairsAsync(missing, clearChangeTracker: false, cancellationToken);
+        cacheInvalidator.InvalidateAll();
+
+        logger.LogDebug(
+            "Ensured media library availability for library {LibraryId} from {FileCount} files ({InsertedCount} new pairs)",
+            libraryId,
+            indexedFileIds.Count,
+            missing.Count);
+    }
+
+    private async Task InsertPairsAsync(
+        IReadOnlyList<MediaLibraryPairProjection> pairs,
+        bool clearChangeTracker,
+        CancellationToken cancellationToken)
     {
         if (pairs.Count == 0)
             return;
@@ -64,7 +112,8 @@ public sealed class MediaLibraryAvailabilityService(
             }));
 
             await context.SaveChangesAsync(cancellationToken);
-            ClearChangeTracker();
+            if (clearChangeTracker)
+                ClearChangeTracker();
         }
     }
 

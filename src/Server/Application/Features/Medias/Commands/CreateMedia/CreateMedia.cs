@@ -38,6 +38,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
     private readonly MediaIdentityLookupService _identityLookup;
     private readonly IMediaIdentityLock _identityLock;
+    private readonly IMediaLibraryAvailabilityService _mediaLibraryAvailabilityService;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
@@ -47,7 +48,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         IOptions<PathsConfiguration> pathsConfiguration,
         IMediaMetadataTagSyncService metadataTagSyncService,
         MediaIdentityLookupService identityLookup,
-        IMediaIdentityLock identityLock)
+        IMediaIdentityLock identityLock,
+        IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
     {
         _context = context;
         _sender = sender;
@@ -57,6 +59,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _metadataTagSyncService = metadataTagSyncService;
         _identityLookup = identityLookup;
         _identityLock = identityLock;
+        _mediaLibraryAvailabilityService = mediaLibraryAvailabilityService;
     }
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
@@ -76,13 +79,23 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var identityKey = MediaIdentityKey.Build(request.MediaType, request.LibraryId, indexedFiles);
         await using var identityGuard = await _identityLock.AcquireAsync(identityKey, cancellationToken);
 
-        return request.MediaType switch
+        var mediaId = request.MediaType switch
         {
             MediaType.Movie => await HandleMovieAsync(indexedFiles, library, cancellationToken),
             MediaType.MusicAlbum => await HandleMusicAlbumAsync(indexedFiles, library, cancellationToken),
             MediaType.Serie => await HandleSerieAsync(indexedFiles, library, cancellationToken),
             _ => throw new NotImplementedException($"Media type {request.MediaType} is not supported.")
         };
+
+        // FileIndexer rebuilds availability before background CreateMedia tasks finish.
+        // Keep the denormalized table current so library-group browse (which filters on it)
+        // sees media as soon as IndexedFiles are linked.
+        await _mediaLibraryAvailabilityService.EnsureFromIndexedFilesAsync(
+            request.LibraryId,
+            request.IndexedFileIds.ToList(),
+            cancellationToken);
+
+        return mediaId;
     }
 
     private async Task<Guid> HandleMovieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)

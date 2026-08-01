@@ -81,6 +81,49 @@ internal static class MediaLibraryLinkageHelper
             .Select(p => new MediaLibraryPairProjection { LibraryId = p.LibraryId, MediaId = p.MediaId });
     }
 
+    /// <summary>
+    /// Same parent expansion as <see cref="SelectMediaLibraryPairs"/> but scoped to a
+    /// library and a set of local indexed files (no remote rows).
+    /// </summary>
+    internal static IQueryable<MediaLibraryPairProjection> SelectMediaLibraryPairsForIndexedFiles(
+        IApplicationDbContext context,
+        Guid libraryId,
+        IReadOnlyCollection<Guid> indexedFileIds)
+    {
+        var tracks = context.Medias.OfType<MusicTrack>();
+        var albums = context.Medias.OfType<MusicAlbum>();
+        var episodes = context.Medias.OfType<SerieEpisode>();
+
+        var scopedFiles = context.IndexedFiles
+            .Where(f => f.LibraryId == libraryId
+                && indexedFileIds.Contains(f.Id)
+                && f.MediaId != null);
+
+        var fromIndexed = scopedFiles
+            .Select(f => new { f.LibraryId, MediaId = f.MediaId!.Value });
+
+        var albumFromTracks = scopedFiles
+            .Join(tracks, f => f.MediaId!.Value, t => t.Id, (f, t) => new { f.LibraryId, MediaId = t.AlbumId });
+
+        var artistFromTracks = scopedFiles
+            .Join(tracks, f => f.MediaId!.Value, t => t.Id, (f, t) => new { f.LibraryId, t.AlbumId })
+            .Join(albums.Where(a => a.ArtistId != null), x => x.AlbumId, a => a.Id,
+                (x, a) => new { x.LibraryId, MediaId = a.ArtistId!.Value });
+
+        var serieFromEpisodes = scopedFiles
+            .Join(episodes, f => f.MediaId!.Value, e => e.Id, (f, e) => new { f.LibraryId, MediaId = e.SerieId });
+
+        var seasonFromEpisodes = scopedFiles
+            .Join(episodes, f => f.MediaId!.Value, e => e.Id, (f, e) => new { f.LibraryId, MediaId = e.SeasonId });
+
+        return fromIndexed
+            .Union(albumFromTracks)
+            .Union(artistFromTracks)
+            .Union(serieFromEpisodes)
+            .Union(seasonFromEpisodes)
+            .Select(p => new MediaLibraryPairProjection { LibraryId = p.LibraryId, MediaId = p.MediaId });
+    }
+
     internal static async Task<Library?> FindLibraryAsync(
         IApplicationDbContext context,
         BaseMedia media,
