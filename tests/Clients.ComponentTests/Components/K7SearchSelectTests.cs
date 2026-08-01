@@ -1,8 +1,10 @@
 using AngleSharp.Dom;
-using Bunit;
+using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.ComponentTests.Components;
 
@@ -12,8 +14,7 @@ public class K7SearchSelectTests
     [Test]
     public void Options_ShouldNotBeSpatialNavFocusable()
     {
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Alpha", "Beta"])));
@@ -29,8 +30,7 @@ public class K7SearchSelectTests
     public async Task FocusWithoutEnter_ShouldNotSearch()
     {
         var searchCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.MinSearchLength, 0)
@@ -51,8 +51,7 @@ public class K7SearchSelectTests
     public async Task Click_ShouldBeginEditingAndSearch()
     {
         var searchCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.MinSearchLength, 0)
@@ -72,8 +71,7 @@ public class K7SearchSelectTests
     public async Task CommitOnSelectOnly_ShouldNotInvokeCommitOnDebouncedSearch()
     {
         var commitCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -97,8 +95,7 @@ public class K7SearchSelectTests
     public async Task MinSearchLengthZero_ShouldSearchOnEnter()
     {
         var searchCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -123,8 +120,7 @@ public class K7SearchSelectTests
     public async Task MinSearchLength_ShouldNotSearchBelowThreshold()
     {
         var searchCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -149,8 +145,7 @@ public class K7SearchSelectTests
     [Test]
     public async Task ArrowDown_ShouldHighlightNextOption()
     {
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -172,8 +167,7 @@ public class K7SearchSelectTests
     public async Task Escape_ShouldCloseDropdownWithoutCommit()
     {
         var commitCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -195,8 +189,7 @@ public class K7SearchSelectTests
     [Test]
     public async Task SpatialEditEnded_ShouldKeepSuggestionsOpen()
     {
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -219,8 +212,7 @@ public class K7SearchSelectTests
     public async Task AfterSpatialEditEnded_ArrowAndEnter_ShouldSelectSuggestion()
     {
         string? committed = null;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -249,8 +241,7 @@ public class K7SearchSelectTests
     {
         var commitStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseCommit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -286,8 +277,7 @@ public class K7SearchSelectTests
     public async Task AfterSpatialEditEnded_Escape_ShouldCloseDropdownWithoutCommit()
     {
         var commitCount = 0;
-        using var ctx = new BunitContext();
-        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        using var ctx = CreateContext();
 
         var cut = ctx.Render<K7SearchSelect>(p => p
             .Add(x => x.DebounceInterval, 50)
@@ -307,6 +297,19 @@ public class K7SearchSelectTests
         await input.KeyDownAsync("Escape");
         cut.FindAll(".k7-search-select-option").Count.Should().Be(0);
         commitCount.Should().Be(0);
+    }
+
+    private static BunitContext CreateContext()
+    {
+        var ctx = new BunitContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var localizer = Substitute.For<IStringLocalizer<SharedResource>>();
+        localizer[Arg.Any<string>()].Returns(call =>
+            new LocalizedString(call.Arg<string>(), call.Arg<string>()));
+        ctx.Services.AddSingleton(localizer);
+
+        return ctx;
     }
 
     private static async Task BeginEditingAsync(IElement input)
