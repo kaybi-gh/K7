@@ -26,6 +26,8 @@ public sealed class SecurityHeadersMiddleware(
     {
         // Chromecast sender (App.razor) loads cast_sender.js + cast_framework from gstatic,
         // then talks to Google discovery endpoints. Cast framework historically needs unsafe-eval.
+        // Blazor WASM needs wasm-unsafe-eval. Keep eval keywords on script-src only:
+        // Firefox ignores them in script-src-elem and may fall back to default-src for <script>.
         var scriptSources = new List<string>
         {
             "'self'",
@@ -36,6 +38,9 @@ public sealed class SecurityHeadersMiddleware(
             "https://*.gstatic.com",
             "https://www.google.com"
         };
+        var scriptElemSources = scriptSources
+            .Where(static s => s is not "'wasm-unsafe-eval'" and not "'unsafe-eval'")
+            .ToList();
         var connectSources = new List<string>
         {
             "'self'",
@@ -69,7 +74,7 @@ public sealed class SecurityHeadersMiddleware(
         return string.Join("; ",
             "default-src 'self'",
             $"script-src {string.Join(' ', scriptSources)}",
-            $"script-src-elem {string.Join(' ', scriptSources)}",
+            $"script-src-elem {string.Join(' ', scriptElemSources)}",
             "script-src-attr 'unsafe-inline'",
             "worker-src 'self' blob: https://www.gstatic.com https://*.gstatic.com",
             "style-src 'self' 'unsafe-inline'",

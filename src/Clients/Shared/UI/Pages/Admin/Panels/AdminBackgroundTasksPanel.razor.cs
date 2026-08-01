@@ -298,7 +298,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
-            var items = allItems.Skip(offset).Take(count).ToList();
+            // Concurrent page fetches can overlap when new tasks shift pagination mid-flight.
+            var items = allItems.Skip(offset).Take(count).DistinctBy(t => t.Id).ToList();
             _totalCount = totalCount;
             _tableLoaded = true;
             await InvokeAsync(StateHasChanged);

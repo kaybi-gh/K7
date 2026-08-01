@@ -288,8 +288,9 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private string GetRowClass(IndexedRow row) =>
         $"{RowClass?.Invoke(row.Item)} {(Striped && row.Index % 2 == 1 ? "k7-data-table-row--alt" : "")}".Trim();
 
-    private object GetRowKey(IndexedRow row) =>
-        RowId?.Invoke(row.Item) is { Length: > 0 } id ? id : row.Index;
+    // Virtualize is position-based; business RowId keys collide when the same item
+    // appears twice (overlapping page fetches / live list shifts during fast scroll).
+    private object GetRowKey(IndexedRow row) => row.Index;
 
     private async Task OnHeaderClick(K7DataColumn<TItem> column)
     {
