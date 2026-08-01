@@ -63,7 +63,11 @@ public partial class SetupWizard
         public string Username { get; set; } = string.Empty;
 
         [EmailAddress(ErrorMessage = "Invalid email address.")]
-        public string? Email { get; set; }
+        public string? Email
+        {
+            get;
+            set => field = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
 
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; } = string.Empty;
