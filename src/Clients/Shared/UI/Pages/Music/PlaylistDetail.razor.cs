@@ -273,28 +273,34 @@ public partial class PlaylistDetail
     private List<AudioQueueItem> BuildQueueItems()
     {
         return _items
-            .Where(i => i.IndexedFileId.HasValue)
             .Select(BuildQueueItem)
+            .OfType<AudioQueueItem>()
             .ToList();
     }
 
-    private static AudioQueueItem BuildQueueItem(PlaylistItemViewModel i) => new()
+    private static AudioQueueItem? BuildQueueItem(PlaylistItemViewModel i)
     {
-        IndexedFileId = i.IndexedFileId!.Value,
-        MediaId = i.MediaId,
-        Title = i.Title,
-        Artist = i.ArtistName,
-        ArtistId = i.ArtistId,
-        AlbumTitle = i.AlbumTitle,
-        Genre = i.Genre,
-        CoverUrl = i.CoverUrl,
-        CoverDominantColor = i.CoverDominantColor,
-        Duration = i.Duration,
-        UserRating = i.UserRating,
-        Bpm = i.Bpm,
-        MusicalKey = i.MusicalKey,
-        Energy = i.Energy
-    };
+        if (!i.IndexedFileId.HasValue)
+            return null;
+
+        return new AudioQueueItem
+        {
+            IndexedFileId = i.IndexedFileId.Value,
+            MediaId = i.MediaId,
+            Title = i.Title,
+            Artist = i.ArtistName,
+            ArtistId = i.ArtistId,
+            AlbumTitle = i.AlbumTitle,
+            Genre = i.Genre,
+            CoverUrl = i.CoverUrl,
+            CoverDominantColor = i.CoverDominantColor,
+            Duration = i.Duration,
+            UserRating = i.UserRating,
+            Bpm = i.Bpm,
+            MusicalKey = i.MusicalKey,
+            Energy = i.Energy
+        };
+    }
 
     private async Task RemoveItem(PlaylistItemViewModel item)
     {

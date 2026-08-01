@@ -1,7 +1,7 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="library-browse-row-actions" @onclick:stopPropagation="true">
-    @if (IsMusic)
+    @if (IsMusic && Track is not null)
     {
         <TrackContextMenu Track="Track" />
     }

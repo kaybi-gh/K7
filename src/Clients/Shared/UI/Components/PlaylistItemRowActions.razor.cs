@@ -6,7 +6,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class PlaylistItemRowActions
 {
     [Parameter] public bool IsMusic { get; set; }
-    [Parameter] public AudioQueueItem Track { get; set; } = default!;
+    [Parameter] public AudioQueueItem? Track { get; set; }
     [Parameter] public MediaCardViewModel? Model { get; set; }
     [Parameter] public string? Href { get; set; }
     [Parameter] public EventCallback OnRemove { get; set; }
