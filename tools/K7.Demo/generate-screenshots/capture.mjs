@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { chromium, devices } from '@playwright/test';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -122,6 +122,25 @@ async function waitForAppShell(targetPage) {
   await targetPage.waitForTimeout(settleMs);
 }
 
+async function assertGuestEnabled() {
+  if (config.guestLogin === false) {
+    return;
+  }
+
+  const response = await fetch(`${baseUrl}/api/server-info`);
+  if (!response.ok) {
+    throw new Error(`Failed to read ${baseUrl}/api/server-info (${response.status})`);
+  }
+
+  const info = await response.json();
+  if (info?.guestEnabled !== true) {
+    throw new Error(
+      `Guest login is disabled on ${baseUrl} (guestEnabled=${info?.guestEnabled}). ` +
+      'Activate the Guest user in Admin -> Users, then retry.',
+    );
+  }
+}
+
 async function loginAsGuestIfNeeded(targetPage) {
   await targetPage.goto(`${baseUrl}/welcome`, { waitUntil: 'networkidle', timeout: 120_000 });
 
@@ -132,7 +151,7 @@ async function loginAsGuestIfNeeded(targetPage) {
     return;
   }
 
-  if (targetPage.url().includes('/welcome')) {
+  if (targetPage.url().includes('/welcome') || targetPage.url().includes('/sign-in')) {
     throw new Error('Guest button not found on /welcome. Is guest mode enabled?');
   }
 
@@ -156,9 +175,17 @@ async function captureEntry(targetPage, entry) {
   await targetPage.goto(url, { waitUntil: 'domcontentloaded' });
 
   if (entry.waitFor) {
-    await targetPage.waitForSelector(entry.waitFor, { timeout: 60_000 }).catch(() => {
+    try {
+      if (entry.waitFor.startsWith('text=')) {
+        await targetPage.getByText(entry.waitFor.slice('text='.length), { exact: false })
+          .first()
+          .waitFor({ state: 'visible', timeout: 60_000 });
+      } else {
+        await targetPage.waitForSelector(entry.waitFor, { timeout: 60_000 });
+      }
+    } catch {
       console.warn(`  waitFor timeout: ${entry.waitFor}`);
-    });
+    }
   } else {
     await waitForAppShell(targetPage);
   }
@@ -166,7 +193,26 @@ async function captureEntry(targetPage, entry) {
   await targetPage.waitForTimeout(settleMs);
 
   const out = path.join(outputDir, entry.file);
-  await targetPage.screenshot({ path: out, fullPage: false });
+  const tempOut = `${out}.${process.pid}.tmp.png`;
+  await targetPage.screenshot({ path: tempOut, fullPage: false });
+  try {
+    if (existsSync(out)) {
+      unlinkSync(out);
+    }
+    renameSync(tempOut, out);
+  } catch (err) {
+    // Fall back to direct overwrite if rename/unlink races with an editor lock.
+    await targetPage.screenshot({ path: out, fullPage: false }).catch(() => {
+      throw err;
+    });
+    if (existsSync(tempOut)) {
+      try {
+        unlinkSync(tempOut);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
+  }
   console.log(`  -> ${out}`);
 }
 
@@ -355,6 +401,8 @@ async function main() {
   console.log(`  baseUrl:   ${baseUrl}`);
   console.log(`  outputDir: ${outputDir}`);
   console.log(`  profiles:  ${selectedGroups.map(([name]) => name).join(', ')}`);
+
+  await assertGuestEnabled();
 
   const browser = await chromium.launch({ headless: true });
 
