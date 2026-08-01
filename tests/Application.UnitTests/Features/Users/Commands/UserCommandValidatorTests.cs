@@ -70,11 +70,16 @@ public class UserCommandValidatorTests
     }
 
     [Test]
-    public void ChangePassword_ShouldRequireCurrentAndMinLengthNewPassword()
+    public void ChangePassword_ShouldRequireCurrentAndPasswordPolicy()
     {
         var validator = new ChangePasswordCommandValidator();
 
-        var tooShort = validator.Validate(new ChangePasswordCommand
+        var missingCurrent = validator.Validate(new ChangePasswordCommand
+        {
+            CurrentPassword = "",
+            NewPassword = "Password12"
+        });
+        var tooWeak = validator.Validate(new ChangePasswordCommand
         {
             CurrentPassword = "old",
             NewPassword = "12345"
@@ -82,20 +87,21 @@ public class UserCommandValidatorTests
         var valid = validator.Validate(new ChangePasswordCommand
         {
             CurrentPassword = "old",
-            NewPassword = "123456"
+            NewPassword = "Password12"
         });
 
-        tooShort.IsValid.Should().BeFalse();
+        missingCurrent.IsValid.Should().BeFalse();
+        tooWeak.IsValid.Should().BeFalse();
         valid.IsValid.Should().BeTrue();
     }
 
     [Test]
-    public void SetPassword_ShouldRequireMinLength()
+    public void SetPassword_ShouldRequirePasswordPolicy()
     {
         var validator = new SetPasswordCommandValidator();
 
         validator.Validate(new SetPasswordCommand { NewPassword = "12345" }).IsValid.Should().BeFalse();
-        validator.Validate(new SetPasswordCommand { NewPassword = "123456" }).IsValid.Should().BeTrue();
+        validator.Validate(new SetPasswordCommand { NewPassword = "Password12" }).IsValid.Should().BeTrue();
     }
 
     [Test]
