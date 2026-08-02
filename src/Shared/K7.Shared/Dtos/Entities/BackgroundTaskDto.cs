@@ -14,6 +14,7 @@ public sealed record BackgroundTaskDto
     public int Priority { get; init; }
     public BackgroundTaskTriggeredBy TriggeredBy { get; init; }
     public Guid? FederationPeerId { get; init; }
+    public string? MetadataProviderName { get; init; }
     public int AttemptCount { get; init; }
     public int MaxAttempts { get; init; }
     public DateTimeOffset Created { get; init; }

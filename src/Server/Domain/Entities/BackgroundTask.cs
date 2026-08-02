@@ -33,6 +33,12 @@ public class BackgroundTask : BaseAuditableEntity
     /// </summary>
     public Guid? FederationPeerId { get; set; }
 
+    /// <summary>
+    /// Metadata provider this Metadata-lane task competes for (tmdb, tvdb, ...). Null for non-Metadata
+    /// lanes. Used as the admission sub-key so each provider runs at most one task at a time.
+    /// </summary>
+    public string? MetadataProviderName { get; set; }
+
     public int AttemptCount { get; set; }
     public int MaxAttempts { get; set; } = 1;
 

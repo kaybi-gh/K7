@@ -130,6 +130,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("MaxAttempts")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("MetadataProviderName")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");

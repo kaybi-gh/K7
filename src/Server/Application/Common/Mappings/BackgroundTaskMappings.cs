@@ -19,6 +19,7 @@ public static class BackgroundTaskMappings
             Priority = domain.Priority,
             TriggeredBy = domain.TriggeredBy,
             FederationPeerId = domain.FederationPeerId,
+            MetadataProviderName = domain.MetadataProviderName,
             AttemptCount = domain.AttemptCount,
             MaxAttempts = domain.MaxAttempts,
             Created = domain.Created,

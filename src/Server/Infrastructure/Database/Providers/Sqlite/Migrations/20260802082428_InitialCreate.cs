@@ -1,10 +1,9 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
+namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -12,25 +11,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:pg_trgm", ",,");
-
             migrationBuilder.CreateTable(
                 name: "ApiKeys",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    KeyHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    KeyPrefix = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: false),
-                    Scope = table.Column<int>(type: "integer", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastUsedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    KeyHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
+                    KeyPrefix = table.Column<string>(type: "TEXT", maxLength: 12, nullable: false),
+                    Scope = table.Column<int>(type: "INTEGER", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastUsedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedByUserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -41,10 +37,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -55,21 +51,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: true),
-                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LockoutEnd = table.Column<string>(type: "TEXT", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -80,31 +76,32 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "BackgroundTasks",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    RequestType = table.Column<string>(type: "text", nullable: false),
-                    RequestData = table.Column<string>(type: "text", nullable: false),
-                    TargetEntityType = table.Column<string>(type: "text", nullable: true),
-                    TargetEntityId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    Lane = table.Column<int>(type: "integer", nullable: false),
-                    WorkClass = table.Column<int>(type: "integer", nullable: false),
-                    Priority = table.Column<int>(type: "integer", nullable: false),
-                    TriggeredBy = table.Column<int>(type: "integer", nullable: false),
-                    FederationPeerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    AttemptCount = table.Column<int>(type: "integer", nullable: false),
-                    MaxAttempts = table.Column<int>(type: "integer", nullable: false),
-                    ReclaimCount = table.Column<int>(type: "integer", nullable: false),
-                    StartedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    CompletedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    NextRetryAfter = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    TimeoutSeconds = table.Column<int>(type: "integer", nullable: false),
-                    CancellationRequested = table.Column<bool>(type: "boolean", nullable: false),
-                    ErrorDetails = table.Column<string>(type: "text", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    RequestType = table.Column<string>(type: "TEXT", nullable: false),
+                    RequestData = table.Column<string>(type: "TEXT", nullable: false),
+                    TargetEntityType = table.Column<string>(type: "TEXT", nullable: true),
+                    TargetEntityId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    Lane = table.Column<int>(type: "INTEGER", nullable: false),
+                    WorkClass = table.Column<int>(type: "INTEGER", nullable: false),
+                    Priority = table.Column<int>(type: "INTEGER", nullable: false),
+                    TriggeredBy = table.Column<int>(type: "INTEGER", nullable: false),
+                    FederationPeerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    MetadataProviderName = table.Column<string>(type: "TEXT", nullable: true),
+                    AttemptCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    MaxAttempts = table.Column<int>(type: "INTEGER", nullable: false),
+                    ReclaimCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    StartedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    CompletedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    NextRetryAfter = table.Column<string>(type: "TEXT", nullable: true),
+                    TimeoutSeconds = table.Column<int>(type: "INTEGER", nullable: false),
+                    CancellationRequested = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ErrorDetails = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -115,14 +112,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "ContentRestrictionProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
                     RuleFilter = table.Column<string>(type: "jsonb", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -133,40 +130,40 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Devices",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeviceUniqueId = table.Column<string>(type: "text", nullable: true),
-                    DeviceName = table.Column<string>(type: "text", nullable: true),
-                    ClientType = table.Column<int>(type: "integer", nullable: false),
-                    DeviceType = table.Column<int>(type: "integer", nullable: false),
-                    OperatingSystem = table.Column<int>(type: "integer", nullable: false),
-                    OperatingSystemVersion = table.Column<string>(type: "text", nullable: true),
-                    DisplayHeight = table.Column<double>(type: "double precision", nullable: false),
-                    DisplayWidth = table.Column<double>(type: "double precision", nullable: false),
-                    NativeDeviceDetails_RawModel = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawManufacturer = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawName = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawVersion = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawPlatform = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawIdiom = table.Column<string>(type: "text", nullable: true),
-                    NativeDeviceDetails_RawDeviceType = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_Browser = table.Column<int>(type: "integer", nullable: true),
-                    WebDeviceDetails_RawUserAgent = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawBrowserName = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawBrowserVersion = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawOperatingSystemName = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawOperatingSystemVersion = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawOperatingSystemVersionName = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawPlatformType = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawEngineName = table.Column<string>(type: "text", nullable: true),
-                    WebDeviceDetails_RawEngineVersion = table.Column<string>(type: "text", nullable: true),
-                    PlaybackCapabilities_SupportedMediaFormatIds = table.Column<string[]>(type: "text[]", nullable: false),
-                    PlaybackCapabilities_SupportedSubtitlesCodecs = table.Column<string[]>(type: "text[]", nullable: false),
-                    PlaybackCapabilities_SupportsHDR = table.Column<bool>(type: "boolean", nullable: false),
-                    LastSeen = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceUniqueId = table.Column<string>(type: "TEXT", nullable: true),
+                    DeviceName = table.Column<string>(type: "TEXT", nullable: true),
+                    ClientType = table.Column<int>(type: "INTEGER", nullable: false),
+                    DeviceType = table.Column<int>(type: "INTEGER", nullable: false),
+                    OperatingSystem = table.Column<int>(type: "INTEGER", nullable: false),
+                    OperatingSystemVersion = table.Column<string>(type: "TEXT", nullable: true),
+                    DisplayHeight = table.Column<double>(type: "REAL", nullable: false),
+                    DisplayWidth = table.Column<double>(type: "REAL", nullable: false),
+                    NativeDeviceDetails_RawModel = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawManufacturer = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawName = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawVersion = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawPlatform = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawIdiom = table.Column<string>(type: "TEXT", nullable: true),
+                    NativeDeviceDetails_RawDeviceType = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_Browser = table.Column<int>(type: "INTEGER", nullable: true),
+                    WebDeviceDetails_RawUserAgent = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawBrowserName = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawBrowserVersion = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawOperatingSystemName = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawOperatingSystemVersion = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawOperatingSystemVersionName = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawPlatformType = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawEngineName = table.Column<string>(type: "TEXT", nullable: true),
+                    WebDeviceDetails_RawEngineVersion = table.Column<string>(type: "TEXT", nullable: true),
+                    PlaybackCapabilities_SupportedMediaFormatIds = table.Column<string>(type: "TEXT", nullable: false),
+                    PlaybackCapabilities_SupportedSubtitlesCodecs = table.Column<string>(type: "TEXT", nullable: false),
+                    PlaybackCapabilities_SupportsHDR = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LastSeen = table.Column<string>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -177,16 +174,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "LibraryGroups",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    MediaType = table.Column<int>(type: "integer", nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    Icon = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    CardColor = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    MediaType = table.Column<int>(type: "INTEGER", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    Icon = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    CardColor = table.Column<string>(type: "TEXT", maxLength: 7, nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -197,10 +194,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MetadataTags",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Kind = table.Column<int>(type: "integer", nullable: false),
-                    NormalizedKey = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    DisplayName = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
+                    NormalizedKey = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -211,21 +208,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "NotificationRules",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    ProviderType = table.Column<int>(type: "integer", nullable: false),
-                    PayloadFormat = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ProviderType = table.Column<int>(type: "INTEGER", nullable: false),
+                    PayloadFormat = table.Column<int>(type: "INTEGER", nullable: false),
                     EventTypeNames = table.Column<string>(type: "text", nullable: false),
-                    ProviderConfig = table.Column<string>(type: "text", nullable: false),
-                    TitleTemplate = table.Column<string>(type: "text", nullable: true),
-                    BodyTemplate = table.Column<string>(type: "text", nullable: true),
-                    RawJsonTemplate = table.Column<string>(type: "text", nullable: true),
+                    ProviderConfig = table.Column<string>(type: "TEXT", nullable: false),
+                    TitleTemplate = table.Column<string>(type: "TEXT", nullable: true),
+                    BodyTemplate = table.Column<string>(type: "TEXT", nullable: true),
+                    RawJsonTemplate = table.Column<string>(type: "TEXT", nullable: true),
                     RuleFilter = table.Column<string>(type: "jsonb", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -236,22 +233,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "OpenIddictApplications",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ApplicationType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    ClientId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    ClientSecret = table.Column<string>(type: "text", nullable: true),
-                    ClientType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    ConsentType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    DisplayName = table.Column<string>(type: "text", nullable: true),
-                    DisplayNames = table.Column<string>(type: "text", nullable: true),
-                    JsonWebKeySet = table.Column<string>(type: "text", nullable: true),
-                    Permissions = table.Column<string>(type: "text", nullable: true),
-                    PostLogoutRedirectUris = table.Column<string>(type: "text", nullable: true),
-                    Properties = table.Column<string>(type: "text", nullable: true),
-                    RedirectUris = table.Column<string>(type: "text", nullable: true),
-                    Requirements = table.Column<string>(type: "text", nullable: true),
-                    Settings = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ApplicationType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    ClientId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    ClientSecret = table.Column<string>(type: "TEXT", nullable: true),
+                    ClientType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    ConsentType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    DisplayName = table.Column<string>(type: "TEXT", nullable: true),
+                    DisplayNames = table.Column<string>(type: "TEXT", nullable: true),
+                    JsonWebKeySet = table.Column<string>(type: "TEXT", nullable: true),
+                    Permissions = table.Column<string>(type: "TEXT", nullable: true),
+                    PostLogoutRedirectUris = table.Column<string>(type: "TEXT", nullable: true),
+                    Properties = table.Column<string>(type: "TEXT", nullable: true),
+                    RedirectUris = table.Column<string>(type: "TEXT", nullable: true),
+                    Requirements = table.Column<string>(type: "TEXT", nullable: true),
+                    Settings = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -262,15 +259,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "OpenIddictScopes",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Descriptions = table.Column<string>(type: "text", nullable: true),
-                    DisplayName = table.Column<string>(type: "text", nullable: true),
-                    DisplayNames = table.Column<string>(type: "text", nullable: true),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    Properties = table.Column<string>(type: "text", nullable: true),
-                    Resources = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ConcurrencyToken = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Descriptions = table.Column<string>(type: "TEXT", nullable: true),
+                    DisplayName = table.Column<string>(type: "TEXT", nullable: true),
+                    DisplayNames = table.Column<string>(type: "TEXT", nullable: true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Properties = table.Column<string>(type: "TEXT", nullable: true),
+                    Resources = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -281,16 +278,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PeerRequests",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    RequesterUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    RequesterName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Token = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    RespondedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RequesterUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    RequesterName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Token = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
+                    RespondedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -301,22 +298,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PeerServers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    BaseUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    OutboundClientId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    OutboundClientSecret = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    InboundApplicationId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    AutoAddNewLibraries = table.Column<bool>(type: "boolean", nullable: false),
-                    LastSeen = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LastTestSucceeded = table.Column<bool>(type: "boolean", nullable: true),
-                    FederationAssertionSecret = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    PeeringToken = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    BaseUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    OutboundClientId = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    OutboundClientSecret = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    InboundApplicationId = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    AutoAddNewLibraries = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LastSeen = table.Column<string>(type: "TEXT", nullable: true),
+                    LastTestSucceeded = table.Column<bool>(type: "INTEGER", nullable: true),
+                    FederationAssertionSecret = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    PeeringToken = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -327,9 +324,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "ServerSettings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Key = table.Column<string>(type: "text", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -340,10 +337,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SharedProfileSettings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Key = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -354,11 +351,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SyncPlayInvites",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Token = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    GroupId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedByUserId = table.Column<string>(type: "character varying(450)", maxLength: 450, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Token = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
+                    GroupId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreatedByUserId = table.Column<string>(type: "TEXT", maxLength: 450, nullable: false),
+                    CreatedAt = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -369,10 +366,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserSettings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Key = table.Column<string>(type: "text", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -383,11 +380,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    RoleId = table.Column<string>(type: "TEXT", nullable: false),
+                    ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                    ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -404,11 +401,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                    ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -425,10 +422,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetUserLogins",
                 columns: table => new
                 {
-                    LoginProvider = table.Column<string>(type: "text", nullable: false),
-                    ProviderKey = table.Column<string>(type: "text", nullable: false),
-                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                    ProviderKey = table.Column<string>(type: "TEXT", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "TEXT", nullable: true),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -445,8 +442,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    RoleId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    RoleId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -469,10 +466,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    LoginProvider = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: true)
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -489,21 +486,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "OpenIddictAuthorizations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ApplicationId = table.Column<string>(type: "text", nullable: true),
-                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Properties = table.Column<string>(type: "text", nullable: true),
-                    Scopes = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Subject = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
-                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ApplicationId = table.Column<string>(type: "TEXT", nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    CreationDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Properties = table.Column<string>(type: "TEXT", nullable: true),
+                    Scopes = table.Column<string>(type: "TEXT", nullable: true),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    Subject = table.Column<string>(type: "TEXT", maxLength: 400, nullable: true),
+                    Type = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OpenIddictAuthorizations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OpenIddictAuthorizations_OpenIddictApplications_Application~",
+                        name: "FK_OpenIddictAuthorizations_OpenIddictApplications_ApplicationId",
                         column: x => x.ApplicationId,
                         principalTable: "OpenIddictApplications",
                         principalColumn: "Id");
@@ -513,30 +510,30 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Libraries",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    MediaType = table.Column<int>(type: "integer", nullable: false),
-                    RootPath = table.Column<string>(type: "text", nullable: true),
-                    MetadataProviderName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    MetadataLanguage = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "fr"),
-                    MetadataFallbackLanguage = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "en"),
-                    MetadataRefreshIntervalDays = table.Column<int>(type: "integer", nullable: true),
-                    RootPathAccessible = table.Column<bool>(type: "boolean", nullable: true),
-                    IntroDetectionEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    ThemeSongGenerationEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    SeekbarThumbnailGenerationEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    ChapterExtractionEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    MusicAudioAnalysisEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    TranscodingEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    TransmuxingEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    RealtimeMonitorEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    AutoScanIntervalHours = table.Column<int>(type: "integer", nullable: false, defaultValue: 6),
-                    LibraryGroupId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    MediaType = table.Column<int>(type: "INTEGER", nullable: false),
+                    RootPath = table.Column<string>(type: "TEXT", nullable: true),
+                    MetadataProviderName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    MetadataLanguage = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false, defaultValue: "fr"),
+                    MetadataFallbackLanguage = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false, defaultValue: "en"),
+                    MetadataRefreshIntervalDays = table.Column<int>(type: "INTEGER", nullable: true),
+                    RootPathAccessible = table.Column<bool>(type: "INTEGER", nullable: true),
+                    IntroDetectionEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    ThemeSongGenerationEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    SeekbarThumbnailGenerationEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    ChapterExtractionEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    MusicAudioAnalysisEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    TranscodingEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    TransmuxingEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    RealtimeMonitorEnabled = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
+                    AutoScanIntervalHours = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 6),
+                    LibraryGroupId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -559,49 +556,49 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Medias",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    Title = table.Column<string>(type: "text", nullable: true),
-                    SortTitle = table.Column<string>(type: "text", nullable: true),
-                    OriginalTitle = table.Column<string>(type: "text", nullable: true),
-                    ReleaseDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastMetadataRefreshedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LockedFields = table.Column<string[]>(type: "text[]", nullable: false),
-                    Tagline = table.Column<string>(type: "text", nullable: true),
-                    Overview = table.Column<string>(type: "text", nullable: true),
-                    OriginalLanguage = table.Column<string>(type: "text", nullable: true),
-                    Budget = table.Column<long>(type: "bigint", nullable: true),
-                    Revenue = table.Column<long>(type: "bigint", nullable: true),
-                    MusicAlbum_Overview = table.Column<string>(type: "text", nullable: true),
-                    ArtistId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ArtistType = table.Column<int>(type: "integer", nullable: true),
-                    Biography = table.Column<string>(type: "text", nullable: true),
-                    Country = table.Column<string>(type: "text", nullable: true),
-                    AlbumId = table.Column<Guid>(type: "uuid", nullable: true),
-                    MusicTrack_ArtistId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TrackNumber = table.Column<int>(type: "integer", nullable: true),
-                    DiscNumber = table.Column<int>(type: "integer", nullable: true),
-                    Lyrics = table.Column<string>(type: "text", nullable: true),
-                    LyricsLrc = table.Column<string>(type: "text", nullable: true),
-                    Serie_Overview = table.Column<string>(type: "text", nullable: true),
-                    Serie_OriginalLanguage = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: true),
-                    SerieId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SeasonId = table.Column<Guid>(type: "uuid", nullable: true),
-                    EpisodeNumber = table.Column<int>(type: "integer", nullable: true),
-                    SerieEpisode_Overview = table.Column<string>(type: "text", nullable: true),
-                    AbsoluteNumber = table.Column<int>(type: "integer", nullable: true),
-                    AirDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    Runtime = table.Column<int>(type: "integer", nullable: true),
-                    SerieSeason_SerieId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SeasonNumber = table.Column<int>(type: "integer", nullable: true),
-                    SerieSeason_Overview = table.Column<string>(type: "text", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true),
-                    Trailers = table.Column<string>(type: "jsonb", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: true),
+                    SortTitle = table.Column<string>(type: "TEXT", nullable: true),
+                    OriginalTitle = table.Column<string>(type: "TEXT", nullable: true),
+                    ReleaseDate = table.Column<DateOnly>(type: "TEXT", nullable: true),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastMetadataRefreshedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    LockedFields = table.Column<string>(type: "TEXT", nullable: false),
+                    Tagline = table.Column<string>(type: "TEXT", nullable: true),
+                    Overview = table.Column<string>(type: "TEXT", nullable: true),
+                    OriginalLanguage = table.Column<string>(type: "TEXT", nullable: true),
+                    Budget = table.Column<long>(type: "INTEGER", nullable: true),
+                    Revenue = table.Column<long>(type: "INTEGER", nullable: true),
+                    MusicAlbum_Overview = table.Column<string>(type: "TEXT", nullable: true),
+                    ArtistId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ArtistType = table.Column<int>(type: "INTEGER", nullable: true),
+                    Biography = table.Column<string>(type: "TEXT", nullable: true),
+                    Country = table.Column<string>(type: "TEXT", nullable: true),
+                    AlbumId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    MusicTrack_ArtistId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    TrackNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    DiscNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    Lyrics = table.Column<string>(type: "TEXT", nullable: true),
+                    LyricsLrc = table.Column<string>(type: "TEXT", nullable: true),
+                    Serie_Overview = table.Column<string>(type: "TEXT", nullable: true),
+                    Serie_OriginalLanguage = table.Column<string>(type: "TEXT", nullable: true),
+                    Status = table.Column<string>(type: "TEXT", nullable: true),
+                    SerieId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SeasonId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    EpisodeNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    SerieEpisode_Overview = table.Column<string>(type: "TEXT", nullable: true),
+                    AbsoluteNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    AirDate = table.Column<DateOnly>(type: "TEXT", nullable: true),
+                    Runtime = table.Column<int>(type: "INTEGER", nullable: true),
+                    SerieSeason_SerieId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SeasonNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    SerieSeason_Overview = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    Trailers = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -652,15 +649,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PeerSocialAgreements",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContentType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    AllowOutbound = table.Column<bool>(type: "boolean", nullable: false),
-                    AllowInbound = table.Column<bool>(type: "boolean", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ContentType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    AllowOutbound = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AllowInbound = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -677,19 +674,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Persons",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Gender = table.Column<int>(type: "integer", nullable: false),
-                    Biography = table.Column<string>(type: "text", nullable: true),
-                    Birthday = table.Column<DateOnly>(type: "date", nullable: true),
-                    Deathday = table.Column<DateOnly>(type: "date", nullable: true),
-                    BirthPlace = table.Column<string>(type: "text", nullable: true),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LockedFields = table.Column<string[]>(type: "text[]", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Gender = table.Column<int>(type: "INTEGER", nullable: false),
+                    Biography = table.Column<string>(type: "TEXT", nullable: true),
+                    Birthday = table.Column<DateOnly>(type: "TEXT", nullable: true),
+                    Deathday = table.Column<DateOnly>(type: "TEXT", nullable: true),
+                    BirthPlace = table.Column<string>(type: "TEXT", nullable: true),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LockedFields = table.Column<string>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -705,19 +702,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IdentityUserId = table.Column<string>(type: "text", nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    DisplayName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    PinHash = table.Column<string>(type: "text", nullable: true),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ContentRestrictionProfileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    OriginUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IdentityUserId = table.Column<string>(type: "TEXT", nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    PinHash = table.Column<string>(type: "TEXT", nullable: true),
+                    DeletedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    ContentRestrictionProfileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    OriginUserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -739,19 +736,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "OpenIddictTokens",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ApplicationId = table.Column<string>(type: "text", nullable: true),
-                    AuthorizationId = table.Column<string>(type: "text", nullable: true),
-                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ExpirationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Payload = table.Column<string>(type: "text", nullable: true),
-                    Properties = table.Column<string>(type: "text", nullable: true),
-                    RedemptionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ReferenceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Subject = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
-                    Type = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ApplicationId = table.Column<string>(type: "TEXT", nullable: true),
+                    AuthorizationId = table.Column<string>(type: "TEXT", nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    CreationDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ExpirationDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Payload = table.Column<string>(type: "TEXT", nullable: true),
+                    Properties = table.Column<string>(type: "TEXT", nullable: true),
+                    RedemptionDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ReferenceId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    Subject = table.Column<string>(type: "TEXT", maxLength: 400, nullable: true),
+                    Type = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -772,11 +769,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Library_ScanIssues",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Path = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    ErrorMessage = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    DetectedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Path = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
+                    ErrorMessage = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
+                    DetectedAt = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -793,17 +790,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PeerShareAgreements",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Direction = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    MaxConcurrentStreams = table.Column<int>(type: "integer", nullable: true),
-                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    SharePlaybackHistory = table.Column<bool>(type: "boolean", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Direction = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    MaxConcurrentStreams = table.Column<int>(type: "INTEGER", nullable: true),
+                    IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    SharePlaybackHistory = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -826,24 +823,24 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "AudioAnalysis",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MusicTrackId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MusicTrackId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ChromaprintFingerprint = table.Column<string>(type: "text", nullable: true),
-                    ChromaprintDurationSeconds = table.Column<int>(type: "integer", nullable: true),
-                    AcoustId = table.Column<string>(type: "text", nullable: true),
-                    AcoustIdScore = table.Column<double>(type: "double precision", nullable: true),
-                    LoudnessLufs = table.Column<double>(type: "double precision", nullable: true),
+                    ChromaprintDurationSeconds = table.Column<int>(type: "INTEGER", nullable: true),
+                    AcoustId = table.Column<string>(type: "TEXT", nullable: true),
+                    AcoustIdScore = table.Column<double>(type: "REAL", nullable: true),
+                    LoudnessLufs = table.Column<double>(type: "REAL", nullable: true),
                     WaveformPeaks = table.Column<string>(type: "jsonb", nullable: true),
-                    FadeInDuration = table.Column<double>(type: "double precision", nullable: true),
-                    FadeOutDuration = table.Column<double>(type: "double precision", nullable: true),
-                    ReplayGainTrackGain = table.Column<double>(type: "double precision", nullable: true),
-                    ReplayGainAlbumGain = table.Column<double>(type: "double precision", nullable: true),
-                    AnalyzedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    AnalysisVersion = table.Column<int>(type: "integer", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    FadeInDuration = table.Column<double>(type: "REAL", nullable: true),
+                    FadeOutDuration = table.Column<double>(type: "REAL", nullable: true),
+                    ReplayGainTrackGain = table.Column<double>(type: "REAL", nullable: true),
+                    ReplayGainAlbumGain = table.Column<double>(type: "REAL", nullable: true),
+                    AnalyzedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    AnalysisVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -860,32 +857,32 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "IndexedFiles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Extension = table.Column<string>(type: "text", nullable: false),
-                    Path = table.Column<string>(type: "text", nullable: false),
-                    ParentDirectory = table.Column<string>(type: "text", nullable: true),
-                    Hash = table.Column<long>(type: "bigint", nullable: false),
-                    Size = table.Column<long>(type: "bigint", nullable: false),
-                    LastWriteTimeUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    Identification_Title = table.Column<string>(type: "text", nullable: true),
-                    Identification_ReleaseYear = table.Column<DateOnly>(type: "date", nullable: true),
-                    Identification_TrackNumber = table.Column<int>(type: "integer", nullable: true),
-                    Identification_AlbumName = table.Column<string>(type: "text", nullable: true),
-                    Identification_ArtistName = table.Column<string>(type: "text", nullable: true),
-                    Identification_SeriesTitle = table.Column<string>(type: "text", nullable: true),
-                    Identification_SeasonNumber = table.Column<int>(type: "integer", nullable: true),
-                    Identification_EpisodeNumber = table.Column<int>(type: "integer", nullable: true),
-                    Identification_AbsoluteNumber = table.Column<int>(type: "integer", nullable: true),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ChromaprintFingerprint = table.Column<byte[]>(type: "bytea", nullable: true),
-                    ChromaprintDurationSeconds = table.Column<int>(type: "integer", nullable: true),
-                    ChromaprintAnalyzedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Extension = table.Column<string>(type: "TEXT", nullable: false),
+                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    ParentDirectory = table.Column<string>(type: "TEXT", nullable: true),
+                    Hash = table.Column<uint>(type: "INTEGER", nullable: false),
+                    Size = table.Column<long>(type: "INTEGER", nullable: false),
+                    LastWriteTimeUtc = table.Column<string>(type: "TEXT", nullable: false),
+                    Identification_Title = table.Column<string>(type: "TEXT", nullable: true),
+                    Identification_ReleaseYear = table.Column<DateOnly>(type: "TEXT", nullable: true),
+                    Identification_TrackNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    Identification_AlbumName = table.Column<string>(type: "TEXT", nullable: true),
+                    Identification_ArtistName = table.Column<string>(type: "TEXT", nullable: true),
+                    Identification_SeriesTitle = table.Column<string>(type: "TEXT", nullable: true),
+                    Identification_SeasonNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    Identification_EpisodeNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    Identification_AbsoluteNumber = table.Column<int>(type: "INTEGER", nullable: true),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ChromaprintFingerprint = table.Column<byte[]>(type: "BLOB", nullable: true),
+                    ChromaprintDurationSeconds = table.Column<int>(type: "INTEGER", nullable: true),
+                    ChromaprintAnalyzedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -907,8 +904,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaLibraryAvailabilities",
                 columns: table => new
                 {
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false)
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -931,8 +928,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaMetadataTags",
                 columns: table => new
                 {
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MetadataTagId = table.Column<Guid>(type: "uuid", nullable: false)
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MetadataTagId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -955,9 +952,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaRecommendations",
                 columns: table => new
                 {
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProviderName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    RecommendedIds = table.Column<string[]>(type: "text[]", nullable: false)
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProviderName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    RecommendedIds = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -974,12 +971,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaSegments",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    StartMs = table.Column<long>(type: "bigint", nullable: false),
-                    EndMs = table.Column<long>(type: "bigint", nullable: false),
-                    DetectedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    StartMs = table.Column<long>(type: "INTEGER", nullable: false),
+                    EndMs = table.Column<long>(type: "INTEGER", nullable: false),
+                    DetectedAt = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -996,16 +993,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MusicArtistCredits",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MusicArtistId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IsGuest = table.Column<bool>(type: "boolean", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: true),
-                    MusicAlbumId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MusicArtistId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IsGuest = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Order = table.Column<int>(type: "INTEGER", nullable: true),
+                    MusicAlbumId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1033,24 +1030,24 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "RemoteIndexedFiles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RemoteFileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Extension = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Size = table.Column<long>(type: "bigint", nullable: false),
-                    Container = table.Column<string>(type: "text", nullable: true),
-                    Duration = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    VideoBitrate = table.Column<long>(type: "bigint", nullable: true),
-                    VideoResolution = table.Column<int>(type: "integer", nullable: true),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RemoteMediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RemoteLibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RemoteFileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Extension = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    Size = table.Column<long>(type: "INTEGER", nullable: false),
+                    Container = table.Column<string>(type: "TEXT", nullable: true),
+                    Duration = table.Column<TimeSpan>(type: "TEXT", nullable: true),
+                    VideoBitrate = table.Column<long>(type: "INTEGER", nullable: true),
+                    VideoResolution = table.Column<int>(type: "INTEGER", nullable: true),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RemoteMediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RemoteLibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1079,21 +1076,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PersonRoles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: true),
-                    PersonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CharacterName = table.Column<string>(type: "text", nullable: true),
-                    Department = table.Column<string>(type: "text", nullable: true),
-                    Job = table.Column<string>(type: "text", nullable: true),
-                    Role = table.Column<string>(type: "text", nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: true),
-                    VoiceActor_CharacterName = table.Column<string>(type: "text", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    Order = table.Column<int>(type: "INTEGER", nullable: true),
+                    PersonId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CharacterName = table.Column<string>(type: "TEXT", nullable: true),
+                    Department = table.Column<string>(type: "TEXT", nullable: true),
+                    Job = table.Column<string>(type: "TEXT", nullable: true),
+                    Role = table.Column<string>(type: "TEXT", nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: true),
+                    VoiceActor_CharacterName = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1116,17 +1113,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Collections",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    IsPublic = table.Column<bool>(type: "boolean", nullable: false),
-                    VisibilityScope = table.Column<int>(type: "integer", nullable: false),
-                    MediaType = table.Column<int>(type: "integer", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    IsPublic = table.Column<bool>(type: "INTEGER", nullable: false),
+                    VisibilityScope = table.Column<int>(type: "INTEGER", nullable: false),
+                    MediaType = table.Column<int>(type: "INTEGER", nullable: true),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1143,8 +1140,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "DeviceUser",
                 columns: table => new
                 {
-                    DevicesId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UsersId = table.Column<Guid>(type: "uuid", nullable: false)
+                    DevicesId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UsersId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1167,9 +1164,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaPlaybackSessionCoViewers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReferenceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ReferenceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1186,22 +1183,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Playlists",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    MediaType = table.Column<int>(type: "integer", nullable: false),
-                    VisibilityScope = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    MediaType = table.Column<int>(type: "INTEGER", nullable: false),
+                    VisibilityScope = table.Column<int>(type: "INTEGER", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Discriminator = table.Column<string>(type: "TEXT", maxLength: 21, nullable: false),
                     RuleFilter = table.Column<string>(type: "jsonb", nullable: true),
-                    Limit = table.Column<int>(type: "integer", nullable: true),
-                    OrderBy = table.Column<int>(type: "integer", nullable: true),
-                    OrderDescending = table.Column<bool>(type: "boolean", nullable: true),
-                    LastEvaluatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Limit = table.Column<int>(type: "INTEGER", nullable: true),
+                    OrderBy = table.Column<int>(type: "INTEGER", nullable: true),
+                    OrderDescending = table.Column<bool>(type: "INTEGER", nullable: true),
+                    LastEvaluatedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1218,19 +1215,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Ratings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Source = table.Column<int>(type: "integer", nullable: false),
-                    Value = table.Column<double>(type: "double precision", nullable: false),
-                    MinimumValue = table.Column<double>(type: "double precision", nullable: false),
-                    MaximumValue = table.Column<double>(type: "double precision", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MetadataProvider = table.Column<int>(type: "integer", nullable: true),
-                    RatingCount = table.Column<int>(type: "integer", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Source = table.Column<int>(type: "INTEGER", nullable: false),
+                    Value = table.Column<double>(type: "REAL", nullable: false),
+                    MinimumValue = table.Column<double>(type: "REAL", nullable: false),
+                    MaximumValue = table.Column<double>(type: "REAL", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MetadataProvider = table.Column<int>(type: "INTEGER", nullable: true),
+                    RatingCount = table.Column<int>(type: "INTEGER", nullable: true),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1253,22 +1250,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SharedProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    HostUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PinHash = table.Column<string>(type: "text", nullable: true),
-                    ContentRestrictionProfileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    HostUserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreatedByUserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PinHash = table.Column<string>(type: "TEXT", nullable: true),
+                    ContentRestrictionProfileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SharedProfiles", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SharedProfiles_ContentRestrictionProfiles_ContentRestrictio~",
+                        name: "FK_SharedProfiles_ContentRestrictionProfiles_ContentRestrictionProfileId",
                         column: x => x.ContentRestrictionProfileId,
                         principalTable: "ContentRestrictionProfiles",
                         principalColumn: "Id",
@@ -1291,10 +1288,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserCapabilityOverrides",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Capability = table.Column<int>(type: "integer", nullable: false),
-                    Enabled = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Capability = table.Column<int>(type: "INTEGER", nullable: false),
+                    Enabled = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1311,11 +1308,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserLibraryExclusions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LibraryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IsAdminExcluded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    IsSelfExcluded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LibraryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IsAdminExcluded = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
+                    IsSelfExcluded = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
@@ -1332,11 +1329,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserMediaExclusions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IsAdminExcluded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    IsSelfExcluded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IsAdminExcluded = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
+                    IsSelfExcluded = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
@@ -1353,20 +1350,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserMediaStates",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastPlaybackPosition = table.Column<double>(type: "double precision", nullable: false),
-                    ProgressPercentage = table.Column<double>(type: "double precision", nullable: false),
-                    IsCompleted = table.Column<bool>(type: "boolean", nullable: false),
-                    PlayCount = table.Column<int>(type: "integer", nullable: false),
-                    LastInteractedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastKnownDurationSeconds = table.Column<double>(type: "double precision", nullable: false),
-                    ExcludedFromContinueWatching = table.Column<bool>(type: "boolean", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LastPlaybackPosition = table.Column<double>(type: "REAL", nullable: false),
+                    ProgressPercentage = table.Column<double>(type: "REAL", nullable: false),
+                    IsCompleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PlayCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    LastInteractedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastKnownDurationSeconds = table.Column<double>(type: "REAL", nullable: false),
+                    ExcludedFromContinueWatching = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1389,14 +1386,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "VisibilityGrants",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OwnerUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContentType = table.Column<int>(type: "integer", nullable: true),
-                    PlaylistId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CollectionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TargetUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TargetPeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TargetOriginUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OwnerUserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ContentType = table.Column<int>(type: "INTEGER", nullable: true),
+                    PlaylistId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CollectionId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    TargetUserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    TargetPeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    TargetOriginUserId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1413,23 +1410,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "Downloads",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IndexedFileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeviceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    OutputPath = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
-                    ContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    FileSize = table.Column<long>(type: "bigint", nullable: true),
-                    AudioTrackIndex = table.Column<int>(type: "integer", nullable: true),
-                    SubtitleTrackIndices = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    IsDirectStream = table.Column<bool>(type: "boolean", nullable: false),
-                    ReadyAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    FailureReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IndexedFileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    OutputPath = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: true),
+                    ContentType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    FileSize = table.Column<long>(type: "INTEGER", nullable: true),
+                    AudioTrackIndex = table.Column<int>(type: "INTEGER", nullable: true),
+                    SubtitleTrackIndices = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    IsDirectStream = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ReadyAt = table.Column<string>(type: "TEXT", nullable: true),
+                    FailureReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1458,19 +1455,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "FileMetadatas",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    Container = table.Column<string>(type: "text", nullable: false),
-                    IndexedFileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Duration = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    VideoBitrate = table.Column<long>(type: "bigint", nullable: true),
-                    VideoFileMetadata_Duration = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    VideoResolution = table.Column<int>(type: "integer", nullable: true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    Container = table.Column<string>(type: "TEXT", nullable: false),
+                    IndexedFileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Duration = table.Column<TimeSpan>(type: "TEXT", nullable: true),
+                    VideoBitrate = table.Column<long>(type: "INTEGER", nullable: true),
+                    VideoFileMetadata_Duration = table.Column<TimeSpan>(type: "TEXT", nullable: true),
+                    VideoResolution = table.Column<int>(type: "INTEGER", nullable: true),
                     Chapters = table.Column<string>(type: "text", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1487,22 +1484,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "StreamSessions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IndexedFileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    RemoteIndexedFileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeviceId = table.Column<Guid>(type: "uuid", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PeerServerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    RemoteSessionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    State = table.Column<int>(type: "integer", nullable: false),
-                    Position = table.Column<double>(type: "double precision", nullable: false),
-                    EndedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    RootDirectory = table.Column<string>(type: "text", nullable: false),
-                    PlaybackSettingsJson = table.Column<string>(type: "text", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IndexedFileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    RemoteIndexedFileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PeerServerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    RemoteSessionId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    State = table.Column<int>(type: "INTEGER", nullable: false),
+                    Position = table.Column<double>(type: "REAL", nullable: false),
+                    EndedAt = table.Column<string>(type: "TEXT", nullable: true),
+                    RootDirectory = table.Column<string>(type: "TEXT", nullable: false),
+                    PlaybackSettingsJson = table.Column<string>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1543,16 +1540,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "ExternalIds",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProviderName = table.Column<string>(type: "text", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PersonId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PersonRoleId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProviderName = table.Column<string>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PersonId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PersonRoleId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1579,10 +1576,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "CollectionItems",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CollectionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CollectionId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Order = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1605,10 +1602,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PlaylistItems",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlaylistId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlaylistId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Order = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1631,14 +1628,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserPlaylistStates",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlaylistId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastListenedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlaylistId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LastListenedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1661,16 +1658,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaReviews",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserRatingId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Text = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
-                    Emoji = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserRatingId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Text = table.Column<string>(type: "TEXT", maxLength: 4000, nullable: false),
+                    Emoji = table.Column<string>(type: "TEXT", maxLength: 16, nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1699,27 +1696,27 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MediaPlaybackSessions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SessionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReferenceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastUpdateAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    StoppedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    PositionSeconds = table.Column<double>(type: "double precision", nullable: false),
-                    DurationSeconds = table.Column<double>(type: "double precision", nullable: false),
-                    WatchedDurationSeconds = table.Column<double>(type: "double precision", nullable: false),
-                    State = table.Column<int>(type: "integer", nullable: false),
-                    DeviceId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SharedProfileNameSnapshot = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    CoWatchingWithSnapshot = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SessionId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ReferenceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastUpdateAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CompletedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    StoppedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    PositionSeconds = table.Column<double>(type: "REAL", nullable: false),
+                    DurationSeconds = table.Column<double>(type: "REAL", nullable: false),
+                    WatchedDurationSeconds = table.Column<double>(type: "REAL", nullable: false),
+                    State = table.Column<int>(type: "INTEGER", nullable: false),
+                    DeviceId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SharedProfileNameSnapshot = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    CoWatchingWithSnapshot = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1754,20 +1751,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SharedProfileMediaStates",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastPlaybackPosition = table.Column<double>(type: "double precision", nullable: false),
-                    ProgressPercentage = table.Column<double>(type: "double precision", nullable: false),
-                    IsCompleted = table.Column<bool>(type: "boolean", nullable: false),
-                    PlayCount = table.Column<int>(type: "integer", nullable: false),
-                    LastInteractedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastKnownDurationSeconds = table.Column<double>(type: "double precision", nullable: false),
-                    ExcludedFromContinueWatching = table.Column<bool>(type: "boolean", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LastPlaybackPosition = table.Column<double>(type: "REAL", nullable: false),
+                    ProgressPercentage = table.Column<double>(type: "REAL", nullable: false),
+                    IsCompleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PlayCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    LastInteractedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastKnownDurationSeconds = table.Column<double>(type: "REAL", nullable: false),
+                    ExcludedFromContinueWatching = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1790,9 +1787,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SharedProfileMembers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1815,13 +1812,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "SharedProfilePlaylists",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlaylistId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlaylistId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1844,38 +1841,38 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "FileTracks",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    Index = table.Column<int>(type: "integer", nullable: false),
-                    IsDefault = table.Column<bool>(type: "boolean", nullable: false),
-                    AudioFileMetadataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    VideoFileMetadataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Name = table.Column<string>(type: "text", nullable: true),
-                    Language = table.Column<string>(type: "text", nullable: true),
-                    Codec = table.Column<string>(type: "text", nullable: true),
-                    Channels = table.Column<int>(type: "integer", nullable: true),
-                    ChannelLayout = table.Column<string>(type: "text", nullable: true),
-                    SampleRateHz = table.Column<int>(type: "integer", nullable: true),
-                    Profile = table.Column<string>(type: "text", nullable: true),
-                    SubtitleFileTrack_VideoFileMetadataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SubtitleFileTrack_Name = table.Column<string>(type: "text", nullable: true),
-                    SubtitleFileTrack_Language = table.Column<string>(type: "text", nullable: true),
-                    SubtitleFileTrack_Codec = table.Column<string>(type: "text", nullable: true),
-                    IsTextBased = table.Column<bool>(type: "boolean", nullable: true),
-                    IsForced = table.Column<bool>(type: "boolean", nullable: true),
-                    IsHearingImpaired = table.Column<bool>(type: "boolean", nullable: true),
-                    VideoFileTrack_VideoFileMetadataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Width = table.Column<int>(type: "integer", nullable: true),
-                    Height = table.Column<int>(type: "integer", nullable: true),
-                    VideoFileTrack_Codec = table.Column<string>(type: "text", nullable: true),
-                    VideoFileTrack_Profile = table.Column<string>(type: "text", nullable: true),
-                    Level = table.Column<int>(type: "integer", nullable: true),
-                    PixelFormat = table.Column<string>(type: "text", nullable: true),
-                    BitDepth = table.Column<int>(type: "integer", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    Index = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AudioFileMetadataId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    VideoFileMetadataId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Language = table.Column<string>(type: "TEXT", nullable: true),
+                    Codec = table.Column<string>(type: "TEXT", nullable: true),
+                    Channels = table.Column<int>(type: "INTEGER", nullable: true),
+                    ChannelLayout = table.Column<string>(type: "TEXT", nullable: true),
+                    SampleRateHz = table.Column<int>(type: "INTEGER", nullable: true),
+                    Profile = table.Column<string>(type: "TEXT", nullable: true),
+                    SubtitleFileTrack_VideoFileMetadataId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SubtitleFileTrack_Name = table.Column<string>(type: "TEXT", nullable: true),
+                    SubtitleFileTrack_Language = table.Column<string>(type: "TEXT", nullable: true),
+                    SubtitleFileTrack_Codec = table.Column<string>(type: "TEXT", nullable: true),
+                    IsTextBased = table.Column<bool>(type: "INTEGER", nullable: true),
+                    IsForced = table.Column<bool>(type: "INTEGER", nullable: true),
+                    IsHearingImpaired = table.Column<bool>(type: "INTEGER", nullable: true),
+                    VideoFileTrack_VideoFileMetadataId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Width = table.Column<int>(type: "INTEGER", nullable: true),
+                    Height = table.Column<int>(type: "INTEGER", nullable: true),
+                    VideoFileTrack_Codec = table.Column<string>(type: "TEXT", nullable: true),
+                    VideoFileTrack_Profile = table.Column<string>(type: "TEXT", nullable: true),
+                    Level = table.Column<int>(type: "INTEGER", nullable: true),
+                    PixelFormat = table.Column<string>(type: "TEXT", nullable: true),
+                    BitDepth = table.Column<int>(type: "INTEGER", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1887,7 +1884,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_FileTracks_FileMetadatas_SubtitleFileTrack_VideoFileMetadat~",
+                        name: "FK_FileTracks_FileMetadatas_SubtitleFileTrack_VideoFileMetadataId",
                         column: x => x.SubtitleFileTrack_VideoFileMetadataId,
                         principalTable: "FileMetadatas",
                         principalColumn: "Id",
@@ -1910,11 +1907,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "HlsSegments",
                 columns: table => new
                 {
-                    FileMetadataId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Number = table.Column<int>(type: "integer", nullable: false),
-                    IndexedFileId = table.Column<Guid>(type: "uuid", nullable: false),
-                    StartTimestamp = table.Column<long>(type: "bigint", nullable: false),
-                    Duration = table.Column<long>(type: "bigint", nullable: false)
+                    FileMetadataId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Number = table.Column<int>(type: "INTEGER", nullable: false),
+                    IndexedFileId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StartTimestamp = table.Column<long>(type: "INTEGER", nullable: false),
+                    Duration = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1931,26 +1928,26 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MetadataPictures",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    OriginalRemoteUri = table.Column<string>(type: "text", nullable: true),
-                    LocalPath = table.Column<string>(type: "text", nullable: true),
-                    OriginalWidth = table.Column<int>(type: "integer", nullable: true),
-                    OriginalHeight = table.Column<int>(type: "integer", nullable: true),
-                    DominantColor = table.Column<string>(type: "text", nullable: true),
-                    MediaId = table.Column<Guid>(type: "uuid", nullable: true),
-                    VideoFileMetadataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PersonId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PersonRoleId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PlaylistId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CollectionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LibraryGroupId = table.Column<Guid>(type: "uuid", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SharedProfileId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    OriginalRemoteUri = table.Column<string>(type: "TEXT", nullable: true),
+                    LocalPath = table.Column<string>(type: "TEXT", nullable: true),
+                    OriginalWidth = table.Column<int>(type: "INTEGER", nullable: true),
+                    OriginalHeight = table.Column<int>(type: "INTEGER", nullable: true),
+                    DominantColor = table.Column<string>(type: "TEXT", nullable: true),
+                    MediaId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    VideoFileMetadataId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PersonId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PersonRoleId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PlaylistId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CollectionId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LibraryGroupId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SharedProfileId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2013,13 +2010,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "EphemeralStreamTokens",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Token = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    StreamSessionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Token = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                    StreamSessionId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ExpiresAt = table.Column<string>(type: "TEXT", nullable: false),
+                    IsRevoked = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -2042,30 +2039,30 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "PlaybackSessionDetails",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MediaPlaybackSessionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IsTranscode = table.Column<bool>(type: "boolean", nullable: true),
-                    VideoDecision = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    AudioDecision = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    TranscodeReason = table.Column<int>(type: "integer", nullable: true),
-                    Bitrate = table.Column<int>(type: "integer", nullable: true),
-                    SourceVideoCodec = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    SourceAudioCodec = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    SourceVideoWidth = table.Column<int>(type: "integer", nullable: true),
-                    SourceVideoHeight = table.Column<int>(type: "integer", nullable: true),
-                    StreamVideoCodec = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    StreamAudioCodec = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    AudioTrackLanguage = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
-                    AudioTrackTitle = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    AudioChannelLayout = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    SubtitleTrackLanguage = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
-                    SubtitleTrackTitle = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MediaPlaybackSessionId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    IsTranscode = table.Column<bool>(type: "INTEGER", nullable: true),
+                    VideoDecision = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    AudioDecision = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    TranscodeReason = table.Column<int>(type: "INTEGER", nullable: true),
+                    Bitrate = table.Column<int>(type: "INTEGER", nullable: true),
+                    SourceVideoCodec = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    SourceAudioCodec = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    SourceVideoWidth = table.Column<int>(type: "INTEGER", nullable: true),
+                    SourceVideoHeight = table.Column<int>(type: "INTEGER", nullable: true),
+                    StreamVideoCodec = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    StreamAudioCodec = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    AudioTrackLanguage = table.Column<string>(type: "TEXT", maxLength: 16, nullable: true),
+                    AudioTrackTitle = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
+                    AudioChannelLayout = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    SubtitleTrackLanguage = table.Column<string>(type: "TEXT", maxLength: 16, nullable: true),
+                    SubtitleTrackTitle = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PlaybackSessionDetails", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PlaybackSessionDetails_MediaPlaybackSessions_MediaPlaybackS~",
+                        name: "FK_PlaybackSessionDetails_MediaPlaybackSessions_MediaPlaybackSessionId",
                         column: x => x.MediaPlaybackSessionId,
                         principalTable: "MediaPlaybackSessions",
                         principalColumn: "Id",
@@ -2076,16 +2073,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "MetadataPictureVariants",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Size = table.Column<int>(type: "integer", nullable: false),
-                    LocalPath = table.Column<string>(type: "text", nullable: false),
-                    Width = table.Column<int>(type: "integer", nullable: false),
-                    Height = table.Column<int>(type: "integer", nullable: false),
-                    MetadataPictureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Created = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
-                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Size = table.Column<int>(type: "INTEGER", nullable: false),
+                    LocalPath = table.Column<string>(type: "TEXT", nullable: false),
+                    Width = table.Column<int>(type: "INTEGER", nullable: false),
+                    Height = table.Column<int>(type: "INTEGER", nullable: false),
+                    MetadataPictureId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Created = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<string>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2453,12 +2450,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 column: "SortTitle");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Medias_Title_trgm",
+                name: "IX_Medias_Title",
                 table: "Medias",
-                column: "Title",
-                filter: "\"Title\" IS NOT NULL")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+                column: "Title");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Medias_Type",
@@ -2609,14 +2603,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_PersonRoles_CharacterName_trgm",
-                table: "PersonRoles",
-                column: "CharacterName",
-                filter: "\"CharacterName\" IS NOT NULL")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PersonRoles_MediaId",
                 table: "PersonRoles",
                 column: "MediaId");
@@ -2625,21 +2611,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "IX_PersonRoles_PersonId",
                 table: "PersonRoles",
                 column: "PersonId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PersonRoles_VoiceActor_CharacterName_trgm",
-                table: "PersonRoles",
-                column: "VoiceActor_CharacterName",
-                filter: "\"VoiceActor_CharacterName\" IS NOT NULL")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Persons_Name_trgm",
-                table: "Persons",
-                column: "Name")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Persons_PeerServerId",

@@ -10808,6 +10808,12 @@
             ],
             "format": "uuid"
           },
+          "metadataProviderName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "attemptCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
