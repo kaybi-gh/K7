@@ -344,7 +344,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private async Task OpenSettingsDialogAsync()
     {
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = false, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<Dialogs.BackgroundTaskSettingsDialog>(L["SettingsTitle"], null, options);
         var result = await dialog.Result;
 

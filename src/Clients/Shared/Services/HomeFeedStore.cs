@@ -535,8 +535,20 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
     {
-        if (!_isLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
+        if (!_isLoaded || IsLoading || IsOffline)
+        {
+            _pendingRefresh = true;
             return;
+        }
+
+        // Dynamic default home layout adds a "Newly added in ..." row per library group. Refreshing
+        // existing row items is not enough when the library is new: global rows (null LibraryIds)
+        // make RowMightBeAffectedByLibrary true without ever creating that feed.
+        if (!HasRowTargetingLibrary(libraryId))
+        {
+            ScheduleLayoutReload();
+            return;
+        }
 
         ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
     }
@@ -568,10 +580,36 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }, token);
     }
 
+    private void ScheduleLayoutReload()
+    {
+        _membershipRefreshCts?.Cancel();
+        _membershipRefreshCts?.Dispose();
+        _membershipRefreshCts = new CancellationTokenSource();
+        var token = _membershipRefreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500, token);
+                await ResetAndReloadAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, token);
+    }
+
+    /// <summary>
+    /// True when a loaded row is scoped to this library. Global rows (null/empty LibraryIds) do not
+    /// count: they refresh for every library without representing a new library-specific feed.
+    /// </summary>
+    private bool HasRowTargetingLibrary(Guid libraryId) =>
+        GetRowsSnapshot().Any(r => r.Config.LibraryIds is { Count: > 0 } ids && ids.Contains(libraryId));
+
     private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
         GetRowsSnapshot().Any(r => r.Config.LibraryIds is null or { Count: 0 }
             || r.Config.LibraryIds.Contains(libraryId));
-
     private async Task RefreshContinueWatchingRowsAsync()
     {
         var rows = GetRowsSnapshot().Where(r => r.Config.ContinueWatching).ToList();

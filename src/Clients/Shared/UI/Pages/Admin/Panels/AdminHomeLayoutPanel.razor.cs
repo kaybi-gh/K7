@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
@@ -16,6 +17,7 @@ public partial class AdminHomeLayoutPanel
 
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private IHomeFeedStore HomeFeedStore { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
@@ -140,6 +142,7 @@ public partial class AdminHomeLayoutPanel
             await ServerPreferencesService.UpdateServerHomeLayoutAsync(layout);
             CaptureFormState();
             await RefreshOverrideStateAsync();
+            await HomeFeedStore.ResetAndReloadAsync();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -162,6 +165,7 @@ public partial class AdminHomeLayoutPanel
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
             CaptureFormState();
             await RefreshOverrideStateAsync();
+            await HomeFeedStore.ResetAndReloadAsync();
             Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)

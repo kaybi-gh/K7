@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
@@ -19,6 +20,7 @@ public partial class AdminLibrariesPanel : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private IHomeFeedStore HomeFeedStore { get; set; } = default!;
     [Inject] private ILogger<AdminLibrariesPanel> Logger { get; set; } = default!;
 
     private bool _isLoading = true;
@@ -170,6 +172,8 @@ public partial class AdminLibrariesPanel : IDisposable
         if (result is { Canceled: false })
         {
             await LoadLibraries();
+            // Dynamic home layout adds a per-group feed; reload so Home picks it up without F5.
+            await HomeFeedStore.ResetAndReloadAsync();
         }
     }
 

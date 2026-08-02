@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
@@ -13,6 +14,7 @@ public partial class SettingsHomePage
     private sealed record HomeFormState(List<HomeRowEditModel> Rows);
 
     [Inject] private IUserPreferencesService PreferencesService { get; set; } = default!;
+    [Inject] private IHomeFeedStore HomeFeedStore { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
 
@@ -98,6 +100,7 @@ public partial class SettingsHomePage
             await PreferencesService.UpdateHomeLayoutAsync(layout);
             CaptureFormState();
             await RefreshOverrideStateAsync();
+            await HomeFeedStore.ResetAndReloadAsync();
             Snackbar.Add(L["HomeSaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -120,6 +123,7 @@ public partial class SettingsHomePage
             _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
             CaptureFormState();
             await RefreshOverrideStateAsync();
+            await HomeFeedStore.ResetAndReloadAsync();
             Snackbar.Add(L["HomeResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
