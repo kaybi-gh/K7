@@ -1,4 +1,4 @@
-name-template: 'K7 $RESOLVED_VERSION'
+name-template: 'K7 v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 version-template: '$MAJOR.$MINOR.$PATCH'
 change-template: '- $TITLE @$AUTHOR ([#$NUMBER]($URL))'
