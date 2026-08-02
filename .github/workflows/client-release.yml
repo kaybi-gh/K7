@@ -1,8 +1,10 @@
 name: Client release
 
 on:
+  # Draft-first: repo has immutable releases, so assets must be uploaded before publish.
+  # Create with `gh release create ... --draft`, then this workflow uploads and publishes.
   release:
-    types: [published]
+    types: [created]
   workflow_dispatch:
     inputs:
       tag:
@@ -22,6 +24,7 @@ jobs:
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
+      is_draft: ${{ steps.version.outputs.is_draft }}
     steps:
       - name: Resolve tag and version
         id: version
@@ -29,6 +32,11 @@ jobs:
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${TAG#v}" >> "${GITHUB_OUTPUT}"
+          if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.draft }}" = "true" ]; then
+            echo "is_draft=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "is_draft=false" >> "${GITHUB_OUTPUT}"
+          fi
 
   # Windows runner: Linux hits NU1102 on Microsoft.NETCore.App.Runtime.Mono.linux-x64
   # (desktop Mono host packs removed in .NET 9+; not published for .NET 10).
@@ -200,3 +208,17 @@ jobs:
             "${{ steps.win.outputs.path }}" \
             --repo "${{ github.repository }}" \
             --clobber
+
+  # Immutable releases lock assets on publish; undraft only after both uploads succeed.
+  publish-release:
+    needs: [resolve, publish-android, publish-windows]
+    if: needs.resolve.outputs.is_draft == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "${{ needs.resolve.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --draft=false
