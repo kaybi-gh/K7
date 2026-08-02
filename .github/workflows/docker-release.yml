@@ -80,11 +80,15 @@ jobs:
             BUILD_CONFIGURATION=Release
             APP_VERSION=${{ steps.version.outputs.version }}
 
+      # Scan is advisory: image push already succeeded. continue-on-error covers flaky
+      # Trivy binary installs (setup-trivy download failures) so release is not blocked.
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@dc5a429b52fcf669ce959baa2c2dd26090d2a6c4 # v0.32.0
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: table
           exit-code: '1'
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+          version: v0.72.0

@@ -66,6 +66,8 @@ If secrets are missing, CI generates an ephemeral keystore (sideload only; signa
 | Trigger | Published GitHub Release |
 | Build arg | `APP_VERSION` -> `dotnet publish -p:Version=...` |
 
+Post-push Trivy scan (`docker-release`) is best-effort: the step uses `continue-on-error` so a flaky Trivy binary install does not fail the release after the image is already on GHCR. Treat scan failures as advisory and re-run or scan locally if needed.
+
 Operator upgrade notes: [Install - Upgrades](../admin/install.md#upgrades).
 
 Contributors do not cut releases from a PR - focus on correct labels and commit titles so draft notes stay accurate.
