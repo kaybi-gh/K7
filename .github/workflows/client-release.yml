@@ -96,13 +96,14 @@ jobs:
           set -euo pipefail
           # shellcheck disable=SC1090
           source "${{ steps.keystore.outputs.envfile }}"
-          # Force a single TFM so restore does not evaluate net10.0-ios / maccatalyst
-          # (NETSDK1178 when only maui-android workload is installed).
+          # K7PublishPlatform=android: single TFM in MAUI csproj (avoids NETSDK1178 for ios
+          # without global -p:TargetFrameworks=, which breaks ProjectReference restore).
+          # Do not set UseMonoRuntime=false here: Android then looks for CoreCLR runtime packs
+          # (NETSDK1181) that are not in the maui-android workload.
           dotnet publish "${{ env.MAUI_PROJECT }}" \
             -f net10.0-android \
             -c Release \
-            -p:TargetFramework=net10.0-android \
-            -p:TargetFrameworks=net10.0-android \
+            -p:K7PublishPlatform=android \
             -p:Version="${{ needs.resolve.outputs.version }}" \
             -p:ApplicationDisplayVersion="${{ needs.resolve.outputs.version }}" \
             -p:AndroidKeyStore=true \
@@ -157,15 +158,14 @@ jobs:
         shell: pwsh
         run: |
           $out = Join-Path $env:RUNNER_TEMP "win-publish"
-          # Single TFM + UseMonoRuntime=false: RID publish otherwise pulls
-          # Microsoft.NETCore.App.Runtime.Mono.win-x64 (NU1102; pack not published for .NET 10).
+          # K7PublishPlatform=windows: single TFM in MAUI csproj only (not global TargetFrameworks).
+          # UseMonoRuntime=false: avoid Microsoft.NETCore.App.Runtime.Mono.win-x64 (NU1102).
           dotnet publish $env:MAUI_PROJECT `
             -f net10.0-windows10.0.19041.0 `
             -c Release `
             -r win-x64 `
             --self-contained true `
-            -p:TargetFramework=net10.0-windows10.0.19041.0 `
-            -p:TargetFrameworks=net10.0-windows10.0.19041.0 `
+            -p:K7PublishPlatform=windows `
             -p:UseMonoRuntime=false `
             -p:WindowsPackageType=None `
             -p:PublishSingleFile=false `

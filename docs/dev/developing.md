@@ -36,14 +36,13 @@ Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Phys
 
 OIDC on MAUI includes `http://localhost/` redirect URIs - register compatible URIs at your IdP when testing SSO.
 
-Android (force single TFM so restore does not evaluate iOS):
+Android (single TFM via `K7PublishPlatform`; do not pass global `-p:TargetFrameworks=`):
 
 ```bash
 dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
   -f net10.0-android \
   -c Release \
-  -p:TargetFramework=net10.0-android \
-  -p:TargetFrameworks=net10.0-android
+  -p:K7PublishPlatform=android
 ```
 
 Windows unpackaged (self-contained):
@@ -54,7 +53,7 @@ dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
   -c Release \
   -r win-x64 \
   --self-contained true \
-  -p:TargetFrameworks=net10.0-windows10.0.19041.0 \
+  -p:K7PublishPlatform=windows \
   -p:UseMonoRuntime=false \
   -p:WindowsPackageType=None
 ```
