@@ -3,14 +3,6 @@
   "defaultProvider": "cdnjs",
   "libraries": [
     {
-      "library": "video.js@8.22.0",
-      "destination": "wwwroot/dist/video.js/",
-      "files": [
-        "video.min.js",
-        "video-js.min.css"
-      ]
-    },
-    {
       "library": "bowser@2.11.0",
       "destination": "wwwroot/dist/bowser/",
       "files": [
