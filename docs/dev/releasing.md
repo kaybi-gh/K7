@@ -15,6 +15,26 @@ Manual re-attach: Actions -> Client release -> Run workflow with the tag.
 
 iOS / Mac Catalyst packages are not published from CI (Apple signing required).
 
+## Release notes
+
+Draft body comes from `.github/release-drafter.yml`. Section order:
+
+1. **Breaking changes** - curated summary (edit before publish; replace the placeholder with "None" or short bullets)
+2. **Highlights** - 1-3 manual bullets (edit before publish)
+3. **Changes** - full categorized list via `$CHANGES` (Breaking Changes, Features, Bug Fixes, Documentation, Miscellaneous)
+4. **Artifacts** - Docker image and client asset names with `$RESOLVED_VERSION`
+5. **New contributors** - via `$CONTRIBUTORS`
+
+Edit **Highlights** and the top **Breaking changes** summary just before you publish. Release Drafter regenerates the draft on pushes to `main`, so earlier manual edits may be overwritten.
+
+Publishing the GitHub Release (tag `vX.Y.Z`) triggers **docker-release** and **client-release**. Artifact references in the notes:
+
+| Artifact | Path / reference |
+|---|---|
+| Docker | `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION` (also `latest`) |
+| Android | Release asset `K7-{version}-android.apk` |
+| Windows | Release asset `K7-{version}-win-x64.zip` |
+
 ### Android signing
 
 Prefer repository secrets so APK updates keep a stable signature:

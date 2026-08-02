@@ -2,10 +2,30 @@ name-template: 'K7 v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 version-template: '$MAJOR.$MINOR.$PATCH'
 change-template: '- $TITLE @$AUTHOR ([#$NUMBER]($URL))'
+no-changes-template: '- No changes'
+no-contributors-template: 'No new contributors'
 template: |
+  ## Breaking changes
+
+  _None listed in this draft. Move any breaking items here if needed, or replace with "None"._
+
+  ## Highlights
+
+  <!-- Add 1-3 highlight bullets before publishing -->
+
   ## Changes
 
   $CHANGES
+
+  ## Artifacts
+
+  - **Docker:** `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION`
+  - **Android:** `K7-$RESOLVED_VERSION-android.apk`
+  - **Windows:** `K7-$RESOLVED_VERSION-win-x64.zip`
+
+  ## New contributors
+
+  $CONTRIBUTORS
 
 categories:
   - title: 'Breaking Changes'
