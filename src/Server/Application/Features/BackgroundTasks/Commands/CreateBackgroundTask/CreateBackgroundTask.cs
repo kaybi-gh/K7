@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -15,16 +16,22 @@ public record CreateBackgroundTaskCommand : IRequest<Guid>
     public Guid? TargetEntityId { get; set; }
 
     /// <summary>Local resource the task competes for.</summary>
-    public BackgroundTaskLane Lane { get; set; } = BackgroundTaskLane.Metadata;
+    public required BackgroundTaskLane Lane { get; set; }
 
     /// <summary>Scheduling band: what the task contributes to on the critical path.</summary>
-    public BackgroundTaskWorkClass WorkClass { get; set; } = BackgroundTaskWorkClass.Polish;
+    public required BackgroundTaskWorkClass WorkClass { get; set; }
 
     /// <summary>Provenance. A <see cref="BackgroundTaskTriggeredBy.User"/> task gets an interactive boost.</summary>
-    public BackgroundTaskTriggeredBy TriggeredBy { get; set; } = BackgroundTaskTriggeredBy.System;
+    public required BackgroundTaskTriggeredBy TriggeredBy { get; set; }
 
     /// <summary>Peer owning the task, for <see cref="BackgroundTaskLane.Federation"/>.</summary>
     public Guid? FederationPeerId { get; set; }
+
+    /// <summary>
+    /// Logical external provider for Metadata admission (tmdb, tvdb, local, ...).
+    /// Required when <see cref="Lane"/> is <see cref="BackgroundTaskLane.Metadata"/>.
+    /// </summary>
+    public string? MetadataProviderName { get; set; }
 
     public int MaxAttempts { get; set; } = 1;
     public int? TimeoutSeconds { get; set; }
@@ -63,6 +70,7 @@ public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, I
             TriggeredBy = request.TriggeredBy,
             Priority = GetInitialPriority(request.TriggeredBy),
             FederationPeerId = request.FederationPeerId,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeForBackgroundTask(request.Lane, request.MetadataProviderName),
             MaxAttempts = request.MaxAttempts,
             TimeoutSeconds = request.TimeoutSeconds ?? 300,
             Status = BackgroundTaskStatus.Pending

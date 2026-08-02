@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -15,16 +16,22 @@ public record CreateBackgroundTasksBatchItem
     public Guid? TargetEntityId { get; init; }
 
     /// <summary>Local resource the task competes for.</summary>
-    public BackgroundTaskLane Lane { get; init; } = BackgroundTaskLane.Metadata;
+    public required BackgroundTaskLane Lane { get; init; }
 
     /// <summary>Scheduling band: what the task contributes to on the critical path.</summary>
-    public BackgroundTaskWorkClass WorkClass { get; init; } = BackgroundTaskWorkClass.Polish;
+    public required BackgroundTaskWorkClass WorkClass { get; init; }
 
     /// <summary>Provenance. A <see cref="BackgroundTaskTriggeredBy.User"/> task gets an interactive boost.</summary>
-    public BackgroundTaskTriggeredBy TriggeredBy { get; init; } = BackgroundTaskTriggeredBy.System;
+    public required BackgroundTaskTriggeredBy TriggeredBy { get; init; }
 
     /// <summary>Peer owning the task, for <see cref="BackgroundTaskLane.Federation"/>.</summary>
     public Guid? FederationPeerId { get; init; }
+
+    /// <summary>
+    /// Logical external provider for Metadata admission.
+    /// Required when <see cref="Lane"/> is <see cref="BackgroundTaskLane.Metadata"/>.
+    /// </summary>
+    public string? MetadataProviderName { get; init; }
 
     public int MaxAttempts { get; init; } = 1;
     public int? TimeoutSeconds { get; init; }
@@ -114,6 +121,9 @@ public class CreateBackgroundTasksBatchCommandHandler : IRequestHandler<CreateBa
                     ? BackgroundTaskScheduling.InteractiveBoost
                     : 0,
                 FederationPeerId = item.FederationPeerId,
+                MetadataProviderName = MetadataProviderHostMapper.NormalizeForBackgroundTask(
+                    item.Lane,
+                    item.MetadataProviderName),
                 MaxAttempts = item.MaxAttempts,
                 TimeoutSeconds = item.TimeoutSeconds ?? 300,
                 Status = BackgroundTaskStatus.Pending

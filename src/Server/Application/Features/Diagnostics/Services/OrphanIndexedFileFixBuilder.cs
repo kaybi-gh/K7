@@ -189,6 +189,7 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
             TargetEntityId = targetEntityId ?? indexedFileIds[0],
             TargetEntityTypeName = nameof(BaseMedia),
             Lane = BackgroundTaskLane.Metadata,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(metadataProviderName),
             WorkClass = BackgroundTaskWorkClass.CriticalLink,
             TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
             MaxAttempts = 5

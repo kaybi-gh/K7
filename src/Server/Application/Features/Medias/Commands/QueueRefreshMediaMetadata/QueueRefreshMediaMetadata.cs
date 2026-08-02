@@ -79,6 +79,7 @@ public class QueueRefreshMediaMetadataCommandHandler(
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             Lane = BackgroundTaskLane.Metadata,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
             WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
             TriggeredBy = BackgroundTaskTriggeredBy.User,
             MaxAttempts = 3

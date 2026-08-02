@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using FluentAssertions;
+using K7.Server.Application.Common;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.UnitTests.Services;
@@ -63,7 +65,6 @@ public class BackgroundTaskConcurrencyGateTests
 
         keyA.Should().NotBe(keyB);
 
-        // One slow peer must not consume the slot of another peer.
         var counts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
         BackgroundTaskConcurrencyGate.TryAcquire(counts, keyA, limit: 1).Should().BeTrue();
         BackgroundTaskConcurrencyGate.TryAcquire(counts, keyB, limit: 1).Should().BeTrue();
@@ -74,5 +75,42 @@ public class BackgroundTaskConcurrencyGateTests
     {
         var key = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Probe, Guid.NewGuid());
         key.Should().Be(BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Probe, null));
+    }
+
+    [Test]
+    public void BuildKey_ShouldIsolateMetadataProviders()
+    {
+        var tvdb = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb);
+        var tmdb = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tmdb);
+
+        tvdb.Should().Be("Metadata:tvdb");
+        tmdb.Should().Be("Metadata:tmdb");
+        tvdb.Should().NotBe(tmdb);
+    }
+
+    [Test]
+    public void TryAcquire_ShouldLimitEachMetadataProviderToOne_AndRespectCeiling()
+    {
+        var counts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        var limits = new Dictionary<BackgroundTaskLane, int>
+        {
+            [BackgroundTaskLane.Metadata] = 2
+        };
+
+        var tvdb = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb);
+        var tmdb = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tmdb);
+        var mb = BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.MusicBrainz);
+
+        BackgroundTaskConcurrencyGate.TryAcquire(counts, tvdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
+            .Should().BeTrue();
+        BackgroundTaskConcurrencyGate.TryAcquire(counts, tvdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
+            .Should().BeFalse();
+
+        BackgroundTaskConcurrencyGate.TryAcquire(counts, tmdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
+            .Should().BeTrue();
+        BackgroundTaskConcurrencyGate.TryAcquire(counts, mb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
+            .Should().BeFalse();
+
+        BackgroundTaskConcurrencyGate.CountMetadataActive(counts).Should().Be(2);
     }
 }

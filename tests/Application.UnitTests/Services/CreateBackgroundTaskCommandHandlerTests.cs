@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
@@ -42,6 +43,7 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             Lane = BackgroundTaskLane.Probe,
             WorkClass = BackgroundTaskWorkClass.CriticalProbe,
             MaxAttempts = 3,
@@ -70,6 +72,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             MaxAttempts = 1
         };
 
@@ -87,6 +93,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             MaxAttempts = 1
         };
 
@@ -108,6 +118,8 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             MaxAttempts = 1,
             Lane = BackgroundTaskLane.Federation,
             FederationPeerId = peerId
@@ -130,6 +142,9 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
             MaxAttempts = 1,
             TriggeredBy = BackgroundTaskTriggeredBy.User
         };
@@ -151,6 +166,9 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
             MaxAttempts = 1,
             TriggeredBy = BackgroundTaskTriggeredBy.System
         };
@@ -188,6 +206,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             TargetEntityId = targetId,
             MaxAttempts = 1
         };
@@ -225,6 +247,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             TargetEntityId = targetId,
             MaxAttempts = 1
         };
@@ -259,6 +285,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             TargetEntityId = targetId,
             MaxAttempts = 1
         };
@@ -293,6 +323,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             TargetEntityId = targetId,
             MaxAttempts = 1
         };
@@ -325,6 +359,10 @@ public class CreateBackgroundTaskCommandHandlerTests
         var command = new CreateBackgroundTaskCommand
         {
             Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MetadataProviderName = MetadataProviderNames.Local,
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.Polish,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
             TargetEntityId = Guid.NewGuid(),
             MaxAttempts = 1
         };

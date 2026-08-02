@@ -30,6 +30,12 @@ public static class BackgroundTaskScheduling
     /// <summary>Upper bound accepted for the worker count.</summary>
     public const int MaxWorkerCount = 32;
 
+    /// <summary>Clamp operator-configured worker count. Zero pauses all background processing.</summary>
+    public static int ClampWorkerCount(int value) => Math.Clamp(value, 0, MaxWorkerCount);
+
+    /// <summary>Clamp operator-configured lane limit. Zero pauses the lane.</summary>
+    public static int ClampLaneLimit(int value) => Math.Clamp(value, 0, MaxLaneLimit);
+
     /// <summary>
     /// Score added when a user explicitly asks for something. Large enough to clear any realistic
     /// aging accumulated by a first-index backlog.
@@ -47,7 +53,7 @@ public static class BackgroundTaskScheduling
     /// next eligible task when a lane saturates between the query and the gate acquisition, instead of
     /// giving up and waiting for the next wake-up.
     /// </summary>
-    public const int CandidateFetchCount = 8;
+    public const int CandidateFetchCount = 24;
 
     /// <summary>
     /// How many times a task may be reclaimed after its worker vanished before it is failed. Guards
@@ -55,11 +61,18 @@ public static class BackgroundTaskScheduling
     /// </summary>
     public const int MaxReclaims = 3;
 
+    /// <summary>
+    /// Hard parallelism per logical external provider on the Metadata lane. Not operator-configurable:
+    /// HTTP pacing stays on <c>OutboundRateLimiter</c>; this only prevents stacking tasks on one provider.
+    /// </summary>
+    public const int MetadataProviderLimit = 1;
+
     private static readonly Dictionary<BackgroundTaskLane, int> DefaultLimits = new()
     {
         [BackgroundTaskLane.Probe] = 4,
         [BackgroundTaskLane.ImageProcessing] = 2,
-        [BackgroundTaskLane.Metadata] = 2
+        // High enough that the usual brake is 1/provider + rate limits, not this ceiling.
+        [BackgroundTaskLane.Metadata] = 8
     };
 
     /// <summary>

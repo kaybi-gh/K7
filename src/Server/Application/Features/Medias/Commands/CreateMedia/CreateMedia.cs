@@ -182,6 +182,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 TargetEntityId = movie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
                 Lane = BackgroundTaskLane.Metadata,
+                MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                 WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
                 TriggeredBy = BackgroundTaskTriggeredBy.System,
                 MaxAttempts = 3
@@ -275,6 +276,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     TargetEntityId = album.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
                     Lane = BackgroundTaskLane.Metadata,
+                    MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                     WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
                     TriggeredBy = BackgroundTaskTriggeredBy.System,
                     MaxAttempts = 3
@@ -519,6 +521,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 TargetEntityId = serie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
                 Lane = BackgroundTaskLane.Metadata,
+                MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                 WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
                 TriggeredBy = BackgroundTaskTriggeredBy.System,
                 MaxAttempts = 3

@@ -73,6 +73,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             Lane = BackgroundTaskLane.Metadata,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(providerName),
             WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
             TriggeredBy = BackgroundTaskTriggeredBy.User,
             MaxAttempts = 1

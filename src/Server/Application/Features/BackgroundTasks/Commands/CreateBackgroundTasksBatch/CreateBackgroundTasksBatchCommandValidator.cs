@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 
 public class CreateBackgroundTasksBatchCommandValidator : AbstractValidator<CreateBackgroundTasksBatchCommand>
@@ -13,6 +15,9 @@ public class CreateBackgroundTasksBatchCommandValidator : AbstractValidator<Crea
             item.RuleFor(i => i.Lane).IsInEnum();
             item.RuleFor(i => i.WorkClass).IsInEnum();
             item.RuleFor(i => i.TriggeredBy).IsInEnum();
+            item.RuleFor(i => i.MetadataProviderName)
+                .NotEmpty()
+                .When(i => i.Lane == BackgroundTaskLane.Metadata);
             item.RuleFor(i => i.MaxAttempts).GreaterThan(0);
             item.RuleFor(i => i.TimeoutSeconds).GreaterThan(0).When(i => i.TimeoutSeconds is not null);
         });

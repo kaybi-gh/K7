@@ -392,6 +392,7 @@ public class FileIndexer : IFileIndexer
                             TargetEntityId = file.Id,
                             TargetEntityTypeName = nameof(BaseMedia),
                             Lane = BackgroundTaskLane.Metadata,
+                            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                             WorkClass = BackgroundTaskWorkClass.CriticalLink,
                             TriggeredBy = BackgroundTaskTriggeredBy.System,
                             MaxAttempts = 5
@@ -431,6 +432,7 @@ public class FileIndexer : IFileIndexer
                         TargetEntityId = albumFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
                         Lane = BackgroundTaskLane.Metadata,
+                        MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                         WorkClass = BackgroundTaskWorkClass.CriticalLink,
                         TriggeredBy = BackgroundTaskTriggeredBy.System,
                         MaxAttempts = 5
@@ -465,6 +467,7 @@ public class FileIndexer : IFileIndexer
                         TargetEntityId = serieFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
                         Lane = BackgroundTaskLane.Metadata,
+                        MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                         WorkClass = BackgroundTaskWorkClass.CriticalLink,
                         TriggeredBy = BackgroundTaskTriggeredBy.System,
                         MaxAttempts = 5
@@ -651,6 +654,7 @@ public class FileIndexer : IFileIndexer
                     TargetEntityId = oldFile.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
                     Lane = BackgroundTaskLane.Metadata,
+                    MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
                     WorkClass = BackgroundTaskWorkClass.CriticalLink,
                     TriggeredBy = BackgroundTaskTriggeredBy.System,
                     MaxAttempts = 5

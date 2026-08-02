@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
@@ -53,6 +54,7 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
             TargetEntityId = person.Id,
             TargetEntityTypeName = nameof(Person),
             Lane = BackgroundTaskLane.Metadata,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(externalId.ProviderName),
             WorkClass = BackgroundTaskWorkClass.Polish,
             TriggeredBy = BackgroundTaskTriggeredBy.User,
             MaxAttempts = 1

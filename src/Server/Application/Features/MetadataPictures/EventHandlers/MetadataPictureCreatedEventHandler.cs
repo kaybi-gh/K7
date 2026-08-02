@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
 using K7.Server.Domain.Entities;
@@ -45,6 +46,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
         // federation lane and is isolated per peer: an unreachable peer must not occupy the Metadata lane
         // slots that provider downloads need.
         var peerServerId = await GetOwningPeerServerIdAsync(notification.MetadataPicture.MediaId, cancellationToken);
+        var lane = peerServerId is null ? BackgroundTaskLane.Metadata : BackgroundTaskLane.Federation;
 
         await _sender.Send(new CreateBackgroundTaskCommand()
         {
@@ -54,7 +56,10 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             },
             TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            Lane = peerServerId is null ? BackgroundTaskLane.Metadata : BackgroundTaskLane.Federation,
+            Lane = lane,
+            MetadataProviderName = lane == BackgroundTaskLane.Metadata
+                ? MetadataProviderHostMapper.FromUri(notification.MetadataPicture.OriginalRemoteUri)
+                : null,
             WorkClass = workClass,
             TriggeredBy = peerServerId is null ? BackgroundTaskTriggeredBy.System : BackgroundTaskTriggeredBy.Federation,
             FederationPeerId = peerServerId,
