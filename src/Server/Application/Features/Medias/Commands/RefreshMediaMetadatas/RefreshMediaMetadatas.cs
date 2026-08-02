@@ -1,6 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.EnrichMusicArtistWikidata;
+using K7.Server.Application.Features.Medias.Commands.EnrichSerieTmdbSupplemental;
 using K7.Server.Application.Features.Medias.Commands.GenerateEpisodeStillFromSource;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
@@ -39,7 +41,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
     private readonly MetadataPictureDeletionService _pictureDeletionService;
-    private readonly ITvdbPersonLinkProvider _tvdbPersonLinkProvider;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
@@ -47,8 +48,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         ISender sender,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders,
         IMediaMetadataTagSyncService metadataTagSyncService,
-        MetadataPictureDeletionService pictureDeletionService,
-        ITvdbPersonLinkProvider tvdbPersonLinkProvider)
+        MetadataPictureDeletionService pictureDeletionService)
     {
         _context = context;
         _serviceProvider = serviceProvider;
@@ -56,7 +56,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
         _metadataTagSyncService = metadataTagSyncService;
         _pictureDeletionService = pictureDeletionService;
-        _tvdbPersonLinkProvider = tvdbPersonLinkProvider;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -146,7 +145,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 if (existingPerson is null)
                 {
-                    foreach (var externalId in personRole.Person.ExternalIds)
+                    foreach (var externalId in personRole.Person.ExternalIds.ToList())
                     {
                         existingPerson = await _context.Persons
                             .Include(p => p.Roles)
@@ -387,32 +386,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        // Bio/image from Wikidata
-        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
-
-        if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
-        {
-            var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
-            if (details is not null)
-            {
-                if (!artist.IsFieldLocked(nameof(MusicArtist.Biography)) && !string.IsNullOrEmpty(details.Biography))
-                    artist.Biography = details.Biography;
-
-                if (!artist.IsPictureTypeLocked(MetadataPictureType.Poster)
-                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
-                    && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var wikidataImageUri))
-                {
-                    var picture = new MetadataPicture
-                    {
-                        Type = MetadataPictureType.Poster,
-                        OriginalRemoteUri = wikidataImageUri,
-                        MediaId = artist.Id
-                    };
-                    picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
-                    artist.Pictures.Add(picture);
-                }
-            }
-        }
+        await QueueEnrichMusicArtistWikidataIfNeededAsync(artist, language, cancellationToken);
     }
 
     private async Task HandleSerieAsync(RefreshMediaMetadatasCommand request, Serie serie, CancellationToken cancellationToken)
@@ -430,11 +404,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .LoadAsync(cancellationToken);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
-        ISerieMetadataProvider? tmdbSerieProvider = null;
-        if (string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
-        {
-            tmdbSerieProvider = _serviceProvider.GetKeyedService<ISerieMetadataProvider>("tmdb");
-        }
 
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
@@ -472,31 +441,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(serie, serieMetadata.Ratings);
-
-        if (tmdbSerieProvider is not null)
-        {
-            var supplementalSerieMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbSerieMetadataAsync(
-                metadataProvider,
-                tmdbSerieProvider,
-                serie,
-                request.Language,
-                request.FallbackLanguage,
-                cancellationToken);
-
-            SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(
-                serie,
-                supplementalSerieMetadata?.Ratings);
-
-            if (!serie.IsFieldLocked(nameof(Serie.PersonRoles))
-                && supplementalSerieMetadata?.PersonRoles is { Count: > 0 })
-            {
-                await EnrichSerieCastFromSupplementalAsync(
-                    serie,
-                    supplementalSerieMetadata.PersonRoles.ToList(),
-                    request.Language,
-                    cancellationToken);
-            }
-        }
 
         // Federation: create seasons and episodes from peer metadata (no local scan to do it)
         if (request.MetadataProviderName == "federation")
@@ -556,28 +500,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 var stillImageUrl = episodeMetadata.StillImageUrl;
                 var episodeRatings = episodeMetadata.Ratings;
-                if (tmdbSerieProvider is not null)
-                {
-                    var supplementalMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbEpisodeMetadataAsync(
-                        metadataProvider,
-                        tmdbSerieProvider,
-                        serie,
-                        season.SeasonNumber,
-                        episode.EpisodeNumber,
-                        request.Language,
-                        request.FallbackLanguage,
-                        cancellationToken);
-
-                    if (!string.IsNullOrWhiteSpace(supplementalMetadata?.StillImageUrl))
-                        stillImageUrl = supplementalMetadata.StillImageUrl;
-
-                    if (supplementalMetadata?.Ratings is { Count: > 0 })
-                        episodeRatings = supplementalMetadata.Ratings;
-
-                    SupplementalEpisodeMetadataResolver.MergeSupplementalExternalIds(
-                        episode,
-                        supplementalMetadata?.ExternalIds);
-                }
 
                 SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(episode, episodeRatings);
 
@@ -626,6 +548,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     }
                 }
             }
+        }
+
+        if (string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
+        {
+            await QueueEnrichSerieTmdbSupplementalAsync(serie, request, cancellationToken);
         }
     }
 
@@ -770,33 +697,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var biographyLocked = artist.IsFieldLocked(nameof(MusicArtist.Biography));
         var posterLocked = artist.IsPictureTypeLocked(MetadataPictureType.Poster);
         if ((posterLocked || artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster))
-            && (biographyLocked || !string.IsNullOrEmpty(artist.Biography))) return;
-
-        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
-
-        if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
+            && (biographyLocked || !string.IsNullOrEmpty(artist.Biography)))
         {
-            var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
-            if (details is not null)
-            {
-                if (!biographyLocked && string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
-                    artist.Biography = details.Biography;
-
-                if (!posterLocked
-                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
-                    && MetadataImageUrlHelper.TryCreateRemoteUri(details.ImageUrl, out var deferredWikidataImageUri))
-                {
-                    var picture = new MetadataPicture
-                    {
-                        Type = MetadataPictureType.Poster,
-                        OriginalRemoteUri = deferredWikidataImageUri,
-                        MediaId = artist.Id
-                    };
-                    picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
-                    artist.Pictures.Add(picture);
-                }
-            }
+            return;
         }
+
+        await QueueEnrichMusicArtistWikidataIfNeededAsync(artist, language, cancellationToken);
 
         if (!posterLocked
             && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster)
@@ -937,6 +843,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     TargetEntityId = person.Id,
                     TargetEntityTypeName = nameof(Person),
                     Lane = BackgroundTaskLane.Metadata,
+                    MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName("musicbrainz"),
                     WorkClass = BackgroundTaskWorkClass.Polish,
                     TriggeredBy = BackgroundTaskTriggeredBy.System,
                     MaxAttempts = 3
@@ -945,87 +852,76 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
     }
 
-    private async Task EnrichSerieCastFromSupplementalAsync(
+    private async Task QueueEnrichSerieTmdbSupplementalAsync(
         Serie serie,
-        IReadOnlyList<BasePersonRole> supplementalRoles,
+        RefreshMediaMetadatasCommand request,
+        CancellationToken cancellationToken)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await _sender.Send(new CreateBackgroundTaskCommand
+        {
+            Request = new EnrichSerieTmdbSupplementalCommand
+            {
+                MediaId = serie.Id,
+                Language = request.Language,
+                FallbackLanguage = request.FallbackLanguage
+            },
+            TargetEntityId = serie.Id,
+            TargetEntityTypeName = nameof(BaseMedia),
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName("tmdb"),
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 3
+        }, cancellationToken);
+    }
+
+    private async Task QueueEnrichMusicArtistWikidataIfNeededAsync(
+        MusicArtist artist,
         string language,
         CancellationToken cancellationToken)
     {
-        var enrichment = SupplementalSerieCastEnricher.Enrich(serie.PersonRoles, supplementalRoles);
+        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
+        if (string.IsNullOrEmpty(wikidataId))
+            return;
 
-        foreach (var tvdbPeopleId in enrichment.UnresolvedTvdbPeopleIds)
+        var biographyLocked = artist.IsFieldLocked(nameof(MusicArtist.Biography));
+        var posterLocked = artist.IsPictureTypeLocked(MetadataPictureType.Poster);
+        if ((posterLocked || artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster))
+            && (biographyLocked || !string.IsNullOrEmpty(artist.Biography)))
         {
-            var linkedIds = await _tvdbPersonLinkProvider.FetchLinkedExternalIdsAsync(tvdbPeopleId, cancellationToken);
-            if (linkedIds.Count == 0)
-                continue;
-
-            foreach (var role in serie.PersonRoles.Where(r =>
-                         r.Person.ExternalIds.Any(e => e.ProviderName == "tvdb" && e.Value == tvdbPeopleId)))
-            {
-                foreach (var linked in linkedIds)
-                {
-                    if (role.Person.ExternalIds.Any(e =>
-                            string.Equals(e.ProviderName, linked.ProviderName, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        continue;
-                    }
-
-                    role.Person.ExternalIds.Add(new ExternalId
-                    {
-                        ProviderName = linked.ProviderName,
-                        Value = linked.Value,
-                        PersonId = role.Person.Id
-                    });
-                }
-            }
+            return;
         }
-
-        if (enrichment.RolesToAppend.Count > 0)
-        {
-            await ResolvePersonReferencesAsync(enrichment.RolesToAppend, cancellationToken);
-            foreach (var role in enrichment.RolesToAppend)
-                serie.PersonRoles.Add(role);
-        }
-
-        // Re-resolve primary roles after id enrichment so tvdb stubs can collapse onto existing tmdb persons
-        await ResolvePersonReferencesAsync(serie.PersonRoles, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        foreach (var person in serie.PersonRoles.Select(r => r.Person).Distinct())
+        await _sender.Send(new CreateBackgroundTaskCommand
         {
-            if (person.Id == Guid.Empty || !PersonMetadataMergeHelper.NeedsProviderRefresh(person))
-                continue;
-
-            var tmdbId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")?.Value;
-            if (string.IsNullOrWhiteSpace(tmdbId))
-                continue;
-
-            await _sender.Send(new CreateBackgroundTaskCommand
+            Request = new EnrichMusicArtistWikidataCommand
             {
-                Request = new RefreshPersonMetadataCommand
-                {
-                    PersonId = person.Id,
-                    ProviderName = "tmdb",
-                    ProviderId = tmdbId,
-                    Language = language
-                },
-                TargetEntityId = person.Id,
-                TargetEntityTypeName = nameof(Person),
-                Lane = BackgroundTaskLane.Metadata,
-                WorkClass = BackgroundTaskWorkClass.Polish,
-                TriggeredBy = BackgroundTaskTriggeredBy.System,
-                MaxAttempts = 3
-            }, cancellationToken);
-        }
+                MediaId = artist.Id,
+                Language = language
+            },
+            TargetEntityId = artist.Id,
+            TargetEntityTypeName = nameof(BaseMedia),
+            Lane = BackgroundTaskLane.Metadata,
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName("wikidata"),
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 3
+        }, cancellationToken);
     }
 
     private async Task ResolvePersonReferencesAsync(IEnumerable<BasePersonRole> roles, CancellationToken cancellationToken)
     {
-        foreach (var role in roles)
+        foreach (var role in roles.ToList())
         {
+            if (role.Person is null)
+                continue;
+
             var matchedPersons = new List<Person>();
-            foreach (var externalId in role.Person.ExternalIds)
+            foreach (var externalId in role.Person.ExternalIds.ToList())
             {
                 var match = await _context.Persons
                     .Include(p => p.ExternalIds)

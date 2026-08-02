@@ -8,7 +8,7 @@ namespace K7.Server.Application.Common.Services;
 
 public static class SupplementalEpisodeMetadataResolver
 {
-    public static async Task<ExternalSerieMetadata?> TryFetchTmdbSerieMetadataAsync(
+    public static Task<ExternalSerieMetadata?> TryFetchTmdbSerieMetadataAsync(
         ISerieMetadataProvider primaryProvider,
         ISerieMetadataProvider tmdbProvider,
         Serie serie,
@@ -17,8 +17,23 @@ public static class SupplementalEpisodeMetadataResolver
         CancellationToken cancellationToken)
     {
         if (!string.Equals(primaryProvider.ProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
-            return null;
+            return Task.FromResult<ExternalSerieMetadata?>(null);
 
+        return TryFetchTmdbSerieMetadataAsync(
+            tmdbProvider,
+            serie,
+            language,
+            fallbackLanguage,
+            cancellationToken);
+    }
+
+    public static async Task<ExternalSerieMetadata?> TryFetchTmdbSerieMetadataAsync(
+        ISerieMetadataProvider tmdbProvider,
+        Serie serie,
+        string language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
         var supplementalProviderId = ResolveTmdbProviderId(serie);
         if (string.IsNullOrWhiteSpace(supplementalProviderId))
             return null;
@@ -37,7 +52,7 @@ public static class SupplementalEpisodeMetadataResolver
         }
     }
 
-    public static async Task<ExternalEpisodeMetadata?> TryFetchTmdbEpisodeMetadataAsync(
+    public static Task<ExternalEpisodeMetadata?> TryFetchTmdbEpisodeMetadataAsync(
         ISerieMetadataProvider primaryProvider,
         ISerieMetadataProvider tmdbProvider,
         Serie serie,
@@ -48,8 +63,27 @@ public static class SupplementalEpisodeMetadataResolver
         CancellationToken cancellationToken)
     {
         if (!string.Equals(primaryProvider.ProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
-            return null;
+            return Task.FromResult<ExternalEpisodeMetadata?>(null);
 
+        return TryFetchTmdbEpisodeMetadataAsync(
+            tmdbProvider,
+            serie,
+            seasonNumber,
+            episodeNumber,
+            language,
+            fallbackLanguage,
+            cancellationToken);
+    }
+
+    public static async Task<ExternalEpisodeMetadata?> TryFetchTmdbEpisodeMetadataAsync(
+        ISerieMetadataProvider tmdbProvider,
+        Serie serie,
+        int seasonNumber,
+        int episodeNumber,
+        string language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
         var supplementalProviderId = ResolveTmdbProviderId(serie);
         if (string.IsNullOrWhiteSpace(supplementalProviderId))
             return null;

@@ -63,6 +63,50 @@ public class SupplementalEpisodeMetadataResolverTests
     }
 
     [Test]
+    public async Task TryFetchTmdbSerieMetadataAsync_Overload_ShouldReturnRatings_WithoutPrimaryProviderCheck()
+    {
+        var tmdb = new StubSerieMetadataProvider("tmdb", serieRating: 7.9);
+        var serie = new Serie
+        {
+            Title = "Test",
+            ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = "1396" }]
+        };
+
+        var result = await SupplementalEpisodeMetadataResolver.TryFetchTmdbSerieMetadataAsync(
+            tmdb,
+            serie,
+            language: "en",
+            fallbackLanguage: "en",
+            CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Ratings.Should().ContainSingle(r => r.MetadataProvider == MetadataProvider.TMDb && r.Value == 7.9);
+    }
+
+    [Test]
+    public async Task TryFetchTmdbEpisodeMetadataAsync_Overload_ShouldReturnMetadata_WithoutPrimaryProviderCheck()
+    {
+        var tmdb = new StubSerieMetadataProvider("tmdb", stillUrl: "https://tmdb.example/still.jpg", tmdbEpisodeId: "42", episodeRating: 8.2);
+        var serie = new Serie
+        {
+            Title = "Test",
+            ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = "1396" }]
+        };
+
+        var result = await SupplementalEpisodeMetadataResolver.TryFetchTmdbEpisodeMetadataAsync(
+            tmdb,
+            serie,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            language: "en",
+            fallbackLanguage: "en",
+            CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.StillImageUrl.Should().Be("https://tmdb.example/still.jpg");
+    }
+
+    [Test]
     public async Task TryFetchTmdbSerieMetadataAsync_ShouldReturnRatings_WhenPrimaryProviderIsTvdb()
     {
         var tvdb = new StubSerieMetadataProvider("tvdb");
