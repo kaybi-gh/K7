@@ -19,6 +19,9 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
     private const string WikidataBaseUrl = "https://www.wikidata.org/w/api.php";
     private const string Host = "musicbrainz.org";
+    private const string WikidataHost = "www.wikidata.org";
+    private const string WikipediaHostKey = "wikipedia.org";
+    private const string CoverArtHost = "coverartarchive.org";
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
@@ -108,6 +111,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
     {
         try
         {
+            await _rateLimiter.WaitAsync(WikidataHost, ct);
             var url = $"{WikidataBaseUrl}?action=wbgetentities&ids={Uri.EscapeDataString(qid)}&props=claims&format=json";
             using var stream = await _httpClient.GetStreamAsync(url, ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
@@ -138,6 +142,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
     {
         try
         {
+            await _rateLimiter.WaitAsync(WikidataHost, ct);
             var url = $"{WikidataBaseUrl}?action=wbgetentities&ids={Uri.EscapeDataString(qid)}&props=sitelinks&format=json";
             using var stream = await _httpClient.GetStreamAsync(url, ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
@@ -173,6 +178,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
     {
         try
         {
+            await _rateLimiter.WaitAsync(WikipediaHostKey, ct);
             var url = $"https://{Uri.EscapeDataString(lang)}.wikipedia.org/api/rest_v1/page/summary/{Uri.EscapeDataString(title)}";
             using var stream = await _httpClient.GetStreamAsync(url, ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
@@ -293,7 +299,7 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPerso
 
                     try
                     {
-                        await _rateLimiter.WaitAsync(Host, cancellationToken);
+                        await _rateLimiter.WaitAsync(CoverArtHost, cancellationToken);
                         var coverUrl = $"{CoverArtBaseUrl}/release-group/{rg.Id}";
                         var response = await _httpClient.GetAsync(coverUrl, cancellationToken);
                         if (!response.IsSuccessStatusCode) continue;

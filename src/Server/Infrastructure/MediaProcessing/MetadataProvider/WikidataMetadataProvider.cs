@@ -1,7 +1,7 @@
-using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -10,12 +10,20 @@ namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
 public class WikidataMetadataProvider : IMusicArtistMetadataProvider
 {
+    public const string WikidataHost = "www.wikidata.org";
+    public const string WikipediaHostKey = "wikipedia.org";
+
     private readonly HttpClient _httpClient;
+    private readonly OutboundRateLimiter _rateLimiter;
     private readonly ILogger<WikidataMetadataProvider> _logger;
 
-    public WikidataMetadataProvider(HttpClient httpClient, ILogger<WikidataMetadataProvider> logger)
+    public WikidataMetadataProvider(
+        HttpClient httpClient,
+        OutboundRateLimiter rateLimiter,
+        ILogger<WikidataMetadataProvider> logger)
     {
         _httpClient = httpClient;
+        _rateLimiter = rateLimiter;
         var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.0.0";
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{version}");
         _httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/json");
@@ -59,6 +67,7 @@ public class WikidataMetadataProvider : IMusicArtistMetadataProvider
     {
         try
         {
+            await _rateLimiter.WaitAsync(WikidataHost, ct);
             var url = $"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={Uri.EscapeDataString(qid)}&props=claims|sitelinks&format=json";
             using var stream = await _httpClient.GetStreamAsync(url, ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
@@ -118,6 +127,8 @@ public class WikidataMetadataProvider : IMusicArtistMetadataProvider
     {
         try
         {
+            // Pace all language editions on one logical key; ConfigureHost uses wikipedia.org.
+            await _rateLimiter.WaitAsync(WikipediaHostKey, ct);
             var url = $"https://{Uri.EscapeDataString(lang)}.wikipedia.org/api/rest_v1/page/summary/{Uri.EscapeDataString(title)}";
             using var stream = await _httpClient.GetStreamAsync(url, ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
