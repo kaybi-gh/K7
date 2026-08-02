@@ -93,7 +93,7 @@ builder.Services.AddSingleton<IFeedHubHostService, FeedHubHostService>();
 builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
 builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
 builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
-builder.Services.AddSingleton<IPageFilterStorage, PageFilterStorage>();
+builder.Services.AddScoped<IPageFilterStorage, PageFilterStorage>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
 builder.Services.AddSingleton<ILocalUserService, StubbedLocalUserService>();
