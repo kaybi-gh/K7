@@ -2,7 +2,7 @@ name: Client release
 
 on:
   # Draft-first: repo has immutable releases, so assets must be uploaded before publish.
-  # Create with `gh release create ... --draft`, then this workflow uploads and publishes.
+  # Create with `gh release create ... --draft`, then this workflow uploads assets and leaves the draft.
   release:
     types: [created]
   workflow_dispatch:
@@ -40,6 +40,14 @@ jobs:
             DRAFT=true
           elif [ "$(gh release view "${TAG}" --repo "${{ github.repository }}" --json isDraft --jq .isDraft)" = "true" ]; then
             DRAFT=true
+          fi
+          if [ "${DRAFT}" != "true" ]; then
+            echo "::error::Release ${TAG} must be a draft. This repo has immutable releases; publish only after client assets are uploaded (see docs/dev/releasing.md)."
+            exit 1
+          fi
+          if [ "$(gh release view "${TAG}" --repo "${{ github.repository }}" --json isImmutable --jq .isImmutable)" = "true" ]; then
+            echo "::error::Release ${TAG} is immutable; assets can no longer be uploaded. Create a new draft tag."
+            exit 1
           fi
           echo "is_draft=${DRAFT}" >> "${GITHUB_OUTPUT}"
           echo "Resolved ${TAG} (draft=${DRAFT})"
