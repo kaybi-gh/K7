@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using K7.Server.Application.Common;
 using K7.Server.Application.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +21,7 @@ public sealed class TvdbAuthenticationService
 
     private readonly HttpClient _httpClient;
     private readonly OutboundRateLimiter _rateLimiter;
+    private readonly MetadataProviderCooldownStore _metadataProviderCooldownStore;
     private readonly ILogger<TvdbAuthenticationService> _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private string? _token;
@@ -28,10 +30,12 @@ public sealed class TvdbAuthenticationService
     public TvdbAuthenticationService(
         HttpClient httpClient,
         OutboundRateLimiter rateLimiter,
+        MetadataProviderCooldownStore metadataProviderCooldownStore,
         ILogger<TvdbAuthenticationService> logger)
     {
         _httpClient = httpClient;
         _rateLimiter = rateLimiter;
+        _metadataProviderCooldownStore = metadataProviderCooldownStore;
         _logger = logger;
     }
 
@@ -57,6 +61,7 @@ public sealed class TvdbAuthenticationService
                 {
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? DefaultRetryAfter;
                     _rateLimiter.ReportRetryAfter(TvdbApiClient.Host, retryAfter);
+                    _metadataProviderCooldownStore.Report(MetadataProviderNames.Tvdb, retryAfter);
                     _logger.LogDebug(
                         "TVDB login rate limited, retry after {RetryAfterSeconds}s",
                         retryAfter.TotalSeconds);

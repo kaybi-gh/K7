@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddSingleton<IBoundedMemoryCache>(sp => sp.GetRequiredService<BoundedMemoryCache>());
         services.AddSingleton<MediaQueryCacheInvalidator>();
         services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
+        services.AddSingleton<MetadataProviderCooldownStore>();
         services.AddSingleton(sp =>
         {
             var limiter = new OutboundRateLimiter();
@@ -91,8 +92,11 @@ public static class DependencyInjection
             limiter.ConfigureHost("api4.thetvdb.com", TimeSpan.FromMilliseconds(500));
             limiter.ConfigureHost("artworks.thetvdb.com", TimeSpan.FromMilliseconds(200));
             limiter.ConfigureHost("image.tmdb.org", TimeSpan.FromMilliseconds(50));
+            limiter.ConfigureHost("www.wikidata.org", TimeSpan.FromSeconds(1));
+            limiter.ConfigureHost("wikipedia.org", TimeSpan.FromSeconds(1));
             limiter.ConfigureHost("commons.wikimedia.org", TimeSpan.FromSeconds(2));
             limiter.ConfigureHost("upload.wikimedia.org", TimeSpan.FromSeconds(2));
+            limiter.ConfigureHost("coverartarchive.org", TimeSpan.FromMilliseconds(500));
             return limiter;
         });
         services.AddScoped<IBackgroundTaskExecutionContext, BackgroundTaskExecutionContext>();
@@ -108,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IStreamPlaybackService, StreamPlaybackService>();
         services.AddScoped<IPlaybackBoostService, PlaybackBoostService>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
+        services.AddScoped<SerieSupplementalCastEnrichmentService>();
         services.AddScoped<MediaIdentityLookupService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<MediaPictureReadyNotifier>();

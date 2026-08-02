@@ -1,4 +1,6 @@
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 
@@ -43,6 +45,38 @@ public class BackgroundTaskFailureTests
         task.Status.Should().Be(BackgroundTaskStatus.WaitingForRetry);
         task.NextRetryAfter.Should().NotBeNull();
         task.CompletedAt.Should().BeNull();
+    }
+
+    [Test]
+    public void ScheduleRateLimitedRetry_ShouldAlignNextRetryAndBoostPriority()
+    {
+        var task = CreateInProgressTask();
+        task.Priority = 0;
+        var now = DateTimeOffset.Parse("2026-08-02T10:00:00Z");
+        var retryAfter = TimeSpan.FromSeconds(90);
+
+        BackgroundTaskFailure.ScheduleRateLimitedRetry(task, retryAfter, now);
+
+        task.Status.Should().Be(BackgroundTaskStatus.WaitingForRetry);
+        task.NextRetryAfter.Should().Be(now.Add(retryAfter));
+        task.Priority.Should().Be(BackgroundTaskScheduling.OnDemandBoost);
+    }
+
+    [Test]
+    public void Handle_ShouldUseProviderRateLimitedPath()
+    {
+        var task = CreateInProgressTask();
+        var before = DateTimeOffset.UtcNow;
+
+        BackgroundTaskFailure.Handle(
+            task,
+            new ProviderRateLimitedException("tvdb", TimeSpan.FromSeconds(30)),
+            TimeSpan.FromMinutes(15));
+
+        task.Status.Should().Be(BackgroundTaskStatus.WaitingForRetry);
+        task.NextRetryAfter.Should().BeOnOrAfter(before.AddSeconds(29));
+        task.NextRetryAfter.Should().BeOnOrBefore(DateTimeOffset.UtcNow.AddSeconds(35));
+        task.Priority.Should().BeGreaterThanOrEqualTo(BackgroundTaskScheduling.OnDemandBoost);
     }
 
     [Test]

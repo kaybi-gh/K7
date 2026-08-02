@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using K7.Server.Application.Common;
 using K7.Server.Application.Services;
 using Microsoft.Extensions.Logging;
 
@@ -23,18 +24,21 @@ public sealed class TvdbApiClient
     private readonly HttpClient _httpClient;
     private readonly TvdbAuthenticationService _authentication;
     private readonly OutboundRateLimiter _rateLimiter;
+    private readonly MetadataProviderCooldownStore _metadataProviderCooldownStore;
     private readonly ILogger<TvdbApiClient> _logger;
 
     public TvdbApiClient(
         HttpClient httpClient,
         TvdbAuthenticationService authentication,
         OutboundRateLimiter rateLimiter,
+        MetadataProviderCooldownStore metadataProviderCooldownStore,
         ILogger<TvdbApiClient> logger)
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri(BaseUrl);
         _authentication = authentication;
         _rateLimiter = rateLimiter;
+        _metadataProviderCooldownStore = metadataProviderCooldownStore;
         _logger = logger;
     }
 
@@ -192,6 +196,7 @@ public sealed class TvdbApiClient
     {
         var retryAfter = response.Headers.RetryAfter?.Delta ?? DefaultRetryAfter;
         _rateLimiter.ReportRetryAfter(Host, retryAfter);
+        _metadataProviderCooldownStore.Report(MetadataProviderNames.Tvdb, retryAfter);
         _logger.LogDebug(
             "TVDB rate limited for {Path}, retry after {RetryAfterSeconds}s",
             path,

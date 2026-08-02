@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -28,6 +29,7 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly BackgroundTaskTypeRegistry _typeRegistry;
     private readonly IBackgroundTaskNotifier _notifier;
     private readonly IBackgroundTaskCancellationRegistry _cancellationRegistry;
+    private readonly MetadataProviderCooldownStore _metadataProviderCooldownStore;
     private readonly ConcurrentDictionary<string, int> _activeCountByLaneKey = new();
     private readonly ConcurrentDictionary<Guid, byte> _executingTaskIds = new();
     private readonly List<WorkerHandle> _workers = [];
@@ -45,7 +47,8 @@ public class BackgroundTasksProcessingService : BackgroundService
         IBackgroundTaskQueue taskQueue,
         BackgroundTaskTypeRegistry typeRegistry,
         IBackgroundTaskNotifier notifier,
-        IBackgroundTaskCancellationRegistry cancellationRegistry)
+        IBackgroundTaskCancellationRegistry cancellationRegistry,
+        MetadataProviderCooldownStore metadataProviderCooldownStore)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -53,6 +56,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         _typeRegistry = typeRegistry;
         _notifier = notifier;
         _cancellationRegistry = cancellationRegistry;
+        _metadataProviderCooldownStore = metadataProviderCooldownStore;
     }
 
     public int ActiveWorkerCount
@@ -124,25 +128,12 @@ public class BackgroundTasksProcessingService : BackgroundService
             return _cachedLaneLimits;
     }
 
-    /// <summary>
-    /// Resolves the limit of a gate key, which is a lane name optionally suffixed with a peer id.
-    /// </summary>
-    private static int ResolveLimitForKey(string key, Dictionary<BackgroundTaskLane, int> limits)
-    {
-        var separatorIndex = key.IndexOf(':', StringComparison.Ordinal);
-        var laneName = separatorIndex < 0 ? key : key[..separatorIndex];
-
-        return Enum.TryParse<BackgroundTaskLane>(laneName, out var lane)
-            ? limits.GetValueOrDefault(lane, BackgroundTaskScheduling.GetDefaultLimit(lane))
-            : BackgroundTaskScheduling.DefaultLaneLimit;
-    }
-
     private async Task<int> ReadWorkerCountAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
         var count = await settings.GetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, cancellationToken);
-        return Math.Max(1, count);
+        return BackgroundTaskScheduling.ClampWorkerCount(count);
     }
 
     private void SignalWorkers(int count)
@@ -340,23 +331,26 @@ public class BackgroundTasksProcessingService : BackgroundService
             executionContext.Reset();
 
             var limits = GetCachedLaneLimits();
-            var saturatedKeys = _activeCountByLaneKey
-                .Where(kvp => kvp.Value >= ResolveLimitForKey(kvp.Key, limits))
-                .Select(kvp => kvp.Key)
-                .ToHashSet(StringComparer.Ordinal);
+            var saturation = BackgroundTaskCandidateSelector.BuildSaturation(
+                _activeCountByLaneKey,
+                limits,
+                _metadataProviderCooldownStore.GetCoolingDownProviders());
 
             var now = DateTimeOffset.UtcNow;
 
-            // Fetch several candidates rather than one: a lane can saturate between this query and the
-            // gate acquisition, and giving up on the single best row would stall every worker on the
-            // same head of line until the next wake-up.
-            var candidates = await context.BackgroundTasks
+            // Spillover: exclude saturated lane/provider keys from the candidate window so WorkClass
+            // preference cannot starve lower-priority work on free keys (idle workers).
+            var candidatesQuery = context.BackgroundTasks
                 .Where(t => t.Status == BackgroundTaskStatus.Pending
-                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)))
+                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)));
+
+            candidatesQuery = BackgroundTaskCandidateSelector.ApplySpilloverFilter(candidatesQuery, saturation);
+
+            var candidates = await candidatesQuery
                 .OrderByDescending(t => t.WorkClass)
                 .ThenByDescending(t => t.Priority)
                 .ThenBy(t => t.Created)
-                .Select(t => new { t.Id, t.Lane, t.FederationPeerId })
+                .Select(t => new BackgroundTaskPickCandidate(t.Id, t.Lane, t.FederationPeerId, t.MetadataProviderName))
                 .Take(BackgroundTaskScheduling.CandidateFetchCount)
                 .ToListAsync(stoppingToken);
 
@@ -365,33 +359,19 @@ public class BackgroundTasksProcessingService : BackgroundService
                 return;
             }
 
-            string? acquiredKey = null;
-            Guid claimedCandidateId = Guid.Empty;
+            var selected = BackgroundTaskCandidateSelector.TryAcquireNext(
+                candidates,
+                _activeCountByLaneKey,
+                limits,
+                saturation,
+                out var acquiredKey);
 
-            foreach (var option in candidates)
-            {
-                var key = BackgroundTaskConcurrencyGate.BuildKey(option.Lane, option.FederationPeerId);
-                if (saturatedKeys.Contains(key))
-                    continue;
-
-                var laneLimit = limits.GetValueOrDefault(option.Lane, BackgroundTaskScheduling.GetDefaultLimit(option.Lane));
-                if (!BackgroundTaskConcurrencyGate.TryAcquire(_activeCountByLaneKey, key, laneLimit))
-                {
-                    saturatedKeys.Add(key);
-                    continue;
-                }
-
-                acquiredKey = key;
-                claimedCandidateId = option.Id;
-                break;
-            }
-
-            if (acquiredKey is null)
+            if (selected is null || acquiredKey is null)
             {
                 return;
             }
 
-            var candidate = new { Id = claimedCandidateId };
+            var candidate = new { selected.Value.Id };
 
             // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
             // This prevents duplicate execution when multiple workers race on the same task.
@@ -592,6 +572,11 @@ public class BackgroundTasksProcessingService : BackgroundService
                 catch (Exception ex)
                 {
                     sw.Stop();
+                    if (ex is ProviderRateLimitedException rateLimited)
+                    {
+                        _metadataProviderCooldownStore.Report(rateLimited.ProviderName, rateLimited.RetryAfter);
+                    }
+
                     _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
                         task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
                     task.ErrorDetails = TruncateErrorDetails(ex.Message);
