@@ -35,10 +35,10 @@
     <!-- App Identifier -->
     <ApplicationId>com.k7.maui</ApplicationId>
 
-    <!-- Versions (ApplicationDisplayVersion = semver; ApplicationVersion = Android/iOS build number).
-         System.Version rejects prerelease labels (e.g. 1.0.0-rc.1), so parse the numeric core only. -->
+    <!-- Versions: Resizetizer requires ApplicationDisplayVersion as 3-part numeric semver
+         (no prerelease label). System.Version also rejects labels, so parse the core only. -->
     <_VersionCore>$([System.String]::Copy('$(Version)').Split('-')[0])</_VersionCore>
-    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>$(_VersionCore)</ApplicationDisplayVersion>
     <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Minor), 100)))), $([System.Version]::Parse('$(_VersionCore)').Build)))</ApplicationVersion>
 
     <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->

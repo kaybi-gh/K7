@@ -30,9 +30,11 @@ jobs:
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${TAG#v}" >> "${GITHUB_OUTPUT}"
 
+  # Windows runner: Linux hits NU1102 on Microsoft.NETCore.App.Runtime.Mono.linux-x64
+  # (desktop Mono host packs removed in .NET 9+; not published for .NET 10).
   publish-android:
     needs: resolve
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -56,6 +58,7 @@ jobs:
       # Fallback: ephemeral CI keystore (sideload only; signature changes each run).
       - name: Prepare Android signing keystore
         id: keystore
+        shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -92,20 +95,19 @@ jobs:
           echo "envfile=${envfile}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish Android APK
+        shell: bash
         run: |
           set -euo pipefail
           # shellcheck disable=SC1090
           source "${{ steps.keystore.outputs.envfile }}"
           # K7PublishPlatform=android: single TFM in MAUI csproj (avoids NETSDK1178 for ios
           # without global -p:TargetFrameworks=, which breaks ProjectReference restore).
-          # Do not set UseMonoRuntime=false here: Android then looks for CoreCLR runtime packs
-          # (NETSDK1181) that are not in the maui-android workload.
+          # Version alone drives ApplicationDisplayVersion via csproj (_VersionCore).
           dotnet publish "${{ env.MAUI_PROJECT }}" \
             -f net10.0-android \
             -c Release \
             -p:K7PublishPlatform=android \
             -p:Version="${{ needs.resolve.outputs.version }}" \
-            -p:ApplicationDisplayVersion="${{ needs.resolve.outputs.version }}" \
             -p:AndroidKeyStore=true \
             -p:AndroidSigningKeyStore="${{ steps.keystore.outputs.path }}" \
             -p:AndroidSigningStorePass="${STORE_PASS}" \
@@ -115,6 +117,7 @@ jobs:
 
       - name: Stage APK
         id: apk
+        shell: bash
         run: |
           set -euo pipefail
           apk=$(find "${{ runner.temp }}/android-publish" -type f \( -name '*.apk' \) | head -n 1)
@@ -129,6 +132,7 @@ jobs:
           echo "Staged $(basename "${out}") from ${apk}"
 
       - name: Upload APK to release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -160,6 +164,7 @@ jobs:
           $out = Join-Path $env:RUNNER_TEMP "win-publish"
           # K7PublishPlatform=windows: single TFM in MAUI csproj only (not global TargetFrameworks).
           # UseMonoRuntime=false: avoid Microsoft.NETCore.App.Runtime.Mono.win-x64 (NU1102).
+          # Version alone drives ApplicationDisplayVersion via csproj (_VersionCore / no -rc label).
           dotnet publish $env:MAUI_PROJECT `
             -f net10.0-windows10.0.19041.0 `
             -c Release `
@@ -170,7 +175,6 @@ jobs:
             -p:WindowsPackageType=None `
             -p:PublishSingleFile=false `
             -p:Version="${{ needs.resolve.outputs.version }}" `
-            -p:ApplicationDisplayVersion="${{ needs.resolve.outputs.version }}" `
             -o $out
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
