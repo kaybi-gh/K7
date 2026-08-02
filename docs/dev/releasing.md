@@ -4,23 +4,26 @@
 
 1. PRs merge to `main` with Conventional Commit titles and changelog labels.
 2. **release-drafter** keeps a draft GitHub Release updated (`.github/workflows/release-drafter.yml`, `.github/release-drafter.yml`).
-3. Maintainers create the GitHub Release as a **draft** (tag `vX.Y.Z`). The repo uses immutable releases, so assets cannot be added after publish.
-4. **client-release** (`.github/workflows/client-release.yml`) runs on release creation, uploads native clients, then publishes the draft:
+3. Maintainers create the Git tag and a **draft** GitHub Release (tag `vX.Y.Z`). The repo uses immutable releases, so assets cannot be added after publish.
+4. **client-release** uploads native clients to the draft:
    - `K7-{version}-android.apk` - sideload / Android TV
    - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; run `K7.exe` inside the zip
-5. Publishing the draft triggers **sync-version** and **docker-release**.
+5. Maintainers **publish the draft** (human / non-`GITHUB_TOKEN`). That triggers **sync-version** and **docker-release**.
 6. **sync-version** rewrites `<Version>` in `Directory.Build.props` to match the tag and commits `chore: sync version to ...`.
 7. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.
 
-Example dry-run:
+Example:
 
 ```bash
-gh release create vX.Y.Z-rc.N --draft --prerelease --target main \
-  --title "K7 vX.Y.Z-rc.N" \
-  --notes "Dry-run of release pipelines, not the official 1.0.0"
+git tag vX.Y.Z && git push github vX.Y.Z
+gh release create vX.Y.Z --draft --verify-tag --title "K7 vX.Y.Z" --notes-file notes.md
+# If client-release did not start (API draft create may not fire release:created):
+gh workflow run client-release.yml -f tag=vX.Y.Z
+# After APK + zip appear on the draft:
+gh release edit vX.Y.Z --draft=false
 ```
 
-Manual re-attach to an existing mutable/draft tag: Actions -> Client release -> Run workflow with the tag.
+Manual re-attach: Actions -> Client release -> Run workflow with the tag.
 
 iOS / Mac Catalyst packages are not published from CI (Apple signing required).
 
@@ -36,7 +39,7 @@ Draft body comes from `.github/release-drafter.yml`. Section order:
 
 Edit **Highlights** and the top **Breaking changes** summary just before you publish. Release Drafter regenerates the draft on pushes to `main`, so earlier manual edits may be overwritten.
 
-Creating the draft triggers **client-release** (upload then publish). Publishing then triggers **docker-release**. Artifact references in the notes:
+Client assets land on the draft; publishing the draft triggers **docker-release**. Artifact references in the notes:
 
 | Artifact | Path / reference |
 |---|---|

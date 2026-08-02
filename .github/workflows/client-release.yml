@@ -215,16 +215,23 @@ jobs:
             --repo "${{ github.repository }}" \
             --clobber
 
-  # Immutable releases lock assets on publish; undraft only after both uploads succeed.
-  publish-release:
+  # Leave the release as a draft. Publishing with GITHUB_TOKEN does not trigger
+  # docker-release / sync-version (GitHub skips workflow events from GITHUB_TOKEN).
+  # Maintainer publishes the draft after assets are present so those workflows run.
+  assets-ready:
     needs: [resolve, publish-android, publish-windows]
-    if: needs.resolve.outputs.is_draft == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Publish draft release
+      - name: Confirm assets uploaded
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release edit "${{ needs.resolve.outputs.tag }}" \
-            --repo "${{ github.repository }}" \
-            --draft=false
+          set -euo pipefail
+          tag="${{ needs.resolve.outputs.tag }}"
+          assets="$(gh release view "${tag}" --repo "${{ github.repository }}" --json assets --jq '[.assets[].name] | join(", ")')"
+          echo "Assets on ${tag}: ${assets}"
+          echo "${assets}" | grep -q 'android.apk'
+          echo "${assets}" | grep -q 'win-x64.zip'
+          if [ "${{ needs.resolve.outputs.is_draft }}" = "true" ]; then
+            echo "Draft ${tag} is ready to publish (immutable releases: publish only after assets are attached)."
+          fi
