@@ -63,7 +63,7 @@ Same interface in the browser and in native apps.
 | Windows | Native app |
 | iOS / Mac | Native apps exist but are **not tested** (no Apple hardware) |
 
-Native builds: download from GitHub Releases when published (`K7-*-android.apk` or `K7-*-win-x64.zip`), or ask your admin. On first launch, enter the server address (for example `k7.example.com`). **https** is assumed; use `http://...` only for plain HTTP on a local network. The app checks that the server responds, then saves the address.
+Native builds: download from GitHub Releases when published (`K7-*-android.apk` or `K7-*-win-x64.zip`), or ask your admin. On Windows, extract the **whole** zip folder and run `K7.exe` from that folder (do not move the exe alone). The app needs the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually already installed with Microsoft Edge). On first launch, enter the server address (for example `k7.example.com`). **https** is assumed; use `http://...` only for plain HTTP on a local network. The app checks that the server responds, then saves the address.
 
 After that first setup, the app **closes** (or exits to the home screen). Open it again and sign in. This restart quirk is a **known limitation** of the native apps.
 

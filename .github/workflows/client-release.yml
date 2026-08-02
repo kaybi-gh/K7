@@ -199,7 +199,16 @@ jobs:
             exit 1
           }
 
+          # Friendly launcher name. WinUI unpackaged loads {exeBasename}.pri next to the
+          # process; copying only the exe (without K7.pri) crashes in Microsoft.UI.Xaml.dll
+          # (0xc000027b). AssemblyName=K7 is not used: NuGet reports ambiguous project name K7.
+          $pri = Join-Path $exe.DirectoryName "K7.Clients.MAUI.pri"
+          if (-not (Test-Path $pri)) {
+            Write-Error "K7.Clients.MAUI.pri not found next to $($exe.FullName)"
+            exit 1
+          }
           Copy-Item $exe.FullName (Join-Path $out "K7.exe") -Force
+          Copy-Item $pri (Join-Path $out "K7.pri") -Force
           $zip = Join-Path $env:RUNNER_TEMP "K7-${{ needs.resolve.outputs.version }}-win-x64.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -Force

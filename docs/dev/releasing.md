@@ -7,7 +7,7 @@
 3. Maintainers create the Git tag and a **draft** GitHub Release (tag `vX.Y.Z`). The repo uses immutable releases, so assets cannot be added after publish.
 4. **client-release** uploads native clients to the draft:
    - `K7-{version}-android.apk` - sideload / Android TV
-   - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; run `K7.exe` inside the zip
+   - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; extract the whole folder and run `K7.exe` (needs matching `K7.pri` sidecars; not a single-file exe). Requires WebView2 Runtime and a recent Windows App Runtime on the machine.
 5. Maintainers **publish the draft** (human / non-`GITHUB_TOKEN`). That triggers **sync-version** and **docker-release**.
 6. **sync-version** rewrites `<Version>` in `Directory.Build.props` to match the tag and commits `chore: sync version to ...`.
 7. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.

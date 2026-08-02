@@ -58,6 +58,8 @@ dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
   -p:WindowsPackageType=None
 ```
 
+Output entry point is `K7.Clients.MAUI.exe` (plus `K7.Clients.MAUI.pri`). Release CI also copies those to `K7.exe` / `K7.pri` for a shorter launcher name - WinUI requires the `.pri` basename to match the `.exe`. Do not ship a renamed exe without the matching `.pri`.
+
 Published Release assets (APK + Windows zip) are produced by [client-release](releasing.md#android-signing) on each GitHub Release.
 
 Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing.
