@@ -40,7 +40,9 @@ public static class SupplementalSerieCastEnricher
                 primary.PortraitPicture = new MetadataPicture
                 {
                     OriginalRemoteUri = match.PortraitPicture.OriginalRemoteUri,
-                    Type = MetadataPictureType.Portrait
+                    Type = MetadataPictureType.Portrait,
+                    PersonRoleId = primary.Id == Guid.Empty ? null : primary.Id,
+                    PersonId = primary.Person.Id == Guid.Empty ? null : primary.Person.Id
                 };
             }
         }

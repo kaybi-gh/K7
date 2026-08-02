@@ -52,7 +52,8 @@ public static class PersonMetadataMergeHelper
             var picture = new MetadataPicture
             {
                 OriginalRemoteUri = source.PortraitPicture.OriginalRemoteUri,
-                Type = MetadataPictureType.Portrait
+                Type = MetadataPictureType.Portrait,
+                PersonId = target.Id == Guid.Empty ? null : target.Id
             };
             picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
             target.PortraitPicture = picture;

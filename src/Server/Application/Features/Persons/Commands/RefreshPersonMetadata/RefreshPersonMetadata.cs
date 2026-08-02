@@ -79,7 +79,8 @@ public class RefreshPersonMetadataCommandHandler(
                 var picture = new MetadataPicture
                 {
                     OriginalRemoteUri = imageUri,
-                    Type = MetadataPictureType.Portrait
+                    Type = MetadataPictureType.Portrait,
+                    PersonId = person.Id
                 };
                 picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
                 person.PortraitPicture = picture;
