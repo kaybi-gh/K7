@@ -32,4 +32,20 @@
     </Content>
   </ItemGroup>
 
+  <!-- Same LibMan / static web assets first-build gap as Shared.UI (wwwroot/dist is gitignored). -->
+  <PropertyGroup>
+    <ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+      LibraryManagerRestore;
+      IncludeLibraryManagerWwwrootContent;
+      $(ResolveCurrentProjectStaticWebAssetsInputsDependsOn)
+    </ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="IncludeLibraryManagerWwwrootContent" AfterTargets="LibraryManagerRestore">
+    <ItemGroup>
+      <_LibManDistFiles Include="wwwroot\dist\**\*" />
+      <Content Include="@(_LibManDistFiles)" Exclude="@(Content)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

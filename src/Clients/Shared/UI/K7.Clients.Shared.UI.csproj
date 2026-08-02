@@ -36,4 +36,29 @@
     </Content>
   </ItemGroup>
 
+  <!--
+    LibMan restores wwwroot/dist during the build. Static web assets are discovered from
+    Content items evaluated earlier, so first CI builds omit those files from publish/APK
+    unless we restore before discovery and re-include them as Content.
+  -->
+  <PropertyGroup>
+    <ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+      LibraryManagerRestore;
+      IncludeLibraryManagerWwwrootContent;
+      $(ResolveCurrentProjectStaticWebAssetsInputsDependsOn)
+    </ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="IncludeLibraryManagerWwwrootContent" AfterTargets="LibraryManagerRestore">
+    <PropertyGroup>
+      <_EmblaUmd>$(MSBuildProjectDirectory)\wwwroot\dist\embla-carousel\embla-carousel.umd.js</_EmblaUmd>
+    </PropertyGroup>
+    <Error Text="LibMan asset missing: $(_EmblaUmd). Run 'dotnet tool restore' and 'dotnet tool run libman restore' in $(MSBuildProjectDirectory)."
+           Condition="!Exists('$(_EmblaUmd)')" />
+    <ItemGroup>
+      <_LibManDistFiles Include="wwwroot\dist\**\*" />
+      <Content Include="@(_LibManDistFiles)" Exclude="@(Content)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

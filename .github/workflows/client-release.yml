@@ -68,6 +68,13 @@ jobs:
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android --skip-manifest-update
 
+      # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
       # Prefer a long-lived keystore from secrets so APK updates keep the same signature.
       # Fallback: ephemeral CI keystore (sideload only; signature changes each run).
       - name: Prepare Android signing keystore
@@ -170,6 +177,13 @@ jobs:
 
       - name: Install MAUI Windows workload
         run: dotnet workload install maui-windows --skip-manifest-update
+
+      # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
 
       - name: Publish Windows (self-contained unpackaged)
         id: win

@@ -56,6 +56,13 @@ jobs:
       - name: Restore
         run: dotnet restore K7.CI.slnf
 
+      # wwwroot/dist is gitignored; must exist before build so static web assets pick them up.
+      - name: Restore LibMan libraries
+        run: |
+          dotnet tool restore
+          (cd src/Clients/Shared/UI && dotnet tool run libman -- restore)
+          (cd src/Clients/Web && dotnet tool run libman -- restore)
+
       - name: Check vulnerable NuGet packages
         run: |
           set -euo pipefail
@@ -104,6 +111,12 @@ jobs:
 
       - name: Restore
         run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
+
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
 
       - name: Build
         run: >
