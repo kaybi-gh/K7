@@ -108,7 +108,7 @@ devices:
   - /dev/dri:/dev/dri
 ```
 
-Rebuild/pull an image that includes VAAPI drivers (`mesa-va-drivers`, `intel-media-va-driver`, ...). The stock K7 image installs these; older builds with only `ffmpeg` will not encode even with `/dev/dri` mounted.
+Rebuild/pull an image that includes VAAPI drivers (`va-driver-all`, plus Intel non-free when available on amd64). The stock K7 image installs these; older builds with only `ffmpeg` will not encode even with `/dev/dri` mounted.
 
 The entrypoint adds `appuser` to the GIDs that own `/dev/dri/renderD*` / `card*` so you usually do **not** need Compose `group_add`. If encode probes still fail with permission errors, add the host `video` / `render` GIDs explicitly:
 

@@ -40,28 +40,26 @@ RUN dotnet publish "src/Server/Web/K7.Server.Web.csproj" \
 
 # VS Fast Mode debug stage (F5 in Visual Studio with Docker profile)
 FROM build AS dev
+# va-driver-all pulls arch-appropriate VAAPI drivers (Intel packages are amd64/i386 only).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ffmpeg \
         vainfo \
-        mesa-va-drivers \
-        intel-media-va-driver \
-        i965-va-driver \
+        va-driver-all \
     && (apt-get install -y --no-install-recommends intel-media-va-driver-non-free || true) \
     && rm -rf /var/lib/apt/lists/*
 EXPOSE 7080 7443
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
+# va-driver-all pulls arch-appropriate VAAPI drivers (Intel packages are amd64/i386 only).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gosu \
         ffmpeg \
         curl \
         vainfo \
-        mesa-va-drivers \
-        intel-media-va-driver \
-        i965-va-driver \
+        va-driver-all \
     && (apt-get install -y --no-install-recommends intel-media-va-driver-non-free || true) \
     && rm -rf /var/lib/apt/lists/*
 
