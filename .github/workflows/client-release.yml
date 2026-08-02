@@ -28,15 +28,21 @@ jobs:
     steps:
       - name: Resolve tag and version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${TAG#v}" >> "${GITHUB_OUTPUT}"
+          DRAFT=false
           if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.draft }}" = "true" ]; then
-            echo "is_draft=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "is_draft=false" >> "${GITHUB_OUTPUT}"
+            DRAFT=true
+          elif [ "$(gh release view "${TAG}" --repo "${{ github.repository }}" --json isDraft --jq .isDraft)" = "true" ]; then
+            DRAFT=true
           fi
+          echo "is_draft=${DRAFT}" >> "${GITHUB_OUTPUT}"
+          echo "Resolved ${TAG} (draft=${DRAFT})"
 
   # Windows runner: Linux hits NU1102 on Microsoft.NETCore.App.Runtime.Mono.linux-x64
   # (desktop Mono host packs removed in .NET 9+; not published for .NET 10).
