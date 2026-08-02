@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
@@ -20,6 +21,7 @@ public class GetBackgroundTaskSettings : IEndpoint
             [FromServices] BackgroundTasksProcessingService processingService,
             [FromServices] IServerSettingsService settings,
             [FromServices] IApplicationDbContext context,
+            [FromServices] MetadataProviderCooldownStore metadataProviderCooldownStore,
             CancellationToken cancellationToken) =>
         {
             var workerCount = await settings.GetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, cancellationToken);
@@ -42,7 +44,7 @@ public class GetBackgroundTaskSettings : IEndpoint
                 {
                     Lane = lane,
                     Limit = limits.GetValueOrDefault(lane, BackgroundTaskScheduling.GetDefaultLimit(lane)),
-                    // Federation keys carry a peer suffix, so sum every key belonging to the lane.
+                    // Federation/Metadata keys carry a suffix, so sum every key belonging to the lane.
                     ActiveCount = activeCounts
                         .Where(kvp => kvp.Key == lane.ToString() || kvp.Key.StartsWith($"{lane}:", StringComparison.Ordinal))
                         .Sum(kvp => kvp.Value),
@@ -50,10 +52,41 @@ public class GetBackgroundTaskSettings : IEndpoint
                 })
                 .ToList();
 
+            var pendingByProvider = await context.BackgroundTasks
+                .Where(t => t.Lane == BackgroundTaskLane.Metadata
+                    && (t.Status == BackgroundTaskStatus.Pending
+                        || t.Status == BackgroundTaskStatus.WaitingForRetry))
+                .GroupBy(t => t.MetadataProviderName ?? MetadataProviderNames.Local)
+                .Select(g => new { Provider = g.Key, Count = g.Count() })
+                .ToListAsync(cancellationToken);
+
+            var pendingProviderLookup = pendingByProvider.ToDictionary(
+                x => x.Provider,
+                x => x.Count,
+                StringComparer.OrdinalIgnoreCase);
+
+            var activeCooldowns = metadataProviderCooldownStore.GetActiveCooldowns();
+
+            var metadataProviderNames = MetadataProviderNames.AdmissionKeys
+                .Select(provider =>
+                {
+                    var key = $"Metadata:{provider}";
+                    return new MetadataProviderStatsDto
+                    {
+                        Provider = provider,
+                        Limit = BackgroundTaskScheduling.MetadataProviderLimit,
+                        ActiveCount = activeCounts.GetValueOrDefault(key),
+                        PendingCount = pendingProviderLookup.GetValueOrDefault(provider),
+                        CooldownUntil = activeCooldowns.TryGetValue(provider, out var until) ? until : null
+                    };
+                })
+                .ToList();
+
             return Results.Ok(new BackgroundTaskSettingsDto
             {
                 WorkerCount = workerCount,
-                Lanes = lanes
+                Lanes = lanes,
+                MetadataProviders = metadataProviderNames
             });
         })
         .RequireAuthorization(Policies.AdminOnly)

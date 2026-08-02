@@ -36,6 +36,13 @@
                     <td><strong>@L["Priority"]</strong></td>
                     <td>@BackgroundTask.Priority</td>
                 </tr>
+                @if (BackgroundTask.MetadataProviderName is not null)
+                {
+                    <tr>
+                        <td><strong>@L["MetadataProviderName"]</strong></td>
+                        <td><K7Chip Size="sm" Color="default">@BackgroundTask.MetadataProviderName</K7Chip></td>
+                    </tr>
+                }
                 @if (BackgroundTask.FederationPeerId is not null)
                 {
                     <tr>
@@ -72,6 +79,10 @@
                         <td><code>@BackgroundTask.TargetEntityId</code></td>
                     </tr>
                 }
+                <tr>
+                    <td><strong>@L["Created"]</strong></td>
+                    <td>@BackgroundTask.Created.LocalDateTime.ToString("g")</td>
+                </tr>
                 @if (BackgroundTask.StartedAt is not null)
                 {
                     <tr>

@@ -62,7 +62,7 @@
   <data name="WorkClass_CriticalProbe" xml:space="preserve"><value>Critical probe</value></data>
   <data name="WorkClass_CriticalLink" xml:space="preserve"><value>Critical linking</value></data>
   <data name="ColAttempts" xml:space="preserve"><value>Attempts</value></data>
-  <data name="ColDate" xml:space="preserve"><value>Date</value></data>
+  <data name="ColDate" xml:space="preserve"><value>Created</value></data>
   <data name="ColDuration" xml:space="preserve"><value>Duration</value></data>
   <data name="DurationSubSecond" xml:space="preserve"><value>&lt; 1s</value></data>
   <data name="DurationSeconds" xml:space="preserve"><value>{0}s</value></data>
@@ -88,6 +88,8 @@
   <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Library indexing</value></data>
   <data name="TaskType_IndexLibraryPathsCommand" xml:space="preserve"><value>Path indexing</value></data>
   <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Metadata refresh</value></data>
+  <data name="TaskType_EnrichSerieTmdbSupplementalCommand" xml:space="preserve"><value>TMDB series enrichment</value></data>
+  <data name="TaskType_EnrichMusicArtistWikidataCommand" xml:space="preserve"><value>Wikidata artist enrichment</value></data>
   <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Intro/outro detection</value></data>
   <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Theme song generation</value></data>
   <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Person metadata refresh</value></data>

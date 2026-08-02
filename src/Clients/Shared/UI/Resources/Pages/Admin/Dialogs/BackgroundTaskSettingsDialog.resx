@@ -20,9 +20,14 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Nombre de workers</value></data>
+  <data name="WorkerCountHint" xml:space="preserve"><value>0 a 32 (0 = pause de tous les traitements en arriere-plan).</value></data>
   <data name="LanesTitle" xml:space="preserve"><value>Files d'exécution</value></data>
-  <data name="LaneLimitHint" xml:space="preserve"><value>Limite de parallélisme par file (0 à 32, 0 = file en pause).</value></data>
+  <data name="LaneLimitHint" xml:space="preserve"><value>Limite de parallélisme par file (0 à 32, 0 = file en pause). Pour Metadata: nombre max de providers externes en parallèle.</value></data>
   <data name="LaneLimit" xml:space="preserve"><value>Limite</value></data>
   <data name="ActiveCount" xml:space="preserve"><value>Actives</value></data>
   <data name="PendingCount" xml:space="preserve"><value>En attente</value></data>
+  <data name="MetadataProvidersTitle" xml:space="preserve"><value>Providers de métadonnées</value></data>
+  <data name="MetadataProvidersHint" xml:space="preserve"><value>Chaque provider de métadonnées n'exécute qu'une tâche à la fois (non configurable). Le pacing HTTP reste géré par le rate limiter sortant. Un 429 met le provider en pause jusqu'à l'heure indiquée.</value></data>
+  <data name="MetadataProviderLimit" xml:space="preserve"><value>Limite</value></data>
+  <data name="MetadataProviderCooldownUntil" xml:space="preserve"><value>En pause (429) jusqu'à {0}</value></data>
 </root>

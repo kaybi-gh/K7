@@ -32,6 +32,8 @@
   <data name="TargetType" xml:space="preserve"><value>Target Type</value></data>
   <data name="TargetId" xml:space="preserve"><value>Target ID</value></data>
   <data name="StartedAt" xml:space="preserve"><value>Started At</value></data>
+  <data name="Created" xml:space="preserve"><value>Created</value></data>
+  <data name="MetadataProviderName" xml:space="preserve"><value>Metadata provider</value></data>
   <data name="CompletedAt" xml:space="preserve"><value>Completed At</value></data>
   <data name="Duration" xml:space="preserve"><value>Duration</value></data>
   <data name="NextRetryAfter" xml:space="preserve"><value>Next Retry After</value></data>

@@ -51,6 +51,30 @@
     white-space: nowrap;
 }
 
+.background-task-settings__provider-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-bottom: 0.35rem;
+}
+
+.background-task-settings__provider-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.background-task-settings__provider-limit {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.background-task-settings__provider-cooldown {
+    font-size: var(--text-xs);
+    color: var(--color-warning, #b45309);
+}
+
 @media (min-width: 600px) {
     .background-task-settings {
         min-width: 22rem;

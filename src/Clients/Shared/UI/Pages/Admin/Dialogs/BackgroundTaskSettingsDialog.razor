@@ -15,6 +15,7 @@
         <div class="background-task-settings">
             <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Immediate="true"
                          Label="@L["WorkerCountLabel"]"
+                         HelperText="@L["WorkerCountHint"]"
                          Class="background-task-settings__number" />
 
             <div class="background-task-settings__lanes">
@@ -33,6 +34,31 @@
                         <span class="background-task-settings__stats">
                             <span>@L["ActiveCount"] @current.ActiveCount</span>
                             <span>@L["PendingCount"] @current.PendingCount</span>
+                        </span>
+                    </div>
+                }
+            </div>
+
+            <div class="background-task-settings__lanes">
+                <h6 class="background-task-settings__lanes-title">@L["MetadataProvidersTitle"]</h6>
+                <p class="background-task-settings__hint">@L["MetadataProvidersHint"]</p>
+
+                @foreach (var provider in _settings.MetadataProviders)
+                {
+                    <div class="background-task-settings__lane">
+                        <div class="background-task-settings__provider-name">
+                            <span class="background-task-settings__provider-label">@provider.Provider</span>
+                            <span class="background-task-settings__provider-limit">@L["MetadataProviderLimit"] @provider.Limit</span>
+                            @if (provider.CooldownUntil is { } cooldownUntil)
+                            {
+                                <span class="background-task-settings__provider-cooldown">
+                                    @L["MetadataProviderCooldownUntil", cooldownUntil.LocalDateTime.ToString("g")]
+                                </span>
+                            }
+                        </div>
+                        <span class="background-task-settings__stats">
+                            <span>@L["ActiveCount"] @provider.ActiveCount</span>
+                            <span>@L["PendingCount"] @provider.PendingCount</span>
                         </span>
                     </div>
                 }

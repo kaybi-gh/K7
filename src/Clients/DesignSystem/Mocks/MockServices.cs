@@ -716,7 +716,12 @@ public sealed class MockBackgroundTaskService : IBackgroundTaskService
         WorkerCount = 1,
         Lanes = Enum.GetValues<BackgroundTaskLane>()
             .Select(lane => new LaneLimitDto { Lane = lane, Limit = 1, ActiveCount = 0, PendingCount = 0 })
-            .ToList()
+            .ToList(),
+        MetadataProviders =
+        [
+            new MetadataProviderStatsDto { Provider = "tmdb", Limit = 1, ActiveCount = 0, PendingCount = 0 },
+            new MetadataProviderStatsDto { Provider = "tvdb", Limit = 1, ActiveCount = 0, PendingCount = 0 }
+        ]
     });
     public Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<BackgroundTaskSummaryDto> GetSummaryAsync(

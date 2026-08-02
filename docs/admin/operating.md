@@ -191,7 +191,8 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 ### Background tasks
 
 - List / cancel / summary: `/api/background-tasks`
-- Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3; per-group concurrency for metadata, `probe`, `ffmpeg`, `hls-segments`, `library-scan`, federation, etc.)
+- Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3, `0` pauses all
+  workers; per-lane concurrency including Metadata ceiling, `0` pauses that lane)
 - Library scans use the `library-scan` concurrency group (default limit 1). Workers reserve a group slot before claiming a task so the configured limit is not bypassed under parallel dequeue.
 
 #### Lanes and time-to-usable
@@ -219,7 +220,7 @@ drains there is nothing critical left. Creation date as the last key keeps the o
 | `MediaAnalysis` | 1 | Intro/outro detection, audio analysis, theme song extraction. |
 | `ImageExtract` | 1 | Seekbar thumbnails and stills extracted with ffmpeg. |
 | `ImageProcessing` | 2 | Local image variant generation. |
-| `Metadata` | 2 | Identification, metadata refresh, provider downloads. |
+| `Metadata` | 8 | Identification, metadata refresh, provider downloads. Ceiling across external providers (1 task each). |
 | `Federation` | 1 | Peer synchronization, isolated per peer. |
 | `DownloadTranscode` | 1 | Transcoding when preparing offline downloads that cannot direct-play. |
 
@@ -279,9 +280,22 @@ Detection only: neither offers a fix action. Merging two medias means re-pointin
 progress, playlist entries, ratings, reviews, collections, external ids and artwork, and deciding what to do
 with conflicting progress - a feature of its own, not yet implemented.
 
-Provider concurrency is no longer configurable: provider clients are already capped in code and HTTP
-pacing is owned by the outbound rate limiter (MusicBrainz 1.1s and so on). Everything that talks to a
-metadata provider shares the `Metadata` lane.
+Provider concurrency on the Metadata lane is fixed at **one in-flight task per metadata
+provider** (`tmdb`, `tvdb`, `musicbrainz`, `wikidata`, `wikimedia`, `coverart`, `local`). HTTP pacing
+stays on the outbound rate limiter (MusicBrainz 1.1s, Wikidata/Wikipedia 1s, and so on). The Metadata
+lane limit is the **ceiling across providers** (default 8): how many different providers may run at
+once. Set it to `0` to pause all Metadata work. The admin settings dialog lists each provider with
+active/pending counts; the per-provider limit is not editable.
+
+A provider HTTP **429** also starts an **admission cooldown** until the `Retry-After` instant: workers
+skip that provider (spill over to other work) instead of launching tasks that would fail until the
+window ends. The task that hit 429 is scheduled with `NextRetryAfter` aligned to that delay and a
+priority boost so it is preferred when the cooldown lifts. The settings UI shows the cooldown end
+time while it is active.
+
+Workers prefer higher work classes, but **spill over** to eligible work on unsaturated lanes or
+providers when the preferred head of the queue cannot acquire a slot, so idle workers do not wait
+behind a saturated CriticalEnrich Metadata backlog while Polish or Probe work is available.
 
 #### Provenance
 

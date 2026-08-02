@@ -20,9 +20,14 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Worker count</value></data>
+  <data name="WorkerCountHint" xml:space="preserve"><value>0 to 32 (0 = pause all background processing).</value></data>
   <data name="LanesTitle" xml:space="preserve"><value>Execution lanes</value></data>
-  <data name="LaneLimitHint" xml:space="preserve"><value>Parallelism limit per lane (0 to 32, 0 = paused lane).</value></data>
+  <data name="LaneLimitHint" xml:space="preserve"><value>Parallelism limit per lane (0 to 32, 0 = paused lane). For Metadata: max concurrent external providers.</value></data>
   <data name="LaneLimit" xml:space="preserve"><value>Limit</value></data>
   <data name="ActiveCount" xml:space="preserve"><value>Active</value></data>
   <data name="PendingCount" xml:space="preserve"><value>Pending</value></data>
+  <data name="MetadataProvidersTitle" xml:space="preserve"><value>Metadata providers</value></data>
+  <data name="MetadataProvidersHint" xml:space="preserve"><value>Each metadata provider runs at most one task at a time (not configurable). HTTP pacing stays on the outbound rate limiter. A 429 pauses the provider until the time shown.</value></data>
+  <data name="MetadataProviderLimit" xml:space="preserve"><value>Limit</value></data>
+  <data name="MetadataProviderCooldownUntil" xml:space="preserve"><value>Paused (429) until {0}</value></data>
 </root>
