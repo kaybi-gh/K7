@@ -1,5 +1,6 @@
 using System.Net;
 using K7.Server.Application.Common.Configuration;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
@@ -27,6 +28,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
     private readonly OutboundRateLimiter _rateLimiter;
+    private readonly MetadataProviderCooldownStore _metadataProviderCooldownStore;
     private readonly MediaPictureReadyNotifier _pictureReadyNotifier;
     private readonly MetadataPictureDeletionService _pictureDeletionService;
     private readonly IBackgroundTaskExecutionContext _taskExecutionContext;
@@ -39,6 +41,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
         OutboundRateLimiter rateLimiter,
+        MetadataProviderCooldownStore metadataProviderCooldownStore,
         MediaPictureReadyNotifier pictureReadyNotifier,
         MetadataPictureDeletionService pictureDeletionService,
         IBackgroundTaskExecutionContext taskExecutionContext,
@@ -50,6 +53,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
         _rateLimiter = rateLimiter;
+        _metadataProviderCooldownStore = metadataProviderCooldownStore;
         _pictureReadyNotifier = pictureReadyNotifier;
         _pictureDeletionService = pictureDeletionService;
         _taskExecutionContext = taskExecutionContext;
@@ -72,8 +76,22 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                 { PersonId: not null } => Path.Combine("persons", $"{entity.PersonId}"),
                 { PersonRoleId: not null } => Path.Combine("person-roles", $"{entity.PersonRoleId}"),
                 { MediaId: not null } => Path.Combine("medias", $"{entity.MediaId}"),
-                _ => throw new InvalidOperationException("No valid metadata id found.")
+                { PlaylistId: not null } => Path.Combine("playlists", $"{entity.PlaylistId}"),
+                { CollectionId: not null } => Path.Combine("collections", $"{entity.CollectionId}"),
+                { LibraryGroupId: not null } => Path.Combine("library-groups", $"{entity.LibraryGroupId}"),
+                { UserId: not null } => Path.Combine("users", $"{entity.UserId}"),
+                { SharedProfileId: not null } => Path.Combine("shared-profiles", $"{entity.SharedProfileId}"),
+                _ => null
             };
+
+            if (subDirectory is null)
+            {
+                _logger.LogWarning(
+                    "Metadata picture {PictureId} has no downloadable owner; cancelling download",
+                    entity.Id);
+                _taskExecutionContext.Cancel("No valid metadata id found.");
+                return;
+            }
 
             var directory = Path.Combine(basePath, subDirectory);
 
@@ -86,8 +104,11 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             {
                 var retryAfter = response.Headers.RetryAfter?.Delta
                     ?? TimeSpan.FromSeconds(5);
-                _rateLimiter.ReportRetryAfter(entity.OriginalRemoteUri.Host, retryAfter);
-                throw new HttpRequestException($"Rate limited (429) by {entity.OriginalRemoteUri.Host}. Retry after {retryAfter.TotalSeconds}s.");
+                var host = entity.OriginalRemoteUri.Host;
+                var provider = MetadataProviderHostMapper.FromHost(host);
+                _rateLimiter.ReportRetryAfter(host, retryAfter);
+                _metadataProviderCooldownStore.Report(provider, retryAfter);
+                throw new ProviderRateLimitedException(provider, retryAfter);
             }
 
             if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)

@@ -56,6 +56,7 @@ public class DownloadMetadataPictureFromProviderCommandHandlerTests
             _sender,
             paths,
             new OutboundRateLimiter(),
+            new MetadataProviderCooldownStore(),
             new MediaPictureReadyNotifier(
                 _context,
                 Substitute.For<ILibraryNotifier>(),
@@ -88,6 +89,25 @@ public class DownloadMetadataPictureFromProviderCommandHandlerTests
         await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         _taskExecutionContext.IsCancelled.Should().BeTrue();
         _taskExecutionContext.CancellationDetails.Should().Contain(((int)statusCode).ToString());
+        await _sender.DidNotReceive().Send(Arg.Any<IRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldCancel_WhenPictureHasNoDownloadableOwner()
+    {
+        var pictureId = Guid.NewGuid();
+        _pictures.Add(new MetadataPicture
+        {
+            Id = pictureId,
+            Type = MetadataPictureType.Portrait,
+            OriginalRemoteUri = new Uri("https://image.tmdb.org/t/p/original/abc.jpg")
+        });
+
+        await _handler.Handle(new DownloadMetadataPictureFromProviderCommand { Id = pictureId }, CancellationToken.None);
+
+        _taskExecutionContext.IsCancelled.Should().BeTrue();
+        _taskExecutionContext.CancellationDetails.Should().Contain("No valid metadata id");
+        _httpClientFactory.DidNotReceive().CreateClient(Arg.Any<string>());
         await _sender.DidNotReceive().Send(Arg.Any<IRequest>(), Arg.Any<CancellationToken>());
     }
 
