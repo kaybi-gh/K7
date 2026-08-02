@@ -59,4 +59,23 @@ public class BackgroundTaskSchedulingTests
 
         values.Should().OnlyHaveUniqueItems();
     }
+
+    [Test]
+    public void ClampWorkerCount_ShouldAllowZero_ToPauseAllWorkers()
+    {
+        BackgroundTaskScheduling.ClampWorkerCount(0).Should().Be(0);
+        BackgroundTaskScheduling.ClampWorkerCount(-3).Should().Be(0);
+        BackgroundTaskScheduling.ClampWorkerCount(1).Should().Be(1);
+        BackgroundTaskScheduling.ClampWorkerCount(BackgroundTaskScheduling.MaxWorkerCount + 5)
+            .Should().Be(BackgroundTaskScheduling.MaxWorkerCount);
+    }
+
+    [Test]
+    public void ClampLaneLimit_ShouldAllowZero_ToPauseLane()
+    {
+        BackgroundTaskScheduling.ClampLaneLimit(0).Should().Be(0);
+        BackgroundTaskScheduling.ClampLaneLimit(-1).Should().Be(0);
+        BackgroundTaskScheduling.ClampLaneLimit(BackgroundTaskScheduling.MaxLaneLimit + 1)
+            .Should().Be(BackgroundTaskScheduling.MaxLaneLimit);
+    }
 }

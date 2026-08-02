@@ -11,6 +11,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 public partial class BackgroundTaskSettingsDialog : IDisposable
 {
     private const int MaxLaneLimit = 32;
+    private const int MaxWorkerCount = 32;
     private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(500);
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
@@ -61,7 +62,7 @@ public partial class BackgroundTaskSettingsDialog : IDisposable
             _settings = await BackgroundTaskService.GetSettingsAsync(_cts.Token);
             if (initial)
             {
-                _workerCount = _settings.WorkerCount;
+                _workerCount = Math.Clamp(_settings.WorkerCount, 0, MaxWorkerCount);
                 _laneLimits = _settings.Lanes.ToDictionary(l => l.Lane, l => l.Limit);
             }
         }
@@ -92,7 +93,7 @@ public partial class BackgroundTaskSettingsDialog : IDisposable
     {
         var request = new UpdateBackgroundTaskSettingsRequest
         {
-            WorkerCount = _workerCount,
+            WorkerCount = Math.Clamp(_workerCount, 0, MaxWorkerCount),
             LaneLimits = _laneLimits
         };
         Dialog.Close(K7DialogResult.Ok(request));

@@ -22,10 +22,7 @@ public class UpdateBackgroundTaskSettings : IEndpoint
         {
             if (request.WorkerCount.HasValue)
             {
-                var count = Math.Clamp(
-                    request.WorkerCount.Value,
-                    1,
-                    BackgroundTaskScheduling.MaxWorkerCount);
+                var count = BackgroundTaskScheduling.ClampWorkerCount(request.WorkerCount.Value);
                 await settings.SetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, count, cancellationToken);
             }
 
@@ -37,7 +34,7 @@ public class UpdateBackgroundTaskSettings : IEndpoint
                     .Where(kvp => Enum.IsDefined(kvp.Key))
                     .ToDictionary(
                         kvp => kvp.Key,
-                        kvp => Math.Clamp(kvp.Value, 0, BackgroundTaskScheduling.MaxLaneLimit));
+                        kvp => BackgroundTaskScheduling.ClampLaneLimit(kvp.Value));
                 await settings.SetAsync(ServerSettingKeys.BackgroundTaskLaneLimits, sanitized, cancellationToken);
             }
 
