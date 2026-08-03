@@ -14,9 +14,15 @@ public static class ThemeSongDiagnosticHelper
     /// detection-eligible season (2+ episodes with existing indexed files). Does not require
     /// an Intro segment to already exist.
     /// </summary>
+    /// <param name="verifyOnDisk">
+    /// When true (default), each indexed episode path is checked with <see cref="File.Exists"/>.
+    /// When false, indexed paths are trusted (use for summary counts during library scans to
+    /// avoid a full filesystem sweep while the disk is busy).
+    /// </param>
     public static async Task<List<SerieThemeCandidate>> GetEligibleSerieCandidatesAsync(
         IApplicationDbContext context,
         Guid? libraryId,
+        bool verifyOnDisk = true,
         CancellationToken cancellationToken = default)
     {
         var episodeRows =
@@ -41,7 +47,9 @@ public static class ThemeSongDiagnosticHelper
 
         var rows = await episodeRows.ToListAsync(cancellationToken);
 
-        var existing = rows.Where(r => File.Exists(r.Path)).ToList();
+        var existing = verifyOnDisk
+            ? rows.Where(r => File.Exists(r.Path)).ToList()
+            : rows;
 
         var eligibleSeasonIds = existing
             .GroupBy(r => r.SeasonId)
@@ -74,9 +82,11 @@ public static class ThemeSongDiagnosticHelper
         PathsConfiguration paths,
         Guid? libraryId,
         IReadOnlyCollection<Guid>? limitToSerieIds,
+        bool verifyOnDisk = true,
         CancellationToken cancellationToken = default)
     {
-        var candidates = await GetEligibleSerieCandidatesAsync(context, libraryId, cancellationToken);
+        var candidates = await GetEligibleSerieCandidatesAsync(
+            context, libraryId, verifyOnDisk, cancellationToken);
         if (limitToSerieIds is not null)
             candidates = candidates.Where(c => limitToSerieIds.Contains(c.SerieId)).ToList();
 
@@ -91,7 +101,10 @@ public static class ThemeSongDiagnosticHelper
         PathsConfiguration paths,
         CancellationToken cancellationToken = default)
     {
-        var candidates = await GetEligibleSerieCandidatesAsync(context, libraryId: null, cancellationToken);
+        // Summary path: trust indexed episode paths (no File.Exists sweep). Theme/sidecar
+        // existence is still checked once per serie in IsMissingTheme.
+        var candidates = await GetEligibleSerieCandidatesAsync(
+            context, libraryId: null, verifyOnDisk: false, cancellationToken);
         return candidates
             .Where(c => IsMissingTheme(paths, c.SerieId, c.EpisodePath))
             .GroupBy(c => c.LibraryId)

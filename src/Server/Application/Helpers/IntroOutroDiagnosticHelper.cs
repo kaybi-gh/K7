@@ -12,10 +12,15 @@ public static class IntroOutroDiagnosticHelper
     /// Episodes in intro-detection-enabled libraries whose season is detection-eligible
     /// (2+ episodes with existing files) and that have neither Intro nor Outro segments.
     /// </summary>
+    /// <param name="verifyOnDisk">
+    /// When true (default), each indexed episode path is checked with <see cref="File.Exists"/>.
+    /// When false, indexed paths are trusted (use for summary counts during library scans).
+    /// </param>
     public static async Task<List<EpisodeIntroOutroCandidate>> GetMissingIntroOutroEpisodesAsync(
         IApplicationDbContext context,
         Guid? libraryId,
         IReadOnlyCollection<Guid>? limitToEpisodeIds = null,
+        bool verifyOnDisk = true,
         CancellationToken cancellationToken = default)
     {
         var episodeRows =
@@ -41,7 +46,9 @@ public static class IntroOutroDiagnosticHelper
             episodeRows = episodeRows.Where(x => limitToEpisodeIds.Contains(x.EpisodeId));
 
         var rows = await episodeRows.ToListAsync(cancellationToken);
-        var existing = rows.Where(r => File.Exists(r.Path)).ToList();
+        var existing = verifyOnDisk
+            ? rows.Where(r => File.Exists(r.Path)).ToList()
+            : rows;
 
         var eligibleSeasonIds = existing
             .GroupBy(r => r.SeasonId)
@@ -83,10 +90,11 @@ public static class IntroOutroDiagnosticHelper
         IApplicationDbContext context,
         Guid? libraryId,
         IReadOnlyCollection<Guid>? limitToEpisodeIds = null,
+        bool verifyOnDisk = true,
         CancellationToken cancellationToken = default)
     {
         var candidates = await GetMissingIntroOutroEpisodesAsync(
-            context, libraryId, limitToEpisodeIds, cancellationToken);
+            context, libraryId, limitToEpisodeIds, verifyOnDisk, cancellationToken);
         return candidates.Select(c => c.EpisodeId).ToHashSet();
     }
 
@@ -95,7 +103,11 @@ public static class IntroOutroDiagnosticHelper
         CancellationToken cancellationToken = default)
     {
         var candidates = await GetMissingIntroOutroEpisodesAsync(
-            context, libraryId: null, limitToEpisodeIds: null, cancellationToken);
+            context,
+            libraryId: null,
+            limitToEpisodeIds: null,
+            verifyOnDisk: false,
+            cancellationToken);
         return candidates
             .GroupBy(c => c.LibraryId)
             .ToDictionary(g => g.Key, g => g.Count());

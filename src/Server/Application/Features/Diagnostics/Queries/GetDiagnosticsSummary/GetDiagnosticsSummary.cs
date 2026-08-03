@@ -202,37 +202,28 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
     private async Task<Dictionary<Guid, int>> GetMediaWithoutFilesCountsAsync(CancellationToken cancellationToken)
     {
-        var libraryMediaRefs = await _context.IndexedFiles
-            .AsNoTracking()
-            .Where(f => f.MediaId != null)
-            .Select(f => new { f.LibraryId, MediaId = f.MediaId!.Value })
-            .Distinct()
-            .ToListAsync(cancellationToken);
+        // Leaf types that should have a direct IndexedFile / RemoteIndexedFile row.
+        // Parent aggregates (serie / season / album / artist) are derived from children and
+        // correctly lack their own file rows.
+        MediaType[] leafTypes =
+        [
+            MediaType.Movie,
+            MediaType.SerieEpisode,
+            MediaType.MusicTrack
+        ];
 
-        if (libraryMediaRefs.Count == 0)
-            return [];
+        var counts = await (
+            from a in _context.MediaLibraryAvailabilities.AsNoTracking()
+            where !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null)
+            join m in _context.Medias.AsNoTracking() on a.MediaId equals m.Id
+            where leafTypes.Contains(m.Type)
+            where !_context.IndexedFiles.Any(f => f.MediaId == a.MediaId)
+                && !_context.RemoteIndexedFiles.Any(r => r.MediaId == a.MediaId)
+            group a by a.LibraryId into g
+            select new { LibraryId = g.Key, Count = g.Count() }
+        ).ToListAsync(cancellationToken);
 
-        var referencedMediaIds = libraryMediaRefs
-            .Select(x => x.MediaId)
-            .Distinct()
-            .ToList();
-
-        var mediaIdsWithoutFiles = await _context.Medias
-            .AsNoTracking()
-            .Where(m => referencedMediaIds.Contains(m.Id))
-            .Where(m => !m.IndexedFiles.Any())
-            .Select(m => m.Id)
-            .ToListAsync(cancellationToken);
-
-        if (mediaIdsWithoutFiles.Count == 0)
-            return [];
-
-        var mediaWithoutFilesSet = mediaIdsWithoutFiles.ToHashSet();
-
-        return libraryMediaRefs
-            .Where(x => mediaWithoutFilesSet.Contains(x.MediaId))
-            .GroupBy(x => x.LibraryId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.MediaId).Distinct().Count());
+        return counts.ToDictionary(x => x.LibraryId, x => x.Count);
     }
 
     private async Task<Dictionary<Guid, int>> GetMissingAudioAnalysisCountsAsync(
@@ -267,7 +258,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             l => l.Id,
             l => MetadataStalenessHelper.GetStalenessThresholdUtc(l.MetadataRefreshIntervalDays, utcNow));
 
-        var pairs = await MediaLibraryLinkageHelper.SelectMediaLibraryPairs(_context)
+        var pairs = await LocalAvailabilityPairs()
             .Distinct()
             .ToListAsync(cancellationToken);
 
@@ -302,7 +293,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
         foreach (var pair in pairs)
         {
-            if (!seenByLibrary[pair.LibraryId].Add(pair.MediaId))
+            if (!seenByLibrary.TryGetValue(pair.LibraryId, out var seen) || !seen.Add(pair.MediaId))
                 continue;
 
             if (!mediaFlags.TryGetValue(pair.MediaId, out var flags))
@@ -338,7 +329,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
     private async Task<Dictionary<Guid, BackgroundTaskLibraryStats>> GetBackgroundTaskStatsByLibraryAsync(
         CancellationToken cancellationToken)
     {
-        var pairsQuery = MediaLibraryLinkageHelper.SelectMediaLibraryPairs(_context).Distinct();
+        var pairsQuery = LocalAvailabilityPairs().Distinct();
 
         var pendingCounts = await _context.BackgroundTasks
             .AsNoTracking()
@@ -372,6 +363,12 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 pendingCounts.GetValueOrDefault(id),
                 failedCounts.GetValueOrDefault(id)));
     }
+
+    private IQueryable<MediaLibraryPairProjection> LocalAvailabilityPairs() =>
+        _context.MediaLibraryAvailabilities
+            .AsNoTracking()
+            .Where(a => !_context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null))
+            .Select(a => new MediaLibraryPairProjection { LibraryId = a.LibraryId, MediaId = a.MediaId });
 
     private sealed class LinkedMediaStatsAccumulator
     {

@@ -40,14 +40,14 @@ public class DiagnosticIssueEntityResolver(
     private async Task<List<Guid>> GetSerieIdsMissingThemeSongAsync(Guid? libraryId, CancellationToken cancellationToken)
     {
         var ids = await ThemeSongDiagnosticHelper.GetMissingThemeSerieIdsAsync(
-            context, _paths, libraryId, limitToSerieIds: null, cancellationToken);
+            context, _paths, libraryId, limitToSerieIds: null, cancellationToken: cancellationToken);
         return ids.ToList();
     }
 
     private async Task<List<Guid>> GetEpisodeIdsMissingIntroOutroAsync(Guid? libraryId, CancellationToken cancellationToken)
     {
         var ids = await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodeIdsAsync(
-            context, libraryId, limitToEpisodeIds: null, cancellationToken);
+            context, libraryId, limitToEpisodeIds: null, cancellationToken: cancellationToken);
         return ids.ToList();
     }
 

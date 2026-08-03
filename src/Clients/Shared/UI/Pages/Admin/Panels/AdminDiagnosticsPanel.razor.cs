@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminDiagnosticsPanel
+public partial class AdminDiagnosticsPanel : IDisposable
 {
     private const string FilterStorageKey = "admin.diagnostics";
 
@@ -49,6 +49,7 @@ public partial class AdminDiagnosticsPanel
     private DiagnosticIssue? _filterIssue;
 
     private readonly HashSet<DiagnosticItemDto> _selectedItems = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private int _totalIssueCount;
     private int _errorCount;
@@ -253,7 +254,7 @@ public partial class AdminDiagnosticsPanel
 
         try
         {
-            _summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
+            _summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync(_cts.Token);
             ComputeAggregateCounts();
         }
         catch (OperationCanceledException)
@@ -729,5 +730,11 @@ public partial class AdminDiagnosticsPanel
             Snackbar.Add(L["ReIdentifyIndexedFileSent"], K7Severity.Success);
             await LoadItemsAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
     }
 }

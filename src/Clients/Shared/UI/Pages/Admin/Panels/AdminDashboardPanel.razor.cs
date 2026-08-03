@@ -24,6 +24,7 @@ public partial class AdminDashboardPanel : IDisposable
     private int _runningTaskCount;
     private PeriodicTimer? _metricsPollTimer;
     private CancellationTokenSource? _pollCts;
+    private readonly CancellationTokenSource _cts = new();
 
     private int OnlineUsersCount =>
         _metricSnapshots.Count > 0 ? _metricSnapshots[^1].OnlineUsersCount : 0;
@@ -58,7 +59,7 @@ public partial class AdminDashboardPanel : IDisposable
     {
         try
         {
-            var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
+            var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync(_cts.Token);
             _errorCount = LibraryHealthSummaryCounts.SumErrors(summaries);
             _warningCount = LibraryHealthSummaryCounts.SumWarnings(summaries);
             _infoCount = LibraryHealthSummaryCounts.SumInfo(summaries);
@@ -154,6 +155,8 @@ public partial class AdminDashboardPanel : IDisposable
     {
         HubClient.ServerMetricsUpdated -= OnServerMetricsUpdated;
 
+        _cts.Cancel();
+        _cts.Dispose();
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _metricsPollTimer?.Dispose();

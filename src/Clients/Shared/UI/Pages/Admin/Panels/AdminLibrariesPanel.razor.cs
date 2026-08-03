@@ -29,6 +29,7 @@ public partial class AdminLibrariesPanel : IDisposable
     private Dictionary<Guid, LibraryStatisticsDto> _libraryStatsMap = [];
     private Dictionary<Guid, IReadOnlyList<KeyValuePair<MediaType, int>>> _orderedMediaCountsMap = [];
     private readonly Dictionary<Guid, LibraryScanProgressState> _scanProgressMap = new();
+    private readonly CancellationTokenSource _cts = new();
 
     private IList<LibraryDto> _libraryItems => _libraries ?? [];
 
@@ -43,6 +44,8 @@ public partial class AdminLibrariesPanel : IDisposable
     {
         K7HubClient.LibraryScanProgress -= OnLibraryScanProgress;
         K7HubClient.LibraryScanCompleted -= OnLibraryScanCompleted;
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
     private void OnLibraryScanProgress(Guid libraryId, int processed, int total, string phase)
@@ -122,7 +125,7 @@ public partial class AdminLibrariesPanel : IDisposable
     {
         try
         {
-            var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
+            var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync(_cts.Token);
             _libraryIssueCountMap = summaries.ToDictionary(
                 s => s.LibraryId,
                 LibraryHealthSummaryCounts.SumLibraryIssues);
