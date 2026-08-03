@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to attach clients to (e.g. v1.2.3)'
+        description: 'Release tag to attach clients to (e.g. v1.2.3 or 1.2.3)'
         required: true
         type: string
 
@@ -39,6 +39,11 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          TAG="${TAG#refs/tags/}"
+          # UI / dispatch often omit the leading v; drafts use tag_name vX.Y.Z.
+          if [[ "${TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+            TAG="v${TAG}"
+          fi
           if [ -z "${TAG}" ] || [[ "${TAG}" == untagged-* ]]; then
             echo "::error::Release has no tag name yet. Choose a tag like v1.2.3 on the draft (GitHub may still show untagged-* until publish)."
             exit 1
@@ -49,8 +54,13 @@ jobs:
           DRAFT=false
           if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.draft }}" = "true" ]; then
             DRAFT=true
-          elif [ "$(gh release view "${TAG}" --repo "${{ github.repository }}" --json isDraft --jq .isDraft)" = "true" ]; then
+          elif gh release view "${TAG}" --repo "${{ github.repository }}" --json isDraft --jq .isDraft 2>/dev/null | grep -qx true; then
             DRAFT=true
+          else
+            if ! gh release view "${TAG}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+              echo "::error::No GitHub release found for tag ${TAG}. Create a draft release that uses this tag name, then re-run."
+              exit 1
+            fi
           fi
           if [ "${DRAFT}" != "true" ]; then
             echo "::error::Release ${TAG} must be a draft. This repo has immutable releases; publish only after client assets are uploaded (see docs/dev/releasing.md)."
@@ -65,6 +75,8 @@ jobs:
           if [ -z "${TARGET}" ]; then
             TARGET="$(gh release view "${TAG}" --repo "${{ github.repository }}" --json targetCommitish --jq .targetCommitish)"
           fi
+          TARGET="${TARGET#refs/heads/}"
+          TARGET="${TARGET#refs/tags/}"
           if [ -z "${TARGET}" ]; then
             TARGET="${{ github.event.repository.default_branch }}"
           fi
