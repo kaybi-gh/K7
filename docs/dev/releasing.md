@@ -4,8 +4,8 @@
 
 1. PRs merge to `main` with Conventional Commit titles and changelog labels.
 2. **release-drafter** keeps a draft GitHub Release updated (`.github/workflows/release-drafter.yml`, `.github/release-drafter.yml`).
-3. Maintainers create the Git tag and a **draft** GitHub Release (tag `vX.Y.Z`). The repo uses immutable releases, so assets cannot be added after publish.
-4. **client-release** uploads native clients to the draft:
+3. Maintainers prepare a **draft** GitHub Release with tag name `vX.Y.Z` (target `main`). Saving a draft does **not** create the git tag yet; that is normal.
+4. **client-release** uploads native clients to the draft. If the git tag is missing, the workflow creates it from the release target commitish (usually `main`), then builds:
    - `K7-{version}-android.apk` - sideload / Android TV
    - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; extract the whole folder and run `K7.exe` (needs matching `K7.pri` sidecars; not a single-file exe). Requires WebView2 Runtime and a recent Windows App Runtime on the machine.
 5. Maintainers **publish the draft** (human / non-`GITHUB_TOKEN`). That triggers **sync-version** and **docker-release**.
@@ -15,15 +15,16 @@
 Example:
 
 ```bash
-git tag vX.Y.Z && git push github vX.Y.Z
-gh release create vX.Y.Z --draft --verify-tag --title "K7 vX.Y.Z" --notes-file notes.md
-# If client-release did not start (API draft create may not fire release:created):
+# Draft from the UI (choose tag vX.Y.Z, target main, Save draft) or:
+gh release create vX.Y.Z --draft --target main --title "K7 vX.Y.Z" --notes-file notes.md
+# Editing a draft does not re-run clients. Drafter-created drafts also do not
+# auto-start other workflows (GITHUB_TOKEN). Start clients once:
 gh workflow run client-release.yml -f tag=vX.Y.Z
 # After APK + zip appear on the draft:
 gh release edit vX.Y.Z --draft=false
 ```
 
-Manual re-attach: Actions -> Client release -> Run workflow with the tag.
+Manual re-attach: Actions -> Client release -> Run workflow with the tag (creates the git tag if still missing).
 
 iOS / Mac Catalyst packages are not published from CI (Apple signing required).
 

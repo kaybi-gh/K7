@@ -26,6 +26,12 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       is_draft: ${{ steps.version.outputs.is_draft }}
     steps:
+      # Saving a GitHub draft does not create the git tag until Publish. CI creates
+      # the missing tag from the release target (usually main) so checkout works.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
       - name: Resolve tag and version
         id: version
         env:
@@ -33,8 +39,13 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          if [ -z "${TAG}" ] || [[ "${TAG}" == untagged-* ]]; then
+            echo "::error::Release has no tag name yet. Choose a tag like v1.2.3 on the draft (GitHub may still show untagged-* until publish)."
+            exit 1
+          fi
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${TAG#v}" >> "${GITHUB_OUTPUT}"
+
           DRAFT=false
           if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.draft }}" = "true" ]; then
             DRAFT=true
@@ -49,8 +60,35 @@ jobs:
             echo "::error::Release ${TAG} is immutable; assets can no longer be uploaded. Create a new draft tag."
             exit 1
           fi
+
+          TARGET="${{ github.event.release.target_commitish }}"
+          if [ -z "${TARGET}" ]; then
+            TARGET="$(gh release view "${TAG}" --repo "${{ github.repository }}" --json targetCommitish --jq .targetCommitish)"
+          fi
+          if [ -z "${TARGET}" ]; then
+            TARGET="${{ github.event.repository.default_branch }}"
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Git tag ${TAG} already exists."
+          elif git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Git tag ${TAG} already exists on origin."
+            git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          else
+            echo "Git tag ${TAG} missing (normal for drafts). Creating at ${TARGET}."
+            git fetch origin "${TARGET}"
+            if git rev-parse -q --verify "origin/${TARGET}" >/dev/null; then
+              REF="origin/${TARGET}"
+            else
+              REF="$(git rev-parse "${TARGET}")"
+            fi
+            git tag "${TAG}" "${REF}"
+            git push origin "refs/tags/${TAG}"
+            echo "Created and pushed ${TAG} -> $(git rev-parse "${TAG}^{commit}")"
+          fi
+
           echo "is_draft=${DRAFT}" >> "${GITHUB_OUTPUT}"
-          echo "Resolved ${TAG} (draft=${DRAFT})"
+          echo "Resolved ${TAG} (draft=${DRAFT}, target=${TARGET})"
 
   # Windows runner: Linux hits NU1102 on Microsoft.NETCore.App.Runtime.Mono.linux-x64
   # (desktop Mono host packs removed in .NET 9+; not published for .NET 10).
