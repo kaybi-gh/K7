@@ -413,7 +413,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
     private async Task<Guid> HandleSerieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
     {
-        foreach (var directoryGroup in indexedFiles.GroupBy(f => f.ParentDirectory))
+        foreach (var directoryGroup in indexedFiles.GroupBy(
+                     f => PathHelper.GetContainingDirectoryPath(f.Path),
+                     StringComparer.OrdinalIgnoreCase))
             SerieIdentificationConsensus.ApplyDirectoryTitleConsensus(directoryGroup.ToList());
 
         var firstIdentification = indexedFiles.First().Identification;
@@ -651,28 +653,36 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         CancellationToken cancellationToken)
     {
         var directories = indexedFiles
-            .Where(f => !string.IsNullOrEmpty(f.ParentDirectory))
-            .Select(f => f.ParentDirectory!)
+            .Select(f => PathHelper.GetContainingDirectoryPath(f.Path))
+            .Where(d => !string.IsNullOrEmpty(d))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (directories.Count != 1)
             return null;
 
-        var directory = directories[0];
+        var directory = directories[0]!;
+        var parentDirectoryName = Path.GetFileName(directory);
         var excludeIds = indexedFiles.Select(f => f.Id).ToList();
 
-        var siblingSerieCounts = await (
+        // ParentDirectory stores the folder name only (e.g. "Season 01"), so prefilter by name
+        // then confirm the full containing path to avoid merging different series trees.
+        var siblingRows = await (
             from file in _context.IndexedFiles.AsNoTracking()
             where file.LibraryId == library.Id
-                && file.ParentDirectory == directory
+                && file.ParentDirectory == parentDirectoryName
                 && file.MediaId != null
                 && !excludeIds.Contains(file.Id)
             join episode in _context.Medias.OfType<SerieEpisode>().AsNoTracking()
                 on file.MediaId equals episode.Id
-            group episode by episode.SerieId into g
-            select new { SerieId = g.Key, Count = g.Count() }
+            select new { file.Path, episode.SerieId }
         ).ToListAsync(cancellationToken);
+
+        var siblingSerieCounts = siblingRows
+            .Where(r => PathHelper.IsInContainingDirectory(r.Path, directory))
+            .GroupBy(r => r.SerieId)
+            .Select(g => new { SerieId = g.Key, Count = g.Count() })
+            .ToList();
 
         if (siblingSerieCounts.Count == 0)
             return null;

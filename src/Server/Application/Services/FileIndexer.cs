@@ -402,7 +402,9 @@ public class FileIndexer : IFileIndexer
                 break;
 
             case LibraryMediaType.Music:
-                foreach (var group in toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory))
+                foreach (var group in toBeIdentifiedFiles.GroupBy(
+                             f => PathHelper.GetContainingDirectoryPath(f.Path),
+                             StringComparer.OrdinalIgnoreCase))
                 {
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
@@ -441,7 +443,9 @@ public class FileIndexer : IFileIndexer
                 break;
 
             case LibraryMediaType.Serie:
-                foreach (var group in toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory))
+                foreach (var group in toBeIdentifiedFiles.GroupBy(
+                             f => PathHelper.GetContainingDirectoryPath(f.Path),
+                             StringComparer.OrdinalIgnoreCase))
                 {
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)

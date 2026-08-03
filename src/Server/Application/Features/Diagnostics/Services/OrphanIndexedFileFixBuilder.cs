@@ -61,7 +61,9 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                     break;
 
                 case LibraryMediaType.Serie:
-                    foreach (var directoryGroup in libraryGroup.GroupBy(f => f.ParentDirectory))
+                    foreach (var directoryGroup in libraryGroup.GroupBy(
+                                 f => PathHelper.GetContainingDirectoryPath(f.Path),
+                                 StringComparer.OrdinalIgnoreCase))
                     {
                         var identifications = directoryGroup
                             .Select(f => f.Identification)
@@ -113,6 +115,7 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                 {
                     Id = f.Id,
                     LibraryId = f.LibraryId,
+                    Path = f.Path,
                     ParentDirectory = f.ParentDirectory,
                     Identification = f.Identification
                 })
@@ -132,7 +135,7 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                 else if (seed.Identification?.SeriesTitle is { } seriesTitle)
                 {
                     foreach (var sibling in libraryOrphans.Where(f =>
-                                 string.Equals(f.ParentDirectory, seed.ParentDirectory, StringComparison.OrdinalIgnoreCase)
+                                 PathHelper.ContainingDirectoriesEqual(f.Path, seed.Path)
                                  && f.Identification?.SeriesTitle is { } siblingTitle
                                  && (string.Equals(siblingTitle, seriesTitle, StringComparison.OrdinalIgnoreCase)
                                      || SerieIdentificationConsensus.AreSeriesTitlesClose(siblingTitle, seriesTitle))))
@@ -157,6 +160,7 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
             {
                 Id = f.Id,
                 LibraryId = f.LibraryId,
+                Path = f.Path,
                 ParentDirectory = f.ParentDirectory,
                 Identification = f.Identification,
                 Library = context.Libraries
@@ -199,6 +203,7 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
     {
         public required Guid Id { get; init; }
         public required Guid LibraryId { get; init; }
+        public required string Path { get; init; }
         public string? ParentDirectory { get; init; }
         public MediaIdentification? Identification { get; init; }
         public LibraryInfo? Library { get; init; }

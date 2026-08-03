@@ -23,7 +23,10 @@ namespace K7.Server.Application.UnitTests.Features.Medias.Commands;
 [TestFixture]
 public class CreateMediaSerieFolderConsensusTests
 {
+    private const string RootPath = "/media/series";
     private const string DirectoryPath = "/media/series/Cool Show/Season 01";
+    private const string ParentDirectoryName = "Season 01";
+    private const string OtherSerieDirectoryPath = "/media/series/Other Show/Season 01";
 
     private SqliteConnection _connection = null!;
     private ApplicationDbContext _context = null!;
@@ -62,7 +65,7 @@ public class CreateMediaSerieFolderConsensusTests
             LibraryGroupId = _groupId,
             Title = "Series",
             MediaType = LibraryMediaType.Serie,
-            RootPath = "/media/series",
+            RootPath = RootPath,
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
             MetadataFallbackLanguage = "en"
@@ -110,8 +113,14 @@ public class CreateMediaSerieFolderConsensusTests
     [Test]
     public async Task Handle_ShouldAttachToFolderSerie_WhenSiblingAlreadyMatched()
     {
-        var existingSerie = await SeedSerieWithEpisodeAsync("Cool Show", season: 1, episode: 1, externalId: "tmdb-cool-show");
+        var existingSerie = await SeedSerieWithEpisodeAsync(
+            "Cool Show",
+            DirectoryPath,
+            season: 1,
+            episode: 1,
+            externalId: "tmdb-cool-show");
         var newFile = await SeedSerieIndexedFileAsync(
+            DirectoryPath,
             "Cool Show - S01E02.mkv",
             seriesTitle: "Totally Wrong Title",
             season: 1,
@@ -138,9 +147,46 @@ public class CreateMediaSerieFolderConsensusTests
     }
 
     [Test]
+    public async Task Handle_ShouldNotAttachToOtherSerie_WhenParentDirectoryNameCollides()
+    {
+        var existingSerie = await SeedSerieWithEpisodeAsync(
+            "Cool Show",
+            DirectoryPath,
+            season: 1,
+            episode: 1,
+            externalId: "tmdb-cool-show");
+        var newFile = await SeedSerieIndexedFileAsync(
+            OtherSerieDirectoryPath,
+            "Other Show - S01E01.mkv",
+            seriesTitle: "Other Show",
+            season: 1,
+            episode: 1);
+
+        _serieProvider.SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+            .Returns("tmdb-other-show");
+
+        var mediaId = await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Serie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [newFile.Id]
+        }, CancellationToken.None);
+
+        mediaId.Should().NotBe(existingSerie.Id);
+        await _serieProvider.Received(1)
+            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>());
+
+        var series = await _context.Medias.OfType<Serie>().ToListAsync();
+        series.Should().HaveCount(2);
+        series.Should().Contain(s => s.Id == existingSerie.Id && s.Title == "Cool Show");
+        series.Should().Contain(s => s.Id == mediaId && s.Title == "Other Show");
+    }
+
+    [Test]
     public async Task Handle_ShouldSearchProvider_WhenFolderHasNoSiblingSeries()
     {
         var newFile = await SeedSerieIndexedFileAsync(
+            DirectoryPath,
             "Brand New Show - S01E01.mkv",
             seriesTitle: "Brand New Show",
             season: 1,
@@ -164,11 +210,13 @@ public class CreateMediaSerieFolderConsensusTests
     public async Task Handle_ShouldUnifyCloseTitles_BeforeCreatingSerie()
     {
         var file1 = await SeedSerieIndexedFileAsync(
+            DirectoryPath,
             "Show Name - S01E01.mkv",
             seriesTitle: "Show Name",
             season: 1,
             episode: 1);
         var file2 = await SeedSerieIndexedFileAsync(
+            DirectoryPath,
             "Show Nam - S01E02.mkv",
             seriesTitle: "Show Nam",
             season: 1,
@@ -191,7 +239,12 @@ public class CreateMediaSerieFolderConsensusTests
         episodes.Should().HaveCount(2);
     }
 
-    private async Task<Serie> SeedSerieWithEpisodeAsync(string title, int season, int episode, string externalId)
+    private async Task<Serie> SeedSerieWithEpisodeAsync(
+        string title,
+        string directoryPath,
+        int season,
+        int episode,
+        string externalId)
     {
         var serie = new Serie
         {
@@ -213,6 +266,7 @@ public class CreateMediaSerieFolderConsensusTests
         serie.Seasons.Add(seasonEntity);
 
         var episodeFile = await SeedSerieIndexedFileAsync(
+            directoryPath,
             $"{title} - S{season:00}E{episode:00}.mkv",
             title,
             season,
@@ -242,6 +296,7 @@ public class CreateMediaSerieFolderConsensusTests
     }
 
     private async Task<IndexedFile> SeedSerieIndexedFileAsync(
+        string directoryPath,
         string fileName,
         string seriesTitle,
         int season,
@@ -254,8 +309,9 @@ public class CreateMediaSerieFolderConsensusTests
             LibraryId = _libraryId,
             Name = fileName,
             Extension = ".mkv",
-            Path = $"{DirectoryPath}/{fileName}",
-            ParentDirectory = DirectoryPath,
+            Path = $"{directoryPath}/{fileName}",
+            // Production stores only the folder name, not the full path.
+            ParentDirectory = ParentDirectoryName,
             Hash = (uint)Random.Shared.Next(1, int.MaxValue),
             Size = 1,
             Identification = new MediaIdentification(seriesTitle)

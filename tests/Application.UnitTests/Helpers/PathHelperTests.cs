@@ -111,4 +111,55 @@ public class PathHelperTests
 
         normalized.Should().Be(PathHelper.NormalizePath(path));
     }
+
+    [Test]
+    [Platform("Win")]
+    public void GetContainingDirectoryPath_ShouldReturnParent_Windows()
+    {
+        var path = @"C:\media\series\Cool Show\Season 01\S01E01.mkv";
+
+        PathHelper.GetContainingDirectoryPath(path).Should().Be(@"C:\media\series\Cool Show\Season 01");
+    }
+
+    [Test]
+    [Platform("Unix")]
+    public void GetContainingDirectoryPath_ShouldReturnParent_Unix()
+    {
+        var path = "/media/series/Cool Show/Season 01/S01E01.mkv";
+
+        PathHelper.GetContainingDirectoryPath(path).Should().Be("/media/series/Cool Show/Season 01");
+    }
+
+    [Test]
+    [Platform("Win")]
+    public void IsInContainingDirectory_ShouldDistinguishSameFolderName_Windows()
+    {
+        var left = @"C:\media\series\Cool Show\Season 01\S01E01.mkv";
+        var right = @"C:\media\series\Other Show\Season 01\S01E01.mkv";
+        var coolSeason = @"C:\media\series\Cool Show\Season 01";
+
+        PathHelper.IsInContainingDirectory(left, coolSeason).Should().BeTrue();
+        PathHelper.IsInContainingDirectory(right, coolSeason).Should().BeFalse();
+        PathHelper.ContainingDirectoriesEqual(left, right).Should().BeFalse();
+    }
+
+    [Test]
+    [Platform("Unix")]
+    public void IsInContainingDirectory_ShouldDistinguishSameFolderName_Unix()
+    {
+        var left = "/media/series/Cool Show/Season 01/S01E01.mkv";
+        var right = "/media/series/Other Show/Season 01/S01E01.mkv";
+        var coolSeason = "/media/series/Cool Show/Season 01";
+
+        PathHelper.IsInContainingDirectory(left, coolSeason).Should().BeTrue();
+        PathHelper.IsInContainingDirectory(right, coolSeason).Should().BeFalse();
+        PathHelper.ContainingDirectoriesEqual(left, right).Should().BeFalse();
+    }
+
+    [Test]
+    public void GetContainingDirectoryPath_ShouldReturnNull_WhenPathMissing()
+    {
+        PathHelper.GetContainingDirectoryPath(null).Should().BeNull();
+        PathHelper.GetContainingDirectoryPath("").Should().BeNull();
+    }
 }
