@@ -25,7 +25,12 @@ public static class DefaultCapabilities
         Capability.CanManageUsers
     ];
 
-    private static readonly HashSet<Capability> GuestCapabilities = [];
+    // Guest sessions are recorded for admin playback history / active streams only.
+    // Personal features (resume, history, stats) stay off.
+    private static readonly HashSet<Capability> GuestCapabilities =
+    [
+        Capability.CanReportPlaybackProgress
+    ];
 
     public static IReadOnlySet<Capability> ForRole(string role) => role switch
     {

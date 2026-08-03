@@ -10,7 +10,8 @@ namespace K7.Clients.Shared.Services;
 /// <summary>
 /// Tracks playback progress and periodically reports it to the server.
 /// Hooks into IPlayerService events to detect time updates, pause, and stop.
-/// Skips reporting when the user is not authenticated (guest mode).
+/// Skips reporting when progress reporting is disabled for the current user
+/// (unauthenticated, or lacking CanReportPlaybackProgress).
 /// </summary>
 public class PlaybackProgressTracker : IDisposable
 {
@@ -69,7 +70,7 @@ public class PlaybackProgressTracker : IDisposable
     /// Begins tracking a specific media. Call this when a new media starts playing.
     /// </summary>
     /// <param name="mediaId">The media being played.</param>
-    /// <param name="isAuthenticated">Whether the current user is authenticated. When false, progress is not reported.</param>
+    /// <param name="isAuthenticated">Whether progress reporting is enabled for the current user. When false, progress is not reported.</param>
     /// <param name="serieId">Optional serie ID when playing a serie episode.</param>
     public void StartTracking(Guid mediaId, bool isAuthenticated = true, Guid? serieId = null, Guid? indexedFileId = null)
     {

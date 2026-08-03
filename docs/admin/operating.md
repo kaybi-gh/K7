@@ -182,6 +182,7 @@ Health overview and active streams (encoder / hardware vs software for the curre
 ### Users and authentication
 
 - Activate Guest, roles, profile restrictions under Admin -> Users.
+- Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
 - Authentication panel: **read-only** view of local / OIDC flags from config.
 
 ### Server defaults vs user overrides

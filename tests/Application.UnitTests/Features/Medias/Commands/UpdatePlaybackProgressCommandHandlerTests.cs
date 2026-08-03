@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -27,6 +28,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
     private ISharedProfilePlaybackResolver _sharedProfiles = null!;
     private IPlaybackPolicySettingsProvider _policies = null!;
     private IPlaybackProgressNotifier _notifier = null!;
+    private IIdentityService _identityService = null!;
     private UpdatePlaybackProgressCommandHandler _handler = null!;
     private Guid _userId;
     private Guid _movieId;
@@ -90,13 +92,16 @@ public class UpdatePlaybackProgressCommandHandlerTests
         syncPlay.ResolveAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns((SyncPlayPlaybackContext?)null);
 
+        _identityService = Substitute.For<IIdentityService>();
+        _identityService.IsInRoleAsync(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
         _handler = new UpdatePlaybackProgressCommandHandler(
             _context,
             _currentUser,
             _notifier,
             _accessGuard,
             _tracker,
-            Substitute.For<IIdentityService>(),
+            _identityService,
             Substitute.For<IMediaQueryCacheInvalidator>(),
             Substitute.For<INextEpisodeEnqueueService>(),
             _stateUpdater,
@@ -205,6 +210,33 @@ public class UpdatePlaybackProgressCommandHandlerTests
 
         (await _context.MediaPlaybackSessions.CountAsync()).Should().Be(0);
         await _accessGuard.DidNotReceive().EnsureAccessAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldCreateSessionWithoutUserMediaState_WhenGuest()
+    {
+        _identityService.IsInRoleAsync("ident", Roles.Guest).Returns(true);
+
+        var sessionId = Guid.NewGuid();
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 10,
+            Duration: 100,
+            State: PlaybackState.Playing), CancellationToken.None);
+
+        var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
+        session.UserId.Should().Be(_userId);
+        session.PositionSeconds.Should().Be(10);
+        _tracker.Received(1).Upsert(sessionId, Arg.Any<ActiveStreamInfo>());
+
+        await _stateUpdater.DidNotReceive().ApplyAsync(
+            Arg.Any<Guid>(), Arg.Any<BaseMedia>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<double>(),
+            Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
+        await _notifier.DidNotReceive().NotifyProgressUpdatedAsync(
+            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<bool>(), Arg.Any<MediaType>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Test]

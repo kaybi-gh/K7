@@ -76,6 +76,8 @@ public class UpdatePlaybackProgressCommandHandler(
         if (media is null) return;
 
         var timeNow = DateTime.UtcNow;
+        var isGuest = !string.IsNullOrEmpty(_currentUser.IdentityId)
+            && await _identityService.IsInRoleAsync(_currentUser.IdentityId, Roles.Guest);
 
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused or PlaybackState.Ended)
             await TryHydrateStreamDecisionAsync(request.SessionId, cancellationToken);
@@ -151,14 +153,16 @@ public class UpdatePlaybackProgressCommandHandler(
             }
         }
 
-        var hostResult = viewingGroup is null
+        // Guests record sessions for admin history / active streams, but do not keep personal
+        // continue-watching or watched state.
+        var hostResult = !isGuest && viewingGroup is null
             ? await _userMediaStateUpdater.ApplyAsync(
                 userId, media, request.MediaId, session.PositionSeconds,
                 session.DurationSeconds > 0 ? session.DurationSeconds : request.Duration,
                 timeNow, cancellationToken)
             : null;
 
-        var sharedResult = viewingGroup is not null
+        var sharedResult = !isGuest && viewingGroup is not null
             ? await _sharedProfileMediaStateUpdater.ApplyAsync(
                 viewingGroup.SharedProfileId,
                 media,
@@ -207,7 +211,7 @@ public class UpdatePlaybackProgressCommandHandler(
 
         // Shared-profile mid-progress stays on SharedProfileMediaState only (personal CW stays clean).
         // On completion, mark the media watched for every member so personal "Vu" badges match the group watch.
-        if (viewingGroup is not null && newlyCompletedSession)
+        if (!isGuest && viewingGroup is not null && newlyCompletedSession)
         {
             var memberIds = viewingGroup.CoViewerUserIds
                 .Append(userId)
@@ -263,7 +267,7 @@ public class UpdatePlaybackProgressCommandHandler(
                 deviceInfo?.DeviceType));
         }
 
-        if (request.PlaylistId is { } playlistId)
+        if (!isGuest && request.PlaylistId is { } playlistId)
             await UserPlaylistStateHelper.TouchLastListenedAsync(_context, userId, playlistId, cancellationToken);
 
         try

@@ -39,7 +39,7 @@ OIDC sign-in never attaches itself to an existing local account by email. Linkin
 
 If you signed in with OIDC and the server also allows username/password sign-in, open **Settings -> Account** and choose **Set a password**. Passwords must be at least 10 characters and include uppercase, lowercase, a digit, and at least 4 distinct characters. If username/password sign-in is disabled (OIDC-only), the page explains that an administrator must enable it first.
 
-Guest mode is limited: many Settings sections and personal features (My Space, offline, and similar) are hidden, and playback progress is not kept like a full account.
+Guest mode is limited: many Settings sections and personal features (My Space, offline, continue watching, personal history, and similar) are hidden. Playback sessions are still recorded so administrators can see Guest consumption under Admin -> Playback history.
 
 ### Two-factor authentication (2FA)
 
@@ -211,7 +211,7 @@ When on: similar / ambiance radios and sonic paths under **Music -> Radio**, int
 | Playback will not start or buffers a lot | Lower quality in the player; check network; on native apps, confirm the saved server address; ask the admin if the file needs transcoding |
 | "This media is still being prepared" | The file is indexed but not analyzed yet, which is normal shortly after it was added or during a first library scan. Asking to play it moves it to the front of the queue, and the page unblocks on its own once analysis finishes |
 | No subtitles | Pick a track in the player; check track-selection settings; the file may have no subtitle streams |
-| Progress missing | Guests do not keep progress like full users; offline sync needs a later connection; with a shared profile, confirm you used the right profile |
+| Progress missing | Guests have no personal continue watching or history (admins still see Guest sessions); offline sync needs a later connection; with a shared profile, confirm you used the right profile |
 | 2FA code rejected | Check the phone's clock; use a recovery code |
 
 Anything else: tell your admin roughly when it happened and which client you used.
