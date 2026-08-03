@@ -1,5 +1,7 @@
 version: 2
 updates:
+  # NuGet: keep a classic K7.sln alongside K7.slnx so Dependabot can discover projects.
+  # Package versions are centralized in Directory.Packages.props (CPM).
   - package-ecosystem: nuget
     directory: /
     schedule:
@@ -8,6 +10,19 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    groups:
+      nuget-microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+          - "Aspire.*"
+      nuget-other:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "Microsoft.*"
+          - "System.*"
+          - "Aspire.*"
 
   - package-ecosystem: github-actions
     directory: /

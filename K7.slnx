@@ -9,6 +9,7 @@
     <File Path="entrypoint.sh" />
     <File Path="global.json" />
     <File Path="K7.CI.slnf" />
+    <File Path="K7.sln" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Source/" />
