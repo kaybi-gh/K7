@@ -18,7 +18,16 @@ npx playwright install chromium
 npm run capture
 ```
 
-Configuration: [`screenshots.config.json`](screenshots.config.json) (demo URL, device profiles, page paths, media IDs).
+Configuration: [`screenshots.config.json`](screenshots.config.json) (demo URL, device profiles, captures).
+
+Media detail / library list captures should use **`resolve`** instead of hard-coded IDs (IDs change on re-import):
+
+```json
+{ "resolve": { "search": "Sintel", "kind": "movie" } }
+{ "resolve": { "category": "MOVIES" } }
+```
+
+`kind`: `movie` | `series` | `album`. Resolution uses guest-accessible `GET /api/medias?SearchText=...` (not `/api/search`, which requires a full user), or clicks an Explore category card.
 
 ### Capture a subset
 

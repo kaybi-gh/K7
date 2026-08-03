@@ -7,7 +7,7 @@
   },
   "colorScheme": "dark",
   "guestLogin": true,
-  "settleMs": 2500,
+  "settleMs": 4000,
   "defaultProfile": "desktop",
   "profiles": {
     "desktop": {
@@ -56,94 +56,90 @@
       "file": "explore-desktop.png",
       "path": "/explore",
       "profile": "desktop",
-      "waitFor": "h1"
+      "waitFor": "text=MOVIES"
     },
     {
       "file": "explore-mobile.png",
       "path": "/explore",
       "profile": "mobile",
-      "waitFor": ".explore-page, .media-card, h1"
+      "waitFor": "text=MOVIES"
     },
     {
       "file": "movies-desktop.png",
-      "path": "/explore?library-group=be358dde-c672-435c-ad39-c7f89b91463a",
+      "resolve": { "category": "MOVIES" },
       "profile": "desktop",
       "optional": true,
-      "waitFor": "text=Big Buck Bunny"
+      "waitFor": "a[href*=\"/movies/\"]"
     },
     {
       "file": "movies-mobile.png",
-      "path": "/explore?library-group=be358dde-c672-435c-ad39-c7f89b91463a",
+      "resolve": { "category": "MOVIES" },
       "profile": "mobile",
       "optional": true,
-      "waitFor": "text=Big Buck Bunny"
+      "waitFor": "a[href*=\"/movies/\"]"
     },
     {
       "file": "movie-detail-desktop.png",
-      "path": "/movies/019fbccc-9263-71bf-83f1-481431d11c36",
+      "resolve": { "search": "Big Buck Bunny", "kind": "movie" },
       "profile": "desktop",
       "optional": true,
-      "waitFor": "text=Play"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "movie-detail-tv.png",
-      "path": "/movies/019fbccc-9263-71bf-83f1-481431d11c36",
+      "resolve": { "search": "Big Buck Bunny", "kind": "movie" },
       "profile": "tv",
       "optional": true,
-      "waitFor": "text=Play"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "movie-detail-mobile.png",
-      "path": "/movies/019fbccc-9263-71bf-83f1-481431d11c36",
+      "resolve": { "search": "Big Buck Bunny", "kind": "movie" },
       "profile": "mobile",
       "optional": true,
-      "waitFor": "text=Play"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "movie-detail-sintel-desktop.png",
-      "path": "/movies/019fbccc-9433-70f2-9591-78e3ca8cf1c0",
+      "resolve": { "search": "Sintel", "kind": "movie" },
       "profile": "desktop",
       "optional": true,
-      "waitFor": "text=Play"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "movie-detail-sintel-mobile.png",
-      "path": "/movies/019fbccc-9433-70f2-9591-78e3ca8cf1c0",
+      "resolve": { "search": "Sintel", "kind": "movie" },
       "profile": "mobile",
       "optional": true,
-      "waitFor": "text=Play"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "music-album-desktop.png",
-      "path": "/music/albums/019fbccd-d144-7300-89af-8211d7c29404",
+      "resolve": { "search": "Goldberg", "kind": "album" },
       "profile": "desktop",
       "optional": true,
-      "waitFor": "text=Goldberg"
+      "waitFor": "h1, table, button:has-text(\"Play\"), button:has-text(\"Lecture\")"
     },
     {
       "file": "music-album-mobile.png",
-      "path": "/music/albums/019fbccd-d144-7300-89af-8211d7c29404",
+      "resolve": { "search": "Goldberg", "kind": "album" },
       "profile": "mobile",
       "optional": true,
-      "waitFor": "text=Goldberg"
+      "waitFor": "h1, table, button:has-text(\"Play\"), button:has-text(\"Lecture\")"
     },
     {
       "file": "series-desktop.png",
-      "path": "/series/019fbccd-48ba-727f-9a8f-fb8dad6ebf20",
+      "resolve": { "search": "Superman", "kind": "series" },
       "profile": "desktop",
       "optional": true,
-      "waitFor": "text=Superman"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     },
     {
       "file": "series-mobile.png",
-      "path": "/series/019fbccd-48ba-727f-9a8f-fb8dad6ebf20",
+      "resolve": { "search": "Superman", "kind": "series" },
       "profile": "mobile",
       "optional": true,
-      "waitFor": "text=Superman"
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     }
-  ],
-  "discover": {
-    "enabled": true,
-    "maxPerType": 1
-  }
+  ]
 }

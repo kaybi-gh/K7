@@ -158,38 +158,171 @@ async function loginAsGuestIfNeeded(targetPage) {
   await waitForAppShell(targetPage);
 }
 
-async function captureEntry(targetPage, entry) {
-  if (/__[^_]+__/.test(entry.path ?? '')) {
+function mediaTypeOf(item) {
+  return item?.$type ?? item?.type ?? null;
+}
+
+function pathForSearchHit(kind, item) {
+  const type = mediaTypeOf(item);
+  const id = item?.id ?? item?.Id;
+  if (!id) {
+    return null;
+  }
+
+  switch (kind) {
+    case 'movie':
+      return type === 'Movie' ? `/movies/${id}` : null;
+    case 'series':
+      if (type === 'Serie') {
+        return `/series/${id}`;
+      }
+      if (type === 'SerieSeason' && (item.serieId || item.SerieId)) {
+        return `/series/${item.serieId ?? item.SerieId}`;
+      }
+      return null;
+    case 'album':
+      if (type === 'MusicAlbum') {
+        return `/music/albums/${id}`;
+      }
+      if (type === 'MusicTrack' && (item.albumId || item.AlbumId)) {
+        return `/music/albums/${item.albumId ?? item.AlbumId}`;
+      }
+      return null;
+    default:
+      return null;
+  }
+}
+
+function mediaTypesForKind(kind) {
+  switch (kind) {
+    case 'movie':
+      return ['Movie'];
+    case 'series':
+      return ['Serie'];
+    case 'album':
+      return ['MusicAlbum'];
+    default:
+      return [];
+  }
+}
+
+async function resolveViaSearch(page, { search, kind }) {
+  // Guest cannot call /api/search (UserOrAbove). Browse /api/medias with SearchText instead.
+  const params = new URLSearchParams({
+    PageNumber: '1',
+    PageSize: '25',
+    SearchText: search,
+  });
+  for (const mediaType of mediaTypesForKind(kind)) {
+    params.append('MediaTypes', mediaType);
+  }
+
+  const url = `${baseUrl}/api/medias?${params}`;
+  const response = await page.request.get(url);
+  if (!response.ok()) {
+    throw new Error(`Medias API failed for "${search}" (${response.status()})`);
+  }
+
+  const payload = await response.json();
+  const results = payload.items ?? payload.Items ?? [];
+  const needle = search.trim().toLowerCase();
+  const ranked = [...results].sort((a, b) => {
+    const ta = (a.title ?? a.Title ?? '').toLowerCase();
+    const tb = (b.title ?? b.Title ?? '').toLowerCase();
+    const score = (t) => (t === needle ? 0 : t.includes(needle) ? 1 : 2);
+    return score(ta) - score(tb);
+  });
+
+  for (const item of ranked) {
+    const resolved = pathForSearchHit(kind, item);
+    if (resolved) {
+      const title = item.title ?? item.Title ?? '';
+      console.log(`  resolve search "${search}" (${kind}) -> ${resolved} (${title})`);
+      return resolved;
+    }
+  }
+
+  throw new Error(`No ${kind} result for search "${search}" (${results.length} media hits)`);
+}
+
+async function resolveViaCategory(page, { category }) {
+  await page.goto(`${baseUrl}/explore`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await waitForAppShell(page);
+  await page.getByRole('button', { name: new RegExp(category, 'i') }).first().click();
+  await page.waitForTimeout(settleMs);
+  const resolved = page.url().replace(baseUrl, '');
+  console.log(`  resolve category "${category}" -> ${resolved}`);
+  return resolved.startsWith('/') ? resolved : `/${resolved}`;
+}
+
+async function resolveEntryPath(page, entry, cache) {
+  if (entry.path && !entry.resolve) {
+    return entry.path;
+  }
+
+  if (!entry.resolve) {
+    throw new Error(`Capture ${entry.file} has neither path nor resolve`);
+  }
+
+  const key = JSON.stringify(entry.resolve);
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+
+  let resolved;
+  if (entry.resolve.category) {
+    resolved = await resolveViaCategory(page, entry.resolve);
+  } else if (entry.resolve.search && entry.resolve.kind) {
+    resolved = await resolveViaSearch(page, entry.resolve);
+  } else {
+    throw new Error(`Invalid resolve for ${entry.file}: ${key}`);
+  }
+
+  cache.set(key, resolved);
+  return resolved;
+}
+
+async function waitForEntry(targetPage, entry) {
+  if (!entry.waitFor) {
+    await waitForAppShell(targetPage);
+    return;
+  }
+
+  try {
+    if (entry.waitFor.startsWith('text=')) {
+      await targetPage.getByText(entry.waitFor.slice('text='.length), { exact: false })
+        .first()
+        .waitFor({ state: 'visible', timeout: 60_000 });
+      return;
+    }
+
+    // Support comma-separated CSS selectors (Playwright :has-text etc.)
+    const selectors = entry.waitFor.split(',').map(s => s.trim()).filter(Boolean);
+    await targetPage.locator(selectors.join(', ')).first()
+      .waitFor({ state: 'visible', timeout: 60_000 });
+  } catch {
+    console.warn(`  waitFor timeout: ${entry.waitFor}`);
+  }
+}
+
+async function captureEntry(targetPage, entry, resolveCache) {
+  const resolvedPath = await resolveEntryPath(targetPage, entry, resolveCache);
+
+  if (/__[^_]+__/.test(resolvedPath ?? '')) {
     if (entry.optional) {
       console.log(`SKIP optional (placeholder): ${entry.file}`);
       return;
     }
 
-    console.warn(`WARN placeholder path not replaced: ${entry.path}`);
+    console.warn(`WARN placeholder path not replaced: ${resolvedPath}`);
     return;
   }
 
-  const url = `${baseUrl}${entry.path.startsWith('/') ? entry.path : `/${entry.path}`}`;
+  const url = `${baseUrl}${resolvedPath.startsWith('/') ? resolvedPath : `/${resolvedPath}`}`;
   console.log(`CAPTURE ${entry.file} <- ${url}`);
 
   await targetPage.goto(url, { waitUntil: 'domcontentloaded' });
-
-  if (entry.waitFor) {
-    try {
-      if (entry.waitFor.startsWith('text=')) {
-        await targetPage.getByText(entry.waitFor.slice('text='.length), { exact: false })
-          .first()
-          .waitFor({ state: 'visible', timeout: 60_000 });
-      } else {
-        await targetPage.waitForSelector(entry.waitFor, { timeout: 60_000 });
-      }
-    } catch {
-      console.warn(`  waitFor timeout: ${entry.waitFor}`);
-    }
-  } else {
-    await waitForAppShell(targetPage);
-  }
-
+  await waitForEntry(targetPage, entry);
   await targetPage.waitForTimeout(settleMs);
 
   const out = path.join(outputDir, entry.file);
@@ -201,7 +334,6 @@ async function captureEntry(targetPage, entry) {
     }
     renameSync(tempOut, out);
   } catch (err) {
-    // Fall back to direct overwrite if rename/unlink races with an editor lock.
     await targetPage.screenshot({ path: out, fullPage: false }).catch(() => {
       throw err;
     });
@@ -214,98 +346,6 @@ async function captureEntry(targetPage, entry) {
     }
   }
   console.log(`  -> ${out}`);
-}
-
-async function discoverMediaLinks(targetPage) {
-  if (!config.discover?.enabled) {
-    return [];
-  }
-
-  const patterns = [
-    { type: 'music-album', re: /\/music\/albums\/[0-9a-f-]{36}/i },
-    { type: 'movie', re: /\/movies\/[0-9a-f-]{36}/i },
-    { type: 'series', re: /\/series\/[0-9a-f-]{36}/i },
-    { type: 'library-group', re: /\/library-groups\/[0-9a-f-]{36}/i },
-  ];
-
-  const pathsToScan = ['/explore', '/'];
-  const found = new Map();
-
-  for (const scanPath of pathsToScan) {
-    await targetPage.goto(`${baseUrl}${scanPath}`, { waitUntil: 'domcontentloaded' });
-    await waitForAppShell(targetPage);
-
-    const hrefs = await targetPage.locator('a[href]').evaluateAll(anchors =>
-      anchors
-        .map(a => a.getAttribute('href'))
-        .filter(Boolean),
-    );
-
-    for (const href of hrefs) {
-      for (const { type, re } of patterns) {
-        if (!re.test(href) || found.has(type)) {
-          continue;
-        }
-
-        found.set(type, href.startsWith('http') ? new URL(href).pathname : href);
-      }
-    }
-  }
-
-  const max = config.discover.maxPerType ?? 1;
-  const discoveries = [];
-
-  if (found.has('library-group')) {
-    const groupPath = found.get('library-group');
-    await targetPage.goto(`${baseUrl}${groupPath}`, { waitUntil: 'domcontentloaded' });
-    await waitForAppShell(targetPage);
-
-    const inner = await targetPage.locator('a[href]').evaluateAll(anchors =>
-      anchors.map(a => a.getAttribute('href')).filter(Boolean),
-    );
-
-    for (const href of inner) {
-      for (const { type, re } of patterns.filter(p => p.type !== 'library-group')) {
-        if (discoveries.filter(d => d.type === type).length >= max) {
-          continue;
-        }
-
-        if (re.test(href)) {
-          discoveries.push({
-            type,
-            path: href.startsWith('http') ? new URL(href).pathname : href,
-          });
-        }
-      }
-    }
-  }
-
-  for (const [type, p] of found) {
-    if (type === 'library-group') {
-      continue;
-    }
-
-    if (discoveries.filter(d => d.type === type).length < max) {
-      discoveries.push({ type, path: p });
-    }
-  }
-
-  return discoveries;
-}
-
-function discoveryToFile(type) {
-  switch (type) {
-    case 'music-album':
-      return 'music-album-desktop.png';
-    case 'movie':
-      return 'movie-detail-desktop.png';
-    case 'series':
-      return 'series-desktop.png';
-    case 'library-group':
-      return 'library-group-desktop.png';
-    default:
-      return `${type}-desktop.png`;
-  }
 }
 
 function groupCapturesByProfile(captures) {
@@ -323,7 +363,7 @@ function groupCapturesByProfile(captures) {
   return groups;
 }
 
-async function runProfile(browser, profile, captures, { discover = false } = {}) {
+async function runProfile(browser, profile, captures) {
   console.log(`PROFILE ${profile.name}`);
 
   const fileFilter = process.env.K7_SCREENSHOTS_FILES
@@ -347,6 +387,7 @@ async function runProfile(browser, profile, captures, { discover = false } = {})
   }
 
   const page = await context.newPage();
+  const resolveCache = new Map();
 
   try {
     if (config.guestLogin !== false) {
@@ -354,25 +395,14 @@ async function runProfile(browser, profile, captures, { discover = false } = {})
     }
 
     for (const entry of selectedCaptures) {
-      await captureEntry(page, entry);
-    }
-
-    if (discover) {
-      const discoveries = await discoverMediaLinks(page);
-      for (const item of discoveries) {
-        const file = discoveryToFile(item.type);
-        const alreadyCaptured = (config.captures ?? []).some(c => c.file === file);
-        if (alreadyCaptured) {
-          console.log(`SKIP discover ${item.type}: ${file} already in config`);
+      try {
+        await captureEntry(page, entry, resolveCache);
+      } catch (err) {
+        if (entry.optional) {
+          console.warn(`SKIP optional ${entry.file}: ${err.message}`);
           continue;
         }
-
-        await captureEntry(page, {
-          file,
-          path: item.path,
-          waitFor: 'h1, .media-card, table',
-          optional: true,
-        });
+        throw err;
       }
     }
   } finally {
@@ -413,8 +443,7 @@ async function main() {
         throw new Error(`Unknown profile "${profileName}" referenced in captures`);
       }
 
-      const discover = profileName === defaultProfile && config.discover?.enabled;
-      await runProfile(browser, profile, profileCaptures, { discover });
+      await runProfile(browser, profile, profileCaptures);
     }
 
     console.log('DONE');
