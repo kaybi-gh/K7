@@ -197,7 +197,11 @@ public class SupplementalEpisodeMetadataResolverTests
     {
         public string ProviderName => providerName;
 
-        public Task<string?> SearchSerieAsync(MediaIdentification identification, CancellationToken cancellationToken = default) =>
+        public Task<string?> SearchSerieAsync(
+            MediaIdentification identification,
+            string? language = null,
+            string? fallbackLanguage = null,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult<string?>(null);
 
         public Task<ExternalSerieMetadata> FetchSerieMetadataAsync(

@@ -25,12 +25,20 @@ public class FederationMetadataProvider(
     public string ProviderName => "federation";
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Movie, LibraryMediaType.Serie, LibraryMediaType.Music];
 
-    public Task<string?> SearchAsync(MediaIdentification movieIdentification, CancellationToken cancellationToken = default)
+    public Task<string?> SearchAsync(
+        MediaIdentification movieIdentification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         return Task.FromResult<string?>(null);
     }
 
-    public Task<string?> SearchSerieAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
+    public Task<string?> SearchSerieAsync(
+        MediaIdentification identification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         return Task.FromResult<string?>(null);
     }

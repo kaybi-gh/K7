@@ -71,7 +71,7 @@ public class CreateMediaCommandHandlerTests
 
         _movieProvider = Substitute.For<IMetadataProvider<ExternalMovieMetadata>>();
         _movieProvider.ProviderName.Returns("tmdb");
-        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns("tmdb-42");
 
         var services = new ServiceCollection();
@@ -214,7 +214,7 @@ public class CreateMediaCommandHandlerTests
     [Test]
     public async Task Handle_ShouldCreateMovieFromIdentification_WhenProviderReturnsNoResult()
     {
-        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns((string?)null);
 
         var indexedFile = await SeedMovieIndexedFileAsync("La Tour de controle infernale", 2016);
@@ -243,7 +243,7 @@ public class CreateMediaCommandHandlerTests
     [Test]
     public async Task Handle_ShouldReuseMovieByTitle_WhenProviderReturnsNoResult()
     {
-        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(string.Empty);
 
         var existingId = Guid.NewGuid();

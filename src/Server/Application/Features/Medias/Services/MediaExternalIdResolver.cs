@@ -35,7 +35,13 @@ public class MediaExternalIdResolver(
             return null;
         }
 
-        var providerExternalId = await SearchProviderAsync(media, providerName, identification, cancellationToken);
+        var providerExternalId = await SearchProviderAsync(
+            media,
+            providerName,
+            identification,
+            library.MetadataLanguage,
+            library.MetadataFallbackLanguage,
+            cancellationToken);
         if (string.IsNullOrWhiteSpace(providerExternalId))
         {
             logger.LogWarning(
@@ -148,19 +154,21 @@ public class MediaExternalIdResolver(
         BaseMedia media,
         string providerName,
         MediaIdentification identification,
+        string? language,
+        string? fallbackLanguage,
         CancellationToken cancellationToken)
     {
         return media switch
         {
             Movie => await serviceProvider
                 .GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(providerName)
-                .SearchAsync(identification, cancellationToken),
+                .SearchAsync(identification, language, fallbackLanguage, cancellationToken),
             Serie => await serviceProvider
                 .GetRequiredKeyedService<ISerieMetadataProvider>(providerName)
-                .SearchSerieAsync(identification, cancellationToken),
+                .SearchSerieAsync(identification, language, fallbackLanguage, cancellationToken),
             MusicAlbum => await serviceProvider
                 .GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(providerName)
-                .SearchAsync(identification, cancellationToken),
+                .SearchAsync(identification, language, fallbackLanguage, cancellationToken),
             _ => null
         };
     }

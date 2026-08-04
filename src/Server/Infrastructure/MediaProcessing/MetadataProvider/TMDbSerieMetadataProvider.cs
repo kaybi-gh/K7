@@ -43,25 +43,27 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         _logger = logger;
     }
 
-    public async Task<string?> SearchSerieAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
+    public async Task<string?> SearchSerieAsync(
+        MediaIdentification identification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         try
         {
             var query = identification.SeriesTitle ?? identification.Title;
             var year = identification.ReleaseYear.HasValue ? identification.ReleaseYear.Value.Year : 0;
-            var searchResult = await _tmdbClient.SearchTvShowAsync(
-                query,
-                firstAirDateYear: year,
-                cancellationToken: cancellationToken);
+            var merged = await SearchTvMergedAsync(query, year, language, fallbackLanguage, cancellationToken);
 
             var bestMatch = MetadataTitleMatchHelper.PickBest(
                 query,
                 year > 0 ? year : null,
-                searchResult.Results,
-                result => result.Name,
-                result => result.FirstAirDate?.Year,
-                result => [result.OriginalName]);
+                merged,
+                result => result.Title,
+                result => result.ReleaseDate?.Year,
+                result => result.AlternateTitles,
+                result => result.Popularity);
 
             return bestMatch?.Id.ToString();
         }
@@ -98,21 +100,17 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                var searchResult = await _tmdbClient.SearchTvShowAsync(
-                    query, language: language, firstAirDateYear: year ?? 0, cancellationToken: cancellationToken);
-
-                if (searchResult?.Results is not null)
-                {
-                    var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
-                        query,
-                        year,
-                        searchResult.Results,
-                        show => show.Name,
-                        show => show.FirstAirDate?.Year,
-                        show => [show.OriginalName]);
-                    results.AddRange(ranked.Select(show =>
-                        MapToSearchResult(show.Id, show.Name, show.FirstAirDate, show.PosterPath, show.Overview)));
-                }
+                var merged = await SearchTvMergedAsync(query, year ?? 0, language, fallbackLanguage, cancellationToken);
+                var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
+                    query,
+                    year,
+                    merged,
+                    show => show.Title,
+                    show => show.ReleaseDate?.Year,
+                    show => show.AlternateTitles,
+                    show => show.Popularity);
+                results.AddRange(ranked.Select(show =>
+                    MapToSearchResult(show.Id, show.Title, show.ReleaseDate, show.PosterPath, show.Overview, show.Popularity)));
             }
         }
         catch (Exception ex)
@@ -121,6 +119,35 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         }
 
         return results;
+    }
+
+    private async Task<IReadOnlyList<TmdbMultiLanguageSearchMerger.MergedHit>> SearchTvMergedAsync(
+        string query,
+        int year,
+        string? language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
+        var languages = MetadataSearchLanguageHelper.ResolveSearchLanguages(language, fallbackLanguage);
+        if (languages.Count == 0)
+        {
+            var searchResult = await _tmdbClient.SearchTvShowAsync(
+                query,
+                firstAirDateYear: year,
+                cancellationToken: cancellationToken);
+            return TmdbMultiLanguageSearchMerger.MergeTv([searchResult.Results ?? []]);
+        }
+
+        var tasks = languages
+            .Select(lang => _tmdbClient.SearchTvShowAsync(
+                query,
+                language: lang,
+                firstAirDateYear: year,
+                cancellationToken: cancellationToken))
+            .ToArray();
+        var results = await Task.WhenAll(tasks);
+        return TmdbMultiLanguageSearchMerger.MergeTv(
+            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchTv>)(r.Results ?? [])).ToList());
     }
 
     public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(
@@ -320,7 +347,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return (1, absoluteNumber);
     }
 
-    private MetadataSearchResult MapToSearchResult(int id, string name, DateTime? firstAirDate, string posterPath, string overview)
+    private MetadataSearchResult MapToSearchResult(int id, string name, DateTime? firstAirDate, string? posterPath, string? overview, double? popularity = null)
     {
         var posterUrl = !string.IsNullOrEmpty(posterPath)
             ? _tmdbClient.GetImageUrl("w500", posterPath, true)?.ToString()
@@ -333,7 +360,8 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             Title = name,
             Year = firstAirDate?.Year,
             PosterUrl = posterUrl,
-            Overview = overview
+            Overview = overview,
+            Popularity = popularity
         };
     }
 

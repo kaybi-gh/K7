@@ -8,4 +8,6 @@ public sealed record MetadataSearchResult
     public int? Year { get; init; }
     public string? PosterUrl { get; init; }
     public string? Overview { get; init; }
+    /// <summary>Optional provider popularity used to break ties between weak title matches.</summary>
+    public double? Popularity { get; init; }
 }

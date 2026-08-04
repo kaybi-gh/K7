@@ -33,7 +33,11 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Serie];
 
-    public async Task<string?> SearchSerieAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
+    public async Task<string?> SearchSerieAsync(
+        MediaIdentification identification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         if (!_apiClient.IsConfigured)
             return null;

@@ -44,7 +44,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     public string ProviderName => "musicbrainz";
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Music];
 
-    public async Task<string?> SearchAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
+    public async Task<string?> SearchAsync(
+        MediaIdentification identification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {

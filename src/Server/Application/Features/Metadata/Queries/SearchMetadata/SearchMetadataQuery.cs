@@ -86,6 +86,7 @@ public class SearchMetadataQueryHandler(
             request.Year,
             flattened,
             result => result.Title,
-            result => result.Year);
+            result => result.Year,
+            popularitySelector: result => result.Popularity);
     }
 }

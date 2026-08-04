@@ -77,5 +77,50 @@ public class MetadataTitleMatchHelperTests
         matchingYear.Should().BeGreaterThan(mismatchingYear);
     }
 
-    private sealed record Candidate(string Title, int Year);
+    [Test]
+    public void OrderByBestMatch_ShouldPreferExactDragons_OverDragonsOrDinosaurs()
+    {
+        var candidates = new[]
+        {
+            new Candidate("Dragons or Dinosaurs: Creation or Evolution", 2010, Popularity: 0.04),
+            new Candidate("Dragons", 2010, Popularity: 19.18),
+            new Candidate("How to Train Your Dragon", 2010, Popularity: 19.18)
+        };
+
+        var ordered = MetadataTitleMatchHelper.OrderByBestMatch(
+            "Dragons",
+            2010,
+            candidates,
+            c => c.Title,
+            c => c.Year,
+            popularitySelector: c => c.Popularity);
+
+        ordered[0].Title.Should().Be("Dragons");
+        ordered[0].Title.Should().NotBe("Dragons or Dinosaurs: Creation or Evolution");
+    }
+
+    [Test]
+    public void PickBest_EnglishTitles_ShouldPreferPopularHttyd_OverDragonsOrDinosaurs()
+    {
+        var candidates = new[]
+        {
+            new Candidate("Dragons or Dinosaurs: Creation or Evolution", 2010, Popularity: 0.04),
+            new Candidate("How to Train Your Dragon", 2010, Popularity: 19.18),
+            new Candidate("Dragon Hunters", 2008, Popularity: 2.68),
+            new Candidate("Merlin and the War of the Dragons", 2008, Popularity: 1.0)
+        };
+
+        var best = MetadataTitleMatchHelper.PickBest(
+            "Dragons",
+            2010,
+            candidates,
+            c => c.Title,
+            c => c.Year,
+            popularitySelector: c => c.Popularity);
+
+        best.Should().NotBeNull();
+        best!.Title.Should().Be("How to Train Your Dragon");
+    }
+
+    private sealed record Candidate(string Title, int Year, double? Popularity = null);
 }

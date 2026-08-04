@@ -38,22 +38,32 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         _tdmbClient = tmdbClient;
     }
 
-    public async Task<string?> SearchAsync(MediaIdentification movieIdentification, CancellationToken cancellationToken = default)
+    public async Task<string?> SearchAsync(
+        MediaIdentification movieIdentification,
+        string? language = null,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
     {
         await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         try
         {
-            var searchResult = await _tdmbClient.SearchMovieAsync(movieIdentification.Title,
-                year: movieIdentification.ReleaseYear.HasValue ? movieIdentification.ReleaseYear.Value.Year : 0,
-                cancellationToken: cancellationToken);
             var year = movieIdentification.ReleaseYear?.Year;
+            var yearFilter = year ?? 0;
+            var merged = await SearchMoviesMergedAsync(
+                movieIdentification.Title,
+                yearFilter,
+                language,
+                fallbackLanguage,
+                cancellationToken);
+
             var bestMatch = MetadataTitleMatchHelper.PickBest(
                 movieIdentification.Title,
                 year,
-                searchResult.Results,
+                merged,
                 result => result.Title,
                 result => result.ReleaseDate?.Year,
-                result => [result.OriginalTitle]);
+                result => result.AlternateTitles,
+                result => result.Popularity);
             return bestMatch?.Id.ToString();
         }
         catch (Exception ex)
@@ -88,19 +98,17 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                var searchResult = await _tdmbClient.SearchMovieAsync(query, language: language, year: year ?? 0, cancellationToken: cancellationToken);
-                if (searchResult?.Results != null)
-                {
-                    var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
-                        query,
-                        year,
-                        searchResult.Results,
-                        movie => movie.Title,
-                        movie => movie.ReleaseDate?.Year,
-                        movie => [movie.OriginalTitle]);
-                    results.AddRange(ranked.Select(movie =>
-                        MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview)));
-                }
+                var merged = await SearchMoviesMergedAsync(query, year ?? 0, language, fallbackLanguage, cancellationToken);
+                var ranked = MetadataTitleMatchHelper.OrderByBestMatch(
+                    query,
+                    year,
+                    merged,
+                    movie => movie.Title,
+                    movie => movie.ReleaseDate?.Year,
+                    movie => movie.AlternateTitles,
+                    movie => movie.Popularity);
+                results.AddRange(ranked.Select(movie =>
+                    MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview, movie.Popularity)));
             }
         }
         catch (Exception ex)
@@ -111,7 +119,36 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         return results;
     }
 
-    private MetadataSearchResult MapToSearchResult(int id, string title, DateTime? releaseDate, string posterPath, string overview)
+    private async Task<IReadOnlyList<TmdbMultiLanguageSearchMerger.MergedHit>> SearchMoviesMergedAsync(
+        string query,
+        int year,
+        string? language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
+        var languages = MetadataSearchLanguageHelper.ResolveSearchLanguages(language, fallbackLanguage);
+        if (languages.Count == 0)
+        {
+            var searchResult = await _tdmbClient.SearchMovieAsync(
+                query,
+                year: year,
+                cancellationToken: cancellationToken);
+            return TmdbMultiLanguageSearchMerger.MergeMovies([searchResult.Results ?? []]);
+        }
+
+        var tasks = languages
+            .Select(lang => _tdmbClient.SearchMovieAsync(
+                query,
+                language: lang,
+                year: year,
+                cancellationToken: cancellationToken))
+            .ToArray();
+        var results = await Task.WhenAll(tasks);
+        return TmdbMultiLanguageSearchMerger.MergeMovies(
+            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchMovie>)(r.Results ?? [])).ToList());
+    }
+
+    private MetadataSearchResult MapToSearchResult(int id, string title, DateTime? releaseDate, string? posterPath, string? overview, double? popularity = null)
     {
         var posterUrl = !string.IsNullOrEmpty(posterPath) 
             ? _tdmbClient.GetImageUrl("w500", posterPath, true)?.ToString() 
@@ -124,7 +161,8 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             Title = title,
             Year = releaseDate?.Year,
             PosterUrl = posterUrl,
-            Overview = overview
+            Overview = overview,
+            Popularity = popularity
         };
     }
 

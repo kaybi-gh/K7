@@ -107,7 +107,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         Guard.Against.Null(identification);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(library.MetadataProviderName);
-        var metadataProviderExternalId = await metadataProvider.SearchAsync(identification, cancellationToken);
+        var metadataProviderExternalId = await metadataProvider.SearchAsync(
+            identification,
+            library.MetadataLanguage,
+            library.MetadataFallbackLanguage,
+            cancellationToken);
 
         // Match music/serie: provider miss is not fatal - create from local identification.
         if (!string.IsNullOrEmpty(metadataProviderExternalId))
@@ -223,7 +227,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         };
         var metadataProviderExternalId = await _serviceProvider
             .GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(library.MetadataProviderName)
-            .SearchAsync(albumIdentification, cancellationToken);
+            .SearchAsync(albumIdentification, library.MetadataLanguage, library.MetadataFallbackLanguage, cancellationToken);
 
         // Try to find existing album by provider ExternalId first (most reliable)
         MusicAlbum? existingAlbum = null;
@@ -425,7 +429,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(library.MetadataProviderName);
         var folderSerie = await TryResolveSerieFromFolderSiblingsAsync(indexedFiles, library, metadataProvider, cancellationToken);
         var (serie, _, providerExternalId) = folderSerie
-            ?? await FindOrCreateSerieAsync(firstIdentification, metadataProvider, cancellationToken);
+            ?? await FindOrCreateSerieAsync(
+                firstIdentification,
+                metadataProvider,
+                library.MetadataLanguage,
+                library.MetadataFallbackLanguage,
+                cancellationToken);
 
         // Load the full season+episode tree once - no more per-episode lazy loads
         await _context.Entry(serie).Collection(s => s.Seasons)
@@ -717,7 +726,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     }
 
     private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)> FindOrCreateSerieAsync(
-        MediaIdentification identification, ISerieMetadataProvider metadataProvider, CancellationToken cancellationToken)
+        MediaIdentification identification,
+        ISerieMetadataProvider metadataProvider,
+        string? language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
     {
         var seriesTitle = identification.SeriesTitle ?? identification.Title;
 
@@ -730,7 +743,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             return (existingSerie, false, externalId);
         }
 
-        var providerExternalId = await metadataProvider.SearchSerieAsync(identification, cancellationToken);
+        var providerExternalId = await metadataProvider.SearchSerieAsync(
+            identification,
+            language,
+            fallbackLanguage,
+            cancellationToken);
 
         if (!string.IsNullOrEmpty(providerExternalId))
         {

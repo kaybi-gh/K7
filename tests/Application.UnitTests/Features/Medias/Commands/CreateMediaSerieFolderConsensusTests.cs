@@ -74,7 +74,7 @@ public class CreateMediaSerieFolderConsensusTests
 
         _serieProvider = Substitute.For<ISerieMetadataProvider>();
         _serieProvider.ProviderName.Returns("tmdb");
-        _serieProvider.SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+        _serieProvider.SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns("tmdb-wrong-show");
 
         var services = new ServiceCollection();
@@ -135,7 +135,7 @@ public class CreateMediaSerieFolderConsensusTests
 
         mediaId.Should().Be(existingSerie.Id);
         await _serieProvider.DidNotReceive()
-            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>());
+            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
 
         var attached = await _context.IndexedFiles.SingleAsync(f => f.Id == newFile.Id);
         var episode = await _context.Medias.OfType<SerieEpisode>()
@@ -162,7 +162,7 @@ public class CreateMediaSerieFolderConsensusTests
             season: 1,
             episode: 1);
 
-        _serieProvider.SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>())
+        _serieProvider.SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns("tmdb-other-show");
 
         var mediaId = await _handler.Handle(new CreateMediaCommand
@@ -174,7 +174,7 @@ public class CreateMediaSerieFolderConsensusTests
 
         mediaId.Should().NotBe(existingSerie.Id);
         await _serieProvider.Received(1)
-            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>());
+            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
 
         var series = await _context.Medias.OfType<Serie>().ToListAsync();
         series.Should().HaveCount(2);
@@ -200,7 +200,7 @@ public class CreateMediaSerieFolderConsensusTests
         }, CancellationToken.None);
 
         await _serieProvider.Received(1)
-            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<CancellationToken>());
+            .SearchSerieAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
 
         var serie = await _context.Medias.OfType<Serie>().SingleAsync(s => s.Id == mediaId);
         serie.ExternalIds.Should().ContainSingle(e => e.Value == "tmdb-wrong-show");

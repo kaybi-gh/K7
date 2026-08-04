@@ -6,13 +6,19 @@ namespace K7.Server.Application.Helpers;
 public static class MetadataTitleMatchHelper
 {
     private const int ExactMatchScore = 10_000;
-    private const int StartsWithScore = 8_000;
     private const int WholeWordScore = 6_000;
     private const int ContainedScore = 3_000;
     private const int YearBonus = 500;
     private const int YearMismatchPenalty = 2_000;
+    private const int ExtraTokenPenalty = 1_200;
+    private const int MaxPopularityBonus = 2_000;
 
-    public static int Score(string? query, string? title, int? queryYear = null, int? resultYear = null)
+    public static int Score(
+        string? query,
+        string? title,
+        int? queryYear = null,
+        int? resultYear = null,
+        double? popularity = null)
     {
         var normalizedQuery = Normalize(query);
         var normalizedTitle = Normalize(title);
@@ -29,6 +35,9 @@ public static class MetadataTitleMatchHelper
                 score -= YearMismatchPenalty;
         }
 
+        if (popularity is > 0)
+            score += PopularityBonus(popularity.Value);
+
         return score;
     }
 
@@ -38,14 +47,26 @@ public static class MetadataTitleMatchHelper
         string? primaryTitle,
         int? resultYear,
         params string?[] alternateTitles)
+        => Score(query, queryYear, primaryTitle, resultYear, popularity: null, alternateTitles);
+
+    public static int Score(
+        string? query,
+        int? queryYear,
+        string? primaryTitle,
+        int? resultYear,
+        double? popularity,
+        params string?[] alternateTitles)
     {
-        var best = Score(query, primaryTitle, queryYear, resultYear);
+        var best = Score(query, primaryTitle, queryYear, resultYear, popularity: null);
         foreach (var alternate in alternateTitles)
         {
-            var alternateScore = Score(query, alternate, queryYear, resultYear);
+            var alternateScore = Score(query, alternate, queryYear, resultYear, popularity: null);
             if (alternateScore > best)
                 best = alternateScore;
         }
+
+        if (popularity is > 0)
+            best += PopularityBonus(popularity.Value);
 
         return best;
     }
@@ -56,7 +77,8 @@ public static class MetadataTitleMatchHelper
         IEnumerable<T> candidates,
         Func<T, string?> titleSelector,
         Func<T, int?> yearSelector,
-        Func<T, IEnumerable<string?>>? alternateTitlesSelector = null)
+        Func<T, IEnumerable<string?>>? alternateTitlesSelector = null,
+        Func<T, double?>? popularitySelector = null)
     {
         T? best = default;
         var bestScore = int.MinValue;
@@ -71,7 +93,8 @@ public static class MetadataTitleMatchHelper
             var title = titleSelector(candidate);
             var year = yearSelector(candidate);
             var alternates = alternateTitlesSelector?.Invoke(candidate)?.ToArray() ?? [];
-            var score = Score(query, queryYear, title, year, alternates);
+            var popularity = popularitySelector?.Invoke(candidate);
+            var score = Score(query, queryYear, title, year, popularity, alternates);
             var titleLength = Normalize(title).Length;
             if (titleLength == 0 && alternates.Length > 0)
                 titleLength = alternates.Select(Normalize).Where(t => t.Length > 0).Select(t => t.Length).DefaultIfEmpty(int.MaxValue).Min();
@@ -98,7 +121,8 @@ public static class MetadataTitleMatchHelper
         IEnumerable<T> candidates,
         Func<T, string?> titleSelector,
         Func<T, int?> yearSelector,
-        Func<T, IEnumerable<string?>>? alternateTitlesSelector = null)
+        Func<T, IEnumerable<string?>>? alternateTitlesSelector = null,
+        Func<T, double?>? popularitySelector = null)
     {
         return candidates
             .Select((candidate, index) =>
@@ -106,7 +130,8 @@ public static class MetadataTitleMatchHelper
                 var title = titleSelector(candidate);
                 var year = yearSelector(candidate);
                 var alternates = alternateTitlesSelector?.Invoke(candidate)?.ToArray() ?? [];
-                var score = Score(query, queryYear, title, year, alternates);
+                var popularity = popularitySelector?.Invoke(candidate);
+                var score = Score(query, queryYear, title, year, popularity, alternates);
                 var titleLength = Normalize(title).Length;
                 if (titleLength == 0 && alternates.Length > 0)
                 {
@@ -157,27 +182,52 @@ public static class MetadataTitleMatchHelper
         if (string.Equals(query, title, StringComparison.Ordinal))
             return ExactMatchScore;
 
-        if (title.StartsWith(query, StringComparison.Ordinal)
-            && (title.Length == query.Length || title[query.Length] == ' '))
-            return StartsWithScore;
-
+        int score;
+        // Do not give a StartsWith boost for longer titles: "Dragons or Dinosaurs..." must not
+        // outrank an exact "Dragons" or a popular localized match like "How to Train Your Dragon".
+        // WholeWord + ExtraTokenPenalty handles "Baki the Grappler" vs "Baki" correctly.
         if (ContainsWholeWord(title, query))
-            return WholeWordScore;
+            score = WholeWordScore;
+        else if (title.Contains(query, StringComparison.Ordinal))
+            score = ContainedScore;
+        else
+        {
+            var maxLen = Math.Max(query.Length, title.Length);
+            if (maxLen == 0)
+                return 0;
 
-        if (title.Contains(query, StringComparison.Ordinal))
-            return ContainedScore;
+            var distance = LevenshteinDistance(query, title);
+            var similarity = 1.0 - (double)distance / maxLen;
+            if (similarity < 0.6)
+                return 0;
 
-        var maxLen = Math.Max(query.Length, title.Length);
-        if (maxLen == 0)
-            return 0;
+            score = (int)(similarity * ContainedScore);
+        }
 
-        var distance = LevenshteinDistance(query, title);
-        var similarity = 1.0 - (double)distance / maxLen;
-        if (similarity < 0.6)
-            return 0;
+        var extraTokens = CountTokens(title) - CountTokens(query);
+        if (extraTokens > 0)
+            score -= extraTokens * ExtraTokenPenalty;
 
-        return (int)(similarity * ContainedScore);
+        return score;
     }
+
+    private static int CountTokens(string normalized)
+    {
+        if (normalized.Length == 0)
+            return 0;
+
+        var count = 1;
+        for (var i = 0; i < normalized.Length; i++)
+        {
+            if (normalized[i] == ' ')
+                count++;
+        }
+
+        return count;
+    }
+
+    private static int PopularityBonus(double popularity)
+        => (int)Math.Min(MaxPopularityBonus, Math.Log10(popularity + 1) * 1_500);
 
     private static bool ContainsWholeWord(string title, string query)
     {
