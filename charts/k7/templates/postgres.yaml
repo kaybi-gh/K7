@@ -51,9 +51,17 @@ spec:
         {{- include "k7.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: postgres
     spec:
+      {{- with $pg.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: postgres
           image: {{ $pg.image | quote }}
+          {{- with $pg.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: postgres
               containerPort: 5432

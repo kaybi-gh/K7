@@ -152,6 +152,8 @@ Persist `/data` (config, metadata, logs, transcoding) via `persistence`, and mou
 
 Skip the setup wizard by bootstrapping the admin unattended: `--set setup.adminUsername=admin --set setup.adminPassword=<strong-password>`. Otherwise read the auto-generated setup token from the pod logs (`kubectl logs deploy/<release>-k7`), or pin it with `setup.token`.
 
+Pod Security: the bundled Postgres ships `restricted`-compliant defaults. The K7 image starts as root (remaps `PUID`/`PGID`, chowns `/data`), so it is not `restricted`-compliant out of the box - `podSecurityContext` / `securityContext` are exposed in values for a `baseline` namespace or a non-root image.
+
 ## Non-Docker installs
 
 **Supported production path: Docker (or another container runtime) using the published image.**

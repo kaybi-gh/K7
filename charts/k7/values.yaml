@@ -36,6 +36,18 @@ database:
     storage:
       size: 10Gi
       storageClass: ""
+    # Restricted-PSS compliant. Defaults assume the alpine postgres uid/gid (70); adjust if you swap the image.
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 70
+      runAsGroup: 70
+      fsGroup: 70
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
 
   # External Postgres.
   external:
@@ -101,5 +113,17 @@ tolerations: []
 affinity: {}
 
 podAnnotations: {}
+# The stock K7 image starts as root (entrypoint remaps PUID/PGID and chowns /data), so it is
+# NOT restricted-PSS compliant out of the box. Leave empty, or override once you run an image
+# that starts non-root (then something like the commented block below satisfies restricted):
 podSecurityContext: {}
+  # runAsNonRoot: true
+  # runAsUser: 911
+  # runAsGroup: 911
+  # fsGroup: 911
+  # seccompProfile:
+  #   type: RuntimeDefault
 securityContext: {}
+  # allowPrivilegeEscalation: false
+  # capabilities:
+  #   drop: ["ALL"]
