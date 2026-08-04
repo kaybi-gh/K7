@@ -7,4 +7,5 @@ public sealed record LibraryPictureDto
     public required Guid Id { get; init; }
     public required MetadataPictureType Type { get; init; }
     public string? DominantColor { get; init; }
+    public string? MediaTitle { get; init; }
 }

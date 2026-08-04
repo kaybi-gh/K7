@@ -33,8 +33,14 @@ public class GetLibraryPicturesQueryHandler(IApplicationDbContext context)
                 PickableTypes.Contains(p.Type) &&
                 (p.LocalPath != null || p.Variants.Any(v => v.LocalPath != null)))
             .OrderBy(p => p.Type)
-            .Take(100)
-            .Select(p => new LibraryPictureDto { Id = p.Id, Type = p.Type, DominantColor = p.DominantColor })
+            .ThenBy(p => p.Media!.Title)
+            .Select(p => new LibraryPictureDto
+            {
+                Id = p.Id,
+                Type = p.Type,
+                DominantColor = p.DominantColor,
+                MediaTitle = p.Media != null ? p.Media.Title : null
+            })
             .ToListAsync(cancellationToken);
     }
 

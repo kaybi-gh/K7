@@ -13457,6 +13457,12 @@
               "null",
               "string"
             ]
+          },
+          "mediaTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

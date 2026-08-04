@@ -74,7 +74,8 @@ public partial class EditPlaylistDialog
                     {
                         Id = picture.Id,
                         Type = picture.Type,
-                        DominantColor = picture.DominantColor
+                        DominantColor = picture.DominantColor,
+                        MediaTitle = item.MediaTitle
                     });
                 }
             }
@@ -92,7 +93,7 @@ public partial class EditPlaylistDialog
         parameters.Add(x => x.Pictures, _itemPictures);
         parameters.Add(x => x.CancelText, S["Cancel"].Value);
         parameters.Add(x => x.ConfirmText, S["Save"].Value);
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<K7CoverPickerDialog>(L["CoverLabel"], parameters, options);
         var result = await dialog.Result;
 

@@ -83,17 +83,22 @@ public partial class EditLibraryGroupDialog
     private async Task OpenCoverPickerAsync()
     {
         var pictures = new List<LibraryPictureDto>();
+        var seen = new HashSet<Guid>();
         foreach (var libraryId in Group.LibraryIds)
         {
             var libraryPictures = await LibraryService.GetLibraryPicturesAsync(libraryId);
-            pictures.AddRange(libraryPictures);
+            foreach (var picture in libraryPictures)
+            {
+                if (seen.Add(picture.Id))
+                    pictures.Add(picture);
+            }
         }
 
         var parameters = new K7DialogParameters<K7CoverPickerDialog>();
         parameters.Add(x => x.Pictures, pictures);
         parameters.Add(x => x.CancelText, S["Cancel"].Value);
         parameters.Add(x => x.ConfirmText, S["Confirm"].Value);
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<K7CoverPickerDialog>(L["CoverLabel"].Value, parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: CoverPickerResult cover })

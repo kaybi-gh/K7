@@ -1,31 +1,78 @@
 @namespace K7.Clients.Shared.UI.Components.Dialogs
 @using Microsoft.AspNetCore.Components.Forms
+@inject IStringLocalizer<K7CoverPickerDialog> L
 
-<div class="k7-dialog-content">
-    @if (_pictures.Count == 0)
+<div class="k7-dialog-content cover-picker">
+    @if (!HasPictures)
     {
-        <p class="text-sm text-secondary">@NoPicturesText</p>
+        <p class="text-sm text-secondary">@L["NoPictures"]</p>
     }
     else
     {
-        <div class="cover-picker-grid">
-            @foreach (var pic in _pictures)
-            {
-                var picId = pic.Id;
-                <button type="button"
-                        class="cover-picker-item @(_selectedSourceId == picId ? "selected" : "")"
-                        @onclick="() => _selectedSourceId = picId">
-                    <img src="/api/metadata-pictures/@picId?size=Small" alt="" loading="lazy" />
-                </button>
-            }
-        </div>
+        <K7TextField @bind-Value="_searchQuery"
+                     @bind-Value:after="ApplyFilters"
+                     Placeholder="@L["SearchPlaceholder"]"
+                     Variant="outlined"
+                     Clearable="true"
+                     Immediate="true"
+                     AdornmentIcon="@Phosphor.MagnifyingGlass"
+                     Class="cover-picker-search" />
+
+        @if (_pictureTypes.Count > 0)
+        {
+            <div class="cover-picker-tabs">
+                @foreach (var type in _pictureTypes)
+                {
+                    <K7Button Variant="@(_selectedType == type ? "filled" : "text")"
+                              Size="sm"
+                              OnClick="@(() => SetTypeFilter(type))">
+                        @type (@_typeCounts.GetValueOrDefault(type))
+                    </K7Button>
+                }
+            </div>
+        }
+
+        @if (_filteredPictures.Count == 0)
+        {
+            <p class="text-sm text-secondary cover-picker-empty">@L["NoMatchingPictures"]</p>
+        }
+        else
+        {
+            <div class="cover-picker-grid-host">
+                <K7VirtualGrid @key="_selectedType"
+                               TItem="LibraryPictureDto"
+                               Items="_filteredPictures"
+                               ItemWidth="GridItemWidth"
+                               AspectRatio="GridAspectRatio"
+                               FooterHeight="32"
+                               Spacing="8"
+                               OverscanCount="4">
+                    <ItemTemplate Context="pic">
+                        @{
+                            var picId = pic.Id;
+                        }
+                        <button type="button"
+                                class="cover-picker-item @GridItemClass @(_selectedSourceId == picId ? "selected" : "")"
+                                @onclick="() => SelectPicture(picId)">
+                            <img src="/api/metadata-pictures/@picId?size=Small"
+                                 alt="@(pic.MediaTitle ?? pic.Type.ToString())"
+                                 loading="lazy" />
+                            <span class="cover-picker-item-title" title="@pic.MediaTitle">
+                                @(string.IsNullOrWhiteSpace(pic.MediaTitle) ? "\u00A0" : pic.MediaTitle)
+                            </span>
+                        </button>
+                    </ItemTemplate>
+                </K7VirtualGrid>
+            </div>
+        }
     }
+
     <K7Divider />
     <div class="d-flex align-center gap-2">
         <InputFile OnChange="OnFileSelected" accept="image/*" id="cover-picker-upload" class="visually-hidden" />
         <label for="cover-picker-upload" class="k7-btn k7-btn--outlined k7-btn--sm">
             <K7Icon Icon="@Phosphor.Upload" />
-            @ChooseFileText
+            @L["ChooseFile"]
         </label>
         @if (_file is not null)
         {
