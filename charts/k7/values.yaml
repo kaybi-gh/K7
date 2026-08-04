@@ -1,0 +1,84 @@
+image:
+  repository: ghcr.io/kaybi-gh/k7
+  # Defaults to Chart.appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+replicaCount: 1
+
+database:
+  provider: Postgres
+  name: K7
+
+  # CloudNativePG: when enabled the chart provisions a Postgres Cluster (CRD) and wires
+  # K7 to its -rw service + generated app secret. Requires the CNPG operator installed.
+  cnpg:
+    enabled: false
+    instances: 1
+    owner: k7
+    # Pin the operator's default image by leaving empty, or set e.g. ghcr.io/cloudnative-pg/postgresql:17
+    imageName: ""
+    storage:
+      size: 10Gi
+      storageClass: ""
+
+  # External Postgres (used when cnpg.enabled is false).
+  external:
+    host: ""
+    port: 5432
+    user: postgres
+    # Set here, or reference an existing secret (key: database-password) via existingSecret.
+    password: ""
+    existingSecret: ""
+
+security:
+  # HMAC secret mixed into API-key hashes. Changing it invalidates all keys. Required.
+  apiKeysHashSecret: ""
+  # Reuse an existing secret for the hash secret instead of the chart-managed one (key: apikeys-hash-secret).
+  existingSecret: ""
+  # Set true behind a TLS reverse proxy / ingress terminating HTTPS.
+  forceHttps: false
+
+# Public URL browsers and federation peers use. Required for OIDC redirects and federation.
+baseUrl: ""
+
+# Match the owner of your media mounts.
+puid: 911
+pgid: 911
+
+service:
+  type: ClusterIP
+  port: 7080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: k7.example.com
+  tls: []
+
+# Server state: config, metadatas, logs, transcoding cache. Mounted at /data.
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  existingClaim: ""
+
+# Read-only media libraries mounted under /media. Each entry becomes a volume + volumeMount.
+mediaVolumes: []
+  # - name: movies
+  #   mountPath: /media/movies
+  #   existingClaim: k7-movies
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}

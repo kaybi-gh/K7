@@ -1,0 +1,11 @@
+apiVersion: v2
+name: k7
+description: K7 self-hosted media server
+type: application
+# Bumped by the chart-release workflow from the Git tag; 0.0.0 is a placeholder for local installs.
+version: 0.0.0
+appVersion: "1.0.1"
+home: https://github.com/kaybi-gh/k7
+sources:
+  - https://github.com/kaybi-gh/k7
+kubeVersion: ">=1.23.0-0"

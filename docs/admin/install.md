@@ -129,6 +129,26 @@ Use the import tool: [tools/K7.Import/README.md](../../tools/K7.Import/README.md
 
 **Back up the database first.** The import tool has no rollback; a failed or unwanted import is recovered by restoring that backup (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
 
+## Kubernetes (Helm)
+
+The chart is published as an OCI artifact on GHCR: `oci://ghcr.io/kaybi-gh/charts/k7`.
+
+```bash
+helm install k7 oci://ghcr.io/kaybi-gh/charts/k7 \
+  --version <x.y.z> \
+  --set database.cnpg.enabled=true \
+  --set security.apiKeysHashSecret=<long-random-string>
+```
+
+Database options (`charts/k7/values.yaml`):
+
+| Mode | Values |
+|---|---|
+| **CloudNativePG** (`database.cnpg.enabled=true`) | Chart provisions a Postgres `Cluster` and wires K7 to it. Requires the [CNPG operator](https://cloudnative-pg.io/). |
+| **External Postgres** (default) | Set `database.external.host`, `.user`, and `.password` (or `.existingSecret`). |
+
+Persist `/data` (config, metadata, logs, transcoding) via `persistence`, and mount media libraries read-only via `mediaVolumes`. Behind an ingress terminating TLS, set `security.forceHttps=true` and `baseUrl`.
+
 ## Non-Docker installs
 
 **Supported production path: Docker (or another container runtime) using the published image.**

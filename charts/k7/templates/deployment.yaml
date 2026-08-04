@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "k7.fullname" . }}
+  labels:
+    {{- include "k7.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # Single writer on /data and the DB migrations - never run two at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "k7.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "k7.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: k7
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 7080
+              protocol: TCP
+          env:
+            - name: Database__Provider
+              value: {{ .Values.database.provider | quote }}
+            - name: Database__Server
+              value: {{ required "database.external.host is required (or enable cnpg)" (include "k7.database.host" .) | quote }}
+            - name: Database__Port
+              value: {{ if .Values.database.cnpg.enabled }}"5432"{{ else }}{{ .Values.database.external.port | quote }}{{ end }}
+            - name: Database__Name
+              value: {{ .Values.database.name | quote }}
+            - name: Database__UserID
+              {{- if .Values.database.cnpg.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "k7.database.secretName" . }}
+                  key: username
+              {{- else }}
+              value: {{ .Values.database.external.user | quote }}
+              {{- end }}
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "k7.database.secretName" . }}
+                  key: {{ include "k7.database.passwordKey" . }}
+            - name: Security__ApiKeys__HashSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "k7.security.secretName" . }}
+                  key: apikeys-hash-secret
+            - name: Security__ForceHttps
+              value: {{ .Values.security.forceHttps | quote }}
+            {{- with .Values.baseUrl }}
+            - name: BaseUrl
+              value: {{ . | quote }}
+            {{- end }}
+            - name: Paths__Config
+              value: /data/config
+            - name: Paths__Metadatas
+              value: /data/metadatas
+            - name: Paths__Logs
+              value: /data/logs
+            - name: Paths__Transcoding
+              value: /data/transcoding
+            - name: PUID
+              value: {{ .Values.puid | quote }}
+            - name: PGID
+              value: {{ .Values.pgid | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- range .Values.mediaVolumes }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              readOnly: true
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "k7.pvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- range .Values.mediaVolumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .existingClaim }}
+            readOnly: true
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
