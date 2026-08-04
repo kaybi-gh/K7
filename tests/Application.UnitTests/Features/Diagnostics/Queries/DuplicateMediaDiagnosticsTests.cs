@@ -117,6 +117,53 @@ public class DuplicateMediaDiagnosticsTests
     }
 
     [Test]
+    public async Task Handle_ShouldNotReportSuspectedDuplicate_ForEpisodesWithSameTitle()
+    {
+        // Generic episode titles must not enter the self-join (cartesian bomb + Postgres 22003).
+        var serieId = Guid.NewGuid();
+        var seasonId = Guid.NewGuid();
+        _context.Medias.Add(new Serie { Id = serieId, Title = "Serie", ReleaseDate = new DateOnly(2020, 1, 1) });
+        _context.Medias.Add(new SerieSeason
+        {
+            Id = seasonId,
+            SerieId = serieId,
+            SeasonNumber = 1,
+            Title = "Season 1",
+            ReleaseDate = new DateOnly(2020, 1, 1)
+        });
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = _libraryId,
+            MediaId = serieId
+        });
+
+        for (var i = 1; i <= 3; i++)
+        {
+            var episodeId = Guid.NewGuid();
+            _context.Medias.Add(new SerieEpisode
+            {
+                Id = episodeId,
+                SerieId = serieId,
+                SeasonId = seasonId,
+                EpisodeNumber = i,
+                Title = "Episode 1",
+                ReleaseDate = new DateOnly(2020, 1, 1)
+            });
+            _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+            {
+                LibraryId = _libraryId,
+                MediaId = episodeId
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        var items = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia);
+
+        items.Should().BeEmpty();
+    }
+
+    [Test]
     public async Task Handle_ShouldReportNothing_WhenSingleMedia()
     {
         var movie = AddMovie("Inception", 2010);
