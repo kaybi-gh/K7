@@ -29,22 +29,30 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-cnpg" (include "k7.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- /* Secret holding the DB password. CNPG generates <cluster>-app; external mode uses the chart/existing secret. */ -}}
+{{- define "k7.postgres.serviceName" -}}
+{{- printf "%s-postgres" (include "k7.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- /* Secret holding the DB password. CNPG generates <cluster>-app; other modes use the chart/existing secret. */ -}}
 {{- define "k7.database.secretName" -}}
-{{- if .Values.database.cnpg.enabled -}}
+{{- if eq .Values.database.mode "cnpg" -}}
 {{- printf "%s-app" (include "k7.cnpg.clusterName" .) -}}
+{{- else if eq .Values.database.mode "deployment" -}}
+{{- default (include "k7.fullname" .) .Values.database.deployment.existingSecret -}}
 {{- else -}}
 {{- default (include "k7.fullname" .) .Values.database.external.existingSecret -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "k7.database.passwordKey" -}}
-{{- if .Values.database.cnpg.enabled -}}password{{- else -}}database-password{{- end -}}
+{{- if eq .Values.database.mode "cnpg" -}}password{{- else -}}database-password{{- end -}}
 {{- end -}}
 
 {{- define "k7.database.host" -}}
-{{- if .Values.database.cnpg.enabled -}}
+{{- if eq .Values.database.mode "cnpg" -}}
 {{- printf "%s-rw" (include "k7.cnpg.clusterName" .) -}}
+{{- else if eq .Values.database.mode "deployment" -}}
+{{- include "k7.postgres.serviceName" . -}}
 {{- else -}}
 {{- .Values.database.external.host -}}
 {{- end -}}

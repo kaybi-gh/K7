@@ -11,11 +11,12 @@ replicaCount: 1
 database:
   provider: Postgres
   name: K7
+  # Where Postgres comes from: external | cnpg | deployment
+  mode: external
 
-  # CloudNativePG: when enabled the chart provisions a Postgres Cluster (CRD) and wires
-  # K7 to its -rw service + generated app secret. Requires the CNPG operator installed.
+  # CloudNativePG: chart provisions a Postgres Cluster (CRD), wires K7 to its -rw service
+  # + generated app secret. Requires the CNPG operator installed.
   cnpg:
-    enabled: false
     instances: 1
     owner: k7
     # Pin the operator's default image by leaving empty, or set e.g. ghcr.io/cloudnative-pg/postgresql:17
@@ -24,7 +25,19 @@ database:
       size: 10Gi
       storageClass: ""
 
-  # External Postgres (used when cnpg.enabled is false).
+  # Bundled single-replica Postgres Deployment. Simple, no operator - fine for trials/homelab,
+  # not HA. For production prefer cnpg or an external managed database.
+  deployment:
+    image: postgres:17-alpine
+    user: postgres
+    # Chart-managed secret, or reference an existing one (key: database-password) via existingSecret.
+    password: ""
+    existingSecret: ""
+    storage:
+      size: 10Gi
+      storageClass: ""
+
+  # External Postgres.
   external:
     host: ""
     port: 5432

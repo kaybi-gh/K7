@@ -1,11 +1,14 @@
 K7 is deploying.
 
-{{- if .Values.database.cnpg.enabled }}
+{{- if eq .Values.database.mode "cnpg" }}
 
 Database: CloudNativePG cluster {{ include "k7.cnpg.clusterName" . }} (requires the CNPG operator).
+{{- else if eq .Values.database.mode "deployment" }}
+
+Database: bundled Postgres Deployment {{ include "k7.postgres.serviceName" . }} (single replica, not HA).
 {{- else if not .Values.database.external.host }}
 
-WARNING: database.external.host is empty and CNPG is disabled - set one of them.
+WARNING: database.mode is external but database.external.host is empty - set it or switch mode.
 {{- end }}
 
 Reach the server:

@@ -45,17 +45,19 @@ spec:
             - name: Database__Provider
               value: {{ .Values.database.provider | quote }}
             - name: Database__Server
-              value: {{ required "database.external.host is required (or enable cnpg)" (include "k7.database.host" .) | quote }}
+              value: {{ required "database.external.host is required (or set database.mode to cnpg/deployment)" (include "k7.database.host" .) | quote }}
             - name: Database__Port
-              value: {{ if .Values.database.cnpg.enabled }}"5432"{{ else }}{{ .Values.database.external.port | quote }}{{ end }}
+              value: {{ if eq .Values.database.mode "external" }}{{ .Values.database.external.port | quote }}{{ else }}"5432"{{ end }}
             - name: Database__Name
               value: {{ .Values.database.name | quote }}
             - name: Database__UserID
-              {{- if .Values.database.cnpg.enabled }}
+              {{- if eq .Values.database.mode "cnpg" }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "k7.database.secretName" . }}
                   key: username
+              {{- else if eq .Values.database.mode "deployment" }}
+              value: {{ .Values.database.deployment.user | quote }}
               {{- else }}
               value: {{ .Values.database.external.user | quote }}
               {{- end }}

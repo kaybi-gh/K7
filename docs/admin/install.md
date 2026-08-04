@@ -136,16 +136,17 @@ The chart is published as an OCI artifact on GHCR: `oci://ghcr.io/kaybi-gh/chart
 ```bash
 helm install k7 oci://ghcr.io/kaybi-gh/charts/k7 \
   --version <x.y.z> \
-  --set database.cnpg.enabled=true \
+  --set database.mode=cnpg \
   --set security.apiKeysHashSecret=<long-random-string>
 ```
 
-Database options (`charts/k7/values.yaml`):
+Database is selected by `database.mode` (`charts/k7/values.yaml`):
 
-| Mode | Values |
+| `database.mode` | Behaviour |
 |---|---|
-| **CloudNativePG** (`database.cnpg.enabled=true`) | Chart provisions a Postgres `Cluster` and wires K7 to it. Requires the [CNPG operator](https://cloudnative-pg.io/). |
-| **External Postgres** (default) | Set `database.external.host`, `.user`, and `.password` (or `.existingSecret`). |
+| `cnpg` | Chart provisions a Postgres `Cluster` and wires K7 to it. Requires the [CNPG operator](https://cloudnative-pg.io/). |
+| `deployment` | Chart runs a single-replica bundled Postgres. Simple, not HA - trials/homelab. |
+| `external` (default) | Set `database.external.host`, `.user`, and `.password` (or `.existingSecret`). |
 
 Persist `/data` (config, metadata, logs, transcoding) via `persistence`, and mount media libraries read-only via `mediaVolumes`. Behind an ingress terminating TLS, set `security.forceHttps=true` and `baseUrl`.
 
