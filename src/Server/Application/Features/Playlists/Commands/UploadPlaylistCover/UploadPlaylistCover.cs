@@ -19,18 +19,19 @@ public class UploadPlaylistCoverCommandHandler(
     ICoverPictureUploadService coverUpload,
     IUser currentUser) : IRequestHandler<UploadPlaylistCoverCommand, Guid>
 {
+    private const string CoverFolder = "playlists";
+
     public async Task<Guid> Handle(UploadPlaylistCoverCommand request, CancellationToken cancellationToken)
     {
         var playlist = await context.Playlists
             .Include(p => p.CoverPicture)
+                .ThenInclude(p => p!.Variants)
             .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == currentUser.Id!.Value, cancellationToken);
 
         Guard.Against.NotFound(request.PlaylistId, playlist);
 
         if (playlist.CoverPicture is not null)
-        {
-            context.MetadataPictures.Remove(playlist.CoverPicture);
-        }
+            coverUpload.RemoveExistingCover(playlist.CoverPicture, CoverFolder, playlist.Id);
 
         var localPath = await ResolveLocalPathAsync(request, playlist.Id, cancellationToken);
 
@@ -45,10 +46,7 @@ public class UploadPlaylistCoverCommandHandler(
         context.MetadataPictures.Add(picture);
         await context.SaveChangesAsync(cancellationToken);
 
-        if (request.FileStream is not null)
-        {
-            await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
-        }
+        await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
 
         return picture.Id;
     }
@@ -63,24 +61,24 @@ public class UploadPlaylistCoverCommandHandler(
             return await coverUpload.SaveUploadedCoverAsync(
                 request.FileStream,
                 request.FileName,
-                "playlists",
+                CoverFolder,
                 playlistId,
                 cancellationToken);
         }
 
         if (request.SourcePictureId is not null)
         {
-            return await coverUpload.ResolveSourcePicturePathAsync(
+            return await coverUpload.CopySourcePictureAsCoverAsync(
                 request.SourcePictureId.Value,
+                CoverFolder,
+                playlistId,
                 async (source, ct) =>
                 {
                     var mediaInPlaylist = await context.PlaylistItems
                         .AnyAsync(i => i.PlaylistId == playlistId && i.MediaId == source.MediaId, ct);
 
                     if (!mediaInPlaylist)
-                    {
                         throw new ForbiddenAccessException();
-                    }
                 },
                 cancellationToken);
         }

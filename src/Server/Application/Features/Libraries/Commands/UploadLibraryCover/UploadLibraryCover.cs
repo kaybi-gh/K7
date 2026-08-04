@@ -24,18 +24,19 @@ public class UploadLibraryCoverCommandHandler(
     IApplicationDbContext context,
     ICoverPictureUploadService coverUpload) : IRequestHandler<UploadLibraryCoverCommand, Guid>
 {
+    private const string CoverFolder = "library-groups";
+
     public async Task<Guid> Handle(UploadLibraryCoverCommand request, CancellationToken cancellationToken)
     {
         var libraryGroup = await context.LibraryGroups
             .Include(g => g.CoverPicture)
+                .ThenInclude(p => p!.Variants)
             .FirstOrDefaultAsync(g => g.Id == request.LibraryGroupId, cancellationToken);
 
         Guard.Against.NotFound(request.LibraryGroupId, libraryGroup);
 
         if (libraryGroup.CoverPicture is not null)
-        {
-            context.MetadataPictures.Remove(libraryGroup.CoverPicture);
-        }
+            coverUpload.RemoveExistingCover(libraryGroup.CoverPicture, CoverFolder, request.LibraryGroupId);
 
         var localPath = await ResolveLocalPathAsync(request, cancellationToken);
 
@@ -50,10 +51,7 @@ public class UploadLibraryCoverCommandHandler(
         context.MetadataPictures.Add(picture);
         await context.SaveChangesAsync(cancellationToken);
 
-        if (request.FileStream is not null)
-        {
-            await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
-        }
+        await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
 
         return picture.Id;
     }
@@ -67,15 +65,17 @@ public class UploadLibraryCoverCommandHandler(
             return await coverUpload.SaveUploadedCoverAsync(
                 request.FileStream,
                 request.FileName,
-                "library-groups",
+                CoverFolder,
                 request.LibraryGroupId,
                 cancellationToken);
         }
 
         if (request.SourcePictureId is not null)
         {
-            return await coverUpload.ResolveSourcePicturePathAsync(
+            return await coverUpload.CopySourcePictureAsCoverAsync(
                 request.SourcePictureId.Value,
+                CoverFolder,
+                request.LibraryGroupId,
                 authorizeAsync: null,
                 cancellationToken);
         }

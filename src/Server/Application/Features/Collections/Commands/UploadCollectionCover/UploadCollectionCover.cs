@@ -22,18 +22,19 @@ public class UploadCollectionCoverCommandHandler(
     ICoverPictureUploadService coverUpload,
     IUser currentUser) : IRequestHandler<UploadCollectionCoverCommand, Guid>
 {
+    private const string CoverFolder = "collections";
+
     public async Task<Guid> Handle(UploadCollectionCoverCommand request, CancellationToken cancellationToken)
     {
         var collection = await context.Collections
             .Include(c => c.CoverPicture)
+                .ThenInclude(p => p!.Variants)
             .FirstOrDefaultAsync(c => c.Id == request.CollectionId && c.UserId == currentUser.Id!.Value, cancellationToken);
 
         Guard.Against.NotFound(request.CollectionId, collection);
 
         if (collection.CoverPicture is not null)
-        {
-            context.MetadataPictures.Remove(collection.CoverPicture);
-        }
+            coverUpload.RemoveExistingCover(collection.CoverPicture, CoverFolder, collection.Id);
 
         var localPath = await ResolveLocalPathAsync(request, collection.Id, cancellationToken);
 
@@ -48,10 +49,7 @@ public class UploadCollectionCoverCommandHandler(
         context.MetadataPictures.Add(picture);
         await context.SaveChangesAsync(cancellationToken);
 
-        if (request.FileStream is not null)
-        {
-            await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
-        }
+        await coverUpload.EnqueueVariantGenerationAsync(picture.Id, cancellationToken);
 
         return picture.Id;
     }
@@ -66,24 +64,24 @@ public class UploadCollectionCoverCommandHandler(
             return await coverUpload.SaveUploadedCoverAsync(
                 request.FileStream,
                 request.FileName,
-                "collections",
+                CoverFolder,
                 collectionId,
                 cancellationToken);
         }
 
         if (request.SourcePictureId is not null)
         {
-            return await coverUpload.ResolveSourcePicturePathAsync(
+            return await coverUpload.CopySourcePictureAsCoverAsync(
                 request.SourcePictureId.Value,
+                CoverFolder,
+                collectionId,
                 async (source, ct) =>
                 {
                     var mediaInCollection = await context.CollectionItems
                         .AnyAsync(i => i.CollectionId == collectionId && i.MediaId == source.MediaId, ct);
 
                     if (!mediaInCollection)
-                    {
                         throw new ForbiddenAccessException();
-                    }
                 },
                 cancellationToken);
         }
