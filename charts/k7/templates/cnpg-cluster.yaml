@@ -1,0 +1,22 @@
+{{- if eq .Values.database.mode "cnpg" }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "k7.cnpg.clusterName" . }}
+  labels:
+    {{- include "k7.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.database.cnpg.instances }}
+  {{- with .Values.database.cnpg.imageName }}
+  imageName: {{ . | quote }}
+  {{- end }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.database.name | quote }}
+      owner: {{ .Values.database.cnpg.owner | quote }}
+  storage:
+    size: {{ .Values.database.cnpg.storage.size | quote }}
+    {{- with .Values.database.cnpg.storage.storageClass }}
+    storageClass: {{ . | quote }}
+    {{- end }}
+{{- end }}

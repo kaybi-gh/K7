@@ -1,0 +1,22 @@
+K7 is deploying.
+
+{{- if eq .Values.database.mode "cnpg" }}
+
+Database: CloudNativePG cluster {{ include "k7.cnpg.clusterName" . }} (requires the CNPG operator).
+{{- else if eq .Values.database.mode "deployment" }}
+
+Database: bundled Postgres Deployment {{ include "k7.postgres.serviceName" . }} (single replica, not HA).
+{{- else if not .Values.database.external.host }}
+
+WARNING: database.mode is external but database.external.host is empty - set it or switch mode.
+{{- end }}
+
+Reach the server:
+{{- if .Values.ingress.enabled }}
+  https://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "k7.fullname" . }} 7080:{{ .Values.service.port }}
+  open http://localhost:7080
+{{- end }}
+
+Then complete first-run setup (see docs/admin/install.md#first-run-setup).

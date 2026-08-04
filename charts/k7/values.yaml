@@ -1,0 +1,129 @@
+image:
+  repository: ghcr.io/kaybi-gh/k7
+  # Defaults to Chart.appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+replicaCount: 1
+
+database:
+  provider: Postgres
+  name: K7
+  # Where Postgres comes from: external | cnpg | deployment
+  mode: external
+
+  # CloudNativePG: chart provisions a Postgres Cluster (CRD), wires K7 to its -rw service
+  # + generated app secret. Requires the CNPG operator installed.
+  cnpg:
+    instances: 1
+    owner: k7
+    # Pin the operator's default image by leaving empty, or set e.g. ghcr.io/cloudnative-pg/postgresql:17
+    imageName: ""
+    storage:
+      size: 10Gi
+      storageClass: ""
+
+  # Bundled single-replica Postgres Deployment. Simple, no operator - fine for trials/homelab,
+  # not HA. For production prefer cnpg or an external managed database.
+  deployment:
+    image: postgres:17-alpine
+    user: postgres
+    # Chart-managed secret, or reference an existing one (key: database-password) via existingSecret.
+    password: ""
+    existingSecret: ""
+    storage:
+      size: 10Gi
+      storageClass: ""
+    # Restricted-PSS compliant. Defaults assume the alpine postgres uid/gid (70); adjust if you swap the image.
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 70
+      runAsGroup: 70
+      fsGroup: 70
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+
+  # External Postgres.
+  external:
+    host: ""
+    port: 5432
+    user: postgres
+    # Set here, or reference an existing secret (key: database-password) via existingSecret.
+    password: ""
+    existingSecret: ""
+
+security:
+  # HMAC secret mixed into API-key hashes. Changing it invalidates all keys. Required.
+  apiKeysHashSecret: ""
+  # Reuse an existing secret for the hash secret instead of the chart-managed one (key: apikeys-hash-secret).
+  existingSecret: ""
+  # Set true behind a TLS reverse proxy / ingress terminating HTTPS.
+  forceHttps: false
+
+# Public URL browsers and federation peers use. Required for OIDC redirects and federation.
+baseUrl: ""
+
+# First-run setup. Leave all empty to read the auto-generated token from the pod logs.
+setup:
+  # Fixes the /setup password-wizard token (K7_SETUP_TOKEN) instead of the auto-generated one.
+  token: ""
+  # Unattended admin bootstrap (skips the wizard entirely). Password is stored in the chart secret.
+  adminUsername: ""
+  adminPassword: ""
+
+# Match the owner of your media mounts.
+puid: 911
+pgid: 911
+
+service:
+  type: ClusterIP
+  port: 7080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: k7.example.com
+  tls: []
+
+# Server state: config, metadatas, logs, transcoding cache. Mounted at /data.
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  existingClaim: ""
+
+# Read-only media libraries mounted under /media. Each entry becomes a volume + volumeMount.
+mediaVolumes: []
+  # - name: movies
+  #   mountPath: /media/movies
+  #   existingClaim: k7-movies
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podAnnotations: {}
+# The stock K7 image starts as root (entrypoint remaps PUID/PGID and chowns /data), so it is
+# NOT restricted-PSS compliant out of the box. Leave empty, or override once you run an image
+# that starts non-root (then something like the commented block below satisfies restricted):
+podSecurityContext: {}
+  # runAsNonRoot: true
+  # runAsUser: 911
+  # runAsGroup: 911
+  # fsGroup: 911
+  # seccompProfile:
+  #   type: RuntimeDefault
+securityContext: {}
+  # allowPrivilegeEscalation: false
+  # capabilities:
+  #   drop: ["ALL"]
