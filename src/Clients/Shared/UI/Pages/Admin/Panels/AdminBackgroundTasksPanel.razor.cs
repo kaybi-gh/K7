@@ -69,6 +69,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private const int PageSize = 50;
     private bool _tableLoaded;
     private bool _pendingQuerySync;
+    private int _tableKey;
 
     private static readonly List<BackgroundTaskOrderingOption> SortOptions =
     [
@@ -244,15 +245,15 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
 
-    private async Task RefreshTableAsync()
+    private Task RefreshTableAsync()
     {
-        if (_tableRef is not null)
-        {
-            await _tableRef.RefreshAsync();
-            return;
-        }
-
-        await InvokeAsync(StateHasChanged);
+        // Remount the table so Virtualize reloads with the new filters.
+        // RefreshAsync alone can leave stale rows until the user scrolls.
+        // Clear _tableLoaded so the host is not display:none during reload
+        // (Virtualize cannot measure when the previous filter had 0 rows).
+        _tableLoaded = false;
+        _tableKey++;
+        return InvokeAsync(StateHasChanged);
     }
 
     private async Task<K7DataTableResult<BackgroundTaskDto>> LoadServerDataAsync(
