@@ -12,10 +12,12 @@ spec:
   selector:
     matchLabels:
       {{- include "k7.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
   template:
     metadata:
       labels:
         {{- include "k7.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
@@ -29,6 +31,14 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # K7 aborts (not retries) if the DB is unreachable at boot - gate startup on it.
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z {{ include "k7.database.host" . }} {{ if eq .Values.database.mode "external" }}{{ .Values.database.external.port }}{{ else }}5432{{ end }}; do echo "waiting for database"; sleep 2; done
       containers:
         - name: k7
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -76,6 +86,24 @@ spec:
             {{- with .Values.baseUrl }}
             - name: BaseUrl
               value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.setup.token }}
+            - name: K7_SETUP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "k7.fullname" . }}
+                  key: setup-token
+            {{- end }}
+            {{- with .Values.setup.adminUsername }}
+            - name: K7_ADMIN_USERNAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.setup.adminPassword }}
+            - name: K7_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "k7.fullname" . }}
+                  key: admin-password
             {{- end }}
             - name: Paths__Config
               value: /data/config

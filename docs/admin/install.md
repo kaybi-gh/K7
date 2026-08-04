@@ -150,6 +150,8 @@ Database is selected by `database.mode` (`charts/k7/values.yaml`):
 
 Persist `/data` (config, metadata, logs, transcoding) via `persistence`, and mount media libraries read-only via `mediaVolumes`. Behind an ingress terminating TLS, set `security.forceHttps=true` and `baseUrl`.
 
+Skip the setup wizard by bootstrapping the admin unattended: `--set setup.adminUsername=admin --set setup.adminPassword=<strong-password>`. Otherwise read the auto-generated setup token from the pod logs (`kubectl logs deploy/<release>-k7`), or pin it with `setup.token`.
+
 ## Non-Docker installs
 
 **Supported production path: Docker (or another container runtime) using the published image.**

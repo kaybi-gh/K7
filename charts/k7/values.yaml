@@ -57,6 +57,14 @@ security:
 # Public URL browsers and federation peers use. Required for OIDC redirects and federation.
 baseUrl: ""
 
+# First-run setup. Leave all empty to read the auto-generated token from the pod logs.
+setup:
+  # Fixes the /setup password-wizard token (K7_SETUP_TOKEN) instead of the auto-generated one.
+  token: ""
+  # Unattended admin bootstrap (skips the wizard entirely). Password is stored in the chart secret.
+  adminUsername: ""
+  adminPassword: ""
+
 # Match the owner of your media mounts.
 puid: 911
 pgid: 911

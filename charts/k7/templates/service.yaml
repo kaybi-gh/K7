@@ -8,6 +8,7 @@ spec:
   type: {{ .Values.service.type }}
   selector:
     {{- include "k7.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
   ports:
     - name: http
       port: {{ .Values.service.port }}
