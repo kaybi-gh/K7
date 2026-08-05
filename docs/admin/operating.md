@@ -53,9 +53,11 @@ When a directory already has episodes attached to a single series, new files in 
 |---|---|---|
 | TMDb | Movies | No - bundled in the server |
 | TheTVDB | Series | No - bundled in the server |
-| MusicBrainz / Cover Art Archive | Music | No API key; polite User-Agent only |
+| MusicBrainz / Cover Art Archive | Music | No API key. Polite User-Agent only |
 
-Series libraries use TheTVDB as the primary provider. When a TMDb (or IMDb) external id is available on the series, K7 also pulls **TMDb community ratings** (series and episodes) and prefers **TMDb episode stills** during metadata refresh. Cast is enriched the same way: match TVDB roles to the supplemental TMDb cast when possible, then resolve remaining TVDB people ids via TheTVDB people `remoteIds` (tmdb/imdb) and queue a TMDb person refresh only for still-thin profiles.
+Series libraries pick **TheTVDB** as the primary provider. In practice TVDB is always backed by **TMDb** for several reasons: broader title search when TVDB returns nothing (scan identification and the re-identify dialog), better episode stills and artwork, community ratings, and cast enrichment. The provider that matched owns the external id and the Metadata-lane background task admission key. When a TMDb (or IMDb) id is available, refresh prefers TMDb ratings and stills. Cast enrichment matches TVDB roles to supplemental TMDb cast when possible, then resolves remaining TVDB people via TheTVDB `remoteIds` (tmdb/imdb) and queues a TMDb person refresh only for still-thin profiles.
+
+Choosing TMDb alone for a series library is still possible in the UI. Prefer TVDB: the cascade and enrichment above already cover the TMDb strengths without giving up TVDB as the episode source of truth.
 
 Field locks in the UI prevent refreshes from overwriting manual edits. Artwork lives under `Paths:Metadatas` - recommended in backups (regenerable via metadata refresh, but slow).
 
