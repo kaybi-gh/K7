@@ -15,6 +15,7 @@ public class GetApiKeysQueryHandler(IApplicationDbContext context)
     public async Task<List<ApiKeyDto>> Handle(GetApiKeysQuery request, CancellationToken cancellationToken)
     {
         return await context.ApiKeys
+            .AsNoTracking()
             .OrderByDescending(k => k.Created)
             .Select(k => new ApiKeyDto
             {

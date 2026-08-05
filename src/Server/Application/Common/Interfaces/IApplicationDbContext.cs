@@ -77,6 +77,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<MetadataTag> MetadataTags { get; }
     DbSet<MediaMetadataTag> MediaMetadataTags { get; }
     DbSet<ApiKey> ApiKeys { get; }
+    DbSet<ClientAppPassword> ClientAppPasswords { get; }
     DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities { get; }
     DbSet<SyncPlayInvite> SyncPlayInvites { get; }
 

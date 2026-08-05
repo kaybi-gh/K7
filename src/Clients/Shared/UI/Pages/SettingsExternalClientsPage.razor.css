@@ -1,0 +1,77 @@
+.external-clients-muted {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.external-clients-login {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-variant);
+}
+
+.external-clients-login__eyebrow {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.external-clients-login__layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-start;
+}
+
+.external-clients-login__fields {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.external-clients-login__field-row {
+    width: 100%;
+}
+
+::deep .external-clients-login__field {
+    width: 100%;
+}
+
+::deep .external-clients-login__field .k7-input {
+    font-family: var(--font-body);
+}
+
+.external-clients-login__qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 0 0 auto;
+    text-align: center;
+    max-width: 12rem;
+}
+
+::deep .external-clients-password-card {
+    padding: var(--space-3) var(--space-4);
+    width: 100%;
+}
+
+@media (max-width: 599.98px) {
+    .external-clients-login {
+        padding: var(--space-3);
+    }
+
+    .external-clients-login__layout {
+        flex-direction: column;
+    }
+
+    .external-clients-login__qr {
+        max-width: none;
+        width: 100%;
+    }
+}

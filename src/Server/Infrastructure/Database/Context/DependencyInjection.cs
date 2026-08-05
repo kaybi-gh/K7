@@ -207,6 +207,7 @@ public static class DependencyInjection
         services.AddSingleton<ISetupTokenProvider, SetupTokenProvider>();
         services.AddSingleton<IPeerUrlGuard, PeerUrlGuard>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddSingleton<IClientAppPasswordService, ClientAppPasswordService>();
         services.AddSingleton<IDatabaseCapabilities, DatabaseCapabilities>();
 
         // Notification providers

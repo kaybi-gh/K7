@@ -94,6 +94,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MetadataTag> MetadataTags => Set<MetadataTag>();
     public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<ClientAppPassword> ClientAppPasswords => Set<ClientAppPassword>();
     public DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities => Set<MediaLibraryAvailability>();
     public DbSet<SyncPlayInvite> SyncPlayInvites => Set<SyncPlayInvite>();
 
