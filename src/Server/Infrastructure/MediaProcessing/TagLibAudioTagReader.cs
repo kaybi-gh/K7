@@ -1,3 +1,4 @@
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
 using Microsoft.Extensions.Logging;
@@ -40,16 +41,21 @@ public class TagLibAudioTagReader : IAudioTagReader
                 }
             }
 
+            // ID3v2.3 (and older) uses "/" as a multi-value separator. TagLib splits on it,
+            // which turns "AC/DC" into ["AC", "DC"] and later shows up as "AC feat. DC".
+            var id3v2 = file.GetTag(TagLib.TagTypes.Id3v2) as TagLib.Id3v2.Tag;
+            var repairSlashSplit = id3v2 is not null && id3v2.Version <= 3;
+
             return new AudioTagData
             {
                 Title = NullIfEmpty(tag.Title),
                 Album = NullIfEmpty(tag.Album),
-                Artists = tag.Performers?.Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? [],
-                AlbumArtists = tag.AlbumArtists?.Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? [],
+                Artists = ReadArtistList(tag.Performers, repairSlashSplit),
+                AlbumArtists = ReadArtistList(tag.AlbumArtists, repairSlashSplit),
                 TrackNumber = tag.Track > 0 ? (int)tag.Track : null,
                 DiscNumber = tag.Disc > 0 ? (int)tag.Disc : null,
                 Year = tag.Year > 0 ? (int)tag.Year : null,
-                Genres = tag.Genres?.Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? [],
+                Genres = CleanList(tag.Genres),
                 Lyrics = NullIfEmpty(tag.Lyrics),
                 Bpm = tag.BeatsPerMinute > 0 ? tag.BeatsPerMinute : null,
                 CoverArtData = coverData,
@@ -64,6 +70,15 @@ public class TagLibAudioTagReader : IAudioTagReader
             return null;
         }
     }
+
+    private static IReadOnlyList<string> ReadArtistList(string[]? values, bool repairSlashSplit)
+        => repairSlashSplit
+            ? MusicArtistNameNormalizer.FromId3v23SplitValues(values)
+            : CleanList(values);
+
+    private static IReadOnlyList<string> CleanList(string[]? values)
+        => values?.Where(static s => !string.IsNullOrWhiteSpace(s)).Select(static s => s.Trim()).ToList()
+           ?? [];
 
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
