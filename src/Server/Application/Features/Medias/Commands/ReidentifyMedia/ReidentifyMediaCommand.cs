@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 using FluentValidation.Results;
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -43,10 +44,13 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
             ]);
         }
 
-        var providerName = library.MetadataProviderName;
+        var providerName = MetadataProviderHostMapper.NormalizeProviderName(request.SelectedProvider);
+        if (string.IsNullOrWhiteSpace(providerName) || providerName == MetadataProviderNames.Local)
+            providerName = request.SelectedProvider.Trim();
 
-        // Update or add external Id
-        var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == providerName);
+        // Update or add external Id under the provider the user actually selected (may be cascade fallback).
+        var existingExternalId = media.ExternalIds?.FirstOrDefault(x =>
+            string.Equals(x.ProviderName, providerName, StringComparison.OrdinalIgnoreCase));
         if (existingExternalId != null)
         {
             existingExternalId.Value = request.SelectedExternalId;
@@ -59,7 +63,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
 
         await context.SaveChangesAsync(cancellationToken);
 
-        // Queue background task to fetch metadata
+        // Queue background task to fetch metadata - admission key must match the provider that owns the id.
         await sender.Send(new CreateBackgroundTaskCommand()
         {
             Request = new RefreshMediaMetadatasCommand()

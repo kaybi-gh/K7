@@ -1,5 +1,6 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -55,12 +56,10 @@ public class SearchMetadataQueryHandler(
         IEnumerable<ISearchableMetadataProvider> applicableProviders = metadataProviders;
         if (library is not null)
         {
-            var normalizedProvider = MetadataProviderNames.Normalize(library.MetadataProviderName);
+            var allowedProviderNames = ResolveAllowedProviderNames(library, mediaType);
             applicableProviders = metadataProviders
-                .Where(p => string.Equals(
-                    MetadataProviderNames.Normalize(p.ProviderName),
-                    normalizedProvider,
-                    StringComparison.OrdinalIgnoreCase));
+                .Where(p => allowedProviderNames.Contains(
+                    MetadataProviderNames.Normalize(p.ProviderName)));
         }
 
         var providerList = applicableProviders.ToList();
@@ -88,5 +87,19 @@ public class SearchMetadataQueryHandler(
             result => result.Title,
             result => result.Year,
             popularitySelector: result => result.Popularity);
+    }
+
+    private static HashSet<string> ResolveAllowedProviderNames(Library library, MediaType? mediaType)
+    {
+        if (mediaType == MediaType.Serie
+            || (mediaType is null && library.MediaType == LibraryMediaType.Serie))
+        {
+            return SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName)
+                .Select(MetadataProviderNames.Normalize)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var normalized = MetadataProviderNames.Normalize(library.MetadataProviderName ?? string.Empty);
+        return new HashSet<string>(StringComparer.OrdinalIgnoreCase) { normalized };
     }
 }

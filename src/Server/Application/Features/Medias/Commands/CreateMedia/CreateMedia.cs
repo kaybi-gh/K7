@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -426,15 +427,16 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         Guard.Against.Null(firstIdentification);
         Guard.Against.NullOrEmpty(firstIdentification.SeriesTitle);
 
-        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(library.MetadataProviderName);
-        var folderSerie = await TryResolveSerieFromFolderSiblingsAsync(indexedFiles, library, metadataProvider, cancellationToken);
-        var (serie, _, providerExternalId) = folderSerie
+        var folderSerie = await TryResolveSerieFromFolderSiblingsAsync(indexedFiles, library, cancellationToken);
+        var (serie, _, matchedProviderName, providerExternalId) = folderSerie
             ?? await FindOrCreateSerieAsync(
                 firstIdentification,
-                metadataProvider,
-                library.MetadataLanguage,
-                library.MetadataFallbackLanguage,
+                library,
                 cancellationToken);
+
+        var resolveProviderName = matchedProviderName
+            ?? MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(resolveProviderName);
 
         // Load the full season+episode tree once - no more per-episode lazy loads
         await _context.Entry(serie).Collection(s => s.Seasons)
@@ -517,7 +519,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        if (hasNewEpisodes && !string.IsNullOrEmpty(providerExternalId))
+        if (hasNewEpisodes && !string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {
             await _sender.Send(new CreateBackgroundTaskCommand
             {
@@ -525,14 +527,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 {
                     MediaId = serie.Id,
                     MetadataProviderExternalId = providerExternalId,
-                    MetadataProviderName = library.MetadataProviderName!,
+                    MetadataProviderName = matchedProviderName,
                     Language = library.MetadataLanguage,
                     FallbackLanguage = library.MetadataFallbackLanguage
                 },
                 TargetEntityId = serie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
                 Lane = BackgroundTaskLane.Metadata,
-                MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
+                MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(matchedProviderName),
                 WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
                 TriggeredBy = BackgroundTaskTriggeredBy.System,
                 MaxAttempts = 3
@@ -655,10 +657,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }, cancellationToken);
     }
 
-    private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)?> TryResolveSerieFromFolderSiblingsAsync(
+    private async Task<(Serie Serie, bool IsNew, string? ProviderName, string? ProviderExternalId)?> TryResolveSerieFromFolderSiblingsAsync(
         List<IndexedFile> indexedFiles,
         Library library,
-        ISerieMetadataProvider metadataProvider,
         CancellationToken cancellationToken)
     {
         var directories = indexedFiles
@@ -720,16 +721,13 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         if (serie is null)
             return null;
 
-        var externalId = serie.ExternalIds
-            .FirstOrDefault(e => e.ProviderName == metadataProvider.ProviderName)?.Value;
-        return (serie, false, externalId);
+        var (providerName, externalId) = PickSerieExternalId(serie, library.MetadataProviderName);
+        return (serie, false, providerName, externalId);
     }
 
-    private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)> FindOrCreateSerieAsync(
+    private async Task<(Serie Serie, bool IsNew, string? ProviderName, string? ProviderExternalId)> FindOrCreateSerieAsync(
         MediaIdentification identification,
-        ISerieMetadataProvider metadataProvider,
-        string? language,
-        string? fallbackLanguage,
+        Library library,
         CancellationToken cancellationToken)
     {
         var seriesTitle = identification.SeriesTitle ?? identification.Title;
@@ -738,24 +736,34 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (existingSerie is not null)
         {
-            var externalId = existingSerie.ExternalIds
-                .FirstOrDefault(e => e.ProviderName == metadataProvider.ProviderName)?.Value;
-            return (existingSerie, false, externalId);
+            var existing = PickSerieExternalId(existingSerie, library.MetadataProviderName);
+            return (existingSerie, false, existing.ProviderName, existing.ExternalId);
         }
 
-        var providerExternalId = await metadataProvider.SearchSerieAsync(
-            identification,
-            language,
-            fallbackLanguage,
-            cancellationToken);
+        string? matchedProviderName = null;
+        string? providerExternalId = null;
+        foreach (var providerKey in SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName))
+        {
+            var provider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(providerKey);
+            providerExternalId = await provider.SearchSerieAsync(
+                identification,
+                library.MetadataLanguage,
+                library.MetadataFallbackLanguage,
+                cancellationToken);
+            if (!string.IsNullOrEmpty(providerExternalId))
+            {
+                matchedProviderName = provider.ProviderName;
+                break;
+            }
+        }
 
-        if (!string.IsNullOrEmpty(providerExternalId))
+        if (!string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {
             var existingSerieById = await _identityLookup.FindMediaByExternalIdAsync<Serie>(
-                metadataProvider.ProviderName, providerExternalId, cancellationToken);
+                matchedProviderName, providerExternalId, cancellationToken);
 
             if (existingSerieById is not null)
-                return (existingSerieById, false, providerExternalId);
+                return (existingSerieById, false, matchedProviderName, providerExternalId);
         }
 
         var serie = new Serie
@@ -767,16 +775,34 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _context.Medias.Add(serie);
         serie.AddDomainEvent(new MediaCreatedEvent(serie));
 
-        if (!string.IsNullOrEmpty(providerExternalId))
+        if (!string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {
             serie.ExternalIds.Add(new ExternalId
             {
-                ProviderName = metadataProvider.ProviderName,
+                ProviderName = matchedProviderName,
                 Value = providerExternalId
             });
         }
 
         await _context.SaveChangesAsync(cancellationToken);
-        return (serie, true, providerExternalId);
+        return (serie, true, matchedProviderName, providerExternalId);
+    }
+
+    private static (string? ProviderName, string? ExternalId) PickSerieExternalId(Serie serie, string? primaryProviderName)
+    {
+        var preferred = MetadataProviderHostMapper.NormalizeProviderName(primaryProviderName);
+        var cascade = SerieMetadataProviderCascade.ResolveSearchProviders(primaryProviderName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var match = serie.ExternalIds
+            .Where(e => cascade.Contains(MetadataProviderNames.Normalize(
+                MetadataProviderHostMapper.NormalizeProviderName(e.ProviderName))))
+            .OrderByDescending(e => string.Equals(
+                MetadataProviderNames.Normalize(MetadataProviderHostMapper.NormalizeProviderName(e.ProviderName)),
+                preferred,
+                StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
+
+        return match is null ? (null, null) : (match.ProviderName, match.Value);
     }
 }

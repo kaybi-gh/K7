@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -7,6 +8,7 @@ using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 
@@ -35,7 +37,9 @@ public class ReidentifyIndexedFileCommandHandler(
         var library = await context.Libraries.FindAsync([indexedFile.LibraryId], cancellationToken);
         Guard.Against.Null(library);
 
-        var providerName = library.MetadataProviderName;
+        var providerName = MetadataProviderHostMapper.NormalizeProviderName(request.SelectedProvider);
+        if (string.IsNullOrWhiteSpace(providerName) || providerName == MetadataProviderNames.Local)
+            providerName = request.SelectedProvider.Trim();
 
         if (indexedFile.MediaId.HasValue)
         {
@@ -88,6 +92,12 @@ public class ReidentifyIndexedFileCommandHandler(
                 await AttachIndexedFileToMusicAlbumAsync(album, indexedFile, library, cancellationToken);
                 break;
         }
+
+        newMedia.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = providerName,
+            Value = request.SelectedExternalId
+        });
 
         newMedia.AddDomainEvent(new MediaCreatedEvent(newMedia));
         await context.SaveChangesAsync(cancellationToken);

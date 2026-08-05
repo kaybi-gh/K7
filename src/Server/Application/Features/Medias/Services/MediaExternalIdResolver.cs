@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
 using K7.Server.Application.Helpers;
@@ -19,6 +20,9 @@ public class MediaExternalIdResolver(
 {
     public async Task<ExternalId?> ResolveAsync(BaseMedia media, Library library, CancellationToken cancellationToken = default)
     {
+        if (media is Serie)
+            return await ResolveSerieAsync(media, library, cancellationToken);
+
         var existing = media.ExternalIds.FirstOrDefault(e =>
             string.Equals(e.ProviderName, library.MetadataProviderName, StringComparison.OrdinalIgnoreCase));
         if (existing is not null)
@@ -68,6 +72,68 @@ public class MediaExternalIdResolver(
             providerExternalId);
 
         return externalId;
+    }
+
+    private async Task<ExternalId?> ResolveSerieAsync(BaseMedia media, Library library, CancellationToken cancellationToken)
+    {
+        var cascade = SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var preferred = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+
+        var existing = media.ExternalIds
+            .Where(e => cascade.Contains(MetadataProviderNames.Normalize(
+                MetadataProviderHostMapper.NormalizeProviderName(e.ProviderName))))
+            .OrderByDescending(e => string.Equals(
+                MetadataProviderNames.Normalize(MetadataProviderHostMapper.NormalizeProviderName(e.ProviderName)),
+                preferred,
+                StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
+        if (existing is not null)
+            return existing;
+
+        var identification = await GetIdentificationAsync(media, library, cancellationToken);
+        if (identification is null)
+        {
+            logger.LogWarning("Cannot resolve external id for media {MediaId}: no identification source available", media.Id);
+            return null;
+        }
+
+        foreach (var providerKey in SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName))
+        {
+            var providerExternalId = await SearchProviderAsync(
+                media,
+                providerKey,
+                identification,
+                library.MetadataLanguage,
+                library.MetadataFallbackLanguage,
+                cancellationToken);
+            if (string.IsNullOrWhiteSpace(providerExternalId))
+                continue;
+
+            var provider = serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(providerKey);
+            var externalId = new ExternalId
+            {
+                ProviderName = provider.ProviderName,
+                Value = providerExternalId,
+                MediaId = media.Id
+            };
+            media.ExternalIds.Add(externalId);
+            await context.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation(
+                "Resolved external id for media {MediaId}: {Provider}={ExternalId}",
+                media.Id,
+                provider.ProviderName,
+                providerExternalId);
+
+            return externalId;
+        }
+
+        logger.LogWarning(
+            "Cannot resolve external id for media {MediaId}: no cascade provider matched {Title}",
+            media.Id,
+            identification.Title);
+        return null;
     }
 
     private async Task<MediaIdentification?> GetIdentificationAsync(
