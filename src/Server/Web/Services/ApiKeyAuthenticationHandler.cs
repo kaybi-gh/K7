@@ -25,10 +25,18 @@ public class ApiKeyAuthenticationHandler(
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.TryGetValue(ApiKeyAuthenticationDefaults.HeaderName, out var apiKeyHeader))
-            return AuthenticateResult.NoResult();
+        string? apiKeyValue = null;
 
-        var apiKeyValue = apiKeyHeader.ToString();
+        if (Request.Headers.TryGetValue(ApiKeyAuthenticationDefaults.HeaderName, out var apiKeyHeader))
+            apiKeyValue = apiKeyHeader.ToString();
+
+        if (string.IsNullOrWhiteSpace(apiKeyValue)
+            && Request.Path.StartsWithSegments("/rest")
+            && Request.Query.TryGetValue("apiKey", out var apiKeyQuery))
+        {
+            apiKeyValue = apiKeyQuery.ToString();
+        }
+
         if (string.IsNullOrWhiteSpace(apiKeyValue))
             return AuthenticateResult.NoResult();
 

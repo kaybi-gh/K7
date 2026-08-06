@@ -42,6 +42,26 @@ public class WebHostSmokeTests
     }
 
     [Test]
+    public async Task OpenSubsonicPing_ShouldReturnAuthErrorEnvelope_WhenUnauthenticated()
+    {
+        var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync("/rest/ping.view?v=1.16.1&c=smoke&f=json");
+        var json = await response.Content.ReadAsStringAsync();
+
+        // Before setup completes the host returns 503 for /rest (same as /api).
+        if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            return;
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+        json.Should().Contain("subsonic-response");
+        json.Should().Contain("\"status\":\"failed\"");
+    }
+
+    [Test]
     public void MediatR_ShouldResolveAllHandlers()
     {
         MediatRHandlerResolution.ResolveAllHandlers(_factory.Services, typeof(DependencyInjection).Assembly);

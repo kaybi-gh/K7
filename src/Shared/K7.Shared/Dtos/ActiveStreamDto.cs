@@ -12,6 +12,7 @@ public sealed record ActiveStreamDto
     public Guid? ParentId { get; init; }
     public Guid? DeviceId { get; init; }
     public string? DeviceName { get; init; }
+    public string? DeviceClient { get; init; }
     public string? DeviceType { get; init; }
     public string? ThumbnailUrl { get; init; }
     public StreamDecisionDto? StreamDecision { get; init; }
@@ -20,4 +21,5 @@ public sealed record ActiveStreamDto
     public double Duration { get; init; }
     public int State { get; init; }
     public string? SharedProfileName { get; init; }
+    public bool HasPlaybackProgress { get; init; }
 }

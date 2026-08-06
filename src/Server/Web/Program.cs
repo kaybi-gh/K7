@@ -62,7 +62,11 @@ try
         };
         options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
         {
-            if (httpContext.Request.Query.ContainsKey(EphemeralStreamTokenDefaults.QueryParameterName))
+            var query = httpContext.Request.Query;
+            if (query.ContainsKey(EphemeralStreamTokenDefaults.QueryParameterName)
+                || query.ContainsKey("apiKey")
+                || query.ContainsKey("p")
+                || query.ContainsKey("t"))
                 diagnosticContext.Set("QueryString", "[Redacted]");
         };
     });

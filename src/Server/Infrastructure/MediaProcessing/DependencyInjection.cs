@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddSingleton<IMediaAnalysisService, MediaAnalysisService>();
         services.AddSingleton<IFfmpegCapabilitiesService, FfmpegCapabilitiesService>();
         services.AddSingleton<IMediaTranscoder, MediaTranscoder>();
+        services.AddSingleton<IOpenSubsonicAudioTranscoder, OpenSubsonicAudioTranscoder>();
         services.AddSingleton<IImageProcessor, ImageProcessor>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
         services.AddSingleton<IAudioTagReader, TagLibAudioTagReader>();

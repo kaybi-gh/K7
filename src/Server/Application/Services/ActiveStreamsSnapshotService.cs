@@ -72,6 +72,7 @@ public sealed class ActiveStreamsSnapshotService(
                 ParentId = s.ParentId,
                 DeviceId = s.DeviceId,
                 DeviceName = s.DeviceName,
+                DeviceClient = s.DeviceClient,
                 DeviceType = s.DeviceType,
                 ThumbnailUrl = s.ThumbnailUrl,
                 StreamDecision = streamDecision,
@@ -79,7 +80,8 @@ public sealed class ActiveStreamsSnapshotService(
                 Position = s.Position,
                 Duration = s.Duration,
                 State = s.State,
-                SharedProfileName = s.SharedProfileName
+                SharedProfileName = s.SharedProfileName,
+                HasPlaybackProgress = s.HasPlaybackProgress
             });
         }
 

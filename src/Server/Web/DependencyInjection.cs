@@ -4,6 +4,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Configuration;
+using K7.Server.Web.OpenSubsonic;
 using K7.Server.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -117,6 +118,7 @@ public static class DependencyInjection
 
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
+        services.AddScoped<OpenSubsonicAuthenticator>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
         services.AddSingleton<MediaNotificationBatcher>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();

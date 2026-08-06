@@ -4,5 +4,6 @@ public enum ClientType
 {
     Unknown,
     Native,
-    Web
+    Web,
+    External
 }
