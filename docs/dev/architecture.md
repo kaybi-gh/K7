@@ -50,6 +50,23 @@ Exceptions map via `CustomExceptionHandler` (`ValidationException` 400, `Forbidd
 
 CQRS layout: `Features/{Feature}/Commands|Queries/{Name}/{Name}.cs` (request + handler same file), validators alongside, domain event handlers under `EventHandlers/`. DTO mapping via extension methods in `Application/Common/Mappings/` (no AutoMapper). Endpoints in `Server/Web/Endpoints/` stay thin and delegate to `ISender`.
 
+## OpenSubsonic compatibility layer
+
+K7 exposes an OpenSubsonic-compatible facade under `/rest`, alongside the native `/api` used by first-party clients. Outbound Music intelligence calls go to AudioMuse's own HTTP API. When AudioMuse is configured as the mediaserver for K7, it reaches K7 through `/rest` with an OpenSubsonic `apiKey`.
+
+| Concern | Behavior |
+|---|---|
+| IDs | Same Guid strings as `/api/medias/{id}` (no prefix) |
+| Auth | `apiKey` query (extension `apiKeyAuthentication`) for admin/automation, or username + **app password** via `u`+`p` or Subsonic `t`+`s` (not the account password). API keys are not assigned to another user. Client name (`c`) registers an **External** device for admin devices, active streams, and history. |
+| Implementation | `Application/Features/OpenSubsonic` + `Web/OpenSubsonic` |
+| Streaming | Direct file when possible. Progressive ffmpeg transcode when `format` / `maxBitRate` requires it (`timeOffset` via `transcodeOffset`). History is written on `scrobble` / `reportPlayback`, not on `stream` alone. `reportPlayback` stopped uses the real position. Completion follows the effective K7 audio playback policy. Classic `scrobble(submission=true)` remains client-driven (full end). When a client starts another track without ending the previous one, K7 ends only the latest open session on that device at its known progress (no wall-clock backfill of older abandoned plays). Finished listens under 30s watched are flagged `IsSkipped` in playback history and increment `UserMediaState.SkipCount` (music player and Most skipped in watch stats). |
+| Extensions | `apiKeyAuthentication`, `songLyrics`, `formPost`, `playbackReport`, `transcodeOffset` |
+| Starred | Mapped to `UserRating` with value `> 5` (same store as star ratings in the K7 UI) |
+| Play queue | Not implemented yet (`getPlayQueue` / `savePlayQueue` return not found). Planned alongside native K7 play-queue work. |
+| Admin progress | External clients hide the active-stream progress bar until `reportPlayback` provides a timeline (`HasPlaybackProgress`). |
+
+Out of scope for the facade: video, podcasts, internet radio, public shares, chat, jukebox, user admin via Subsonic, bookmarks, sonic-path OS extensions. Backlog: richer OS `transcoding` endpoints (`getTranscodeDecision` / `getTranscodeStream`).
+
 ## Infrastructure split
 
 Under `src/Server/Infrastructure/`:

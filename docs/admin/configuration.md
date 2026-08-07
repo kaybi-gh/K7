@@ -203,7 +203,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - Do not publish Postgres to the internet. The sample compose maps host `5432` for local convenience - remove it (or bind `127.0.0.1` only) on public hosts.
 - Leave registration disabled unless you want open sign-up; enable Guest only when needed.
 - Encourage 2FA for password accounts; prefer OIDC with MFA when available.
-- API keys: header `X-Api-Key`; Admin CRUD at `/api/admin/api-keys`; least privilege; rotate unused keys. `Security:ApiKeys:HashSecret` is required at startup (env/file).
+- API keys (admin only): header `X-Api-Key` on the native API, and OpenSubsonic query `apiKey` on `/rest`. Admin CRUD at `/api/admin/api-keys`. Prefer least privilege (Read vs Write) and rotate unused keys. Keys are admin/automation credentials, not personal user tokens. `Security:ApiKeys:HashSecret` is required at startup (env/file). Request logs redact query strings that contain `apiKey`, `p`, or `t`.
 - Enable federation only when needed; treat peering as trust.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
 - Behind a reverse proxy: prefer not publishing K7 `:7080` on the LAN while `TrustPrivateProxies` is true (default).

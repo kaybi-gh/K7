@@ -371,11 +371,14 @@ categories. Notable Federation / Health events for ops monitoring:
 
 Optional self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI):
 
-1. In K7, create an API key (Admin -> API keys) for AudioMuse to use as its mediaserver credential:
-   - **Read** is enough for library scan, analysis downloads, and the K7 Music intelligence flow (K7 asks AudioMuse for track ids and creates playlists itself).
-   - **Write** is required if you also want AudioMuse's own UI to create or update playlists on K7 (Instant Playlist, clustering playlists, and similar write-back features). Prefer Write when you use AudioMuse as a full mediaserver client, not only as a backend for K7 radios / smart playlists.
-2. In AudioMuse, set the media server type to **K7**, point it at your K7 base URL (default HTTP port **7080**), and paste that API key. Run analysis so AudioMuse builds embeddings for your library.
-3. In K7: Admin -> Music intelligence (`/admin/music-intelligence`) - enable, set AudioMuse base URL, optionally an AudioMuse API token if AudioMuse auth is enabled; test connection (stored as `AudioMuseAi`).
+1. In K7, create an API key under **Admin -> API keys** (admin only).
+   - API keys are admin/automation credentials. They are not assigned to a user account.
+   - **Read** is enough when K7 drives Music intelligence (K7 asks AudioMuse for track ids and creates playlists itself).
+   - **Write** is required if AudioMuse must create or update playlists on K7 (analysis write-back).
+2. In AudioMuse, add a media server of type **Navidrome** (OpenSubsonic-compatible) pointed at the K7 base URL (default HTTP port **7080**). Use the K7 API key in the OpenSubsonic **API key** field (AudioMuse sends `apiKey=` and must not send `u`). Leave username/password empty when using an API key. Prefer HTTPS in production (credentials travel in query strings). Requires AudioMuse-AI with OpenSubsonic `apiKey` auth support.
+3. In K7: Admin -> Music intelligence (`/admin/music-intelligence`) - enable, set AudioMuse base URL, optionally an AudioMuse API token if AudioMuse auth is enabled, then test connection (stored as `AudioMuseAi`).
+
+K7 talks to AudioMuse over AudioMuse's own HTTP API. AudioMuse talks back to K7 over the OpenSubsonic `/rest` facade (same Guid media ids as `/api`).
 
 When disabled, AI discovery stays hidden; basic radios still work. User features: [Using K7 - Music discovery](../user/guide.md#music-discovery-audiomuse).
 

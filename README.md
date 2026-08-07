@@ -43,6 +43,7 @@ Open `http://localhost:7080` and complete first-run setup. Install details: [doc
 - **Fully keyboard-navigable** - spatial navigation across the whole app
 - **Remote control** - drive playback on one device (TV, phone, browser) from another logged-in client on the same server
 - **Chromecast (Web and Android only)** - cast video and music to any supported device
+- **OpenSubsonic** - connect apps like Symfonium or Feishin with an app password (Settings -> External clients)
 - iOS and Mac builds exist but are not tested by the maintainer (no Apple hardware)
 
 **Personalization**

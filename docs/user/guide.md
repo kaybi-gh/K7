@@ -204,6 +204,17 @@ Optional. The admin connects a self-hosted [AudioMuse AI](https://github.com/Nep
 
 When on: similar / ambiance radios and sonic paths under **Music -> Radio**, intelligent search in the library, similar tracks in the music player, and smart playlists from a text prompt. Basic radios (random, time capsule, recently added) work without AudioMuse.
 
+## External music clients (OpenSubsonic)
+
+K7 works with apps like Symfonium or Feishin over OpenSubsonic.
+
+1. Open **Settings -> External clients** to copy the server URL (and optional QR) and see your K7 username.
+2. Create an **app password** with a label (for example Symfonium). The generated password is shown only once, copy it now.
+3. In the client, add a Subsonic / OpenSubsonic provider with that URL.
+4. Sign in with your **K7 username** and the **app password** (not your K7 account password). Prefer HTTPS when you can.
+
+Stars in those clients use the same ratings as in K7. Listening history updates when the client reports plays. The client keeps its own play queue (K7 does not sync it yet).
+
 ## When something goes wrong
 
 | Problem | What to try |
