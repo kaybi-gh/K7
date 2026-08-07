@@ -68,6 +68,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         if (until.HasValue)
             sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt <= until.Value);
 
+        var topSkippedItems = await BuildTopSkippedItemsAsync(
+            sessionsQuery,
+            mediaTypes,
+            since,
+            until,
+            cancellationToken);
+
         var sessions = await sessionsWithMedia
             .Select(s => new SessionRow(
                 s.MediaId,
@@ -81,9 +88,22 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (sessions.Count == 0)
         {
+            if (topSkippedItems.Count > 0)
+            {
+                var skipImages = await MediaCoverPictureResolver.GetCoverImageUrlsByMediaIdAsync(
+                    context,
+                    topSkippedItems.Select(i => i.Id).ToList(),
+                    cancellationToken);
+                topSkippedItems = topSkippedItems
+                    .Select(i => i with { ImageUrl = skipImages.GetValueOrDefault(i.Id) })
+                    .ToList();
+                topSkippedItems = await AttachTopItemNavigationAsync(topSkippedItems, cancellationToken);
+            }
+
             return new WatchStatsDto
             {
                 Period = request.Period,
+                TopSkippedItems = topSkippedItems,
                 PlaysByDayOfWeek = BuildEmptyDayOfWeek(),
                 PlaysByHourOfDay = BuildEmptyHourOfDay()
             };
@@ -231,6 +251,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         var imageUrls = await MediaCoverPictureResolver.GetCoverImageUrlsByMediaIdAsync(
             context,
             topItems.Select(i => i.Id)
+                .Concat(topSkippedItems.Select(i => i.Id))
                 .Concat(topArtists.Select(i => i.Id))
                 .Concat(topAlbums.Select(i => i.Id))
                 .Concat(topShows.Select(i => i.Id))
@@ -239,11 +260,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             cancellationToken);
 
         topItems = topItems.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
+        topSkippedItems = topSkippedItems.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
         topArtists = topArtists.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
         topAlbums = topAlbums.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
         topShows = topShows.Select(i => i with { ImageUrl = imageUrls.GetValueOrDefault(i.Id) }).ToList();
 
         topItems = await AttachTopItemNavigationAsync(topItems, cancellationToken);
+        topSkippedItems = await AttachTopItemNavigationAsync(topSkippedItems, cancellationToken);
 
         var playbackDetails = request.MediaType == MediaType.MusicTrack
             ? null
@@ -256,6 +279,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             TotalPlays = totalPlays,
             UniqueItemsPlayed = uniqueItems,
             TopItems = topItems,
+            TopSkippedItems = topSkippedItems,
             TopArtists = topArtists,
             TopAlbums = topAlbums,
             TopShows = topShows,
@@ -266,6 +290,71 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             PlaysByHourOfDay = byHourOfDay,
             PlaybackDetails = playbackDetails
         };
+    }
+
+    private async Task<List<TopItemDto>> BuildTopSkippedItemsAsync(
+        IQueryable<MediaPlaybackSession> sessionsQuery,
+        MediaType[] mediaTypes,
+        DateTime? since,
+        DateTime? until,
+        CancellationToken cancellationToken)
+    {
+        var skipSessions = sessionsQuery
+            .Where(s => s.CompletedAt == null
+                        && (s.State == PlaybackState.Ended
+                            || s.State == PlaybackState.Idle
+                            || s.StoppedAt != null))
+            .Join(
+                context.Medias.Where(m => mediaTypes.Contains(m.Type)),
+                s => s.MediaId,
+                m => m.Id,
+                (s, m) => new { Session = s, Media = m });
+
+        if (since.HasValue)
+            skipSessions = skipSessions.Where(x => x.Session.StartedAt >= since.Value);
+
+        if (until.HasValue)
+            skipSessions = skipSessions.Where(x => x.Session.StartedAt <= until.Value);
+
+        var rows = await skipSessions
+            .Select(x => new
+            {
+                x.Session.MediaId,
+                x.Session.ReferenceId,
+                x.Session.WatchedDurationSeconds,
+                x.Session.PositionSeconds,
+                x.Session.DurationSeconds,
+                Title = x.Media.Title,
+                MediaType = x.Media.Type
+            })
+            .ToListAsync(cancellationToken);
+
+        var skipped = rows
+            .Where(r =>
+            {
+                var watched = PlaybackSkipRules.EffectiveWatchedSeconds(r.WatchedDurationSeconds, r.PositionSeconds);
+                var ratioComplete = r.DurationSeconds > 0
+                    && Math.Max(r.PositionSeconds, r.WatchedDurationSeconds) / r.DurationSeconds >= 0.9;
+                return !ratioComplete
+                       && PlaybackSkipRules.IsSkippedListen(isCompleted: false, isFinished: true, watched);
+            })
+            .GroupBy(r => r.MediaId)
+            .Select(g =>
+            {
+                var sample = g.First();
+                return new TopItemDto
+                {
+                    Id = g.Key,
+                    Name = sample.Title ?? "Unknown",
+                    MediaType = sample.MediaType.ToString(),
+                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
+                };
+            })
+            .OrderByDescending(x => x.PlayCount)
+            .Take(10)
+            .ToList();
+
+        return skipped;
     }
 
     private async Task<List<GenreStatDto>> BuildTopGenresAsync(

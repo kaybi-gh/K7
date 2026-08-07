@@ -39,6 +39,7 @@
   <data name="ByDayOfWeek" xml:space="preserve"><value>Par jour de la semaine</value></data>
   <data name="TopItems" xml:space="preserve"><value>Top éléments</value></data>
   <data name="TopTracks" xml:space="preserve"><value>Top titres</value></data>
+  <data name="TopSkipped" xml:space="preserve"><value>Plus passées</value></data>
   <data name="TopMovies" xml:space="preserve"><value>Top films</value></data>
   <data name="TopEpisodes" xml:space="preserve"><value>Top épisodes</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top Artistes</value></data>

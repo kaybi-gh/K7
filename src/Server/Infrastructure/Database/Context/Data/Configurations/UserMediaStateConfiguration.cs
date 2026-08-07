@@ -23,5 +23,9 @@ public class UserMediaStateConfiguration : IEntityTypeConfiguration<UserMediaSta
         builder
             .HasIndex(s => new { s.UserId, s.PlayCount })
             .HasDatabaseName("IX_UserMediaStates_UserId_PlayCount");
+
+        builder
+            .HasIndex(s => new { s.UserId, s.SkipCount })
+            .HasDatabaseName("IX_UserMediaStates_UserId_SkipCount");
     }
 }
