@@ -36,7 +36,7 @@ Draft body comes from `.github/release-drafter.yml`. Section order:
 2. **Highlights** - 1-3 manual bullets (edit before publish)
 3. **Changes** - full categorized list via `$CHANGES` (Breaking Changes, Features, Bug Fixes, Documentation, Miscellaneous)
 4. **Artifacts** - Docker image and client asset names with `$RESOLVED_VERSION`
-5. **New contributors** - via `$CONTRIBUTORS`
+5. **New contributors** - via `$NEW_CONTRIBUTORS` (first-time PR authors only)
 
 Edit **Highlights** and the top **Breaking changes** summary just before you publish. Release Drafter regenerates the draft on pushes to `main`, so earlier manual edits may be overwritten.
 

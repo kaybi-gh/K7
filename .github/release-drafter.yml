@@ -3,7 +3,7 @@ tag-template: 'v$RESOLVED_VERSION'
 version-template: '$MAJOR.$MINOR.$PATCH'
 change-template: '- $TITLE @$AUTHOR ([#$NUMBER]($URL))'
 no-changes-template: '- No changes'
-no-contributors-template: 'No new contributors'
+no-new-contributor-template: 'No new contributors'
 template: |
   ## Breaking changes
 
@@ -25,7 +25,7 @@ template: |
 
   ## New contributors
 
-  $CONTRIBUTORS
+  $NEW_CONTRIBUTORS
 
 categories:
   - title: 'Breaking Changes'
