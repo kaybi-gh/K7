@@ -38,4 +38,7 @@
   <data name="ReasonSubtitles" xml:space="preserve"><value>Subtitle burn-in</value></data>
   <data name="ReasonResolution" xml:space="preserve"><value>Resolution not supported</value></data>
   <data name="ReasonQualityDownscale" xml:space="preserve"><value>Reduced quality</value></data>
+  <data name="ClientExternal" xml:space="preserve"><value>External</value></data>
+  <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
+  <data name="ClientWeb" xml:space="preserve"><value>Browser</value></data>
 </root>

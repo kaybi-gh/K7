@@ -37,6 +37,7 @@
   <data name="DeviceTypeWatch" xml:space="preserve"><value>Watch</value></data>
   <data name="ClientTypeNative" xml:space="preserve"><value>Native app</value></data>
   <data name="ClientTypeWeb" xml:space="preserve"><value>Browser</value></data>
+  <data name="ClientTypeExternal" xml:space="preserve"><value>External client</value></data>
   <data name="Select" xml:space="preserve"><value>Select</value></data>
   <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
   <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>

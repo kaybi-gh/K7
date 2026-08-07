@@ -87,6 +87,10 @@ public partial class AdminStreamCard
         }
     }
 
+    private bool ShowProgress =>
+        !string.Equals(Stream.DeviceClient, "External", StringComparison.OrdinalIgnoreCase)
+        || Stream.HasPlaybackProgress;
+
     private double ProgressPercent => Stream.Duration > 0
         ? Stream.Position / Stream.Duration * 100
         : 0;
@@ -100,15 +104,32 @@ public partial class AdminStreamCard
         get
         {
             var name = Stream.DeviceName ?? "-";
-            if (string.IsNullOrEmpty(Stream.DeviceType) || Stream.DeviceType == "Unknown")
-                return name;
+            var client = FormatDeviceClient(Stream.DeviceClient);
+            var parts = new List<string> { name };
 
-            if (name.Contains(Stream.DeviceType, StringComparison.OrdinalIgnoreCase))
-                return name;
+            if (!string.IsNullOrWhiteSpace(client)
+                && !name.Contains(client, StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(client);
+            }
+            else if (!string.IsNullOrEmpty(Stream.DeviceType)
+                     && Stream.DeviceType != "Unknown"
+                     && !name.Contains(Stream.DeviceType, StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(Stream.DeviceType);
+            }
 
-            return $"{name} ({Stream.DeviceType})";
+            return string.Join(" · ", parts);
         }
     }
+
+    private string? FormatDeviceClient(string? client) => client switch
+    {
+        "External" => L["ClientExternal"],
+        "Native" => L["ClientNative"],
+        "Web" => L["ClientWeb"],
+        _ => client
+    };
 
     private static string FormatTime(double totalSeconds)
     {
