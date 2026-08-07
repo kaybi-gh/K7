@@ -32,6 +32,9 @@
   <data name="Device" xml:space="preserve"><value>Appareil</value></data>
   <data name="SharedProfile" xml:space="preserve"><value>Regardé avec</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="Completed" xml:space="preserve"><value>Terminé</value></data>
+  <data name="Incomplete" xml:space="preserve"><value>Incomplet</value></data>
+  <data name="Skipped" xml:space="preserve"><value>Passée</value></data>
   <data name="Period" xml:space="preserve"><value>Période</value></data>
   <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
   <data name="WeekShort" xml:space="preserve"><value>Sem.</value></data>

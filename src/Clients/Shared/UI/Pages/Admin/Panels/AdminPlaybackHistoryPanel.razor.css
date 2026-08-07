@@ -65,6 +65,11 @@
     color: var(--color-warning);
 }
 
+.history-badge--muted {
+    background: color-mix(in srgb, var(--color-text-muted) 20%, transparent);
+    color: var(--color-text-muted);
+}
+
 .history-badge--direct {
     background: color-mix(in srgb, var(--color-success) 20%, transparent);
     color: var(--color-success);

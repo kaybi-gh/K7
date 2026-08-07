@@ -32,6 +32,9 @@
   <data name="Device" xml:space="preserve"><value>Device</value></data>
   <data name="SharedProfile" xml:space="preserve"><value>Watched with</value></data>
   <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Incomplete" xml:space="preserve"><value>Incomplete</value></data>
+  <data name="Skipped" xml:space="preserve"><value>Skipped</value></data>
   <data name="Period" xml:space="preserve"><value>Period</value></data>
   <data name="MediaType" xml:space="preserve"><value>Media type</value></data>
   <data name="WeekShort" xml:space="preserve"><value>Wk</value></data>

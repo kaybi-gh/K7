@@ -46,6 +46,7 @@
   <data name="SessionDetails" xml:space="preserve"><value>Session Details</value></data>
   <data name="Watched" xml:space="preserve"><value>Watched</value></data>
   <data name="Incomplete" xml:space="preserve"><value>Incomplete</value></data>
+  <data name="Skipped" xml:space="preserve"><value>Skipped</value></data>
   <data name="DirectPlay" xml:space="preserve"><value>Direct Play</value></data>
   <data name="Direct" xml:space="preserve"><value>Direct</value></data>
   <data name="Library" xml:space="preserve"><value>Library</value></data>
@@ -69,4 +70,7 @@
   <data name="Source" xml:space="preserve"><value>Source</value></data>
   <data name="Stream" xml:space="preserve"><value>Stream</value></data>
   <data name="NoStreamData" xml:space="preserve"><value>No stream data available</value></data>
+  <data name="ClientExternal" xml:space="preserve"><value>External</value></data>
+  <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
+  <data name="ClientWeb" xml:space="preserve"><value>Browser</value></data>
 </root>

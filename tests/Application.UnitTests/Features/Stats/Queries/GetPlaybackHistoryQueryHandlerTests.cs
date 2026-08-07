@@ -194,4 +194,123 @@ public class GetPlaybackHistoryQueryHandlerTests
         result.Items.Should().ContainSingle()
             .Which.ReferenceId.Should().Be(sharedReferenceId);
     }
+
+    [Test]
+    public async Task Handle_ShouldNotUseMediaDuration_AsWatchedFallback()
+    {
+        var referenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = referenceId,
+            StartedAt = now.AddMinutes(-5),
+            DurationSeconds = 7200,
+            PositionSeconds = 0,
+            WatchedDurationSeconds = 0,
+            State = PlaybackState.Playing
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle();
+        result.Items[0].TotalWatchedSeconds.Should().Be(0);
+        result.Items[0].IsCompleted.Should().BeFalse();
+        result.Items[0].IsSkipped.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Handle_ShouldMarkSkipped_WhenFinishedWithLittleProgress()
+    {
+        var referenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = referenceId,
+            StartedAt = now.AddMinutes(-2),
+            StoppedAt = now,
+            DurationSeconds = 200,
+            PositionSeconds = 8,
+            WatchedDurationSeconds = 8,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle();
+        result.Items[0].IsCompleted.Should().BeFalse();
+        result.Items[0].IsSkipped.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ShouldNotMarkSkipped_WhenIncompleteWithMeaningfulProgress()
+    {
+        var referenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = referenceId,
+            StartedAt = now.AddMinutes(-5),
+            StoppedAt = now,
+            DurationSeconds = 200,
+            PositionSeconds = 90,
+            WatchedDurationSeconds = 90,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle();
+        result.Items[0].IsCompleted.Should().BeFalse();
+        result.Items[0].IsSkipped.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Handle_ShouldMarkCompleted_WhenCompletedAtSet()
+    {
+        var referenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = referenceId,
+            StartedAt = now.AddMinutes(-5),
+            StoppedAt = now,
+            DurationSeconds = 200,
+            PositionSeconds = 200,
+            WatchedDurationSeconds = 200,
+            CompletedAt = now,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle();
+        result.Items[0].IsCompleted.Should().BeTrue();
+        result.Items[0].IsSkipped.Should().BeFalse();
+        result.Items[0].TotalWatchedSeconds.Should().Be(200);
+    }
 }
+

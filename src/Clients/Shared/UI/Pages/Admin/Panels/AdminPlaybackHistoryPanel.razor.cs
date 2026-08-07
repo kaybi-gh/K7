@@ -384,15 +384,15 @@ public partial class AdminPlaybackHistoryPanel
             MediaType = item.MediaType,
             MediaTypeLabel = MediaTypeLabelHelper.Format(item.MediaType, S),
             MediaUrl = item.MediaUrl,
-            Status = item.IsCompleted ? L["Watched"] : L["Incomplete"],
-            StatusVariant = item.IsCompleted ? "success" : "warning",
+            Status = StatusLabel(item),
+            StatusVariant = StatusBadgeVariant(item),
             StartedAt = item.StartedAt,
             StoppedAt = item.StoppedAt,
             DurationDisplay = FormatDuration(item.TotalWatchedSeconds),
             UserName = item.UserName,
             SharedProfileName = item.SharedProfileName,
             DeviceName = item.DeviceName,
-            DeviceClient = item.DeviceClient,
+            DeviceClient = FormatDeviceClient(item.DeviceClient),
             HasStreamDetails = hasStream,
             ModeLabel = modeLabel,
             ModeBadgeVariant = modeBadgeVariant,
@@ -413,6 +413,33 @@ public partial class AdminPlaybackHistoryPanel
             IsSubtitleBurnIn = sq?.TranscodeReason?.Contains("SubtitlesBurnIn", StringComparison.Ordinal) == true
         };
     }
+
+    private string StatusLabel(PlaybackHistoryItemDto item) =>
+        item.IsCompleted ? L["Watched"] : item.IsSkipped ? L["Skipped"] : L["Incomplete"];
+
+    private static string StatusBadgeVariant(PlaybackHistoryItemDto item) =>
+        item.IsCompleted ? "success" : item.IsSkipped ? "muted" : "warning";
+
+    private string FormatDeviceLabel(string? deviceName, string? deviceClient)
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+            return FormatDeviceClient(deviceClient) ?? "-";
+
+        var client = FormatDeviceClient(deviceClient);
+        if (string.IsNullOrWhiteSpace(client)
+            || deviceName.Contains(client, StringComparison.OrdinalIgnoreCase))
+            return deviceName;
+
+        return $"{deviceName} · {client}";
+    }
+
+    private string? FormatDeviceClient(string? client) => client switch
+    {
+        "External" => L["ClientExternal"],
+        "Native" => L["ClientNative"],
+        "Web" => L["ClientWeb"],
+        _ => client
+    };
 
     private static string FormatBitrate(int bitrate)
     {
