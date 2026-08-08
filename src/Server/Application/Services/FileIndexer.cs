@@ -664,6 +664,38 @@ public class FileIndexer : IFileIndexer
                     MaxAttempts = 5
                 });
             }
+            else if (library.MediaType == LibraryMediaType.Serie)
+            {
+                var previousIdentification = oldFile.Identification;
+                if (oldFile.TryIdentifySerieEpisode(library, [oldFile]))
+                {
+                    if (!SerieIdentificationConsensus.EpisodeIdentityEquals(
+                            previousIdentification,
+                            oldFile.Identification))
+                    {
+                        backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
+                        {
+                            Request = new CreateMediaCommand()
+                            {
+                                IndexedFileIds = [oldFile.Id],
+                                MediaType = MediaType.Serie,
+                                LibraryId = library.Id
+                            },
+                            TargetEntityId = oldFile.Id,
+                            TargetEntityTypeName = nameof(BaseMedia),
+                            Lane = BackgroundTaskLane.Metadata,
+                            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
+                            WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                            TriggeredBy = BackgroundTaskTriggeredBy.System,
+                            MaxAttempts = 5
+                        });
+                    }
+                }
+                else
+                {
+                    oldFile.Identification = previousIdentification;
+                }
+            }
 
             _context.IndexedFiles.Update(oldFile);
         }

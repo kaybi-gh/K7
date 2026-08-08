@@ -138,4 +138,21 @@ public static class SerieIdentificationConsensus
 
         return prev[m];
     }
+
+    /// <summary>
+    /// True when season/episode identity fields used for re-link are unchanged.
+    /// Episode title in the filename is ignored.
+    /// </summary>
+    public static bool EpisodeIdentityEquals(MediaIdentification? left, MediaIdentification? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+        if (left is null || right is null)
+            return false;
+
+        return left.SeasonNumber == right.SeasonNumber
+            && left.EpisodeNumber == right.EpisodeNumber
+            && left.AbsoluteNumber == right.AbsoluteNumber
+            && string.Equals(left.SeriesTitle, right.SeriesTitle, StringComparison.OrdinalIgnoreCase);
+    }
 }

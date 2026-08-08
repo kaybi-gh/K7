@@ -98,7 +98,8 @@ public class CreateMediaCommandHandlerTests
             tagSync,
             new MediaIdentityLookupService(_context),
             new MediaIdentityLock(),
-            availability);
+            availability,
+            Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
     [TearDown]

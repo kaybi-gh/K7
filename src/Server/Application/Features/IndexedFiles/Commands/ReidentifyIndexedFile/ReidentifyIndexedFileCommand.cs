@@ -11,6 +11,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.ReidentifyIndexedFile;
 
@@ -24,7 +25,8 @@ public class ReidentifyIndexedFileCommand : IRequest
 public class ReidentifyIndexedFileCommandHandler(
     IApplicationDbContext context,
     ISender sender,
-    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
+    IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
+    ILogger<ReidentifyIndexedFileCommandHandler> logger)
     : IRequestHandler<ReidentifyIndexedFileCommand>
 {
     public async Task Handle(ReidentifyIndexedFileCommand request, CancellationToken cancellationToken)
@@ -41,6 +43,7 @@ public class ReidentifyIndexedFileCommandHandler(
         if (string.IsNullOrWhiteSpace(providerName) || providerName == MetadataProviderNames.Local)
             providerName = request.SelectedProvider.Trim();
 
+        Guid? formerSerieEpisodeId = null;
         if (indexedFile.MediaId.HasValue)
         {
             var oldMedia = await context.Medias
@@ -51,6 +54,10 @@ public class ReidentifyIndexedFileCommandHandler(
             {
                 oldMedia.IndexedFiles?.Remove(indexedFile);
             }
+
+            if (oldMedia is SerieEpisode)
+                formerSerieEpisodeId = indexedFile.MediaId;
+
             indexedFile.MediaId = null;
         }
 
@@ -62,6 +69,15 @@ public class ReidentifyIndexedFileCommandHandler(
         if (existingExternalId?.Media is not null)
         {
             await AttachIndexedFileAsync(existingExternalId.Media, indexedFile, library, cancellationToken);
+            if (formerSerieEpisodeId is Guid orphanId)
+            {
+                await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                    context,
+                    orphanId,
+                    logger,
+                    cancellationToken);
+            }
+
             await context.SaveChangesAsync(cancellationToken);
             await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
             if (library.MediaType == LibraryMediaType.Music)
@@ -76,9 +92,9 @@ public class ReidentifyIndexedFileCommandHandler(
 
         BaseMedia newMedia = library.MediaType switch
         {
-            LibraryMediaType.Serie => new Serie(),
-            LibraryMediaType.Music => new MusicAlbum(),
-            _ => new Movie() { IndexedFiles = [indexedFile] }
+            LibraryMediaType.Serie => new Serie { Id = Guid.NewGuid() },
+            LibraryMediaType.Music => new MusicAlbum { Id = Guid.NewGuid() },
+            _ => new Movie { Id = Guid.NewGuid(), IndexedFiles = [indexedFile] }
         };
 
         context.Medias.Add(newMedia);
@@ -100,6 +116,16 @@ public class ReidentifyIndexedFileCommandHandler(
         });
 
         newMedia.AddDomainEvent(new MediaCreatedEvent(newMedia));
+
+        if (formerSerieEpisodeId is Guid orphanEpisodeId)
+        {
+            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                context,
+                orphanEpisodeId,
+                logger,
+                cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
         await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
 
@@ -151,11 +177,13 @@ public class ReidentifyIndexedFileCommandHandler(
 
         var (seasonNumber, episodeNumber) = ResolveSerieEpisodeNumbers(indexedFile, library);
 
-        var season = serie.Seasons.FirstOrDefault(s => s.SeasonNumber == seasonNumber);
+        var season = serie.Seasons.FirstOrDefault(s =>
+            s.SeasonNumber == seasonNumber && context.Entry(s).State != EntityState.Deleted);
         if (season is null)
         {
             season = new SerieSeason
             {
+                Id = Guid.NewGuid(),
                 SerieId = serie.Id,
                 Serie = serie,
                 SeasonNumber = seasonNumber,
@@ -166,15 +194,18 @@ public class ReidentifyIndexedFileCommandHandler(
             context.Medias.Add(season);
         }
 
-        var existingEpisode = season.Episodes.FirstOrDefault(e => e.EpisodeNumber == episodeNumber);
+        var existingEpisode = season.Episodes.FirstOrDefault(e =>
+            e.EpisodeNumber == episodeNumber && context.Entry(e).State != EntityState.Deleted);
         if (existingEpisode is not null)
         {
+            existingEpisode.IndexedFiles ??= [];
             existingEpisode.IndexedFiles.Add(indexedFile);
             return;
         }
 
         var episode = new SerieEpisode
         {
+            Id = Guid.NewGuid(),
             SerieId = serie.Id,
             Serie = serie,
             SeasonId = season.Id,
@@ -240,8 +271,8 @@ public class ReidentifyIndexedFileCommandHandler(
 
     private static (int SeasonNumber, int EpisodeNumber) ResolveSerieEpisodeNumbers(IndexedFile indexedFile, Library library)
     {
-        if (indexedFile.Identification is null)
-            indexedFile.TryIdentifySerieEpisode(library, [indexedFile]);
+        // Always re-parse from the current path so renames are not ignored.
+        indexedFile.TryIdentifySerieEpisode(library, [indexedFile]);
 
         var identification = indexedFile.Identification;
         var seasonNumber = identification?.SeasonNumber ?? 1;

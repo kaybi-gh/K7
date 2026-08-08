@@ -18,6 +18,7 @@ using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Medias.Commands.CreateMedia;
@@ -40,6 +41,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly MediaIdentityLookupService _identityLookup;
     private readonly IMediaIdentityLock _identityLock;
     private readonly IMediaLibraryAvailabilityService _mediaLibraryAvailabilityService;
+    private readonly ILogger<CreateMediaCommandHandler> _logger;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
@@ -50,7 +52,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         IMediaMetadataTagSyncService metadataTagSyncService,
         MediaIdentityLookupService identityLookup,
         IMediaIdentityLock identityLock,
-        IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
+        IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
+        ILogger<CreateMediaCommandHandler> logger)
     {
         _context = context;
         _sender = sender;
@@ -61,6 +64,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _identityLookup = identityLookup;
         _identityLock = identityLock;
         _mediaLibraryAvailabilityService = mediaLibraryAvailabilityService;
+        _logger = logger;
     }
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
@@ -442,9 +446,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         await _context.Entry(serie).Collection(s => s.Seasons)
             .Query()
             .Include(s => s.Episodes)
+                .ThenInclude(e => e.IndexedFiles)
             .LoadAsync(cancellationToken);
 
         var hasNewEpisodes = false;
+        var orphanCandidateIds = new HashSet<Guid>();
 
         foreach (var indexedFile in indexedFiles)
         {
@@ -482,6 +488,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             {
                 season = new SerieSeason
                 {
+                    Id = Guid.NewGuid(),
                     SerieId = serie.Id,
                     Serie = serie,
                     SeasonNumber = seasonNumber.Value,
@@ -495,12 +502,25 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             var existingEpisode = season.Episodes.FirstOrDefault(e => e.EpisodeNumber == episodeNumber.Value);
             if (existingEpisode is not null)
             {
-                existingEpisode.IndexedFiles.Add(indexedFile);
+                if (indexedFile.MediaId != existingEpisode.Id)
+                {
+                    var formerMediaId = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
+                    if (formerMediaId is Guid formerId)
+                        orphanCandidateIds.Add(formerId);
+
+                    existingEpisode.IndexedFiles.Add(indexedFile);
+                }
+
                 continue;
             }
 
+            var formerIdForNew = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
+            if (formerIdForNew is Guid formerNewId)
+                orphanCandidateIds.Add(formerNewId);
+
             var episode = new SerieEpisode
             {
+                Id = Guid.NewGuid(),
                 SerieId = serie.Id,
                 Serie = serie,
                 SeasonId = season.Id,
@@ -516,6 +536,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             episode.AddDomainEvent(new MediaCreatedEvent(episode));
             hasNewEpisodes = true;
         }
+
+        foreach (var orphanId in orphanCandidateIds)
+            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(_context, orphanId, _logger, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -786,6 +809,29 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         await _context.SaveChangesAsync(cancellationToken);
         return (serie, true, matchedProviderName, providerExternalId);
+    }
+
+    private async Task<Guid?> DetachIndexedFileFromPreviousEpisodeAsync(
+        IndexedFile indexedFile,
+        CancellationToken cancellationToken)
+    {
+        if (indexedFile.MediaId is not Guid formerMediaId)
+            return null;
+
+        var formerEpisode = await _context.Medias
+            .OfType<SerieEpisode>()
+            .Include(e => e.IndexedFiles)
+            .FirstOrDefaultAsync(e => e.Id == formerMediaId, cancellationToken);
+
+        if (formerEpisode is null)
+        {
+            indexedFile.MediaId = null;
+            return formerMediaId;
+        }
+
+        formerEpisode.IndexedFiles.Remove(indexedFile);
+        indexedFile.MediaId = null;
+        return formerMediaId;
     }
 
     private static (string? ProviderName, string? ExternalId) PickSerieExternalId(Serie serie, string? primaryProviderName)

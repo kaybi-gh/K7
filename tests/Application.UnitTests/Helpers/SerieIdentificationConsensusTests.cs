@@ -103,6 +103,63 @@ public class SerieIdentificationConsensusTests
         SerieIdentificationConsensus.AreSeriesTitlesClose("Alpha", "Beta").Should().BeFalse();
     }
 
+    [Test]
+    public void EpisodeIdentityEquals_ShouldBeTrue_WhenOnlyEpisodeTitleInFilenameWouldDiffer()
+    {
+        var left = new MediaIdentification("Show")
+        {
+            SeriesTitle = "Show",
+            SeasonNumber = 0,
+            EpisodeNumber = 26
+        };
+        var right = new MediaIdentification("Show")
+        {
+            SeriesTitle = "Show",
+            SeasonNumber = 0,
+            EpisodeNumber = 26
+        };
+
+        SerieIdentificationConsensus.EpisodeIdentityEquals(left, right).Should().BeTrue();
+    }
+
+    [Test]
+    public void EpisodeIdentityEquals_ShouldBeFalse_WhenSeasonOrEpisodeChanges()
+    {
+        var left = new MediaIdentification("Show")
+        {
+            SeriesTitle = "Show",
+            SeasonNumber = 0,
+            EpisodeNumber = 99
+        };
+        var right = new MediaIdentification("Show")
+        {
+            SeriesTitle = "Show",
+            SeasonNumber = 0,
+            EpisodeNumber = 26
+        };
+
+        SerieIdentificationConsensus.EpisodeIdentityEquals(left, right).Should().BeFalse();
+    }
+
+    [Test]
+    public void EpisodeIdentityEquals_ShouldBeFalse_WhenSeriesTitleChanges()
+    {
+        var left = new MediaIdentification("Show A")
+        {
+            SeriesTitle = "Show A",
+            SeasonNumber = 1,
+            EpisodeNumber = 1
+        };
+        var right = new MediaIdentification("Show B")
+        {
+            SeriesTitle = "Show B",
+            SeasonNumber = 1,
+            EpisodeNumber = 1
+        };
+
+        SerieIdentificationConsensus.EpisodeIdentityEquals(left, right).Should().BeFalse();
+    }
+
     private static IndexedFile CreateFile(string name, string seriesTitle) =>
         new()
         {

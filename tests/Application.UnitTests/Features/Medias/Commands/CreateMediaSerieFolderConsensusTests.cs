@@ -99,7 +99,8 @@ public class CreateMediaSerieFolderConsensusTests
             Substitute.For<IMediaMetadataTagSyncService>(),
             new MediaIdentityLookupService(_context),
             new MediaIdentityLock(),
-            availability);
+            availability,
+            Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
     [TearDown]
