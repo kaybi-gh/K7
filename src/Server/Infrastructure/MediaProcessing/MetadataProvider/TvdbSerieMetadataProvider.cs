@@ -20,7 +20,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 {
     private readonly TvdbApiClient _apiClient;
     private readonly ILogger<TvdbSerieMetadataProvider> _logger;
-    private readonly Dictionary<int, IReadOnlyList<TvdbEpisodeBase>> _episodeCache = new();
+    private readonly Dictionary<(int SeriesId, string SeasonType), IReadOnlyList<TvdbEpisodeBase>> _episodeCache = new();
     private readonly Dictionary<int, string?> _seriesOriginalLanguageCache = new();
 
     public TvdbSerieMetadataProvider(TvdbApiClient apiClient, ILogger<TvdbSerieMetadataProvider> logger)
@@ -254,8 +254,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         var originalLanguage = await GetSeriesOriginalLanguageAsync(seriesId, cancellationToken);
 
-        var episodes = await GetCachedEpisodesAsync(seriesId, cancellationToken);
-        var episodeRef = episodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.Number == episodeNumber)
+        var episodeRef = await FindEpisodeRefAsync(seriesId, seasonNumber, episodeNumber, cancellationToken)
             ?? throw new InvalidOperationException($"TVDB episode S{seasonNumber}E{episodeNumber} not found for series {seriesId}.");
 
         var episode = await _apiClient.GetEpisodeExtendedAsync(episodeRef.Id, cancellationToken);
@@ -396,8 +395,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         List<ProviderImageDto> results,
         CancellationToken cancellationToken)
     {
-        var episodes = await GetCachedEpisodesAsync(seriesId, cancellationToken);
-        var episodeRef = episodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.Number == episodeNumber);
+        var episodeRef = await FindEpisodeRefAsync(seriesId, seasonNumber, episodeNumber, cancellationToken);
         if (episodeRef is null)
             return;
 
@@ -423,13 +421,33 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         AddArtworkImages(results, artworks, null);
     }
 
-    private async Task<IReadOnlyList<TvdbEpisodeBase>> GetCachedEpisodesAsync(int seriesId, CancellationToken cancellationToken)
+    private async Task<TvdbEpisodeBase?> FindEpisodeRefAsync(
+        int seriesId,
+        int seasonNumber,
+        int episodeNumber,
+        CancellationToken cancellationToken)
     {
-        if (_episodeCache.TryGetValue(seriesId, out var cached))
+        var episodes = await GetCachedEpisodesAsync(seriesId, cancellationToken);
+        var episodeRef = episodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.Number == episodeNumber);
+        if (episodeRef is not null)
+            return episodeRef;
+
+        var absoluteEpisodes = await GetCachedEpisodesAsync(seriesId, cancellationToken, "absolute");
+        return absoluteEpisodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.Number == episodeNumber);
+    }
+
+    private async Task<IReadOnlyList<TvdbEpisodeBase>> GetCachedEpisodesAsync(
+        int seriesId,
+        CancellationToken cancellationToken,
+        string seasonType = "default")
+    {
+        var normalizedSeasonType = string.IsNullOrWhiteSpace(seasonType) ? "default" : seasonType.Trim();
+        var cacheKey = (seriesId, normalizedSeasonType);
+        if (_episodeCache.TryGetValue(cacheKey, out var cached))
             return cached;
 
-        var episodes = await _apiClient.GetAllSeriesEpisodesAsync(seriesId, cancellationToken);
-        _episodeCache[seriesId] = episodes;
+        var episodes = await _apiClient.GetAllSeriesEpisodesAsync(seriesId, normalizedSeasonType, cancellationToken);
+        _episodeCache[cacheKey] = episodes;
         return episodes;
     }
 
