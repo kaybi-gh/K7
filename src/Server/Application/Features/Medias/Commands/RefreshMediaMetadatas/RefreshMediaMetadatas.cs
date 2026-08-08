@@ -21,6 +21,7 @@ using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 
@@ -41,6 +42,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
     private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
     private readonly MetadataPictureDeletionService _pictureDeletionService;
+    private readonly ILogger<RefreshMediaMetadatasCommandHandler> _logger;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
@@ -48,7 +50,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         ISender sender,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders,
         IMediaMetadataTagSyncService metadataTagSyncService,
-        MetadataPictureDeletionService pictureDeletionService)
+        MetadataPictureDeletionService pictureDeletionService,
+        ILogger<RefreshMediaMetadatasCommandHandler> logger)
     {
         _context = context;
         _serviceProvider = serviceProvider;
@@ -56,6 +59,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
         _metadataTagSyncService = metadataTagSyncService;
         _pictureDeletionService = pictureDeletionService;
+        _logger = logger;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -457,8 +461,23 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         // Fetch and apply season metadata
         foreach (var season in serie.Seasons)
         {
-            var seasonMetadata = await metadataProvider.FetchSeasonMetadataAsync(
-                request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken, request.FallbackLanguage);
+            ExternalSeasonMetadata seasonMetadata;
+            try
+            {
+                seasonMetadata = await metadataProvider.FetchSeasonMetadataAsync(
+                    request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken, request.FallbackLanguage);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Skipping season {SeasonNumber} metadata refresh for serie {MediaId} via {Provider}",
+                    season.SeasonNumber,
+                    serie.Id,
+                    request.MetadataProviderName);
+                continue;
+            }
+
             season.ApplyMetadata(seasonMetadata);
 
             if (request.MetadataProviderName == "federation")
@@ -479,9 +498,28 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         {
             foreach (var episode in season.Episodes)
             {
-                var episodeMetadata = await metadataProvider.FetchEpisodeMetadataAsync(
-                    request.MetadataProviderExternalId, season.SeasonNumber, episode.EpisodeNumber,
-                    request.Language, cancellationToken, request.FallbackLanguage);
+                ExternalEpisodeMetadata episodeMetadata;
+                try
+                {
+                    episodeMetadata = await metadataProvider.FetchEpisodeMetadataAsync(
+                        request.MetadataProviderExternalId, season.SeasonNumber, episode.EpisodeNumber,
+                        request.Language, cancellationToken, request.FallbackLanguage);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Skipping episode S{SeasonNumber}E{EpisodeNumber} metadata refresh for serie {MediaId} via {Provider}",
+                        season.SeasonNumber,
+                        episode.EpisodeNumber,
+                        serie.Id,
+                        request.MetadataProviderName);
+
+                    if (!episode.IsPictureTypeLocked(MetadataPictureType.Still))
+                        await TryQueueEpisodeStillFromSourceFallbackAsync(episode, cancellationToken);
+
+                    continue;
+                }
 
                 episode.ApplyMetadata(episodeMetadata);
 
