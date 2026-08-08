@@ -450,7 +450,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .LoadAsync(cancellationToken);
 
         var hasNewEpisodes = false;
-        var orphanCandidateIds = new HashSet<Guid>();
+        var orphanTransfers = new List<(Guid FromEpisodeId, Guid ToEpisodeId)>();
 
         foreach (var indexedFile in indexedFiles)
         {
@@ -506,7 +506,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 {
                     var formerMediaId = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
                     if (formerMediaId is Guid formerId)
-                        orphanCandidateIds.Add(formerId);
+                        orphanTransfers.Add((formerId, existingEpisode.Id));
 
                     existingEpisode.IndexedFiles.Add(indexedFile);
                 }
@@ -515,8 +515,6 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             }
 
             var formerIdForNew = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
-            if (formerIdForNew is Guid formerNewId)
-                orphanCandidateIds.Add(formerNewId);
 
             var episode = new SerieEpisode
             {
@@ -535,10 +533,32 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             _context.Medias.Add(episode);
             episode.AddDomainEvent(new MediaCreatedEvent(episode));
             hasNewEpisodes = true;
+
+            if (formerIdForNew is Guid formerNewId)
+                orphanTransfers.Add((formerNewId, episode.Id));
         }
 
-        foreach (var orphanId in orphanCandidateIds)
-            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(_context, orphanId, _logger, cancellationToken);
+        foreach (var (fromEpisodeId, toEpisodeId) in orphanTransfers)
+        {
+            await MediaUserStateTransferHelper.TransferAsync(
+                _context,
+                fromEpisodeId,
+                toEpisodeId,
+                _logger,
+                cancellationToken);
+        }
+
+        if (orphanTransfers.Count > 0)
+            await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var (fromEpisodeId, _) in orphanTransfers)
+        {
+            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                _context,
+                fromEpisodeId,
+                _logger,
+                cancellationToken);
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 

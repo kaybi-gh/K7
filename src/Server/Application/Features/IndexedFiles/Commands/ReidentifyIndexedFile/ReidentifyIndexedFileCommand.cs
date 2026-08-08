@@ -43,7 +43,9 @@ public class ReidentifyIndexedFileCommandHandler(
         if (string.IsNullOrWhiteSpace(providerName) || providerName == MetadataProviderNames.Local)
             providerName = request.SelectedProvider.Trim();
 
-        Guid? formerSerieEpisodeId = null;
+        Guid? formerMediaId = null;
+        var formerWasSerieEpisode = false;
+        var formerWasMovie = false;
         if (indexedFile.MediaId.HasValue)
         {
             var oldMedia = await context.Medias
@@ -56,7 +58,15 @@ public class ReidentifyIndexedFileCommandHandler(
             }
 
             if (oldMedia is SerieEpisode)
-                formerSerieEpisodeId = indexedFile.MediaId;
+            {
+                formerMediaId = indexedFile.MediaId;
+                formerWasSerieEpisode = true;
+            }
+            else if (oldMedia is Movie)
+            {
+                formerMediaId = indexedFile.MediaId;
+                formerWasMovie = true;
+            }
 
             indexedFile.MediaId = null;
         }
@@ -69,14 +79,12 @@ public class ReidentifyIndexedFileCommandHandler(
         if (existingExternalId?.Media is not null)
         {
             await AttachIndexedFileAsync(existingExternalId.Media, indexedFile, library, cancellationToken);
-            if (formerSerieEpisodeId is Guid orphanId)
-            {
-                await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
-                    context,
-                    orphanId,
-                    logger,
-                    cancellationToken);
-            }
+            await TransferAndCleanupFormerMediaAsync(
+                formerMediaId,
+                indexedFile.MediaId,
+                formerWasSerieEpisode,
+                formerWasMovie,
+                cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
             await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
@@ -117,14 +125,12 @@ public class ReidentifyIndexedFileCommandHandler(
 
         newMedia.AddDomainEvent(new MediaCreatedEvent(newMedia));
 
-        if (formerSerieEpisodeId is Guid orphanEpisodeId)
-        {
-            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
-                context,
-                orphanEpisodeId,
-                logger,
-                cancellationToken);
-        }
+        await TransferAndCleanupFormerMediaAsync(
+            formerMediaId,
+            indexedFile.MediaId,
+            formerWasSerieEpisode,
+            formerWasMovie,
+            cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
         await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
@@ -133,6 +139,42 @@ public class ReidentifyIndexedFileCommandHandler(
 
         if (library.MediaType == LibraryMediaType.Music)
             await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
+    }
+
+    private async Task TransferAndCleanupFormerMediaAsync(
+        Guid? formerMediaId,
+        Guid? targetMediaId,
+        bool formerWasSerieEpisode,
+        bool formerWasMovie,
+        CancellationToken cancellationToken)
+    {
+        if (formerMediaId is not Guid fromId || targetMediaId is not Guid toId)
+            return;
+
+        await MediaUserStateTransferHelper.TransferAsync(
+            context,
+            fromId,
+            toId,
+            logger,
+            cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        if (formerWasSerieEpisode)
+        {
+            await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                context,
+                fromId,
+                logger,
+                cancellationToken);
+        }
+        else if (formerWasMovie)
+        {
+            await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                context,
+                fromId,
+                logger,
+                cancellationToken);
+        }
     }
 
     private async Task AttachIndexedFileAsync(
@@ -146,6 +188,7 @@ public class ReidentifyIndexedFileCommandHandler(
             case Movie movie:
                 movie.IndexedFiles ??= [];
                 movie.IndexedFiles.Add(indexedFile);
+                indexedFile.MediaId = movie.Id;
                 break;
 
             case Serie serie:
