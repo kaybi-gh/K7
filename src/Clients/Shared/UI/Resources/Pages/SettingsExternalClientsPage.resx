@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Clients externes</value></data>
+  <data name="OpenSubsonicTitle" xml:space="preserve"><value>OpenSubsonic</value></data>
+  <data name="OpenSubsonicDescription" xml:space="preserve"><value>Connectez un client musique compatible OpenSubsonic (Symfonium, Feishin, ...) a ce serveur K7.</value></data>
+  <data name="ClientFormTitle" xml:space="preserve"><value>A saisir dans l'application</value></data>
+  <data name="ServerUrlLabel" xml:space="preserve"><value>Serveur</value></data>
+  <data name="UsernameLabel" xml:space="preserve"><value>Nom d'utilisateur</value></data>
+  <data name="PasswordLabel" xml:space="preserve"><value>Mot de passe d'application</value></data>
+  <data name="AccountPasswordRejected" xml:space="preserve"><value>Le mot de passe du compte K7 n'est pas accepte. Creez un mot de passe d'application ci-dessous.</value></data>
+  <data name="QrHint" xml:space="preserve"><value>QR code de l'URL du serveur (a scanner si le client le permet).</value></data>
+  <data name="AppPasswordsTitle" xml:space="preserve"><value>Mots de passe d'application</value></data>
+  <data name="AppPasswordsDescription" xml:space="preserve"><value>Creez un mot de passe avec un libelle (ex. Symfonium). Il s'affiche une seule fois apres creation.</value></data>
+  <data name="CreatePassword" xml:space="preserve"><value>Creer un mot de passe</value></data>
+  <data name="NoPasswords" xml:space="preserve"><value>Aucun mot de passe d'application.</value></data>
+  <data name="Created" xml:space="preserve"><value>Cree</value></data>
+  <data name="LastUsed" xml:space="preserve"><value>Derniere utilisation</value></data>
+  <data name="Revoke" xml:space="preserve"><value>Revoquer</value></data>
+  <data name="RevokeConfirmTitle" xml:space="preserve"><value>Revoquer le mot de passe</value></data>
+  <data name="CopyWarning" xml:space="preserve"><value>Copiez ce mot de passe maintenant. Il ne sera plus affiche.</value></data>
+  <data name="Copied" xml:space="preserve"><value>Copie</value></data>
+</root>

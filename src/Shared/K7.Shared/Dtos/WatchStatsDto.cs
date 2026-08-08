@@ -7,6 +7,7 @@ public sealed record WatchStatsDto
     public int TotalPlays { get; init; }
     public int UniqueItemsPlayed { get; init; }
     public IReadOnlyList<TopItemDto> TopItems { get; init; } = [];
+    public IReadOnlyList<TopItemDto> TopSkippedItems { get; init; } = [];
     public IReadOnlyList<TopItemDto> TopArtists { get; init; } = [];
     public IReadOnlyList<TopItemDto> TopAlbums { get; init; } = [];
     public IReadOnlyList<TopItemDto> TopShows { get; init; } = [];

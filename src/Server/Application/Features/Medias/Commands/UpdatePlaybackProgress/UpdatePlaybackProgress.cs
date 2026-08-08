@@ -92,7 +92,28 @@ public class UpdatePlaybackProgressCommandHandler(
         if (existingSession is not null)
         {
             session = existingSession;
-            ApplyExistingSessionProgress(session, request, timeNow);
+
+            // OpenSubsonic reuses one SessionId per user+device across tracks. When the
+            // media changes, start a fresh logical play so history and progress estimates reset.
+            if (session.MediaId != request.MediaId)
+            {
+                session.MediaId = request.MediaId;
+                session.ReferenceId = request.ReferenceId;
+                session.StartedAt = timeNow;
+                session.LastUpdateAt = timeNow;
+                session.PositionSeconds = 0;
+                session.WatchedDurationSeconds = 0;
+                session.DurationSeconds = 0;
+                session.CompletedAt = null;
+                session.State = request.State;
+                session.DeviceId = request.DeviceId ?? session.DeviceId;
+                previousState = PlaybackState.Unknown;
+            }
+            else
+            {
+                ApplyExistingSessionProgress(session, request, timeNow);
+            }
+
             await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
         }
         else
@@ -206,6 +227,37 @@ public class UpdatePlaybackProgressCommandHandler(
             session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
         }
 
+        // Music re-listens: UserMediaState.IsCompleted stays true after the first completion, so
+        // RecordProgress would skip PlayCount. Count each newly completed history session.
+        if (newlyCompletedSession && isMusic && !isGuest && hostResult is { WasNewlyCompleted: false })
+        {
+            var state = await _context.UserMediaStates
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == request.MediaId, cancellationToken);
+            if (state is not null)
+            {
+                state.PlayCount++;
+                state.LastInteractedAt = timeNow;
+            }
+        }
+
+        var isTerminalEnd = request.State is PlaybackState.Ended or PlaybackState.Idle;
+        var wasAlreadyTerminal = previousState is PlaybackState.Ended or PlaybackState.Idle;
+        var watchedForSkip = PlaybackSkipRules.EffectiveWatchedSeconds(
+            session.WatchedDurationSeconds,
+            session.PositionSeconds);
+        if (!isGuest
+            && isTerminalEnd
+            && !wasAlreadyTerminal
+            && PlaybackSkipRules.IsSkippedListen(completed, isFinished: true, watchedForSkip))
+        {
+            await IncrementSkipCountAsync(
+                userId,
+                request.MediaId,
+                viewingGroup?.SharedProfileId,
+                timeNow,
+                cancellationToken);
+        }
+
         if (hostResult?.EpisodeIdForEnqueue is { } hostEpisodeId)
             await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
 
@@ -307,7 +359,7 @@ public class UpdatePlaybackProgressCommandHandler(
             var device = request.DeviceId.HasValue
                 ? await _context.Devices
                     .Where(d => d.Id == request.DeviceId.Value)
-                    .Select(d => new { d.DeviceName, DeviceType = d.DeviceType.ToString() })
+                    .Select(d => new { d.DeviceName, ClientType = d.ClientType.ToString(), DeviceType = d.DeviceType.ToString() })
                     .FirstOrDefaultAsync(cancellationToken)
                 : null;
 
@@ -369,6 +421,7 @@ public class UpdatePlaybackProgressCommandHandler(
                     : null,
                 DeviceId = request.DeviceId,
                 DeviceName = device?.DeviceName,
+                DeviceClient = device?.ClientType,
                 DeviceType = device?.DeviceType,
                 ThumbnailUrl = thumbnailUrl,
                 StartedAt = session.StartedAt,
@@ -410,6 +463,55 @@ public class UpdatePlaybackProgressCommandHandler(
         }
     }
 
+    private async Task IncrementSkipCountAsync(
+        Guid userId,
+        Guid mediaId,
+        Guid? sharedProfileId,
+        DateTime timeNow,
+        CancellationToken cancellationToken)
+    {
+        if (sharedProfileId is { } profileId)
+        {
+            var sharedState = await _context.SharedProfileMediaStates
+                .FirstOrDefaultAsync(s => s.SharedProfileId == profileId && s.MediaId == mediaId, cancellationToken);
+            if (sharedState is null)
+            {
+                sharedState = new SharedProfileMediaState
+                {
+                    SharedProfileId = profileId,
+                    MediaId = mediaId,
+                    SkipCount = 1,
+                    LastInteractedAt = timeNow
+                };
+                _context.SharedProfileMediaStates.Add(sharedState);
+            }
+            else
+            {
+                sharedState.SkipCount++;
+                sharedState.LastInteractedAt = timeNow;
+            }
+
+            return;
+        }
+
+        var state = await _context.UserMediaStates
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == mediaId, cancellationToken);
+        if (state is null)
+        {
+            _context.UserMediaStates.Add(new UserMediaState
+            {
+                UserId = userId,
+                MediaId = mediaId,
+                SkipCount = 1,
+                LastInteractedAt = timeNow
+            });
+            return;
+        }
+
+        state.SkipCount++;
+        state.LastInteractedAt = timeNow;
+    }
+
     private static void ApplyExistingSessionProgress(
         MediaPlaybackSession session,
         UpdatePlaybackProgressCommand request,
@@ -418,9 +520,17 @@ public class UpdatePlaybackProgressCommandHandler(
         if (session.State == PlaybackState.Playing && session.LastUpdateAt.HasValue)
         {
             var delta = (timeNow - session.LastUpdateAt.Value).TotalSeconds;
-            if (delta is > 0 and < 120)
+            if (delta > 0)
             {
-                session.WatchedDurationSeconds += delta;
+                // Native clients heartbeat often (< 2 min). OpenSubsonic / reportPlayback may
+                // only send start + pause/end, so credit longer gaps when playback stops.
+                var maxDelta = request.State is PlaybackState.Ended or PlaybackState.Idle or PlaybackState.Paused
+                    ? (session.DurationSeconds > 0 ? session.DurationSeconds : delta)
+                    : 120;
+                if (delta <= maxDelta)
+                    session.WatchedDurationSeconds += delta;
+                else if (request.State is PlaybackState.Ended or PlaybackState.Idle or PlaybackState.Paused)
+                    session.WatchedDurationSeconds += maxDelta;
             }
         }
 
@@ -429,9 +539,22 @@ public class UpdatePlaybackProgressCommandHandler(
         {
             session.StoppedAt = timeNow;
         }
+        else if (request.State is PlaybackState.Ended or PlaybackState.Idle)
+        {
+            session.StoppedAt ??= timeNow;
+        }
 
         session.LastUpdateAt = timeNow;
         session.State = request.State;
+
+        // Prefer a visible history duration when the client reported a position but we
+        // never accumulated watched time (e.g. first pause right after start).
+        if (request.State is PlaybackState.Paused or PlaybackState.Ended or PlaybackState.Idle
+            && session.WatchedDurationSeconds <= 0
+            && request.Position > 0)
+        {
+            session.WatchedDurationSeconds = request.Position;
+        }
     }
 
     private void DetachSessionGraph(MediaPlaybackSession session)

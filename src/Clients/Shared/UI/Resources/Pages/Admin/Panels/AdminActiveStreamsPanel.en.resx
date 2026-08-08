@@ -51,4 +51,7 @@
   <data name="Playing" xml:space="preserve"><value>Playing</value></data>
   <data name="Paused" xml:space="preserve"><value>Paused</value></data>
   <data name="Buffering" xml:space="preserve"><value>Buffering</value></data>
+  <data name="ClientExternal" xml:space="preserve"><value>External</value></data>
+  <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
+  <data name="ClientWeb" xml:space="preserve"><value>Browser</value></data>
 </root>

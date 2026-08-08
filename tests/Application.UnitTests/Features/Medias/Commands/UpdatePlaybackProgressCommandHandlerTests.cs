@@ -181,6 +181,79 @@ public class UpdatePlaybackProgressCommandHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldIncrementPlayCount_WhenMusicRelistenCompletes()
+    {
+        var albumId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Album" });
+        _context.Medias.Add(new MusicTrack { Id = trackId, Title = "Song", AlbumId = albumId });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = trackId,
+            PlayCount = 1,
+            IsCompleted = true,
+            ProgressPercentage = 100,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-1)
+        });
+        await _context.SaveChangesAsync();
+
+        _stateUpdater.ApplyAsync(
+                Arg.Any<Guid>(), Arg.Any<BaseMedia>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<double>(),
+                Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(new UserMediaStateUpdateResult(100, true, WasNewlyCompleted: false, null));
+
+        var sessionId = Guid.NewGuid();
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            trackId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 180,
+            Duration: 180,
+            State: PlaybackState.Ended), CancellationToken.None);
+
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == _userId && s.MediaId == trackId);
+        state.PlayCount.Should().Be(2);
+
+        var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
+        session.CompletedAt.Should().NotBeNull();
+    }
+
+    [Test]
+    public async Task Handle_ShouldIncrementSkipCount_WhenEndingWithLittleProgress()
+    {
+        var albumId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Album" });
+        _context.Medias.Add(new MusicTrack { Id = trackId, Title = "Song", AlbumId = albumId });
+        await _context.SaveChangesAsync();
+
+        var sessionId = Guid.NewGuid();
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            trackId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 0,
+            Duration: 200,
+            State: PlaybackState.Playing), CancellationToken.None);
+
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            trackId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 8,
+            Duration: 200,
+            State: PlaybackState.Ended), CancellationToken.None);
+
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == _userId && s.MediaId == trackId);
+        state.SkipCount.Should().Be(1);
+        state.PlayCount.Should().Be(0);
+
+        var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
+        session.CompletedAt.Should().BeNull();
+    }
+
+    [Test]
     public async Task Handle_ShouldUpdateExistingSessionWithoutDoubleComplete()
     {
         var sessionId = Guid.NewGuid();

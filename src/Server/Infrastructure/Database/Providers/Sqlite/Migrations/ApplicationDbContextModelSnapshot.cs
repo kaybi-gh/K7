@@ -2178,6 +2178,49 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("SyncPlayInvites");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ClientAppPassword", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ClientAppPasswords");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2463,6 +2506,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("SharedProfileId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("SkipCount")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaId");
@@ -2475,6 +2521,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasIndex("SharedProfileId", "PlayCount")
                         .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_PlayCount");
+
+                    b.HasIndex("SharedProfileId", "SkipCount")
+                        .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_SkipCount");
 
                     b.HasIndex("SharedProfileId", "IsCompleted", "LastInteractedAt")
                         .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_IsCompleted_LastInteractedAt");
@@ -2686,6 +2735,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double>("ProgressPercentage")
                         .HasColumnType("REAL");
 
+                    b.Property<int>("SkipCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
@@ -2701,6 +2753,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.HasIndex("UserId", "PlayCount")
                         .HasDatabaseName("IX_UserMediaStates_UserId_PlayCount");
+
+                    b.HasIndex("UserId", "SkipCount")
+                        .HasDatabaseName("IX_UserMediaStates_UserId_SkipCount");
 
                     b.HasIndex("UserId", "IsCompleted", "LastInteractedAt")
                         .HasDatabaseName("IX_UserMediaStates_UserId_IsCompleted_LastInteractedAt");
@@ -4369,6 +4424,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("PeerServer");
 
                     b.Navigation("RemoteIndexedFile");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ClientAppPassword", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

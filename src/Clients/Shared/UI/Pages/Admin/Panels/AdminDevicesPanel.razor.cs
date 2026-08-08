@@ -240,6 +240,7 @@ public partial class AdminDevicesPanel : IAsyncDisposable
     {
         ClientType.Native => K7Brand.Symbol,
         ClientType.Web => Phosphor.Globe,
+        ClientType.External => Phosphor.PlugsConnected,
         _ => Phosphor.AppWindow,
     };
 
@@ -267,6 +268,7 @@ public partial class AdminDevicesPanel : IAsyncDisposable
     {
         ClientType.Native => L["ClientTypeNative"],
         ClientType.Web => L["ClientTypeWeb"],
+        ClientType.External => L["ClientTypeExternal"],
         _ => L["UnknownDevice"]
     };
 

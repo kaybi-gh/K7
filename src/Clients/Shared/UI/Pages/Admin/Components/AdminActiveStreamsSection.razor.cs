@@ -154,11 +154,14 @@ public partial class AdminActiveStreamsSection : IDisposable
             Status = stateLabel,
             StatusVariant = stateVariant,
             StartedAt = stream.StartedAt,
-            DurationDisplay = $"{FormatTime(stream.Position)} / {FormatTime(stream.Duration)}",
+            DurationDisplay = string.Equals(stream.DeviceClient, "External", StringComparison.OrdinalIgnoreCase)
+                && !stream.HasPlaybackProgress
+                ? FormatTime(stream.Duration)
+                : $"{FormatTime(stream.Position)} / {FormatTime(stream.Duration)}",
             UserName = stream.UserName,
             SharedProfileName = stream.SharedProfileName,
             DeviceName = stream.DeviceName,
-            DeviceClient = stream.DeviceType,
+            DeviceClient = FormatDeviceClient(stream.DeviceClient),
             HasStreamDetails = hasStream,
             ModeLabel = modeLabel,
             ModeBadgeVariant = modeBadgeVariant,
@@ -194,6 +197,14 @@ public partial class AdminActiveStreamsSection : IDisposable
             ? ts.ToString(@"h\:mm\:ss")
             : ts.ToString(@"m\:ss");
     }
+
+    private string? FormatDeviceClient(string? client) => client switch
+    {
+        "External" => L["ClientExternal"],
+        "Native" => L["ClientNative"],
+        "Web" => L["ClientWeb"],
+        _ => client
+    };
 
     private static string FormatBitrate(int bitrate)
     {

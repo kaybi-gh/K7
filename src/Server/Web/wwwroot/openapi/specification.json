@@ -5,6 +5,50 @@
     "version": "v1"
   },
   "paths": {
+    "/rest/{actionPath}": {
+      "get": {
+        "tags": [
+          "OpenSubsonic"
+        ],
+        "operationId": "OpenSubsonic",
+        "parameters": [
+          {
+            "name": "actionPath",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OpenSubsonic"
+        ],
+        "operationId": "OpenSubsonic",
+        "parameters": [
+          {
+            "name": "actionPath",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/two-factor/setup": {
       "post": {
         "tags": [
@@ -178,6 +222,64 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/client-app-passwords": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetClientAppPasswords",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "CreateClientAppPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClientAppPasswordCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/client-app-passwords/{id}": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "RevokeClientAppPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -10222,6 +10324,12 @@
               "string"
             ]
           },
+          "deviceClient": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "deviceType": {
             "type": [
               "null",
@@ -10277,6 +10385,9 @@
               "null",
               "string"
             ]
+          },
+          "hasPlaybackProgress": {
+            "type": "boolean"
           }
         }
       },
@@ -11432,6 +11543,17 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "CreateClientAppPasswordCommand": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -18118,6 +18240,9 @@
           "isCompleted": {
             "type": "boolean"
           },
+          "isSkipped": {
+            "type": "boolean"
+          },
           "userName": {
             "type": [
               "null",
@@ -20729,6 +20854,14 @@
             ],
             "format": "int32"
           },
+          "skipCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "lastInteractedAt": {
             "type": [
               "null",
@@ -20989,6 +21122,12 @@
               "$ref": "#/components/schemas/TopItemDto"
             }
           },
+          "topSkippedItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
           "topArtists": {
             "type": "array",
             "items": {
@@ -21114,6 +21253,9 @@
     }
   },
   "tags": [
+    {
+      "name": "OpenSubsonic"
+    },
     {
       "name": "Users"
     },

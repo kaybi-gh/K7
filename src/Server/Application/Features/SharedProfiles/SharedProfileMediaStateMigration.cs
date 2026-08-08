@@ -55,6 +55,7 @@ internal static class SharedProfileMediaStateMigration
                     ProgressPercentage = shared.ProgressPercentage,
                     IsCompleted = shared.IsCompleted,
                     PlayCount = shared.PlayCount,
+                    SkipCount = shared.SkipCount,
                     LastInteractedAt = shared.LastInteractedAt,
                     LastKnownDurationSeconds = shared.LastKnownDurationSeconds,
                     ExcludedFromContinueWatching = shared.ExcludedFromContinueWatching
@@ -83,5 +84,8 @@ internal static class SharedProfileMediaStateMigration
 
         if (shared.PlayCount > personal.PlayCount)
             personal.PlayCount = shared.PlayCount;
+
+        if (shared.SkipCount > personal.SkipCount)
+            personal.SkipCount = shared.SkipCount;
     }
 }

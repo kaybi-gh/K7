@@ -131,17 +131,20 @@
             </div>
         }
 
-        <div class="stream-card__progress">
-            <K7ProgressBar Value="@ProgressPercent" />
-            <div class="stream-card__times">
-                <span>@FormatTime(Stream.Position)</span>
-                @if (Stream.State == (int)K7.Server.Domain.Enums.PlaybackState.Paused)
-                {
-                    <span class="stream-card__paused-label">@L["Paused"]</span>
-                }
-                <span>@FormatRemainingTime()</span>
+        @if (ShowProgress)
+        {
+            <div class="stream-card__progress">
+                <K7ProgressBar Value="@ProgressPercent" />
+                <div class="stream-card__times">
+                    <span>@FormatTime(Stream.Position)</span>
+                    @if (Stream.State == (int)K7.Server.Domain.Enums.PlaybackState.Paused)
+                    {
+                        <span class="stream-card__paused-label">@L["Paused"]</span>
+                    }
+                    <span>@FormatRemainingTime()</span>
+                </div>
             </div>
-        </div>
+        }
 
         <div class="stream-card__footer">
             <span class="stream-card__device">

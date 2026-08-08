@@ -55,6 +55,7 @@ internal static class SeasonWatchStateHelper
             ProgressPercentage = progressPercentage,
             LastPlaybackPosition = 0,
             PlayCount = 0,
+            SkipCount = 0,
             LastInteractedAt = lastInteractedAt
         };
     }

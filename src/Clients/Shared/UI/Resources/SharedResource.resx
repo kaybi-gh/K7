@@ -147,6 +147,7 @@
   <data name="Valence" xml:space="preserve"><value>Valence</value></data>
   <data name="ListeningStats" xml:space="preserve"><value>Statistiques d'écoute</value></data>
   <data name="PlayCount" xml:space="preserve"><value>Nombre d'écoutes</value></data>
+  <data name="SkipCount" xml:space="preserve"><value>Nombre de skips</value></data>
   <data name="TotalPlayCount" xml:space="preserve"><value>Écoutes totales</value></data>
   <data name="LastPlayed" xml:space="preserve"><value>Dernière écoute</value></data>
   <data name="UpNext" xml:space="preserve"><value>À suivre</value></data>

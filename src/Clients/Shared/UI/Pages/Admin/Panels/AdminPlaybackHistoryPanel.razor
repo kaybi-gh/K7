@@ -79,8 +79,8 @@
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="110px" Hideable="false">
                 <CellTemplate>
-                    <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
-                        @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
+                    <span class="history-badge history-badge--@StatusBadgeVariant(context)">
+                        @StatusLabel(context)
                     </span>
                 </CellTemplate>
             </K7DataColumn>
@@ -94,7 +94,11 @@
                     <span class="text-sm">@(context.LibraryName ?? "-")</span>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" Width="140px" VisibleOnMobile="false" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Width="160px" VisibleOnMobile="false">
+                <CellTemplate>
+                    <span class="text-sm">@FormatDeviceLabel(context.DeviceName, context.DeviceClient)</span>
+                </CellTemplate>
+            </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Quality"]" Width="120px" VisibleOnMobile="false">
                 <CellTemplate>
                     @if (context.StreamQuality is { } sq)

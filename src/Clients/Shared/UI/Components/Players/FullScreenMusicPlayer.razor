@@ -506,7 +506,9 @@
                             </div>
                             }
 
-                            @if (_trackDetails.UserState?.PlayCount is > 0 || _trackDetails.TotalPlayCount > 0)
+                            @if (_trackDetails.UserState?.PlayCount is > 0
+                                 || _trackDetails.UserState?.SkipCount is > 0
+                                 || _trackDetails.TotalPlayCount > 0)
                             {
                                 <div class="info-section">
                                     <span class="info-section-title">@S["ListeningStats"]</span>
@@ -515,6 +517,13 @@
                                         <div class="info-row">
                                             <span class="info-label">@S["PlayCount"]</span>
                                             <span class="info-value">@_trackDetails.UserState.PlayCount</span>
+                                        </div>
+                                    }
+                                    @if (_trackDetails.UserState?.SkipCount is > 0)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["SkipCount"]</span>
+                                            <span class="info-value">@_trackDetails.UserState.SkipCount</span>
                                         </div>
                                     }
                                     @if (_trackDetails.TotalPlayCount > 0)

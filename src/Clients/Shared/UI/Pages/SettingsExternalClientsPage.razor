@@ -1,0 +1,113 @@
+@page "/settings/external-clients"
+@page "/settings/external-apps"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsExternalClientsPage> L
+@inject IStringLocalizer<SharedResource> S
+@inject IClientAppPasswordUserService ClientAppPasswordUserService
+@inject IUserAdminService UserAdminService
+@inject IK7DialogService DialogService
+@inject IK7Snackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="settings-form-page">
+    <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
+        <section class="settings-section d-flex flex-col gap-3">
+            <h5>@L["OpenSubsonicTitle"]</h5>
+            <p class="text-body-2 external-clients-muted">@L["OpenSubsonicDescription"]</p>
+
+            <div class="external-clients-login">
+                <p class="external-clients-login__eyebrow">@L["ClientFormTitle"]</p>
+
+                @if (_createdPassword is not null)
+                {
+                    <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">@L["CopyWarning"]</K7Alert>
+                }
+
+                <div class="external-clients-login__layout">
+                    <div class="external-clients-login__fields d-flex flex-col gap-3">
+                        <div class="external-clients-login__field-row">
+                            <K7TextField TValue="string"
+                                         Value="_serverUrl"
+                                         Label="@L["ServerUrlLabel"]"
+                                         ReadOnly="true"
+                                         Class="external-clients-login__field"
+                                         AdornmentIcon="@Phosphor.Clipboard"
+                                         OnAdornmentClick="CopyServerUrl" />
+                        </div>
+
+                        <div class="external-clients-login__field-row">
+                            <K7TextField TValue="string"
+                                         Value="@(_username ?? string.Empty)"
+                                         Label="@L["UsernameLabel"]"
+                                         ReadOnly="true"
+                                         Class="external-clients-login__field"
+                                         AdornmentIcon="@Phosphor.Clipboard"
+                                         OnAdornmentClick="CopyUsername" />
+                        </div>
+
+                        @if (_createdPassword is not null)
+                        {
+                            <div class="external-clients-login__field-row">
+                                <K7TextField TValue="string"
+                                             Value="_createdPassword"
+                                             Label="@L["PasswordLabel"]"
+                                             ReadOnly="true"
+                                             Class="external-clients-login__field"
+                                             AdornmentIcon="@Phosphor.Clipboard"
+                                             OnAdornmentClick="CopyCreatedPassword" />
+                            </div>
+                        }
+
+                        <p class="text-caption external-clients-muted">@L["AccountPasswordRejected"]</p>
+                    </div>
+
+                    <div class="external-clients-login__qr">
+                        <div id="opensubsonic-server-qr"></div>
+                        <p class="text-caption external-clients-muted">@L["QrHint"]</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section d-flex flex-col gap-3">
+            <div class="d-flex align-center justify-between">
+                <h5>@L["AppPasswordsTitle"]</h5>
+                <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">@L["CreatePassword"]</K7Button>
+            </div>
+            <p class="text-body-2 external-clients-muted">@L["AppPasswordsDescription"]</p>
+
+            @if (_loading)
+            {
+                <K7Spinner />
+            }
+            else if (_passwords.Count == 0)
+            {
+                <span class="text-caption external-clients-muted">@L["NoPasswords"]</span>
+            }
+            else
+            {
+                @foreach (var item in _passwords)
+                {
+                    <K7Paper Elevation="0" Class="external-clients-password-card">
+                        <div class="d-flex align-center justify-between">
+                            <div class="d-flex flex-col">
+                                <span class="text-body-1 font-weight-medium">@item.Name</span>
+                                <span class="text-caption external-clients-muted">
+                                    @L["Created"] @item.CreatedAt.ToLocalTime().ToString("g")
+                                    @if (item.LastUsedAt.HasValue)
+                                    {
+                                        <text> - @L["LastUsed"] @item.LastUsedAt.Value.ToLocalTime().ToString("g")</text>
+                                    }
+                                </span>
+                            </div>
+                            <K7Button OnClick="() => RevokePassword(item)" Variant="K7ButtonVariant.Text" Color="var(--color-error)">@L["Revoke"]</K7Button>
+                        </div>
+                    </K7Paper>
+                }
+            }
+        </section>
+    </div>
+</div>

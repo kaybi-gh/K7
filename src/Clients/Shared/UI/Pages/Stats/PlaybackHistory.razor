@@ -63,11 +63,21 @@
                 <CellTemplate>
                     @if (context.IsCompleted)
                     {
-                        <K7Icon Icon="@Phosphor.CheckCircle" Style="color: var(--color-success);"  IconSize="@K7IconSize.Sm" />
+                        <span title="@L["Completed"]">
+                            <K7Icon Icon="@Phosphor.CheckCircle" Style="color: var(--color-success);" IconSize="@K7IconSize.Sm" />
+                        </span>
+                    }
+                    else if (context.IsSkipped)
+                    {
+                        <span title="@L["Skipped"]">
+                            <K7Icon Icon="@Phosphor.SkipForward" Style="color: var(--color-text-muted);" IconSize="@K7IconSize.Sm" />
+                        </span>
                     }
                     else
                     {
-                        <K7Icon Icon="@Phosphor.PauseCircle" Style="color: var(--color-warning);"  IconSize="@K7IconSize.Sm" />
+                        <span title="@L["Incomplete"]">
+                            <K7Icon Icon="@Phosphor.PauseCircle" Style="color: var(--color-warning);" IconSize="@K7IconSize.Sm" />
+                        </span>
                     }
                 </CellTemplate>
             </K7DataColumn>

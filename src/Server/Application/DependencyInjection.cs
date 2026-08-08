@@ -10,6 +10,7 @@ using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
 using K7.Server.Application.Features.Notifications.Services.Descriptors;
+using K7.Server.Application.Features.OpenSubsonic;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Medias;
@@ -125,6 +126,7 @@ public static class DependencyInjection
         services.AddScoped<INextEpisodeEnqueueService, NextEpisodeEnqueueService>();
         services.AddSingleton<ITranscodeSettingsProvider, TranscodeSettingsProvider>();
         services.AddScoped<IHomeRecommendationService, HomeRecommendationService>();
+        services.AddScoped<IOpenSubsonicService, OpenSubsonicService>();
 
         // Outbound Notifications
         services.AddSingleton<NotificationConditionEvaluator>();

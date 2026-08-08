@@ -115,7 +115,7 @@ K7 generates an **OpenAPI 3.1** document for the server HTTP API.
 | Runtime static spec | `/openapi/specification.json` |
 | Scalar UI | `/scalar` - **Development only** |
 
-A normal `dotnet build` on `src/Server/Web` regenerates the document. Prefer shared DTOs in `K7.Shared` for first-party clients. Automation: Admin API keys via `X-Api-Key` - [Configuration - Security](../admin/configuration.md#hardening-checklist).
+A normal `dotnet build` on `src/Server/Web` regenerates the document. Prefer shared DTOs in `K7.Shared` for first-party clients. Automation uses API keys via `X-Api-Key` (native API) or OpenSubsonic `apiKey` on `/rest` - see [Configuration - Security](../admin/configuration.md#hardening-checklist). OpenSubsonic facade: [Architecture](architecture.md#opensubsonic-compatibility-layer).
 
 ## Testing
 

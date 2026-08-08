@@ -6,7 +6,7 @@ Guides for people who **use**, **operate**, or **develop** K7.
 
 | Guide | Description |
 |---|---|
-| [Using K7](user/guide.md) | Accounts, clients, playback, customization, privacy, offline, casting, shared profiles, AudioMuse |
+| [Using K7](user/guide.md) | Accounts, clients, playback, customization, privacy, offline, casting, shared profiles, AudioMuse, External clients |
 
 ## Administrators
 

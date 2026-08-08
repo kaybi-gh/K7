@@ -28,7 +28,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IClientAppPasswordUserService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1915,6 +1915,27 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task RevokeApiKeyAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/admin/api-keys/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    // IClientAppPasswordUserService
+
+    public async Task<List<ClientAppPasswordDto>> GetClientAppPasswordsAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<ClientAppPasswordDto>>("api/users/me/client-app-passwords", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<CreateClientAppPasswordResponse> CreateClientAppPasswordAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var request = new { Name = name };
+        var response = await HttpClient.PostAsJsonAsync("api/users/me/client-app-passwords", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<CreateClientAppPasswordResponse>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task RevokeClientAppPasswordAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/users/me/client-app-passwords/{id}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

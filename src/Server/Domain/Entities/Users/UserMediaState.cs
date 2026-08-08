@@ -26,6 +26,7 @@ public class UserMediaState : BaseAuditableEntity
     public double ProgressPercentage { get; set; }
     public bool IsCompleted { get; set; }
     public int PlayCount { get; set; }
+    public int SkipCount { get; set; }
     public DateTime? LastInteractedAt { get; set; }
     public double LastKnownDurationSeconds { get; set; }
     public bool ExcludedFromContinueWatching { get; set; }

@@ -149,6 +149,7 @@ else
 
         <div class="stats-top-grid">
             <StatsMediaRankedTable Title="@TopItemsLabel" Items="_stats.TopItems" />
+            <StatsMediaRankedTable Title="@L["TopSkipped"]" Items="_stats.TopSkippedItems" />
             @if (ShowMusicRankings)
             {
                 <StatsMediaRankedTable Title="@L["TopArtists"]" Items="_stats.TopArtists" MediaTypeOverride="MusicArtist" />

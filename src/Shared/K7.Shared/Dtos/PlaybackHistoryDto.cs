@@ -16,6 +16,7 @@ public sealed record PlaybackHistoryItemDto
     public string? DeviceName { get; init; }
     public string? DeviceClient { get; init; }
     public bool IsCompleted { get; init; }
+    public bool IsSkipped { get; init; }
     public string? UserName { get; init; }
     public string? SharedProfileName { get; init; }
     public StreamQualityDto? StreamQuality { get; init; }

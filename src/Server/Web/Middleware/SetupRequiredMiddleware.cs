@@ -27,7 +27,8 @@ public class SetupRequiredMiddleware(RequestDelegate next)
             return;
         }
 
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (context.Request.Path.StartsWithSegments("/api")
+            || context.Request.Path.StartsWithSegments("/rest"))
         {
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             return;

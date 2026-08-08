@@ -38,4 +38,7 @@
   <data name="ReasonSubtitles" xml:space="preserve"><value>Incrustation des sous-titres</value></data>
   <data name="ReasonResolution" xml:space="preserve"><value>R&#233;solution non support&#233;e</value></data>
   <data name="ReasonQualityDownscale" xml:space="preserve"><value>Qualit&#233; r&#233;duite</value></data>
+  <data name="ClientExternal" xml:space="preserve"><value>Externe</value></data>
+  <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
+  <data name="ClientWeb" xml:space="preserve"><value>Navigateur</value></data>
 </root>

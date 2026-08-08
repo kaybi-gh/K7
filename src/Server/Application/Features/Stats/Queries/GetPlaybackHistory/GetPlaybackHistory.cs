@@ -102,10 +102,20 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 ReferenceId = g.Key,
                 StartedAt = g.Min(s => s.StartedAt),
                 StoppedAt = g.Max(s => s.StoppedAt),
-                TotalWatchedSeconds = g.Sum(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds),
+                TotalWatchedSeconds = g.Sum(s =>
+                    s.WatchedDurationSeconds > 0
+                        ? s.WatchedDurationSeconds
+                        : s.PositionSeconds > 0
+                            ? s.PositionSeconds
+                            : 0),
                 SegmentCount = g.Count(),
                 IsCompleted = g.Any(s => s.CompletedAt != null)
-                    || g.Any(s => s.DurationSeconds > 0 && s.PositionSeconds / s.DurationSeconds >= 0.9),
+                    || g.Any(s => s.DurationSeconds > 0 && s.PositionSeconds / s.DurationSeconds >= 0.9)
+                    || g.Any(s => s.DurationSeconds > 0 && s.WatchedDurationSeconds / s.DurationSeconds >= 0.9),
+                IsFinished = g.All(s =>
+                    s.State == PlaybackState.Ended
+                    || s.State == PlaybackState.Idle
+                    || s.StoppedAt != null),
                 MediaId = g.First().MediaId,
                 DeviceId = g.First().DeviceId,
                 UserId = g.First().UserId,
@@ -261,6 +271,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 DeviceName = g.DeviceId.HasValue && devices.TryGetValue(g.DeviceId.Value, out var dev) ? dev.DeviceName : null,
                 DeviceClient = g.DeviceId.HasValue && devices.TryGetValue(g.DeviceId.Value, out var devClient) ? devClient.ClientType.ToString() : null,
                 IsCompleted = g.IsCompleted,
+                IsSkipped = !g.IsCompleted && g.IsFinished && g.TotalWatchedSeconds < PlaybackSkipRules.MaxWatchedSeconds,
                 UserName = userNames.GetValueOrDefault(g.UserId),
                 SharedProfileName = g.SharedProfileName ?? g.CoWatchingWithSnapshot,
                 StreamQuality = quality

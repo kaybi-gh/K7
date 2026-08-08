@@ -26,6 +26,10 @@ public class SharedProfileMediaStateConfiguration : IEntityTypeConfiguration<Sha
             .HasIndex(s => new { s.SharedProfileId, s.PlayCount })
             .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_PlayCount");
 
+        builder
+            .HasIndex(s => new { s.SharedProfileId, s.SkipCount })
+            .HasDatabaseName("IX_SharedProfileMediaStates_SharedProfileId_SkipCount");
+
         builder.HasOne(s => s.SharedProfile)
             .WithMany()
             .HasForeignKey(s => s.SharedProfileId)

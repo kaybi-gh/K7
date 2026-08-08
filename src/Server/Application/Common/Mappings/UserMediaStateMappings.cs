@@ -13,6 +13,7 @@ public static class UserMediaStateMappings
             ProgressPercentage = domain.ProgressPercentage,
             IsCompleted = domain.IsCompleted,
             PlayCount = domain.PlayCount,
+            SkipCount = domain.SkipCount,
             LastInteractedAt = domain.LastInteractedAt
         };
     }

@@ -9,6 +9,7 @@
             @if (!_isGuest)
             {
                 <SidebarNavLink Href="/settings/account" Title="@L["Account"]" Icon="@Phosphor.UserCircle" />
+                <SidebarNavLink Href="/settings/external-clients" Title="@L["ExternalClients"]" Icon="@Phosphor.PlugsConnected" />
                 <SidebarNavGroup Title="@L["SharedProfiles"]" Icon="@Phosphor.UsersThree" Routes="@WatchTogetherRoutes">
                     <NavLink class="nav-link focusable" href="/settings/syncplay">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.Broadcast" /></span>
