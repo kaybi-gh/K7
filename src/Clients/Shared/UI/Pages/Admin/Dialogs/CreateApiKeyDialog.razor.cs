@@ -14,6 +14,8 @@ public partial class CreateApiKeyDialog
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
+    [Parameter] public EventCallback OnCreated { get; set; }
+
     private string _name = "";
     private ApiKeyScope _scope = ApiKeyScope.Read;
     private bool _isSubmitting;
@@ -30,6 +32,7 @@ public partial class CreateApiKeyDialog
         {
             var result = await ApiKeyAdminService.CreateApiKeyAsync(_name.Trim(), _scope);
             _createdKey = result.FullKey;
+            await OnCreated.InvokeAsync();
         }
         catch (Exception ex)
         {

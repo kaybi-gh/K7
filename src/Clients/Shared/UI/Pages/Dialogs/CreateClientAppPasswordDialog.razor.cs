@@ -13,6 +13,8 @@ public partial class CreateClientAppPasswordDialog
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
+    [Parameter] public EventCallback<CreateClientAppPasswordResponse> OnCreated { get; set; }
+
     private string _name = "";
     private bool _isSubmitting;
     private string? _createdPassword;
@@ -30,6 +32,7 @@ public partial class CreateClientAppPasswordDialog
         {
             _response = await ClientAppPasswordUserService.CreateClientAppPasswordAsync(_name.Trim());
             _createdPassword = _response.Password;
+            await OnCreated.InvokeAsync(_response);
         }
         catch (Exception ex)
         {

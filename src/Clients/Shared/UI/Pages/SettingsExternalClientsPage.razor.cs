@@ -48,9 +48,11 @@ public partial class SettingsExternalClientsPage
         }
     }
 
-    private async Task LoadPasswords()
+    private async Task LoadPasswords(bool showLoading = true)
     {
-        _loading = true;
+        if (showLoading)
+            _loading = true;
+
         try
         {
             _passwords = await ClientAppPasswordUserService.GetClientAppPasswordsAsync();
@@ -65,15 +67,25 @@ public partial class SettingsExternalClientsPage
 
     private async Task ShowCreateDialog()
     {
+        var parameters = new K7DialogParameters<CreateClientAppPasswordDialog>
+        {
+            { x => x.OnCreated, EventCallback.Factory.Create<CreateClientAppPasswordResponse>(this, OnPasswordCreated) }
+        };
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreateClientAppPasswordDialog>(L["CreatePassword"], null, options);
+        var dialog = await DialogService.ShowAsync<CreateClientAppPasswordDialog>(L["CreatePassword"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: CreateClientAppPasswordResponse created })
-        {
             _createdPassword = created.Password;
-            await LoadPasswords();
-        }
+
+        // Refresh even if the dialog was dismissed via X/Escape after a successful create.
+        await LoadPasswords(showLoading: false);
+    }
+
+    private async Task OnPasswordCreated(CreateClientAppPasswordResponse created)
+    {
+        _createdPassword = created.Password;
+        await LoadPasswords(showLoading: false);
     }
 
     private async Task RevokePassword(ClientAppPasswordDto item)

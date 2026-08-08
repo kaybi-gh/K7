@@ -18,9 +18,10 @@ public partial class AdminApiKeysPanel
         await LoadKeys();
     }
 
-    private async Task LoadKeys()
+    private async Task LoadKeys(bool showLoading = true)
     {
-        _loading = true;
+        if (showLoading)
+            _loading = true;
 
         try
         {
@@ -36,14 +37,16 @@ public partial class AdminApiKeysPanel
 
     private async Task ShowCreateDialog()
     {
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreateApiKeyDialog>(L["CreateKey"], null, options);
-        var result = await dialog.Result;
-
-        if (result is { Canceled: false })
+        var parameters = new K7DialogParameters<CreateApiKeyDialog>
         {
-            await LoadKeys();
-        }
+            { x => x.OnCreated, EventCallback.Factory.Create(this, () => LoadKeys(showLoading: false)) }
+        };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<CreateApiKeyDialog>(L["CreateKey"], parameters, options);
+        await dialog.Result;
+
+        // Refresh even if the dialog was dismissed via X/Escape after a successful create.
+        await LoadKeys(showLoading: false);
     }
 
     private async Task RevokeKey(ApiKeyDto key)
