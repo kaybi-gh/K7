@@ -50,7 +50,16 @@
             }
         </div>
 
-        <K7ColorPicker Label="@L["ColorLabel"]" Value="@_cardColor" ValueChanged="OnCardColorChangedAsync" />
+        <div class="color-picker-row">
+            <K7ColorPicker Label="@L["ColorLabel"]" Value="@_cardColor" ValueChanged="OnCardColorChangedAsync" />
+            <K7Button Variant="outlined"
+                      Size="sm"
+                      Class="color-picker-row__action"
+                      Disabled="@(!CanApplyCoverDominantColor)"
+                      OnClick="ApplyCoverDominantColorAsync">
+                @L["UseCoverDominantColor"]
+            </K7Button>
+        </div>
 
         <div class="mt-3">
             <span class="picker-row__label mb-1">@L["PreviewLabel"]</span>
@@ -60,7 +69,6 @@
                                 Icon="@PreviewIcon"
                                 GradientStart="@_previewColors.GradientStart"                                IconColor="@_previewColors.IconColor"
                                 ImageUrl="@PreviewImageUrl"
-                                DominantColor="@PreviewDominantColor"
                                 CardColor="@_cardColor" />
             </div>
         </div>

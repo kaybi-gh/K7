@@ -13,7 +13,7 @@ public partial class K7CategoryCard
     /// <summary>Phosphor icon name (without the "ph-" prefix).</summary>
     [Parameter] public string Icon { get; set; } = string.Empty;
 
-    /// <summary>CSS color used as the gradient tone when no dominant color is set.</summary>
+    /// <summary>CSS color used as the gradient tone when CardColor is unset.</summary>
     [Parameter] public string GradientStart { get; set; } = "rgba(80,20,20,0.85)";
 
     /// <summary>Background color of the icon badge.</summary>
@@ -22,10 +22,7 @@ public partial class K7CategoryCard
     /// <summary>Optional background image URL. Displayed behind the gradient overlay.</summary>
     [Parameter] public string? ImageUrl { get; set; }
 
-    /// <summary>Optional hex color extracted from the cover image. Used as the gradient tone when provided.</summary>
-    [Parameter] public string? DominantColor { get; set; }
-
-    /// <summary>Optional configured card color (hex). Used when no dominant color is available.</summary>
+    /// <summary>Configured library-group card color (hex). Falls back to GradientStart when unset.</summary>
     [Parameter] public string? CardColor { get; set; }
 
     [Parameter] public EventCallback OnClick { get; set; }
@@ -33,7 +30,8 @@ public partial class K7CategoryCard
     [Parameter] public string Style { get; set; } = "";
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
-    private string ComputedTone => ResolveOpaqueTone(DominantColor ?? CardColor ?? GradientStart);
+    private string ComputedTone => ResolveOpaqueTone(
+        !string.IsNullOrWhiteSpace(CardColor) ? CardColor : GradientStart);
 
     private static string ResolveOpaqueTone(string color)
     {

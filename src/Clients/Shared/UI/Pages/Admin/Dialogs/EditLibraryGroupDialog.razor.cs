@@ -22,6 +22,7 @@ public partial class EditLibraryGroupDialog
     private string? _description;
     private string? _icon;
     private string _cardColor = "#781e1e";
+    private string? _coverDominantColor;
     private CoverPickerResult? _pendingCover;
     private Guid? _currentCoverPictureId;
     private bool _removeCover;
@@ -46,8 +47,9 @@ public partial class EditLibraryGroupDialog
         }
     }
 
-    private string? PreviewDominantColor =>
-        PreviewImageUrl is not null && !_removeCover ? Group.CoverDominantColor : null;
+    private bool CanApplyCoverDominantColor =>
+        PreviewImageUrl is not null
+        && DominantColorCss.ToHexColor(_coverDominantColor) is not null;
 
     protected override void OnInitialized()
     {
@@ -55,6 +57,7 @@ public partial class EditLibraryGroupDialog
         _description = Group.Description;
         _icon = Group.Icon;
         _currentCoverPictureId = Group.CoverPictureId;
+        _coverDominantColor = Group.CoverDominantColor;
         _cardColor = Group.CardColor ?? LibraryGroupCardColors.GetDefaultHex(Group.MediaType);
         _previewColors = LibraryGroupCardColors.GetRgbaColors(Group.MediaType, Group.CardColor);
     }
@@ -64,6 +67,15 @@ public partial class EditLibraryGroupDialog
         _cardColor = value;
         _previewColors = LibraryGroupCardColors.ToRgba(value);
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ApplyCoverDominantColorAsync()
+    {
+        var hex = DominantColorCss.ToHexColor(_coverDominantColor);
+        if (hex is null)
+            return;
+
+        await OnCardColorChangedAsync(hex);
     }
 
     private async Task OpenIconPickerAsync()
@@ -105,6 +117,9 @@ public partial class EditLibraryGroupDialog
         {
             _pendingCover = cover;
             _removeCover = false;
+            _coverDominantColor = cover.SourcePictureId is { } sourceId
+                ? pictures.FirstOrDefault(p => p.Id == sourceId)?.DominantColor
+                : null;
         }
     }
 
@@ -112,6 +127,7 @@ public partial class EditLibraryGroupDialog
     {
         _pendingCover = null;
         _currentCoverPictureId = null;
+        _coverDominantColor = null;
         _removeCover = true;
     }
 

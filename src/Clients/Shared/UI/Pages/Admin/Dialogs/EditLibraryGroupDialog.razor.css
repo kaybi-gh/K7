@@ -36,6 +36,22 @@
     flex-shrink: 0;
 }
 
+.color-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+}
+
+.color-picker-row ::deep .k7-color-picker {
+    flex: 1;
+    min-width: 160px;
+}
+
+.color-picker-row__action {
+    margin-bottom: 2px;
+}
+
 .library-group-card-preview {
     max-width: 280px;
 }

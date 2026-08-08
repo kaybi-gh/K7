@@ -27,6 +27,19 @@ public static class DominantColorCss
         return cssColor is not null ? $"{variableName}: {cssColor};" : "";
     }
 
+    /// <summary>Converts a stored dominant color ("r,g,b" or hex) to opaque #RRGGBB.</summary>
+    public static string? ToHexColor(string? value)
+    {
+        if (TryParseRgbComponents(value, out var r, out var g, out var b))
+            return $"#{r:X2}{g:X2}{b:X2}";
+
+        var trimmed = value?.Trim();
+        if (trimmed is null || trimmed.Length < 7 || trimmed[0] != '#')
+            return null;
+
+        return $"#{trimmed[1..7]}";
+    }
+
     public static bool TryParseRgbComponents(string? value, out int r, out int g, out int b)
     {
         r = g = b = 0;
