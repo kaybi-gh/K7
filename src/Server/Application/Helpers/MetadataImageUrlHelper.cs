@@ -82,6 +82,11 @@ public static class MetadataImageUrlHelper
             .Select(NormalizeProviderImage)
             .Where(image => image is not null)
             .Cast<ProviderImageDto>()
+            .GroupBy(image => image.Url, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group
+                .OrderByDescending(image => image.VoteAverage)
+                .ThenByDescending(image => image.Width * image.Height)
+                .First())
             .ToList();
 
     public static IReadOnlyList<ProviderImageDto> FilterHdEpisodeStills(IEnumerable<ProviderImageDto> images) =>

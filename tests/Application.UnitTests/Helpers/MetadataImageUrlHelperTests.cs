@@ -61,6 +61,40 @@ public class MetadataImageUrlHelperTests
     }
 
     [Test]
+    public void FilterProviderImages_ShouldDeduplicateByUrl_KeepingHigherQuality()
+    {
+        var images = new List<ProviderImageDto>
+        {
+            new()
+            {
+                Url = "https://artworks.thetvdb.com/banners/seasons/5d248398cea92.jpg",
+                ThumbnailUrl = "https://artworks.thetvdb.com/banners/seasons/5d248398cea92.jpg",
+                Type = MetadataPictureType.Poster,
+                Provider = "tvdb",
+                Width = 400,
+                Height = 578,
+                VoteAverage = 1
+            },
+            new()
+            {
+                Url = "https://artworks.thetvdb.com/banners/seasons/5d248398cea92.jpg",
+                ThumbnailUrl = "https://artworks.thetvdb.com/banners/seasons/5d248398cea92_t.jpg",
+                Type = MetadataPictureType.Poster,
+                Provider = "tvdb",
+                Width = 680,
+                Height = 1000,
+                VoteAverage = 5
+            }
+        };
+
+        var filtered = MetadataImageUrlHelper.FilterProviderImages(images);
+
+        filtered.Should().ContainSingle();
+        filtered[0].VoteAverage.Should().Be(5);
+        filtered[0].Width.Should().Be(680);
+    }
+
+    [Test]
     public void GetExtensionFromContentType_ShouldMapKnownImageTypes()
     {
         MetadataImageUrlHelper.GetExtensionFromContentType("image/png; charset=binary")
