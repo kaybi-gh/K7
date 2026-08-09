@@ -32,7 +32,8 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
-.remote-control-panel__cover img {
+.remote-control-panel__cover ::deep .k7-img-wrap,
+.remote-control-panel__cover ::deep .k7-img {
     width: 100%;
     height: 100%;
     object-fit: cover;

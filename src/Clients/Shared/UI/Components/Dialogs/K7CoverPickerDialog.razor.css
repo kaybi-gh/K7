@@ -50,21 +50,29 @@
     color: inherit;
 }
 
-.cover-picker-item img {
+.cover-picker-item ::deep .cover-picker-item__image {
     width: 100%;
     height: auto;
     aspect-ratio: 2 / 3;
-    object-fit: cover;
     display: block;
     flex-shrink: 0;
     background: var(--color-surface-hover);
 }
 
-.cover-picker-item--backdrop img {
+.cover-picker-item ::deep .cover-picker-item__image .k7-img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+.cover-picker-item--backdrop ::deep .cover-picker-item__image,
+.cover-picker-item--backdrop ::deep .cover-picker-item__image .k7-img {
     aspect-ratio: 16 / 9;
 }
 
-.cover-picker-item--cover img {
+.cover-picker-item--cover ::deep .cover-picker-item__image,
+.cover-picker-item--cover ::deep .cover-picker-item__image .k7-img {
     aspect-ratio: 1 / 1;
 }
 

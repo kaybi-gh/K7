@@ -17,7 +17,11 @@
     @if (Remote.CoverUrl is not null)
     {
         <div class="remote-control-panel__cover">
-            <img src="@Remote.CoverUrl" alt="" />
+            <K7Image Src="@Remote.CoverUrl"
+                     Alt=""
+                     ObjectFit="cover"
+                     Fluid="true"
+                     LoadingMode="K7ImageLoadingMode.Css" />
         </div>
     }
 

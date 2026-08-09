@@ -1,4 +1,6 @@
+using K7.Clients.Shared.Helpers;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -52,7 +54,14 @@ public partial class K7CoverMosaic
     private List<string> ResolveMosaicUrls()
     {
         if (ImageUrls is { Count: > 0 })
-            return ImageUrls.Where(url => !string.IsNullOrEmpty(url)).Take(4).ToList();
+        {
+            return ImageUrls
+                .Select(url => MediaPictureUrlHelper.ToDisplayUrl(ApiClient, url))
+                .Where(url => !string.IsNullOrEmpty(url))
+                .Cast<string>()
+                .Take(4)
+                .ToList();
+        }
 
         if (PreviewPictures is not { Count: > 0 })
             return [];
@@ -68,7 +77,7 @@ public partial class K7CoverMosaic
     private string? ResolveUrl(MetadataPictureDto? picture)
     {
         var uri = picture?.GetUri(PictureSize)?.OriginalString;
-        return ApiClient.GetAbsoluteUri(uri)?.AbsoluteUri;
+        return MediaPictureUrlHelper.ToDisplayUrl(ApiClient, uri);
     }
 
     private static int GetGridVariant(int count) => count switch

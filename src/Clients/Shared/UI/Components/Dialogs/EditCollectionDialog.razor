@@ -25,7 +25,13 @@
                 }
                 else if (_pendingCover?.SourcePictureId.HasValue == true)
                 {
-                    <img src="/api/metadata-pictures/@_pendingCover.SourcePictureId?size=Small" class="picker-row__cover-preview" alt="" />
+                    <K7Image Src="@($"/api/metadata-pictures/{_pendingCover.SourcePictureId}?size=Small")"
+                             Class="picker-row__cover-preview"
+                             Width="48"
+                             Height="48"
+                             ObjectFit="cover"
+                             Alt=""
+                             LoadingMode="K7ImageLoadingMode.Css" />
                 }
                 else if (_pendingCover?.File is not null)
                 {
@@ -33,7 +39,13 @@
                 }
                 else if (_currentCoverPictureId.HasValue)
                 {
-                    <img src="/api/metadata-pictures/@_currentCoverPictureId?size=Small" class="picker-row__cover-preview" alt="" />
+                    <K7Image Src="@($"/api/metadata-pictures/{_currentCoverPictureId}?size=Small")"
+                             Class="picker-row__cover-preview"
+                             Width="48"
+                             Height="48"
+                             ObjectFit="cover"
+                             Alt=""
+                             LoadingMode="K7ImageLoadingMode.Css" />
                 }
                 else
                 {

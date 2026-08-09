@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
 public partial class K7CategoryCard
 {
+    [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+
     /// <summary>Primary title displayed in large bold italic caps.</summary>
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
 
@@ -29,6 +33,8 @@ public partial class K7CategoryCard
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? ResolvedImageUrl => MediaPictureUrlHelper.ToDisplayUrl(ApiClient, ImageUrl);
 
     private string ComputedTone => ResolveOpaqueTone(
         !string.IsNullOrWhiteSpace(CardColor) ? CardColor : GradientStart);

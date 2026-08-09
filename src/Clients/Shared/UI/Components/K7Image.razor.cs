@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -20,6 +22,8 @@ public enum K7ImageLoadingMode
 
 public partial class K7Image
 {
+    [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+
     [Parameter] public string Src { get; set; } = "";
     [Parameter] public string Alt { get; set; } = "";
     [Parameter] public string ObjectFit { get; set; } = "";
@@ -43,7 +47,9 @@ public partial class K7Image
     private K7ImageLoadingMode EffectiveLoadingMode =>
         LoadingMode ?? (ShowLoadingState ? K7ImageLoadingMode.Interactive : K7ImageLoadingMode.None);
 
-    private bool HasSource => !string.IsNullOrEmpty(Src);
+    private string ResolvedSrc => MediaPictureUrlHelper.ToDisplayUrl(ApiClient, Src) ?? "";
+
+    private bool HasSource => !string.IsNullOrEmpty(ResolvedSrc);
     private bool HasCustomFallback => FallbackContent is not null;
     private bool ShowFallback => !HasSource || _failed;
     private bool UseInteractiveLoading => EffectiveLoadingMode == K7ImageLoadingMode.Interactive;
@@ -124,10 +130,10 @@ public partial class K7Image
 
     protected override void OnParametersSet()
     {
-        if (_trackedSrc == Src)
+        if (_trackedSrc == ResolvedSrc)
             return;
 
-        _trackedSrc = Src;
+        _trackedSrc = ResolvedSrc;
         _loaded = false;
         _failed = false;
     }

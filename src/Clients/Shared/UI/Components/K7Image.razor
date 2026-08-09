@@ -32,9 +32,9 @@
         @if (UseInteractiveLoading)
         {
             <img @ref="_imgRef"
-                 @key="Src"
+                 @key="ResolvedSrc"
                  class="@ImageCssClass"
-                 src="@Src"
+                 src="@ResolvedSrc"
                  alt="@Alt"
                  loading="@Loading"
                  decoding="async"
@@ -45,9 +45,9 @@
         else
         {
             <img @ref="_imgRef"
-                 @key="Src"
+                 @key="ResolvedSrc"
                  class="@ImageCssClass"
-                 src="@Src"
+                 src="@ResolvedSrc"
                  alt="@Alt"
                  loading="@Loading"
                  decoding="async"

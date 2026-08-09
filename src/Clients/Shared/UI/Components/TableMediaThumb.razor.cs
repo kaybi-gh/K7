@@ -9,9 +9,6 @@ public partial class TableMediaThumb
     [Parameter] public string? MediaType { get; set; }
     [Parameter] public TableMediaThumbHelper.Size Size { get; set; } = TableMediaThumbHelper.Size.Standard;
 
-    private string? ResolvedImageUrl =>
-        ApiClient.GetAbsoluteUri(ImageUrl)?.AbsoluteUri;
-
     private string ThumbStyle =>
         TableMediaThumbHelper.BuildStyle(TableMediaThumbHelper.ParseMediaType(MediaType), Size);
 

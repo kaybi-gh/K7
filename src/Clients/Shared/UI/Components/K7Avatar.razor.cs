@@ -1,4 +1,5 @@
-﻿using K7.Shared.Interfaces;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -44,11 +45,7 @@ public partial class K7Avatar
             if (string.IsNullOrEmpty(Image) || _imageFailed)
                 return null;
 
-            if (Image.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                || Image.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                return Image;
-
-            return ApiClient.GetAbsoluteUri(Image)?.AbsoluteUri ?? Image;
+            return MediaPictureUrlHelper.ToDisplayUrl(ApiClient, Image);
         }
     }
 

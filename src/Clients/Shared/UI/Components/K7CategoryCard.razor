@@ -1,15 +1,15 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="k7-category-card @(!string.IsNullOrEmpty(ImageUrl) ? "k7-category-card--has-image" : "") @Class"
+<div class="k7-category-card @(!string.IsNullOrEmpty(ResolvedImageUrl) ? "k7-category-card--has-image" : "") @Class"
      style="--card-tone:@ComputedTone;--card-icon-color:@IconColor;@Style">
     <div class="k7-category-card__container">
         <button type="button"
                 class="k7-category-card__hit focusable"
                 @onclick="OnClick"
                 @attributes="AdditionalAttributes">
-            @if (!string.IsNullOrEmpty(ImageUrl))
+            @if (!string.IsNullOrEmpty(ResolvedImageUrl))
             {
-                <div class="k7-category-card__bg" style="background-image:url('@ImageUrl')"></div>
+                <div class="k7-category-card__bg" style="background-image:url('@ResolvedImageUrl')"></div>
             }
             <div class="k7-category-card__overlay"></div>
 

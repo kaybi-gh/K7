@@ -1,12 +1,11 @@
 @namespace K7.Clients.Shared.UI.Components
 @using K7.Clients.Shared.UI.Helpers
 @using K7.Server.Domain.Enums
-@inject IK7ServerService ApiClient
 
-@if (ResolvedImageUrl is not null)
+@if (!string.IsNullOrEmpty(ImageUrl))
 {
     <div class="table-media-thumb" style="@ThumbStyle">
-        <K7Image Src="@ResolvedImageUrl"
+        <K7Image Src="@ImageUrl"
                  Alt=""
                  ObjectFit="contain"
                  Class="table-media-thumb__image rounded"

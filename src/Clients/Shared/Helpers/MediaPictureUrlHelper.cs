@@ -1,7 +1,28 @@
+using K7.Shared.Interfaces;
+
 namespace K7.Clients.Shared.Helpers;
 
 public static class MediaPictureUrlHelper
 {
+    /// <summary>
+    /// Resolves a picture URL for display. Only relative <c>/api/metadata-pictures/...</c> paths are
+    /// prefixed with the configured server base address (required on MAUI). Absolute URLs, Blazor
+    /// static assets, and other relative paths are left unchanged.
+    /// </summary>
+    public static string? ToDisplayUrl(IK7ServerService apiClient, string? url)
+    {
+        ArgumentNullException.ThrowIfNull(apiClient);
+
+        if (string.IsNullOrEmpty(url) || !IsRelativeMetadataPicturePath(url))
+            return url;
+
+        return apiClient.GetAbsoluteUri(url)?.AbsoluteUri ?? url;
+    }
+
+    public static bool IsRelativeMetadataPicturePath(string url) =>
+        url.StartsWith("/api/metadata-pictures/", StringComparison.OrdinalIgnoreCase)
+        || url.StartsWith("api/metadata-pictures/", StringComparison.OrdinalIgnoreCase);
+
     public static string? WithCacheBuster(string? url, DateTimeOffset? version)
     {
         if (string.IsNullOrEmpty(url))

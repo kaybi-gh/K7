@@ -54,9 +54,13 @@
                         <button type="button"
                                 class="cover-picker-item @GridItemClass @(_selectedSourceId == picId ? "selected" : "")"
                                 @onclick="() => SelectPicture(picId)">
-                            <img src="/api/metadata-pictures/@picId?size=Small"
-                                 alt="@(pic.MediaTitle ?? pic.Type.ToString())"
-                                 loading="lazy" />
+                            <K7Image Src="@($"/api/metadata-pictures/{picId}?size=Small")"
+                                     Alt="@(pic.MediaTitle ?? pic.Type.ToString())"
+                                     ObjectFit="cover"
+                                     Fluid="true"
+                                     LoadingMode="K7ImageLoadingMode.Css"
+                                     Class="cover-picker-item__image"
+                                     loading="lazy" />
                             <span class="cover-picker-item-title" title="@pic.MediaTitle">
                                 @(string.IsNullOrWhiteSpace(pic.MediaTitle) ? "\u00A0" : pic.MediaTitle)
                             </span>
