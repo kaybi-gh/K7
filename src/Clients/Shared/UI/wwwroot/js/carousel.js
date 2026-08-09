@@ -52,16 +52,24 @@ export function init(rootElement) {
         var loopBackAction = loopBackBtn.querySelector('.carousel-loop-back__image') || loopBackBtn;
 
         function focusFirstCarouselItem() {
+            // Ensure snap 0 is applied before focusing so the first card is on-screen.
+            try { embla.scrollTo(0); } catch (e) { /* ignore */ }
             var firstItem = rootElement.querySelector('[data-carousel-item]:not([data-carousel-loop-back])');
             if (!firstItem) return;
             var target = firstItem.querySelector('.focusable') || firstItem;
-            target.focus({ preventScroll: true });
+            if (window.SpatialNav && window.SpatialNav.focusElement) {
+                window.SpatialNav.focusElement(target);
+            } else {
+                target.focus({ preventScroll: true });
+            }
         }
 
         function doLoopBack(fromKeyboard) {
             embla.scrollTo(0);
 
             // TV remotes often omit keyup; always focus first item with a fallback.
+            // Defer past Embla settle so focus does not land on an off-screen slide.
+            var delay = fromKeyboard ? 40 : 50;
             if (fromKeyboard && window.K7 && window.K7.suppressEnterUntilKeyUp) {
                 var focused = false;
                 var focusOnce = function () {
@@ -74,7 +82,7 @@ export function init(rootElement) {
                 return;
             }
 
-            setTimeout(focusFirstCarouselItem, fromKeyboard ? 0 : 50);
+            setTimeout(focusFirstCarouselItem, delay);
         }
 
         loopBackAction.addEventListener('click', function (e) {
@@ -106,6 +114,9 @@ export function init(rootElement) {
             totalWidth += padStart + (parseInt(getComputedStyle(container).paddingInlineEnd) || 0);
             var needsLoopBack = totalWidth > viewportNode.offsetWidth;
             loopBackBtn.classList.toggle('visible', needsLoopBack);
+            // Keep out of browser tab order until the control is actually shown (TV focus restore).
+            var loopAction = loopBackBtn.querySelector('.carousel-loop-back__image');
+            if (loopAction) loopAction.tabIndex = needsLoopBack ? 0 : -1;
         }
     }
 

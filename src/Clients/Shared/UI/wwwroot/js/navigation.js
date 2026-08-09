@@ -289,6 +289,8 @@ var SpatialNav = (function () {
 
     function isElementVisible(el) {
         if (isInsideInactiveFeedHub(el)) return false;
+        // Loop-back slide stays in the DOM with height:0 until .visible; never treat as focusable.
+        if (el.closest && el.closest('[data-carousel-loop-back]:not(.visible)')) return false;
         var style = window.getComputedStyle(el);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
         if (el.offsetParent !== null) return true;
@@ -379,21 +381,13 @@ var SpatialNav = (function () {
         var container = carouselRoot.querySelector('.carousel-container');
         var allItems = container ? Array.from(container.querySelectorAll('[data-carousel-item]')) : [];
         var idx = allItems.indexOf(item);
+        if (idx < 0) return;
 
-        if (idx === 0) {
-            carouselRoot.__embla.scrollTo(0);
-            return;
-        }
-
-        var viewport = carouselRoot.querySelector('[data-carousel-viewport]') || carouselRoot;
-        var vpRect = viewport.getBoundingClientRect();
-        var itemRect = item.getBoundingClientRect();
-        if (itemRect.left >= vpRect.left + 1 && itemRect.right <= vpRect.right + 5) return;
-
-        if (itemRect.right > vpRect.right + 5) {
-            carouselRoot.__embla.scrollNext();
-        } else if (itemRect.left < vpRect.left + 1) {
-            carouselRoot.__embla.scrollPrev();
+        // One scrollNext/Prev is not enough when focus lands far off-screen (e.g. loop-back).
+        try {
+            carouselRoot.__embla.scrollTo(idx);
+        } catch (e) {
+            if (idx === 0) carouselRoot.__embla.scrollTo(0);
         }
     }
 
@@ -473,7 +467,11 @@ var SpatialNav = (function () {
             return true;
         }
 
-        var allItems = Array.from(carousel.querySelectorAll('[data-carousel-item]'));
+        var allItems = Array.from(carousel.querySelectorAll('[data-carousel-item]')).filter(function (item) {
+            if (item.hasAttribute('data-carousel-loop-back') && !item.classList.contains('visible'))
+                return false;
+            return true;
+        });
         var currentIdx = allItems.indexOf(currentItem);
         if (currentIdx === -1) return false;
 
@@ -487,16 +485,12 @@ var SpatialNav = (function () {
         if (!target) return false;
 
         if (carousel.__embla) {
-            var viewport = carousel.querySelector('[data-carousel-viewport]') || carousel;
-            var vpRect = viewport.getBoundingClientRect();
-            var targetRect = targetItem.getBoundingClientRect();
-
-            if (targetIdx === 0) {
-                carousel.__embla.scrollTo(0);
-            } else if (targetRect.right > vpRect.right + 5) {
-                carousel.__embla.scrollNext();
-            } else if (targetRect.left < vpRect.left + 1) {
-                carousel.__embla.scrollPrev();
+            try {
+                carousel.__embla.scrollTo(targetIdx);
+            } catch (e) {
+                if (targetIdx === 0) carousel.__embla.scrollTo(0);
+                else if (targetIdx > currentIdx) carousel.__embla.scrollNext();
+                else carousel.__embla.scrollPrev();
             }
         }
         _carouselNavHandled = true;
@@ -2904,8 +2898,58 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
                 chrome[i].style.removeProperty('visibility');
                 chrome[i].style.removeProperty('opacity');
             }
-            if (window.SpatialNav && window.SpatialNav.refresh) window.SpatialNav.refresh();
+            // Native video hides the WebView; Embla keeps stale 0-width snaps until reInit.
+            // Delay past Android WebView IsVisible restore + layout.
+            var settleAfterNativeVideo = function () {
+                // Focus Play first so SpatialNav.refresh cannot land on casting.
+                if (window.K7 && window.K7.restoreFocusAfterNativeVideo) {
+                    window.K7.restoreFocusAfterNativeVideo();
+                }
+                var carousels = document.querySelectorAll('[data-carousel]');
+                for (var c = 0; c < carousels.length; c++) {
+                    if (carousels[c].__embla) {
+                        try { carousels[c].__embla.reInit(); } catch (e) { /* ignore */ }
+                    }
+                }
+                if (window.SpatialNav && window.SpatialNav.refresh) window.SpatialNav.refresh();
+                if (window.K7 && window.K7.restoreFocusAfterNativeVideo) {
+                    window.K7.restoreFocusAfterNativeVideo();
+                }
+            };
+            setTimeout(function () {
+                requestAnimationFrame(settleAfterNativeVideo);
+            }, 50);
+            setTimeout(function () {
+                requestAnimationFrame(settleAfterNativeVideo);
+            }, 220);
         });
+    }
+};
+
+/** After Android/iOS native chrome closes, put TV focus back on the hero Play control. */
+K7.restoreFocusAfterNativeVideo = function () {
+    var root = document.querySelector('[data-tv-scroll]');
+    if (root && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(root)) {
+        try { window.K7.TvDetailScroll.scrollToMain(root, true); } catch (e) { /* ignore */ }
+    }
+
+    var target =
+        document.querySelector('[data-tv-scroll-zone="actions"] [data-initial-focus]')
+        || document.querySelector('.movie-actions-play[data-initial-focus], .episode-actions-play[data-initial-focus]')
+        || document.querySelector('[data-tv-scroll-zone="actions"][data-initial-focus]')
+        || document.querySelector('[data-initial-focus]');
+    if (!target) return;
+
+    // Prefer the actual focusable control when the attribute is on a wrapper.
+    if (!target.classList.contains('focusable') && target.querySelector) {
+        var inner = target.querySelector('.focusable, button, a, [tabindex]:not([tabindex="-1"])');
+        if (inner) target = inner;
+    }
+
+    if (window.SpatialNav && window.SpatialNav.focusElement) {
+        window.SpatialNav.focusElement(target);
+    } else {
+        target.focus({ preventScroll: true });
     }
 };
 
@@ -3764,7 +3808,7 @@ K7.TvDetailScroll = (function () {
             function focusFirstInBelow() {
                 var below = getZone(inst.root, 'below');
                 var target = below && (
-                    below.querySelector('[data-carousel-item] .focusable')
+                    below.querySelector('[data-carousel-item]:not([data-carousel-loop-back]) .focusable')
                     || below.querySelector('.focusable')
                 );
                 if (!target) return false;
@@ -3876,6 +3920,10 @@ K7.TvDetailScroll = (function () {
         },
         hasInstance: function (root) {
             return !!(root && _instances.has(root));
+        },
+        scrollToMain: function (root, instant) {
+            var inst = root ? _instances.get(root) : null;
+            if (inst) inst.scrollToMain(!!instant);
         },
         clampMainView: function (el) {
             if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
