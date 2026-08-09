@@ -29,6 +29,7 @@
         @if (_auth.Local.SignInEnabled)
         {
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" Enhance="false">
+                <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
                 <DataAnnotationsValidator />
                 <div class="auth-form-stack">
                     <div class="auth-form-field">

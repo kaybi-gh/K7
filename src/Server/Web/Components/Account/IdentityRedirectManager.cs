@@ -57,14 +57,26 @@ namespace K7.Server.Web.Components.Account
         {
             uri ??= "";
 
+            // Keep relative paths, native deep links, and OpenIddict loopback callbacks as-is.
+            // Loopback ports are ephemeral (e.g. http://localhost:53333/), so do not hardcode one.
             if (!Uri.IsWellFormedUriString(uri, UriKind.Relative)
-                && !uri.StartsWith("k7://")
-                && !uri.StartsWith("http://localhost:59451"))
+                && !uri.StartsWith("k7://", StringComparison.OrdinalIgnoreCase)
+                && !IsLoopbackCallback(uri))
             {
                 uri = navigationManager.ToBaseRelativePath(uri);
             }
 
             return uri;
+        }
+
+        private static bool IsLoopbackCallback(string uri)
+        {
+            if (!Uri.TryCreate(uri, UriKind.Absolute, out var absolute))
+                return false;
+
+            return absolute.Scheme is "http" or "https"
+                && (absolute.IsLoopback
+                    || string.Equals(absolute.Host, "localhost", StringComparison.OrdinalIgnoreCase));
         }
 
         private string CurrentPath => navigationManager.ToAbsoluteUri(navigationManager.Uri).GetLeftPart(UriPartial.Path);
