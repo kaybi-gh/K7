@@ -21,6 +21,7 @@ public sealed class LibraryGroupContextStore : ILibraryGroupContextStore, IDispo
     private readonly object _sync = new();
 
     public event Action<Guid>? Changed;
+    public event Action<Guid, Guid>? MediaVisualChanged;
 
     public LibraryGroupContextStore(IServiceScopeFactory scopeFactory, IMediaBrowseHubCoordinator hubCoordinator)
     {
@@ -139,7 +140,11 @@ public sealed class LibraryGroupContextStore : ILibraryGroupContextStore, IDispo
 
         var libraryGroupIds = new[] { groupId };
         var libraryIds = group.LibraryIds.ToArray();
-        _subscriptions[groupId] = _hubCoordinator.Subscribe(libraryIds, libraryGroupIds, () => Invalidate(groupId));
+        _subscriptions[groupId] = _hubCoordinator.Subscribe(
+            libraryIds,
+            libraryGroupIds,
+            onCatalogChanged: () => Invalidate(groupId),
+            onMediaVisualChanged: mediaId => MediaVisualChanged?.Invoke(groupId, mediaId));
     }
 
     private readonly record struct TagsCacheKey(Guid GroupId, MediaType MediaType);

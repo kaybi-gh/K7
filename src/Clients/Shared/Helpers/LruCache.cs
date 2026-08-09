@@ -59,4 +59,12 @@ public sealed class LruCache<TKey, TValue>
         _map.Clear();
         _order.Clear();
     }
+
+    public List<(TKey Key, TValue Value)> Snapshot()
+    {
+        var result = new List<(TKey Key, TValue Value)>(_order.Count);
+        foreach (var entry in _order)
+            result.Add(entry);
+        return result;
+    }
 }

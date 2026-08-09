@@ -111,7 +111,9 @@ public partial class LibraryGroupView : IDisposable
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
     private string _tableScopeKey = "initial";
-    private DebouncedActionRunner? _picturesRefreshRunner;
+    private DebouncedActionRunner? _catalogRefreshRunner;
+    private DebouncedActionRunner? _mediaVisualRefreshRunner;
+    private readonly HashSet<Guid> _pendingVisualMediaIds = [];
     private string? _initializedId;
 
     private Dictionary<string, object> CreateDynamicPlaylistButtonAttributes => new()
@@ -151,6 +153,7 @@ public partial class LibraryGroupView : IDisposable
     protected override void OnInitialized()
     {
         ContextStore.Changed += OnContextStoreChanged;
+        ContextStore.MediaVisualChanged += OnMediaVisualChanged;
         FeedHub.Changed += OnFeedHubChanged;
         _hubPageActive = IsHubPageActive();
     }
@@ -231,7 +234,11 @@ public partial class LibraryGroupView : IDisposable
 
         EnsureValidContentSourceSelection();
 
-        _picturesRefreshRunner = new DebouncedActionRunner(RefreshAfterContextChangedAsync, InvokeAsync);
+        _catalogRefreshRunner?.Dispose();
+        _mediaVisualRefreshRunner?.Dispose();
+        _pendingVisualMediaIds.Clear();
+        _catalogRefreshRunner = new DebouncedActionRunner(RefreshAfterContextChangedAsync, InvokeAsync);
+        _mediaVisualRefreshRunner = new DebouncedActionRunner(RefreshPendingMediaVisualsAsync, InvokeAsync);
 
         await LoadTagsAsync();
 
@@ -1016,7 +1023,16 @@ public partial class LibraryGroupView : IDisposable
         if (!Guid.TryParse(Id, out var currentId) || currentId != groupId || _loading)
             return;
 
-        _picturesRefreshRunner?.Schedule();
+        _catalogRefreshRunner?.Schedule();
+    }
+
+    private void OnMediaVisualChanged(Guid groupId, Guid mediaId)
+    {
+        if (!Guid.TryParse(Id, out var currentId) || currentId != groupId || _loading)
+            return;
+
+        _pendingVisualMediaIds.Add(mediaId);
+        _mediaVisualRefreshRunner?.Schedule();
     }
 
     private async Task RefreshAfterContextChangedAsync()
@@ -1029,6 +1045,105 @@ public partial class LibraryGroupView : IDisposable
         InvalidateBrowseCaches();
         await RefreshAllAsync();
         StateHasChanged();
+    }
+
+    private async Task RefreshPendingMediaVisualsAsync()
+    {
+        if (_pendingVisualMediaIds.Count == 0)
+            return;
+
+        var mediaIds = _pendingVisualMediaIds.ToArray();
+        _pendingVisualMediaIds.Clear();
+
+        var knownIds = mediaIds
+            .Where(id => _viewModelCache.ContainsKey(id) || PageCacheContains(id))
+            .Distinct()
+            .ToArray();
+        if (knownIds.Length == 0)
+            return;
+
+        try
+        {
+            var result = await k7ServerService.QueryMediasAsync(new QueryMediasRequest
+            {
+                Ids = knownIds,
+                LibraryIds = _libraryGroupIds is { Length: > 0 } ? null : _libraryIds?.ToArray(),
+                LibraryGroupIds = _libraryGroupIds,
+                PageNumber = 1,
+                PageSize = knownIds.Length
+            });
+
+            if (result?.Items is not { Count: > 0 })
+                return;
+
+            var changed = false;
+            foreach (var item in result.Items)
+            {
+                if (UpsertCachedMedia(item))
+                    changed = true;
+            }
+
+            if (changed)
+                StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+            // Best-effort soft refresh; next browse load will pick up fresh data.
+        }
+    }
+
+    private bool PageCacheContains(Guid mediaId)
+    {
+        foreach (var (_, (items, _)) in _pageCache.Snapshot())
+        {
+            foreach (var item in items)
+            {
+                if (item.Id == mediaId)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool UpsertCachedMedia(LiteMediaDto item)
+    {
+        var changed = false;
+
+        foreach (var (key, (items, totalCount)) in _pageCache.Snapshot())
+        {
+            for (var i = 0; i < items.Count; i++)
+            {
+                if (items[i].Id != item.Id)
+                    continue;
+
+                if (!ReferenceEquals(items[i], item))
+                {
+                    var list = items as List<LiteMediaDto> ?? items.ToList();
+                    list[i] = item;
+                    _pageCache.Set(key, (list, totalCount));
+                    changed = true;
+                }
+
+                break;
+            }
+        }
+
+        var next = item.ToCardViewModel(
+            apiClient,
+            n => string.Format(S["SeasonNumber"], n),
+            episodeStillOnly: _selectedMediaType == MediaType.SerieEpisode,
+            pictureSize: MetadataPictureSize.Medium);
+        if (next is null)
+            return changed;
+
+        _viewModelCache.TryGetValue(item.Id, out var existing);
+        var merge = MediaCardVisualMerge.Apply(existing, next);
+        _viewModelCache[item.Id] = merge.Model;
+        return changed || merge.RequiresRender;
     }
 
     private async Task RefreshAllAsync()
@@ -1311,7 +1426,9 @@ public partial class LibraryGroupView : IDisposable
     public void Dispose()
     {
         ContextStore.Changed -= OnContextStoreChanged;
+        ContextStore.MediaVisualChanged -= OnMediaVisualChanged;
         FeedHub.Changed -= OnFeedHubChanged;
-        _picturesRefreshRunner?.Dispose();
+        _catalogRefreshRunner?.Dispose();
+        _mediaVisualRefreshRunner?.Dispose();
     }
 }

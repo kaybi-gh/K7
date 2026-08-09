@@ -13,11 +13,15 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
 
     public MediaBrowseHubCoordinator(K7HubClient hubClient) => _hubClient = hubClient;
 
-    public IDisposable Subscribe(Guid[]? libraryIds, Guid[]? libraryGroupIds, Action onRefresh)
+    public IDisposable Subscribe(
+        Guid[]? libraryIds,
+        Guid[]? libraryGroupIds,
+        Action onCatalogChanged,
+        Action<Guid>? onMediaVisualChanged = null)
     {
         RegisterHandlers();
 
-        var subscription = new Subscription(libraryIds, libraryGroupIds, onRefresh);
+        var subscription = new Subscription(libraryIds, libraryGroupIds, onCatalogChanged, onMediaVisualChanged);
         lock (_sync)
         {
             _subscriptions.Add(subscription);
@@ -54,21 +58,19 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         _hubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
     }
 
-    private void OnBrowseChanged(List<MediaBatchItem> items) => NotifyAll();
+    private void OnBrowseChanged(List<MediaBatchItem> items) => NotifyCatalogAll();
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId) =>
-        NotifyMatching(libraryId, _ => true);
+        NotifyCatalogMatching(libraryId);
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount) =>
-        NotifyMatching(libraryId, _ => true);
+        NotifyCatalogMatching(libraryId);
 
-    private void OnMediaMetadataRefreshed(Guid mediaId) =>
-        NotifyMatching(Guid.Empty, s => s.OnMetadataOrPictures(mediaId));
+    private void OnMediaMetadataRefreshed(Guid mediaId) => NotifyMediaVisual(mediaId);
 
-    private void OnMediaPicturesUpdated(Guid mediaId) =>
-        NotifyMatching(Guid.Empty, s => s.OnMetadataOrPictures(mediaId));
+    private void OnMediaPicturesUpdated(Guid mediaId) => NotifyMediaVisual(mediaId);
 
-    private void NotifyAll()
+    private void NotifyCatalogAll()
     {
         Subscription[] snapshot;
         lock (_sync)
@@ -77,10 +79,10 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         }
 
         foreach (var subscription in snapshot)
-            subscription.Notify();
+            subscription.NotifyCatalog();
     }
 
-    private void NotifyMatching(Guid libraryId, Func<Subscription, bool> predicate)
+    private void NotifyCatalogMatching(Guid libraryId)
     {
         Subscription[] snapshot;
         lock (_sync)
@@ -90,16 +92,26 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
 
         foreach (var subscription in snapshot)
         {
-            if (libraryId != Guid.Empty
-                && !MediaBrowseCarouselRefreshScope.IsAffected(
+            if (!MediaBrowseCarouselRefreshScope.IsAffected(
                     subscription.LibraryIds, subscription.LibraryGroupIds, libraryId))
             {
                 continue;
             }
 
-            if (predicate(subscription))
-                subscription.Notify();
+            subscription.NotifyCatalog();
         }
+    }
+
+    private void NotifyMediaVisual(Guid mediaId)
+    {
+        Subscription[] snapshot;
+        lock (_sync)
+        {
+            snapshot = _subscriptions.ToArray();
+        }
+
+        foreach (var subscription in snapshot)
+            subscription.NotifyMediaVisual(mediaId);
     }
 
     private void RemoveSubscription(Subscription subscription)
@@ -110,14 +122,24 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         }
     }
 
-    private sealed class Subscription(Guid[]? libraryIds, Guid[]? libraryGroupIds, Action onRefresh)
+    private sealed class Subscription(
+        Guid[]? libraryIds,
+        Guid[]? libraryGroupIds,
+        Action onCatalogChanged,
+        Action<Guid>? onMediaVisualChanged)
     {
         public Guid[]? LibraryIds { get; } = libraryIds;
         public Guid[]? LibraryGroupIds { get; } = libraryGroupIds;
 
-        public void Notify() => onRefresh();
+        public void NotifyCatalog() => onCatalogChanged();
 
-        public bool OnMetadataOrPictures(Guid mediaId) => true;
+        public void NotifyMediaVisual(Guid mediaId)
+        {
+            if (onMediaVisualChanged is not null)
+                onMediaVisualChanged(mediaId);
+            else
+                onCatalogChanged();
+        }
     }
 
     private sealed class SubscriptionHandle(MediaBrowseHubCoordinator coordinator, Subscription subscription) : IDisposable

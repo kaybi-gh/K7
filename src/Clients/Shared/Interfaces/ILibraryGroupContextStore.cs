@@ -7,7 +7,11 @@ namespace K7.Clients.Shared.Interfaces;
 
 public interface ILibraryGroupContextStore
 {
+    /// <summary>Catalog membership changed for this library group (scan, batch add, etc.).</summary>
     event Action<Guid>? Changed;
+
+    /// <summary>A single media's metadata or pictures changed within this library group scope.</summary>
+    event Action<Guid, Guid>? MediaVisualChanged;
 
     Task<LibraryGroupContextSnapshot?> EnsureContextAsync(Guid groupId, CancellationToken cancellationToken = default);
 
