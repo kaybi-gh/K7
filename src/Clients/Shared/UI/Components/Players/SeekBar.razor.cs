@@ -35,21 +35,46 @@ public partial class SeekBar : IAsyncDisposable
     [Parameter] public List<Chapter> Chapters { get; set; } = [];
     [Parameter] public bool IsVisible { get; set; }
 
+    /// <summary>
+    /// When true, use <see cref="ExternalCurrentTime"/> / Duration / Buffered instead of IPlayerService
+    /// (remote-control mode).
+    /// </summary>
+    [Parameter] public bool UseExternalClock { get; set; }
+
+    [Parameter] public double ExternalCurrentTime { get; set; }
+    [Parameter] public double ExternalDuration { get; set; }
+    [Parameter] public double ExternalBufferedTime { get; set; }
+    [Parameter] public EventCallback<double> OnSeekRequested { get; set; }
+
     private const int ThumbWidth = 320;
     private const int ThumbHeight = 180;
     private const int IntervalSeconds = 30;
     private const int ThumbsPerRow = 10;
 
-    private double CurrentPercent => (PlayerService.CurrentTime / PlayerService.Duration) * 100;
-    private double BufferedPercent => (PlayerService.BufferedTime / PlayerService.Duration) * 100;
+    private double ClockCurrentTime => UseExternalClock ? ExternalCurrentTime : PlayerService.CurrentTime;
+    private double ClockDuration => UseExternalClock ? ExternalDuration : PlayerService.Duration;
+    private double ClockBufferedTime => UseExternalClock ? ExternalBufferedTime : PlayerService.BufferedTime;
+
+    private double CurrentPercent => ClockDuration > 0 ? (ClockCurrentTime / ClockDuration) * 100 : 0;
+    private double BufferedPercent => ClockDuration > 0 ? (ClockBufferedTime / ClockDuration) * 100 : 0;
 
     protected override void OnInitialized()
     {
-        PlayerService.DurationChanged += OnDurationChanged;
-        PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
-        PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
+        if (!UseExternalClock)
+        {
+            PlayerService.DurationChanged += OnDurationChanged;
+            PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+            PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
+        }
+
         _scrubDecayTimer = new System.Timers.Timer(400) { AutoReset = false };
         _scrubDecayTimer.Elapsed += (_, _) => _scrubRepeatCount = 0;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (UseExternalClock)
+            RequestProgressRender();
     }
 
     protected override bool ShouldRender()
@@ -162,9 +187,8 @@ public partial class SeekBar : IAsyncDisposable
             {
                 var x = e.ClientX - SeekBarLeft;
                 var percent = Math.Clamp(x / SeekBarWidth, 0, 1);
-                var seekTime = PlayerService.Duration * percent;
-
-                PlayerService.Seek(seekTime);
+                var seekTime = ClockDuration * percent;
+                await SeekToAsync(seekTime);
             }
 
             _isDragging = false;
@@ -215,7 +239,7 @@ public partial class SeekBar : IAsyncDisposable
 
         _isScrubbing = true;
         _scrubRepeatCount = 0;
-        _scrubTime = PlayerService.CurrentTime;
+        _scrubTime = ClockCurrentTime;
         HoverPercent = CurrentPercent;
         HoverTime = _scrubTime;
         // Drop Blazor current-position preview; JS paints the scrub preview only.
@@ -250,9 +274,9 @@ public partial class SeekBar : IAsyncDisposable
         var step = GetScrubStep();
         _scrubTime = direction < 0
             ? Math.Max(0, _scrubTime - step)
-            : Math.Min(PlayerService.Duration, _scrubTime + step);
-        HoverPercent = PlayerService.Duration > 0
-            ? _scrubTime / PlayerService.Duration * 100
+            : Math.Min(ClockDuration, _scrubTime + step);
+        HoverPercent = ClockDuration > 0
+            ? _scrubTime / ClockDuration * 100
             : 0;
         HoverTime = _scrubTime;
         IsHovering = true;
@@ -267,7 +291,7 @@ public partial class SeekBar : IAsyncDisposable
         // Always seek: TV scrub is driven by JS (K7.SeekBar.stepLocal). OnEditStart can be
         // missed on the first arrow while the overlay becomes visible, leaving _isScrubbing false
         // while the thumbnail still moves - guarding on it would drop the commit entirely.
-        PlayerService.Seek(Math.Clamp(scrubTime, 0, Math.Max(0, PlayerService.Duration)));
+        await SeekToAsync(Math.Clamp(scrubTime, 0, Math.Max(0, ClockDuration)));
 
         _isScrubbing = false;
         _scrubRepeatCount = 0;
@@ -361,7 +385,16 @@ public partial class SeekBar : IAsyncDisposable
         var relativeX = clientX - SeekBarLeft;
         var percent = Math.Clamp(relativeX / SeekBarWidth, 0, 1);
         HoverPercent = percent * 100;
-        HoverTime = PlayerService.Duration * percent;
+        HoverTime = ClockDuration * percent;
+    }
+
+    private async Task SeekToAsync(double time)
+    {
+        time = Math.Clamp(time, 0, Math.Max(0, ClockDuration));
+        if (OnSeekRequested.HasDelegate)
+            await OnSeekRequested.InvokeAsync(time);
+        else
+            PlayerService.Seek(time);
     }
 
     private string GetSpriteStyle(double time)
@@ -399,7 +432,7 @@ public partial class SeekBar : IAsyncDisposable
 
     private List<ChapterSegment> GetChapterSegments()
     {
-        var duration = PlayerService.Duration;
+        var duration = ClockDuration;
         if (duration <= 0 || Chapters.Count == 0)
             return [];
 
@@ -468,15 +501,19 @@ public partial class SeekBar : IAsyncDisposable
             {
                 await JS.InvokeVoidAsync("K7.SeekBar.dispose", SeekBarRef);
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
             {
             }
             _dotNetRef.Dispose();
             _dotNetRef = null;
         }
-        PlayerService.DurationChanged -= OnDurationChanged;
-        PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
-        PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
+
+        if (!UseExternalClock)
+        {
+            PlayerService.DurationChanged -= OnDurationChanged;
+            PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+            PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
+        }
     }
 
     public class Chapter

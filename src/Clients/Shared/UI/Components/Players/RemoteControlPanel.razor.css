@@ -66,12 +66,16 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 560px;
 }
 
-.remote-control-panel__seekbar {
+.remote-control-panel__seekbar-host {
     flex: 1;
-    accent-color: var(--k7-primary);
+    min-width: 0;
+}
+
+.remote-control-panel__seekbar-host ::deep .seekbar-container {
+    width: 100%;
 }
 
 .remote-control-panel__time {

@@ -7,8 +7,8 @@
      data-thumbs-per-row="@ThumbsPerRow"
      data-thumb-width="@ThumbWidth"
      data-thumb-height="@ThumbHeight"
-     aria-valuemin="0" aria-valuemax="@PlayerService.Duration.ToString(CultureInfo.InvariantCulture)"
-     aria-valuenow="@PlayerService.CurrentTime.ToString(CultureInfo.InvariantCulture)"
+     aria-valuemin="0" aria-valuemax="@ClockDuration.ToString(CultureInfo.InvariantCulture)"
+     aria-valuenow="@ClockCurrentTime.ToString(CultureInfo.InvariantCulture)"
      aria-label="Seek"
 @onpointerdown="OnPointerDown"
 @onpointermove="OnPointerMove"
@@ -39,12 +39,12 @@
             @for (var i = 0; i < segments.Count; i++)
             {
                 var segment = segments[i];
-                var startFrac = segment.Start / PlayerService.Duration;
-                var durFrac = segment.Duration / PlayerService.Duration;
+                var startFrac = segment.Start / ClockDuration;
+                var durFrac = segment.Duration / ClockDuration;
                 var gapOffsetPx = i * ChapterGapPx;
 
-                var progressPercent = Math.Clamp((PlayerService.CurrentTime - segment.Start) / segment.Duration * 100, 0, 100);
-                var bufferPercent = Math.Clamp((PlayerService.BufferedTime - segment.Start) / segment.Duration * 100, 0, 100);
+                var progressPercent = Math.Clamp((ClockCurrentTime - segment.Start) / segment.Duration * 100, 0, 100);
+                var bufferPercent = Math.Clamp((ClockBufferedTime - segment.Start) / segment.Duration * 100, 0, 100);
                 var hoverPercent = Math.Clamp((HoverTime - segment.Start) / segment.Duration * 100, 0, 100);
 
                 <div class="chapter-segment-container"
@@ -67,7 +67,7 @@
         // .thumbnail here, ensurePreview races and leaves a second sprite stuck on the bar.
         var showPreview = !_isScrubbing && (IsHovering || _isFocused);
         var previewPercent = IsHovering ? HoverPercent : CurrentPercent;
-        var previewTime = IsHovering ? HoverTime : PlayerService.CurrentTime;
+        var previewTime = IsHovering ? HoverTime : ClockCurrentTime;
     }
 
     @if (showPreview)
