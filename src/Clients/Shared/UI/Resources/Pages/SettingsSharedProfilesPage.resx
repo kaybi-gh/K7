@@ -34,11 +34,11 @@
   <data name="PrivacyDescription" xml:space="preserve"><value>Par défaut, les autres utilisateurs ne peuvent pas vous ajouter à un nouveau profil partagé. Désactivez cette option pour autoriser les ajouts.</value></data>
   <data name="BlockNewMembership" xml:space="preserve"><value>Bloquer les ajouts à de nouveaux profils partagés</value></data>
   <data name="GroupsTitle" xml:space="preserve"><value>Vos profils</value></data>
-  <data name="GroupsDescription" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. Épinglez ceux à afficher sur cet appareil.</value></data>
-  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. L'activation du mode profil partagé est disponible dans les applis natives.</value></data>
+  <data name="GroupsDescription" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble. Membres et PIN : nom, membres, hôte et code PIN. Préférences : avatar, restrictions et playlists. Les seuils de lecture se règlent dans Paramètres une fois le profil actif.</value></data>
+  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble. Membres et PIN : nom, membres, hôte et code PIN. Préférences : avatar, restrictions et playlists. L'activation du mode profil partagé est disponible dans les applis natives.</value></data>
   <data name="ShowOnDevice" xml:space="preserve"><value>Afficher sur cet appareil</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Créer un profil partagé</value></data>
-  <data name="EditGroup" xml:space="preserve"><value>Modifier</value></data>
+  <data name="EditGroup" xml:space="preserve"><value>Membres et PIN</value></data>
   <data name="GroupCreated" xml:space="preserve"><value>Profil partagé créé.</value></data>
   <data name="GroupUpdated" xml:space="preserve"><value>Profil partagé mis à jour.</value></data>
   <data name="Empty" xml:space="preserve"><value>Vous ne faites partie d'aucun profil partagé.</value></data>
@@ -51,7 +51,7 @@
   <data name="LeaveDeletesGroup" xml:space="preserve"><value>Quitter ce profil partagé le supprimera, car il ne resterait qu'un seul membre.</value></data>
   <data name="TransferHostTitle" xml:space="preserve"><value>Transférer l'hôte</value></data>
   <data name="LeftGroup" xml:space="preserve"><value>Profil partagé quitté.</value></data>
-  <data name="ConfigureProfile" xml:space="preserve"><value>Configurer</value></data>
-  <data name="ProfileSettings" xml:space="preserve"><value>Configurer</value></data>
+  <data name="ConfigureProfile" xml:space="preserve"><value>Préférences</value></data>
+  <data name="ProfileSettings" xml:space="preserve"><value>Préférences</value></data>
   <data name="ProfileConfigured" xml:space="preserve"><value>Préférences du profil enregistrées.</value></data>
 </root>

@@ -1,6 +1,5 @@
 @namespace K7.Clients.Shared.UI.Components.Dialogs
 @using K7.Shared.Dtos
-@using K7.Shared.Dtos.Entities
 @using K7.Shared.Dtos.Entities.Playlists
 @using K7.Shared.Dtos.Restrictions
 @using K7.Shared.Dtos.SharedProfiles
@@ -9,12 +8,14 @@
 
 @if (_loading)
 {
-    <K7Spinner />
+    <div class="k7-dialog-content">
+        <K7Spinner />
+    </div>
 }
 else
 {
-    <div class="d-flex flex-col gap-4">
-        <p class="text-secondary">@string.Format(L["Description"], Group.Name)</p>
+    <div class="k7-dialog-content">
+        <p class="text-secondary mb-0">@string.Format(L["Description"], Group.Name)</p>
 
         <h6>@L["AvatarTitle"]</h6>
         <div class="d-flex align-center gap-3">
@@ -27,7 +28,8 @@ else
                 <K7AvatarGroup Size="lg" Members="@_memberAvatarItems" />
             }
             <div class="d-flex gap-2">
-                <K7Button Variant="outlined" OnClick="UploadAvatar" Disabled="_saving">@L["UploadAvatar"]</K7Button>
+                <K7Button Variant="outlined" OnClick="UploadAvatar" Disabled="_saving"
+                          @attributes="_initialFocusAttributes">@L["UploadAvatar"]</K7Button>
                 @if (!string.IsNullOrEmpty(_avatarUrl))
                 {
                     <K7Button Variant="text" Color="error" OnClick="RemoveAvatar" Disabled="_saving">@L["RemoveAvatar"]</K7Button>
@@ -40,16 +42,6 @@ else
             <K7Alert Severity="K7Severity.Error">@_avatarError</K7Alert>
         }
 
-        <h6>@L["VideoPolicyTitle"]</h6>
-        <K7TextField TValue="int" Type="number" Label="@L["MinResumePercent"]" @bind-Value="_videoPolicy.MinResumePercent" />
-        <K7TextField TValue="int" Type="number" Label="@L["MinResumeDurationSeconds"]" @bind-Value="_videoPolicy.MinResumeDurationSeconds" />
-        <K7TextField TValue="int" Type="number" Label="@L["CompletedThresholdPercent"]" @bind-Value="_videoPolicy.CompletedThresholdPercent" />
-        <K7TextField TValue="int" Type="number" Label="@L["ContinueWatchingMaxAgeDays"]" @bind-Value="_videoPolicy.ContinueWatchingMaxAgeDays" />
-
-        <h6>@L["AudioPolicyTitle"]</h6>
-        <K7TextField TValue="int" Type="number" Label="@L["AudioCompletedThresholdPercent"]" @bind-Value="_audioPolicy.CompletedThresholdPercent" />
-        <K7TextField TValue="int" Type="number" Label="@L["AudioCompletedMinDurationSeconds"]" @bind-Value="_audioPolicy.CompletedMinDurationSeconds" />
-
         <h6>@L["RestrictionTitle"]</h6>
         <K7Select TValue="Guid?" Label="@L["RestrictionProfile"]" @bind-Value="_restrictionProfileId" Clearable="true">
             @foreach (var profile in _restrictionProfiles)
@@ -59,10 +51,10 @@ else
         </K7Select>
 
         <h6>@L["PlaylistsTitle"]</h6>
-        <p class="text-secondary">@L["PlaylistsDescription"]</p>
+        <p class="text-secondary mb-0">@L["PlaylistsDescription"]</p>
         @if (_playlists.Count == 0)
         {
-            <p class="text-secondary">@L["NoPlaylists"]</p>
+            <p class="text-secondary mb-0">@L["NoPlaylists"]</p>
         }
         else
         {

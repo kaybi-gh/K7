@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.SharedProfiles;
@@ -225,4 +226,14 @@ public partial class SettingsWatchTogetherSharedProfilesPage
     }
 
     private const int SharedProfileMemberValidatorMinMembers = 2;
+
+    private static K7AvatarGroupItem ToAvatarGroupItem(SharedProfileMemberDto member) =>
+        new()
+        {
+            UserId = member.UserId,
+            Image = member.AvatarUrl,
+            Letter = string.IsNullOrEmpty(member.DisplayName)
+                ? "?"
+                : member.DisplayName[..1].ToUpperInvariant()
+        };
 }

@@ -13,8 +13,14 @@ public class GetEffectiveAudioPlaybackPolicySettingsQueryHandler(
     IUser currentUser)
     : IRequestHandler<GetEffectiveAudioPlaybackPolicySettingsQuery, AudioPlaybackPolicySettingsDto>
 {
-    public Task<AudioPlaybackPolicySettingsDto> Handle(
+    public async Task<AudioPlaybackPolicySettingsDto> Handle(
         GetEffectiveAudioPlaybackPolicySettingsQuery request,
-        CancellationToken cancellationToken) =>
-        policyProvider.GetEffectiveAudioPolicyAsync(currentUser.Id, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        return await policyProvider.GetEffectiveAudioPolicyAsync(
+            currentUser.Id,
+            sharedProfileId,
+            cancellationToken);
+    }
 }

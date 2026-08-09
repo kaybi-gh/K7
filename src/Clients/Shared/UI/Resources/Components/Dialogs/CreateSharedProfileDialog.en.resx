@@ -25,10 +25,16 @@
   <data name="MembersMinRequired" xml:space="preserve"><value>Select at least one more member to create the profile.</value></data>
   <data name="MembersInvitationHint" xml:space="preserve"><value>Only users who have allowed shared profile invitations are shown.</value></data>
   <data name="Host" xml:space="preserve"><value>Host</value></data>
-  <data name="GroupPinOptional" xml:space="preserve"><value>Shared profile PIN (optional)</value></data>
-  <data name="NewPinOptional" xml:space="preserve"><value>New PIN (optional)</value></data>
-  <data name="ConfirmPin" xml:space="preserve"><value>Confirm PIN</value></data>
-  <data name="GroupPinHelper" xml:space="preserve"><value>Protects access to the shared profile on this device.</value></data>
+  <data name="PinSectionTitle" xml:space="preserve"><value>Shared profile PIN</value></data>
+  <data name="GroupPinHelper" xml:space="preserve"><value>Protects access to the shared profile on the profile selection screen.</value></data>
+  <data name="SetPin" xml:space="preserve"><value>Set a PIN</value></data>
+  <data name="ChangePin" xml:space="preserve"><value>Change PIN</value></data>
+  <data name="RemovePin" xml:space="preserve"><value>Remove PIN</value></data>
+  <data name="SetPinDialogTitle" xml:space="preserve"><value>Set a PIN</value></data>
+  <data name="NewPinDialogTitle" xml:space="preserve"><value>New PIN</value></data>
+  <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirm PIN</value></data>
+  <data name="RemovePinDialogTitle" xml:space="preserve"><value>Remove PIN</value></data>
+  <data name="RemovePinConfirm" xml:space="preserve"><value>Remove the PIN from this shared profile?</value></data>
   <data name="Create" xml:space="preserve"><value>Create</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>PINs do not match.</value></data>

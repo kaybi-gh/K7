@@ -31,6 +31,14 @@
     gap: var(--space-1);
 }
 
+.shared-profiles-list__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    flex: 1;
+}
+
 .shared-profiles-list__info {
     display: flex;
     flex-direction: column;

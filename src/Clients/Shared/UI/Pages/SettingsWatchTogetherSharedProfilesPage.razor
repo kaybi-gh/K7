@@ -45,19 +45,33 @@
                     var isPinned = SharedProfileDevicePin.IsPinned(group.Id);
                     <div class="shared-profiles-list__item shared-profiles-list__item--stacked">
                         <div class="shared-profiles-list__row">
-                            <div class="shared-profiles-list__info">
-                                <span class="shared-profiles-list__name">@group.Name</span>
-                                <span class="shared-profiles-list__meta">
-                                    @string.Format(L["MemberCount"], group.Members.Count)
-                                    @if (isHost)
-                                    {
-                                        <span class="shared-profiles-list__badge">@L["HostBadge"]</span>
-                                    }
-                                    @if (group.HasPin)
-                                    {
-                                        <span class="shared-profiles-list__badge">@L["PinBadge"]</span>
-                                    }
-                                </span>
+                            <div class="shared-profiles-list__identity">
+                                @if (!string.IsNullOrEmpty(group.AvatarUrl))
+                                {
+                                    <K7Avatar Size="md"
+                                              Image="@group.AvatarUrl"
+                                              Letter="@(string.IsNullOrEmpty(group.Name) ? "?" : group.Name[..1].ToUpperInvariant())"
+                                              Alt="@group.Name" />
+                                }
+                                else
+                                {
+                                    <K7AvatarGroup Size="md"
+                                                   Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
+                                }
+                                <div class="shared-profiles-list__info">
+                                    <span class="shared-profiles-list__name">@group.Name</span>
+                                    <span class="shared-profiles-list__meta">
+                                        @string.Format(L["MemberCount"], group.Members.Count)
+                                        @if (isHost)
+                                        {
+                                            <span class="shared-profiles-list__badge">@L["HostBadge"]</span>
+                                        }
+                                        @if (group.HasPin)
+                                        {
+                                            <span class="shared-profiles-list__badge">@L["PinBadge"]</span>
+                                        }
+                                    </span>
+                                </div>
                             </div>
                             <div class="shared-profiles-list__actions">
                                 <K7Button Variant="text" StartIcon="@Phosphor.PencilSimple"

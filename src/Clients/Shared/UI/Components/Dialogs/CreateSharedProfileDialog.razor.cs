@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Extensions;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
@@ -10,6 +11,8 @@ public partial class CreateSharedProfileDialog
 {
     [Inject] private ISharedProfileService SharedProfileService { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
@@ -21,8 +24,9 @@ public partial class CreateSharedProfileDialog
     private Guid _currentUserId;
     private Guid _hostUserId;
     private string _name = "";
-    private string _pin = "";
-    private string _pinConfirm = "";
+    private string? _pendingPin;
+    private bool _pinChanged;
+    private bool _hasPin;
     private bool _loading = true;
     private bool _isSubmitting;
 
@@ -47,6 +51,7 @@ public partial class CreateSharedProfileDialog
                 if (_currentUserId != Guid.Empty)
                     _selectedMemberIds.Add(_currentUserId);
                 _hostUserId = EditGroup.HostUserId;
+                _hasPin = EditGroup.HasPin;
 
                 // Existing members may block new invitations; keep them visible for edit/host selection.
                 foreach (var member in EditGroup.Members)
@@ -126,18 +131,83 @@ public partial class CreateSharedProfileDialog
         return string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
     }
 
+    private async Task SetPinAsync()
+    {
+        var pin = await PromptPinAsync(L["SetPinDialogTitle"]);
+        if (pin is null)
+            return;
+
+        var confirm = await PromptPinAsync(L["ConfirmPinDialogTitle"]);
+        if (confirm is null)
+            return;
+
+        if (pin != confirm)
+        {
+            Snackbar.Add(L["PinMismatch"], K7Severity.Error);
+            return;
+        }
+
+        _pendingPin = pin;
+        _pinChanged = true;
+        _hasPin = true;
+    }
+
+    private async Task ChangePinAsync()
+    {
+        var pin = await PromptPinAsync(L["NewPinDialogTitle"]);
+        if (pin is null)
+            return;
+
+        var confirm = await PromptPinAsync(L["ConfirmPinDialogTitle"]);
+        if (confirm is null)
+            return;
+
+        if (pin != confirm)
+        {
+            Snackbar.Add(L["PinMismatch"], K7Severity.Error);
+            return;
+        }
+
+        _pendingPin = pin;
+        _pinChanged = true;
+        _hasPin = true;
+    }
+
+    private async Task RemovePinAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["RemovePinDialogTitle"],
+            L["RemovePinConfirm"],
+            yesText: S["Confirm"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed != true)
+            return;
+
+        _pendingPin = null;
+        _pinChanged = true;
+        _hasPin = false;
+    }
+
+    private async Task<string?> PromptPinAsync(string title)
+    {
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        var options = K7DialogServiceExtensions.CreatePinDialogOptions(deviceType);
+        var dialog = await DialogService.ShowAsync<PinDialog>(title, null, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+            return null;
+
+        return result.Data as string;
+    }
+
     private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()
     {
         if (_selectedMemberIds.Count < 2 || string.IsNullOrWhiteSpace(_name))
             return;
-
-        if (!string.IsNullOrEmpty(_pin) && _pin != _pinConfirm)
-        {
-            Snackbar.Add(L["PinMismatch"], K7Severity.Error);
-            return;
-        }
 
         _isSubmitting = true;
         try
@@ -149,7 +219,7 @@ public partial class CreateSharedProfileDialog
                     Name = _name.Trim(),
                     HostUserId = _hostUserId,
                     MemberUserIds = _selectedMemberIds.ToList(),
-                    Pin = string.IsNullOrWhiteSpace(_pin) ? null : _pin
+                    Pin = _pinChanged ? _pendingPin : null
                 });
             }
             else
@@ -161,14 +231,8 @@ public partial class CreateSharedProfileDialog
                     MemberUserIds = _selectedMemberIds.ToList()
                 });
 
-                if (_pin != _pinConfirm)
-                {
-                    Snackbar.Add(L["PinMismatch"], K7Severity.Error);
-                    return;
-                }
-
-                if (!string.IsNullOrWhiteSpace(_pin) || EditGroup.HasPin)
-                    await SharedProfileService.SetPinAsync(EditGroup.Id, string.IsNullOrWhiteSpace(_pin) ? null : _pin);
+                if (_pinChanged)
+                    await SharedProfileService.SetPinAsync(EditGroup.Id, _pendingPin);
             }
 
             Dialog.Close(K7DialogResult.Ok(true));

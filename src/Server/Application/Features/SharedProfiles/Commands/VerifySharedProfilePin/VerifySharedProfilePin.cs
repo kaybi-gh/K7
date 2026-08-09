@@ -5,18 +5,17 @@ namespace K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedPro
 
 public record VerifySharedProfilePinCommand(Guid SharedProfileId, string Pin) : IRequest<bool>;
 
-public class VerifySharedProfilePinCommandHandler(IApplicationDbContext context, IUser currentUser)
+public class VerifySharedProfilePinCommandHandler(IApplicationDbContext context)
     : IRequestHandler<VerifySharedProfilePinCommand, bool>
 {
     public async Task<bool> Handle(VerifySharedProfilePinCommand request, CancellationToken cancellationToken)
     {
-        Guard.Against.Null(currentUser.Id);
-
         var group = await context.SharedProfiles
             .AsNoTracking()
             .FirstOrDefaultAsync(g => g.Id == request.SharedProfileId, cancellationToken);
 
-        Guard.Against.NotFound(request.SharedProfileId, group);
+        if (group is null)
+            return false;
 
         if (group.PinHash is null)
             return true;

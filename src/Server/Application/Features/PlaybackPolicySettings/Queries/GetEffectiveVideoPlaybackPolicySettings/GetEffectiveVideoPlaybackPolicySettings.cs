@@ -13,8 +13,14 @@ public class GetEffectiveVideoPlaybackPolicySettingsQueryHandler(
     IUser currentUser)
     : IRequestHandler<GetEffectiveVideoPlaybackPolicySettingsQuery, VideoPlaybackPolicySettingsDto>
 {
-    public Task<VideoPlaybackPolicySettingsDto> Handle(
+    public async Task<VideoPlaybackPolicySettingsDto> Handle(
         GetEffectiveVideoPlaybackPolicySettingsQuery request,
-        CancellationToken cancellationToken) =>
-        policyProvider.GetEffectiveVideoPolicyAsync(currentUser.Id, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        return await policyProvider.GetEffectiveVideoPolicyAsync(
+            currentUser.Id,
+            sharedProfileId,
+            cancellationToken);
+    }
 }

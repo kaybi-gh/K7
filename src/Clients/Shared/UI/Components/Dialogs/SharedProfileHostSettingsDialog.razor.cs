@@ -1,6 +1,6 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Components;
 using K7.Shared.Dtos;
-using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.SharedProfiles;
@@ -16,6 +16,8 @@ public partial class SharedProfileHostSettingsDialog
 {
     private const long MaxAvatarSize = 2 * 1024 * 1024;
     private readonly string _avatarFileInputId = $"shared-profile-avatar-{Guid.NewGuid():N}";
+    private static readonly IReadOnlyDictionary<string, object> InitialFocusAttributes =
+        new Dictionary<string, object> { ["data-initial-focus"] = true };
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Parameter] public SharedProfileDto Group { get; set; } = default!;
@@ -25,20 +27,23 @@ public partial class SharedProfileHostSettingsDialog
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private bool _loading = true;
     private bool _saving;
     private bool _avatarChanged;
+    private bool _focusRequested;
     private string? _avatarUrl;
     private string? _avatarError;
-    private VideoPlaybackPolicySettingsDto _videoPolicy = new();
-    private AudioPlaybackPolicySettingsDto _audioPolicy = new();
     private Guid? _restrictionProfileId;
     private List<ContentRestrictionProfileDto> _restrictionProfiles = [];
     private List<LitePlaylistDto> _playlists = [];
     private HashSet<Guid> _sharedPlaylistIds = [];
     private HashSet<Guid> _initialSharedPlaylistIds = [];
     private List<K7AvatarGroupItem> _memberAvatarItems = [];
+
+    private IReadOnlyDictionary<string, object>? _initialFocusAttributes =>
+        !_loading ? InitialFocusAttributes : null;
 
     private string _avatarLetter =>
         string.IsNullOrEmpty(Group.Name) ? "?" : Group.Name[..1].ToUpperInvariant();
@@ -58,8 +63,6 @@ public partial class SharedProfileHostSettingsDialog
                 .ToList();
 
             _restrictionProfileId = Group.ContentRestrictionProfileId;
-            _videoPolicy = await SharedProfileService.GetVideoPlaybackPolicyAsync(Group.Id);
-            _audioPolicy = await SharedProfileService.GetAudioPlaybackPolicyAsync(Group.Id);
             _restrictionProfiles = await UserAdminService.GetContentRestrictionProfilesAsync();
             var playlistPage = await PlaylistService.GetPlaylistsAsync(pageNumber: 1, pageSize: 100);
             _playlists = playlistPage?.Items?.ToList() ?? [];
@@ -74,6 +77,23 @@ public partial class SharedProfileHostSettingsDialog
         finally
         {
             _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_loading || _focusRequested)
+            return;
+
+        _focusRequested = true;
+        await Task.Delay(220);
+        try
+        {
+            await SpatialNav.RefreshAsync();
+            await SpatialNav.FocusFirstAsync(".k7-dialog-content .k7-btn[data-initial-focus]");
+        }
+        catch (InvalidOperationException)
+        {
         }
     }
 
@@ -162,8 +182,6 @@ public partial class SharedProfileHostSettingsDialog
         _saving = true;
         try
         {
-            await SharedProfileService.UpdateVideoPlaybackPolicyAsync(Group.Id, _videoPolicy);
-            await SharedProfileService.UpdateAudioPlaybackPolicyAsync(Group.Id, _audioPolicy);
             await SharedProfileService.AssignContentRestrictionAsync(Group.Id, _restrictionProfileId);
 
             foreach (var id in _sharedPlaylistIds.Except(_initialSharedPlaylistIds))

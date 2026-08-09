@@ -188,7 +188,7 @@ Shared profiles let a couple or group watch together with a **shared continue-wa
 2. Others cannot add you until you allow shared-profile invitations.
 3. The host can set a custom avatar for the profile; otherwise member avatars are stacked.
 4. On native apps, pin with **Show on this device**, then pick it on profile selection.
-5. The host can **Configure** playback policies, content restrictions, home layout, and playlists shared with members for navigation.
+5. The host can open **Preferences** for avatar, content restrictions, and playlists shared with members. Playback continue-watching thresholds are configured in **Settings** while the shared profile is active (host only).
 
 While a shared profile is active:
 

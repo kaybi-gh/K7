@@ -19,19 +19,11 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Description" xml:space="preserve"><value>Preferences du profil partage "{0}". Elles s'appliquent quand ce profil est actif, pas les reglages personnels.</value></data>
+  <data name="Description" xml:space="preserve"><value>Preferences hote du profil partage "{0}" : avatar, restrictions de contenu et playlists. Les seuils de lecture se reglent dans Parametres une fois ce profil actif.</value></data>
   <data name="AvatarTitle" xml:space="preserve"><value>Avatar</value></data>
   <data name="UploadAvatar" xml:space="preserve"><value>Changer</value></data>
   <data name="RemoveAvatar" xml:space="preserve"><value>Supprimer</value></data>
   <data name="AvatarTooLarge" xml:space="preserve"><value>L'image ne doit pas depasser 2 Mo.</value></data>
-  <data name="VideoPolicyTitle" xml:space="preserve"><value>Reprendre la lecture video</value></data>
-  <data name="MinResumePercent" xml:space="preserve"><value>Pourcentage minimum pour reprendre</value></data>
-  <data name="MinResumeDurationSeconds" xml:space="preserve"><value>Duree minimale pour reprendre (secondes)</value></data>
-  <data name="CompletedThresholdPercent" xml:space="preserve"><value>Seuil de completion (%)</value></data>
-  <data name="ContinueWatchingMaxAgeDays" xml:space="preserve"><value>Age max continuer a regarder (jours)</value></data>
-  <data name="AudioPolicyTitle" xml:space="preserve"><value>Completion audio</value></data>
-  <data name="AudioCompletedThresholdPercent" xml:space="preserve"><value>Seuil de completion (%)</value></data>
-  <data name="AudioCompletedMinDurationSeconds" xml:space="preserve"><value>Duree minimale de completion (secondes)</value></data>
   <data name="RestrictionTitle" xml:space="preserve"><value>Restrictions de contenu</value></data>
   <data name="RestrictionProfile" xml:space="preserve"><value>Profil de restriction</value></data>
   <data name="PlaylistsTitle" xml:space="preserve"><value>Playlists partagees</value></data>

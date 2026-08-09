@@ -34,11 +34,11 @@
   <data name="PrivacyDescription" xml:space="preserve"><value>By default, other users cannot add you to a new shared profile. Turn this off to allow invitations.</value></data>
   <data name="BlockNewMembership" xml:space="preserve"><value>Block new shared profile invitations</value></data>
   <data name="GroupsTitle" xml:space="preserve"><value>Your profiles</value></data>
-  <data name="GroupsDescription" xml:space="preserve"><value>Shared profiles group members who watch together on a shared device. Pin the ones to show on this device.</value></data>
-  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Shared profiles group members who watch together on a shared device. Activating shared-profile mode is available in native apps.</value></data>
+  <data name="GroupsDescription" xml:space="preserve"><value>Shared profiles group members who watch together. Members &amp; PIN: name, members, host, and PIN. Preferences: avatar, restrictions, and playlists. Playback thresholds are set in Settings once the profile is active. Pin profiles to show on this device.</value></data>
+  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Shared profiles group members who watch together. Members &amp; PIN: name, members, host, and PIN. Preferences: avatar, restrictions, and playlists. Activating shared-profile mode is available in native apps.</value></data>
   <data name="ShowOnDevice" xml:space="preserve"><value>Show on this device</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Create shared profile</value></data>
-  <data name="EditGroup" xml:space="preserve"><value>Edit</value></data>
+  <data name="EditGroup" xml:space="preserve"><value>Members &amp; PIN</value></data>
   <data name="GroupCreated" xml:space="preserve"><value>Shared profile created.</value></data>
   <data name="GroupUpdated" xml:space="preserve"><value>Shared profile updated.</value></data>
   <data name="Empty" xml:space="preserve"><value>You are not a member of any shared profile.</value></data>
@@ -51,7 +51,7 @@
   <data name="LeaveDeletesGroup" xml:space="preserve"><value>Leaving will delete this shared profile because only one member would remain.</value></data>
   <data name="TransferHostTitle" xml:space="preserve"><value>Transfer host</value></data>
   <data name="LeftGroup" xml:space="preserve"><value>Left shared profile.</value></data>
-  <data name="ConfigureProfile" xml:space="preserve"><value>Configure</value></data>
-  <data name="ProfileSettings" xml:space="preserve"><value>Configure</value></data>
+  <data name="ConfigureProfile" xml:space="preserve"><value>Preferences</value></data>
+  <data name="ProfileSettings" xml:space="preserve"><value>Preferences</value></data>
   <data name="ProfileConfigured" xml:space="preserve"><value>Profile preferences saved.</value></data>
 </root>

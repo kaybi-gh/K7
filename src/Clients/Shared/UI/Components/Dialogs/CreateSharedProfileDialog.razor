@@ -50,26 +50,21 @@
                 </K7Select>
             }
 
-            @if (EditGroup is null)
-            {
-                <K7TextField @bind-Value="_pin" Label="@L["GroupPinOptional"]" Variant="outlined" Type="password"
-                              MaxLength="4"
-                              HelperText="@L["GroupPinHelper"]"
-                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
-                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password"
-                              MaxLength="4"
-                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
-            }
-            else
-            {
-                <K7TextField @bind-Value="_pin" Label="@L["NewPinOptional"]" Variant="outlined" Type="password"
-                              MaxLength="4"
-                              HelperText="@L["GroupPinHelper"]"
-                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
-                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password"
-                              MaxLength="4"
-                              UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
-            }
+            <div>
+                <span class="text-sm text-muted">@L["PinSectionTitle"]</span>
+                <p class="text-xs text-secondary mt-1 mb-2">@L["GroupPinHelper"]</p>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (_hasPin)
+                    {
+                        <K7Button Variant="outlined" OnClick="ChangePinAsync" Disabled="_isSubmitting">@L["ChangePin"]</K7Button>
+                        <K7Button Variant="text" Color="error" OnClick="RemovePinAsync" Disabled="_isSubmitting">@L["RemovePin"]</K7Button>
+                    }
+                    else
+                    {
+                        <K7Button Variant="outlined" OnClick="SetPinAsync" Disabled="_isSubmitting">@L["SetPin"]</K7Button>
+                    }
+                </div>
+            </div>
         </div>
     }
 </div>
