@@ -289,7 +289,8 @@
 
 @media (max-width: 599.98px) {
     .media-card--poster,
-    .media-card--cover {
+    .media-card--cover,
+    .media-card--backdrop {
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -298,36 +299,21 @@
     }
 
     .media-card--poster .media-card-container,
-    .media-card--cover .media-card-container {
+    .media-card--cover .media-card-container,
+    .media-card--backdrop .media-card-container {
         width: 100%;
     }
 
     .media-card--poster .media-card-footer,
-    .media-card--cover .media-card-footer {
-        width: 100%;
-    }
-
-    .media-card--poster .media-card-title,
-    .media-card--poster .media-card-subtitle {
-        width: 100%;
-        max-width: none;
-    }
-
-    .media-card--cover .media-card-title,
-    .media-card--cover .media-card-subtitle {
-        width: 100%;
-        max-width: none;
-    }
-
-    .media-card--backdrop .media-card-container {
-        width: var(--media-card-compact-backdrop-width);
-        aspect-ratio: 16 / 9;
-    }
-
+    .media-card--cover .media-card-footer,
     .media-card--backdrop .media-card-footer {
         width: 100%;
     }
 
+    .media-card--poster .media-card-title,
+    .media-card--poster .media-card-subtitle,
+    .media-card--cover .media-card-title,
+    .media-card--cover .media-card-subtitle,
     .media-card--backdrop .media-card-title,
     .media-card--backdrop .media-card-subtitle {
         width: 100%;
