@@ -31,6 +31,7 @@ public class PlaybackProgressTracker : IDisposable
     private Guid? _currentIndexedFileId;
     private double _lastReportedPosition;
     private double _lastKnownTime;
+    private double _resumeFloor;
     private bool _isAuthenticated;
     private bool _disposed;
     private PlaybackState _lastState = PlaybackState.Unknown;
@@ -38,6 +39,8 @@ public class PlaybackProgressTracker : IDisposable
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(10);
     private const double MinPositionDeltaToReport = 2.0;
     private const double SeekDetectionThreshold = 3.0;
+    private const double SpuriousZeroGuardSeconds = 5.0;
+    private const double SignificantProgressSeconds = 30.0;
 
     public Guid? CurrentMediaId => _currentMediaId;
     public Guid? CurrentSerieId => _currentSerieId;
@@ -82,6 +85,7 @@ public class PlaybackProgressTracker : IDisposable
         _referenceId = Guid.NewGuid();
         _lastReportedPosition = 0;
         _isAuthenticated = isAuthenticated;
+        ApplyResumeFloor(_playerService.Source?.PendingSeekTime);
         StartTimer();
     }
 
@@ -105,6 +109,9 @@ public class PlaybackProgressTracker : IDisposable
 
     private void OnCurrentTimeChanged(double time)
     {
+        if (ShouldIgnoreTransientPosition(time))
+            return;
+
         // Detect significant seek (forward or backward) and immediately report
         if (_currentMediaId is not null && Math.Abs(time - _lastKnownTime) > SeekDetectionThreshold)
         {
@@ -112,6 +119,7 @@ public class PlaybackProgressTracker : IDisposable
         }
 
         _lastKnownTime = time;
+        ClearResumeFloorIfReached(time);
     }
 
     private void OnSourceChanged(PlayerSource source)
@@ -121,6 +129,8 @@ public class PlaybackProgressTracker : IDisposable
         {
             _sessionId = serverSessionId;
         }
+
+        ApplyResumeFloor(source.PendingSeekTime);
     }
 
     private void OnPlaybackStateChanged(PlaybackState state)
@@ -170,9 +180,19 @@ public class PlaybackProgressTracker : IDisposable
         try
         {
             if (duration <= 0) return;
+            if (ShouldIgnoreTransientPosition(position)) return;
             if (!isTerminal && Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
 
+            // Never overwrite a solid resume point with a near-zero tick after reopen/rebind.
+            if (!isTerminal
+                && position < SpuriousZeroGuardSeconds
+                && _lastReportedPosition > SignificantProgressSeconds)
+            {
+                return;
+            }
+
             _lastReportedPosition = position;
+            ClearResumeFloorIfReached(position);
 
             if (!_connectivity.IsOnline && _currentIndexedFileId.HasValue)
             {
@@ -211,6 +231,33 @@ public class PlaybackProgressTracker : IDisposable
             if (isTerminal)
                 _cacheStore.InvalidateHomeFeed();
         }
+    }
+
+    private void ApplyResumeFloor(double? pendingSeekTime)
+    {
+        if (pendingSeekTime is > 0)
+        {
+            _resumeFloor = pendingSeekTime.Value;
+            if (_lastKnownTime < _resumeFloor)
+                _lastKnownTime = _resumeFloor;
+            return;
+        }
+
+        _resumeFloor = 0;
+    }
+
+    private void ClearResumeFloorIfReached(double position)
+    {
+        if (_resumeFloor > 0 && position >= _resumeFloor - SeekDetectionThreshold)
+            _resumeFloor = 0;
+    }
+
+    private bool ShouldIgnoreTransientPosition(double position)
+    {
+        if (_resumeFloor > 0 && position < _resumeFloor - SeekDetectionThreshold)
+            return true;
+
+        return false;
     }
 
     public void Dispose()
