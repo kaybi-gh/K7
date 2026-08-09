@@ -1176,6 +1176,9 @@ public class K7MediaLibraryService : MediaLibraryService,
             return afterPrefix.Contains(':') ? (false, true) : (true, true);
         }
 
+        if (mediaId.StartsWith("radio:"))
+            return (false, true);
+
         if (mediaId.StartsWith("download-group:"))
         {
             var afterPrefix = mediaId.AsSpan("download-group:".Length);
@@ -1211,13 +1214,28 @@ public class K7MediaLibraryService : MediaLibraryService,
                     var mediaId = item.MediaId;
                     if (string.IsNullOrEmpty(mediaId)) continue;
 
-                    var queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
+                    var isRadio = mediaId.StartsWith("radio:", StringComparison.Ordinal);
+
+                    // Block OnSourceChanged while resolving so Media3 owns the first SetMediaItem.
+                    _syncingFromExoPlayer = true;
+                    IReadOnlyList<AudioQueueItem> queueItems;
+                    try
+                    {
+                        queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
+                    }
+                    finally
+                    {
+                        if (isRadio)
+                            _syncingFromExoPlayer = false;
+                    }
+
                     Log.Info(Tag, $"OnAddMediaItems: GetPlayableItemsAsync({mediaId}) returned {queueItems.Count} tracks");
 
                     if (queueItems.Count > 0)
                     {
                         var failCount = 0;
-                        foreach (var track in queueItems)
+                        var tracksToResolve = isRadio ? queueItems.Take(1) : queueItems;
+                        foreach (var track in tracksToResolve)
                         {
                             var streamUrl = await GetStreamUrl(track);
                             if (streamUrl is null)
@@ -1238,33 +1256,42 @@ public class K7MediaLibraryService : MediaLibraryService,
                         if (failCount > 0)
                             Log.Warn(Tag, $"OnAddMediaItems: {failCount} tracks failed to get stream URL");
 
-                        // Store resolved items for queue navigation
-                        var resolvedList = new List<MediaItem>();
-                        for (var i = 0; i < resolvedItems.Size(); i++)
-                            resolvedList.Add((MediaItem)resolvedItems.Get(i)!);
-                        _resolvedQueueMediaItems = resolvedList;
-
-                        // Block OnSourceChanged - Media3 will handle setting items on the player
-                        _syncingFromExoPlayer = true;
-                        try
+                        if (isRadio)
                         {
-                            await MainThread.InvokeOnMainThreadAsync(() => _audioPlayerService!.PlayTracksAsync(queueItems, 0));
+                            // Radio keeps single-item + refill via MusicRadioPlaybackService.
+                            _resolvedQueueMediaItems = null;
+                            _pendingTrack = _audioPlayerService?.CurrentTrack ?? queueItems[0];
                         }
-                        finally
+                        else
                         {
-                            _syncingFromExoPlayer = false;
+                            var resolvedList = new List<MediaItem>();
+                            for (var i = 0; i < resolvedItems.Size(); i++)
+                                resolvedList.Add((MediaItem)resolvedItems.Get(i)!);
+                            _resolvedQueueMediaItems = resolvedList;
+
+                            try
+                            {
+                                await MainThread.InvokeOnMainThreadAsync(() => _audioPlayerService!.PlayTracksAsync(queueItems, 0));
+                            }
+                            finally
+                            {
+                                _syncingFromExoPlayer = false;
+                            }
                         }
 
                         Log.Info(Tag, $"OnAddMediaItems: queue ready with {resolvedItems.Size()} items for: {mediaId}");
                     }
-                    else if (item is not null)
+                    else
                     {
-                        resolvedItems.Add(item);
+                        _syncingFromExoPlayer = false;
+                        if (item is not null)
+                            resolvedItems.Add(item);
                     }
                 }
             }
             catch (Exception ex)
             {
+                _syncingFromExoPlayer = false;
                 Log.Error(Tag, $"OnAddMediaItems: exception: {ex}");
             }
 

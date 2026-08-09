@@ -118,13 +118,15 @@ public class CarPlaySceneDelegate : UIResponder, ICPTemplateApplicationSceneDele
         try
         {
             var tracks = await _mediaBrowseService.GetPlayableItemsAsync(item.Id);
-            if (tracks.Count > 0)
-            {
+            if (tracks.Count == 0)
+                return;
+
+            // Radio presets already start playback inside GetPlayableItemsAsync (with refill).
+            if (!item.Id.StartsWith("radio:", StringComparison.Ordinal))
                 await _audioPlayerService.PlayTracksAsync(tracks, 0);
 
-                // Navigate to Now Playing
-                _interfaceController?.PushTemplate(CPNowPlayingTemplate.SharedTemplate, true, null);
-            }
+            // Navigate to Now Playing
+            _interfaceController?.PushTemplate(CPNowPlayingTemplate.SharedTemplate, true, null);
         }
         catch (Exception ex)
         {

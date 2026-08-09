@@ -58,7 +58,7 @@ Same interface in the browser and in native apps.
 | Platform | Notes |
 |---|---|
 | Web | Open the server URL in a browser - no separate install |
-| Android (phone) | Native app |
+| Android (phone) | Native app, also supports **Android Auto** (browse Home / Library / Playlists / Downloads, play radios from Home) |
 | Android TV | Native app for TV remotes |
 | Windows | Native app |
 | iOS / Mac | Native apps exist but are **not tested** (no Apple hardware) |

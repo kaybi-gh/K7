@@ -29,6 +29,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private const string PrefixRecent = "recent:";
     private const string PrefixDownloadGroup = "download-group:";
     private const string PrefixArtistLetter = "artists-letter:";
+    private const string PrefixRadio = "radio:";
     private const string ShuffleSuffix = ":shuffle";
     private const string ServerUnavailableId = "error:server-unavailable";
 
@@ -37,19 +38,28 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private readonly IServerInfoService _serverInfoService;
     private readonly IK7ServerService _apiClient;
     private readonly IOfflineMediaStore _offlineStore;
+    private readonly IMusicRadioPlaybackService _musicRadio;
+    private readonly IServerPreferencesService _serverPreferences;
+    private readonly IAudioPlayerService _audioPlayer;
 
     public MediaBrowseService(
         IMediaService mediaService,
         IPlaylistService playlistService,
         IServerInfoService serverInfoService,
         IK7ServerService apiClient,
-        IOfflineMediaStore offlineStore)
+        IOfflineMediaStore offlineStore,
+        IMusicRadioPlaybackService musicRadio,
+        IServerPreferencesService serverPreferences,
+        IAudioPlayerService audioPlayer)
     {
         _mediaService = mediaService;
         _playlistService = playlistService;
         _serverInfoService = serverInfoService;
         _apiClient = apiClient;
         _offlineStore = offlineStore;
+        _musicRadio = musicRadio;
+        _serverPreferences = serverPreferences;
+        _audioPlayer = audioPlayer;
     }
 
     public Task<IReadOnlyList<MediaBrowseItem>> GetRootItemsAsync(CancellationToken cancellationToken = default)
@@ -90,6 +100,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
                     await GetOnlineOrUnavailableAsync(() => GetAlbumTracksAsync(parentId, cancellationToken)),
                 _ when parentId.StartsWith(PrefixPlaylist) =>
                     await GetOnlineOrUnavailableAsync(() => GetPlaylistTracksAsync(parentId, cancellationToken)),
+                _ when parentId.StartsWith(PrefixRadio) => [],
                 _ => []
             };
         }
@@ -165,6 +176,11 @@ public sealed class MediaBrowseService : IMediaBrowseService
         if (parentId.StartsWith(PrefixTrack))
         {
             return await GetSingleTrackQueueAsync(parentId, cancellationToken);
+        }
+
+        if (parentId.StartsWith(PrefixRadio))
+        {
+            return await StartRadioAsync(parentId, cancellationToken);
         }
 
         if (parentId.StartsWith(PrefixArtist))
@@ -325,6 +341,8 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
     private async Task<IReadOnlyList<MediaBrowseItem>> GetHomeItemsAsync(CancellationToken cancellationToken)
     {
+        var radios = await GetRadioPresetItemsAsync(cancellationToken);
+
         var homeSections = new List<MediaBrowseItem>
         {
             new() { Id = HomeSectionRecentPlaylists, Title = "Recent Playlists", IsBrowsable = true },
@@ -338,17 +356,97 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         // null means the API call failed (auth/network). Empty means the server
         // responded but has no content for that section.
-        if (recentPlaylists is null && recentPlays is null && recentlyAdded is null)
-            return [CreateServerUnavailableItem()];
-
-        var hasAny = (recentPlaylists?.Count ?? 0) > 0
+        var hasOnlineContent = (recentPlaylists?.Count ?? 0) > 0
             || (recentPlays?.Count ?? 0) > 0
             || (recentlyAdded?.Count ?? 0) > 0;
 
-        if (!hasAny)
-            return [CreateServerUnavailableItem()];
+        // Playable radio presets first so Android Auto / CarPlay can start them in one tap.
+        var items = new List<MediaBrowseItem>(radios.Count + homeSections.Count);
+        items.AddRange(radios);
+        if (hasOnlineContent)
+            items.AddRange(homeSections);
 
-        return homeSections;
+        return items;
+    }
+
+    private async Task<IReadOnlyList<MediaBrowseItem>> GetRadioPresetItemsAsync(CancellationToken cancellationToken)
+    {
+        var presets = new List<MediaBrowseItem>
+        {
+            new()
+            {
+                Id = $"{PrefixRadio}{MusicRadioType.Discovery}",
+                Title = "Discovery",
+                Subtitle = "Radio",
+                IsPlayable = true
+            },
+            new()
+            {
+                Id = $"{PrefixRadio}{MusicRadioType.TimeCapsule}",
+                Title = "Time Capsule",
+                Subtitle = "Radio",
+                IsPlayable = true
+            },
+            new()
+            {
+                Id = $"{PrefixRadio}{MusicRadioType.RecentlyAdded}",
+                Title = "Recently Added",
+                Subtitle = "Radio",
+                IsPlayable = true
+            }
+        };
+
+        try
+        {
+            var status = await _serverPreferences.GetMusicIntelligenceStatusAsync(cancellationToken);
+            if (status.IsAvailable)
+            {
+                presets.Insert(1, new MediaBrowseItem
+                {
+                    Id = $"{PrefixRadio}{MusicRadioType.DiscoveryAi}",
+                    Title = "Discovery AI",
+                    Subtitle = "Radio",
+                    IsPlayable = true
+                });
+            }
+        }
+        catch
+        {
+            // Presets without MI remain available.
+        }
+
+        return presets;
+    }
+
+    private async Task<IReadOnlyList<AudioQueueItem>> StartRadioAsync(string parentId, CancellationToken cancellationToken)
+    {
+        var radioKey = parentId[PrefixRadio.Length..];
+        if (!Enum.TryParse<MusicRadioType>(radioKey, ignoreCase: true, out var radioType))
+            return [];
+
+        if (radioType is not (MusicRadioType.Discovery or MusicRadioType.DiscoveryAi
+            or MusicRadioType.TimeCapsule or MusicRadioType.RecentlyAdded))
+            return [];
+
+        var title = radioType switch
+        {
+            MusicRadioType.Discovery => "Discovery",
+            MusicRadioType.DiscoveryAi => "Discovery AI",
+            MusicRadioType.TimeCapsule => "Time Capsule",
+            MusicRadioType.RecentlyAdded => "Recently Added",
+            _ => radioType.ToString()
+        };
+
+        var started = await _musicRadio.StartAsync(new MusicRadioRequest
+        {
+            RadioType = radioType.ToString(),
+            Title = title
+        }, cancellationToken);
+
+        if (!started)
+            return [];
+
+        return _audioPlayer.Queue.Count > 0 ? _audioPlayer.Queue.ToArray() : [];
     }
 
     private static MediaBrowseItem CreateServerUnavailableItem() => new()
