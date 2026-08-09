@@ -593,26 +593,75 @@ public class K7MediaLibraryService : MediaLibraryService,
         var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
         var itemBuilder = new MediaItem.Builder().SetUri(uri)!;
 
-        if (_pendingTrack is not null)
+        // Prefer CurrentTrack over deferred _pendingTrack: soft-crossfade advances the
+        // queue index before CurrentTrackChanged fires, so _pendingTrack stays one behind.
+        var track = _audioPlayerService?.CurrentTrack ?? _pendingTrack;
+        if (track is not null)
         {
-            var metadataBuilder = new MediaMetadata.Builder()
-                .SetTitle(_pendingTrack.Title)!
-                .SetArtist(_pendingTrack.Artist)!
-                .SetAlbumTitle(_pendingTrack.AlbumTitle)!
-                .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
-                .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
-
-            if (_pendingTrack.CoverUrl is not null)
-                SetPlayerArtwork(metadataBuilder, _pendingTrack.CoverUrl);
-
-            itemBuilder.SetMediaId(_pendingTrack.MediaId.ToString())!
-                .SetMediaMetadata(metadataBuilder.Build()!);
+            itemBuilder.SetMediaId(track.MediaId.ToString())!
+                .SetMediaMetadata(BuildTrackMetadata(track)!);
         }
 
         player.Volume = volume;
         player.SetMediaItem(itemBuilder.Build()!);
         player.Prepare();
         player.PlayWhenReady = playWhenReady;
+    }
+
+    private MediaMetadata BuildTrackMetadata(AudioQueueItem track)
+    {
+        var metadataBuilder = new MediaMetadata.Builder()
+            .SetTitle(track.Title)!
+            .SetArtist(track.Artist)!
+            .SetAlbumTitle(track.AlbumTitle)!
+            .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
+            .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
+
+        if (track.CoverUrl is not null)
+            SetPlayerArtwork(metadataBuilder, track.CoverUrl);
+
+        return metadataBuilder.Build()!;
+    }
+
+    private void SyncNowPlayingMetadata(AudioQueueItem? track)
+    {
+        if (_player is null || track is null || _isVideoMode)
+            return;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            try
+            {
+                if (_player is null)
+                    return;
+
+                var current = _player.CurrentMediaItem;
+                if (current is null)
+                    return;
+
+                var index = _player.CurrentMediaItemIndex;
+                if (index < 0)
+                    return;
+
+                var mediaId = track.MediaId.ToString();
+                var currentTitle = current.MediaMetadata?.Title?.ToString();
+                if (string.Equals(current.MediaId, mediaId, StringComparison.Ordinal)
+                    && string.Equals(currentTitle, track.Title, StringComparison.Ordinal))
+                    return;
+
+                var updated = current.BuildUpon()!
+                    .SetMediaId(mediaId)!
+                    .SetMediaMetadata(BuildTrackMetadata(track))!
+                    .Build()!;
+
+                _player.ReplaceMediaItem(index, updated);
+                Log.Info(Tag, $"Now-playing metadata synced: {track.Title}");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"Failed to sync now-playing metadata: {ex.Message}");
+            }
+        });
     }
 
     private void ApplySingleItemSource(PlayerSource source, float startVolume = 1f)
@@ -624,7 +673,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         PreparePlayerWithSource(_player, source, startVolume <= 0 ? startVolume : startVolume * _loudnessLinearGain, playWhenReady: true);
         if (startVolume > 0)
             _player.Volume = startVolume * _loudnessLinearGain;
-        Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"}");
+        Log.Info(Tag, $"Playing: {(_audioPlayerService?.CurrentTrack ?? _pendingTrack)?.Title ?? "unknown"}");
     }
 
     private void OnSourceChanged(PlayerSource source)
@@ -758,6 +807,10 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         _pendingTrack = track;
         RefreshLoudnessGain(applyToPlayer: !_crossfadeInProgress);
+        // Crossfade defers this event until after SetMediaItem; push metadata so
+        // Android Auto / notification never stay one track behind.
+        if (!_crossfadeInProgress && !_syncingFromExoPlayer)
+            SyncNowPlayingMetadata(track);
     }
 
     private bool _acceptEncodingConfigured;
@@ -1173,20 +1226,10 @@ public class K7MediaLibraryService : MediaLibraryService,
                                 continue;
                             }
 
-                            var metadataBuilder = new MediaMetadata.Builder()
-                                .SetTitle(track.Title)!
-                                .SetArtist(track.Artist)!
-                                .SetAlbumTitle(track.AlbumTitle)!
-                                .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
-                                .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
-
-                            if (track.CoverUrl is not null)
-                                SetPlayerArtwork(metadataBuilder, track.CoverUrl);
-
                             var resolved = new MediaItem.Builder()
                                 .SetMediaId(track.MediaId.ToString())!
                                 .SetUri(streamUrl)!
-                                .SetMediaMetadata(metadataBuilder.Build()!)!
+                                .SetMediaMetadata(BuildTrackMetadata(track))!
                                 .Build()!;
 
                             resolvedItems.Add(resolved);
