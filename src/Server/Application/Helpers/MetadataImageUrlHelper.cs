@@ -59,15 +59,50 @@ public static class MetadataImageUrlHelper
 
     public static ProviderImageDto? NormalizeProviderImage(ProviderImageDto image)
     {
-        if (!TryCreateRemoteUri(image.Url, out _))
+        var url = PreferHttps(image.Url);
+        if (url is null || !TryCreateRemoteUri(url, out _))
             return null;
 
-        var thumbnailUrl = BuildWikimediaThumbnailUrl(image.ThumbnailUrl) ?? image.Url;
+        var thumbnailUrl = PreferHttps(image.ThumbnailUrl);
+        thumbnailUrl = BuildWikimediaThumbnailUrl(thumbnailUrl) ?? url;
 
         return image with
         {
+            Url = url,
             ThumbnailUrl = thumbnailUrl
         };
+    }
+
+    /// <summary>
+    /// Cover Art Archive JSON still emits http:// URLs; browsers on HTTPS pages need https for CSP and mixed content.
+    /// </summary>
+    public static string? PreferHttps(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return url;
+
+        if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            return url;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return url;
+
+        if (!IsHttpsUpgradeableImageHost(uri.Host))
+            return url;
+
+        var builder = new UriBuilder(uri) { Scheme = Uri.UriSchemeHttps, Port = -1 };
+        return builder.Uri.AbsoluteUri;
+    }
+
+    private static bool IsHttpsUpgradeableImageHost(string host)
+    {
+        if (host.Equals("coverartarchive.org", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("www.coverartarchive.org", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("archive.org", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("www.archive.org", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return host.EndsWith(".archive.org", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool MeetsHdStillThreshold(int width, int height) =>

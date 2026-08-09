@@ -21,7 +21,9 @@ public static class MetadataProviderHostMapper
         if (h is "artworks.thetvdb.com" or "api4.thetvdb.com" or "thetvdb.com" or "www.thetvdb.com")
             return MetadataProviderNames.Tvdb;
 
-        if (h is "coverartarchive.org" or "www.coverartarchive.org")
+        if (h is "coverartarchive.org" or "www.coverartarchive.org"
+            or "archive.org" or "www.archive.org"
+            || h.EndsWith(".archive.org", StringComparison.Ordinal))
             return MetadataProviderNames.CoverArt;
 
         if (h is "musicbrainz.org" or "www.musicbrainz.org")

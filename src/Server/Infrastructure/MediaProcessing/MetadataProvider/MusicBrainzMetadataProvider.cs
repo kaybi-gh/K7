@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -414,7 +415,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             var response = await _httpClient.GetAsync($"{baseUrl}/front-500", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                return response.RequestMessage?.RequestUri?.ToString();
+                return MetadataImageUrlHelper.PreferHttps(response.RequestMessage?.RequestUri?.ToString());
             }
         }
         catch

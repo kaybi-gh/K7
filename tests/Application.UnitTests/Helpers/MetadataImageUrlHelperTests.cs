@@ -8,6 +8,43 @@ namespace K7.Server.Application.UnitTests.Helpers;
 public class MetadataImageUrlHelperTests
 {
     [Test]
+    public void PreferHttps_ShouldUpgradeCoverArtArchiveHttpUrls()
+    {
+        var upgraded = MetadataImageUrlHelper.PreferHttps(
+            "http://coverartarchive.org/release/0d98ccb8-3e6c-442f-bdff-9f3187fa71f5/14954323808-500.jpg");
+
+        upgraded.Should().Be(
+            "https://coverartarchive.org/release/0d98ccb8-3e6c-442f-bdff-9f3187fa71f5/14954323808-500.jpg");
+    }
+
+    [Test]
+    public void PreferHttps_ShouldLeaveUnrelatedHttpUrlsUnchanged()
+    {
+        MetadataImageUrlHelper.PreferHttps("http://example.com/cover.jpg")
+            .Should().Be("http://example.com/cover.jpg");
+    }
+
+    [Test]
+    public void FilterProviderImages_ShouldUpgradeCoverArtArchiveHttpUrls()
+    {
+        var images = new List<ProviderImageDto>
+        {
+            new()
+            {
+                Url = "http://coverartarchive.org/release/abc/front.jpg",
+                ThumbnailUrl = "http://coverartarchive.org/release/abc/front-250.jpg",
+                Type = MetadataPictureType.Cover
+            }
+        };
+
+        var filtered = MetadataImageUrlHelper.FilterProviderImages(images);
+
+        filtered.Should().ContainSingle();
+        filtered[0].Url.Should().StartWith("https://");
+        filtered[0].ThumbnailUrl.Should().StartWith("https://");
+    }
+
+    [Test]
     public void IsVectorImageUrl_ShouldReturnTrue_WhenUrlEndsWithSvg()
     {
         MetadataImageUrlHelper.IsVectorImageUrl("https://commons.wikimedia.org/wiki/Special:FilePath/Logo.svg")

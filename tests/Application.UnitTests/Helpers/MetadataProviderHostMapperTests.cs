@@ -13,6 +13,8 @@ public class MetadataProviderHostMapperTests
     [TestCase("upload.wikimedia.org", MetadataProviderNames.Wikimedia)]
     [TestCase("fr.wikipedia.org", MetadataProviderNames.Wikimedia)]
     [TestCase("coverartarchive.org", MetadataProviderNames.CoverArt)]
+    [TestCase("archive.org", MetadataProviderNames.CoverArt)]
+    [TestCase("ia601408.us.archive.org", MetadataProviderNames.CoverArt)]
     [TestCase("musicbrainz.org", MetadataProviderNames.MusicBrainz)]
     [TestCase("www.wikidata.org", MetadataProviderNames.Wikidata)]
     [TestCase("unknown.example", MetadataProviderNames.Local)]

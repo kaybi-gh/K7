@@ -42,6 +42,27 @@ public class WebHostSmokeTests
     }
 
     [Test]
+    public async Task Responses_ShouldAllowMetadataImageHostsInCsp()
+    {
+        var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync("/health");
+        var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+
+        csp.Should().Contain("img-src");
+        csp.Should().Contain("https://image.tmdb.org");
+        csp.Should().Contain("https://artworks.thetvdb.com");
+        csp.Should().Contain("https://coverartarchive.org");
+        csp.Should().Contain("https://archive.org");
+        csp.Should().Contain("https://*.archive.org");
+        csp.Should().Contain("https://commons.wikimedia.org");
+        csp.Should().Contain("https://upload.wikimedia.org");
+    }
+
+    [Test]
     public async Task OpenSubsonicPing_ShouldReturnAuthErrorEnvelope_WhenUnauthenticated()
     {
         var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions

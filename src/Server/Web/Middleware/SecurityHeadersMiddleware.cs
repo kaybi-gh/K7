@@ -78,7 +78,9 @@ public sealed class SecurityHeadersMiddleware(
             "script-src-attr 'unsafe-inline'",
             "worker-src 'self' blob: https://www.gstatic.com https://*.gstatic.com",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: https://image.tmdb.org https://artworks.thetvdb.com https://coverartarchive.org https://*.archive.org",
+            // Metadata picker previews: TMDb, TVDB, Cover Art Archive (often redirects to archive.org apex
+            // or ia*.archive.org), plus Wikimedia Commons (Special:FilePath -> upload.wikimedia.org).
+            "img-src 'self' data: blob: https://image.tmdb.org https://artworks.thetvdb.com https://coverartarchive.org https://archive.org https://*.archive.org https://commons.wikimedia.org https://upload.wikimedia.org",
             "font-src 'self' data:",
             $"connect-src {string.Join(' ', connectSources)}",
             "media-src 'self' blob:",
