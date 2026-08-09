@@ -1,4 +1,5 @@
 using CommunityToolkit.Maui;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Data;
 using K7.Clients.MAUI.Interfaces;
@@ -30,6 +31,8 @@ public static partial class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        MauiNativeVideoChrome.EnableForNativeMediaElementHosts();
+
 #if WINDOWS
         // Capture JSException.Message (VS only shows "Exception thrown" without details).
         // Also reports a rate-limited sample to the server via IClientErrorReporter once DI is ready.
@@ -44,6 +47,7 @@ public static partial class MauiProgram
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("Phosphor.ttf", "Phosphor");
             });
 
         builder.Services.AddMauiBlazorWebView();

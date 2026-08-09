@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
+using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -7,6 +8,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
 using Microsoft.JSInterop;
+using System.ComponentModel;
 
 namespace K7.Clients.MAUI;
 
@@ -85,12 +87,14 @@ public partial class BlazorPage : ContentPage
         InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
+        InitializeNativeVideoOverlay();
         Loaded += OnBlazorPageLoaded;
     }
 
     private void OnBlazorPageLoaded(object? sender, EventArgs e)
     {
         Loaded -= OnBlazorPageLoaded;
+        InitializeNativeVideoOverlay();
 #if !WINDOWS
         TrySubscribeAccessTokenChanged();
 #endif
@@ -167,19 +171,26 @@ public partial class BlazorPage : ContentPage
 
     internal void HandleBackButton()
     {
+        NativeVideoDebug.Log(
+            "HandleBackButton playerVisible=" + _playerService.IsVisible
+            + " nativeChrome=" + MauiNativeVideoChrome.IsEnabled);
+
         if (_backButtonService.HandleBackButton())
             return;
 
-        // When native video player is active, prefer pure WebView JS (cancel/hide/close).
-        // Blazor OnBackPressed + JSRuntime await can hang after scrub storms.
+        // When native video player is active, prefer native overlay or WebView JS.
         if (_playerService.IsVisible)
         {
             MainThread.BeginInvokeOnMainThread(() =>
             {
+                if (TryHandleNativeVideoBack())
+                {
+                    NativeVideoDebug.Log("HandleBackButton consumed by native overlay");
+                    return;
+                }
 #if ANDROID
-                // handleVideoTvBack hides overlay or closes. Re-call closePlayer when r===close
-                // so a missing K7.tvNativeClosePlayer mirror still tears down MediaElement.
-                if (TryEvaluateWebViewJs(
+                if (!MauiNativeVideoChrome.IsEnabled
+                    && TryEvaluateWebViewJs(
                         "(function(){try{"
                         + "var r=window.K7&&K7.handleVideoTvBack?K7.handleVideoTvBack():'';"
                         + "if(r==='close'){"
@@ -261,6 +272,9 @@ public partial class BlazorPage : ContentPage
 
     private double? _chainedSeekTargetSeconds;
     private DateTime _chainedSeekUtc;
+#if !WINDOWS
+    private PropertyChangedEventHandler? _pendingSeekStateHandler;
+#endif
 
     /// <summary>
     /// Prefer last seek target when skips arrive faster than CurrentTime updates.
@@ -325,6 +339,14 @@ public partial class BlazorPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
+            {
+                NativeVideoDebug.Log("NotifyTvRemoteSelect phase=" + phase + " key=" + keyCode + " heldMs=" + heldMs);
+                if (phase is "up" or "long-up")
+                    TryHandleNativeVideoKey("select");
+                return;
+            }
+
 #if ANDROID
             // Direct WebView JS - TryDispatchAsync silently dies after scrub/seek storms.
             if (TryEvaluateWebViewJs(
@@ -528,11 +550,36 @@ public partial class BlazorPage : ContentPage
 
             _playerService.PlaybackState = mapped;
 #if ANDROID
-            // ExoPlayer emits a transient Paused (dur=0) during open before Buffering.
-            // Unlocking see-through then clears the black shell over an empty TextureView
-            // (white/black flash). Only Playing means frames can show; stay see-through on
-            // later Paused without re-entering this branch.
-            if (_playerService.IsVisible && mediaState is MediaElementState.Playing)
+            NativeVideoDebug.Log(
+                "MediaState mapped=" + mapped + " native=" + mediaState
+                + " pos=" + NativePlayer.Position.TotalSeconds.ToString("F2")
+                + "s dur=" + NativePlayer.Duration.TotalSeconds.ToString("F2")
+                + "s visible=" + _playerService.IsVisible
+                + " pending=" + (_playerService.Source?.PendingSeekTime?.ToString("F1") ?? "null"));
+
+            if (_playerService.IsVisible && MauiNativeVideoChrome.IsEnabled)
+            {
+                if (mediaState is MediaElementState.Playing)
+                {
+                    // Keep the veil through resume PendingSeek (first Playing is often at 0:00).
+                    var pending = _playerService.Source?.PendingSeekTime;
+                    var pos = NativePlayer.Position.TotalSeconds;
+                    if (pending is double resumeAt && resumeAt > 1 && pos < resumeAt - 2)
+                        _nativeOverlay?.SetLoadingVeil(true);
+                    else
+                        _nativeOverlay?.NotifyFirstFrameReady();
+                }
+                else if (mediaState is MediaElementState.Opening
+                    || (mediaState is MediaElementState.Buffering
+                        && NativePlayer.Position <= TimeSpan.FromSeconds(1))
+                    || (mediaState is MediaElementState.Paused
+                        && NativePlayer.Position <= TimeSpan.FromSeconds(0.25)))
+                {
+                    // Startup only - never cover mid-play buffer stalls with an opaque veil.
+                    _nativeOverlay?.SetLoadingVeil(true);
+                }
+            }
+            else if (_playerService.IsVisible && mediaState is MediaElementState.Playing)
             {
                 ApplyAndroidWebViewShell(seeThroughForVideo: true);
                 _ = TryEvaluateWebViewJs(
@@ -585,6 +632,9 @@ public partial class BlazorPage : ContentPage
         // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
         ConfigureNativeVideoPlayerAfterOpen();
 #if ANDROID
+        if (source.PendingSeekTime is double pendingSeek && pendingSeek > 1)
+            RememberSeekTarget(pendingSeek);
+
         // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
         // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
         BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
@@ -592,6 +642,8 @@ public partial class BlazorPage : ContentPage
         NativePlayer.Play();
 
         AttachPendingSeekHandler(source);
+        if (MauiNativeVideoChrome.IsEnabled)
+            _nativeOverlay?.SetLoadingVeil(true);
     }
 
     private void AttachPendingSeekHandler(PlayerSource source)
@@ -599,22 +651,118 @@ public partial class BlazorPage : ContentPage
         if (source.PendingSeekTime is not double seekTime)
             return;
 
-        // Seek once the player starts playing (MediaOpened may not fire on source swap)
-        void OnStateChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != nameof(MediaElement.CurrentState))
-                return;
+        NativeVideoDebug.Log("AttachPendingSeek seekTime=" + seekTime.ToString("F1") + "s");
 
-            if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
-            {
-                NativePlayer.PropertyChanged -= OnStateChanged;
-                // Clear before seek so progress tracking can report once we land near the target.
-                source.PendingSeekTime = null;
-                SeekNativeVideoAsync(seekTime).FireAndForget();
-            }
+        if (_pendingSeekStateHandler is not null)
+        {
+            NativePlayer.PropertyChanged -= _pendingSeekStateHandler;
+            _pendingSeekStateHandler = null;
         }
 
+        void TryApplyPendingSeek(string reason)
+        {
+            if (!ReferenceEquals(_playerService.Source, source))
+                return;
+            if (source.PendingSeekTime is not double pending)
+                return;
+
+            var duration = NativePlayer.Duration.TotalSeconds;
+            var position = NativePlayer.Position.TotalSeconds;
+            var playing = NativePlayer.CurrentState is MediaElementState.Playing;
+
+            // startSeconds in the manifest often lands us near the target already.
+            if (duration > 0 && position > 0 && Math.Abs(position - pending) <= 4)
+            {
+                source.PendingSeekTime = null;
+                if (_pendingSeekStateHandler is not null)
+                {
+                    NativePlayer.PropertyChanged -= _pendingSeekStateHandler;
+                    _pendingSeekStateHandler = null;
+                }
+
+                NativeVideoDebug.Log(
+                    "PendingSeek skip near target=" + pending.ToString("F1")
+                    + "s pos=" + position.ToString("F1") + "s reason=" + reason);
+                return;
+            }
+
+            // Wait until Playing with a real duration (Playing+dur=0 is a transient ExoPlayer state).
+            if (!playing || duration <= 0)
+                return;
+
+            if (_pendingSeekStateHandler is not null)
+            {
+                NativePlayer.PropertyChanged -= _pendingSeekStateHandler;
+                _pendingSeekStateHandler = null;
+            }
+
+            source.PendingSeekTime = null;
+            NativeVideoDebug.Log(
+                "PendingSeek apply target=" + pending.ToString("F1")
+                + "s state=" + NativePlayer.CurrentState + " reason=" + reason);
+            SeekNativeVideoAsync(pending).FireAndForget();
+        }
+
+        void OnStateChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(MediaElement.CurrentState) or nameof(MediaElement.Duration)
+                or nameof(MediaElement.Position))
+                TryApplyPendingSeek(e.PropertyName ?? "prop");
+        }
+
+        _pendingSeekStateHandler = OnStateChanged;
         NativePlayer.PropertyChanged += OnStateChanged;
+        // In case we attached after Playing+duration already arrived.
+        TryApplyPendingSeek("attach");
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(8000);
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    if (!_playerService.IsVisible)
+                        return;
+                    if (!ReferenceEquals(_playerService.Source, source))
+                        return;
+                    if (source.PendingSeekTime is not double stillPending)
+                        return;
+
+                    var position = NativePlayer.Position.TotalSeconds;
+                    if (position > 0 && Math.Abs(position - stillPending) <= 4)
+                    {
+                        source.PendingSeekTime = null;
+                        if (_pendingSeekStateHandler is not null)
+                        {
+                            NativePlayer.PropertyChanged -= _pendingSeekStateHandler;
+                            _pendingSeekStateHandler = null;
+                        }
+
+                        NativeVideoDebug.Log(
+                            "PendingSeek failsafe skip near target=" + stillPending.ToString("F1")
+                            + "s pos=" + position.ToString("F1") + "s");
+                        return;
+                    }
+
+                    NativeVideoDebug.Log(
+                        "PendingSeek failsafe target=" + stillPending.ToString("F1")
+                        + "s state=" + NativePlayer.CurrentState);
+                    if (_pendingSeekStateHandler is not null)
+                    {
+                        NativePlayer.PropertyChanged -= _pendingSeekStateHandler;
+                        _pendingSeekStateHandler = null;
+                    }
+
+                    source.PendingSeekTime = null;
+                    SeekNativeVideoAsync(stillPending).FireAndForget();
+                    NativePlayer.Play();
+                });
+            }
+            catch
+            {
+            }
+        });
     }
 #endif
 
@@ -624,8 +772,10 @@ public partial class BlazorPage : ContentPage
         {
 #if WINDOWS
             ConfigureWindowsVideoPlayerLayout();
+            OnNativeVideoVisibilityChanged(_playerService.IsVisible);
 #else
             NativePlayer.IsVisible = _playerService.IsVisible;
+            OnNativeVideoVisibilityChanged(_playerService.IsVisible);
 
             if (_playerService.IsVisible)
             {
@@ -640,15 +790,18 @@ public partial class BlazorPage : ContentPage
                 SetLandscapeOrientation();
 #endif
 #if ANDROID
-                // Hide movie/page chrome immediately - do not wait for Blazor OnVisibilityChanged.
-                _ = TryEvaluateWebViewJs(
-                    "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,false);"
-                    + "if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(false);}catch(e){}");
-                // Opaque black until Playing/Paused (see OnNativePlayerPropertyChanged).
-                ApplyAndroidWebViewShell(seeThroughForVideo: false);
+                if (!MauiNativeVideoChrome.IsEnabled)
+                {
+                    _ = TryEvaluateWebViewJs(
+                        "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,false);"
+                        + "if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(false);}catch(e){}");
+                    ApplyAndroidWebViewShell(seeThroughForVideo: false);
+                }
+                // Native chrome: keep focus off the hidden WebView. Legacy HUD: bounce to WebView.
                 SetVideoFocusOwnership(active: true);
 #else
-                blazorWebView.BackgroundColor = Colors.Transparent;
+                if (!MauiNativeVideoChrome.IsEnabled)
+                    blazorWebView.BackgroundColor = Colors.Transparent;
 #endif
             }
             else
@@ -1267,6 +1420,7 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged -= OnSourceChanged;
         _playerService.IsVisibleChanged -= OnIsVisibleChanged;
+        _nativeOverlay?.Detach();
         _audioPlayerService.PlayerUxSettingsChanged -= HandleAudioPlayerUxSettingsChanged;
         _audioPlayerService.PlaybackStateChanged -= HandleAudioPlaybackKeepScreenChanged;
 #if !WINDOWS
@@ -1485,15 +1639,19 @@ public partial class BlazorPage : ContentPage
         if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
             return;
 
-        var resumeAt = Math.Max(CaptureNativeVideoResumePosition(), _authRebindResumeOverride ?? 0);
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
                 return;
 
 #if ANDROID
-            RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+            // Proactive AuthSessionKeeper refresh (~2 min while near expiry) used to full-rebind
+            // ExoPlayer + seek-to-current, causing a multi-second buffer stall. Update the shared
+            // HTTP Authorization header so the next segment fetch uses the new Bearer instead.
+            ApplyExoPlayerHttpAuthHeaders();
+            NativeVideoDebug.Log("AccessTokenChanged applied Exo HTTP auth without rebind");
 #else
+            var resumeAt = Math.Max(CaptureNativeVideoResumePosition(), _authRebindResumeOverride ?? 0);
             ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
 #endif
         });

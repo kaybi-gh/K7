@@ -4,6 +4,7 @@ using AndroidX.Media3.ExoPlayer;
 using AndroidX.Media3.ExoPlayer.Source;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
+using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.Shared.Helpers;
 using Microsoft.JSInterop;
 
@@ -14,6 +15,8 @@ public partial class BlazorPage
     private Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener? _videoFocusBounceListener;
     private bool _videoFocusBounceAttached;
     private int _androidHttpTimeoutRetryCount;
+    private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
+    private Dictionary<string, string>? _exoHttpRequestHeaders;
 
     partial void InitializePlayerPlatform()
     {
@@ -22,18 +25,44 @@ public partial class BlazorPage
     }
 
     /// <summary>
-    /// While video is visible, always synthesize DPAD into the WebView JS context.
-    /// Native WebView key delivery can go quiet after scrub/seek even when the WebView has focus.
-    /// EvaluateJavascript bypasses that.
+    /// While video is visible with native chrome, always consume DPAD (never leak to WebView).
     /// </summary>
     internal bool TryForwardTvVideoDpad(Android.Views.KeyEvent e)
     {
         if (!_playerService.IsVisible)
             return false;
 
+        if (MauiNativeVideoChrome.IsEnabled)
+        {
+            var key = MapAndroidDpadKey(e);
+            if (key is null)
+                return false;
+
+            var isKeyUp = e.Action == Android.Views.KeyEventActions.Up;
+            if (e.Action == Android.Views.KeyEventActions.Down && e.RepeatCount > 0)
+                return true;
+
+            // Always consume while native chrome owns video - even if a specific key is a no-op.
+            NativeVideoDebug.Log(
+                "Dpad key=" + key + " up=" + isKeyUp + " repeat=" + e.RepeatCount
+                + " focusWeb=" + HasWebViewWindowFocus());
+            _ = TryHandleNativeVideoKey(key, isKeyUp);
+            return true;
+        }
+
         NotifyTvRemoteDpad(e);
         return true;
     }
+
+    private static string? MapAndroidDpadKey(Android.Views.KeyEvent e) =>
+        e.KeyCode switch
+        {
+            Android.Views.Keycode.DpadLeft => "dpad_left",
+            Android.Views.Keycode.DpadRight => "dpad_right",
+            Android.Views.Keycode.DpadUp => "dpad_up",
+            Android.Views.Keycode.DpadDown => "dpad_down",
+            _ => null
+        };
 
     internal bool HasWebViewWindowFocus()
     {
@@ -136,19 +165,8 @@ public partial class BlazorPage
             if (player is not IExoPlayer exo)
                 return;
 
-            var httpFactory = new DefaultHttpDataSource.Factory()!
-                .SetConnectTimeoutMs(connectTimeoutMs)!
-                .SetReadTimeoutMs(readTimeoutMs)!
-                .SetAllowCrossProtocolRedirects(true)!;
-
-            var authValue = ResolveNativePlayerAuthorizationHeader();
-            if (!string.IsNullOrEmpty(authValue))
-            {
-                httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
-                {
-                    ["Authorization"] = authValue
-                });
-            }
+            var httpFactory = GetOrCreateExoHttpDataSourceFactory(connectTimeoutMs, readTimeoutMs);
+            ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
 #pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in bindings but is the Media3 API
@@ -164,24 +182,43 @@ public partial class BlazorPage
             TryApplyPreviousSyncSeekParameters(exo);
             _androidHttpTimeoutRetryCount = 0;
 
-            // Toolkit PlatformUpdateSource is async and can overwrite this bind with the 8s factory.
-            if (NativePlayer.Handler?.PlatformView is Android.Views.View platformView)
-            {
-                platformView.PostDelayed(() =>
-                {
-                    if (!_playerService.IsVisible)
-                        return;
-                    if (!string.Equals(_playerService.Source?.Url, url, StringComparison.Ordinal))
-                        return;
-
-                    BindAndroidExoPlayerWithLongHttpTimeoutsCore(url, connectTimeoutMs, readTimeoutMs);
-                }, 150);
-            }
+            // Do not PostDelayed SetMediaSource again: a second Prepare resets HLS to
+            // startSeconds/segment boundaries (~1015s jumps), fights PendingSeek, and blinks.
+            // Long timeouts are already on this bind; MediaFailed auth path rebinds explicitly.
         }
         catch (Exception)
         {
             // Best-effort rebind - toolkit default timeouts remain if this fails.
         }
+    }
+
+    private DefaultHttpDataSource.Factory GetOrCreateExoHttpDataSourceFactory(int connectTimeoutMs, int readTimeoutMs)
+    {
+        if (_exoHttpDataSourceFactory is not null)
+            return _exoHttpDataSourceFactory;
+
+        _exoHttpRequestHeaders = new Dictionary<string, string>(StringComparer.Ordinal);
+        _exoHttpDataSourceFactory = new DefaultHttpDataSource.Factory()!
+            .SetConnectTimeoutMs(connectTimeoutMs)!
+            .SetReadTimeoutMs(readTimeoutMs)!
+            .SetAllowCrossProtocolRedirects(true)!;
+        return _exoHttpDataSourceFactory;
+    }
+
+    /// <summary>
+    /// Push the current Bearer into the shared Exo HTTP factory. Segment requests created after
+    /// this call pick up the new token without SetMediaSource (avoids periodic buffer stalls).
+    /// </summary>
+    private void ApplyExoPlayerHttpAuthHeaders()
+    {
+        _exoHttpRequestHeaders ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        var authValue = ResolveNativePlayerAuthorizationHeader();
+        if (!string.IsNullOrEmpty(authValue))
+            _exoHttpRequestHeaders["Authorization"] = authValue;
+        else
+            _exoHttpRequestHeaders.Remove("Authorization");
+
+        _exoHttpDataSourceFactory?.SetDefaultRequestProperties(_exoHttpRequestHeaders);
     }
 
     /// <summary>
@@ -208,19 +245,10 @@ public partial class BlazorPage
             if (player is not IExoPlayer exo)
                 return;
 
-            var httpFactory = new DefaultHttpDataSource.Factory()!
-                .SetConnectTimeoutMs(connectTimeoutMs)!
-                .SetReadTimeoutMs(readTimeoutMs)!
-                .SetAllowCrossProtocolRedirects(true)!;
-
-            var authValue = ResolveNativePlayerAuthorizationHeader();
-            if (!string.IsNullOrEmpty(authValue))
-            {
-                httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
-                {
-                    ["Authorization"] = authValue
-                });
-            }
+            // Fresh factory for retry path (previous bind may have failed mid-setup).
+            _exoHttpDataSourceFactory = null;
+            var httpFactory = GetOrCreateExoHttpDataSourceFactory(connectTimeoutMs, readTimeoutMs);
+            ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
 #pragma warning disable CS0618
@@ -244,6 +272,11 @@ public partial class BlazorPage
     partial void OnAfterNativeVideoSeek()
     {
         EnsureVideoSurfaceNotFocusable();
+        // Native XAML chrome owns input; bouncing into the (hidden) WebView after seeks
+        // causes focus flashes and can stall ExoPlayer on TV.
+        if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
+            return;
+
         if (!HasWebViewWindowFocus())
             BounceWindowFocusToWebView();
     }
@@ -267,10 +300,26 @@ public partial class BlazorPage
             if (duration > 0)
                 targetSeconds = Math.Min(targetSeconds, duration);
 
-            var requested = targetSeconds;
+            // No-op seeks (auth rebind, soft-subtitle re-apply) still pause ExoPlayer.
+            var currentPos = NativePlayer.Position.TotalSeconds;
+            if (currentPos > 0 && Math.Abs(currentPos - targetSeconds) < 0.75)
+            {
+                if (_playerService.Source is { } nearSource)
+                    nearSource.PendingSeekTime = null;
+                NativeVideoDebug.Log(
+                    "SeekAndroid skip near-current target=" + targetSeconds.ToString("F1")
+                    + "s pos=" + currentPos.ToString("F1") + "s");
+                return;
+            }
+
             // Do not floor to a fake 6s grid: video playlists use keyframe-aligned EXTINF.
             // PREVIOUS_SYNC + INDEPENDENT-SEGMENTS snaps to the real segment start.
             RememberSeekTarget(targetSeconds);
+            NativeVideoDebug.Log(
+                "SeekAndroid target=" + targetSeconds.ToString("F1")
+                + "s resumePlay=" + resumePlayback
+                + " state=" + NativePlayer.CurrentState
+                + " pos=" + NativePlayer.Position.TotalSeconds.ToString("F1") + "s");
 
 
             var player = UnwrapPlayer(GetPlayer(NativePlayer));
@@ -440,6 +489,15 @@ public partial class BlazorPage
     private void SetVideoFocusOwnership(bool active)
     {
         EnsureVideoSurfaceNotFocusable();
+
+        if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
+        {
+            // Native XAML chrome owns input - do not bounce window focus into the (hidden) WebView.
+            DetachVideoFocusBounceListener();
+            SuppressWebViewFocusForNativeChrome();
+            return;
+        }
+
         if (active)
         {
             AttachVideoFocusBounceListener();
@@ -449,6 +507,23 @@ public partial class BlazorPage
         {
             DetachVideoFocusBounceListener();
             BounceWindowFocusToWebView();
+        }
+    }
+
+    private void SuppressWebViewFocusForNativeChrome()
+    {
+        try
+        {
+            if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+                return;
+
+            webView.Focusable = false;
+            webView.FocusableInTouchMode = false;
+            if (webView.IsFocused)
+                webView.ClearFocus();
+        }
+        catch
+        {
         }
     }
 
@@ -1037,85 +1112,101 @@ public partial class BlazorPage
 
     private void OnSwitchSubtitleTrack(string? slug)
     {
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            var player = GetPlayer(NativePlayer);
-            if (player is null) return;
+        MainThread.BeginInvokeOnMainThread(() => TrySwitchSubtitleTrack(slug, attempt: 0));
+    }
 
-            if (slug is null)
+    private void TrySwitchSubtitleTrack(string? slug, int attempt)
+    {
+        var player = GetPlayer(NativePlayer);
+        if (player is null)
+            return;
+
+        if (slug is null)
+        {
+            var disableParams = player.TrackSelectionParameters!
+                .BuildUpon()!
+                .ClearOverridesOfType(C.TrackTypeText)!
+                .SetTrackTypeDisabled(C.TrackTypeText, true)!
+                .Build();
+            player.TrackSelectionParameters = disableParams;
+            NativeVideoDebug.Log("SelectTextTrack off");
+            return;
+        }
+
+        var tracks = player.CurrentTracks;
+        if (tracks?.Groups is null || tracks.Groups.Size() == 0)
+        {
+            if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View platformView)
             {
-                var disableParams = player.TrackSelectionParameters!
-                    .BuildUpon()!
-                    .SetTrackTypeDisabled(C.TrackTypeText, true)!
-                    .Build();
-                player.TrackSelectionParameters = disableParams;
+                NativeVideoDebug.Log("SelectTextTrack retry wait tracks attempt=" + attempt);
+                platformView.PostDelayed(() => TrySwitchSubtitleTrack(slug, attempt + 1), 250);
+            }
+            else
+                NativeVideoDebug.Log("SelectTextTrack abort no tracks slug=" + slug);
+            return;
+        }
+
+        // Each HLS #EXT-X-MEDIA:TYPE=SUBTITLES creates its own TrackGroup with 1 track.
+        var textGroupIndex = 0;
+        int? targetTextGroupOrder = null;
+        if (int.TryParse(slug.AsSpan(4), out var fileStreamIndex))
+        {
+            var subtitleTracks = _playerService.SubtitleTracks;
+            for (var idx = 0; idx < subtitleTracks.Count; idx++)
+            {
+                if (subtitleTracks[idx].Index == fileStreamIndex)
+                {
+                    targetTextGroupOrder = idx;
+                    break;
+                }
+            }
+        }
+
+        for (var i = 0; i < tracks.Groups.Size(); i++)
+        {
+            var group = (Tracks.Group)tracks.Groups.Get(i)!;
+            if (group.Type != C.TrackTypeText)
+                continue;
+
+            for (var j = 0; j < group.Length; j++)
+            {
+                var format = group.GetTrackFormat(j);
+                if (format?.Label == slug || format?.Id == slug)
+                {
+                    SelectTextTrack(player, group, j);
+                    return;
+                }
+            }
+
+            if (targetTextGroupOrder == textGroupIndex)
+            {
+                SelectTextTrack(player, group, 0);
                 return;
             }
 
-            var tracks = player.CurrentTracks;
-            if (tracks?.Groups is null) return;
+            textGroupIndex++;
+        }
 
-            // Each HLS #EXT-X-MEDIA:TYPE=SUBTITLES creates its own TrackGroup with 1 track.
-            // Count text groups sequentially to find the N-th subtitle track.
-            var textGroupIndex = 0;
-            int? targetTextGroupOrder = null;
-            if (int.TryParse(slug.AsSpan(4), out var fileStreamIndex))
-            {
-                // Build a mapping: the server orders subtitle tracks by index,
-                // so the N-th text group corresponds to the N-th subtitle in the manifest.
-                // We need to find which text group order this slug maps to.
-                // The slug "sub-{N}" where N is the file stream index.
-                // But we don't know the mapping from file stream index to group order here,
-                // so we use the order of SubtitleTracks in the PlayerService.
-                var subtitleTracks = _playerService.SubtitleTracks;
-                for (var idx = 0; idx < subtitleTracks.Count; idx++)
-                {
-                    if (subtitleTracks[idx].Index == fileStreamIndex)
-                    {
-                        targetTextGroupOrder = idx;
-                        break;
-                    }
-                }
-            }
-
-            for (var i = 0; i < tracks.Groups.Size(); i++)
-            {
-                var group = (Tracks.Group)tracks.Groups.Get(i)!;
-                if (group.Type != C.TrackTypeText)
-                    continue;
-
-                // Try matching by Label (HLS NAME = "sub-{index}")
-                for (var j = 0; j < group.Length; j++)
-                {
-                    var format = group.GetTrackFormat(j);
-                    if (format?.Label == slug || format?.Id == slug)
-                    {
-                        SelectTextTrack(player, group, j);
-                        return;
-                    }
-                }
-
-                // Match by sequential text group order
-                if (targetTextGroupOrder == textGroupIndex)
-                {
-                    SelectTextTrack(player, group, 0);
-                    return;
-                }
-
-                textGroupIndex++;
-            }
-        });
+        if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View view)
+        {
+            NativeVideoDebug.Log("SelectTextTrack retry no match slug=" + slug + " attempt=" + attempt);
+            view.PostDelayed(() => TrySwitchSubtitleTrack(slug, attempt + 1), 250);
+        }
+        else
+            NativeVideoDebug.Log("SelectTextTrack miss slug=" + slug);
     }
 
     private static void SelectTextTrack(IPlayer player, Tracks.Group group, int trackIdx)
     {
         var newParams = player.TrackSelectionParameters!
             .BuildUpon()!
+            .ClearOverridesOfType(C.TrackTypeText)!
             .SetTrackTypeDisabled(C.TrackTypeText, false)!
             .SetOverrideForType(new TrackSelectionOverride(group.MediaTrackGroup, trackIdx))!
             .Build();
 
         player.TrackSelectionParameters = newParams;
+        NativeVideoDebug.Log("SelectTextTrack idx=" + trackIdx + " groupLen=" + group.Length);
     }
 
 }

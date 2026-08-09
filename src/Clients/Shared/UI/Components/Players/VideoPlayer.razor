@@ -1,3 +1,4 @@
+@using K7.Clients.Shared.Helpers
 @using K7.Clients.Shared.Interfaces
 @inject IJSRuntime JSRuntime
 @inject IPlayerService PlayerService
@@ -19,43 +20,53 @@ else if (PlayerService.IsVisible)
 {
     var isNative = DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Native;
     var usesWebVideoOnNative = isNative && WindowsVideoPlayback.UsesWebVideoPlayer;
-    var containerClass = isNative && !usesWebVideoOnNative ? "video-container native-overlay" : "video-container";
-    if (_syncPlaySidebarOpen)
-    {
-        containerClass += " syncplay-sidebar-open";
-    }
+    // Android/iOS only - Windows keeps full Blazor + Video.js chrome.
+    var nativeChrome = MauiNativeVideoChrome.IsEnabled && isNative && !usesWebVideoOnNative;
 
-    <div class="@containerClass" @ref="_videoContainer" @onkeydown="OnContainerKeyDown"
-         data-sn-layer="@(_syncPlaySidebarOpen ? "overlay" : null)"
-         data-sn-layer-close=".video-player-close-btn">
-        <div class="video-main">
-            <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" OnSyncPlayToggle="ToggleSyncPlaySidebar" SyncPlaySidebarOpen="_syncPlaySidebarOpen" ContainerRef="_videoContainer" />
-            @if (SyncPlay.IsInGroup && SyncPlay.ShowReactions)
-            {
-                <SyncPlayReactionOverlay />
-            }
-            @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web
-                 || usesWebVideoOnNative)
-            {
-            @* Never embed <source> here: Video.js owns src via changeSource/changeSourceAndSeek.
-               Blazor re-rendering a <source> while VHS is attached causes reload thrash / black frames. *@
-            <video id="video-player" class="video-js" @ref="_player" playsinline>
-                <p class="vjs-no-js">
-                    To view this video please enable JavaScript, and consider upgrading to a
-                    web browser that
-                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-                </p>
-            </video>
-            }
-            <NextEpisodeOverlay />
-        </div>
-        @if (_syncPlaySidebarOpen)
+    if (nativeChrome)
+    {
+        @* Native MAUI overlay owns all chrome on Android/iOS. *@
+    }
+    else
+    {
+        var containerClass = isNative && !usesWebVideoOnNative ? "video-container native-overlay" : "video-container";
+        if (_syncPlaySidebarOpen)
         {
-            <div class="video-syncplay-sidebar">
-                <SyncPlayOverlay />
-            </div>
+            containerClass += " syncplay-sidebar-open";
         }
-    </div>
+
+        <div class="@containerClass" @ref="_videoContainer" @onkeydown="OnContainerKeyDown"
+             data-sn-layer="@(_syncPlaySidebarOpen ? "overlay" : null)"
+             data-sn-layer-close=".video-player-close-btn">
+            <div class="video-main">
+                <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" OnSyncPlayToggle="ToggleSyncPlaySidebar" SyncPlaySidebarOpen="_syncPlaySidebarOpen" ContainerRef="_videoContainer" />
+                @if (SyncPlay.IsInGroup && SyncPlay.ShowReactions)
+                {
+                    <SyncPlayReactionOverlay />
+                }
+                @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web
+                     || usesWebVideoOnNative)
+                {
+                @* Never embed <source> here: Video.js owns src via changeSource/changeSourceAndSeek.
+                   Blazor re-rendering a <source> while VHS is attached causes reload thrash / black frames. *@
+                <video id="video-player" class="video-js" @ref="_player" playsinline>
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a
+                        web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                    </p>
+                </video>
+                }
+                <NextEpisodeOverlay />
+            </div>
+            @if (_syncPlaySidebarOpen)
+            {
+                <div class="video-syncplay-sidebar">
+                    <SyncPlayOverlay />
+                </div>
+            }
+        </div>
+    }
 }
 @* 
 Sources

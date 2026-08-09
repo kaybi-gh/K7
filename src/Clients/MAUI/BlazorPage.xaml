@@ -10,10 +10,10 @@
              Padding="0">
 
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
-        <!-- Native MediaElement (video) - Android/iOS/MacCatalyst only at runtime.
-             TextureView on Android so the transparent BlazorWebView can composite HUD/controls
-             above the picture (SurfaceView ignores Z-order and can hide overlays).
-             Black at launch avoids a white flash before the first decoded frame. -->
+        <!-- Native MediaElement (video) - Android/iOS decode on TextureView (Android).
+             NativeVideoPlayerOverlay (ZIndex 5+) owns transport chrome when MauiNativeVideoChrome
+             is enabled (Android/iOS only). Windows stays full Blazor + Video.js in WebView2.
+             Black at launch avoids a white flash before first frame. -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
                               IsVisible="False"
@@ -41,9 +41,8 @@
                               InputTransparent="True"
                               WidthRequest="0" HeightRequest="0" />
         
-        <!-- Blazor overlay MUST stay Transparent on Android/iOS so MediaElement (ZIndex 1) shows through.
-             Windows Video.js forces an opaque WebView2 surface in Platforms/Windows only.
-             Do not set Black here - that regresses Android TV to audio-only / black picture. -->
+        <!-- Blazor shell: on Android/iOS with native overlay, WebView is hidden during play.
+             Windows Video.js + Blazor controls stay in WebView2 for the whole session. -->
         <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"
                    HorizontalOptions="Fill" VerticalOptions="Fill"
                    BackgroundColor="Transparent" ZIndex="2">
