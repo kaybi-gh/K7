@@ -119,6 +119,10 @@
         --carousel-slide-width: var(--media-card-compact-person-width);
     }
 
+    .carousel-container:has(.music-radio-presets__item) {
+        --carousel-slide-width: var(--media-card-compact-poster-width);
+    }
+
     .carousel-container:has(.media-review-card) {
         --carousel-slide-width: min(88vw, 22rem);
     }

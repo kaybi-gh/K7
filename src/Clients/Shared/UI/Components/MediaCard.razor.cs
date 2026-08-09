@@ -35,6 +35,8 @@ public partial class MediaCard : IDisposable
     [Parameter] public EventCallback OnDismissFromContinueWatching { get; set; }
     [Parameter] public EventCallback OnWatchStateChanged { get; set; }
     [Parameter] public EventCallback OnFocused { get; set; }
+    /// <summary>When set, short-press / click invokes this instead of navigating to <see cref="Href"/>.</summary>
+    [Parameter] public EventCallback OnActivated { get; set; }
     [Parameter] public string? ElementId { get; set; }
     [Parameter] public RenderFragment? CoverContent { get; set; }
     [Parameter] public string? PlaceholderIcon { get; set; }
@@ -297,7 +299,10 @@ public partial class MediaCard : IDisposable
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        if (!LongPressEnabled || !IsEnterKey(e))
+        if (!IsEnterKey(e))
+            return;
+
+        if (!LongPressEnabled)
             return;
 
         if (e.Repeat && _longPressCts is not null)
@@ -314,25 +319,27 @@ public partial class MediaCard : IDisposable
 
     private async Task OnKeyUp(KeyboardEventArgs e)
     {
-        if (!LongPressEnabled || !IsEnterKey(e))
+        if (!IsEnterKey(e))
             return;
 
-        CancelLongPress();
-
-        var wasShortPress = _keyHeldDown && !_longPressTriggered;
-        _keyHeldDown = false;
-
-        if (_longPressTriggered)
+        if (LongPressEnabled)
         {
-            _preventNextClick = true;
-            return;
+            CancelLongPress();
+
+            var wasShortPress = _keyHeldDown && !_longPressTriggered;
+            _keyHeldDown = false;
+
+            if (_longPressTriggered)
+            {
+                _preventNextClick = true;
+                return;
+            }
+
+            if (!wasShortPress)
+                return;
         }
 
-        if (wasShortPress && !string.IsNullOrEmpty(Href))
-        {
-            await NotifyFocusedAsync();
-            NavigationManager.NavigateTo(Href);
-        }
+        await ActivateAsync();
     }
 
     private void OnTouchStart(TouchEventArgs e)
@@ -416,7 +423,12 @@ public partial class MediaCard : IDisposable
     }
 
     private bool ShouldPreventLinkActivation =>
-        _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen || _dragSuppressClick;
+        OnActivated.HasDelegate
+        || _preventNextClick
+        || _keyHeldDown
+        || _longPressTriggered
+        || _menuOpen
+        || _dragSuppressClick;
 
     private void OnLinkPointerDown(PointerEventArgs e)
     {
@@ -445,10 +457,10 @@ public partial class MediaCard : IDisposable
 
     private async Task OnLinkClick(MouseEventArgs e)
     {
-        var suppress = ShouldPreventLinkActivation;
+        var blocked = _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen || _dragSuppressClick;
         _dragSuppressClick = false;
 
-        if (suppress)
+        if (blocked)
         {
             // Keep _preventNextClick for long-press / menu flows; drag only needed this click.
             if (_longPressTriggered || _menuOpen || _keyHeldDown)
@@ -456,9 +468,28 @@ public partial class MediaCard : IDisposable
             return;
         }
 
-        // Touch / mouse often activate the link without a prior focusin.
-        // Notify parents before navigation so scroll/focus restore can save position.
+        // Touch / mouse often activate without a prior focusin.
+        // Notify parents before navigation/action so scroll/focus restore can save position.
         await NotifyFocusedAsync();
+
+        if (OnActivated.HasDelegate)
+            await OnActivated.InvokeAsync();
+    }
+
+    private Task OnActivateClick(MouseEventArgs e) => OnLinkClick(e);
+
+    private async Task ActivateAsync()
+    {
+        await NotifyFocusedAsync();
+
+        if (OnActivated.HasDelegate)
+        {
+            await OnActivated.InvokeAsync();
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Href))
+            NavigationManager.NavigateTo(Href);
     }
 
     private Task NotifyFocusedAsync() =>

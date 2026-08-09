@@ -11,6 +11,7 @@ namespace K7.Clients.Shared.UI.Components.Explore;
 public partial class ExploreTopTracksTable
 {
     [Parameter] public Guid[] LibraryIds { get; set; } = [];
+    [Parameter] public bool IsTv { get; set; }
 
     private List<TrackRow> _tracks = [];
     private bool _loading = true;
@@ -38,10 +39,14 @@ public partial class ExploreTopTracksTable
 
     private async Task OnTrackClick(TableRowClickEventArgs<TrackRow> args)
     {
-        var track = args.Item;
-        if (track is null)
+        if (args.Item is null)
             return;
 
+        await PlayTrackAsync(args.Item);
+    }
+
+    private async Task PlayTrackAsync(TrackRow track)
+    {
         var queueItems = _tracks
             .Where(t => t.IndexedFileId.HasValue)
             .Select(BuildQueueItem)
@@ -51,9 +56,25 @@ public partial class ExploreTopTracksTable
         await Audio.PlayTracksAsync(queueItems, index >= 0 ? index : 0);
     }
 
+    private MediaCardViewModel ToCardModel(TrackRow track) => new()
+    {
+        Id = track.Id.ToString(),
+        Kind = MediaCardKind.Cover,
+        Title = track.Title,
+        PictureUrl = track.CoverUrl,
+        AdditionalInformations = $"{track.PlayCount} {L["Plays"]}",
+        UserRating = track.UserRating
+    };
+
+    private static string GetCardElementId(Guid id) => $"explore-top-track-{id:N}";
+
     private TrackRow ToRow(PlayedMusicTrackDto item, int rank)
     {
         var track = item.Track;
+        var picture = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+        var pictureSize = IsTv ? MetadataPictureSize.Medium : MetadataPictureSize.Small;
+
         return new TrackRow
         {
             Rank = rank,
@@ -66,12 +87,8 @@ public partial class ExploreTopTracksTable
             AlbumTitle = track.AlbumTitle,
             Duration = track.Duration ?? 0,
             PlayCount = item.PlayCount,
-            CoverUrl = ApiClient.GetAbsoluteUri(
-                (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                    ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-            CoverDominantColor = (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
+            CoverUrl = ApiClient.GetAbsoluteUri(picture?.GetUri(pictureSize)?.OriginalString)?.AbsoluteUri,
+            CoverDominantColor = picture?.DominantColor,
             Genre = track.Genre,
             UserRating = track.UserRating,
             IsPlaying = Audio.CurrentTrack?.MediaId == track.Id

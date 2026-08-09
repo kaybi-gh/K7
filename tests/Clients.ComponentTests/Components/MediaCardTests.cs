@@ -97,6 +97,49 @@ public class MediaCardTests
     }
 
     [Test]
+    public async Task OnActivateClick_ShouldInvokeOnActivated_WhenNoHref()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel();
+        var activated = false;
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.OnActivated, EventCallback.Factory.Create(this, () => activated = true)));
+
+        // Act
+        await cut.Find(".media-card-link").ClickAsync(new MouseEventArgs());
+
+        // Assert
+        activated.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task OnKeyUp_ShouldInvokeOnActivated_WhenShortEnterPress()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel();
+        var activated = false;
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.OnActivated, EventCallback.Factory.Create(this, () => activated = true)));
+
+        var link = cut.Find(".media-card-link");
+
+        // Act
+        await link.KeyDownAsync("Enter");
+        await link.KeyUpAsync("Enter");
+
+        // Assert
+        activated.Should().BeTrue();
+    }
+
+    [Test]
     public async Task OnKeyUp_ShouldNotNavigate_WhenStrayKeyUpArrivesAfterKeyboardLongPressMenuCloses()
     {
         // Arrange

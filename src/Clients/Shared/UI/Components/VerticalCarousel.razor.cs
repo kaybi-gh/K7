@@ -52,11 +52,11 @@ public partial class VerticalCarousel : IAsyncDisposable
             if (_disposed)
                 return;
 
-            if (slideCount != _lastSlideCount)
-            {
-                _lastSlideCount = slideCount;
-                await _module.InvokeVoidAsync("refresh", _root);
-            }
+            // Always schedule a remeasure: explore rows remount skeleton->content
+            // without changing slide count, which otherwise leaves a stale viewport
+            // height and lets the next shelf peek under the current one.
+            _lastSlideCount = slideCount;
+            await _module.InvokeVoidAsync("refresh", _root);
         }
         catch (Exception ex) when (IsBenignJsFailure(ex))
         {

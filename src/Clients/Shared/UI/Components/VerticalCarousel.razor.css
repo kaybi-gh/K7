@@ -26,6 +26,7 @@
     flex-direction: column;
     justify-content: flex-end;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Before JS sets viewport height, keep extra shelves out of document flow

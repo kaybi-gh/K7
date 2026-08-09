@@ -41,6 +41,11 @@ html.platform-tv .vertical-carousel:not([data-vcarousel-ready]) .vertical-carous
     top: 0;
 }
 
+html.platform-tv .vertical-carousel__container > *,
+.tv-feed-page .vertical-carousel__container > * {
+    overflow: hidden;
+}
+
 html.platform-tv .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__viewport,
 .tv-feed-page .vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__viewport {
     overflow: hidden;

@@ -21,10 +21,15 @@ public partial class MusicRadioPresets : IAsyncDisposable
     private IReadOnlyList<RadioPresetInfo> Presets { get; set; } = [];
     private string? _loadingPresetTitle;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         MusicRadio.LoadingStateChanged += OnLoadingStateChanged;
+        // Base presets must paint immediately; MI status only gates AI extras.
+        Presets = BuildBasePresets();
+    }
 
+    protected override async Task OnInitializedAsync()
+    {
         var musicIntelligenceAvailable = false;
         try
         {
@@ -36,24 +41,24 @@ public partial class MusicRadioPresets : IAsyncDisposable
             musicIntelligenceAvailable = false;
         }
 
-        var presets = new List<RadioPresetInfo>
-        {
-            new(L["PresetDiscovery"], L["PresetDiscoveryDesc"], Phosphor.Compass, "--radio-tone: var(--color-info);", MusicRadioType.Discovery),
-            new(L["PresetTimeCapsule"], L["PresetTimeCapsuleDesc"], Phosphor.ClockCounterClockwise, "--radio-tone: #8B7AA8;", MusicRadioType.TimeCapsule),
-            new(L["PresetRecentlyAdded"], L["PresetRecentlyAddedDesc"], Phosphor.Sparkle, "--radio-tone: var(--color-success);", MusicRadioType.RecentlyAdded),
-            new(L["PresetGenre"], L["PresetGenreDesc"], Phosphor.MusicNotes, "--radio-tone: #C4A35A;", Action: RadioPresetAction.Genre),
-        };
+        if (!musicIntelligenceAvailable)
+            return;
 
-        if (musicIntelligenceAvailable)
-        {
-            presets.Insert(1, new(L["PresetDiscoveryAi"], L["PresetDiscoveryAiDesc"], Phosphor.Sparkle, "--radio-tone: #7A9E7E;", MusicRadioType.DiscoveryAi));
-            presets.Add(new(L["PresetAmbiance"], L["PresetAmbianceDesc"], Phosphor.MoonStars, "--radio-tone: var(--color-warning);", Action: RadioPresetAction.Ambiance));
-            presets.Add(new(L["PresetSonicPath"], L["PresetSonicPathDesc"], Phosphor.Path, "--radio-tone: #9A8BB8;", Action: RadioPresetAction.SonicPath));
-            presets.Add(new(L["PresetIntelligentSearch"], L["PresetIntelligentSearchDesc"], Phosphor.MagnifyingGlass, "--radio-tone: #6B8FA3;", Action: RadioPresetAction.IntelligentSearch));
-        }
-
+        var presets = BuildBasePresets();
+        presets.Insert(1, new(L["PresetDiscoveryAi"], L["PresetDiscoveryAiDesc"], Phosphor.Sparkle, "--radio-tone: #7A9E7E;", MusicRadioType.DiscoveryAi));
+        presets.Add(new(L["PresetAmbiance"], L["PresetAmbianceDesc"], Phosphor.MoonStars, "--radio-tone: var(--color-warning);", Action: RadioPresetAction.Ambiance));
+        presets.Add(new(L["PresetSonicPath"], L["PresetSonicPathDesc"], Phosphor.Path, "--radio-tone: #9A8BB8;", Action: RadioPresetAction.SonicPath));
+        presets.Add(new(L["PresetIntelligentSearch"], L["PresetIntelligentSearchDesc"], Phosphor.MagnifyingGlass, "--radio-tone: #6B8FA3;", Action: RadioPresetAction.IntelligentSearch));
         Presets = presets;
     }
+
+    private List<RadioPresetInfo> BuildBasePresets() =>
+    [
+        new(L["PresetDiscovery"], L["PresetDiscoveryDesc"], Phosphor.Compass, "--radio-tone: var(--color-info);", MusicRadioType.Discovery),
+        new(L["PresetTimeCapsule"], L["PresetTimeCapsuleDesc"], Phosphor.ClockCounterClockwise, "--radio-tone: #8B7AA8;", MusicRadioType.TimeCapsule),
+        new(L["PresetRecentlyAdded"], L["PresetRecentlyAddedDesc"], Phosphor.Sparkle, "--radio-tone: var(--color-success);", MusicRadioType.RecentlyAdded),
+        new(L["PresetGenre"], L["PresetGenreDesc"], Phosphor.MusicNotes, "--radio-tone: #C4A35A;", Action: RadioPresetAction.Genre),
+    ];
 
     public ValueTask DisposeAsync()
     {

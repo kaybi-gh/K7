@@ -37,9 +37,11 @@
 }
 
 /* Carousel loop-back (and similar) set visibility:visible on themselves; force
-   them hidden while the hub page is parked so they cannot paint or steal focus. */
+   them hidden while the hub page is parked so they cannot paint or steal focus.
+   ::deep is required: without it CSS isolation only matches host markup, and a
+   visibility:visible descendant still paints under a visibility:hidden ancestor. */
 .feed-hub-page:not(.feed-hub-page--active),
-.feed-hub-page:not(.feed-hub-page--active) * {
+.feed-hub-page:not(.feed-hub-page--active) ::deep * {
     visibility: hidden !important;
 }
 

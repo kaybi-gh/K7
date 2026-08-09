@@ -17,6 +17,8 @@ export function init(rootElement) {
     var scrollAnim = null;
     var lastFocusedPerSlide = {};
     var resizeObserver = null;
+    var mutationObserver = null;
+    var relayoutTimer = null;
 
     function easeOutCubic(t) {
         return 1 - Math.pow(1 - t, 3);
@@ -322,6 +324,21 @@ export function init(rootElement) {
         relayoutViewport(false);
     }
 
+    function scheduleRelayout(instant) {
+        if (relayoutTimer) {
+            clearTimeout(relayoutTimer);
+            relayoutTimer = null;
+        }
+
+        // Child carousels remount skeleton->content without changing slide count;
+        // debounce so Blazor multi-pass renders coalesce into one measure.
+        relayoutTimer = setTimeout(function () {
+            relayoutTimer = null;
+            if (scrollAnim && instant) return;
+            relayoutViewport(!!instant);
+        }, 50);
+    }
+
     function onWindowResize() {
         if (scrollAnim) return;
         relayoutViewport(true);
@@ -332,12 +349,23 @@ export function init(rootElement) {
     resizeObserver = typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(function () {
             if (scrollAnim) return;
-            relayoutViewport(true);
+            scheduleRelayout(true);
         })
         : null;
 
     if (resizeObserver) {
         resizeObserver.observe(containerNode);
+    }
+
+    mutationObserver = typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(function () {
+            if (scrollAnim) return;
+            scheduleRelayout(true);
+        })
+        : null;
+
+    if (mutationObserver) {
+        mutationObserver.observe(containerNode, { childList: true });
     }
 
     requestAnimationFrame(function () {
@@ -348,12 +376,15 @@ export function init(rootElement) {
         currentIndex: function () { return currentIndex; },
         scrollTo: scrollToSlide,
         refresh: layoutSlides,
+        scheduleRefresh: function () { scheduleRelayout(true); },
         cleanup: function () {
             rootElement.removeEventListener('focusin', onFocusIn, true);
             rootElement.removeEventListener('keydown', onKeyDown, true);
             window.removeEventListener('resize', onWindowResize);
+            if (relayoutTimer) clearTimeout(relayoutTimer);
             if (scrollAnim) cancelAnimationFrame(scrollAnim);
             if (resizeObserver) resizeObserver.disconnect();
+            if (mutationObserver) mutationObserver.disconnect();
         }
     };
 }
@@ -382,6 +413,11 @@ export function reInit(rootElement) {
 }
 
 export function refresh(rootElement) {
+    if (rootElement?.__vcarousel?.scheduleRefresh) {
+        rootElement.__vcarousel.scheduleRefresh();
+        return;
+    }
+
     if (rootElement?.__vcarousel?.refresh) {
         rootElement.__vcarousel.refresh();
     }

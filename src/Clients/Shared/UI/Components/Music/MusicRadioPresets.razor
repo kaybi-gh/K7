@@ -3,7 +3,7 @@
 @inject IStringLocalizer<MusicRadioPresets> L
 
 <div class="music-radio-presets @Class">
-    <Carousel Title="@Title">
+    <Carousel Title="@Title" ContentKey="@string.Join(',', Presets.Select(p => p.Title))">
         @foreach (var radio in Presets)
         {
             <CarouselItem @key="radio.Title">

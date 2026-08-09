@@ -12,63 +12,97 @@
 
 @if (_loading)
 {
-    <div class="d-flex flex-col pa-8">
-        <K7Spinner />
-    </div>
+    @if (IsTv)
+    {
+        <Carousel Skeleton="true" Title="@L["TopTracks"]">
+            @for (var i = 0; i < 8; i++)
+            {
+                <CarouselItem>
+                    <MediaCard Skeleton="true" Variant="MediaCardVariant.Cover" FooterVisible="true" />
+                </CarouselItem>
+            }
+        </Carousel>
+    }
+    else
+    {
+        <div class="d-flex flex-col pa-8">
+            <K7Spinner />
+        </div>
+    }
 }
 else if (_tracks.Count > 0)
 {
-    <section class="explore-top-tracks">
-        <h3 class="explore-top-tracks__title">@L["TopTracks"]</h3>
-        <K7Table Items="_tracks"
-                 TItem="TrackRow"
-                 OnRowClick="OnTrackClick"
-                 RowClass="cursor-pointer">
-            <HeaderContent>
-                <th class="explore-top-tracks__col-rank">#</th>
-                <th>@S["Title"]</th>
-                <th>@S["Artist"]</th>
-                <th>@S["Album"]</th>
-                <th class="explore-top-tracks__col-duration"><K7Icon Icon="@Phosphor.Clock"  IconSize="@K7IconSize.Sm" /></th>
-                <th class="explore-top-tracks__col-plays">@L["Plays"]</th>
-            </HeaderContent>
-            <RowTemplate>
-                <td>
-                    <span class="text-sm" Color="secondary">@context.Rank</span>
-                </td>
-                <td>
-                    <div class="d-flex align-center">
-                        @if (context.IsPlaying)
+    @if (IsTv)
+    {
+        <Carousel Title="@L["TopTracks"]" ContentKey="@string.Join(',', _tracks.Select(t => t.Id))">
+            @foreach (var track in _tracks)
+            {
+                <CarouselItem @key="track.Id" ItemId="@GetCardElementId(track.Id)">
+                    <MediaCard Model="@ToCardModel(track)"
+                               ElementId="@GetCardElementId(track.Id)"
+                               Variant="MediaCardVariant.Cover"
+                               OverlayEnabled="true"
+                               FooterVisible="true"
+                               ImageLoading="eager"
+                               OnActivated="() => PlayTrackAsync(track)" />
+                </CarouselItem>
+            }
+        </Carousel>
+    }
+    else
+    {
+        <section class="explore-top-tracks">
+            <h3 class="explore-top-tracks__title">@L["TopTracks"]</h3>
+            <K7Table Items="_tracks"
+                     TItem="TrackRow"
+                     OnRowClick="OnTrackClick"
+                     RowClass="cursor-pointer">
+                <HeaderContent>
+                    <th class="explore-top-tracks__col-rank">#</th>
+                    <th>@S["Title"]</th>
+                    <th>@S["Artist"]</th>
+                    <th>@S["Album"]</th>
+                    <th class="explore-top-tracks__col-duration"><K7Icon Icon="@Phosphor.Clock"  IconSize="@K7IconSize.Sm" /></th>
+                    <th class="explore-top-tracks__col-plays">@L["Plays"]</th>
+                </HeaderContent>
+                <RowTemplate>
+                    <td>
+                        <span class="text-sm" Color="secondary">@context.Rank</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center">
+                            @if (context.IsPlaying)
+                            {
+                                <K7Icon Icon="@Phosphor.Equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
+                            }
+                            <span style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
+                        </div>
+                    </td>
+                    <td>
+                        @if (context.ArtistId.HasValue)
                         {
-                            <K7Icon Icon="@Phosphor.Equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
+                            <a href="@($"/music/artists/{context.ArtistId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
+                                <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                            </a>
                         }
-                        <span style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
-                    </div>
-                </td>
-                <td>
-                    @if (context.ArtistId.HasValue)
-                    {
-                        <a href="@($"/music/artists/{context.ArtistId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
+                        else
+                        {
                             <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="@($"/music/albums/{context.AlbumId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
+                            <span class="text-sm" Color="secondary">@context.AlbumTitle</span>
                         </a>
-                    }
-                    else
-                    {
-                        <span class="text-sm" Color="secondary">@context.ArtistName</span>
-                    }
-                </td>
-                <td>
-                    <a href="@($"/music/albums/{context.AlbumId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
-                        <span class="text-sm" Color="secondary">@context.AlbumTitle</span>
-                    </a>
-                </td>
-                <td>
-                    <span class="text-sm" Color="secondary">@FormatTime(context.Duration)</span>
-                </td>
-                <td>
-                    <K7Chip Size="sm" Color="primary" Variant="outlined">@context.PlayCount</K7Chip>
-                </td>
-            </RowTemplate>
-        </K7Table>
-    </section>
+                    </td>
+                    <td>
+                        <span class="text-sm" Color="secondary">@FormatTime(context.Duration)</span>
+                    </td>
+                    <td>
+                        <K7Chip Size="sm" Color="primary" Variant="outlined">@context.PlayCount</K7Chip>
+                    </td>
+                </RowTemplate>
+            </K7Table>
+        </section>
+    }
 }
