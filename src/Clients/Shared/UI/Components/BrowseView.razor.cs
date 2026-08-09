@@ -346,8 +346,14 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
         }
+
+        _module = null;
         _dotnetRef?.Dispose();
+        _dotnetRef = null;
     }
 
     private sealed class BrowseViewSettings

@@ -124,6 +124,12 @@ public partial class ExploreFeedHubView : IDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
         try
@@ -134,6 +140,12 @@ public partial class ExploreFeedHubView : IDisposable
         {
         }
         catch (JSDisconnectedException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (InvalidOperationException)
         {
         }
     }

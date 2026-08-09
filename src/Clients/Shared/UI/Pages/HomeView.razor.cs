@@ -175,6 +175,9 @@ public partial class HomeView : IAsyncDisposable
         catch (JSDisconnectedException)
         {
         }
+        catch (ObjectDisposedException)
+        {
+        }
         catch (InvalidOperationException)
         {
         }
@@ -447,6 +450,11 @@ public partial class HomeView : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            _homeRestoreModule = null;
         }
     }
 

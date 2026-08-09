@@ -212,7 +212,12 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
         }
+
+        _browseViewModule = null;
     }
 
     private bool HasContent() =>

@@ -265,8 +265,13 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
+        _module = null;
         _dotnetRef?.Dispose();
+        _dotnetRef = null;
     }
 }

@@ -62,12 +62,13 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     private int _primarySwapGeneration;
     private int _secondarySwapGeneration;
     private DotNetObjectReference<MediaPageBackdrop>? _dotNetRef;
+    private volatile bool _disposed;
 
     private string StyleAttribute => DominantColorCss.ToVariableStyle("--media-dominant-color", DominantColor);
 
     protected override async Task OnParametersSetAsync()
     {
-        if (_module is null)
+        if (_disposed || _module is null)
             return;
 
         await RefreshResolvedUrlsAsync();
@@ -75,77 +76,112 @@ public partial class MediaPageBackdrop : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/mediaPageBackdrop.js");
+        if (_disposed)
+            return;
 
-        if (ScrollFadeEnabled && !_scrollAttached)
+        try
         {
-            var attached = await _module.InvokeAsync<bool>("attachScrollFade", ScrollTarget, _rootRef);
-            if (attached)
-                _scrollAttached = true;
+            _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/mediaPageBackdrop.js");
+
+            if (_disposed || _module is null)
+                return;
+
+            if (ScrollFadeEnabled && !_scrollAttached)
+            {
+                var attached = await _module.InvokeAsync<bool>("attachScrollFade", ScrollTarget, _rootRef);
+                if (_disposed)
+                    return;
+                if (attached)
+                    _scrollAttached = true;
+            }
+
+            if (!_heroPickAttached)
+            {
+                _dotNetRef ??= DotNetObjectReference.Create(this);
+                await _module.InvokeVoidAsync(
+                    "attachHeroImagePicker",
+                    _rootRef,
+                    _dotNetRef,
+                    MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
+                if (_disposed)
+                    return;
+                _heroPickAttached = true;
+            }
+
+            await RefreshResolvedUrlsAsync();
+            if (_disposed || _module is null)
+                return;
+
+            var softStillUrl = _resolvedImageUrl ?? ImageUrl;
+            if (SoftStillBlurEnabled
+                && !string.IsNullOrEmpty(softStillUrl)
+                && (!_softStillAttached || _attachedSoftStillImageUrl != softStillUrl))
+            {
+                await _module.InvokeAsync<bool>(
+                    "attachSoftStillBlur",
+                    _rootRef,
+                    softStillUrl,
+                    SoftStillSourceWidth,
+                    SoftStillSourceHeight,
+                    SoftStillMaxBlurPx);
+
+                if (_disposed)
+                    return;
+
+                _softStillAttached = true;
+                _attachedSoftStillImageUrl = softStillUrl;
+            }
         }
-
-        if (!_heroPickAttached)
+        catch (Exception ex) when (IsBenignJsInteropFailure(ex))
         {
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-            await _module.InvokeVoidAsync(
-                "attachHeroImagePicker",
-                _rootRef,
-                _dotNetRef,
-                MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
-            _heroPickAttached = true;
-        }
-
-        await RefreshResolvedUrlsAsync();
-
-        var softStillUrl = _resolvedImageUrl ?? ImageUrl;
-        if (SoftStillBlurEnabled
-            && !string.IsNullOrEmpty(softStillUrl)
-            && (!_softStillAttached || _attachedSoftStillImageUrl != softStillUrl))
-        {
-            await _module.InvokeAsync<bool>(
-                "attachSoftStillBlur",
-                _rootRef,
-                softStillUrl,
-                SoftStillSourceWidth,
-                SoftStillSourceHeight,
-                SoftStillMaxBlurPx);
-
-            _softStillAttached = true;
-            _attachedSoftStillImageUrl = softStillUrl;
+            // Navigate away / WebView hide during native video: module may already be disposed.
         }
     }
 
     [JSInvokable]
-    public Task OnHeroViewportChangedAsync() => RefreshResolvedUrlsAsync();
+    public Task OnHeroViewportChangedAsync() =>
+        _disposed ? Task.CompletedTask : RefreshResolvedUrlsAsync();
 
     private async Task RefreshResolvedUrlsAsync()
     {
-        if (_module is null)
+        if (_disposed || _module is null)
             return;
 
-        var primary = await _module.InvokeAsync<string?>(
-            "pickHeroImageUrl",
-            ImageUrl,
-            HighResImageUrl,
-            MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
+        try
+        {
+            var primary = await _module.InvokeAsync<string?>(
+                "pickHeroImageUrl",
+                ImageUrl,
+                HighResImageUrl,
+                MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
 
-        var secondary = await _module.InvokeAsync<string?>(
-            "pickHeroImageUrl",
-            SecondaryImageUrl,
-            SecondaryHighResImageUrl,
-            MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
+            if (_disposed || _module is null)
+                return;
 
-        var primaryChanged = !string.Equals(primary, _resolvedImageUrl, StringComparison.Ordinal);
-        var secondaryChanged = !string.Equals(secondary, _resolvedSecondaryImageUrl, StringComparison.Ordinal);
-        if (!primaryChanged && !secondaryChanged)
-            return;
+            var secondary = await _module.InvokeAsync<string?>(
+                "pickHeroImageUrl",
+                SecondaryImageUrl,
+                SecondaryHighResImageUrl,
+                MetadataPictureDisplayHelper.HeroBackdropPixelBudget);
 
-        if (primaryChanged)
-            await ApplyPrimaryUrlAsync(primary);
+            if (_disposed)
+                return;
 
-        if (secondaryChanged)
-            await ApplySecondaryUrlAsync(secondary);
+            var primaryChanged = !string.Equals(primary, _resolvedImageUrl, StringComparison.Ordinal);
+            var secondaryChanged = !string.Equals(secondary, _resolvedSecondaryImageUrl, StringComparison.Ordinal);
+            if (!primaryChanged && !secondaryChanged)
+                return;
+
+            if (primaryChanged)
+                await ApplyPrimaryUrlAsync(primary);
+
+            if (secondaryChanged)
+                await ApplySecondaryUrlAsync(secondary);
+        }
+        catch (Exception ex) when (IsBenignJsInteropFailure(ex))
+        {
+        }
     }
 
     private async Task ApplyPrimaryUrlAsync(string? nextUrl)
@@ -155,19 +191,28 @@ public partial class MediaPageBackdrop : IAsyncDisposable
         if (string.IsNullOrEmpty(nextUrl))
         {
             _resolvedImageUrl = null;
-            await InvokeAsync(StateHasChanged);
+            await SafeStateHasChangedAsync();
             return;
         }
 
         // Keep the current image visible until the next URL is decoded.
-        if (_resolvedImageUrl is not null && _module is not null)
-            await _module.InvokeAsync<bool>("preloadImage", nextUrl);
+        if (_resolvedImageUrl is not null && _module is not null && !_disposed)
+        {
+            try
+            {
+                await _module.InvokeAsync<bool>("preloadImage", nextUrl);
+            }
+            catch (Exception ex) when (IsBenignJsInteropFailure(ex))
+            {
+                return;
+            }
+        }
 
-        if (generation != _primarySwapGeneration)
+        if (_disposed || generation != _primarySwapGeneration)
             return;
 
         _resolvedImageUrl = nextUrl;
-        await InvokeAsync(StateHasChanged);
+        await SafeStateHasChangedAsync();
     }
 
     private async Task ApplySecondaryUrlAsync(string? nextUrl)
@@ -177,34 +222,75 @@ public partial class MediaPageBackdrop : IAsyncDisposable
         if (string.IsNullOrEmpty(nextUrl))
         {
             _resolvedSecondaryImageUrl = null;
-            await InvokeAsync(StateHasChanged);
+            await SafeStateHasChangedAsync();
             return;
         }
 
-        if (_resolvedSecondaryImageUrl is not null && _module is not null)
-            await _module.InvokeAsync<bool>("preloadImage", nextUrl);
-
-        if (generation != _secondarySwapGeneration)
-            return;
-
-        _resolvedSecondaryImageUrl = nextUrl;
-        await InvokeAsync(StateHasChanged);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_module is not null)
+        if (_resolvedSecondaryImageUrl is not null && _module is not null && !_disposed)
         {
             try
             {
-                await _module.InvokeVoidAsync("dispose", _rootRef);
-                await _module.DisposeAsync();
+                await _module.InvokeAsync<bool>("preloadImage", nextUrl);
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (IsBenignJsInteropFailure(ex))
+            {
+                return;
+            }
+        }
+
+        if (_disposed || generation != _secondarySwapGeneration)
+            return;
+
+        _resolvedSecondaryImageUrl = nextUrl;
+        await SafeStateHasChangedAsync();
+    }
+
+    private async Task SafeStateHasChangedAsync()
+    {
+        if (_disposed)
+            return;
+
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex) when (IsBenignJsInteropFailure(ex) || ex is ObjectDisposedException)
+        {
+        }
+    }
+
+    private static bool IsBenignJsInteropFailure(Exception ex) =>
+        ex is JSDisconnectedException
+            or ObjectDisposedException
+            or JSException
+            or InvalidOperationException;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        var module = _module;
+        _module = null;
+        _scrollAttached = false;
+        _softStillAttached = false;
+        _heroPickAttached = false;
+
+        if (module is not null)
+        {
+            try
+            {
+                await module.InvokeVoidAsync("dispose", _rootRef);
+                await module.DisposeAsync();
+            }
+            catch (Exception ex) when (IsBenignJsInteropFailure(ex))
             {
             }
         }
 
         _dotNetRef?.Dispose();
+        _dotNetRef = null;
     }
 }

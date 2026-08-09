@@ -133,7 +133,12 @@ public partial class K7VirtualList<TItem> : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (ObjectDisposedException)
+            {
+            }
         }
+
+        _module = null;
     }
 
     private sealed record IndexedListItem(TItem Item, int Index)

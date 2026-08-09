@@ -16,22 +16,34 @@ public partial class K7JumpIndex : IAsyncDisposable
     private DotNetObjectReference<K7JumpIndex>? _dotnetRef;
     private string? _activeLabel;
     private bool _dragging;
+    private volatile bool _disposed;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender || _disposed)
+            return;
+
+        try
         {
             _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
                 "import", "./_content/K7.Clients.Shared.UI/js/jumpIndex.js");
+            if (_disposed)
+                return;
+
             _dotnetRef = DotNetObjectReference.Create(this);
             await _module.InvokeVoidAsync("init", _root, _dotnetRef);
+        }
+        catch (Exception ex) when (IsBenignJsFailure(ex))
+        {
         }
     }
 
     [JSInvokable]
     public async Task OnDragLabel(string label)
     {
-        if (label == _activeLabel) return;
+        if (_disposed || label == _activeLabel)
+            return;
+
         _activeLabel = label;
         _dragging = true;
         await OnJumpRequested.InvokeAsync(label);
@@ -41,29 +53,47 @@ public partial class K7JumpIndex : IAsyncDisposable
     [JSInvokable]
     public void OnDragEnd()
     {
+        if (_disposed)
+            return;
+
         _dragging = false;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task OnLabelClicked(string label)
     {
+        if (_disposed)
+            return;
+
         _activeLabel = label;
         await OnJumpRequested.InvokeAsync(label);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_module is not null)
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        var module = _module;
+        _module = null;
+
+        if (module is not null)
         {
             try
             {
-                await _module.InvokeVoidAsync("dispose", _root);
-                await _module.DisposeAsync();
+                await module.InvokeVoidAsync("dispose", _root);
+                await module.DisposeAsync();
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (IsBenignJsFailure(ex))
             {
             }
         }
+
         _dotnetRef?.Dispose();
+        _dotnetRef = null;
     }
+
+    private static bool IsBenignJsFailure(Exception ex) =>
+        ex is JSDisconnectedException or ObjectDisposedException or JSException or InvalidOperationException;
 }

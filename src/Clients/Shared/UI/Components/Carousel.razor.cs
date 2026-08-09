@@ -11,6 +11,7 @@ public partial class Carousel : IAsyncDisposable
     private ElementReference _root;
     private IJSObjectReference? _module;
     private bool _moduleLoadFailed;
+    private volatile bool _disposed;
 
     [Parameter] public bool Skeleton { get; set; } = false;
     [Parameter] public string Title { get; set; } = "";
@@ -29,6 +30,9 @@ public partial class Carousel : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_disposed)
+            return;
+
         if (firstRender)
         {
             _lastContentKey = ContentKey;
@@ -45,7 +49,7 @@ public partial class Carousel : IAsyncDisposable
 
     public async Task EnsureInitializedAsync()
     {
-        if (_moduleLoadFailed)
+        if (_disposed || _moduleLoadFailed)
             return;
 
         if (_module is null)
@@ -55,47 +59,75 @@ public partial class Carousel : IAsyncDisposable
                 _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./_content/K7.Clients.Shared.UI/js/carousel.js");
             }
-            catch (JSException)
+            catch (Exception ex) when (IsBenignJsFailure(ex))
             {
                 _moduleLoadFailed = true;
                 return;
             }
         }
 
-        await _module.InvokeVoidAsync("init", _root);
+        if (_disposed || _module is null)
+            return;
+
+        try
+        {
+            await _module.InvokeVoidAsync("init", _root);
+        }
+        catch (Exception ex) when (IsBenignJsFailure(ex))
+        {
+        }
     }
 
     public async Task NotifyItemsChangedAsync()
     {
-        if (_module is not null)
+        if (_disposed || _module is null)
+            return;
+
+        try
         {
             await _module.InvokeVoidAsync("reInit", _root);
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_module is not null)
+        catch (Exception ex) when (IsBenignJsFailure(ex))
         {
-            try
-            {
-                await _module.InvokeVoidAsync("destroy", _root);
-                await _module.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-            }
-            catch (JSException)
-            {
-            }
         }
     }
 
     public async Task ScrollToIndexAsync(int index)
     {
-        if (_module is not null)
+        if (_disposed || _module is null)
+            return;
+
+        try
         {
             await _module.InvokeVoidAsync("scrollToIndex", _root, index);
         }
+        catch (Exception ex) when (IsBenignJsFailure(ex))
+        {
+        }
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        var module = _module;
+        _module = null;
+
+        if (module is null)
+            return;
+
+        try
+        {
+            await module.InvokeVoidAsync("destroy", _root);
+            await module.DisposeAsync();
+        }
+        catch (Exception ex) when (IsBenignJsFailure(ex))
+        {
+        }
+    }
+
+    private static bool IsBenignJsFailure(Exception ex) =>
+        ex is JSDisconnectedException or ObjectDisposedException or JSException or InvalidOperationException;
 }
