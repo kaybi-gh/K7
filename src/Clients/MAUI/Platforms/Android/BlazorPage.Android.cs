@@ -4,6 +4,7 @@ using AndroidX.Media3.ExoPlayer;
 using AndroidX.Media3.ExoPlayer.Source;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
+using K7.Clients.Shared.Helpers;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.MAUI;
@@ -140,12 +141,12 @@ public partial class BlazorPage
                 .SetReadTimeoutMs(readTimeoutMs)!
                 .SetAllowCrossProtocolRedirects(true)!;
 
-            var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
-            if (authHeader is not null)
+            var authValue = ResolveNativePlayerAuthorizationHeader();
+            if (!string.IsNullOrEmpty(authValue))
             {
                 httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
                 {
-                    ["Authorization"] = authHeader.ToString()
+                    ["Authorization"] = authValue
                 });
             }
 
@@ -183,6 +184,22 @@ public partial class BlazorPage
         }
     }
 
+    /// <summary>
+    /// Rebind ExoPlayer with the current access token and seek back so a token rotation
+    /// (or 401 MediaFailed) does not restart the movie at 0:00.
+    /// </summary>
+    private void RebindAndroidNativeVideoPreservingPosition(string url, double resumeAtSeconds)
+    {
+        if (resumeAtSeconds > 1 && _playerService.Source is { } source)
+            source.PendingSeekTime = resumeAtSeconds;
+
+        BindAndroidExoPlayerWithLongHttpTimeouts(url);
+        NativePlayer.Play();
+
+        if (resumeAtSeconds > 1)
+            SeekNativeVideoAsync(resumeAtSeconds).FireAndForget();
+    }
+
     private void BindAndroidExoPlayerWithLongHttpTimeoutsCore(string url, int connectTimeoutMs, int readTimeoutMs)
     {
         try
@@ -196,12 +213,12 @@ public partial class BlazorPage
                 .SetReadTimeoutMs(readTimeoutMs)!
                 .SetAllowCrossProtocolRedirects(true)!;
 
-            var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
-            if (authHeader is not null)
+            var authValue = ResolveNativePlayerAuthorizationHeader();
+            if (!string.IsNullOrEmpty(authValue))
             {
                 httpFactory.SetDefaultRequestProperties(new Dictionary<string, string>
                 {
-                    ["Authorization"] = authHeader.ToString()
+                    ["Authorization"] = authValue
                 });
             }
 

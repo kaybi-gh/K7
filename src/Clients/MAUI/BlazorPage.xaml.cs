@@ -46,6 +46,11 @@ public partial class BlazorPage : ContentPage
     private DateTime _lastMediaFailedReportUtc = DateTime.MinValue;
     private string? _lastMediaFailedReportKey;
     private static readonly TimeSpan MediaFailedReportDedupeWindow = TimeSpan.FromSeconds(30);
+    private int _nativeAuthRecoveryCount;
+    private DateTime _lastNativeAuthRecoveryUtc = DateTime.MinValue;
+    private double? _authRebindResumeOverride;
+    private ICustomAuthenticationStateProvider? _authStateProvider;
+    private bool _accessTokenChangedSubscribed;
 
     private static readonly HashSet<string> SensitiveQueryKeys = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -80,6 +85,15 @@ public partial class BlazorPage : ContentPage
         InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
+        Loaded += OnBlazorPageLoaded;
+    }
+
+    private void OnBlazorPageLoaded(object? sender, EventArgs e)
+    {
+        Loaded -= OnBlazorPageLoaded;
+#if !WINDOWS
+        TrySubscribeAccessTokenChanged();
+#endif
     }
 
     private void OnWebResourceRequested(object? sender, Microsoft.Maui.Controls.WebViewWebResourceRequestedEventArgs e)
@@ -558,6 +572,8 @@ public partial class BlazorPage : ContentPage
         if (_playerService.IsVisible && !NativePlayer.IsVisible)
             NativePlayer.IsVisible = true;
 
+        _nativeAuthRecoveryCount = 0;
+
         // Baseline open path: Stop() then assign Source. Never Source=null first -
         // nulling the surface fires MediaFailed on Android and kills the next open mid-HLS.
         NativePlayer.Stop();
@@ -592,6 +608,8 @@ public partial class BlazorPage : ContentPage
             if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
             {
                 NativePlayer.PropertyChanged -= OnStateChanged;
+                // Clear before seek so progress tracking can report once we land near the target.
+                source.PendingSeekTime = null;
                 SeekNativeVideoAsync(seekTime).FireAndForget();
             }
         }
@@ -718,14 +736,18 @@ public partial class BlazorPage : ContentPage
             if (!string.IsNullOrEmpty(url) && _playerService.IsVisible)
             {
                 _androidHttpTimeoutRetryCount++;
+                var resumeAt = CaptureNativeVideoResumePosition();
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
                         return;
-                    BindAndroidExoPlayerWithLongHttpTimeouts(_playerService.Source.Url);
-                    NativePlayer.Play();
+                    RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
                 });
             }
+        }
+        else if (ShouldAttemptNativeAuthRecovery(detail))
+        {
+            _ = TryRecoverNativeVideoAuthAsync(detail);
         }
 #endif
 
@@ -1248,6 +1270,12 @@ public partial class BlazorPage : ContentPage
         _audioPlayerService.PlayerUxSettingsChanged -= HandleAudioPlayerUxSettingsChanged;
         _audioPlayerService.PlaybackStateChanged -= HandleAudioPlaybackKeepScreenChanged;
 #if !WINDOWS
+        if (_accessTokenChangedSubscribed && _authStateProvider is not null)
+        {
+            _authStateProvider.AccessTokenChanged -= OnAccessTokenChanged;
+            _accessTokenChangedSubscribed = false;
+        }
+
         _playerService.PlayRequested -= HandleVideoPlayRequested;
         _playerService.PauseRequested -= HandleVideoPauseRequested;
         _playerService.MuteRequested -= HandleVideoMuteRequested;
@@ -1423,17 +1451,162 @@ public partial class BlazorPage : ContentPage
         if (File.Exists(url))
             return MediaSource.FromFile(url);
 
-        var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
-        if (authHeader is not null)
+        var authValue = ResolveNativePlayerAuthorizationHeader();
+        if (!string.IsNullOrEmpty(authValue))
         {
             var headers = new Dictionary<string, string>
             {
-                ["Authorization"] = authHeader.ToString()
+                ["Authorization"] = authValue
             };
             return MediaSource.FromUri(new Uri(url), headers);
         }
 
         return MediaSource.FromUri(url);
+    }
+
+#if !WINDOWS
+    private void TrySubscribeAccessTokenChanged()
+    {
+        if (_accessTokenChangedSubscribed)
+            return;
+
+        var services = Application.Current?.Handler?.MauiContext?.Services
+            ?? IPlatformApplication.Current?.Services;
+        _authStateProvider = services?.GetService<ICustomAuthenticationStateProvider>();
+        if (_authStateProvider is null)
+            return;
+
+        _authStateProvider.AccessTokenChanged += OnAccessTokenChanged;
+        _accessTokenChangedSubscribed = true;
+    }
+
+    private void OnAccessTokenChanged(object? sender, EventArgs e)
+    {
+        if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+            return;
+
+        var resumeAt = Math.Max(CaptureNativeVideoResumePosition(), _authRebindResumeOverride ?? 0);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+                return;
+
+#if ANDROID
+            RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+#else
+            ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
+#endif
+        });
+    }
+
+    private static bool ShouldAttemptNativeAuthRecovery(string detail) =>
+        detail.Contains("ResponseCode=401", StringComparison.Ordinal)
+        || detail.Contains("ERROR_CODE_IO_BAD_HTTP_STATUS", StringComparison.Ordinal);
+
+    private async Task TryRecoverNativeVideoAuthAsync(string detail)
+    {
+        if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+            return;
+
+        var now = DateTime.UtcNow;
+        if (_nativeAuthRecoveryCount >= 2 && now - _lastNativeAuthRecoveryUtc < TimeSpan.FromMinutes(2))
+            return;
+
+        if (now - _lastNativeAuthRecoveryUtc < TimeSpan.FromSeconds(5))
+            return;
+
+        _nativeAuthRecoveryCount++;
+        _lastNativeAuthRecoveryUtc = now;
+
+        var resumeAt = CaptureNativeVideoResumePosition();
+        _authRebindResumeOverride = resumeAt;
+        var rejectedToken = ResolveNativePlayerBearerToken();
+
+        try
+        {
+            TrySubscribeAccessTokenChanged();
+            var auth = _authStateProvider
+                ?? Application.Current?.Handler?.MauiContext?.Services?.GetService<ICustomAuthenticationStateProvider>()
+                ?? IPlatformApplication.Current?.Services?.GetService<ICustomAuthenticationStateProvider>();
+
+            if (auth is not null)
+                await auth.TryRefreshAsync(rejectedAccessToken: rejectedToken, forceRefresh: true);
+
+            // Always rebind: AccessTokenChanged may no-op if the token string did not change,
+            // and ExoPlayer must pick up storage/HttpClient Bearer after a 401.
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+                    return;
+
+#if ANDROID
+                RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+#else
+                ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
+#endif
+            });
+        }
+        catch
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+                    return;
+
+#if ANDROID
+                RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+#else
+                ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
+#endif
+            });
+        }
+        finally
+        {
+            _authRebindResumeOverride = null;
+        }
+    }
+
+    private double CaptureNativeVideoResumePosition()
+    {
+        var fromPlayer = NativePlayer.Position.TotalSeconds;
+        var fromService = _playerService.CurrentTime;
+        var pending = _playerService.Source?.PendingSeekTime ?? 0;
+        return Math.Max(Math.Max(fromPlayer, fromService), pending);
+    }
+
+    private void ReopenNativePlayerSourcePreservingPosition(PlayerSource source, double resumeAt)
+    {
+        if (string.IsNullOrEmpty(source.Url))
+            return;
+
+        if (resumeAt > 1)
+            source.PendingSeekTime = resumeAt;
+
+        NativePlayer.Stop();
+        NativePlayer.ShouldAutoPlay = true;
+        NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
+        ConfigureNativeVideoPlayerAfterOpen();
+        NativePlayer.Play();
+        AttachPendingSeekHandler(source);
+    }
+#endif
+
+    private string? ResolveNativePlayerAuthorizationHeader()
+    {
+        var token = ResolveNativePlayerBearerToken();
+        return string.IsNullOrEmpty(token) ? null : "Bearer " + token;
+    }
+
+    private string? ResolveNativePlayerBearerToken()
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services
+            ?? IPlatformApplication.Current?.Services;
+        var deviceStorage = services?.GetService<IDeviceStorageService>();
+        var fromStorage = deviceStorage?.Get(K7.Shared.PreferenceKeys.ACCESS_TOKEN);
+        if (!string.IsNullOrEmpty(fromStorage))
+            return fromStorage;
+
+        return _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization?.Parameter;
     }
 
 #if ANDROID || IOS

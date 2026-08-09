@@ -19,6 +19,8 @@ namespace K7.Clients.MAUI.Services.Authentication;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
 {
+    public event EventHandler? AccessTokenChanged;
+
     private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IUserAdminService _userAdminService;
@@ -163,9 +165,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             if (root.TryGetProperty("access_token", out var tokenProp))
             {
                 var accessToken = tokenProp.GetString()!;
-                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", accessToken);
-                _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
+                StoreAccessToken(accessToken);
 
                 var handler = new JwtSecurityTokenHandler();
                 if (handler.CanReadToken(accessToken))
@@ -389,7 +389,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         string refreshToken,
         CancellationToken cancellationToken = default,
         string? rejectedAccessToken = null,
-        bool forUserSwitch = false)
+        bool forUserSwitch = false,
+        bool forceRefresh = false)
     {
         if (string.IsNullOrEmpty(refreshToken))
             return false;
@@ -402,10 +403,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
             var accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
 
-            // Reuse a still-valid access token unless the caller just got a 401 for that exact token.
+            // Reuse a still-valid access token unless the caller just got a 401 for that exact token,
+            // or proactive rotation was requested (native ExoPlayer keeps a baked Bearer).
             // Never reuse on user switch - SwitchToUserAsync clears the prior session first.
-            var mustHitTokenEndpoint = !string.IsNullOrEmpty(rejectedAccessToken)
-                && string.Equals(accessToken, rejectedAccessToken, StringComparison.Ordinal);
+            var mustHitTokenEndpoint = forceRefresh
+                || (!string.IsNullOrEmpty(rejectedAccessToken)
+                    && string.Equals(accessToken, rejectedAccessToken, StringComparison.Ordinal));
 
             if (!forUserSwitch
                 && !mustHitTokenEndpoint
@@ -473,13 +476,20 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    public async Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null)
+    public async Task<bool> TryRefreshAsync(
+        CancellationToken cancellationToken = default,
+        string? rejectedAccessToken = null,
+        bool forceRefresh = false)
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
         if (string.IsNullOrEmpty(refreshToken))
             return false;
 
-        var success = await TryRefreshTokenAsync(refreshToken, cancellationToken, rejectedAccessToken);
+        var success = await TryRefreshTokenAsync(
+            refreshToken,
+            cancellationToken,
+            rejectedAccessToken,
+            forceRefresh: forceRefresh);
         if (success)
         {
             await SaveLocalUserFromCurrentUserAsync(cancellationToken);
@@ -685,6 +695,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (string.IsNullOrEmpty(accessToken))
             return;
 
+        var previous = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
+
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
         _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, accessToken);
@@ -692,6 +704,9 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 #if WINDOWS
         WindowsStreamAuthContext.UpdateFrom(_k7ServerService);
 #endif
+
+        if (!string.Equals(previous, accessToken, StringComparison.Ordinal))
+            AccessTokenChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private bool HasPersistedSessionTokens()

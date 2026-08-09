@@ -46,10 +46,19 @@ public sealed class MockAuthStateProvider : AuthenticationStateProvider
 
 public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProvider
 {
+    public event EventHandler? AccessTokenChanged
+    {
+        add { }
+        remove { }
+    }
+
     public Task LoginAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginAsGuestAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null) => Task.FromResult(true);
+    public Task<bool> TryRefreshAsync(
+        CancellationToken cancellationToken = default,
+        string? rejectedAccessToken = null,
+        bool forceRefresh = false) => Task.FromResult(true);
     public Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public void SignInOffline(LocalUser user) { }
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

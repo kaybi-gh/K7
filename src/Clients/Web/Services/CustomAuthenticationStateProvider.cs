@@ -9,6 +9,13 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
 {
     private readonly NavigationManager _navigationManager;
 
+    // Web uses cookie auth; native ExoPlayer rebind is MAUI-only.
+    public event EventHandler? AccessTokenChanged
+    {
+        add { }
+        remove { }
+    }
+
     public CustomAuthenticationStateProvider(NavigationManager navigationManager)
     {
         _navigationManager = navigationManager;
@@ -42,7 +49,10 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
         throw new NotSupportedException("Device code flow is not supported in the web client.");
     }
 
-    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default, string? rejectedAccessToken = null)
+    public Task<bool> TryRefreshAsync(
+        CancellationToken cancellationToken = default,
+        string? rejectedAccessToken = null,
+        bool forceRefresh = false)
     {
         return Task.FromResult(false);
     }
