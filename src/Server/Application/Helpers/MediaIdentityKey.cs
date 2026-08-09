@@ -10,7 +10,7 @@ namespace K7.Server.Application.Helpers;
 /// <remarks>
 /// The key must match the criteria the creation handler itself uses to find an existing media, otherwise
 /// two commands that would resolve to the same media could take different locks: album lookup is
-/// (title, artist, year) inside a library, serie lookup is the serie title, movie lookup is
+/// (title, artist, year) inside a library, serie lookup is title plus year, movie lookup is
 /// (title, release date). Falls back to the file path so an unidentified file still gets a distinct key
 /// rather than colliding with every other unidentified file.
 /// </remarks>
@@ -52,12 +52,15 @@ public static class MediaIdentityKey
 
     private static string BuildSerieIdentity(MediaIdentification? identification, IndexedFile? primaryFile)
     {
-        // Mirrors FindSerieByTitleAsync: the serie title alone. Season and episode numbers must NOT take
+        // Mirrors FindSerieByTitleAndYearAsync: title + year. Season and episode numbers must NOT take
         // part, otherwise two episodes of the same serie would take different locks and could both create
         // the serie.
         var serie = Normalize(identification?.SeriesTitle) ?? Normalize(identification?.Title);
+        var year = identification?.ReleaseYear?.Year;
 
-        return serie is null ? FallbackToPath(primaryFile) : $"serie:{serie}";
+        return serie is null
+            ? FallbackToPath(primaryFile)
+            : $"serie:{serie}|year:{year?.ToString() ?? "-"}";
     }
 
     private static string BuildMovieIdentity(MediaIdentification? identification, IndexedFile? primaryFile)

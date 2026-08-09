@@ -331,10 +331,17 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
         return externalId?.Media as TMedia;
     }
 
-    public Task<Serie?> FindSerieByTitleAsync(string title, CancellationToken cancellationToken = default) =>
+    /// <summary>
+    /// Finds a serie by exact title and release date (including both null). Aligns with movie
+    /// dedupe so same-title shows from different years (e.g. One Piece anime vs live-action) stay distinct.
+    /// </summary>
+    public Task<Serie?> FindSerieByTitleAndYearAsync(
+        string title,
+        DateOnly? releaseYear,
+        CancellationToken cancellationToken = default) =>
         context.Medias.OfType<Serie>()
             .Include(s => s.ExternalIds)
-            .FirstOrDefaultAsync(s => s.Title == title, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Title == title && s.ReleaseDate == releaseYear, cancellationToken);
 
     public Task<MusicArtist?> FindMusicArtistByNameAsync(string name, CancellationToken cancellationToken = default) =>
         context.Medias.OfType<MusicArtist>()

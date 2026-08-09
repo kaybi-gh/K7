@@ -56,6 +56,28 @@ public class MediaIdentityKeyTests
     }
 
     [Test]
+    public void Build_ShouldDifferForSameSerieTitleDifferentYear()
+    {
+        var anime = File("/series/One Piece (1999)/S01E01.mkv", new MediaIdentification("Episode")
+        {
+            SeriesTitle = "One Piece",
+            ReleaseYear = new DateOnly(1999, 1, 1),
+            SeasonNumber = 1,
+            EpisodeNumber = 1
+        });
+        var liveAction = File("/series/One Piece (2023)/S01E01.mkv", new MediaIdentification("Episode")
+        {
+            SeriesTitle = "One Piece",
+            ReleaseYear = new DateOnly(2023, 1, 1),
+            SeasonNumber = 1,
+            EpisodeNumber = 1
+        });
+
+        MediaIdentityKey.Build(MediaType.Serie, LibraryId, [anime])
+            .Should().NotBe(MediaIdentityKey.Build(MediaType.Serie, LibraryId, [liveAction]));
+    }
+
+    [Test]
     public void Build_ShouldDifferForDifferentAlbumsOfTheSameArtist()
     {
         var abbeyRoad = File("/music/a/1.flac", new MediaIdentification("Come Together")

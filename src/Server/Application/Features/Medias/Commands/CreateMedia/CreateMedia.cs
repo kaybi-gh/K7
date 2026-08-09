@@ -775,14 +775,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     {
         var seriesTitle = identification.SeriesTitle ?? identification.Title;
 
-        var existingSerie = await _identityLookup.FindSerieByTitleAsync(seriesTitle, cancellationToken);
-
-        if (existingSerie is not null)
-        {
-            var existing = PickSerieExternalId(existingSerie, library.MetadataProviderName);
-            return (existingSerie, false, existing.ProviderName, existing.ExternalId);
-        }
-
+        // Prefer provider external id (like movies), then title + year. Title alone wrongly merges
+        // homonyms such as One Piece anime (1999) and live-action (2023).
         string? matchedProviderName = null;
         string? providerExternalId = null;
         foreach (var providerKey in SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName))
@@ -807,6 +801,15 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (existingSerieById is not null)
                 return (existingSerieById, false, matchedProviderName, providerExternalId);
+        }
+
+        var existingSerie = await _identityLookup.FindSerieByTitleAndYearAsync(
+            seriesTitle, identification.ReleaseYear, cancellationToken);
+
+        if (existingSerie is not null)
+        {
+            var existing = PickSerieExternalId(existingSerie, library.MetadataProviderName);
+            return (existingSerie, false, existing.ProviderName, existing.ExternalId);
         }
 
         var serie = new Serie

@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -75,7 +76,11 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
 
                     foreach (var serieGroup in libraryGroup
                                  .Where(f => f.Identification?.SeriesTitle is not null)
-                                 .GroupBy(f => f.Identification!.SeriesTitle, StringComparer.OrdinalIgnoreCase))
+                                 .GroupBy(
+                                     f => MediaIdentityKeys.NormalizeSerieTitle(
+                                         f.Identification!.SeriesTitle!,
+                                         f.Identification.ReleaseYear?.Year),
+                                     StringComparer.OrdinalIgnoreCase))
                     {
                         var serieFiles = serieGroup.ToList();
                         tasks.Add(CreateMediaTask(

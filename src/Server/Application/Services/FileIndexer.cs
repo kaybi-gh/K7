@@ -4,6 +4,7 @@ using K7.Server.Application.Extensions;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Models;
 using K7.Server.Domain.Entities;
@@ -456,7 +457,11 @@ public class FileIndexer : IFileIndexer
 
                 foreach (var serieGroup in toBeIdentifiedFiles
                     .Where(f => f.Identification?.SeriesTitle is not null)
-                    .GroupBy(f => f.Identification!.SeriesTitle, StringComparer.OrdinalIgnoreCase))
+                    .GroupBy(
+                        f => MediaIdentityKeys.NormalizeSerieTitle(
+                            f.Identification!.SeriesTitle!,
+                            f.Identification.ReleaseYear?.Year),
+                        StringComparer.OrdinalIgnoreCase))
                 {
                     var serieFiles = serieGroup.ToList();
                     var serieFilesIds = serieFiles.Select(f => f.Id).ToList();
