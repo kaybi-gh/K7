@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Notifications;
 
 namespace K7.Clients.Shared.Services;
@@ -17,11 +18,12 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         Guid[]? libraryIds,
         Guid[]? libraryGroupIds,
         Action onCatalogChanged,
-        Action<Guid>? onMediaVisualChanged = null)
+        Action<Guid>? onMediaVisualChanged = null,
+        IReadOnlyCollection<MediaType>? mediaTypes = null)
     {
         RegisterHandlers();
 
-        var subscription = new Subscription(libraryIds, libraryGroupIds, onCatalogChanged, onMediaVisualChanged);
+        var subscription = new Subscription(libraryIds, libraryGroupIds, mediaTypes, onCatalogChanged, onMediaVisualChanged);
         lock (_sync)
         {
             _subscriptions.Add(subscription);
@@ -58,19 +60,19 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         _hubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
     }
 
-    private void OnBrowseChanged(List<MediaBatchItem> items) => NotifyCatalogAll();
+    private void OnBrowseChanged(List<MediaBatchItem> items) => NotifyCatalogMatchingBatch(items);
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId) =>
-        NotifyCatalogMatching(libraryId);
+        NotifyCatalogMatchingLibrary(libraryId);
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount) =>
-        NotifyCatalogMatching(libraryId);
+        NotifyCatalogMatchingLibrary(libraryId);
 
     private void OnMediaMetadataRefreshed(Guid mediaId) => NotifyMediaVisual(mediaId);
 
     private void OnMediaPicturesUpdated(Guid mediaId) => NotifyMediaVisual(mediaId);
 
-    private void NotifyCatalogAll()
+    private void NotifyCatalogMatchingBatch(List<MediaBatchItem> items)
     {
         Subscription[] snapshot;
         lock (_sync)
@@ -79,10 +81,21 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
         }
 
         foreach (var subscription in snapshot)
+        {
+            if (!MediaBrowseCarouselRefreshScope.IsBatchAffected(
+                    subscription.LibraryIds,
+                    subscription.LibraryGroupIds,
+                    subscription.MediaTypes,
+                    items))
+            {
+                continue;
+            }
+
             subscription.NotifyCatalog();
+        }
     }
 
-    private void NotifyCatalogMatching(Guid libraryId)
+    private void NotifyCatalogMatchingLibrary(Guid libraryId)
     {
         Subscription[] snapshot;
         lock (_sync)
@@ -125,11 +138,13 @@ public sealed class MediaBrowseHubCoordinator : IMediaBrowseHubCoordinator, IDis
     private sealed class Subscription(
         Guid[]? libraryIds,
         Guid[]? libraryGroupIds,
+        IReadOnlyCollection<MediaType>? mediaTypes,
         Action onCatalogChanged,
         Action<Guid>? onMediaVisualChanged)
     {
         public Guid[]? LibraryIds { get; } = libraryIds;
         public Guid[]? LibraryGroupIds { get; } = libraryGroupIds;
+        public IReadOnlyCollection<MediaType>? MediaTypes { get; } = mediaTypes;
 
         public void NotifyCatalog() => onCatalogChanged();
 

@@ -45,16 +45,99 @@ public partial class MediasCarouselRow : IDisposable
     private bool _canSetWatchState;
     private bool _isAdmin;
     private IDisposable? _hubSubscription;
+    private DebouncedActionRunner? _visualRefreshRunner;
+    private readonly HashSet<Guid> _pendingVisualMediaIds = [];
 
     protected override async Task OnInitializedAsync()
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
-        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => ReloadAsync().FireAndForget(Logger));
+        _visualRefreshRunner = new DebouncedActionRunner(RefreshPendingMediaVisualsAsync, InvokeAsync);
+        _hubSubscription = HubCoordinator.Subscribe(
+            LibraryIds,
+            LibraryGroupIds,
+            onCatalogChanged: () => ReloadAsync().FireAndForget(Logger),
+            onMediaVisualChanged: OnMediaVisualChanged,
+            mediaTypes: MediaTypes);
     }
 
-    public void Dispose() => _hubSubscription?.Dispose();
+    public void Dispose()
+    {
+        _hubSubscription?.Dispose();
+        _visualRefreshRunner?.Dispose();
+    }
+
+    private void OnMediaVisualChanged(Guid mediaId)
+    {
+        if (!_items.Any(i => i.Id == mediaId))
+            return;
+
+        _pendingVisualMediaIds.Add(mediaId);
+        _visualRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshPendingMediaVisualsAsync()
+    {
+        if (_pendingVisualMediaIds.Count == 0)
+            return;
+
+        var mediaIds = _pendingVisualMediaIds.ToArray();
+        _pendingVisualMediaIds.Clear();
+
+        try
+        {
+            var page = await MediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+            {
+                Ids = mediaIds,
+                LibraryIds = LibraryGroupIds is { Length: > 0 } ? null : LibraryIds,
+                LibraryGroupIds = LibraryGroupIds,
+                PageNumber = 1,
+                PageSize = mediaIds.Length
+            });
+
+            if (page?.Items is not { Count: > 0 })
+                return;
+
+            var changed = false;
+            foreach (var item in page.Items)
+            {
+                if (UpsertCard(item))
+                    changed = true;
+            }
+
+            if (changed)
+                StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+            // Best-effort soft refresh; next catalog reload will pick up fresh data.
+        }
+    }
+
+    private bool UpsertCard(LiteMediaDto item)
+    {
+        var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+        if (model is null)
+            return false;
+
+        for (var i = 0; i < _items.Count; i++)
+        {
+            if (_items[i].Id != item.Id)
+                continue;
+
+            _items[i] = item;
+            var existing = _cardItems[i].Model;
+            var merge = MediaCardVisualMerge.Apply(existing, model);
+            _cardItems[i] = new CarouselCardItem(item.Id, merge.Model, GetVariant(item), GetHref(item));
+            return merge.RequiresRender;
+        }
+
+        return false;
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -88,12 +171,7 @@ public partial class MediasCarouselRow : IDisposable
             var page = await MediaService.GetLiteMediasAsync(query);
             if (page?.Items is not null)
             {
-                _items = page.Items.ToList();
-                _cardItems = _items
-                    .Select(item => (Item: item, Model: item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n))))
-                    .Where(item => item.Model is not null)
-                    .Select(item => new CarouselCardItem(item.Item.Id, item.Model!, GetVariant(item.Item), GetHref(item.Item)))
-                    .ToList();
+                ApplyItems(page.Items.ToList());
                 if (_cardItems.Count > 0)
                     TvFocus?.TrySetInitialItem(_cardItems[0].Model);
             }
@@ -105,6 +183,27 @@ public partial class MediasCarouselRow : IDisposable
         }
 
         _loading = false;
+    }
+
+    private void ApplyItems(List<LiteMediaDto> nextItems)
+    {
+        var existingById = _cardItems.ToDictionary(x => x.Id, x => x.Model);
+        _items = nextItems;
+        _cardItems = nextItems
+            .Select(item =>
+            {
+                var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                if (model is null)
+                    return null;
+
+                if (existingById.TryGetValue(item.Id, out var existing))
+                    model = MediaCardVisualMerge.Apply(existing, model).Model;
+
+                return new CarouselCardItem(item.Id, model, GetVariant(item), GetHref(item));
+            })
+            .Where(x => x is not null)
+            .Select(x => x!)
+            .ToList();
     }
 
     private async Task ReloadAsync()

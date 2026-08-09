@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -61,7 +62,14 @@ public sealed class ExploreGroupStore : IExploreGroupStore, IDisposable
             {
                 var libraryGroupIds = new[] { groupId };
                 var libraryIds = group.LibraryIds.ToArray();
-                _subscriptions[groupId] = _hubCoordinator.Subscribe(libraryIds, libraryGroupIds, () => Invalidate(groupId));
+                var mediaTypes = MediaBrowseCarouselRefreshScope.ForLibraryMediaType(group.MediaType);
+                _subscriptions[groupId] = _hubCoordinator.Subscribe(
+                    libraryIds,
+                    libraryGroupIds,
+                    onCatalogChanged: () => Invalidate(groupId),
+                    // Genre lists do not need poster soft-patches; ignore visual events.
+                    onMediaVisualChanged: _ => { },
+                    mediaTypes: mediaTypes);
             }
         }
 

@@ -518,11 +518,14 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!_isLoaded || IsLoading || IsOffline || items.Count == 0)
+            return;
+
+        if (!GetRowsSnapshot().Any(r => RowMightBeAffectedByBatch(r, items)))
             return;
 
         // New catalog membership: debounce so rapid CreateMedia batches coalesce into one refresh.
-        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false, batchItems: items);
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -553,7 +556,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
     }
 
-    private void ScheduleCatalogMembershipRefresh(bool refreshContinueWatching)
+    private void ScheduleCatalogMembershipRefresh(bool refreshContinueWatching, List<MediaBatchItem>? batchItems = null)
     {
         _membershipRefreshCts?.Cancel();
         _membershipRefreshCts?.Dispose();
@@ -568,9 +571,21 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 Interlocked.Increment(ref _catalogRefreshGeneration);
                 InvalidateCache();
                 if (refreshContinueWatching)
+                {
                     await RefreshAllRowsAsync();
+                }
+                else if (batchItems is { Count: > 0 })
+                {
+                    var rows = GetRowsSnapshot()
+                        .Where(r => !r.Config.ContinueWatching && RowMightBeAffectedByBatch(r, batchItems))
+                        .ToList();
+                    await Task.WhenAll(rows.Select(RefreshRowAsync));
+                }
                 else
+                {
                     await RefreshNonContinueWatchingRowsAsync();
+                }
+
                 if (!token.IsCancellationRequested)
                     NotifyChanged();
             }
@@ -610,6 +625,18 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
         GetRowsSnapshot().Any(r => r.Config.LibraryIds is null or { Count: 0 }
             || r.Config.LibraryIds.Contains(libraryId));
+
+    private static bool RowMightBeAffectedByBatch(HomeFeedRow row, IReadOnlyList<MediaBatchItem> items)
+    {
+        var libraryIds = row.Config.LibraryIds is { Count: > 0 } ids ? ids.ToArray() : null;
+        var mediaTypes = row.Config.MediaTypes is { Count: > 0 } types ? types : null;
+        return MediaBrowseCarouselRefreshScope.IsBatchAffected(
+            libraryIds,
+            libraryGroupIds: null,
+            mediaTypes,
+            items);
+    }
+
     private async Task RefreshContinueWatchingRowsAsync()
     {
         var rows = GetRowsSnapshot().Where(r => r.Config.ContinueWatching).ToList();
@@ -730,6 +757,18 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             existing.Watched = next.Watched;
             existing.GroupCount = next.GroupCount;
             return existing;
+        }
+
+        // Keep identical image URLs so K7Image does not remount for unchanged posters.
+        var samePicture = MediaPictureUrlHelper.SameResourceUrl(existing.PictureUrl, next.PictureUrl);
+        var sameBackdrop = MediaPictureUrlHelper.SameResourceUrl(existing.BackdropUrl, next.BackdropUrl);
+        if (samePicture || sameBackdrop)
+        {
+            return next with
+            {
+                PictureUrl = samePicture ? existing.PictureUrl : next.PictureUrl,
+                BackdropUrl = sameBackdrop ? existing.BackdropUrl : next.BackdropUrl
+            };
         }
 
         return next;

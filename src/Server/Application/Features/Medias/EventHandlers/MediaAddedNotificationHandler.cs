@@ -18,10 +18,14 @@ public class MediaAddedNotificationHandler(
 
         logger.LogDebug("Broadcasting MediaAdded (with metadata) for {MediaId} '{Title}'", media.Id, media.Title);
 
+        var libraryId = media.IndexedFiles.FirstOrDefault()?.LibraryId
+            ?? media.RemoteIndexedFiles.FirstOrDefault()?.LibraryId;
+
         await notifier.NotifyMediaAddedAsync(
             media.Id,
             media.Title,
             media.Type.ToString(),
+            libraryId,
             cancellationToken);
     }
 }

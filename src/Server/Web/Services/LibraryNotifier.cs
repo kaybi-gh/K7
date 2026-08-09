@@ -13,14 +13,15 @@ internal sealed class LibraryNotifier(
     IMediaQueryCacheInvalidator cacheInvalidator,
     ILogger<LibraryNotifier> logger) : ILibraryNotifier
 {
-    public Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, CancellationToken cancellationToken = default)
+    public Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, Guid? libraryId = null, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Enqueuing MediaAdded: {MediaId} '{Title}' ({MediaType})", mediaId, title, mediaType);
+        logger.LogDebug("Enqueuing MediaAdded: {MediaId} '{Title}' ({MediaType}) library {LibraryId}", mediaId, title, mediaType, libraryId);
         batcher.Enqueue(new MediaBatchItem
         {
             MediaId = mediaId,
             Title = title,
-            MediaType = mediaType
+            MediaType = mediaType,
+            LibraryId = libraryId
         });
         return Task.CompletedTask;
     }

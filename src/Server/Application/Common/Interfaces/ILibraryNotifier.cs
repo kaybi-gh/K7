@@ -4,7 +4,7 @@ namespace K7.Server.Application.Common.Interfaces;
 
 public interface ILibraryNotifier
 {
-    Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, CancellationToken cancellationToken = default);
+    Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, Guid? libraryId = null, CancellationToken cancellationToken = default);
     Task NotifyMediaBatchAddedAsync(List<MediaBatchItem> items, CancellationToken cancellationToken = default);
     Task NotifyMediaMetadataRefreshedAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task NotifyMediaPicturesUpdatedAsync(Guid mediaId, CancellationToken cancellationToken = default);

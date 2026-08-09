@@ -41,16 +41,91 @@ public partial class HomeFeedCarouselRow : IDisposable
     private bool _canSetWatchState;
     private bool _isAdmin;
     private IDisposable? _hubSubscription;
+    private DebouncedActionRunner? _visualRefreshRunner;
+    private readonly HashSet<Guid> _pendingVisualMediaIds = [];
 
     protected override async Task OnInitializedAsync()
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
-        _hubSubscription = HubCoordinator.Subscribe(LibraryIds, LibraryGroupIds, () => ReloadAsync().FireAndForget(Logger));
+        _visualRefreshRunner = new DebouncedActionRunner(RefreshPendingMediaVisualsAsync, InvokeAsync);
+        _hubSubscription = HubCoordinator.Subscribe(
+            LibraryIds,
+            LibraryGroupIds,
+            onCatalogChanged: () => ReloadAsync().FireAndForget(Logger),
+            onMediaVisualChanged: OnMediaVisualChanged,
+            mediaTypes: MediaTypes);
     }
 
-    public void Dispose() => _hubSubscription?.Dispose();
+    public void Dispose()
+    {
+        _hubSubscription?.Dispose();
+        _visualRefreshRunner?.Dispose();
+    }
+
+    private void OnMediaVisualChanged(Guid mediaId)
+    {
+        if (!_items.Any(i => i.Id == mediaId.ToString() || i.ParentId == mediaId.ToString()))
+            return;
+
+        _pendingVisualMediaIds.Add(mediaId);
+        _visualRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshPendingMediaVisualsAsync()
+    {
+        if (_pendingVisualMediaIds.Count == 0)
+            return;
+
+        var mediaIds = _pendingVisualMediaIds.ToArray();
+        _pendingVisualMediaIds.Clear();
+
+        try
+        {
+            var page = await MediaService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+            {
+                Ids = mediaIds,
+                LibraryIds = LibraryGroupIds is { Length: > 0 } ? null : LibraryIds,
+                LibraryGroupIds = LibraryGroupIds,
+                PageNumber = 1,
+                PageSize = mediaIds.Length
+            });
+
+            if (page?.Items is not { Count: > 0 })
+                return;
+
+            var changed = false;
+            foreach (var item in page.Items)
+            {
+                var next = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                if (next is null)
+                    continue;
+
+                for (var i = 0; i < _items.Count; i++)
+                {
+                    if (_items[i].Id != next.Id && _items[i].ParentId != next.Id)
+                        continue;
+
+                    var merge = MediaCardVisualMerge.Apply(_items[i], next);
+                    _items[i] = merge.Model;
+                    if (merge.RequiresRender)
+                        changed = true;
+                    break;
+                }
+            }
+
+            if (changed)
+                StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+            // Best-effort soft refresh; next catalog reload will pick up fresh data.
+        }
+    }
 
     private async Task ReloadAsync()
     {
@@ -89,7 +164,8 @@ public partial class HomeFeedCarouselRow : IDisposable
             var feedPage = await MediaService.GetHomeFeedAsync(query);
             if (feedPage?.Items is not null)
             {
-                _items = feedPage.Items.Select(item => item.ToCardViewModel(ApiClient)).ToList();
+                var nextItems = feedPage.Items.Select(item => item.ToCardViewModel(ApiClient)).ToList();
+                ApplyItems(nextItems);
                 if (_items.Count > 0)
                     TvFocus?.TrySetInitialItem(_items[0]);
             }
@@ -100,6 +176,27 @@ public partial class HomeFeedCarouselRow : IDisposable
         }
 
         _loading = false;
+    }
+
+    private void ApplyItems(List<MediaCardViewModel> nextItems)
+    {
+        if (_items.Count == 0)
+        {
+            _items = nextItems;
+            return;
+        }
+
+        var existingById = _items.ToDictionary(x => x.Id);
+        var merged = new List<MediaCardViewModel>(nextItems.Count);
+        foreach (var item in nextItems)
+        {
+            if (existingById.TryGetValue(item.Id, out var existing))
+                merged.Add(MediaCardVisualMerge.Apply(existing, item).Model);
+            else
+                merged.Add(item);
+        }
+
+        _items = merged;
     }
 
     private string BuildLoadKey() => string.Join('|',

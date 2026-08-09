@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -140,11 +141,13 @@ public sealed class LibraryGroupContextStore : ILibraryGroupContextStore, IDispo
 
         var libraryGroupIds = new[] { groupId };
         var libraryIds = group.LibraryIds.ToArray();
+        var mediaTypes = MediaBrowseCarouselRefreshScope.ForLibraryMediaType(group.MediaType);
         _subscriptions[groupId] = _hubCoordinator.Subscribe(
             libraryIds,
             libraryGroupIds,
             onCatalogChanged: () => Invalidate(groupId),
-            onMediaVisualChanged: mediaId => MediaVisualChanged?.Invoke(groupId, mediaId));
+            onMediaVisualChanged: mediaId => MediaVisualChanged?.Invoke(groupId, mediaId),
+            mediaTypes: mediaTypes);
     }
 
     private readonly record struct TagsCacheKey(Guid GroupId, MediaType MediaType);
