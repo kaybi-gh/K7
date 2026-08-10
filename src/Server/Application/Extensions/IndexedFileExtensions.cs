@@ -142,9 +142,15 @@ public static class IndexedFileExtensions
     public static bool TryIdentifySerieEpisode(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
     {
         var fileName = indexedFile.Name;
+        var (pathProviderName, pathProviderId) = MetadataProviderPathIdParser.TryParseFromPaths(
+            indexedFile.Path,
+            indexedFile.Name,
+            indexedFile.ParentDirectory,
+            Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(indexedFile.Path) ?? string.Empty)));
 
         // Clean anime fansub tags from filename before parsing
         var cleanedFileName = CleanAnimeTags(fileName);
+        cleanedFileName = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedFileName);
 
         // Try SxxExx pattern first (highest priority)
         var sxxExxMatch = Regexes.EpisodeSxxExx().Match(cleanedFileName);
@@ -153,7 +159,9 @@ public static class IndexedFileExtensions
             var seasonNumber = int.Parse(sxxExxMatch.Groups["season"].Value);
             var episodeNumber = int.Parse(sxxExxMatch.Groups["episode"].Value);
             var seriesTitle = ExtractSeriesTitle(cleanedFileName, sxxExxMatch.Index, indexedFile, library);
+            seriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(seriesTitle);
             var releaseYear = ExtractReleaseYear(seriesTitle, indexedFile, library, out var cleanedSeriesTitle);
+            cleanedSeriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedSeriesTitle);
 
             if (string.IsNullOrWhiteSpace(cleanedSeriesTitle)) return false;
 
@@ -167,7 +175,9 @@ public static class IndexedFileExtensions
                 ReleaseYear = releaseYear,
                 SeriesTitle = cleanedSeriesTitle,
                 SeasonNumber = seasonNumber,
-                EpisodeNumber = episodeNumber
+                EpisodeNumber = episodeNumber,
+                ProviderName = pathProviderName,
+                ProviderExternalId = pathProviderId
             };
             return true;
         }
@@ -179,7 +189,9 @@ public static class IndexedFileExtensions
             var seasonNumber = int.Parse(nxnnMatch.Groups["season"].Value);
             var episodeNumber = int.Parse(nxnnMatch.Groups["episode"].Value);
             var seriesTitle = ExtractSeriesTitle(cleanedFileName, nxnnMatch.Index, indexedFile, library);
+            seriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(seriesTitle);
             var releaseYear = ExtractReleaseYear(seriesTitle, indexedFile, library, out var cleanedSeriesTitle);
+            cleanedSeriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedSeriesTitle);
 
             if (string.IsNullOrWhiteSpace(cleanedSeriesTitle)) return false;
 
@@ -188,7 +200,9 @@ public static class IndexedFileExtensions
                 ReleaseYear = releaseYear,
                 SeriesTitle = cleanedSeriesTitle,
                 SeasonNumber = seasonNumber,
-                EpisodeNumber = episodeNumber
+                EpisodeNumber = episodeNumber,
+                ProviderName = pathProviderName,
+                ProviderExternalId = pathProviderId
             };
             return true;
         }
@@ -207,7 +221,9 @@ public static class IndexedFileExtensions
             if (episodeNum is >= 1928 and <= 2500) return false;
 
             var seriesTitle = ExtractSeriesTitle(cleanedFileName, absoluteMatch.Index, indexedFile, library);
+            seriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(seriesTitle);
             var releaseYear = ExtractReleaseYear(seriesTitle, indexedFile, library, out var cleanedSeriesTitle);
+            cleanedSeriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedSeriesTitle);
 
             if (string.IsNullOrWhiteSpace(cleanedSeriesTitle)) return false;
 
@@ -219,7 +235,9 @@ public static class IndexedFileExtensions
                 ReleaseYear = releaseYear,
                 SeriesTitle = cleanedSeriesTitle,
                 SeasonNumber = seasonFromFolder,
-                AbsoluteNumber = episodeNum
+                AbsoluteNumber = episodeNum,
+                ProviderName = pathProviderName,
+                ProviderExternalId = pathProviderId
             };
             return true;
         }

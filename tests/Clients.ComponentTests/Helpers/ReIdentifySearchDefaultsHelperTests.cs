@@ -110,4 +110,82 @@ public class ReIdentifySearchDefaultsHelperTests
         query.Should().Be("Fallback Title");
         year.Should().Be(2010);
     }
+
+    [Test]
+    public void ResolveSourcePath_ShouldReturnMovieFilePath()
+    {
+        var path = @"D:\Movies\Inception (2010).mkv";
+        var files = new[]
+        {
+            new IndexedFileDto
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = Guid.NewGuid(),
+                Name = "Inception (2010)",
+                Extension = ".mkv",
+                Path = path,
+                Hash = 1,
+                Size = 1
+            }
+        };
+
+        ReIdentifySearchDefaultsHelper.ResolveSourcePath(files, MediaType.Movie)
+            .Should().Be(path);
+    }
+
+    [Test]
+    public void ResolveSourcePath_ShouldReturnSerieRoot_WhenSeasonFolderPresent()
+    {
+        var files = new[]
+        {
+            new IndexedFileDto
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = Guid.NewGuid(),
+                Name = "Show - S01E01",
+                Extension = ".mkv",
+                Path = Path.Combine("media", "series", "Cool Show", "Season 01", "Show - S01E01.mkv"),
+                ParentDirectory = "Season 01",
+                Hash = 1,
+                Size = 1
+            }
+        };
+
+        var resolved = ReIdentifySearchDefaultsHelper.ResolveSourcePath(files, MediaType.Serie);
+
+        resolved.Should().Be(Path.Combine("media", "series", "Cool Show"));
+    }
+
+    [Test]
+    public void ResolveSourcePath_ShouldReturnPreferredFile_WhenFileScoped()
+    {
+        var preferredId = Guid.NewGuid();
+        var preferredPath = @"/media/series/Cool Show/Season 01/Show - S01E02.mkv";
+        var files = new[]
+        {
+            new IndexedFileDto
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = Guid.NewGuid(),
+                Name = "Show - S01E01",
+                Extension = ".mkv",
+                Path = @"/media/series/Cool Show/Season 01/Show - S01E01.mkv",
+                Hash = 1,
+                Size = 1
+            },
+            new IndexedFileDto
+            {
+                Id = preferredId,
+                LibraryId = Guid.NewGuid(),
+                Name = "Show - S01E02",
+                Extension = ".mkv",
+                Path = preferredPath,
+                Hash = 2,
+                Size = 2
+            }
+        };
+
+        ReIdentifySearchDefaultsHelper.ResolveSourcePath(files, MediaType.Serie, preferredIndexedFileId: preferredId)
+            .Should().Be(preferredPath);
+    }
 }
