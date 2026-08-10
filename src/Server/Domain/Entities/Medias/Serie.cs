@@ -11,6 +11,12 @@ public class Serie() : BaseMedia(MediaType.Serie)
     public string? OriginalLanguage { get; set; }
     public string? Status { get; set; }
 
+    /// <summary>
+    /// Effective episode numbering / primary metadata provider for this serie (tmdb or tvdb).
+    /// Set by Auto hit-rate selection or forced library provider; used on refresh.
+    /// </summary>
+    public string? NumberingProviderName { get; set; }
+
     public void ApplyMetadata(ExternalSerieMetadata metadata)
     {
         if (!IsFieldLocked(nameof(Title)))

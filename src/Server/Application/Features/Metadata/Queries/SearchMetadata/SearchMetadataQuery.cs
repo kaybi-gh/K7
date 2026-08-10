@@ -99,7 +99,15 @@ public class SearchMetadataQueryHandler(
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
-        var normalized = MetadataProviderNames.Normalize(library.MetadataProviderName ?? string.Empty);
+        var normalized = MetadataProviderNames.Normalize(
+            MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName ?? string.Empty));
+        if (string.Equals(normalized, MetadataProviderNames.Auto, StringComparison.OrdinalIgnoreCase))
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                MetadataProviderNames.Tmdb,
+                MetadataProviderNames.Tvdb
+            };
+
         return new HashSet<string>(StringComparer.OrdinalIgnoreCase) { normalized };
     }
 }

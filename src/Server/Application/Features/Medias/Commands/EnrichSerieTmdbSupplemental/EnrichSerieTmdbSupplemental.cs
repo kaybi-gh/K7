@@ -2,11 +2,13 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.GenerateEpisodeStillFromSource;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -84,6 +86,16 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
         {
             foreach (var episode in season.Episodes)
             {
+                var needsTitle = string.IsNullOrWhiteSpace(episode.Title)
+                    || episode.Title.StartsWith("Episode ", StringComparison.OrdinalIgnoreCase);
+                var needsOverview = string.IsNullOrWhiteSpace(episode.Overview);
+                var needsStill = !episode.Pictures.Any(p => p.Type == MetadataPictureType.Still)
+                    && !episode.IsPictureTypeLocked(MetadataPictureType.Still);
+                var needsRatings = !episode.Ratings.OfType<MetadataProviderRating>().Any();
+
+                if (!needsTitle && !needsOverview && !needsStill && !needsRatings)
+                    continue;
+
                 var supplementalMetadata = await SupplementalEpisodeMetadataResolver.TryFetchTmdbEpisodeMetadataAsync(
                     tmdbSerieProvider,
                     serie,
@@ -94,19 +106,39 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
                     cancellationToken);
 
                 if (supplementalMetadata is null)
+                {
+                    if (needsStill)
+                        await TryQueueEpisodeStillFromSourceFallbackAsync(episode, cancellationToken);
                     continue;
+                }
 
-                SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(
-                    episode,
-                    supplementalMetadata.Ratings);
+                if (needsTitle && !string.IsNullOrWhiteSpace(supplementalMetadata.Title)
+                    && !episode.IsFieldLocked(nameof(SerieEpisode.Title)))
+                {
+                    episode.Title = supplementalMetadata.Title;
+                    episode.SortTitle = supplementalMetadata.SortTitle ?? MediaSortTitleHelper.Compute(supplementalMetadata.Title);
+                }
+
+                if (needsOverview && !string.IsNullOrWhiteSpace(supplementalMetadata.Overview)
+                    && !episode.IsFieldLocked(nameof(SerieEpisode.Overview)))
+                {
+                    episode.Overview = supplementalMetadata.Overview;
+                }
+
+                if (needsRatings)
+                {
+                    SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(
+                        episode,
+                        supplementalMetadata.Ratings);
+                }
 
                 SupplementalEpisodeMetadataResolver.MergeSupplementalExternalIds(
                     episode,
                     supplementalMetadata.ExternalIds);
 
                 var stillImageUrl = supplementalMetadata.StillImageUrl;
-                if (!string.IsNullOrEmpty(stillImageUrl)
-                    && !episode.IsPictureTypeLocked(MetadataPictureType.Still)
+                if (needsStill
+                    && !string.IsNullOrEmpty(stillImageUrl)
                     && MetadataImageUrlHelper.TryCreateRemoteUri(stillImageUrl, out var stillUri))
                 {
                     var stillPicture = new MetadataPicture
@@ -119,8 +151,7 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
                     episode.RemovePicturesOfType(MetadataPictureType.Still);
                     episode.Pictures.Add(stillPicture);
                 }
-                else if (!episode.IsPictureTypeLocked(MetadataPictureType.Still)
-                         && string.IsNullOrWhiteSpace(supplementalMetadata.StillImageUrl))
+                else if (needsStill && string.IsNullOrWhiteSpace(supplementalMetadata.StillImageUrl))
                 {
                     await TryQueueEpisodeStillFromSourceFallbackAsync(episode, cancellationToken);
                 }

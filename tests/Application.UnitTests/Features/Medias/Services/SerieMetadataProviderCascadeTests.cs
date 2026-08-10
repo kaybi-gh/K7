@@ -22,6 +22,21 @@ public class SerieMetadataProviderCascadeTests
     }
 
     [Test]
+    public void ResolveSearchProviders_ShouldSearchBothWithoutBias_WhenPrimaryIsAuto()
+    {
+        SerieMetadataProviderCascade.ResolveSearchProviders("auto")
+            .Should().Equal(MetadataProviderNames.Tmdb, MetadataProviderNames.Tvdb);
+        SerieMetadataProviderCascade.IsAuto("auto").Should().BeTrue();
+    }
+
+    [Test]
+    public void ResolveEnrichmentProvider_ShouldReturnAlternate()
+    {
+        SerieMetadataProviderCascade.ResolveEnrichmentProvider("tvdb").Should().Be(MetadataProviderNames.Tmdb);
+        SerieMetadataProviderCascade.ResolveEnrichmentProvider("tmdb").Should().Be(MetadataProviderNames.Tvdb);
+    }
+
+    [Test]
     public void ResolveSearchProviders_ShouldMapImdbPrimaryToTmdbCascade()
     {
         SerieMetadataProviderCascade.ResolveSearchProviders("imdb")

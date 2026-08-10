@@ -89,7 +89,7 @@ public class BackgroundTaskConcurrencyGateTests
     }
 
     [Test]
-    public void TryAcquire_ShouldLimitEachMetadataProviderToOne_AndRespectCeiling()
+    public void TryAcquire_ShouldLimitEachMetadataProvider_AndRespectCeiling()
     {
         var counts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
         var limits = new Dictionary<BackgroundTaskLane, int>
@@ -104,10 +104,13 @@ public class BackgroundTaskConcurrencyGateTests
         BackgroundTaskConcurrencyGate.TryAcquire(counts, tvdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
             .Should().BeTrue();
         BackgroundTaskConcurrencyGate.TryAcquire(counts, tvdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
+            .Should().BeTrue();
+        BackgroundTaskConcurrencyGate.TryAcquire(counts, tvdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
             .Should().BeFalse();
 
+        // Lane ceiling is already full (2), so another provider cannot acquire.
         BackgroundTaskConcurrencyGate.TryAcquire(counts, tmdb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
-            .Should().BeTrue();
+            .Should().BeFalse();
         BackgroundTaskConcurrencyGate.TryAcquire(counts, mb, BackgroundTaskScheduling.MetadataProviderLimit, limits)
             .Should().BeFalse();
 

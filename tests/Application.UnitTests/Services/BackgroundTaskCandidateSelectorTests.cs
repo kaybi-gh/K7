@@ -21,7 +21,8 @@ public class BackgroundTaskCandidateSelectorTests
     {
         var active = new ConcurrentDictionary<string, int>(StringComparer.Ordinal)
         {
-            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] = 1
+            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] =
+                BackgroundTaskScheduling.MetadataProviderLimit
         };
         var saturation = BackgroundTaskCandidateSelector.BuildSaturation(active, DefaultLimits());
 
@@ -96,7 +97,8 @@ public class BackgroundTaskCandidateSelectorTests
         // instead of leaving the worker idle behind the preferred WorkClass head.
         var active = new ConcurrentDictionary<string, int>(StringComparer.Ordinal)
         {
-            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] = 1
+            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] =
+                BackgroundTaskScheduling.MetadataProviderLimit
         };
         var limits = DefaultLimits();
         var saturation = BackgroundTaskCandidateSelector.BuildSaturation(active, limits);
@@ -193,7 +195,8 @@ public class BackgroundTaskCandidateSelectorTests
             MetadataProviderNames.Tmdb);
 
         // Simulate a race: slot taken after BuildSaturation / filter.
-        active[BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] = 1;
+        active[BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] =
+            BackgroundTaskScheduling.MetadataProviderLimit;
 
         var selected = BackgroundTaskCandidateSelector.TryAcquireNext(
             [tvdb, tmdb],
@@ -249,7 +252,8 @@ public class BackgroundTaskCandidateSelectorTests
     {
         var active = new ConcurrentDictionary<string, int>(StringComparer.Ordinal)
         {
-            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] = 1
+            [BackgroundTaskConcurrencyGate.BuildKey(BackgroundTaskLane.Metadata, null, MetadataProviderNames.Tvdb)] =
+                BackgroundTaskScheduling.MetadataProviderLimit
         };
         var limits = DefaultLimits(metadataCeiling: 1);
         var saturation = BackgroundTaskCandidateSelector.BuildSaturation(active, limits);

@@ -323,6 +323,56 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return (1, absoluteNumber);
     }
 
+    public async Task<IReadOnlySet<(int Season, int Episode)>> ListEpisodeKeysAsync(
+        string providerId,
+        CancellationToken cancellationToken = default)
+    {
+        var seriesId = await ResolveSeriesIdAsync(providerId, cancellationToken);
+        if (!seriesId.HasValue)
+            return new HashSet<(int, int)>();
+
+        var episodes = await GetCachedEpisodesAsync(seriesId.Value, cancellationToken);
+        return episodes
+            .Select(e => (e.SeasonNumber, e.Number))
+            .ToHashSet();
+    }
+
+    public async Task<ExternalEpisodeMetadata?> TryBuildEpisodeMetadataFromCatalogAsync(
+        string providerId,
+        int seasonNumber,
+        int episodeNumber,
+        string language,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var seriesId = await ResolveSeriesIdAsync(providerId, cancellationToken);
+        if (!seriesId.HasValue)
+            return null;
+
+        var episodeRef = await FindEpisodeRefAsync(seriesId.Value, seasonNumber, episodeNumber, cancellationToken);
+        if (episodeRef is null)
+            return null;
+
+        // Prefer catalog fields to avoid per-episode extended HTTP during large refreshes.
+        var title = episodeRef.Name ?? $"Episode {episodeNumber}";
+        var overview = episodeRef.Overview;
+        var stillUrl = TvdbImageUrlHelper.BuildImageUrl(episodeRef.Image);
+
+        return new ExternalEpisodeMetadata
+        {
+            EpisodeNumber = episodeNumber,
+            SeasonNumber = seasonNumber,
+            Title = title,
+            SortTitle = MediaSortTitleHelper.Compute(title),
+            Overview = overview,
+            AirDate = ParseDate(episodeRef.Aired),
+            Runtime = episodeRef.Runtime,
+            StillImageUrl = stillUrl,
+            ExternalIds = BuildExternalIds(episodeRef.Id.ToString(), remoteIds: null),
+            PersonRoles = []
+        };
+    }
+
     public bool SupportsMediaType(MediaType mediaType) =>
         mediaType is MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
 

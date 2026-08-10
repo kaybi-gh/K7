@@ -8,7 +8,7 @@ namespace K7.Server.Application.UnitTests.Features.Metadata.Queries;
 public class GetMetadataProvidersQueryHandlerTests
 {
     [Test]
-    public async Task Handle_ShouldPreferTvdbFirst_ForSerieLibraries()
+    public async Task Handle_ShouldPreferAutoThenTvdb_ForSerieLibraries()
     {
         IMetadataProviderInfo[] providers =
         [
@@ -19,9 +19,10 @@ public class GetMetadataProvidersQueryHandlerTests
         var handler = new GetMetadataProvidersQueryHandler(providers);
         var result = (await handler.Handle(new GetMetadataProvidersQuery { MediaType = LibraryMediaType.Serie }, CancellationToken.None)).ToList();
 
-        result.Should().HaveCount(2);
-        result[0].ProviderName.Should().Be("tvdb");
-        result[1].ProviderName.Should().Be("tmdb");
+        result.Should().HaveCount(3);
+        result[0].ProviderName.Should().Be("auto");
+        result[1].ProviderName.Should().Be("tvdb");
+        result[2].ProviderName.Should().Be("tmdb");
     }
 
     private sealed class StubProvider(string providerName, IReadOnlyList<LibraryMediaType> supportedMediaTypes) : IMetadataProviderInfo

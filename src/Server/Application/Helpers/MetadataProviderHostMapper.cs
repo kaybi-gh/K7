@@ -52,6 +52,7 @@ public static class MetadataProviderHostMapper
             "themoviedb" or "tmdb" => MetadataProviderNames.Tmdb,
             "imdb" => MetadataProviderNames.Tmdb,
             "thetvdb" or "tvdb" => MetadataProviderNames.Tvdb,
+            "auto" => MetadataProviderNames.Auto,
             "musicbrainz" or "mb" => MetadataProviderNames.MusicBrainz,
             "wikidata" => MetadataProviderNames.Wikidata,
             "wikimedia" or "commons" => MetadataProviderNames.Wikimedia,

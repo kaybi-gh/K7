@@ -30,16 +30,30 @@ public class GetMetadataProvidersQueryHandler : IRequestHandler<GetMetadataProvi
             providers = providers.Where(p => p.SupportedMediaTypes.Contains(request.MediaType.Value));
         }
 
-        IEnumerable<MetadataProviderInfoDto> result = providers
+        var result = providers
             .DistinctBy(p => p.ProviderName)
             .Select(p => new MetadataProviderInfoDto
             {
                 ProviderName = p.ProviderName,
                 SupportedMediaTypes = p.SupportedMediaTypes
             })
-            .OrderBy(p => request.MediaType == LibraryMediaType.Serie && p.ProviderName == "tvdb" ? 0 : 1)
+            .ToList();
+
+        if (request.MediaType is null or LibraryMediaType.Serie)
+        {
+            result.Insert(0, new MetadataProviderInfoDto
+            {
+                ProviderName = "auto",
+                SupportedMediaTypes = [LibraryMediaType.Serie]
+            });
+        }
+
+        IEnumerable<MetadataProviderInfoDto> ordered = result
+            .OrderBy(p => request.MediaType == LibraryMediaType.Serie && p.ProviderName == "auto" ? 0
+                : request.MediaType == LibraryMediaType.Serie && p.ProviderName == "tvdb" ? 1
+                : 2)
             .ThenBy(p => p.ProviderName);
 
-        return Task.FromResult(result);
+        return Task.FromResult(ordered);
     }
 }

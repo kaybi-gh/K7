@@ -347,6 +347,81 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return (1, absoluteNumber);
     }
 
+    public async Task<IReadOnlySet<(int Season, int Episode)>> ListEpisodeKeysAsync(
+        string providerId,
+        CancellationToken cancellationToken = default)
+    {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
+        var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
+        var keys = new HashSet<(int Season, int Episode)>();
+
+        var show = await _tmdbClient.GetTvShowAsync(tmdbId, cancellationToken: cancellationToken);
+        var seasonCount = show?.NumberOfSeasons ?? 0;
+        for (var season = 0; season <= seasonCount; season++)
+        {
+            try
+            {
+                var seasonData = await _tmdbClient.GetTvSeasonAsync(
+                    tmdbId,
+                    season,
+                    cancellationToken: cancellationToken);
+                if (seasonData?.Episodes is null)
+                    continue;
+
+                foreach (var episode in seasonData.Episodes)
+                    keys.Add((episode.SeasonNumber, episode.EpisodeNumber));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "TMDb season {Season} list failed for {ProviderId}", season, providerId);
+            }
+        }
+
+        return keys;
+    }
+
+    public async Task<ExternalEpisodeMetadata?> TryBuildEpisodeMetadataFromCatalogAsync(
+        string providerId,
+        int seasonNumber,
+        int episodeNumber,
+        string language,
+        string? fallbackLanguage = null,
+        CancellationToken cancellationToken = default)
+    {
+        await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
+        var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
+        var season = await _tmdbClient.GetTvSeasonAsync(
+            tmdbId,
+            seasonNumber,
+            language: language,
+            cancellationToken: cancellationToken);
+
+        var episode = season?.Episodes?.FirstOrDefault(e => e.EpisodeNumber == episodeNumber);
+        if (episode is null)
+            return null;
+
+        string? stillUrl = null;
+        if (!string.IsNullOrEmpty(episode.StillPath))
+            stillUrl = _tmdbClient.GetImageUrl("original", episode.StillPath, true)?.ToString();
+
+        return new ExternalEpisodeMetadata
+        {
+            EpisodeNumber = episode.EpisodeNumber,
+            SeasonNumber = episode.SeasonNumber,
+            Title = episode.Name,
+            SortTitle = MediaSortTitleHelper.Compute(episode.Name),
+            Overview = episode.Overview,
+            AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
+            Runtime = episode.Runtime,
+            StillImageUrl = stillUrl,
+            ExternalIds = [],
+            PersonRoles = [],
+            Ratings = episode.VoteCount > 0
+                ? [new MetadataProviderRating { MetadataProvider = Domain.Enums.MetadataProvider.TMDb, Value = episode.VoteAverage, MinimumValue = 0, MaximumValue = 10, RatingCount = episode.VoteCount }]
+                : []
+        };
+    }
+
     private MetadataSearchResult MapToSearchResult(int id, string name, DateTime? firstAirDate, string? posterPath, string? overview, double? popularity = null)
     {
         var posterUrl = !string.IsNullOrEmpty(posterPath)
@@ -442,14 +517,17 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return pictures;
     }
 
-    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, string language, CancellationToken cancellationToken)
+    private Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, string language, CancellationToken cancellationToken)
     {
         var roles = new List<BasePersonRole>();
-        if (credits is null) return roles;
+        if (credits is null)
+            return Task.FromResult<IList<BasePersonRole>>(roles);
 
         foreach (var role in credits.Cast)
         {
-            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, language, cancellationToken: cancellationToken);
+            if (string.IsNullOrWhiteSpace(role.Name))
+                continue;
+
             var actor = new Actor
             {
                 Order = role.Order,
@@ -458,13 +536,17 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 [
                     new ExternalId { ProviderName = "tmdb", Value = role.CreditId ?? $"{role.Id}:{role.Order}:{role.Character}" }
                 ],
-                Person = ConvertToPerson(tmdbPerson)
+                Person = new Person
+                {
+                    Name = role.Name,
+                    ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = role.Id.ToString() }]
+                }
             };
 
             if (!string.IsNullOrEmpty(role.ProfilePath))
             {
                 var uri = _tmdbClient.GetImageUrl("original", role.ProfilePath, true);
-                if (uri is not null && uri != actor.Person.PortraitPicture?.OriginalRemoteUri)
+                if (uri is not null)
                 {
                     actor.PortraitPicture = new MetadataPicture { OriginalRemoteUri = uri, Type = MetadataPictureType.Portrait };
                     actor.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(actor.PortraitPicture));
@@ -476,7 +558,9 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         foreach (var role in credits.Crew.Where(x => _wantedCrewRoles.Contains((x.Department, x.Job))))
         {
-            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, language, cancellationToken: cancellationToken);
+            if (string.IsNullOrWhiteSpace(role.Name))
+                continue;
+
             var crewMember = new CrewMember
             {
                 Department = role.Department,
@@ -485,13 +569,17 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 [
                     new ExternalId { ProviderName = "tmdb", Value = role.CreditId }
                 ],
-                Person = ConvertToPerson(tmdbPerson)
+                Person = new Person
+                {
+                    Name = role.Name,
+                    ExternalIds = [new ExternalId { ProviderName = "tmdb", Value = role.Id.ToString() }]
+                }
             };
 
             if (!string.IsNullOrEmpty(role.ProfilePath))
             {
                 var uri = _tmdbClient.GetImageUrl("original", role.ProfilePath, true);
-                if (uri is not null && uri != crewMember.Person.PortraitPicture?.OriginalRemoteUri)
+                if (uri is not null)
                 {
                     crewMember.PortraitPicture = new MetadataPicture { OriginalRemoteUri = uri, Type = MetadataPictureType.Portrait };
                     crewMember.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(crewMember.PortraitPicture));
@@ -502,7 +590,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         }
 
         PersonRoleImportHelper.DedupByTmdbCreditId(roles);
-        return roles;
+        return Task.FromResult<IList<BasePersonRole>>(roles);
     }
 
     private Person ConvertToPerson(TMDbLib.Objects.People.Person tmdbPerson)

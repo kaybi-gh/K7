@@ -270,5 +270,19 @@ public class SupplementalEpisodeMetadataResolverTests
             int absoluteNumber,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(int Season, int Episode)?>(null);
+
+        public Task<IReadOnlySet<(int Season, int Episode)>> ListEpisodeKeysAsync(
+            string providerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<(int Season, int Episode)>>(new HashSet<(int, int)>());
+
+        public Task<ExternalEpisodeMetadata?> TryBuildEpisodeMetadataFromCatalogAsync(
+            string providerId,
+            int seasonNumber,
+            int episodeNumber,
+            string language,
+            string? fallbackLanguage = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ExternalEpisodeMetadata?>(null);
     }
 }

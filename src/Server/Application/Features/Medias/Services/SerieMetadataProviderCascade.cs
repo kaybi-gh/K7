@@ -6,6 +6,7 @@ namespace K7.Server.Application.Features.Medias.Services;
 /// <summary>
 /// Ordered serie metadata providers for search: library primary first, then the other of
 /// TVDB/TMDB so identification can fall back without mixing Metadata-lane queues.
+/// Auto searches both without preference.
 /// </summary>
 public static class SerieMetadataProviderCascade
 {
@@ -21,12 +22,19 @@ public static class SerieMetadataProviderCascade
 
         return primary switch
         {
+            MetadataProviderNames.Auto => [MetadataProviderNames.Tmdb, MetadataProviderNames.Tvdb],
             MetadataProviderNames.Tvdb => [MetadataProviderNames.Tvdb, MetadataProviderNames.Tmdb],
             MetadataProviderNames.Tmdb => [MetadataProviderNames.Tmdb, MetadataProviderNames.Tvdb],
-            MetadataProviderNames.Local => [MetadataProviderNames.Tvdb, MetadataProviderNames.Tmdb],
+            MetadataProviderNames.Local => [MetadataProviderNames.Tmdb, MetadataProviderNames.Tvdb],
             _ => [primary]
         };
     }
+
+    public static bool IsAuto(string? primaryProviderName) =>
+        string.Equals(
+            MetadataProviderHostMapper.NormalizeProviderName(primaryProviderName),
+            MetadataProviderNames.Auto,
+            StringComparison.OrdinalIgnoreCase);
 
     public static bool IsCascadeProvider(string? providerName, string? primaryProviderName)
     {
@@ -37,5 +45,20 @@ public static class SerieMetadataProviderCascade
             MetadataProviderHostMapper.NormalizeProviderName(providerName));
         return ResolveSearchProviders(primaryProviderName)
             .Any(p => string.Equals(p, normalized, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Alternate provider used for enrichment when the canon is known.
+    /// </summary>
+    public static string? ResolveEnrichmentProvider(string? numberingProviderName)
+    {
+        var canon = MetadataProviderNames.Normalize(
+            MetadataProviderHostMapper.NormalizeProviderName(numberingProviderName));
+        return canon switch
+        {
+            MetadataProviderNames.Tvdb => MetadataProviderNames.Tmdb,
+            MetadataProviderNames.Tmdb => MetadataProviderNames.Tvdb,
+            _ => null
+        };
     }
 }

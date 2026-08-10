@@ -3303,6 +3303,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<string>("NumberingProviderName")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("TEXT");
 
@@ -3996,6 +3999,27 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                             b1.Property<int?>("EpisodeNumber")
                                 .HasColumnType("INTEGER");
+
+                            b1.Property<string>("MusicBrainzAlbumArtistId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("MusicBrainzArtistId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("MusicBrainzRecordingId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("MusicBrainzReleaseGroupId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("MusicBrainzReleaseId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ProviderExternalId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ProviderName")
+                                .HasColumnType("TEXT");
 
                             b1.Property<DateOnly?>("ReleaseYear")
                                 .HasColumnType("TEXT");

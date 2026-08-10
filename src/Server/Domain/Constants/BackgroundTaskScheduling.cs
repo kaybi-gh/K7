@@ -65,7 +65,7 @@ public static class BackgroundTaskScheduling
     /// Hard parallelism per logical external provider on the Metadata lane. Not operator-configurable:
     /// HTTP pacing stays on <c>OutboundRateLimiter</c>; this only prevents stacking tasks on one provider.
     /// </summary>
-    public const int MetadataProviderLimit = 1;
+    public const int MetadataProviderLimit = 2;
 
     private static readonly Dictionary<BackgroundTaskLane, int> DefaultLimits = new()
     {

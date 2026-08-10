@@ -9,6 +9,7 @@ public static class MetadataProviderNames
     public const string Tmdb = "tmdb";
     public const string Imdb = "imdb";
     public const string Tvdb = "tvdb";
+    public const string Auto = "auto";
     public const string MusicBrainz = "musicbrainz";
     public const string Wikidata = "wikidata";
     public const string Wikimedia = "wikimedia";
@@ -21,6 +22,7 @@ public static class MetadataProviderNames
     [
         Tmdb,
         Tvdb,
+        Auto,
         MusicBrainz,
         Wikidata,
         Wikimedia,
