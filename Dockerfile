@@ -51,7 +51,7 @@ RUN apt-get update \
 EXPOSE 7080 7443
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:f1126d438ccc359f51cc6d4701a8deae513856cf10f5fe645d29ea6403dcac6b AS runtime
 # va-driver-all pulls arch-appropriate VAAPI drivers (Intel packages are amd64/i386 only).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
