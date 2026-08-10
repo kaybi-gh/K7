@@ -28,6 +28,44 @@ public static class ContinueWatchingEligibility
             state.ProgressPercentage,
             policy);
 
+    /// <summary>
+    /// Next-episode Keep Watching placeholders: touched after finishing the previous episode,
+    /// with no real resume point yet (progress and position stay at 0 so playback starts at the beginning).
+    /// </summary>
+    public static bool IsContinueWatchingPlaceholder(UserMediaState state) =>
+        IsContinueWatchingPlaceholder(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.PlayCount,
+            state.LastPlaybackPosition,
+            state.ProgressPercentage);
+
+    public static bool IsContinueWatchingPlaceholder(SharedProfileMediaState state) =>
+        IsContinueWatchingPlaceholder(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.PlayCount,
+            state.LastPlaybackPosition,
+            state.ProgressPercentage);
+
+    public static bool IsEligibleForContinueWatching(UserMediaState state, VideoPlaybackPolicySettingsDto policy) =>
+        MeetsResumeThreshold(state, policy) || IsContinueWatchingPlaceholder(state);
+
+    public static bool IsEligibleForContinueWatching(SharedProfileMediaState state, VideoPlaybackPolicySettingsDto policy) =>
+        MeetsResumeThreshold(state, policy) || IsContinueWatchingPlaceholder(state);
+
+    private static bool IsContinueWatchingPlaceholder(
+        bool isCompleted,
+        DateTime? lastInteractedAt,
+        int playCount,
+        double lastPlaybackPosition,
+        double progressPercentage) =>
+        !isCompleted
+        && lastInteractedAt is not null
+        && playCount == 0
+        && lastPlaybackPosition <= 0
+        && progressPercentage <= 0;
+
     private static bool MeetsResumeThreshold(
         bool isCompleted,
         DateTime? lastInteractedAt,
@@ -71,7 +109,7 @@ public static class ContinueWatchingEligibility
         if (state.ExcludedFromContinueWatching)
             return false;
 
-        if (!MeetsResumeThreshold(state, policy))
+        if (!IsEligibleForContinueWatching(state, policy))
             return false;
 
         return IsWithinWindow(state, policy, utcNow);
@@ -94,10 +132,13 @@ public static class ContinueWatchingEligibility
                 && !s.IsCompleted
                 && !s.ExcludedFromContinueWatching
                 && s.LastInteractedAt != null
-                && s.ProgressPercentage >= minResumePercent
                 && (minResumeDurationSeconds <= 0
                     || s.LastKnownDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)));
+                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
+                && (s.ProgressPercentage >= minResumePercent
+                    || (s.PlayCount == 0
+                        && s.LastPlaybackPosition <= 0
+                        && s.ProgressPercentage <= 0))));
 
         if (cutoff is not null)
         {
@@ -127,10 +168,13 @@ public static class ContinueWatchingEligibility
                 && !s.IsCompleted
                 && !s.ExcludedFromContinueWatching
                 && s.LastInteractedAt != null
-                && s.ProgressPercentage >= minResumePercent
                 && (minResumeDurationSeconds <= 0
                     || s.LastKnownDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)));
+                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
+                && (s.ProgressPercentage >= minResumePercent
+                    || (s.PlayCount == 0
+                        && s.LastPlaybackPosition <= 0
+                        && s.ProgressPercentage <= 0))));
 
         if (cutoff is not null)
         {

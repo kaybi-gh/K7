@@ -261,6 +261,15 @@ public class UpdatePlaybackProgressCommandHandler(
         if (hostResult?.EpisodeIdForEnqueue is { } hostEpisodeId)
             await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
 
+        if (viewingGroup is not null && sharedResult?.EpisodeIdForEnqueue is { } sharedEpisodeId)
+        {
+            await _nextEpisodeEnqueueService.EnqueueNextEpisodeForSharedProfileAsync(
+                viewingGroup.SharedProfileId,
+                sharedEpisodeId,
+                timeNow,
+                cancellationToken);
+        }
+
         // Shared-profile mid-progress stays on SharedProfileMediaState only (personal CW stays clean).
         // On completion, mark the media watched for every member so personal "Vu" badges match the group watch.
         if (!isGuest && viewingGroup is not null && newlyCompletedSession)

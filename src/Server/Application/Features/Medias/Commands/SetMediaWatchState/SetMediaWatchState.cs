@@ -104,6 +104,8 @@ public class SetMediaWatchStateCommandHandler(
                 state.ProgressPercentage = 0;
                 state.LastPlaybackPosition = 0;
                 state.LastInteractedAt = timeNow;
+                // Avoid looking like a next-episode Keep Watching placeholder after a manual unwatch.
+                state.ExcludedFromContinueWatching = true;
                 notifications.Add((mediaId, 0, false, notifyType));
             }
         }

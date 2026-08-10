@@ -44,6 +44,28 @@ public class ContinueWatchingEligibilityTests
     }
 
     [Test]
+    public void MeetsThreshold_ShouldReturnTrue_WhenNextEpisodePlaceholderAtZeroProgress()
+    {
+        var state = CreateState(progress: 0, lastInteractedAt: DateTime.UtcNow);
+        state.LastPlaybackPosition = 0;
+        state.PlayCount = 0;
+
+        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeTrue();
+        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
+        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeTrue();
+    }
+
+    [Test]
+    public void MeetsThreshold_ShouldReturnFalse_WhenZeroProgressButExcluded()
+    {
+        var state = CreateState(excluded: true, progress: 0, lastInteractedAt: DateTime.UtcNow);
+        state.LastPlaybackPosition = 0;
+        state.PlayCount = 0;
+
+        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeFalse();
+    }
+
+    [Test]
     public void GetWindowCutoff_ShouldReturnNull_WhenMaxAgeIsZero()
     {
         var policy = DefaultPolicy with { ContinueWatchingMaxAgeDays = 0 };
