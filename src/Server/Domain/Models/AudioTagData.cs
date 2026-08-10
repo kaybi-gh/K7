@@ -16,4 +16,19 @@ public sealed record AudioTagData
     public string? CoverArtMimeType { get; init; }
     public double? ReplayGainTrackGain { get; init; }
     public double? ReplayGainAlbumGain { get; init; }
+
+    /// <summary>MusicBrainz release (album edition) id from tags.</summary>
+    public string? MusicBrainzReleaseId { get; init; }
+
+    /// <summary>MusicBrainz release-group id from tags.</summary>
+    public string? MusicBrainzReleaseGroupId { get; init; }
+
+    /// <summary>MusicBrainz track artist id from tags.</summary>
+    public string? MusicBrainzArtistId { get; init; }
+
+    /// <summary>MusicBrainz album artist id from tags.</summary>
+    public string? MusicBrainzAlbumArtistId { get; init; }
+
+    /// <summary>MusicBrainz recording / track id from tags.</summary>
+    public string? MusicBrainzRecordingId { get; init; }
 }

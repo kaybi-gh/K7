@@ -16,12 +16,19 @@ namespace K7.Server.Application.Features.Medias.Services;
 public class MediaExternalIdResolver(
     IApplicationDbContext context,
     IServiceProvider serviceProvider,
+    MusicMetadataIdentityService musicIdentityService,
     ILogger<MediaExternalIdResolver> logger)
 {
     public async Task<ExternalId?> ResolveAsync(BaseMedia media, Library library, CancellationToken cancellationToken = default)
     {
         if (media is Serie)
             return await ResolveSerieAsync(media, library, cancellationToken);
+
+        if (media is MusicArtist artist)
+            return await ResolveMusicArtistAsync(artist, library, cancellationToken);
+
+        if (media is MusicAlbum)
+            return await ResolveMusicAlbumAsync(media, library, cancellationToken);
 
         var existing = media.ExternalIds.FirstOrDefault(e =>
             string.Equals(e.ProviderName, library.MetadataProviderName, StringComparison.OrdinalIgnoreCase));
@@ -74,11 +81,149 @@ public class MediaExternalIdResolver(
         return externalId;
     }
 
+    private async Task<ExternalId?> ResolveMusicAlbumAsync(BaseMedia media, Library library, CancellationToken cancellationToken)
+    {
+        var providerName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+        if (string.IsNullOrWhiteSpace(providerName)
+            || string.Equals(providerName, MetadataProviderNames.Auto, StringComparison.OrdinalIgnoreCase))
+            providerName = MetadataProviderNames.MusicBrainz;
+
+        var existing = media.ExternalIds.FirstOrDefault(e =>
+            string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+            return existing;
+
+        var identification = await GetIdentificationAsync(media, library, cancellationToken);
+        if (identification is null)
+        {
+            logger.LogWarning("Cannot resolve external id for media {MediaId}: no identification source available", media.Id);
+            return null;
+        }
+
+        await EnrichMusicIdentificationFromTagsAsync(identification, media, cancellationToken);
+
+        var match = await musicIdentityService.ResolveAlbumAsync(
+            identification,
+            providerName,
+            library.MetadataLanguage,
+            library.MetadataFallbackLanguage,
+            cancellationToken);
+        if (match is null)
+        {
+            logger.LogWarning(
+                "Cannot resolve external id for media {MediaId}: music identity returned no match for {Title}",
+                media.Id,
+                identification.Title);
+            return null;
+        }
+
+        var externalId = new ExternalId
+        {
+            ProviderName = match.ProviderName,
+            Value = match.ExternalId,
+            MediaId = media.Id
+        };
+        media.ExternalIds.Add(externalId);
+
+        if (!string.IsNullOrWhiteSpace(match.PreferredReleaseId)
+            && !media.ExternalIds.Any(e => e.ProviderName == "musicbrainz-release"))
+        {
+            media.ExternalIds.Add(new ExternalId
+            {
+                ProviderName = "musicbrainz-release",
+                Value = match.PreferredReleaseId,
+                MediaId = media.Id
+            });
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Resolved external id for media {MediaId}: {Provider}={ExternalId}",
+            media.Id,
+            match.ProviderName,
+            match.ExternalId);
+
+        return externalId;
+    }
+
+    private async Task<ExternalId?> ResolveMusicArtistAsync(MusicArtist artist, Library library, CancellationToken cancellationToken)
+    {
+        var existing = artist.ExternalIds.FirstOrDefault(e =>
+            string.Equals(e.ProviderName, MetadataProviderNames.MusicBrainz, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+            return existing;
+
+        var artistId = await musicIdentityService.ResolveArtistIdAsync(
+            artist.Title,
+            knownMusicBrainzId: null,
+            library.MetadataLanguage ?? MetadataProviderNames.DefaultLanguage,
+            cancellationToken);
+        if (string.IsNullOrWhiteSpace(artistId))
+        {
+            logger.LogWarning(
+                "Cannot resolve external id for music artist {MediaId}: no MusicBrainz match for {Title}",
+                artist.Id,
+                artist.Title);
+            return null;
+        }
+
+        var externalId = new ExternalId
+        {
+            ProviderName = MetadataProviderNames.MusicBrainz,
+            Value = artistId,
+            MediaId = artist.Id
+        };
+        artist.ExternalIds.Add(externalId);
+        await context.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Resolved external id for media {MediaId}: {Provider}={ExternalId}",
+            artist.Id,
+            MetadataProviderNames.MusicBrainz,
+            artistId);
+
+        return externalId;
+    }
+
+    private async Task EnrichMusicIdentificationFromTagsAsync(
+        MediaIdentification identification,
+        BaseMedia media,
+        CancellationToken cancellationToken)
+    {
+        if (identification.MusicBrainzReleaseGroupId is not null
+            || identification.MusicBrainzReleaseId is not null)
+            return;
+
+        var file = await MediaLibraryLinkageHelper.GetIndexedFilesQuery(context, media)
+            .AsNoTracking()
+            .OrderBy(f => f.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (file is null)
+            return;
+
+        var tagReader = serviceProvider.GetService<IAudioTagReader>();
+        var tags = tagReader?.ReadTags(file.Path, includeCoverArt: false);
+        if (tags is null)
+            return;
+
+        identification.MusicBrainzReleaseId ??= tags.MusicBrainzReleaseId;
+        identification.MusicBrainzReleaseGroupId ??= tags.MusicBrainzReleaseGroupId;
+        identification.MusicBrainzArtistId ??= tags.MusicBrainzArtistId;
+        identification.MusicBrainzAlbumArtistId ??= tags.MusicBrainzAlbumArtistId;
+        identification.MusicBrainzRecordingId ??= tags.MusicBrainzRecordingId;
+    }
+
     private async Task<ExternalId?> ResolveSerieAsync(BaseMedia media, Library library, CancellationToken cancellationToken)
     {
+        var serie = media as Serie;
         var cascade = SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var preferred = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+        var preferred = !string.IsNullOrWhiteSpace(serie?.NumberingProviderName)
+            ? MetadataProviderHostMapper.NormalizeProviderName(serie.NumberingProviderName)
+            : MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+        if (SerieMetadataProviderCascade.IsAuto(preferred))
+            preferred = MetadataProviderNames.Tmdb;
 
         var existing = media.ExternalIds
             .Where(e => cascade.Contains(MetadataProviderNames.Normalize(
@@ -96,6 +241,53 @@ public class MediaExternalIdResolver(
         {
             logger.LogWarning("Cannot resolve external id for media {MediaId}: no identification source available", media.Id);
             return null;
+        }
+
+        var identityService = serviceProvider.GetService<SerieMetadataIdentityService>();
+        if (identityService is not null)
+        {
+            var match = await identityService.ResolveAsync(
+                identification,
+                library.MetadataProviderName,
+                [identification],
+                library.MetadataLanguage,
+                library.MetadataFallbackLanguage,
+                cancellationToken);
+            if (match is not null)
+            {
+                foreach (var (providerName, value) in match.ExternalIds)
+                {
+                    if (media.ExternalIds.Any(e =>
+                            string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    media.ExternalIds.Add(new ExternalId
+                    {
+                        ProviderName = providerName,
+                        Value = value,
+                        MediaId = media.Id
+                    });
+                }
+
+                if (serie is not null)
+                    serie.NumberingProviderName = match.NumberingProviderName;
+
+                await context.SaveChangesAsync(cancellationToken);
+
+                var primary = media.ExternalIds.FirstOrDefault(e =>
+                    string.Equals(e.ProviderName, match.NumberingProviderName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(e.Value, match.NumberingExternalId, StringComparison.OrdinalIgnoreCase))
+                    ?? media.ExternalIds.FirstOrDefault(e =>
+                        string.Equals(e.ProviderName, match.NumberingProviderName, StringComparison.OrdinalIgnoreCase));
+
+                logger.LogInformation(
+                    "Resolved external id for media {MediaId}: {Provider}={ExternalId}",
+                    media.Id,
+                    match.NumberingProviderName,
+                    match.NumberingExternalId);
+
+                return primary;
+            }
         }
 
         foreach (var providerKey in SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName))
@@ -118,6 +310,8 @@ public class MediaExternalIdResolver(
                 MediaId = media.Id
             };
             media.ExternalIds.Add(externalId);
+            if (serie is not null)
+                serie.NumberingProviderName = provider.ProviderName;
             await context.SaveChangesAsync(cancellationToken);
 
             logger.LogInformation(

@@ -343,7 +343,14 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             .Include(s => s.ExternalIds)
             .FirstOrDefaultAsync(s => s.Title == title && s.ReleaseDate == releaseYear, cancellationToken);
 
-    public Task<MusicArtist?> FindMusicArtistByNameAsync(string name, CancellationToken cancellationToken = default) =>
-        context.Medias.OfType<MusicArtist>()
-            .FirstOrDefaultAsync(a => a.Title == name, cancellationToken);
+    public async Task<MusicArtist?> FindMusicArtistByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var normalized = MusicArtistNameNormalizer.NormalizeForMatch(name);
+        var candidates = await context.Medias.OfType<MusicArtist>()
+            .Where(a => a.Title == name
+                || (normalized != null && a.Title == normalized))
+            .ToListAsync(cancellationToken);
+
+        return candidates.FirstOrDefault(a => MusicArtistNameNormalizer.NamesMatch(a.Title, name));
+    }
 }

@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -351,8 +352,16 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (_artistProviders.TryGetValue("musicbrainz", out var mbProvider))
         {
-            var mbDetails = await mbProvider.FetchByProviderIdAsync(
-                request.MetadataProviderExternalId, language, cancellationToken);
+            ExternalMusicArtistDetails? mbDetails = null;
+            if (!string.IsNullOrWhiteSpace(request.MetadataProviderExternalId))
+            {
+                mbDetails = await mbProvider.FetchByProviderIdAsync(
+                    request.MetadataProviderExternalId, language, cancellationToken);
+            }
+
+            mbDetails ??= !string.IsNullOrWhiteSpace(artist.Title)
+                ? await mbProvider.SearchByNameAsync(artist.Title!, language, cancellationToken)
+                : null;
 
             if (mbDetails is not null)
             {
@@ -361,6 +370,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)))
                 {
+                    if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId)
+                        && !artist.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
+                    {
+                        artist.ExternalIds.Add(new ExternalId
+                        {
+                            ProviderName = "musicbrainz",
+                            Value = mbDetails.MusicBrainzArtistId,
+                            MediaId = artist.Id
+                        });
+                    }
+
                     if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
                         artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
 
@@ -446,6 +466,44 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(serie, serieMetadata.Ratings);
 
+        // Persist crosswalk ids from serie fetch before episode loop so inline fallback can resolve TMDB/TVDB.
+        if (!serie.IsFieldLocked(nameof(Serie.ExternalIds)) && serieMetadata.ExternalIds?.Count > 0)
+        {
+            foreach (var external in serieMetadata.ExternalIds)
+            {
+                if (string.IsNullOrWhiteSpace(external.ProviderName) || string.IsNullOrWhiteSpace(external.Value))
+                    continue;
+                if (serie.ExternalIds.Any(e =>
+                        string.Equals(e.ProviderName, external.ProviderName, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                serie.ExternalIds.Add(new ExternalId
+                {
+                    ProviderName = external.ProviderName,
+                    Value = external.Value,
+                    MediaId = serie.Id
+                });
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(serie.NumberingProviderName))
+            serie.NumberingProviderName = MetadataProviderHostMapper.NormalizeProviderName(request.MetadataProviderName);
+
+        var enrichmentProviderName = SerieMetadataProviderCascade.ResolveEnrichmentProvider(
+            serie.NumberingProviderName ?? request.MetadataProviderName);
+        ISerieMetadataProvider? enrichmentProvider = null;
+        string? enrichmentExternalId = null;
+        if (!string.IsNullOrWhiteSpace(enrichmentProviderName))
+        {
+            enrichmentExternalId = serie.ExternalIds
+                .FirstOrDefault(e => string.Equals(e.ProviderName, enrichmentProviderName, StringComparison.OrdinalIgnoreCase))
+                ?.Value
+                ?? (enrichmentProviderName == MetadataProviderNames.Tmdb
+                    ? serie.ExternalIds.FirstOrDefault(e => e.ProviderName == MetadataProviderNames.Imdb)?.Value
+                    : null);
+            if (!string.IsNullOrWhiteSpace(enrichmentExternalId))
+                enrichmentProvider = _serviceProvider.GetKeyedService<ISerieMetadataProvider>(enrichmentProviderName);
+        }
+
         // Federation: create seasons and episodes from peer metadata (no local scan to do it)
         if (request.MetadataProviderName == "federation")
         {
@@ -492,32 +550,76 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        // Fetch and apply episode metadata
+        // Fetch and apply episode metadata (catalog-first, then inline enrichment fallback)
         var episodeRemoteIds = new Dictionary<(int Season, int Episode), Guid>();
         foreach (var season in serie.Seasons)
         {
             foreach (var episode in season.Episodes)
             {
-                ExternalEpisodeMetadata episodeMetadata;
+                ExternalEpisodeMetadata? episodeMetadata = null;
                 try
                 {
-                    episodeMetadata = await metadataProvider.FetchEpisodeMetadataAsync(
+                    episodeMetadata = await metadataProvider.TryBuildEpisodeMetadataFromCatalogAsync(
+                        request.MetadataProviderExternalId,
+                        season.SeasonNumber,
+                        episode.EpisodeNumber,
+                        request.Language,
+                        request.FallbackLanguage,
+                        cancellationToken);
+
+                    episodeMetadata ??= await metadataProvider.FetchEpisodeMetadataAsync(
                         request.MetadataProviderExternalId, season.SeasonNumber, episode.EpisodeNumber,
                         request.Language, cancellationToken, request.FallbackLanguage);
                 }
                 catch (InvalidOperationException ex)
                 {
-                    _logger.LogWarning(
+                    _logger.LogDebug(
                         ex,
-                        "Skipping episode S{SeasonNumber}E{EpisodeNumber} metadata refresh for serie {MediaId} via {Provider}",
+                        "Canon episode miss S{SeasonNumber}E{EpisodeNumber} for serie {MediaId} via {Provider}",
                         season.SeasonNumber,
                         episode.EpisodeNumber,
                         serie.Id,
                         request.MetadataProviderName);
+                }
 
+                if (episodeMetadata is null
+                    && enrichmentProvider is not null
+                    && !string.IsNullOrWhiteSpace(enrichmentExternalId))
+                {
+                    try
+                    {
+                        episodeMetadata = await enrichmentProvider.TryBuildEpisodeMetadataFromCatalogAsync(
+                            enrichmentExternalId,
+                            season.SeasonNumber,
+                            episode.EpisodeNumber,
+                            request.Language,
+                            request.FallbackLanguage,
+                            cancellationToken);
+
+                        episodeMetadata ??= await enrichmentProvider.FetchEpisodeMetadataAsync(
+                            enrichmentExternalId,
+                            season.SeasonNumber,
+                            episode.EpisodeNumber,
+                            request.Language,
+                            cancellationToken,
+                            request.FallbackLanguage);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "Skipping episode S{SeasonNumber}E{EpisodeNumber} metadata refresh for serie {MediaId} via {Provider}",
+                            season.SeasonNumber,
+                            episode.EpisodeNumber,
+                            serie.Id,
+                            enrichmentProviderName);
+                    }
+                }
+
+                if (episodeMetadata is null)
+                {
                     if (!episode.IsPictureTypeLocked(MetadataPictureType.Still))
                         await TryQueueEpisodeStillFromSourceFallbackAsync(episode, cancellationToken);
-
                     continue;
                 }
 
@@ -672,9 +774,9 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (artist is null) return;
 
-        // Try to match artist from metadata to get MusicBrainz ID
+        // Match album artist by name; never fall back to Artists[0] (VA / multi-artist albums).
         var artistMetadata = metadata.Artists?.FirstOrDefault(a =>
-            string.Equals(a.Name, artist.Title, StringComparison.OrdinalIgnoreCase));
+            MusicArtistNameNormalizer.NamesMatch(a.Name, artist.Title));
 
         if (!artist.IsFieldLocked(nameof(MusicArtist.SortTitle))
             && artistMetadata?.SortName is not null)

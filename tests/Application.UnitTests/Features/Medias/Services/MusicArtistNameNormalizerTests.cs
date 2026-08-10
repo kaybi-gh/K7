@@ -51,4 +51,13 @@ public class MusicArtistNameNormalizerTests
         MusicArtistNameNormalizer.FromId3v23SplitValues(null).Should().BeEmpty();
         MusicArtistNameNormalizer.FromId3v23SplitValues(["  ", ""]).Should().BeEmpty();
     }
+
+    [Test]
+    public void NamesMatch_ShouldIgnoreLeadingPunctuationAndCase()
+    {
+        MusicArtistNameNormalizer.NamesMatch("*NSYNC", "NSYNC").Should().BeTrue();
+        MusicArtistNameNormalizer.NamesMatch("*NSYNC", "nsync").Should().BeTrue();
+        MusicArtistNameNormalizer.NamesMatch("Justin Timberlake", "Justin Timberlake ").Should().BeTrue();
+        MusicArtistNameNormalizer.NamesMatch("*NSYNC", "Backstreet Boys").Should().BeFalse();
+    }
 }

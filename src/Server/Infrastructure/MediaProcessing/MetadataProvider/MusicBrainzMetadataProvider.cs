@@ -53,21 +53,44 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            // Search for a release (album) by album name + artist
+            if (!string.IsNullOrWhiteSpace(identification.MusicBrainzReleaseGroupId))
+                return identification.MusicBrainzReleaseGroupId.Trim();
+
+            if (!string.IsNullOrWhiteSpace(identification.MusicBrainzReleaseId))
+            {
+                var release = await GetReleaseWithReleaseGroupAsync(identification.MusicBrainzReleaseId.Trim(), cancellationToken);
+                if (!string.IsNullOrWhiteSpace(release?.ReleaseGroup?.Id))
+                    return release.ReleaseGroup.Id;
+
+                // Do not store a release id under the album (release-group) provider key.
+                return null;
+            }
+
             var query = BuildSearchQuery(identification);
-            var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(query)}&limit=5&fmt=json";
+            if (string.IsNullOrWhiteSpace(query))
+                return null;
+
+            var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(query)}&limit=10&fmt=json";
 
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             var response = await _httpClient.GetFromJsonAsync<MbReleaseSearchResult>(url, JsonOptions, cancellationToken);
-            var bestMatch = response?.Releases?.FirstOrDefault();
+            var candidates = response?.Releases?
+                .Where(r => r.Score >= 80)
+                .ToList() ?? [];
 
-            if (bestMatch != null && bestMatch.Score >= 80)
-            {
-                // Prefer the release-group ID for consistency across editions
-                return bestMatch.ReleaseGroup?.Id ?? bestMatch.Id;
-            }
+            if (candidates.Count == 0)
+                return null;
 
-            return null;
+            var yearIndex = FindPreferredYearIndex(
+                candidates.Select(c => c.Date).ToList(),
+                identification.ReleaseYear?.Year);
+            var bestMatch = yearIndex is int i ? candidates[i] : candidates[0];
+
+            // Album ExternalId is always a release-group id - never fall back to release id.
+            if (string.IsNullOrWhiteSpace(bestMatch.ReleaseGroup?.Id))
+                return null;
+
+            return bestMatch.ReleaseGroup.Id;
         }
         catch (Exception ex)
         {
@@ -176,7 +199,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
             foreach (var release in response.Releases)
             {
-                var externalId = release.ReleaseGroup?.Id ?? release.Id;
+                var externalId = release.ReleaseGroup?.Id;
                 if (string.IsNullOrWhiteSpace(externalId))
                     continue;
 
@@ -205,10 +228,10 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
 
         var release = await GetReleaseWithReleaseGroupAsync(providerId, cancellationToken);
-        if (release is null)
+        if (release is null || string.IsNullOrWhiteSpace(release.ReleaseGroup?.Id))
             return null;
 
-        var externalId = release.ReleaseGroup?.Id ?? release.Id;
+        var externalId = release.ReleaseGroup.Id;
         var posterUrl = await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release-group/{externalId}", cancellationToken)
             ?? await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release/{release.Id}", cancellationToken);
 
@@ -263,24 +286,81 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
         if (!string.IsNullOrEmpty(identification.AlbumName))
         {
-            parts.Add($"release:\"{identification.AlbumName}\"");
+            parts.Add($"release:\"{EscapeLucene(identification.AlbumName)}\"");
         }
         else if (!string.IsNullOrEmpty(identification.Title))
         {
-            parts.Add($"release:\"{identification.Title}\"");
+            parts.Add($"release:\"{EscapeLucene(identification.Title)}\"");
         }
 
-        if (!string.IsNullOrEmpty(identification.ArtistName))
+        var artistMbid = identification.MusicBrainzAlbumArtistId ?? identification.MusicBrainzArtistId;
+        if (!string.IsNullOrWhiteSpace(artistMbid))
         {
-            parts.Add($"artist:\"{identification.ArtistName}\"");
+            parts.Add($"arid:{artistMbid.Trim()}");
         }
-
-        if (identification.ReleaseYear.HasValue)
+        else if (!string.IsNullOrEmpty(identification.ArtistName))
         {
-            parts.Add($"date:{identification.ReleaseYear.Value.Year}");
+            parts.Add($"artist:\"{EscapeLucene(identification.ArtistName)}\"");
         }
 
+        // Year is intentionally omitted from the Lucene query: a wrong tag year zeros all hits.
+        // FindPreferredYearIndex re-ranks locally when a year hint is available.
         return string.Join(" AND ", parts);
+    }
+
+    /// <summary>
+    /// Escapes Lucene special characters inside MusicBrainz advanced search terms.
+    /// </summary>
+    internal static string EscapeLucene(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        Span<char> buffer = stackalloc char[value.Length * 2];
+        var written = 0;
+        foreach (var c in value)
+        {
+            if (c is '+' or '-' or '&' or '|' or '!' or '(' or ')' or '{' or '}' or '[' or ']'
+                or '^' or '"' or '~' or '*' or '?' or ':' or '\\' or '/')
+            {
+                buffer[written++] = '\\';
+            }
+
+            buffer[written++] = c;
+        }
+
+        return new string(buffer[..written]);
+    }
+
+    internal static string? NormalizeArtistSearchName(string? artistName)
+    {
+        if (string.IsNullOrWhiteSpace(artistName))
+            return null;
+
+        var trimmed = artistName.Trim();
+        // Strip leading decorative punctuation (*NSYNC, 'N Sync, ★NSYNC).
+        while (trimmed.Length > 0 && !char.IsLetterOrDigit(trimmed[0]))
+            trimmed = trimmed[1..].TrimStart();
+
+        return string.IsNullOrWhiteSpace(trimmed) ? artistName.Trim() : trimmed;
+    }
+
+    /// <summary>
+    /// Soft year ranking: pick the first candidate whose date year matches the local hint.
+    /// Returns null when no hint or no match so callers can fall back to score order.
+    /// </summary>
+    internal static int? FindPreferredYearIndex(IReadOnlyList<string?> candidateDates, int? preferredYear)
+    {
+        if (preferredYear is null || candidateDates.Count == 0)
+            return null;
+
+        for (var i = 0; i < candidateDates.Count; i++)
+        {
+            if (ParseYear(candidateDates[i]) == preferredYear)
+                return i;
+        }
+
+        return null;
     }
 
     private async Task<MbReleaseGroup?> GetReleaseGroupAsync(string releaseGroupId, CancellationToken cancellationToken)
@@ -593,13 +673,34 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            await _rateLimiter.WaitAsync(Host, cancellationToken);
-            var url = $"{BaseUrl}/artist/?query=artist:\"{Uri.EscapeDataString(artistName)}\"&limit=1&fmt=json";
-            var result = await _httpClient.GetFromJsonAsync<MbArtistSearchResult>(url, JsonOptions, cancellationToken);
-            var best = result?.Artists?.FirstOrDefault();
-            if (best is not { Score: >= 90 }) return null;
+            var namesToTry = new List<string>();
+            if (!string.IsNullOrWhiteSpace(artistName))
+                namesToTry.Add(artistName.Trim());
 
-            return await FetchByProviderIdAsync(best.Id, language, cancellationToken);
+            var normalized = NormalizeArtistSearchName(artistName);
+            if (!string.IsNullOrWhiteSpace(normalized)
+                && !namesToTry.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+            {
+                namesToTry.Add(normalized);
+            }
+
+            foreach (var name in namesToTry)
+            {
+                await _rateLimiter.WaitAsync(Host, cancellationToken);
+                var lucene = EscapeLucene(name);
+                var url = $"{BaseUrl}/artist/?query=artist:\"{Uri.EscapeDataString(lucene)}\"&limit=5&fmt=json";
+                var result = await _httpClient.GetFromJsonAsync<MbArtistSearchResult>(url, JsonOptions, cancellationToken);
+                var best = result?.Artists?
+                    .Where(a => a.Score >= 90)
+                    .OrderByDescending(a => a.Score)
+                    .FirstOrDefault();
+                if (best is null)
+                    continue;
+
+                return await FetchByProviderIdAsync(best.Id, language, cancellationToken);
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
@@ -819,6 +920,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public string Id { get; init; } = "";
         public int Score { get; init; }
         public string? Title { get; init; }
+        public string? Date { get; init; }
         [JsonPropertyName("release-group")]
         public MbReleaseGroupRef? ReleaseGroup { get; init; }
     }

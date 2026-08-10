@@ -61,7 +61,12 @@ public class TagLibAudioTagReader : IAudioTagReader
                 CoverArtData = coverData,
                 CoverArtMimeType = coverMime,
                 ReplayGainTrackGain = ExtractReplayGain(tag.ReplayGainTrackGain),
-                ReplayGainAlbumGain = ExtractReplayGain(tag.ReplayGainAlbumGain)
+                ReplayGainAlbumGain = ExtractReplayGain(tag.ReplayGainAlbumGain),
+                MusicBrainzReleaseId = NullIfEmpty(tag.MusicBrainzReleaseId),
+                MusicBrainzReleaseGroupId = NullIfEmpty(tag.MusicBrainzReleaseGroupId),
+                MusicBrainzArtistId = NullIfEmpty(tag.MusicBrainzArtistId),
+                MusicBrainzAlbumArtistId = NullIfEmpty(tag.MusicBrainzReleaseArtistId),
+                MusicBrainzRecordingId = NullIfEmpty(tag.MusicBrainzTrackId)
             };
         }
         catch (Exception ex)

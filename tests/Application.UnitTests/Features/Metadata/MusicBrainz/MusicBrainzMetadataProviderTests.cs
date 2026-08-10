@@ -46,7 +46,7 @@ public class MusicBrainzMetadataProviderTests
         MusicBrainzMetadataProvider.ExtractImdbId("https://www.imdb.com/name/nm0000093/").Should().Be("nm0000093");
 
     [Test]
-    public void BuildSearchQuery_ShouldCombineAlbumArtistAndYear_WhenAllPresent()
+    public void BuildSearchQuery_ShouldCombineAlbumAndArtist_WithoutHardDateFilter()
     {
         var identification = new MediaIdentification("fallback title")
         {
@@ -57,7 +57,50 @@ public class MusicBrainzMetadataProviderTests
 
         var query = MusicBrainzMetadataProvider.BuildSearchQuery(identification);
 
-        query.Should().Be("release:\"Discovery\" AND artist:\"Daft Punk\" AND date:2001");
+        query.Should().Be("release:\"Discovery\" AND artist:\"Daft Punk\"");
+    }
+
+    [Test]
+    public void BuildSearchQuery_ShouldPreferArtistMbid_WhenPresent()
+    {
+        var identification = new MediaIdentification("fallback")
+        {
+            AlbumName = "No Strings Attached",
+            ArtistName = "*NSYNC",
+            MusicBrainzAlbumArtistId = "603ba565-3967-4be1-931e-9cb945394e86"
+        };
+
+        var query = MusicBrainzMetadataProvider.BuildSearchQuery(identification);
+
+        query.Should().Be("release:\"No Strings Attached\" AND arid:603ba565-3967-4be1-931e-9cb945394e86");
+    }
+
+    [Test]
+    public void BuildSearchQuery_ShouldEscapeLuceneSpecialCharacters_InQuotedFields()
+    {
+        var identification = new MediaIdentification("fallback")
+        {
+            AlbumName = "No Strings Attached",
+            ArtistName = "*NSYNC"
+        };
+
+        var query = MusicBrainzMetadataProvider.BuildSearchQuery(identification);
+
+        query.Should().Be("release:\"No Strings Attached\" AND artist:\"\\*NSYNC\"");
+    }
+
+    [Test]
+    public void EscapeLucene_ShouldEscapeParenthesesAndAsterisk()
+    {
+        MusicBrainzMetadataProvider.EscapeLucene("*NSYNC").Should().Be("\\*NSYNC");
+        MusicBrainzMetadataProvider.EscapeLucene("Song (Remix)").Should().Be("Song \\(Remix\\)");
+    }
+
+    [Test]
+    public void NormalizeArtistSearchName_ShouldStripLeadingPunctuation()
+    {
+        MusicBrainzMetadataProvider.NormalizeArtistSearchName("*NSYNC").Should().Be("NSYNC");
+        MusicBrainzMetadataProvider.NormalizeArtistSearchName("'N Sync").Should().Be("N Sync");
     }
 
     [Test]
@@ -68,5 +111,26 @@ public class MusicBrainzMetadataProviderTests
         var query = MusicBrainzMetadataProvider.BuildSearchQuery(identification);
 
         query.Should().Be("release:\"Homework\"");
+    }
+
+    [Test]
+    public void FindPreferredYearIndex_ShouldReturnMatchingIndex_WhenYearHintMatches()
+    {
+        var index = MusicBrainzMetadataProvider.FindPreferredYearIndex(
+            ["1998-01-01", "2000-03-21", "2001"],
+            preferredYear: 2000);
+
+        index.Should().Be(1);
+    }
+
+    [Test]
+    public void FindPreferredYearIndex_ShouldReturnNull_WhenYearHintMissingOrUnmatched()
+    {
+        MusicBrainzMetadataProvider.FindPreferredYearIndex(["2000"], preferredYear: null)
+            .Should().BeNull();
+        MusicBrainzMetadataProvider.FindPreferredYearIndex(["2000"], preferredYear: 1999)
+            .Should().BeNull();
+        MusicBrainzMetadataProvider.FindPreferredYearIndex([], preferredYear: 2000)
+            .Should().BeNull();
     }
 }
