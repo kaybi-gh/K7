@@ -31,16 +31,7 @@ public static class MovieOrphanCleanupHelper
         if (movie.IndexedFiles.Count > 0 || movie.RemoteIndexedFiles.Count > 0)
             return false;
 
-        var hasUserData = await context.UserMediaStates
-                .AnyAsync(s => s.MediaId == movieId, cancellationToken)
-            || await context.MediaReviews
-                .AnyAsync(r => r.MediaId == movieId, cancellationToken)
-            || await context.PlaylistItems
-                .AnyAsync(p => p.MediaId == movieId, cancellationToken)
-            || await context.SharedProfileMediaStates
-                .AnyAsync(s => s.MediaId == movieId, cancellationToken);
-
-        if (hasUserData)
+        if (await MediaHasUserDataHelper.HasUserDataAsync(context, movieId, cancellationToken))
         {
             logger.LogInformation(
                 "Keeping orphan movie {MovieId} ({Title}) because user data exists",

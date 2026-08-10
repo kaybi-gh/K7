@@ -27,19 +27,34 @@ public static class MediaUserStateTransferHelper
         var transferredReviews = await TransferMediaReviewsAsync(context, fromMediaId, toMediaId, cancellationToken);
         var transferredPlaylists = await TransferPlaylistItemsAsync(context, fromMediaId, toMediaId, cancellationToken);
         var transferredRatings = await TransferUserRatingsAsync(context, fromMediaId, toMediaId, cancellationToken);
+        var transferredCollections = await TransferCollectionItemsAsync(context, fromMediaId, toMediaId, cancellationToken);
+        var transferredSessions = await TransferPlaybackSessionsAsync(context, fromMediaId, toMediaId, cancellationToken);
+        var transferredExclusions = await TransferMediaExclusionsAsync(context, fromMediaId, toMediaId, cancellationToken);
 
-        if (transferredStates + transferredShared + transferredReviews + transferredPlaylists + transferredRatings == 0)
+        if (transferredStates
+            + transferredShared
+            + transferredReviews
+            + transferredPlaylists
+            + transferredRatings
+            + transferredCollections
+            + transferredSessions
+            + transferredExclusions == 0)
+        {
             return;
+        }
 
         logger.LogInformation(
-            "Transferred user state from media {FromMediaId} to {ToMediaId} (states={States}, shared={Shared}, reviews={Reviews}, playlists={Playlists}, ratings={Ratings})",
+            "Transferred user state from media {FromMediaId} to {ToMediaId} (states={States}, shared={Shared}, reviews={Reviews}, playlists={Playlists}, ratings={Ratings}, collections={Collections}, sessions={Sessions}, exclusions={Exclusions})",
             fromMediaId,
             toMediaId,
             transferredStates,
             transferredShared,
             transferredReviews,
             transferredPlaylists,
-            transferredRatings);
+            transferredRatings,
+            transferredCollections,
+            transferredSessions,
+            transferredExclusions);
     }
 
     private static async Task<int> TransferUserMediaStatesAsync(
@@ -206,6 +221,91 @@ public static class MediaUserStateTransferHelper
         return sourceRatings.Count;
     }
 
+    private static async Task<int> TransferCollectionItemsAsync(
+        IApplicationDbContext context,
+        Guid fromMediaId,
+        Guid toMediaId,
+        CancellationToken cancellationToken)
+    {
+        var sourceItems = await context.CollectionItems
+            .Where(c => c.MediaId == fromMediaId)
+            .ToListAsync(cancellationToken);
+
+        if (sourceItems.Count == 0)
+            return 0;
+
+        var collectionIds = sourceItems.Select(c => c.CollectionId).Distinct().ToList();
+        var targetCollectionIds = await context.CollectionItems
+            .Where(c => c.MediaId == toMediaId && collectionIds.Contains(c.CollectionId))
+            .Select(c => c.CollectionId)
+            .ToListAsync(cancellationToken);
+        var targetSet = targetCollectionIds.ToHashSet();
+
+        foreach (var source in sourceItems)
+        {
+            if (targetSet.Contains(source.CollectionId))
+                context.CollectionItems.Remove(source);
+            else
+                source.MediaId = toMediaId;
+        }
+
+        return sourceItems.Count;
+    }
+
+    private static async Task<int> TransferPlaybackSessionsAsync(
+        IApplicationDbContext context,
+        Guid fromMediaId,
+        Guid toMediaId,
+        CancellationToken cancellationToken)
+    {
+        var sourceSessions = await context.MediaPlaybackSessions
+            .Where(s => s.MediaId == fromMediaId)
+            .ToListAsync(cancellationToken);
+
+        if (sourceSessions.Count == 0)
+            return 0;
+
+        foreach (var source in sourceSessions)
+            source.MediaId = toMediaId;
+
+        return sourceSessions.Count;
+    }
+
+    private static async Task<int> TransferMediaExclusionsAsync(
+        IApplicationDbContext context,
+        Guid fromMediaId,
+        Guid toMediaId,
+        CancellationToken cancellationToken)
+    {
+        var sourceExclusions = await context.UserMediaExclusions
+            .Where(e => e.MediaId == fromMediaId)
+            .ToListAsync(cancellationToken);
+
+        if (sourceExclusions.Count == 0)
+            return 0;
+
+        var userIds = sourceExclusions.Select(e => e.UserId).Distinct().ToList();
+        var targetExclusions = await context.UserMediaExclusions
+            .Where(e => e.MediaId == toMediaId && userIds.Contains(e.UserId))
+            .ToDictionaryAsync(e => e.UserId, cancellationToken);
+
+        foreach (var source in sourceExclusions)
+        {
+            if (targetExclusions.TryGetValue(source.UserId, out var target))
+            {
+                target.IsAdminExcluded = target.IsAdminExcluded || source.IsAdminExcluded;
+                target.IsSelfExcluded = target.IsSelfExcluded || source.IsSelfExcluded;
+                context.UserMediaExclusions.Remove(source);
+            }
+            else
+            {
+                source.MediaId = toMediaId;
+            }
+        }
+
+        return sourceExclusions.Count;
+    }
+
     private static void MergeWatchState(UserMediaState target, UserMediaState source)
     {
         var sourceIsNewer = source.LastInteractedAt.HasValue
@@ -226,11 +326,8 @@ public static class MediaUserStateTransferHelper
             target.IsCompleted = target.IsCompleted || source.IsCompleted;
         }
 
-        if (source.PlayCount > target.PlayCount)
-            target.PlayCount = source.PlayCount;
-
-        if (source.SkipCount > target.SkipCount)
-            target.SkipCount = source.SkipCount;
+        target.PlayCount += source.PlayCount;
+        target.SkipCount += source.SkipCount;
     }
 
     private static void MergeSharedWatchState(SharedProfileMediaState target, SharedProfileMediaState source)
@@ -253,10 +350,7 @@ public static class MediaUserStateTransferHelper
             target.IsCompleted = target.IsCompleted || source.IsCompleted;
         }
 
-        if (source.PlayCount > target.PlayCount)
-            target.PlayCount = source.PlayCount;
-
-        if (source.SkipCount > target.SkipCount)
-            target.SkipCount = source.SkipCount;
+        target.PlayCount += source.PlayCount;
+        target.SkipCount += source.SkipCount;
     }
 }

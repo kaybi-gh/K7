@@ -1,5 +1,6 @@
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -83,6 +84,83 @@ public class SerieEpisodeOrphanCleanupHelperTests
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenIndexedFileRemains()
     {
         var (episodeId, _) = await SeedOrphanEpisodeAsync(withFile: true);
+
+        var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+            _context,
+            episodeId,
+            _logger);
+
+        deleted.Should().BeFalse();
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenCollectionItemExists()
+    {
+        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        var collection = new Collection { Id = Guid.NewGuid(), Title = "Favs", UserId = userId };
+        _context.Collections.Add(collection);
+        _context.CollectionItems.Add(new CollectionItem
+        {
+            CollectionId = collection.Id,
+            MediaId = episodeId,
+            Order = 0
+        });
+        await _context.SaveChangesAsync();
+
+        var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+            _context,
+            episodeId,
+            _logger);
+
+        deleted.Should().BeFalse();
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenPlaybackSessionExists()
+    {
+        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            UserId = userId,
+            MediaId = episodeId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = Guid.NewGuid(),
+            StartedAt = DateTime.UtcNow,
+            PositionSeconds = 1,
+            DurationSeconds = 10,
+            WatchedDurationSeconds = 1,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+            _context,
+            episodeId,
+            _logger);
+
+        deleted.Should().BeFalse();
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenExclusionExists()
+    {
+        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaExclusions.Add(new UserMediaExclusion
+        {
+            UserId = userId,
+            MediaId = episodeId,
+            IsSelfExcluded = true
+        });
+        await _context.SaveChangesAsync();
 
         var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
             _context,

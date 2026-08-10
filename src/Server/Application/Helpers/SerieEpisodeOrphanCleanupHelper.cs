@@ -34,16 +34,7 @@ public static class SerieEpisodeOrphanCleanupHelper
         if (episode.IndexedFiles.Count > 0 || episode.RemoteIndexedFiles.Count > 0)
             return false;
 
-        var hasUserData = await context.UserMediaStates
-                .AnyAsync(s => s.MediaId == episodeId, cancellationToken)
-            || await context.MediaReviews
-                .AnyAsync(r => r.MediaId == episodeId, cancellationToken)
-            || await context.PlaylistItems
-                .AnyAsync(p => p.MediaId == episodeId, cancellationToken)
-            || await context.SharedProfileMediaStates
-                .AnyAsync(s => s.MediaId == episodeId, cancellationToken);
-
-        if (hasUserData)
+        if (await MediaHasUserDataHelper.HasUserDataAsync(context, episodeId, cancellationToken))
         {
             logger.LogInformation(
                 "Keeping orphan episode {EpisodeId} (S{SeasonNumber}E{EpisodeNumber}) because user data exists",
