@@ -6,8 +6,13 @@ using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Entities.Playlists;
+using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Entities.Reviews;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
@@ -89,6 +94,11 @@ public class CreateMediaCommandHandlerTests
             Substitute.For<IMediaQueryCacheInvalidator>(),
             Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
 
+        var serieIdentity = new SerieMetadataIdentityService(
+            Enumerable.Empty<ISearchableMetadataProvider>(),
+            _serviceProvider,
+            Substitute.For<ILogger<SerieMetadataIdentityService>>());
+
         _handler = new CreateMediaCommandHandler(
             _context,
             _sender,
@@ -99,6 +109,9 @@ public class CreateMediaCommandHandlerTests
             new MediaIdentityLookupService(_context),
             new MediaIdentityLock(),
             availability,
+            serieIdentity,
+            new MusicMetadataIdentityService(_serviceProvider, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
+            Substitute.For<IMusicIntelligenceCatalogReconciler>(),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
@@ -268,6 +281,149 @@ public class CreateMediaCommandHandlerTests
         mediaId.Should().Be(existingId);
         (await _context.Medias.OfType<Movie>().CountAsync()).Should().Be(1);
         await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldTransferUserDataUsingFormerMediaIds_WhenMediaIdAlreadyCleared()
+    {
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns("tmdb-correct");
+
+        var wrongMovie = new Movie { Id = Guid.NewGuid(), Title = "Wrong Title" };
+        _context.Medias.Add(wrongMovie);
+
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = wrongMovie.Id,
+            PlayCount = 4,
+            ProgressPercentage = 70
+        });
+
+        var rating = new UserRating
+        {
+            Id = Guid.NewGuid(),
+            MediaId = wrongMovie.Id,
+            UserId = userId,
+            Value = 9,
+            MinimumValue = 0,
+            MaximumValue = 10
+        };
+        _context.Ratings.Add(rating);
+        _context.MediaReviews.Add(new MediaReview
+        {
+            MediaId = wrongMovie.Id,
+            UserId = userId,
+            UserRatingId = rating.Id,
+            Text = "Great"
+        });
+
+        var playlist = new Playlist
+        {
+            Id = Guid.NewGuid(),
+            Title = "Later",
+            UserId = userId,
+            MediaType = MediaType.Movie
+        };
+        _context.Playlists.Add(playlist);
+        _context.PlaylistItems.Add(new PlaylistItem
+        {
+            PlaylistId = playlist.Id,
+            MediaId = wrongMovie.Id,
+            Order = 0
+        });
+
+        var collection = new Collection
+        {
+            Id = Guid.NewGuid(),
+            Title = "Favs",
+            UserId = userId
+        };
+        _context.Collections.Add(collection);
+        _context.CollectionItems.Add(new CollectionItem
+        {
+            CollectionId = collection.Id,
+            MediaId = wrongMovie.Id,
+            Order = 0
+        });
+
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            UserId = userId,
+            MediaId = wrongMovie.Id,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = Guid.NewGuid(),
+            StartedAt = DateTime.UtcNow.AddDays(-1),
+            PositionSeconds = 12,
+            DurationSeconds = 100,
+            WatchedDurationSeconds = 12,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var indexedFile = await SeedMovieIndexedFileAsync("Correct Title", 2020);
+        // Rematch clears MediaId before CreateMedia; former id is only in the command map.
+        var formerMap = new Dictionary<Guid, Guid> { [indexedFile.Id] = wrongMovie.Id };
+
+        var mediaId = await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Movie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [indexedFile.Id],
+            FormerMediaIdsByIndexedFileId = formerMap
+        }, CancellationToken.None);
+
+        mediaId.Should().NotBe(wrongMovie.Id);
+
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
+        state.MediaId.Should().Be(mediaId);
+        state.PlayCount.Should().Be(4);
+        state.ProgressPercentage.Should().Be(70);
+
+        (await _context.Ratings.OfType<UserRating>().SingleAsync()).MediaId.Should().Be(mediaId);
+        (await _context.MediaReviews.SingleAsync()).MediaId.Should().Be(mediaId);
+        (await _context.PlaylistItems.SingleAsync()).MediaId.Should().Be(mediaId);
+        (await _context.CollectionItems.SingleAsync()).MediaId.Should().Be(mediaId);
+        (await _context.MediaPlaybackSessions.SingleAsync()).MediaId.Should().Be(mediaId);
+
+        (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == wrongMovie.Id)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Handle_ShouldLeaveUserDataOnFormerMovie_WhenMediaIdClearedWithoutFormerMap()
+    {
+        _movieProvider.SearchAsync(Arg.Any<MediaIdentification>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns("tmdb-correct");
+
+        var wrongMovie = new Movie { Id = Guid.NewGuid(), Title = "Wrong Title" };
+        _context.Medias.Add(wrongMovie);
+
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = wrongMovie.Id,
+            PlayCount = 2,
+            ProgressPercentage = 40
+        });
+        await _context.SaveChangesAsync();
+
+        var indexedFile = await SeedMovieIndexedFileAsync("Correct Title", 2020);
+
+        var mediaId = await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Movie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [indexedFile.Id]
+        }, CancellationToken.None);
+
+        mediaId.Should().NotBe(wrongMovie.Id);
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
+        state.MediaId.Should().Be(wrongMovie.Id);
+        (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == wrongMovie.Id)).Should().BeTrue();
     }
 
     private async Task<IndexedFile> SeedMovieIndexedFileAsync(string title, int year)

@@ -14,6 +14,7 @@ public interface ILibraryService
     Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default);
     Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default);
     Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default);
+    Task RematchLibraryMediaAsync(Guid libraryId, CancellationToken cancellationToken = default);
     Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default);
     Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default);
     Task<Guid> UploadLibraryGroupCoverAsync(Guid libraryGroupId, Stream stream, string fileName, CancellationToken cancellationToken = default);

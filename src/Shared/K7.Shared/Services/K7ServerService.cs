@@ -485,6 +485,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task RematchLibraryMediaAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/rematch-media", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/libraries/{id}", request, _serializerOptions, cancellationToken);

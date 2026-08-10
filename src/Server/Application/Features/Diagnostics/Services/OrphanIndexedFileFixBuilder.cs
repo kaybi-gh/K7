@@ -14,7 +14,9 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
 {
     public async Task<List<CreateBackgroundTasksBatchItem>> BuildCreateMediaTasksAsync(
         IReadOnlyList<Guid> indexedFileIds,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        BackgroundTaskTriggeredBy triggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId = null)
     {
         if (indexedFileIds.Count == 0)
             return [];
@@ -41,7 +43,13 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                 case LibraryMediaType.Movie:
                     foreach (var file in libraryGroup)
                     {
-                        tasks.Add(CreateMediaTask([file.Id], MediaType.Movie, library.Id, library.MetadataProviderName));
+                        tasks.Add(CreateMediaTask(
+                            [file.Id],
+                            MediaType.Movie,
+                            library.Id,
+                            library.MetadataProviderName,
+                            triggeredBy: triggeredBy,
+                            formerMediaIdsByIndexedFileId: formerMediaIdsByIndexedFileId));
                     }
 
                     break;
@@ -56,7 +64,9 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                             MediaType.MusicAlbum,
                             library.Id,
                             library.MetadataProviderName,
-                            albumFiles[0].Id));
+                            albumFiles[0].Id,
+                            triggeredBy,
+                            formerMediaIdsByIndexedFileId));
                     }
 
                     break;
@@ -88,7 +98,9 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
                             MediaType.Serie,
                             library.Id,
                             library.MetadataProviderName,
-                            serieFiles[0].Id));
+                            serieFiles[0].Id,
+                            triggeredBy,
+                            formerMediaIdsByIndexedFileId));
                     }
 
                     break;
@@ -186,23 +198,38 @@ public class OrphanIndexedFileFixBuilder(IApplicationDbContext context)
         MediaType mediaType,
         Guid libraryId,
         string metadataProviderName,
-        Guid? targetEntityId = null) =>
-        new()
+        Guid? targetEntityId = null,
+        BackgroundTaskTriggeredBy triggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId = null)
+    {
+        Dictionary<Guid, Guid>? formerForTask = null;
+        if (formerMediaIdsByIndexedFileId is not null)
+        {
+            formerForTask = indexedFileIds
+                .Where(formerMediaIdsByIndexedFileId.ContainsKey)
+                .ToDictionary(id => id, id => formerMediaIdsByIndexedFileId[id]);
+            if (formerForTask.Count == 0)
+                formerForTask = null;
+        }
+
+        return new CreateBackgroundTasksBatchItem
         {
             Request = new CreateMediaCommand
             {
                 IndexedFileIds = indexedFileIds.ToList(),
                 MediaType = mediaType,
-                LibraryId = libraryId
+                LibraryId = libraryId,
+                FormerMediaIdsByIndexedFileId = formerForTask
             },
             TargetEntityId = targetEntityId ?? indexedFileIds[0],
             TargetEntityTypeName = nameof(BaseMedia),
             Lane = BackgroundTaskLane.Metadata,
             MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(metadataProviderName),
             WorkClass = BackgroundTaskWorkClass.CriticalLink,
-            TriggeredBy = BackgroundTaskTriggeredBy.Diagnostics,
+            TriggeredBy = triggeredBy,
             MaxAttempts = 5
         };
+    }
 
     private sealed class OrphanIndexedFileRow
     {

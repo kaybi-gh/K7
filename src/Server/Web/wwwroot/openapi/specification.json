@@ -5642,6 +5642,30 @@
         }
       }
     },
+    "/api/libraries/{id}/rematch-media": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "RematchLibraryMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/library-groups/{id}/cover": {
       "post": {
         "tags": [

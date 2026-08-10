@@ -92,6 +92,7 @@ public static class DependencyInjection
             limiter.ConfigureHost("musicbrainz.org", TimeSpan.FromMilliseconds(1100));
             limiter.ConfigureHost("api4.thetvdb.com", TimeSpan.FromMilliseconds(500));
             limiter.ConfigureHost("artworks.thetvdb.com", TimeSpan.FromMilliseconds(200));
+            limiter.ConfigureHost("api.themoviedb.org", TimeSpan.FromMilliseconds(40));
             limiter.ConfigureHost("image.tmdb.org", TimeSpan.FromMilliseconds(50));
             limiter.ConfigureHost("www.wikidata.org", TimeSpan.FromSeconds(1));
             limiter.ConfigureHost("wikipedia.org", TimeSpan.FromSeconds(1));
@@ -116,6 +117,8 @@ public static class DependencyInjection
         services.AddScoped<SerieSupplementalCastEnrichmentService>();
         services.AddScoped<MediaIdentityLookupService>();
         services.AddScoped<MediaExternalIdResolver>();
+        services.AddScoped<SerieMetadataIdentityService>();
+        services.AddScoped<MusicMetadataIdentityService>();
         services.AddScoped<MediaPictureReadyNotifier>();
         services.AddScoped<MetadataPictureDeletionService>();
         services.AddScoped<ICoverPictureUploadService, CoverPictureUploadService>();

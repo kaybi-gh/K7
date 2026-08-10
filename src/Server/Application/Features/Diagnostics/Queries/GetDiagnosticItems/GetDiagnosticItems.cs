@@ -144,6 +144,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             f.Id,
             f.Name,
+            f.Path,
             f.LibraryId,
             LibraryTitle = _context.Libraries.Where(l => l.Id == f.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
             IsOrphan = f.MediaId == null,
@@ -164,6 +165,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id,
             EntityName = f.Name,
+            Path = f.Path,
             LibraryId = f.LibraryId,
             LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.OrphanFile,
@@ -173,6 +175,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id,
             EntityName = f.Name,
+            Path = f.Path,
             LibraryId = f.LibraryId,
             LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.UnidentifiedFile,
@@ -182,6 +185,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id,
             EntityName = f.Name,
+            Path = f.Path,
             LibraryId = f.LibraryId,
             LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.MissingFileMetadata,
@@ -191,6 +195,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id,
             EntityName = f.Name,
+            Path = f.Path,
             LibraryId = f.LibraryId,
             LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.MissingHlsSegments,
@@ -200,6 +205,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         {
             EntityId = f.Id,
             EntityName = f.Name,
+            Path = f.Path,
             LibraryId = f.LibraryId,
             LibraryTitle = f.LibraryTitle,
             Issue = DiagnosticIssue.MissingChapters,
@@ -226,6 +232,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             LibraryTitle = row.LibraryTitle,
             Issues = [row.Issue],
             Severity = row.Severity,
+            DetailText = row.Path,
             Identification = identification
         };
 
@@ -329,6 +336,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             {
                 f.Id,
                 f.Name,
+                f.Path,
                 f.LibraryId,
                 LibraryTitle = _context.Libraries.Where(l => l.Id == f.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
                 IsOrphan = f.MediaId == null,
@@ -368,7 +376,8 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 LibraryId = f.LibraryId,
                 LibraryTitle = f.LibraryTitle,
                 Issues = issues,
-                Severity = severity
+                Severity = severity,
+                DetailText = f.Path
             };
         }).ToList();
     }
@@ -764,6 +773,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     {
         public required Guid EntityId { get; init; }
         public required string EntityName { get; init; }
+        public required string Path { get; init; }
         public required Guid LibraryId { get; init; }
         public required string LibraryTitle { get; init; }
         public required DiagnosticIssue Issue { get; init; }

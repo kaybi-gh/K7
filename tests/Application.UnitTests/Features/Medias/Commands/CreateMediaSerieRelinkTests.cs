@@ -92,6 +92,11 @@ public class CreateMediaSerieRelinkTests
             Substitute.For<IMediaQueryCacheInvalidator>(),
             Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
 
+        var serieIdentity = new SerieMetadataIdentityService(
+            Enumerable.Empty<ISearchableMetadataProvider>(),
+            _serviceProviderRoot,
+            Substitute.For<ILogger<SerieMetadataIdentityService>>());
+
         _handler = new CreateMediaCommandHandler(
             _context,
             _sender,
@@ -102,6 +107,9 @@ public class CreateMediaSerieRelinkTests
             new MediaIdentityLookupService(_context),
             new MediaIdentityLock(),
             availability,
+            serieIdentity,
+            new MusicMetadataIdentityService(_serviceProviderRoot, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
+            Substitute.For<IMusicIntelligenceCatalogReconciler>(),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
@@ -195,6 +203,98 @@ public class CreateMediaSerieRelinkTests
         state.MediaId.Should().Be(newEpisode.Id);
         state.ProgressPercentage.Should().Be(55);
         state.PlayCount.Should().Be(1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldTransferWatchStateUsingFormerMediaIds_WhenMediaIdAlreadyCleared()
+    {
+        var (serie, oldEpisode, file) = await SeedSerieWithWrongSpecialAsync();
+
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = oldEpisode.Id,
+            PlayCount = 1,
+            ProgressPercentage = 55,
+            LastPlaybackPosition = 120,
+            LastInteractedAt = DateTime.UtcNow.AddHours(-1)
+        });
+
+        file.Name = "Black Clover - S00E026.mkv";
+        file.Path = $"{DirectoryPath}/{file.Name}";
+        file.Identification = new MediaIdentification("Black Clover")
+        {
+            SeriesTitle = "Black Clover",
+            SeasonNumber = 0,
+            EpisodeNumber = 26
+        };
+        var formerEpisodeId = oldEpisode.Id;
+        file.MediaId = null;
+        await _context.SaveChangesAsync();
+
+        await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Serie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [file.Id],
+            FormerMediaIdsByIndexedFileId = new Dictionary<Guid, Guid> { [file.Id] = formerEpisodeId }
+        }, CancellationToken.None);
+
+        var attached = await _context.IndexedFiles.SingleAsync(f => f.Id == file.Id);
+        var newEpisode = await _context.Medias.OfType<SerieEpisode>()
+            .SingleAsync(e => e.Id == attached.MediaId);
+
+        newEpisode.SerieId.Should().Be(serie.Id);
+        newEpisode.Id.Should().NotBe(formerEpisodeId);
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == formerEpisodeId)).Should().BeFalse();
+
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
+        state.MediaId.Should().Be(newEpisode.Id);
+        state.ProgressPercentage.Should().Be(55);
+    }
+
+    [Test]
+    public async Task Handle_ShouldLeaveWatchStateOnFormerEpisode_WhenMediaIdClearedWithoutFormerMap()
+    {
+        var (_, oldEpisode, file) = await SeedSerieWithWrongSpecialAsync();
+
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = oldEpisode.Id,
+            PlayCount = 1,
+            ProgressPercentage = 55
+        });
+
+        file.Name = "Black Clover - S00E026.mkv";
+        file.Path = $"{DirectoryPath}/{file.Name}";
+        file.Identification = new MediaIdentification("Black Clover")
+        {
+            SeriesTitle = "Black Clover",
+            SeasonNumber = 0,
+            EpisodeNumber = 26
+        };
+        var formerEpisodeId = oldEpisode.Id;
+        file.MediaId = null;
+        await _context.SaveChangesAsync();
+
+        await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.Serie,
+            LibraryId = _libraryId,
+            IndexedFileIds = [file.Id]
+        }, CancellationToken.None);
+
+        var attached = await _context.IndexedFiles.SingleAsync(f => f.Id == file.Id);
+        attached.MediaId.Should().NotBe(formerEpisodeId);
+
+        var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
+        state.MediaId.Should().Be(formerEpisodeId);
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == formerEpisodeId)).Should().BeTrue();
     }
 
     private async Task<(Serie Serie, SerieEpisode Episode, IndexedFile File)> SeedSerieWithWrongSpecialAsync()

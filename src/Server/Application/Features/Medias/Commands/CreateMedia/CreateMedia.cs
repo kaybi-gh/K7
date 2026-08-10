@@ -28,6 +28,13 @@ public record CreateMediaCommand : IRequest<Guid>
     public required MediaType MediaType { get; init; }
     public required IList<Guid> IndexedFileIds { get; init; }
     public required Guid LibraryId { get; init; }
+
+    /// <summary>
+    /// Optional map of indexed-file id to the media it was previously linked to.
+    /// Used after bulk rematch, which clears <see cref="IndexedFile.MediaId"/> before CreateMedia runs
+    /// so folder sibling consensus cannot re-stick, while still allowing user-data transfer A→B.
+    /// </summary>
+    public Dictionary<Guid, Guid>? FormerMediaIdsByIndexedFileId { get; init; }
 }
 
 public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Guid>
@@ -41,6 +48,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly MediaIdentityLookupService _identityLookup;
     private readonly IMediaIdentityLock _identityLock;
     private readonly IMediaLibraryAvailabilityService _mediaLibraryAvailabilityService;
+    private readonly SerieMetadataIdentityService _serieIdentityService;
+    private readonly MusicMetadataIdentityService _musicIdentityService;
+    private readonly IMusicIntelligenceCatalogReconciler _musicIntelligenceCatalogReconciler;
     private readonly ILogger<CreateMediaCommandHandler> _logger;
 
     public CreateMediaCommandHandler(
@@ -53,6 +63,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         MediaIdentityLookupService identityLookup,
         IMediaIdentityLock identityLock,
         IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
+        SerieMetadataIdentityService serieIdentityService,
+        MusicMetadataIdentityService musicIdentityService,
+        IMusicIntelligenceCatalogReconciler musicIntelligenceCatalogReconciler,
         ILogger<CreateMediaCommandHandler> logger)
     {
         _context = context;
@@ -64,6 +77,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _identityLookup = identityLookup;
         _identityLock = identityLock;
         _mediaLibraryAvailabilityService = mediaLibraryAvailabilityService;
+        _serieIdentityService = serieIdentityService;
+        _musicIdentityService = musicIdentityService;
+        _musicIntelligenceCatalogReconciler = musicIntelligenceCatalogReconciler;
         _logger = logger;
     }
 
@@ -86,9 +102,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         var mediaId = request.MediaType switch
         {
-            MediaType.Movie => await HandleMovieAsync(indexedFiles, library, cancellationToken),
-            MediaType.MusicAlbum => await HandleMusicAlbumAsync(indexedFiles, library, cancellationToken),
-            MediaType.Serie => await HandleSerieAsync(indexedFiles, library, cancellationToken),
+            MediaType.Movie => await HandleMovieAsync(
+                indexedFiles, library, request.FormerMediaIdsByIndexedFileId, cancellationToken),
+            MediaType.MusicAlbum => await HandleMusicAlbumAsync(
+                indexedFiles, library, request.FormerMediaIdsByIndexedFileId, cancellationToken),
+            MediaType.Serie => await HandleSerieAsync(
+                indexedFiles, library, request.FormerMediaIdsByIndexedFileId, cancellationToken),
             _ => throw new NotImplementedException($"Media type {request.MediaType} is not supported.")
         };
 
@@ -103,7 +122,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         return mediaId;
     }
 
-    private async Task<Guid> HandleMovieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
+    private async Task<Guid> HandleMovieAsync(
+        List<IndexedFile> indexedFiles,
+        Library library,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
+        CancellationToken cancellationToken)
     {
         var primaryFile = indexedFiles.First();
         Guard.Against.NullOrEmpty(primaryFile.Path);
@@ -130,7 +153,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (existingExternalId?.Media is Movie existingMovie)
             {
-                await AttachMovieIndexedFilesAsync(existingMovie, indexedFiles, cancellationToken);
+                await AttachMovieIndexedFilesAsync(
+                    existingMovie,
+                    indexedFiles,
+                    formerMediaIdsByIndexedFileId,
+                    cancellationToken);
                 return existingMovie.Id;
             }
         }
@@ -146,7 +173,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (existingByTitle is not null)
             {
-                await AttachMovieIndexedFilesAsync(existingByTitle, indexedFiles, cancellationToken);
+                await AttachMovieIndexedFilesAsync(
+                    existingByTitle,
+                    indexedFiles,
+                    formerMediaIdsByIndexedFileId,
+                    cancellationToken);
                 return existingByTitle.Id;
             }
         }
@@ -176,6 +207,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         movie.AddDomainEvent(new MediaCreatedEvent(movie));
         await _context.SaveChangesAsync(cancellationToken);
 
+        await TransferAndCleanupFormerMediasAsync(
+            indexedFiles,
+            movie.Id,
+            formerMediaIdsByIndexedFileId,
+            cleanupMovies: true,
+            cleanupSerieEpisodes: false,
+            cancellationToken);
+
         if (!string.IsNullOrEmpty(metadataProviderExternalId))
         {
             await _sender.Send(new CreateBackgroundTaskCommand
@@ -204,15 +243,28 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private async Task AttachMovieIndexedFilesAsync(
         Movie movie,
         List<IndexedFile> indexedFiles,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
         CancellationToken cancellationToken)
     {
         foreach (var file in indexedFiles.Where(f => movie.IndexedFiles.All(i => i.Id != f.Id)))
             movie.IndexedFiles.Add(file);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await TransferAndCleanupFormerMediasAsync(
+            indexedFiles,
+            movie.Id,
+            formerMediaIdsByIndexedFileId,
+            cleanupMovies: true,
+            cleanupSerieEpisodes: false,
+            cancellationToken);
     }
 
-    private async Task<Guid> HandleMusicAlbumAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
+    private async Task<Guid> HandleMusicAlbumAsync(
+        List<IndexedFile> indexedFiles,
+        Library library,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
+        CancellationToken cancellationToken)
     {
         var firstFile = indexedFiles.First();
         var firstTags = _audioTagReader.ReadTags(firstFile.Path);
@@ -223,40 +275,90 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var releaseYear = firstTags?.Year != null ? new DateOnly(firstTags.Year.Value, 1, 1) : firstIdentification.ReleaseYear;
         var albumArtistName = firstTags?.AlbumArtists.FirstOrDefault() ?? firstTags?.Artists.FirstOrDefault() ?? firstIdentification.ArtistName;
 
-        // Search metadata provider for the album external ID upfront (like movies do)
-        var albumIdentification = new MediaIdentification(albumName ?? "Unknown Album")
-        {
-            AlbumName = albumName,
-            ArtistName = albumArtistName,
-            ReleaseYear = releaseYear
-        };
-        var metadataProviderExternalId = await _serviceProvider
-            .GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(library.MetadataProviderName)
-            .SearchAsync(albumIdentification, library.MetadataLanguage, library.MetadataFallbackLanguage, cancellationToken);
+        var albumIdentification = BuildMusicAlbumIdentification(
+            albumName,
+            albumArtistName,
+            releaseYear,
+            firstTags,
+            firstIdentification);
+
+        var identityMatch = await _musicIdentityService.ResolveAlbumAsync(
+            albumIdentification,
+            library.MetadataProviderName,
+            library.MetadataLanguage,
+            library.MetadataFallbackLanguage,
+            cancellationToken);
+
+        var metadataProviderExternalId = identityMatch?.ExternalId;
+        var albumProviderName = identityMatch?.ProviderName ?? library.MetadataProviderName;
+        var albumArtistMbid = identityMatch?.ArtistMusicBrainzId
+            ?? albumIdentification.MusicBrainzAlbumArtistId
+            ?? albumIdentification.MusicBrainzArtistId;
+
+        var formerTrackIds = indexedFiles
+            .Select(f => ResolveFormerMediaId(f, formerMediaIdsByIndexedFileId))
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        var formerTracks = formerTrackIds.Count == 0
+            ? []
+            : await _context.Medias
+                .OfType<MusicTrack>()
+                .Include(t => t.Album)
+                    .ThenInclude(a => a.ExternalIds)
+                .Include(t => t.IndexedFiles)
+                .Where(t => formerTrackIds.Contains(t.Id))
+                .ToListAsync(cancellationToken);
+
+        var formerAlbumIdByTrackId = formerTracks.ToDictionary(t => t.Id, t => t.AlbumId);
 
         // Try to find existing album by provider ExternalId first (most reliable)
-        MusicAlbum? existingAlbum = null;
+        MusicAlbum? existingAlbumByExternalId = null;
         if (!string.IsNullOrEmpty(metadataProviderExternalId))
         {
             var existingExternalId = await _context.ExternalIds
                 .Include(x => x.Media)
                 .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId
-                    && x.ProviderName == library.MetadataProviderName
+                    && x.ProviderName == albumProviderName
                     && x.Media != null, cancellationToken);
 
-            existingAlbum = existingExternalId?.Media as MusicAlbum;
+            existingAlbumByExternalId = existingExternalId?.Media as MusicAlbum;
         }
 
-        // Fallback: find by title/artist/year (handles case where ExternalId not yet set)
-        var (album, isNewAlbum) = existingAlbum is not null
-            ? (existingAlbum, false)
-            : await FindOrCreateAlbumAsync(firstFile, albumName, albumArtistName, releaseYear, cancellationToken);
+        var preferredFormerAlbum = PickPreferredFormerAlbum(formerTracks);
+        var canReuseFormerAlbum = preferredFormerAlbum is not null
+            && (existingAlbumByExternalId is null
+                || existingAlbumByExternalId.Id == preferredFormerAlbum.Id);
+
+        MusicAlbum album;
+        var isNewAlbum = false;
+        var shouldRefreshPreservedAlbum = false;
+
+        if (canReuseFormerAlbum)
+        {
+            album = preferredFormerAlbum!;
+            if (!string.IsNullOrEmpty(metadataProviderExternalId))
+                shouldRefreshPreservedAlbum = UpsertExternalId(album, albumProviderName, metadataProviderExternalId);
+        }
+        else if (existingAlbumByExternalId is not null)
+        {
+            album = existingAlbumByExternalId;
+        }
+        else
+        {
+            (album, isNewAlbum) = await FindOrCreateAlbumAsync(
+                firstFile, albumName, albumArtistName, releaseYear, cancellationToken);
+            if (!isNewAlbum && !string.IsNullOrEmpty(metadataProviderExternalId))
+                shouldRefreshPreservedAlbum = UpsertExternalId(album, albumProviderName, metadataProviderExternalId);
+        }
 
         if (isNewAlbum)
         {
             if (!string.IsNullOrEmpty(albumArtistName))
             {
-                var artist = await FindOrCreateMusicArtistAsync(albumArtistName, cancellationToken);
+                var artist = await FindOrCreateMusicArtistAsync(albumArtistName, albumArtistMbid, cancellationToken);
                 album.ArtistId = artist.Id;
             }
 
@@ -272,25 +374,29 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (!string.IsNullOrEmpty(metadataProviderExternalId))
             {
-                await _sender.Send(new CreateBackgroundTaskCommand
-                {
-                    Request = new RefreshMediaMetadatasCommand
-                    {
-                        MediaId = album.Id,
-                        MetadataProviderExternalId = metadataProviderExternalId,
-                        MetadataProviderName = library.MetadataProviderName,
-                        Language = library.MetadataLanguage,
-                        FallbackLanguage = library.MetadataFallbackLanguage
-                    },
-                    TargetEntityId = album.Id,
-                    TargetEntityTypeName = nameof(BaseMedia),
-                    Lane = BackgroundTaskLane.Metadata,
-                    MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
-                    WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
-                    TriggeredBy = BackgroundTaskTriggeredBy.System,
-                    MaxAttempts = 3
-                }, cancellationToken);
+                UpsertExternalId(album, albumProviderName, metadataProviderExternalId);
+                if (!string.IsNullOrWhiteSpace(identityMatch?.PreferredReleaseId))
+                    UpsertExternalId(album, "musicbrainz-release", identityMatch.PreferredReleaseId);
+
+                await QueueAlbumRefreshAsync(
+                    album.Id,
+                    metadataProviderExternalId,
+                    albumProviderName,
+                    library,
+                    cancellationToken);
             }
+        }
+        else if (shouldRefreshPreservedAlbum && !string.IsNullOrEmpty(metadataProviderExternalId))
+        {
+            if (!string.IsNullOrWhiteSpace(identityMatch?.PreferredReleaseId))
+                UpsertExternalId(album, "musicbrainz-release", identityMatch.PreferredReleaseId);
+
+            await QueueAlbumRefreshAsync(
+                album.Id,
+                metadataProviderExternalId,
+                albumProviderName,
+                library,
+                cancellationToken);
         }
 
         if (!isNewAlbum)
@@ -300,6 +406,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 .Include(t => t.IndexedFiles)
                 .LoadAsync(cancellationToken);
         }
+
+        var vacatedAlbumIds = new HashSet<Guid>();
 
         foreach (var indexedFile in indexedFiles)
         {
@@ -312,6 +420,39 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             var tags = _audioTagReader.ReadTags(indexedFile.Path);
             var trackTitle = tags?.Title ?? identification.Title;
             var trackNumber = tags?.TrackNumber ?? identification.TrackNumber;
+
+            var formerTrackId = ResolveFormerMediaId(indexedFile, formerMediaIdsByIndexedFileId);
+            var formerTrack = formerTrackId is Guid fid
+                ? formerTracks.FirstOrDefault(t => t.Id == fid)
+                : null;
+
+            // Rematch / reidentify: reparent the former track so AudioMuse and OpenSubsonic Guids stay stable.
+            if (formerTrack is not null)
+            {
+                if (formerAlbumIdByTrackId.TryGetValue(formerTrack.Id, out var previousAlbumId)
+                    && previousAlbumId != album.Id)
+                {
+                    vacatedAlbumIds.Add(previousAlbumId);
+                    formerTrack.AlbumId = album.Id;
+                    formerTrack.Album = album;
+                    if (!album.Tracks.Any(t => t.Id == formerTrack.Id))
+                        album.Tracks.Add(formerTrack);
+                }
+
+                if (!formerTrack.IndexedFiles.Any(f => f.Id == indexedFile.Id))
+                    formerTrack.IndexedFiles.Add(indexedFile);
+
+                if (!string.IsNullOrWhiteSpace(trackTitle))
+                {
+                    formerTrack.Title = trackTitle;
+                    formerTrack.SortTitle = MediaSortTitleHelper.Compute(trackTitle);
+                }
+
+                if (trackNumber is not null)
+                    formerTrack.TrackNumber = trackNumber;
+
+                continue;
+            }
 
             // Re-link to existing orphan track (no IndexedFiles) when album was reused
             if (!isNewAlbum)
@@ -356,15 +497,20 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             var trackArtists = tags?.Artists ?? [];
             var artistName = trackArtists.FirstOrDefault() ?? identification.ArtistName;
+            var trackArtistMbid = string.IsNullOrEmpty(artistName)
+                || string.Equals(artistName, albumArtistName, StringComparison.OrdinalIgnoreCase)
+                ? albumArtistMbid ?? tags?.MusicBrainzArtistId
+                : tags?.MusicBrainzArtistId;
             if (!string.IsNullOrEmpty(artistName))
             {
-                var trackArtist = await FindOrCreateMusicArtistAsync(artistName, cancellationToken);
+                var trackArtist = await FindOrCreateMusicArtistAsync(artistName, trackArtistMbid, cancellationToken);
                 track.ArtistId = trackArtist.Id;
             }
 
             for (var i = 0; i < trackArtists.Count; i++)
             {
-                var creditArtist = await FindOrCreateMusicArtistAsync(trackArtists[i], cancellationToken);
+                var creditMbid = i == 0 ? trackArtistMbid : null;
+                var creditArtist = await FindOrCreateMusicArtistAsync(trackArtists[i], creditMbid, cancellationToken);
                 track.ArtistCredits.Add(new MusicArtistCredit
                 {
                     MusicArtistId = creditArtist.Id,
@@ -378,8 +524,96 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var deletedMusic = await TransferAndCleanupFormerMediaIdsAsync(
+            indexedFiles,
+            formerMediaIdsByIndexedFileId,
+            cleanupMovies: false,
+            cleanupSerieEpisodes: false,
+            cleanupMusicTracks: true,
+            cancellationToken);
+
+        foreach (var vacatedAlbumId in vacatedAlbumIds)
+        {
+            if (await MusicOrphanCleanupHelper.TryDeleteAlbumIfOrphanAsync(
+                    _context,
+                    vacatedAlbumId,
+                    _logger,
+                    cancellationToken: cancellationToken))
+            {
+                deletedMusic = true;
+            }
+        }
+
+        if (deletedMusic)
+            await _context.SaveChangesAsync(cancellationToken);
+
+        if (deletedMusic)
+            _musicIntelligenceCatalogReconciler.RequestReconcile();
+
         await QueueAudioAnalysisForIndexedFilesAsync(indexedFiles, library, cancellationToken);
         return album.Id;
+    }
+
+    private Task QueueAlbumRefreshAsync(
+        Guid albumId,
+        string metadataProviderExternalId,
+        string metadataProviderName,
+        Library library,
+        CancellationToken cancellationToken) =>
+        _sender.Send(new CreateBackgroundTaskCommand
+        {
+            Request = new RefreshMediaMetadatasCommand
+            {
+                MediaId = albumId,
+                MetadataProviderExternalId = metadataProviderExternalId,
+                MetadataProviderName = metadataProviderName,
+                Language = library.MetadataLanguage,
+                FallbackLanguage = library.MetadataFallbackLanguage
+            },
+            TargetEntityId = albumId,
+            TargetEntityTypeName = nameof(BaseMedia),
+            Lane = BackgroundTaskLane.Metadata,
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(metadataProviderName),
+            WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
+            TriggeredBy = BackgroundTaskTriggeredBy.System,
+            MaxAttempts = 3
+        }, cancellationToken);
+
+    private static MusicAlbum? PickPreferredFormerAlbum(IReadOnlyList<MusicTrack> formerTracks)
+    {
+        if (formerTracks.Count == 0)
+            return null;
+
+        return formerTracks
+            .GroupBy(t => t.AlbumId)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.First().Album)
+            .FirstOrDefault();
+    }
+
+    private static bool UpsertExternalId(BaseMedia media, string providerName, string value)
+    {
+        media.ExternalIds ??= [];
+        var existing = media.ExternalIds.FirstOrDefault(e =>
+            string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+        {
+            if (string.Equals(existing.Value, value, StringComparison.Ordinal))
+                return false;
+
+            existing.Value = value;
+            return true;
+        }
+
+        media.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = providerName,
+            Value = value,
+            MediaId = media.Id
+        });
+        return true;
     }
 
     private async Task QueueAudioAnalysisForIndexedFilesAsync(
@@ -420,7 +654,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
     }
 
-    private async Task<Guid> HandleSerieAsync(List<IndexedFile> indexedFiles, Library library, CancellationToken cancellationToken)
+    private async Task<Guid> HandleSerieAsync(
+        List<IndexedFile> indexedFiles,
+        Library library,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
+        CancellationToken cancellationToken)
     {
         foreach (var directoryGroup in indexedFiles.GroupBy(
                      f => PathHelper.GetContainingDirectoryPath(f.Path),
@@ -435,11 +673,15 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var (serie, _, matchedProviderName, providerExternalId) = folderSerie
             ?? await FindOrCreateSerieAsync(
                 firstIdentification,
+                indexedFiles.Select(f => f.Identification).Where(i => i is not null).Cast<MediaIdentification>().ToList(),
                 library,
                 cancellationToken);
 
         var resolveProviderName = matchedProviderName
+            ?? serie.NumberingProviderName
             ?? MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName);
+        if (SerieMetadataProviderCascade.IsAuto(resolveProviderName))
+            resolveProviderName = serie.NumberingProviderName ?? MetadataProviderNames.Tmdb;
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(resolveProviderName);
 
         // Load the full season+episode tree once - no more per-episode lazy loads
@@ -504,8 +746,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             {
                 if (indexedFile.MediaId != existingEpisode.Id)
                 {
-                    var formerMediaId = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
-                    if (formerMediaId is Guid formerId)
+                    var formerMediaId = await DetachIndexedFileFromPreviousEpisodeAsync(
+                        indexedFile,
+                        formerMediaIdsByIndexedFileId,
+                        cancellationToken);
+                    if (formerMediaId is Guid formerId && formerId != existingEpisode.Id)
                         orphanTransfers.Add((formerId, existingEpisode.Id));
 
                     existingEpisode.IndexedFiles.Add(indexedFile);
@@ -514,7 +759,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 continue;
             }
 
-            var formerIdForNew = await DetachIndexedFileFromPreviousEpisodeAsync(indexedFile, cancellationToken);
+            var formerIdForNew = await DetachIndexedFileFromPreviousEpisodeAsync(
+                indexedFile,
+                formerMediaIdsByIndexedFileId,
+                cancellationToken);
 
             var episode = new SerieEpisode
             {
@@ -534,7 +782,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             episode.AddDomainEvent(new MediaCreatedEvent(episode));
             hasNewEpisodes = true;
 
-            if (formerIdForNew is Guid formerNewId)
+            if (formerIdForNew is Guid formerNewId && formerNewId != episode.Id)
                 orphanTransfers.Add((formerNewId, episode.Id));
         }
 
@@ -632,11 +880,37 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         return person;
     }
 
-    private async Task<Domain.Entities.Medias.MusicArtist> FindOrCreateMusicArtistAsync(string name, CancellationToken cancellationToken)
+    private async Task<Domain.Entities.Medias.MusicArtist> FindOrCreateMusicArtistAsync(
+        string name,
+        string? musicBrainzId,
+        CancellationToken cancellationToken)
     {
-        var existing = await _identityLookup.FindMusicArtistByNameAsync(name, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(musicBrainzId))
+        {
+            var byExternalId = await _context.Medias.OfType<Domain.Entities.Medias.MusicArtist>()
+                .FirstOrDefaultAsync(a => a.ExternalIds.Any(e =>
+                    e.ProviderName == MetadataProviderNames.MusicBrainz
+                    && e.Value == musicBrainzId), cancellationToken);
+            if (byExternalId is not null)
+                return byExternalId;
+        }
 
-        if (existing is not null) return existing;
+        var existing = await FindMusicArtistByNameAsync(name, cancellationToken);
+        if (existing is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(musicBrainzId)
+                && !existing.ExternalIds.Any(e => e.ProviderName == MetadataProviderNames.MusicBrainz))
+            {
+                existing.ExternalIds.Add(new ExternalId
+                {
+                    ProviderName = MetadataProviderNames.MusicBrainz,
+                    Value = musicBrainzId,
+                    MediaId = existing.Id
+                });
+            }
+
+            return existing;
+        }
 
         var artist = new Domain.Entities.Medias.MusicArtist
         {
@@ -644,10 +918,57 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             SortTitle = MediaSortTitleHelper.Compute(name)
         };
         _context.Medias.Add(artist);
-        await _context.SaveChangesAsync(cancellationToken);
 
+        if (!string.IsNullOrWhiteSpace(musicBrainzId))
+        {
+            artist.ExternalIds.Add(new ExternalId
+            {
+                ProviderName = MetadataProviderNames.MusicBrainz,
+                Value = musicBrainzId,
+                MediaId = artist.Id
+            });
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
         return artist;
     }
+
+    private async Task<Domain.Entities.Medias.MusicArtist?> FindMusicArtistByNameAsync(
+        string name,
+        CancellationToken cancellationToken)
+    {
+        var normalized = MusicArtistNameNormalizer.NormalizeForMatch(name);
+        var candidates = await _context.Medias.OfType<Domain.Entities.Medias.MusicArtist>()
+            .Include(a => a.ExternalIds)
+            .Where(a => a.Title == name
+                || (normalized != null && a.Title == normalized))
+            .ToListAsync(cancellationToken);
+
+        return candidates.FirstOrDefault(a => MusicArtistNameNormalizer.NamesMatch(a.Title, name));
+    }
+
+    private static MediaIdentification BuildMusicAlbumIdentification(
+        string? albumName,
+        string? albumArtistName,
+        DateOnly? releaseYear,
+        AudioTagData? tags,
+        MediaIdentification fallback)
+    {
+        return new MediaIdentification(albumName ?? "Unknown Album")
+        {
+            AlbumName = albumName,
+            ArtistName = albumArtistName,
+            ReleaseYear = releaseYear,
+            MusicBrainzReleaseId = FirstNonEmpty(tags?.MusicBrainzReleaseId, fallback.MusicBrainzReleaseId),
+            MusicBrainzReleaseGroupId = FirstNonEmpty(tags?.MusicBrainzReleaseGroupId, fallback.MusicBrainzReleaseGroupId),
+            MusicBrainzArtistId = FirstNonEmpty(tags?.MusicBrainzArtistId, fallback.MusicBrainzArtistId),
+            MusicBrainzAlbumArtistId = FirstNonEmpty(tags?.MusicBrainzAlbumArtistId, fallback.MusicBrainzAlbumArtistId),
+            MusicBrainzRecordingId = FirstNonEmpty(tags?.MusicBrainzRecordingId, fallback.MusicBrainzRecordingId)
+        };
+    }
+
+    private static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
     private async Task TryAttachAlbumCoverAsync(
         IndexedFile indexedFile, MusicAlbum album, AudioTagData? tags, CancellationToken cancellationToken)
@@ -770,6 +1091,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
     private async Task<(Serie Serie, bool IsNew, string? ProviderName, string? ProviderExternalId)> FindOrCreateSerieAsync(
         MediaIdentification identification,
+        IReadOnlyList<MediaIdentification> fileIdentifications,
         Library library,
         CancellationToken cancellationToken)
     {
@@ -779,28 +1101,42 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         // homonyms such as One Piece anime (1999) and live-action (2023).
         string? matchedProviderName = null;
         string? providerExternalId = null;
-        foreach (var providerKey in SerieMetadataProviderCascade.ResolveSearchProviders(library.MetadataProviderName))
+        IReadOnlyList<(string ProviderName, string ExternalId)> crosswalkIds = [];
+
+        var match = await _serieIdentityService.ResolveAsync(
+            identification,
+            library.MetadataProviderName,
+            fileIdentifications.Count > 0 ? fileIdentifications : [identification],
+            library.MetadataLanguage,
+            library.MetadataFallbackLanguage,
+            cancellationToken);
+
+        if (match is not null)
         {
-            var provider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(providerKey);
-            providerExternalId = await provider.SearchSerieAsync(
-                identification,
-                library.MetadataLanguage,
-                library.MetadataFallbackLanguage,
-                cancellationToken);
-            if (!string.IsNullOrEmpty(providerExternalId))
-            {
-                matchedProviderName = provider.ProviderName;
-                break;
-            }
+            matchedProviderName = match.NumberingProviderName;
+            providerExternalId = match.NumberingExternalId;
+            crosswalkIds = match.ExternalIds;
         }
 
         if (!string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {
-            var existingSerieById = await _identityLookup.FindMediaByExternalIdAsync<Serie>(
-                matchedProviderName, providerExternalId, cancellationToken);
+            foreach (var (providerName, externalId) in crosswalkIds.DefaultIfEmpty((matchedProviderName, providerExternalId)))
+            {
+                var existingSerieById = await _identityLookup.FindMediaByExternalIdAsync<Serie>(
+                    providerName, externalId, cancellationToken);
+                if (existingSerieById is not null)
+                {
+                    MergeSerieExternalIds(existingSerieById, crosswalkIds);
+                    if (string.IsNullOrWhiteSpace(existingSerieById.NumberingProviderName)
+                        || SerieMetadataProviderCascade.IsAuto(library.MetadataProviderName))
+                    {
+                        existingSerieById.NumberingProviderName = matchedProviderName;
+                    }
 
-            if (existingSerieById is not null)
-                return (existingSerieById, false, matchedProviderName, providerExternalId);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    return (existingSerieById, false, matchedProviderName, providerExternalId);
+                }
+            }
         }
 
         var existingSerie = await _identityLookup.FindSerieByTitleAndYearAsync(
@@ -808,59 +1144,252 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (existingSerie is not null)
         {
+            MergeSerieExternalIds(existingSerie, crosswalkIds);
+            if (!string.IsNullOrWhiteSpace(matchedProviderName)
+                && (string.IsNullOrWhiteSpace(existingSerie.NumberingProviderName)
+                    || SerieMetadataProviderCascade.IsAuto(library.MetadataProviderName)))
+            {
+                existingSerie.NumberingProviderName = matchedProviderName;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
             var existing = PickSerieExternalId(existingSerie, library.MetadataProviderName);
-            return (existingSerie, false, existing.ProviderName, existing.ExternalId);
+            return (existingSerie, false, existing.ProviderName ?? matchedProviderName, existing.ExternalId ?? providerExternalId);
         }
 
         var serie = new Serie
         {
             Title = seriesTitle,
             SortTitle = MediaSortTitleHelper.Compute(seriesTitle),
-            ReleaseDate = identification.ReleaseYear
+            ReleaseDate = identification.ReleaseYear,
+            NumberingProviderName = matchedProviderName
         };
         _context.Medias.Add(serie);
         serie.AddDomainEvent(new MediaCreatedEvent(serie));
 
-        if (!string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
-        {
-            serie.ExternalIds.Add(new ExternalId
-            {
-                ProviderName = matchedProviderName,
-                Value = providerExternalId
-            });
-        }
+        MergeSerieExternalIds(serie, crosswalkIds.Count > 0
+            ? crosswalkIds
+            : !string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName)
+                ? [(matchedProviderName, providerExternalId)]
+                : []);
 
         await _context.SaveChangesAsync(cancellationToken);
         return (serie, true, matchedProviderName, providerExternalId);
     }
 
+    private static void MergeSerieExternalIds(
+        Serie serie,
+        IReadOnlyList<(string ProviderName, string ExternalId)> externalIds)
+    {
+        foreach (var (providerName, externalId) in externalIds)
+        {
+            if (string.IsNullOrWhiteSpace(providerName) || string.IsNullOrWhiteSpace(externalId))
+                continue;
+
+            if (serie.ExternalIds.Any(e =>
+                    string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(e.Value, externalId, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            if (serie.ExternalIds.Any(e =>
+                    string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            serie.ExternalIds.Add(new ExternalId
+            {
+                ProviderName = providerName,
+                Value = externalId
+            });
+        }
+    }
+
     private async Task<Guid?> DetachIndexedFileFromPreviousEpisodeAsync(
         IndexedFile indexedFile,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
         CancellationToken cancellationToken)
     {
-        if (indexedFile.MediaId is not Guid formerMediaId)
+        var formerMediaId = ResolveFormerMediaId(indexedFile, formerMediaIdsByIndexedFileId);
+        if (formerMediaId is null)
             return null;
 
-        var formerEpisode = await _context.Medias
-            .OfType<SerieEpisode>()
-            .Include(e => e.IndexedFiles)
-            .FirstOrDefaultAsync(e => e.Id == formerMediaId, cancellationToken);
-
-        if (formerEpisode is null)
+        if (indexedFile.MediaId is Guid currentMediaId)
         {
+            var formerEpisode = await _context.Medias
+                .OfType<SerieEpisode>()
+                .Include(e => e.IndexedFiles)
+                .FirstOrDefaultAsync(e => e.Id == currentMediaId, cancellationToken);
+
+            if (formerEpisode is not null)
+                formerEpisode.IndexedFiles.Remove(indexedFile);
+
             indexedFile.MediaId = null;
-            return formerMediaId;
         }
 
-        formerEpisode.IndexedFiles.Remove(indexedFile);
-        indexedFile.MediaId = null;
         return formerMediaId;
+    }
+
+    private async Task TransferAndCleanupFormerMediasAsync(
+        IReadOnlyList<IndexedFile> indexedFiles,
+        Guid targetMediaId,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
+        bool cleanupMovies,
+        bool cleanupSerieEpisodes,
+        CancellationToken cancellationToken)
+    {
+        var transfers = new HashSet<(Guid From, Guid To)>();
+        foreach (var file in indexedFiles)
+        {
+            var formerId = ResolveFormerMediaId(file, formerMediaIdsByIndexedFileId);
+            if (formerId is null || formerId.Value == targetMediaId)
+                continue;
+
+            transfers.Add((formerId.Value, targetMediaId));
+        }
+
+        if (transfers.Count == 0)
+            return;
+
+        foreach (var (fromMediaId, toMediaId) in transfers)
+        {
+            await MediaUserStateTransferHelper.TransferAsync(
+                _context,
+                fromMediaId,
+                toMediaId,
+                _logger,
+                cancellationToken);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var fromMediaId in transfers.Select(t => t.From).Distinct())
+        {
+            if (cleanupMovies)
+            {
+                await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                    _context,
+                    fromMediaId,
+                    _logger,
+                    cancellationToken);
+            }
+
+            if (cleanupSerieEpisodes)
+            {
+                await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                    _context,
+                    fromMediaId,
+                    _logger,
+                    cancellationToken);
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<bool> TransferAndCleanupFormerMediaIdsAsync(
+        IReadOnlyList<IndexedFile> indexedFiles,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId,
+        bool cleanupMovies,
+        bool cleanupSerieEpisodes,
+        bool cleanupMusicTracks,
+        CancellationToken cancellationToken)
+    {
+        var transfers = new HashSet<(Guid From, Guid To)>();
+        foreach (var file in indexedFiles)
+        {
+            if (file.MediaId is not Guid targetMediaId)
+                continue;
+
+            var formerId = ResolveFormerMediaId(file, formerMediaIdsByIndexedFileId);
+            if (formerId is null || formerId.Value == targetMediaId)
+                continue;
+
+            transfers.Add((formerId.Value, targetMediaId));
+        }
+
+        if (transfers.Count == 0)
+            return false;
+
+        foreach (var (fromMediaId, toMediaId) in transfers)
+        {
+            await MediaUserStateTransferHelper.TransferAsync(
+                _context,
+                fromMediaId,
+                toMediaId,
+                _logger,
+                cancellationToken);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var deletedMusic = false;
+        foreach (var fromMediaId in transfers.Select(t => t.From).Distinct())
+        {
+            if (cleanupMovies)
+            {
+                await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                    _context,
+                    fromMediaId,
+                    _logger,
+                    cancellationToken);
+            }
+
+            if (cleanupSerieEpisodes)
+            {
+                await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+                    _context,
+                    fromMediaId,
+                    _logger,
+                    cancellationToken);
+            }
+
+            if (cleanupMusicTracks)
+            {
+                if (await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(
+                        _context,
+                        fromMediaId,
+                        _logger,
+                        cancellationToken))
+                {
+                    deletedMusic = true;
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return deletedMusic;
+    }
+
+    private static Guid? ResolveFormerMediaId(
+        IndexedFile indexedFile,
+        IReadOnlyDictionary<Guid, Guid>? formerMediaIdsByIndexedFileId)
+    {
+        if (formerMediaIdsByIndexedFileId is not null
+            && formerMediaIdsByIndexedFileId.TryGetValue(indexedFile.Id, out var mappedId)
+            && mappedId != Guid.Empty)
+        {
+            return mappedId;
+        }
+
+        return indexedFile.MediaId;
     }
 
     private static (string? ProviderName, string? ExternalId) PickSerieExternalId(Serie serie, string? primaryProviderName)
     {
-        var preferred = MetadataProviderHostMapper.NormalizeProviderName(primaryProviderName);
-        var cascade = SerieMetadataProviderCascade.ResolveSearchProviders(primaryProviderName)
+        var preferred = !string.IsNullOrWhiteSpace(serie.NumberingProviderName)
+            ? MetadataProviderHostMapper.NormalizeProviderName(serie.NumberingProviderName)
+            : MetadataProviderHostMapper.NormalizeProviderName(primaryProviderName);
+
+        if (SerieMetadataProviderCascade.IsAuto(preferred))
+            preferred = MetadataProviderNames.Tmdb;
+
+        var cascade = SerieMetadataProviderCascade.ResolveSearchProviders(
+                SerieMetadataProviderCascade.IsAuto(primaryProviderName)
+                    ? MetadataProviderNames.Auto
+                    : primaryProviderName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var match = serie.ExternalIds

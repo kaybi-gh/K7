@@ -90,6 +90,11 @@ public class CreateMediaSerieFolderConsensusTests
             Substitute.For<IMediaQueryCacheInvalidator>(),
             Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
 
+        var serieIdentity = new SerieMetadataIdentityService(
+            Enumerable.Empty<ISearchableMetadataProvider>(),
+            _serviceProviderRoot,
+            Substitute.For<ILogger<SerieMetadataIdentityService>>());
+
         _handler = new CreateMediaCommandHandler(
             _context,
             _sender,
@@ -100,6 +105,9 @@ public class CreateMediaSerieFolderConsensusTests
             new MediaIdentityLookupService(_context),
             new MediaIdentityLock(),
             availability,
+            serieIdentity,
+            new MusicMetadataIdentityService(_serviceProviderRoot, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
+            Substitute.For<IMusicIntelligenceCatalogReconciler>(),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
