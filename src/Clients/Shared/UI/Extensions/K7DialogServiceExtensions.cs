@@ -24,13 +24,15 @@ public static class K7DialogServiceExtensions
         string message,
         string yesText = "OK",
         string? noText = null,
-        string? cancelText = null)
+        string? cancelText = null,
+        string? icon = null)
     {
         var parameters = new K7DialogParameters();
         parameters["Message"] = message;
         parameters["YesText"] = yesText;
         parameters["NoText"] = noText;
         parameters["CancelText"] = cancelText;
+        parameters["Icon"] = icon;
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
         var dialog = await service.ShowAsync<K7MessageBoxDialog>(title, parameters, options);

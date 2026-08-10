@@ -211,6 +211,29 @@ public partial class AdminLibrariesPanel : IDisposable
         }
     }
 
+    private async Task RematchLibrary(LibraryDto library)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["RematchDialogTitle"],
+            string.Format(L["RematchDialogMessage"], library.Title),
+            yesText: L["RematchConfirm"],
+            cancelText: S["Cancel"],
+            icon: Phosphor.Warning);
+
+        if (confirmed is not true)
+            return;
+
+        try
+        {
+            await K7ServerService.RematchLibraryMediaAsync(library.Id);
+            Snackbar.Add(string.Format(L["RematchStarted"], library.Title), K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
     private async Task OpenUsersDialog(LibraryDto library)
     {
         var parameters = new K7DialogParameters<AdminLibraryUsersDialog>

@@ -117,7 +117,8 @@
                     <h6 class="edit-library-section__title">@L["SectionMetadataTitle"]</h6>
                     <p class="edit-library-section__description">@L["SectionMetadataDescription"]</p>
                     <div class="edit-library-section__fields d-flex flex-col">
-                        <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
+                        <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
+                                  HelperText="@(_selectedMediaType == LibraryMediaType.Serie ? L["ProviderHelperSerie"] : null)">
                             @foreach (var provider in _availableProviders)
                             {
                                 <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>

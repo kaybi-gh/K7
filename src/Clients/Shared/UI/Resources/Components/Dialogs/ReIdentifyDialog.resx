@@ -19,6 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
+  <data name="SourcePathLabel" xml:space="preserve"><value>Fichier / dossier</value></data>
   <data name="TitleLabel" xml:space="preserve"><value>Titre</value></data>
   <data name="YearOptionalLabel" xml:space="preserve"><value>Année (Optionnel)</value></data>
   <data name="ProviderIdLabel" xml:space="preserve"><value>ID Provider (Ex: TMDB ID)</value></data>

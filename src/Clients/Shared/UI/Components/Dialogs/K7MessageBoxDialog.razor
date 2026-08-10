@@ -3,7 +3,14 @@
 @using K7.Clients.Shared.Models
 
 <div class="k7-dialog-content">
-    <p>@Message</p>
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <K7Alert Severity="K7Severity.Warning" Icon="@Icon">@Message</K7Alert>
+    }
+    else
+    {
+        <p>@Message</p>
+    }
 </div>
 <div class="k7-dialog-actions">
     @if (!string.IsNullOrEmpty(CancelText))

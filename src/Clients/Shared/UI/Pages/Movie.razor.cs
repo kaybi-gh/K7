@@ -391,7 +391,8 @@ public partial class Movie : IAsyncDisposable
             { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Movie },
-            { x => x.LibraryId, GetLibraryIdForReIdentify() }
+            { x => x.LibraryId, GetLibraryIdForReIdentify() },
+            { x => x.SourcePath, ReIdentifySearchDefaultsHelper.ResolveSourcePath(_movie.IndexedFiles, MediaType.Movie) }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
@@ -420,7 +421,14 @@ public partial class Movie : IAsyncDisposable
             { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Movie },
-            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
+            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) },
+            {
+                x => x.SourcePath,
+                ReIdentifySearchDefaultsHelper.ResolveSourcePath(
+                    _movie?.IndexedFiles,
+                    MediaType.Movie,
+                    preferredIndexedFileId: indexedFileId)
+            }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };

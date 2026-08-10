@@ -25,9 +25,14 @@
   <data name="EmptyDescription" xml:space="preserve"><value>Create your first library to start organizing your media.</value></data>
   <data name="CreateLibrary" xml:space="preserve"><value>Create a library</value></data>
   <data name="AriaIndex" xml:space="preserve"><value>Index</value></data>
+  <data name="AriaRematch" xml:space="preserve"><value>Rematch metadata</value></data>
   <data name="AriaUserAccess" xml:space="preserve"><value>User access</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>New library</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexing of '{0}' started.</value></data>
+  <data name="RematchDialogTitle" xml:space="preserve"><value>Rematch metadata</value></data>
+  <data name="RematchDialogMessage" xml:space="preserve"><value>Every media item in '{0}' will be rematched with the current algorithm. Automatic and manual identifications will both be redone. User data (watch progress, stats, history, playlists, collections, and so on) is not lost. It is transferred to the newly identified media. Files stay on disk and keep their probes. Matching runs in the background and can take a while on large libraries.</value></data>
+  <data name="RematchConfirm" xml:space="preserve"><value>Rematch</value></data>
+  <data name="RematchStarted" xml:space="preserve"><value>Rematch of '{0}' started.</value></data>
   <data name="AccessTitle" xml:space="preserve"><value>Access - {0}</value></data>
   <data name="AriaEdit" xml:space="preserve"><value>Edit</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>

@@ -30,6 +30,10 @@ public partial class ReIdentifyDialog
     [Parameter]
     public Guid? LibraryId { get; set; }
 
+    /// <summary>File or series folder path shown as context for the re-identify.</summary>
+    [Parameter]
+    public string? SourcePath { get; set; }
+
     private string _searchQuery = "";
     private int? _searchYear;
     private string? _searchProviderId;

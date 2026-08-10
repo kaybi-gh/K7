@@ -22,6 +22,7 @@
   <data name="TitleLabel" xml:space="preserve"><value>Nom de la librairie</value></data>
   <data name="TitleRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="ProviderLabel" xml:space="preserve"><value>Fournisseur de métadonnées</value></data>
+  <data name="ProviderHelperSerie" xml:space="preserve"><value>Auto choisit la numerotation qui correspond le mieux a vos fichiers et enrichit depuis TMDb et TheTVDB. Forcez un fournisseur seulement pour un schema de saisons fixe.</value></data>
   <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>

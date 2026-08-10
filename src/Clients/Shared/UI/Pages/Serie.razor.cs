@@ -248,7 +248,8 @@ public partial class Serie : IAsyncDisposable
             { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Serie },
-            { x => x.LibraryId, GetLibraryIdForReIdentify() }
+            { x => x.LibraryId, GetLibraryIdForReIdentify() },
+            { x => x.SourcePath, ReIdentifySearchDefaultsHelper.ResolveSourcePath(_serie.IndexedFiles, MediaType.Serie) }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };

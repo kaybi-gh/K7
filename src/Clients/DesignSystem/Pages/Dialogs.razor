@@ -230,6 +230,7 @@
         var p = new K7DialogParameters<ReIdentifyDialog>();
         p.Add(x => x.MediaId, _demoMovie.Id);
         p.Add(x => x.InitialSearchQuery, _demoMovie.Title);
+        p.Add(x => x.SourcePath, @"D:\Media\Movies\Inception (2010).mkv");
         await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify", p);
     }
 

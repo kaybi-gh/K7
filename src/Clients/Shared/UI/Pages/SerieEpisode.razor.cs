@@ -294,7 +294,14 @@ public partial class SerieEpisode : IAsyncDisposable
             { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Serie },
-            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) }
+            { x => x.LibraryId, GetLibraryIdForReIdentify(indexedFileId) },
+            {
+                x => x.SourcePath,
+                ReIdentifySearchDefaultsHelper.ResolveSourcePath(
+                    _episode.IndexedFiles,
+                    MediaType.Serie,
+                    preferredIndexedFileId: indexedFileId)
+            }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };

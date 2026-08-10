@@ -86,6 +86,7 @@
                 @if (library.PeerServerId is null)
                 {
                     <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
+                    <K7IconButton Icon="@Phosphor.MagnifyingGlass" OnClick="@(() => RematchLibrary(library))" AriaLabel="@L["AriaRematch"]" />
                 }
                 <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
                 <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />

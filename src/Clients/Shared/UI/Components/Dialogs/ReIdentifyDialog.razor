@@ -3,6 +3,14 @@
 
 <div class="k7-dialog-content">
         <div class="reidentify-form">
+            @if (!string.IsNullOrWhiteSpace(SourcePath))
+            {
+                <div class="reidentify-source-path">
+                    <span class="reidentify-source-path__label">@L["SourcePathLabel"]</span>
+                    <span class="reidentify-source-path__value" title="@SourcePath">@SourcePath</span>
+                </div>
+            }
+
             <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" />
 
             <div class="reidentify-fields-row">

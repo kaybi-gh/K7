@@ -4,6 +4,25 @@
     gap: var(--space-4);
 }
 
+.reidentify-source-path {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.reidentify-source-path__label {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
+
+.reidentify-source-path__value {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    word-break: break-all;
+    line-height: 1.35;
+}
+
 .reidentify-fields-row {
     display: flex;
     gap: var(--space-3);

@@ -709,7 +709,8 @@ public partial class AdminDiagnosticsPanel : IDisposable
             { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, mediaType },
-            { x => x.LibraryId, item.LibraryId }
+            { x => x.LibraryId, item.LibraryId },
+            { x => x.SourcePath, item.DetailText }
         };
 
         var options = new K7DialogOptions
