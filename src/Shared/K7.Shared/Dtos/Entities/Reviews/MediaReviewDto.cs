@@ -12,6 +12,7 @@ public sealed record MediaReviewDto
     public string? Emoji { get; init; }
     public required double Rating { get; init; }
     public string? UserDisplayName { get; init; }
+    public Guid? AvatarPictureId { get; init; }
     public required DateTimeOffset Created { get; init; }
     public DateTimeOffset? LastModified { get; init; }
 }

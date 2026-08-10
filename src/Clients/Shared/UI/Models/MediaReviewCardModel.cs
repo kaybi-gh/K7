@@ -26,6 +26,7 @@ public sealed record MediaReviewCardModel
         DisplayName = review.UserDisplayName,
         ProfileHref = $"/users/{review.UserId}",
         UserId = review.UserId,
+        AvatarUrl = MediaReviewCardHelper.GetAvatarUrl(review.AvatarPictureId),
         MediaId = review.MediaId,
         Rating = review.Rating,
         Text = review.Text,

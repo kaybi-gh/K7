@@ -77,10 +77,10 @@ public class GetMediaReviewsQueryHandler(
                 visibleReviews.Add(review);
         }
 
-        return await EnrichDisplayNamesAsync(visibleReviews, cancellationToken);
+        return await EnrichAsync(visibleReviews, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<MediaReviewDto>> EnrichDisplayNamesAsync(
+    private async Task<IReadOnlyList<MediaReviewDto>> EnrichAsync(
         IReadOnlyList<MediaReview> reviews,
         CancellationToken cancellationToken)
     {
@@ -95,14 +95,35 @@ public class GetMediaReviewsQueryHandler(
             usersNeedingResolution,
             cancellationToken);
 
+        var userIds = reviews.Select(r => r.UserId).Distinct().ToList();
+        var avatarMap = userIds.Count > 0
+            ? await context.MetadataPictures
+                .AsNoTracking()
+                .Where(p => p.UserId != null
+                            && userIds.Contains(p.UserId.Value)
+                            && p.Type == MetadataPictureType.UserAvatar)
+                .Select(p => new { p.UserId, p.Id })
+                .ToDictionaryAsync(p => p.UserId!.Value, p => p.Id, cancellationToken)
+            : new Dictionary<Guid, Guid>();
+
         return reviews
             .Select(review =>
             {
                 var dto = review.ToMediaReviewDto();
-                if (!string.IsNullOrWhiteSpace(dto.UserDisplayName) || review.User is null)
-                    return dto;
+                var avatarPictureId = avatarMap.TryGetValue(review.UserId, out var pictureId)
+                    ? pictureId
+                    : (Guid?)null;
 
-                return dto with { UserDisplayName = displayNames.GetValueOrDefault(review.User.Id) ?? "?" };
+                if (string.IsNullOrWhiteSpace(dto.UserDisplayName) && review.User is not null)
+                {
+                    return dto with
+                    {
+                        UserDisplayName = displayNames.GetValueOrDefault(review.User.Id) ?? "?",
+                        AvatarPictureId = avatarPictureId
+                    };
+                }
+
+                return dto with { AvatarPictureId = avatarPictureId };
             })
             .ToList();
     }
