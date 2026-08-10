@@ -35,7 +35,7 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 **Movies:** `Movie Name (2019).mkv` or `Movie Name (2019)/Movie Name (2019).mkv`. Year helps matching; rip/quality tags are stripped when parsing.
 
-**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Specials`. Prefer standard episode naming when possible.
+**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Specials`. Prefer standard episode naming when possible. Include the year in the series folder when there are homonyms, and optionally a provider id: `Show Name (2023) [tmdbid-123]`.
 
 When a directory already has episodes attached to a single series, new files in that folder are attached to the same series (folder consensus). Close title variants parsed from filenames in the same folder are also unified before matching. A mis-matched episode file can be re-identified from the episode page (Indexed versions).
 
@@ -51,15 +51,20 @@ When a directory already has episodes attached to a single series, new files in 
 
 | Provider | Used for | Admin API key? |
 |---|---|---|
-| TMDb | Movies | No - bundled in the server |
-| TheTVDB | Series | No - bundled in the server |
+| Auto (default for series) | Series identity + numbering | No - picks TMDb/TVDB per show |
+| TMDb | Movies, series (forced or Auto) | No - bundled in the server |
+| TheTVDB | Series (forced or Auto) | No - bundled in the server |
 | MusicBrainz / Cover Art Archive | Music | No API key. Polite User-Agent only |
 
-Series libraries pick **TheTVDB** as the primary provider. In practice TVDB is always backed by **TMDb** for several reasons: broader title search when TVDB returns nothing (scan identification and the re-identify dialog), better episode stills and artwork, community ratings, and cast enrichment. The provider that matched owns the external id and the Metadata-lane background task admission key. When a TMDb (or IMDb) id is available, refresh prefers TMDb ratings and stills. Cast enrichment matches TVDB roles to supplemental TMDb cast when possible, then resolves remaining TVDB people via TheTVDB `remoteIds` (tmdb/imdb) and queues a TMDb person refresh only for still-thin profiles.
+**Music identification.** K7 prefers MusicBrainz ids embedded in audio tags (Picard / TagLib: release-group, release, artist, album artist, recording) before searching. Album search uses release + artist (or `arid:` when an artist MBID is known). Tag **year is not a hard Lucene filter** - a wrong year no longer zeros all hits. Year only re-ranks candidates. Lucene special characters in titles/artists are escaped. After Rematch (or first ingest), album refresh propagates artist MBIDs from release credits with normalized name matching.
 
-Choosing TMDb alone for a series library is still possible in the UI. Prefer TVDB: the cascade and enrichment above already cover the TMDb strengths without giving up TVDB as the episode source of truth.
+**Series libraries default to Auto.** Auto scores TVDB and TMDb search hits together (title, year, popularity), stores both external ids when known, then picks the **numbering canon** (which S/E grid matches your files best). The other provider still enriches gaps (stills, ratings, cast). Force **TMDb** or **TheTVDB** only when you need a fixed numbering scheme (for example Sonarr/TVDB-named packs).
+
+Optional folder tokens improve matching: `Series Name (2023) [tmdbid-123]` or `[tvdbid-456]` / `[imdbid-tt...]`.
 
 Field locks in the UI prevent refreshes from overwriting manual edits. Artwork lives under `Paths:Metadatas` - recommended in backups (regenerable via metadata refresh, but slow).
+
+**Rematch metadata (Admin -> Libraries):** after improving matching (or switching a series library to Auto), use the magnifying-glass action on a **local** library. It re-runs identification with the current algorithm and only re-links a file when the resolved identity differs. Probes and HLS stay on the files. Watch progress, playlists, collections, playback history, and exclusions transfer to the corrected media when a file is re-linked. For music, K7 prefers keeping the same track/album Guids when the corrected ExternalId is free (AudioMuse / OpenSubsonic ids stay stable). Merges onto an already-existing identity delete orphan Guids and then debounce an AudioMuse align + clean. Federated libraries cannot be rematched this way. Prefer rematch over delete/recreate when the library settings and file probes are still good.
 
 After federation peering, remote libraries can appear according to share agreements - see [Federation](#federation).
 
@@ -284,11 +289,11 @@ progress, playlist entries, ratings, reviews, collections, external ids and artw
 with conflicting progress - a feature of its own, not yet implemented.
 
 Provider concurrency on the Metadata lane is fixed at **one in-flight task per metadata
-provider** (`tmdb`, `tvdb`, `musicbrainz`, `wikidata`, `wikimedia`, `coverart`, `local`). HTTP pacing
+provider** (`tmdb`, `tvdb`, `auto`, `musicbrainz`, `wikidata`, `wikimedia`, `coverart`, `local`). HTTP pacing
 stays on the outbound rate limiter (MusicBrainz 1.1s, Wikidata/Wikipedia 1s, and so on). The Metadata
 lane limit is the **ceiling across providers** (default 8): how many different providers may run at
 once. Set it to `0` to pause all Metadata work. The admin settings dialog lists each provider with
-active/pending counts; the per-provider limit is not editable.
+active/pending counts. The per-provider limit is not editable.
 
 A provider HTTP **429** also starts an **admission cooldown** until the `Retry-After` instant: workers
 skip that provider (spill over to other work) instead of launching tasks that would fail until the
@@ -382,8 +387,10 @@ Optional self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI):
 
 K7 talks to AudioMuse over AudioMuse's own HTTP API. AudioMuse talks back to K7 over the OpenSubsonic `/rest` facade (same Guid media ids as `/api`).
 
+After music Guids are deleted or replaced (merge rematch / reidentify onto another album, orphan track cleanup after file delete), K7 debounces a best-effort AudioMuse **server align** then **catalogue cleaning**. Align remaps server item ids when fingerprints still match; cleaning drops mappings that no longer exist on any server. Pure in-place ExternalId corrections keep the same Guids and do not trigger reconcile.
+
 When disabled, AI discovery stays hidden; basic radios still work. User features: [Using K7 - Music discovery](../user/guide.md#music-discovery-audiomuse).
 
 ### Import from other servers
 
-[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - Plex, Jellyfin, Spotify, and more. Back up the database first; there is no import undo (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
+[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - import from other libraries and services. Back up the database first. There is no import undo (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
