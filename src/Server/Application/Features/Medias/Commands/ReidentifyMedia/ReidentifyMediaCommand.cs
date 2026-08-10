@@ -53,7 +53,14 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
             string.Equals(x.ProviderName, providerName, StringComparison.OrdinalIgnoreCase));
         if (existingExternalId != null)
         {
-            existingExternalId.Value = request.SelectedExternalId;
+            if (string.Equals(existingExternalId.Value, request.SelectedExternalId, StringComparison.Ordinal))
+            {
+                // Same identity: still refresh metadata so stale provider data can catch up.
+            }
+            else
+            {
+                existingExternalId.Value = request.SelectedExternalId;
+            }
         }
         else
         {

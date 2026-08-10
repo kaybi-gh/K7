@@ -75,6 +75,7 @@ public class ReidentifyIndexedFileCommandHandlerTests
             _context,
             _sender,
             availability,
+            Substitute.For<IMusicIntelligenceCatalogReconciler>(),
             Substitute.For<ILogger<ReidentifyIndexedFileCommandHandler>>());
     }
 

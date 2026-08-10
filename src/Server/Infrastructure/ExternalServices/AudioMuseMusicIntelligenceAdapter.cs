@@ -384,6 +384,49 @@ public class AudioMuseMusicIntelligenceAdapter(
     public Task<MusicIntelligenceSettingsDto?> GetSettingsAsync(CancellationToken cancellationToken)
         => ReadSettingsAsync(cancellationToken);
 
+    public async Task StartServerAlignAsync(CancellationToken cancellationToken = default)
+    {
+        await ConfigureClientAsync(cancellationToken);
+
+        using var response = await httpClient.PostAsync("api/servers/align", content: null, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            logger.LogInformation("AudioMuse server align enqueued ({StatusCode})", (int)response.StatusCode);
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        logger.LogWarning(
+            "AudioMuse server align failed with {StatusCode}: {Body}",
+            (int)response.StatusCode,
+            body);
+    }
+
+    public async Task StartCleaningAsync(bool cleanCatalogue = true, CancellationToken cancellationToken = default)
+    {
+        await ConfigureClientAsync(cancellationToken);
+
+        using var response = await httpClient.PostAsJsonAsync(
+            "api/cleaning/start",
+            new { clean_catalogue = cleanCatalogue },
+            cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            logger.LogInformation(
+                "AudioMuse cleaning enqueued (cleanCatalogue={CleanCatalogue}, {StatusCode})",
+                cleanCatalogue,
+                (int)response.StatusCode);
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        logger.LogWarning(
+            "AudioMuse cleaning failed with {StatusCode}: {Body}",
+            (int)response.StatusCode,
+            body);
+    }
+
     private async Task ConfigureClientAsync(CancellationToken cancellationToken, bool requireEnabled = true)
     {
         var settings = await ReadSettingsAsync(cancellationToken)

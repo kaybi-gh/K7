@@ -70,6 +70,7 @@ public class ReidentifyIndexedFileMovieTransferTests
             _context,
             sender,
             availability,
+            Substitute.For<IMusicIntelligenceCatalogReconciler>(),
             Substitute.For<ILogger<ReidentifyIndexedFileCommandHandler>>());
     }
 

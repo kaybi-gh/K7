@@ -26,6 +26,7 @@ public class ReidentifyIndexedFileCommandHandler(
     IApplicationDbContext context,
     ISender sender,
     IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
+    IMusicIntelligenceCatalogReconciler musicIntelligenceCatalogReconciler,
     ILogger<ReidentifyIndexedFileCommandHandler> logger)
     : IRequestHandler<ReidentifyIndexedFileCommand>
 {
@@ -42,6 +43,12 @@ public class ReidentifyIndexedFileCommandHandler(
         var providerName = MetadataProviderHostMapper.NormalizeProviderName(request.SelectedProvider);
         if (string.IsNullOrWhiteSpace(providerName) || providerName == MetadataProviderNames.Local)
             providerName = request.SelectedProvider.Trim();
+
+        if (library.MediaType == LibraryMediaType.Music)
+        {
+            await HandleMusicAsync(indexedFile, library, providerName, request, cancellationToken);
+            return;
+        }
 
         Guid? formerMediaId = null;
         var formerWasSerieEpisode = false;
@@ -84,12 +91,11 @@ public class ReidentifyIndexedFileCommandHandler(
                 indexedFile.MediaId,
                 formerWasSerieEpisode,
                 formerWasMovie,
+                cleanupMusic: false,
                 cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
             await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
-            if (library.MediaType == LibraryMediaType.Music)
-                await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
             return;
         }
 
@@ -101,21 +107,13 @@ public class ReidentifyIndexedFileCommandHandler(
         BaseMedia newMedia = library.MediaType switch
         {
             LibraryMediaType.Serie => new Serie { Id = Guid.NewGuid() },
-            LibraryMediaType.Music => new MusicAlbum { Id = Guid.NewGuid() },
             _ => new Movie { Id = Guid.NewGuid(), IndexedFiles = [indexedFile] }
         };
 
         context.Medias.Add(newMedia);
 
-        switch (newMedia)
-        {
-            case Serie serie:
-                await AttachIndexedFileToSerieAsync(serie, indexedFile, library, cancellationToken);
-                break;
-            case MusicAlbum album:
-                await AttachIndexedFileToMusicAlbumAsync(album, indexedFile, library, cancellationToken);
-                break;
-        }
+        if (newMedia is Serie serie)
+            await AttachIndexedFileToSerieAsync(serie, indexedFile, library, cancellationToken);
 
         newMedia.ExternalIds.Add(new ExternalId
         {
@@ -130,26 +128,147 @@ public class ReidentifyIndexedFileCommandHandler(
             indexedFile.MediaId,
             formerWasSerieEpisode,
             formerWasMovie,
+            cleanupMusic: false,
             cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
         await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
 
         await QueueRefreshAsync(newMedia.Id, request.SelectedExternalId, providerName, library, cancellationToken);
-
-        if (library.MediaType == LibraryMediaType.Music)
-            await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
     }
 
-    private async Task TransferAndCleanupFormerMediaAsync(
+    private async Task HandleMusicAsync(
+        IndexedFile indexedFile,
+        Library library,
+        string providerName,
+        ReidentifyIndexedFileCommand request,
+        CancellationToken cancellationToken)
+    {
+        MusicTrack? currentTrack = null;
+        MusicAlbum? currentAlbum = null;
+
+        if (indexedFile.MediaId is Guid mediaId)
+        {
+            currentTrack = await context.Medias
+                .OfType<MusicTrack>()
+                .Include(t => t.IndexedFiles)
+                .Include(t => t.Album)
+                    .ThenInclude(a => a.ExternalIds)
+                .FirstOrDefaultAsync(t => t.Id == mediaId, cancellationToken);
+
+            if (currentTrack is not null)
+            {
+                currentAlbum = currentTrack.Album;
+            }
+            else
+            {
+                currentAlbum = await context.Medias
+                    .OfType<MusicAlbum>()
+                    .Include(a => a.ExternalIds)
+                    .Include(a => a.Tracks)
+                        .ThenInclude(t => t.IndexedFiles)
+                    .FirstOrDefaultAsync(a => a.Id == mediaId, cancellationToken);
+            }
+        }
+
+        var existingExternalId = await context.ExternalIds
+            .Include(x => x!.Media)
+                .ThenInclude(x => x!.IndexedFiles)
+            .FirstOrDefaultAsync(
+                x => x.Value == request.SelectedExternalId && x.ProviderName == providerName,
+                cancellationToken);
+
+        if (existingExternalId?.Media is MusicAlbum targetAlbum)
+        {
+            if (currentAlbum is not null && currentAlbum.Id == targetAlbum.Id)
+            {
+                await QueueRefreshAsync(
+                    targetAlbum.Id,
+                    request.SelectedExternalId,
+                    providerName,
+                    library,
+                    cancellationToken);
+                return;
+            }
+
+            var formerTrackId = currentTrack?.Id;
+            if (currentTrack is not null)
+                currentTrack.IndexedFiles?.Remove(indexedFile);
+
+            indexedFile.MediaId = null;
+            await AttachIndexedFileToMusicAlbumAsync(targetAlbum, indexedFile, library, cancellationToken);
+
+            var deletedMusic = await TransferAndCleanupFormerMediaAsync(
+                formerTrackId,
+                indexedFile.MediaId,
+                formerWasSerieEpisode: false,
+                formerWasMovie: false,
+                cleanupMusic: true,
+                cancellationToken);
+
+            await context.SaveChangesAsync(cancellationToken);
+            await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
+
+            if (deletedMusic)
+                musicIntelligenceCatalogReconciler.RequestReconcile();
+
+            await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
+            return;
+        }
+
+        // ExternalId is free: prefer in-place album identity update so track Guids stay stable.
+        if (currentAlbum is not null)
+        {
+            if (!UpsertExternalId(currentAlbum, providerName, request.SelectedExternalId))
+            {
+                await QueueRefreshAsync(
+                    currentAlbum.Id,
+                    request.SelectedExternalId,
+                    providerName,
+                    library,
+                    cancellationToken);
+                return;
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+            await QueueRefreshAsync(
+                currentAlbum.Id,
+                request.SelectedExternalId,
+                providerName,
+                library,
+                cancellationToken);
+            return;
+        }
+
+        if (context.Entry(indexedFile).State == EntityState.Detached)
+            context.IndexedFiles.Attach(indexedFile);
+
+        var album = new MusicAlbum { Id = Guid.NewGuid() };
+        context.Medias.Add(album);
+        await AttachIndexedFileToMusicAlbumAsync(album, indexedFile, library, cancellationToken);
+        album.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = providerName,
+            Value = request.SelectedExternalId
+        });
+        album.AddDomainEvent(new MediaCreatedEvent(album));
+
+        await context.SaveChangesAsync(cancellationToken);
+        await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
+        await QueueRefreshAsync(album.Id, request.SelectedExternalId, providerName, library, cancellationToken);
+        await QueueAudioAnalysisForIndexedFileAsync(indexedFile.Id, library, cancellationToken);
+    }
+
+    private async Task<bool> TransferAndCleanupFormerMediaAsync(
         Guid? formerMediaId,
         Guid? targetMediaId,
         bool formerWasSerieEpisode,
         bool formerWasMovie,
+        bool cleanupMusic,
         CancellationToken cancellationToken)
     {
         if (formerMediaId is not Guid fromId || targetMediaId is not Guid toId)
-            return;
+            return false;
 
         await MediaUserStateTransferHelper.TransferAsync(
             context,
@@ -166,15 +285,29 @@ public class ReidentifyIndexedFileCommandHandler(
                 fromId,
                 logger,
                 cancellationToken);
+            return false;
         }
-        else if (formerWasMovie)
+
+        if (formerWasMovie)
         {
             await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(
                 context,
                 fromId,
                 logger,
                 cancellationToken);
+            return false;
         }
+
+        if (cleanupMusic)
+        {
+            return await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(
+                context,
+                fromId,
+                logger,
+                cancellationToken);
+        }
+
+        return false;
     }
 
     private async Task AttachIndexedFileAsync(
@@ -310,6 +443,29 @@ public class ReidentifyIndexedFileCommandHandler(
         album.Tracks.Add(track);
         context.Medias.Add(track);
         track.AddDomainEvent(new MediaCreatedEvent(track));
+    }
+
+    private static bool UpsertExternalId(BaseMedia media, string providerName, string value)
+    {
+        media.ExternalIds ??= [];
+        var existing = media.ExternalIds.FirstOrDefault(e =>
+            string.Equals(e.ProviderName, providerName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+        {
+            if (string.Equals(existing.Value, value, StringComparison.Ordinal))
+                return false;
+
+            existing.Value = value;
+            return true;
+        }
+
+        media.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = providerName,
+            Value = value
+        });
+        return true;
     }
 
     private static (int SeasonNumber, int EpisodeNumber) ResolveSerieEpisodeNumbers(IndexedFile indexedFile, Library library)

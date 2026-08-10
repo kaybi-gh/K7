@@ -29,6 +29,7 @@ public static class DependencyInjection
                 options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
                 options.Retry.MaxRetryAttempts = 2;
             });
+        services.AddSingleton<IMusicIntelligenceCatalogReconciler, MusicIntelligenceCatalogReconciler>();
         services.AddScoped<IMusicIntelligenceService, MusicIntelligenceService>();
 
         // API / control-plane peer calls.
