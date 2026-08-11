@@ -39,9 +39,15 @@ public class UserMediaState : BaseAuditableEntity
         DateTime timeNow)
     {
         LastInteractedAt = timeNow;
-        LastKnownDurationSeconds = duration;
+        // Prefer a duration that can contain the resume position. A short/wrong player duration
+        // would otherwise mark the title completed and eject it from Keep Watching.
+        var effectiveDuration = duration;
+        if (duration > 0 && position > duration)
+            effectiveDuration = position;
 
-        var progress = duration > 0 ? position / duration : 0;
+        LastKnownDurationSeconds = effectiveDuration > 0 ? effectiveDuration : duration;
+
+        var progress = effectiveDuration > 0 ? position / effectiveDuration : 0;
         var completed = policy.IsMusic
             ? progress >= policy.CompletedThresholdPercent / 100.0
               || position >= policy.CompletedMinDurationSeconds
@@ -70,6 +76,10 @@ public class UserMediaState : BaseAuditableEntity
         {
             if (!policy.IsMusic)
             {
+                // Re-open Keep Watching after a false completion (e.g. bogus short duration).
+                if (IsCompleted && progress > 0 && progress < policy.CompletedThresholdPercent / 100.0)
+                    IsCompleted = false;
+
                 LastPlaybackPosition = position;
                 ProgressPercentage = Math.Clamp(progress * 100, 0, 100);
             }
