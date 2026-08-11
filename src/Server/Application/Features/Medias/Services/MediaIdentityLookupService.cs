@@ -332,16 +332,34 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
     }
 
     /// <summary>
-    /// Finds a serie by exact title and release date (including both null). Aligns with movie
-    /// dedupe so same-title shows from different years (e.g. One Piece anime vs live-action) stay distinct.
+    /// Finds a serie by title and calendar year. Same-title shows from different years stay distinct.
+    /// Matches any ReleaseDate in that year (not exact DateOnly), so a parsed 2022-01-01 still hits
+    /// a serie whose metadata refresh set the real premiere date.
     /// </summary>
     public Task<Serie?> FindSerieByTitleAndYearAsync(
         string title,
         DateOnly? releaseYear,
-        CancellationToken cancellationToken = default) =>
-        context.Medias.OfType<Serie>()
+        CancellationToken cancellationToken = default)
+    {
+        if (releaseYear is null)
+        {
+            return context.Medias.OfType<Serie>()
+                .Include(s => s.ExternalIds)
+                .FirstOrDefaultAsync(s => s.Title == title && s.ReleaseDate == null, cancellationToken);
+        }
+
+        var yearStart = new DateOnly(releaseYear.Value.Year, 1, 1);
+        var yearEnd = new DateOnly(releaseYear.Value.Year, 12, 31);
+
+        return context.Medias.OfType<Serie>()
             .Include(s => s.ExternalIds)
-            .FirstOrDefaultAsync(s => s.Title == title && s.ReleaseDate == releaseYear, cancellationToken);
+            .FirstOrDefaultAsync(
+                s => s.Title == title
+                    && s.ReleaseDate != null
+                    && s.ReleaseDate >= yearStart
+                    && s.ReleaseDate <= yearEnd,
+                cancellationToken);
+    }
 
     public async Task<MusicArtist?> FindMusicArtistByNameAsync(string name, CancellationToken cancellationToken = default)
     {

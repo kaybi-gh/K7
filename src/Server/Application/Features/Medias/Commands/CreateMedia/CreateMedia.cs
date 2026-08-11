@@ -840,6 +840,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     {
         var resolvedAlbumName = albumName ?? "Unknown Album";
 
+        // Compare by calendar-year date range, not ReleaseDate.Year: Npgsql translates .Year to
+        // date_part(...)::int and throws 22003 (dtoi4) on out-of-range / infinity dates.
+        DateOnly? yearStart = releaseYear is { } year ? new DateOnly(year.Year, 1, 1) : null;
+        DateOnly? yearEnd = releaseYear is { } y ? new DateOnly(y.Year, 12, 31) : null;
+
         var existingAlbum = await _context.Medias
             .OfType<MusicAlbum>()
             .FirstOrDefaultAsync(a =>
@@ -847,7 +852,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 (a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId))
                     || !a.Tracks.Any(t => t.IndexedFiles.Any())) &&
                 (artistName == null || (a.Artist != null && a.Artist.Title == artistName)) &&
-                (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate.Value.Year == releaseYear.Value.Year),
+                (yearStart == null
+                    || a.ReleaseDate == null
+                    || (a.ReleaseDate >= yearStart && a.ReleaseDate <= yearEnd)),
                 cancellationToken);
 
         if (existingAlbum is not null)
