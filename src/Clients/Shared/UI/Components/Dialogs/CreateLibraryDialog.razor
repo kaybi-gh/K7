@@ -65,6 +65,9 @@
 
                         @if (_compatibleGroups.Count > 0)
                         {
+                            <K7Alert Severity="K7Severity.Info" Variant="outlined" Icon="@Phosphor.Folders" Class="mb-1">
+                                @L["GroupReuseHint"]
+                            </K7Alert>
                             <div class="d-flex flex-col gap-2">
                                 <span class="text-sm text-bold">@L["GroupLabel"]</span>
                                 <div class="d-flex flex-wrap gap-2">

@@ -73,11 +73,14 @@ else
                 {
                     <div class="media-card-overlay">
                         <K7FabButton AriaLabel="Play" Icon="@Phosphor.Fill.Play" Focusable="false" />
+                        @OverlayProgress
                     </div>
                 }
                 else if (HoverOverlayEnabled)
                 {
-                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true"></div>
+                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true">
+                        @OverlayProgress
+                    </div>
                 }
             </a>
             }
@@ -122,6 +125,7 @@ else
 
                 <div class="media-card-overlay">
                     <K7FabButton AriaLabel="Play" Icon="@Phosphor.Fill.Play" Focusable="false" />
+                    @OverlayProgress
                 </div>
             </div>
             }
@@ -139,7 +143,9 @@ else
 
                 @if (HoverOverlayEnabled || Selected)
                 {
-                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true"></div>
+                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true">
+                        @OverlayProgress
+                    </div>
                 }
             </div>
             }
@@ -173,5 +179,15 @@ else
     private RenderFragment CardPlaceholder => @<div class="media-card-placeholder rounded-lg">
         <K7Icon Icon="@ResolvedPlaceholderIcon" Class="media-card-placeholder-icon" />
     </div>;
+
+    private RenderFragment OverlayProgress => @<text>
+        @if (ProgressEnabled && !ProgressBarIsHidden())
+        {
+            <div class="media-card-overlay-progress">
+                <span class="media-card-overlay-progress-label">@GetOverlayProgressLabel()</span>
+                <K7ProgressBar Value="@Model.Progress" />
+            </div>
+        }
+    </text>;
 }
 

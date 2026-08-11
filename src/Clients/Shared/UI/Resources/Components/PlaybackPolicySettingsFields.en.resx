@@ -22,25 +22,25 @@
     <value>Minimum resume threshold (%)</value>
   </data>
   <data name="MinResumePercentHint" xml:space="preserve">
-    <value>Below {0}%, content does not appear in Keep Watching.</value>
+    <value>Below this threshold, content does not appear in Keep Watching.</value>
   </data>
   <data name="MinResumeDurationSeconds" xml:space="preserve">
     <value>Minimum duration for resume (seconds)</value>
   </data>
   <data name="MinResumeDurationHint" xml:space="preserve">
-    <value>Videos shorter than {0}s do not offer resume.</value>
+    <value>Titles whose total runtime is below this threshold do not appear in Keep Watching (0 = disabled). Combined with the percent threshold above.</value>
   </data>
   <data name="CompletedThresholdPercent" xml:space="preserve">
     <value>Completed threshold (%)</value>
   </data>
   <data name="CompletedThresholdHint" xml:space="preserve">
-    <value>Beyond {0}%, content is marked as watched.</value>
+    <value>Beyond this threshold, content is marked as watched.</value>
   </data>
   <data name="ContinueWatchingMaxAgeDays" xml:space="preserve">
     <value>Keep Watching window (days)</value>
   </data>
   <data name="ContinueWatchingMaxAgeDaysHint" xml:space="preserve">
-    <value>Only content watched in the last {0} days appears in Keep Watching (0 = unlimited).</value>
+    <value>Only content watched within this window appears in Keep Watching (0 = unlimited).</value>
   </data>
   <data name="MusicResumeSection" xml:space="preserve">
     <value>Music tracking</value>

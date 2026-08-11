@@ -8,25 +8,29 @@
 
         <K7Slider TValue="int" Min="0" Max="50" Step="1" Immediate="true"
                   Label="@L["MinResumePercent"]"
-                  Hint="@string.Format(L["MinResumePercentHint"], VideoPolicy.MinResumePercent)"
+                  Hint="@L["MinResumePercentHint"]"
+                  FormatValue="FormatPercent"
                   Value="VideoPolicy.MinResumePercent"
                   ValueChanged="v => OnVideoChanged(p => p with { MinResumePercent = v })" />
 
         <K7Slider TValue="int" Min="0" Max="900" Step="30" Immediate="true"
                   Label="@L["MinResumeDurationSeconds"]"
-                  Hint="@string.Format(L["MinResumeDurationHint"], VideoPolicy.MinResumeDurationSeconds)"
+                  Hint="@L["MinResumeDurationHint"]"
+                  FormatValue="FormatSeconds"
                   Value="VideoPolicy.MinResumeDurationSeconds"
                   ValueChanged="v => OnVideoChanged(p => p with { MinResumeDurationSeconds = v })" />
 
         <K7Slider TValue="int" Min="50" Max="100" Step="1" Immediate="true"
                   Label="@L["CompletedThresholdPercent"]"
-                  Hint="@string.Format(L["CompletedThresholdHint"], VideoPolicy.CompletedThresholdPercent)"
+                  Hint="@L["CompletedThresholdHint"]"
+                  FormatValue="FormatPercent"
                   Value="VideoPolicy.CompletedThresholdPercent"
                   ValueChanged="v => OnVideoChanged(p => p with { CompletedThresholdPercent = v })" />
 
         <K7Slider TValue="int" Min="0" Max="90" Step="1" Immediate="true"
                   Label="@L["ContinueWatchingMaxAgeDays"]"
-                  Hint="@string.Format(L["ContinueWatchingMaxAgeDaysHint"], VideoPolicy.ContinueWatchingMaxAgeDays)"
+                  Hint="@L["ContinueWatchingMaxAgeDaysHint"]"
+                  FormatValue="FormatDays"
                   Value="VideoPolicy.ContinueWatchingMaxAgeDays"
                   ValueChanged="v => OnVideoChanged(p => p with { ContinueWatchingMaxAgeDays = v })" />
     </section>

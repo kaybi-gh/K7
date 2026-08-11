@@ -35,4 +35,6 @@ public partial class PlaybackPolicySettingsFields
     private static string FormatPercent(int value) => $"{value} %";
 
     private static string FormatSeconds(int value) => $"{value} s";
+
+    private static string FormatDays(int value) => $"{value} d";
 }

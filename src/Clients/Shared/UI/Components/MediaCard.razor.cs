@@ -5,6 +5,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
 
@@ -50,6 +51,7 @@ public partial class MediaCard : IDisposable
     [Inject] private ILogger<MediaCard> Logger { get; set; } = default!;
     [Inject] private IMediaCardContextMenuService ContextMenuService { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IStringLocalizer<MediaCard> L { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
@@ -103,6 +105,25 @@ public partial class MediaCard : IDisposable
     };
 
     private bool ProgressBarIsHidden() => Model.Progress < 1 || Model.Progress >= 100;
+
+    private string GetOverlayProgressLabel()
+    {
+        if (Model.RuntimeMinutes is > 0)
+        {
+            var remainingMinutes = (int)Math.Ceiling(Model.RuntimeMinutes.Value * (1 - Model.Progress / 100d));
+            if (remainingMinutes < 1)
+                remainingMinutes = 1;
+
+            var hours = remainingMinutes / 60;
+            var minutes = remainingMinutes % 60;
+            if (hours > 0)
+                return L["RemainingHoursMinutes", hours, minutes];
+
+            return L["RemainingMinutes", remainingMinutes];
+        }
+
+        return L["ProgressPercent", (int)Math.Round(Model.Progress)];
+    }
 
     protected override void OnInitialized() =>
         ContextMenuService.Changed += OnContextMenuServiceChanged;

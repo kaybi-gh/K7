@@ -62,7 +62,7 @@ public partial class CreateLibraryDialog
 
         var allGroups = await K7ServerService.GetLibraryGroupsAsync();
         _compatibleGroups = allGroups.Where(g => g.MediaType == mediaType).ToList();
-        _createNewGroup = _compatibleGroups.Count == 0;
+        _createNewGroup = true;
         _selectedGroupId = null;
     }
 

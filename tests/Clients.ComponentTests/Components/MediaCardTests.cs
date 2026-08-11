@@ -178,6 +178,44 @@ public class MediaCardTests
         navigationManager.Uri.Should().Be(uriBeforeStrayKeyUp);
     }
 
+    [Test]
+    public void Render_ShouldShowOverlayProgress_WhenProgressEnabled()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel() with { Progress = 42, RuntimeMinutes = 120 };
+
+        // Act
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.ProgressEnabled, true)
+            .Add(c => c.Href, "/movies/1"));
+
+        // Assert
+        cut.Find(".media-card-progress-bar").Should().NotBeNull();
+        cut.Find(".media-card-overlay-progress").Should().NotBeNull();
+        cut.Find(".media-card-overlay-progress-label").TextContent.Should().Contain("RemainingHoursMinutes");
+    }
+
+    [Test]
+    public void Render_ShouldShowProgressPercent_WhenRuntimeUnknown()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel() with { Progress = 42 };
+
+        // Act
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.ProgressEnabled, true)
+            .Add(c => c.Href, "/movies/1"));
+
+        // Assert
+        cut.Find(".media-card-overlay-progress-label").TextContent.Should().Contain("ProgressPercent");
+    }
+
     private static RenderFragment BuildCardWithHost(
         MediaCardViewModel model,
         bool overlayEnabled,
@@ -215,6 +253,17 @@ public class MediaCardTests
         contextMenuLocalizer[Arg.Any<string>()].Returns(call =>
             new LocalizedString(call.Arg<string>(), call.Arg<string>()));
         ctx.Services.AddSingleton(contextMenuLocalizer);
+
+        var mediaCardLocalizer = Substitute.For<IStringLocalizer<MediaCard>>();
+        mediaCardLocalizer[Arg.Any<string>()].Returns(call =>
+            new LocalizedString(call.Arg<string>(), call.Arg<string>()));
+        mediaCardLocalizer[Arg.Any<string>(), Arg.Any<object[]>()].Returns(call =>
+        {
+            var name = call.ArgAt<string>(0);
+            var args = call.ArgAt<object[]>(1);
+            return new LocalizedString(name, string.Format(name, args));
+        });
+        ctx.Services.AddSingleton(mediaCardLocalizer);
 
         var sharedLocalizer = Substitute.For<IStringLocalizer<SharedResource>>();
         sharedLocalizer[Arg.Any<string>()].Returns(call =>

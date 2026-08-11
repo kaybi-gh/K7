@@ -24,5 +24,8 @@
   <data name="Play" xml:space="preserve"><value>Lecture</value></data>
   <data name="MarkAsWatched" xml:space="preserve"><value>Marquer comme vu</value></data>
   <data name="MarkAsUnwatched" xml:space="preserve"><value>Marquer comme non vu</value></data>
+  <data name="ProgressPercent" xml:space="preserve"><value>{0} %</value></data>
+  <data name="RemainingHoursMinutes" xml:space="preserve"><value>{0} h {1} min restantes</value></data>
+  <data name="RemainingMinutes" xml:space="preserve"><value>{0} min restantes</value></data>
 </root>
 

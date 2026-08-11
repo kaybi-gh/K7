@@ -22,25 +22,25 @@
     <value>Seuil minimum de reprise (%)</value>
   </data>
   <data name="MinResumePercentHint" xml:space="preserve">
-    <value>En dessous de {0} %, le contenu n'apparaît pas dans Reprendre.</value>
+    <value>En dessous de ce seuil, le contenu n'apparaît pas dans Reprendre.</value>
   </data>
   <data name="MinResumeDurationSeconds" xml:space="preserve">
     <value>Durée minimum pour la reprise (secondes)</value>
   </data>
   <data name="MinResumeDurationHint" xml:space="preserve">
-    <value>Les vidéos plus courtes que {0} s ne proposent pas de reprise.</value>
+    <value>Les medias dont la duree totale est inferieure a ce seuil n'apparaissent pas dans Reprendre (0 = desactive). Combine avec le seuil en % ci-dessus.</value>
   </data>
   <data name="CompletedThresholdPercent" xml:space="preserve">
     <value>Seuil de terminé (%)</value>
   </data>
   <data name="CompletedThresholdHint" xml:space="preserve">
-    <value>Au-delà de {0} %, le contenu est marqué comme vu.</value>
+    <value>Au-delà de ce seuil, le contenu est marqué comme vu.</value>
   </data>
   <data name="ContinueWatchingMaxAgeDays" xml:space="preserve">
     <value>Fenêtre Reprendre (jours)</value>
   </data>
   <data name="ContinueWatchingMaxAgeDaysHint" xml:space="preserve">
-    <value>Seuls les contenus visionnés dans les {0} derniers jours apparaissent dans Reprendre (0 = illimité).</value>
+    <value>Seuls les contenus visionnés dans cette fenêtre apparaissent dans Reprendre (0 = illimité).</value>
   </data>
   <data name="MusicResumeSection" xml:space="preserve">
     <value>Suivi musical</value>

@@ -69,5 +69,6 @@
   <data name="IconNone" xml:space="preserve"><value>None</value></data>
   <data name="GroupLabel" xml:space="preserve"><value>Group</value></data>
   <data name="GroupNewOption" xml:space="preserve"><value>New group</value></data>
+  <data name="GroupReuseHint" xml:space="preserve"><value>You can attach this library to an existing group so it appears together in Explore and Home, instead of creating a new one.</value></data>
 </root>
 

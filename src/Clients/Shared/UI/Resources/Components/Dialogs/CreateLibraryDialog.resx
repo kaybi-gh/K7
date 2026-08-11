@@ -70,5 +70,6 @@
   <data name="IconNone" xml:space="preserve"><value>Aucune</value></data>
   <data name="GroupLabel" xml:space="preserve"><value>Groupe</value></data>
   <data name="GroupNewOption" xml:space="preserve"><value>Nouveau groupe</value></data>
+  <data name="GroupReuseHint" xml:space="preserve"><value>Vous pouvez rattacher cette bibliotheque a un groupe existant pour la regrouper dans Explorer et a l'accueil, au lieu d'en creer un nouveau.</value></data>
 </root>
 
