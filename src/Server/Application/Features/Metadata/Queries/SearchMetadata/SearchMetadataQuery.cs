@@ -80,6 +80,10 @@ public class SearchMetadataQueryHandler(
         if (string.IsNullOrWhiteSpace(request.Query) || !string.IsNullOrWhiteSpace(request.ProviderId))
             return flattened;
 
+        // Lucene advanced queries (release:"…" AND artist:"…") must keep provider ranking.
+        if (LooksLikeAdvancedProviderQuery(request.Query))
+            return flattened;
+
         return MetadataTitleMatchHelper.OrderByBestMatch(
             request.Query,
             request.Year,
@@ -88,6 +92,11 @@ public class SearchMetadataQueryHandler(
             result => result.Year,
             popularitySelector: result => result.Popularity);
     }
+
+    private static bool LooksLikeAdvancedProviderQuery(string query) =>
+        query.Contains(':')
+        || query.Contains(" AND ", StringComparison.OrdinalIgnoreCase)
+        || query.Contains(" OR ", StringComparison.OrdinalIgnoreCase);
 
     private static HashSet<string> ResolveAllowedProviderNames(Library library, MediaType? mediaType)
     {

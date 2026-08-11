@@ -56,6 +56,62 @@ public static partial class ReIdentifySearchDefaultsHelper
     }
 
     /// <summary>
+    /// Prefers "Artist Album" plain text (display / fallback).
+    /// </summary>
+    public static string? BuildMusicAlbumQuery(string? artistName, string? albumTitle)
+    {
+        var artist = artistName?.Trim();
+        var album = albumTitle?.Trim();
+
+        if (string.IsNullOrEmpty(artist))
+            return string.IsNullOrEmpty(album) ? null : album;
+
+        if (string.IsNullOrEmpty(album))
+            return artist;
+
+        if (album.StartsWith(artist, StringComparison.OrdinalIgnoreCase))
+            return album;
+
+        return $"{artist} {album}";
+    }
+
+    /// <summary>
+    /// Same Lucene shape as automatic MusicBrainz identify: release + artist fields.
+    /// </summary>
+    public static string? BuildMusicAlbumLuceneQuery(string? artistName, string? albumTitle)
+    {
+        var artist = artistName?.Trim();
+        var album = albumTitle?.Trim();
+
+        if (!string.IsNullOrEmpty(artist) && !string.IsNullOrEmpty(album)
+            && album.StartsWith(artist, StringComparison.OrdinalIgnoreCase))
+        {
+            var withoutArtist = album[artist.Length..].Trim().TrimStart('-', '–', ':').Trim();
+            if (!string.IsNullOrEmpty(withoutArtist))
+                album = withoutArtist;
+        }
+
+        if (string.IsNullOrEmpty(album) && string.IsNullOrEmpty(artist))
+            return null;
+
+        if (string.IsNullOrEmpty(artist))
+            return $"release:\"{EscapeLucene(album!)}\"";
+
+        if (string.IsNullOrEmpty(album))
+            return $"artist:\"{EscapeLucene(artist)}\"";
+
+        return $"release:\"{EscapeLucene(album)}\" AND artist:\"{EscapeLucene(artist)}\"";
+    }
+
+    private static string EscapeLucene(string value)
+    {
+        // Keep in sync with MusicBrainzMetadataProvider.EscapeLucene for quotes/backslashes at minimum.
+        return value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Path shown in the re-identify dialog: movie/episode file, or series root folder when detectable.
     /// </summary>
     public static string? ResolveSourcePath(

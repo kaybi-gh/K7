@@ -22,6 +22,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
     private const string Host = "musicbrainz.org";
+    private const string CoverArtHost = "coverartarchive.org";
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
@@ -187,27 +188,46 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             if (string.IsNullOrWhiteSpace(query))
                 return results;
 
-            var searchQuery = year.HasValue
-                ? $"{query} AND date:{year.Value}"
-                : query;
-            var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(searchQuery)}&limit=10&fmt=json";
+            // Same shape as auto-identify SearchAsync: release search + free/Lucene text.
+            // Do not hard-filter by year in Lucene (wrong tag/UI year zeros the real hit).
+            var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(query.Trim())}&limit=25&fmt=json";
 
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             var response = await _httpClient.GetFromJsonAsync<MbReleaseSearchResult>(url, JsonOptions, cancellationToken);
-            if (response?.Releases is null)
+            var candidates = response?.Releases?
+                .Where(r => !string.IsNullOrWhiteSpace(r.ReleaseGroup?.Id))
+                .ToList() ?? [];
+
+            if (candidates.Count == 0)
                 return results;
 
-            foreach (var release in response.Releases)
+            // Soft year preference (same idea as FindPreferredYearIndex), then keep first hit per release-group.
+            IEnumerable<MbReleaseSearchEntry> ordered = candidates;
+            if (year.HasValue)
             {
-                var externalId = release.ReleaseGroup?.Id;
-                if (string.IsNullOrWhiteSpace(externalId))
-                    continue;
+                ordered = candidates
+                    .OrderByDescending(c => ParseYear(c.Date) == year ? 1 : 0)
+                    .ThenByDescending(c => c.Score);
+            }
+            else
+            {
+                ordered = candidates.OrderByDescending(c => c.Score);
+            }
+
+            foreach (var release in ordered.DistinctBy(r => r.ReleaseGroup!.Id).Take(10))
+            {
+                var externalId = release.ReleaseGroup!.Id;
+                var posterUrl = await TryGetCoverArtUrl(
+                    $"{CoverArtBaseUrl}/release-group/{externalId}",
+                    cancellationToken);
 
                 results.Add(new MetadataSearchResult
                 {
                     Provider = ProviderName,
                     ExternalId = externalId,
-                    Title = release.Title ?? string.Empty
+                    Title = FormatSearchResultTitle(release.Title, release.ArtistCredit),
+                    Year = ParseYear(release.Date),
+                    PosterUrl = posterUrl
                 });
             }
         }
@@ -239,7 +259,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             Provider = ProviderName,
             ExternalId = externalId,
-            Title = release.Title ?? string.Empty,
+            Title = FormatSearchResultTitle(release.Title, release.ArtistCredit),
             Year = ParseYear(release.Date),
             PosterUrl = posterUrl
         };
@@ -253,10 +273,31 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             Provider = ProviderName,
             ExternalId = releaseGroup.Id,
-            Title = releaseGroup.Title ?? string.Empty,
+            Title = FormatSearchResultTitle(releaseGroup.Title, releaseGroup.ArtistCredit),
             Year = ParseYear(releaseGroup.FirstReleaseDate),
             PosterUrl = posterUrl
         };
+    }
+
+    private static string FormatSearchResultTitle(string? albumTitle, IReadOnlyList<MbArtistCredit>? artistCredit)
+    {
+        var title = albumTitle?.Trim() ?? string.Empty;
+        var artist = FormatArtistCredit(artistCredit);
+        if (string.IsNullOrEmpty(artist))
+            return title;
+        if (string.IsNullOrEmpty(title))
+            return artist;
+        return $"{artist} - {title}";
+    }
+
+    private static string FormatArtistCredit(IReadOnlyList<MbArtistCredit>? artistCredit)
+    {
+        if (artistCredit is null || artistCredit.Count == 0)
+            return string.Empty;
+
+        return string.Join(", ", artistCredit
+            .Select(c => c.Artist?.Name ?? c.Name)
+            .Where(n => !string.IsNullOrWhiteSpace(n))!);
     }
 
     private async Task<MbRelease?> GetReleaseWithReleaseGroupAsync(string releaseId, CancellationToken cancellationToken)
@@ -367,7 +408,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags+url-rels&fmt=json";
+            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags+url-rels+artist-credits&fmt=json";
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbReleaseGroup>(url, JsonOptions, cancellationToken);
         }
@@ -492,6 +533,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
+            await _rateLimiter.WaitAsync(CoverArtHost, cancellationToken);
             var response = await _httpClient.GetAsync($"{baseUrl}/front-500", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
@@ -921,6 +963,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public int Score { get; init; }
         public string? Title { get; init; }
         public string? Date { get; init; }
+        [JsonPropertyName("artist-credit")]
+        public List<MbArtistCredit>? ArtistCredit { get; init; }
         [JsonPropertyName("release-group")]
         public MbReleaseGroupRef? ReleaseGroup { get; init; }
     }
@@ -940,6 +984,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public List<MbGenre>? Genres { get; init; }
         public List<MbGenre>? Tags { get; init; }
         public List<MbRelation>? Relations { get; init; }
+        [JsonPropertyName("artist-credit")]
+        public List<MbArtistCredit>? ArtistCredit { get; init; }
     }
 
     private record MbGenre
@@ -1043,6 +1089,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private record MbReleaseGroupEntry
     {
         public string Id { get; init; } = "";
+        public string? Title { get; init; }
+        [JsonPropertyName("first-release-date")]
+        public string? FirstReleaseDate { get; init; }
+        [JsonPropertyName("artist-credit")]
+        public List<MbArtistCredit>? ArtistCredit { get; init; }
     }
 
     private record MbArea

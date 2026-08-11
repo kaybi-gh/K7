@@ -706,12 +706,21 @@ public partial class AdminDiagnosticsPanel : IDisposable
         var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, item.EntityId },
-            { x => x.InitialSearchQuery, searchQuery },
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, mediaType },
             { x => x.LibraryId, item.LibraryId },
             { x => x.SourcePath, item.DetailText }
         };
+
+        if (mediaType == MediaType.MusicAlbum)
+        {
+            parameters.Add(x => x.InitialSearchArtist, item.Identification?.ArtistName);
+            parameters.Add(x => x.InitialSearchAlbum, searchQuery);
+        }
+        else
+        {
+            parameters.Add(x => x.InitialSearchQuery, searchQuery);
+        }
 
         var options = new K7DialogOptions
         {

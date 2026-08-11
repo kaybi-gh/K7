@@ -304,6 +304,91 @@ public partial class MusicAlbumDetail : IDisposable
 
     internal sealed record ArtistInfo(Guid Id, string Name);
 
+    private async Task OpenMediaReIdentifyDialogAsync()
+    {
+        if (_album is null) return;
+
+        // Album.IndexedFiles is often empty (files live on tracks): fetch a sample track for path / search defaults.
+        var sampleFiles = await ResolveAlbumSampleIndexedFilesAsync();
+
+        var tagIdentification = sampleFiles?
+            .Select(f => f.Identification)
+            .FirstOrDefault(i => i is not null);
+        var albumTitle = FirstNonEmpty(tagIdentification?.AlbumName, tagIdentification?.Title, _album.Title);
+        var artistName = FirstNonEmpty(tagIdentification?.ArtistName, _album.ArtistName);
+
+        var currentExternalId = _album.ExternalIds?
+            .FirstOrDefault(e => string.Equals(e.ProviderName, "musicbrainz", StringComparison.OrdinalIgnoreCase))
+            ?.Value;
+
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.MediaId, _album.Id },
+            { x => x.InitialSearchArtist, artistName },
+            { x => x.InitialSearchAlbum, albumTitle },
+            { x => x.MediaType, MediaType.MusicAlbum },
+            { x => x.LibraryId, GetLibraryIdForReIdentify() },
+            { x => x.SourcePath, ReIdentifySearchDefaultsHelper.ResolveSourcePath(sampleFiles, MediaType.MusicAlbum) },
+            { x => x.CurrentExternalId, currentExternalId },
+            { x => x.CurrentProvider, string.IsNullOrWhiteSpace(currentExternalId) ? null : "musicbrainz" }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyMediaDialogTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    /// <summary>
+    /// Files are attached to tracks, not the album. Load the first track with a local file
+    /// so the re-identify dialog can show a sample path.
+    /// </summary>
+    private async Task<IReadOnlyList<IndexedFileDto>?> ResolveAlbumSampleIndexedFilesAsync()
+    {
+        if (_album?.IndexedFiles is { Count: > 0 } existing)
+            return existing;
+
+        var trackId = _tracks
+            .Where(t => t.IndexedFileId.HasValue)
+            .OrderBy(t => t.DiscNumber)
+            .ThenBy(t => t.TrackNumber)
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefault();
+        if (trackId is null)
+            return _album?.IndexedFiles;
+
+        try
+        {
+            if (await k7ServerService.GetMediaAsync(trackId.Value) is MusicTrackDto track
+                && track.IndexedFiles is { Count: > 0 } files)
+            {
+                return files;
+            }
+        }
+        catch
+        {
+            // Non-critical: dialog still opens without source path context.
+        }
+
+        return _album?.IndexedFiles;
+    }
+
+    private Guid? GetLibraryIdForReIdentify()
+    {
+        if (_album?.LibraryId is { } libraryId)
+            return libraryId;
+
+        return _album?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+    }
+
+    private static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
     private async Task RefreshMetadataAsync()
     {
         if (_album is null) return;

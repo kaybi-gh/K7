@@ -11,7 +11,17 @@
                 </div>
             }
 
-            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" />
+            @if (IsMusicSearch)
+            {
+                <div class="reidentify-fields-row">
+                    <K7TextField @bind-Value="_searchArtist" Label="@L["ArtistLabel"]" Variant="outlined" />
+                    <K7TextField @bind-Value="_searchAlbum" Label="@L["AlbumLabel"]" Variant="outlined" />
+                </div>
+            }
+            else
+            {
+                <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" />
+            }
 
             <div class="reidentify-fields-row">
                 <K7TextField Type="number" @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="outlined" Clearable="true" />
@@ -46,23 +56,37 @@
                                 role="button"
                                 @onclick="() => SelectResult(result)"
                                 @onkeydown="e => OnResultKeyDown(e, result)">
-                                <div class="grid">
-                                    <div>
-                                        @if (!string.IsNullOrEmpty(result.PosterUrl))
-                                        {
-                                            <K7Image Src="@result.PosterUrl" ObjectFit="cover" Width="70" Class="rounded-lg" loading="lazy" />
-                                        }
-                                        else
-                                        {
-                                            <div class="surface d-flex align-center justify-center rounded-lg">
-                                                <K7Icon Icon="@Phosphor.Circle" />
-                                            </div>
-                                        }
+                                <div class="grid @ResultGridClass">
+                                    <div class="@ResultArtClass">
+                                        <K7Image Src="@(result.PosterUrl ?? "")"
+                                                 Alt=""
+                                                 ObjectFit="cover"
+                                                 Fluid="true"
+                                                 Class="rounded-lg reidentify-result-art__img"
+                                                 FallbackIcon="@Phosphor.ImageBroken"
+                                                 loading="lazy" />
                                     </div>
                                     <div>
                                         <div class="d-flex flex-col">
                                             <p class="text-subtitle1"><b>@result.Title</b> @(result.Year.HasValue ? $"({result.Year})" : "")</p>
-                                            <span class="text-caption" Color="secondary">@string.Format(L["ProviderAndId"], result.Provider, result.ExternalId)</span>
+                                            <div class="reidentify-result-meta">
+                                                <span class="text-caption" Color="secondary">@string.Format(L["ProviderAndId"], result.Provider, result.ExternalId)</span>
+                                                @if (_showProviderExternalLink)
+                                                {
+                                                    var providerUrl = MetadataProviderPageUrlHelper.TryBuild(result.Provider, result.ExternalId, MediaType);
+                                                    @if (providerUrl is not null)
+                                                    {
+                                                        <span @onclick:stopPropagation="true">
+                                                            <K7IconButton Icon="@Phosphor.ArrowSquareOut"
+                                                                          Size="sm"
+                                                                          Href="@providerUrl"
+                                                                          target="_blank"
+                                                                          rel="noopener noreferrer"
+                                                                          AriaLabel="@L["OpenProviderPage"]" />
+                                                        </span>
+                                                    }
+                                                }
+                                            </div>
                                             <p class="text-sm" Style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">@result.Overview</p>
                                         </div>
                                     </div>

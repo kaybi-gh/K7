@@ -21,13 +21,17 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SourcePathLabel" xml:space="preserve"><value>Fichier / dossier</value></data>
   <data name="TitleLabel" xml:space="preserve"><value>Titre</value></data>
+  <data name="ArtistLabel" xml:space="preserve"><value>Artiste</value></data>
+  <data name="AlbumLabel" xml:space="preserve"><value>Album</value></data>
   <data name="YearOptionalLabel" xml:space="preserve"><value>Année (Optionnel)</value></data>
-  <data name="ProviderIdLabel" xml:space="preserve"><value>ID Provider (Ex: TMDB ID)</value></data>
+  <data name="ProviderIdLabel" xml:space="preserve"><value>ID Provider (Ex: MusicBrainz / TMDB)</value></data>
   <data name="Searching" xml:space="preserve"><value>Recherche...</value></data>
   <data name="SearchButton" xml:space="preserve"><value>Chercher</value></data>
   <data name="NoResults" xml:space="preserve"><value>Aucun résultat trouvé.</value></data>
   <data name="ProviderAndId" xml:space="preserve"><value>Provider: {0} | ID: {1}</value></data>
+  <data name="OpenProviderPage" xml:space="preserve"><value>Ouvrir la page du provider</value></data>
   <data name="EnterTitleOrId" xml:space="preserve"><value>Veuillez entrer un titre ou un ID.</value></data>
+  <data name="EnterArtistOrAlbumOrId" xml:space="preserve"><value>Veuillez entrer un artiste, un album ou un ID.</value></data>
   <data name="SearchError" xml:space="preserve"><value>Erreur lors de la recherche : {0}</value></data>
   <data name="ReidentifyError" xml:space="preserve"><value>Erreur lors de la ré-identification : {0}</value></data>
 </root>

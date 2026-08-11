@@ -112,6 +112,44 @@ public class ReIdentifySearchDefaultsHelperTests
     }
 
     [Test]
+    public void FromIdentification_ShouldIncludeArtist_WhenMusicAlbum()
+    {
+        var (query, year) = ReIdentifySearchDefaultsHelper.FromIdentification(
+            new MediaIdentificationDto
+            {
+                Title = "Greatest Hits",
+                AlbumName = "Greatest Hits",
+                ArtistName = "Jamiroquai",
+                ReleaseYear = new DateOnly(2006, 11, 6)
+            },
+            MediaType.MusicAlbum);
+
+        query.Should().Be("Greatest Hits");
+        year.Should().Be(2006);
+    }
+
+    [Test]
+    public void BuildMusicAlbumLuceneQuery_ShouldMatchAutoIdentifyShape()
+    {
+        ReIdentifySearchDefaultsHelper.BuildMusicAlbumLuceneQuery("Jamiroquai", "Greatest Hits")
+            .Should().Be("release:\"Greatest Hits\" AND artist:\"Jamiroquai\"");
+    }
+
+    [Test]
+    public void BuildMusicAlbumQuery_ShouldNotDuplicateArtist_WhenAlbumAlreadyPrefixed()
+    {
+        ReIdentifySearchDefaultsHelper.BuildMusicAlbumQuery("Jamiroquai", "Jamiroquai - Greatest Hits")
+            .Should().Be("Jamiroquai - Greatest Hits");
+    }
+
+    [Test]
+    public void BuildMusicAlbumQuery_ShouldReturnAlbumOnly_WhenArtistMissing()
+    {
+        ReIdentifySearchDefaultsHelper.BuildMusicAlbumQuery(null, "Greatest Hits")
+            .Should().Be("Greatest Hits");
+    }
+
+    [Test]
     public void ResolveSourcePath_ShouldReturnMovieFilePath()
     {
         var path = @"D:\Movies\Inception (2010).mkv";
