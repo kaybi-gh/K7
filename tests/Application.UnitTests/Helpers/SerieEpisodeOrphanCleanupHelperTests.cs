@@ -43,7 +43,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldDeleteEpisodeAndEmptySeason_WhenNoFilesAndNoUserData()
     {
-        var (episodeId, seasonId) = await SeedOrphanEpisodeAsync();
+        var (episodeId, seasonId, serieId) = await SeedOrphanEpisodeAsync();
 
         var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
             _context,
@@ -54,12 +54,39 @@ public class SerieEpisodeOrphanCleanupHelperTests
         deleted.Should().BeTrue();
         (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeFalse();
         (await _context.Medias.OfType<SerieSeason>().AnyAsync(s => s.Id == seasonId)).Should().BeFalse();
+        (await _context.Medias.OfType<Serie>().AnyAsync(s => s.Id == serieId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldKeepSerie_WhenSerieHasUserData()
+    {
+        var (episodeId, seasonId, serieId) = await SeedOrphanEpisodeAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = serieId,
+            PlayCount = 1
+        });
+        await _context.SaveChangesAsync();
+
+        var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
+            _context,
+            episodeId,
+            _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeFalse();
+        (await _context.Medias.OfType<SerieSeason>().AnyAsync(s => s.Id == seasonId)).Should().BeFalse();
+        (await _context.Medias.OfType<Serie>().AnyAsync(s => s.Id == serieId)).Should().BeTrue();
     }
 
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenUserMediaStateExists()
     {
-        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var (episodeId, _, _) = await SeedOrphanEpisodeAsync();
         var userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         _context.UserMediaStates.Add(new UserMediaState
@@ -83,7 +110,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenIndexedFileRemains()
     {
-        var (episodeId, _) = await SeedOrphanEpisodeAsync(withFile: true);
+        var (episodeId, _, _) = await SeedOrphanEpisodeAsync(withFile: true);
 
         var deleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
             _context,
@@ -97,7 +124,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenCollectionItemExists()
     {
-        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var (episodeId, _, _) = await SeedOrphanEpisodeAsync();
         var userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         var collection = new Collection { Id = Guid.NewGuid(), Title = "Favs", UserId = userId };
@@ -122,7 +149,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenPlaybackSessionExists()
     {
-        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var (episodeId, _, _) = await SeedOrphanEpisodeAsync();
         var userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
@@ -151,7 +178,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteIfOrphanAsync_ShouldKeepEpisode_WhenExclusionExists()
     {
-        var (episodeId, _) = await SeedOrphanEpisodeAsync();
+        var (episodeId, _, _) = await SeedOrphanEpisodeAsync();
         var userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         _context.UserMediaExclusions.Add(new UserMediaExclusion
@@ -171,7 +198,7 @@ public class SerieEpisodeOrphanCleanupHelperTests
         (await _context.Medias.OfType<SerieEpisode>().AnyAsync(e => e.Id == episodeId)).Should().BeTrue();
     }
 
-    private async Task<(Guid EpisodeId, Guid SeasonId)> SeedOrphanEpisodeAsync(bool withFile = false)
+    private async Task<(Guid EpisodeId, Guid SeasonId, Guid SerieId)> SeedOrphanEpisodeAsync(bool withFile = false)
     {
         var groupId = Guid.NewGuid();
         var libraryId = Guid.NewGuid();
@@ -242,6 +269,6 @@ public class SerieEpisodeOrphanCleanupHelperTests
         }
 
         await _context.SaveChangesAsync();
-        return (episode.Id, season.Id);
+        return (episode.Id, season.Id, serie.Id);
     }
 }

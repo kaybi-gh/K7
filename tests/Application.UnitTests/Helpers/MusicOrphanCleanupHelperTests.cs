@@ -43,7 +43,7 @@ public class MusicOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteTrackIfOrphanAsync_ShouldDeleteTrackAndEmptyAlbum_WhenNoFilesAndNoUserData()
     {
-        var (albumId, trackId) = await SeedOrphanTrackAsync();
+        var (albumId, trackId, artistId) = await SeedOrphanTrackAsync();
 
         var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(_context, trackId, _logger);
         await _context.SaveChangesAsync();
@@ -51,12 +51,67 @@ public class MusicOrphanCleanupHelperTests
         deleted.Should().BeTrue();
         (await _context.Medias.OfType<MusicTrack>().AnyAsync(t => t.Id == trackId)).Should().BeFalse();
         (await _context.Medias.OfType<MusicAlbum>().AnyAsync(a => a.Id == albumId)).Should().BeFalse();
+        (await _context.Medias.OfType<MusicArtist>().AnyAsync(a => a.Id == artistId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task TryDeleteTrackIfOrphanAsync_ShouldKeepArtist_WhenArtistHasUserData()
+    {
+        var (albumId, trackId, artistId) = await SeedOrphanTrackAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = userId,
+            MediaId = artistId,
+            PlayCount = 1
+        });
+        await _context.SaveChangesAsync();
+
+        var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(_context, trackId, _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<MusicTrack>().AnyAsync(t => t.Id == trackId)).Should().BeFalse();
+        (await _context.Medias.OfType<MusicAlbum>().AnyAsync(a => a.Id == albumId)).Should().BeFalse();
+        (await _context.Medias.OfType<MusicArtist>().AnyAsync(a => a.Id == artistId)).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task TryDeleteTrackIfOrphanAsync_ShouldKeepArtist_WhenCreditRemains()
+    {
+        var (albumId, trackId, artistId) = await SeedOrphanTrackAsync();
+        var otherAlbum = new MusicAlbum { Id = Guid.NewGuid(), Title = "Other" };
+        var otherTrack = new MusicTrack
+        {
+            Id = Guid.NewGuid(),
+            Title = "Other Track",
+            AlbumId = otherAlbum.Id,
+            Album = otherAlbum
+        };
+        _context.Medias.Add(otherAlbum);
+        _context.Medias.Add(otherTrack);
+        _context.MusicArtistCredits.Add(new MusicArtistCredit
+        {
+            Id = Guid.NewGuid(),
+            MediaId = otherTrack.Id,
+            MusicArtistId = artistId,
+            Order = 0
+        });
+        await _context.SaveChangesAsync();
+
+        var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(_context, trackId, _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<MusicAlbum>().AnyAsync(a => a.Id == albumId)).Should().BeFalse();
+        (await _context.Medias.OfType<MusicArtist>().AnyAsync(a => a.Id == artistId)).Should().BeTrue();
     }
 
     [Test]
     public async Task TryDeleteTrackIfOrphanAsync_ShouldKeepTrack_WhenIndexedFileRemains()
     {
-        var (_, trackId) = await SeedOrphanTrackAsync(withFile: true);
+        var (_, trackId, _) = await SeedOrphanTrackAsync(withFile: true);
 
         var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(_context, trackId, _logger);
 
@@ -67,7 +122,7 @@ public class MusicOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteTrackIfOrphanAsync_ShouldKeepTrack_WhenUserDataExists()
     {
-        var (_, trackId) = await SeedOrphanTrackAsync();
+        var (_, trackId, _) = await SeedOrphanTrackAsync();
         var userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         _context.UserMediaStates.Add(new UserMediaState
@@ -87,7 +142,7 @@ public class MusicOrphanCleanupHelperTests
     [Test]
     public async Task TryDeleteAlbumIfOrphanAsync_ShouldKeepAlbum_WhenCollectionItemExists()
     {
-        var (albumId, trackId) = await SeedOrphanTrackAsync();
+        var (albumId, trackId, _) = await SeedOrphanTrackAsync();
         _context.Medias.Remove(await _context.Medias.OfType<MusicTrack>().SingleAsync(t => t.Id == trackId));
         await _context.SaveChangesAsync();
 
@@ -109,7 +164,7 @@ public class MusicOrphanCleanupHelperTests
         (await _context.Medias.OfType<MusicAlbum>().AnyAsync(a => a.Id == albumId)).Should().BeTrue();
     }
 
-    private async Task<(Guid AlbumId, Guid TrackId)> SeedOrphanTrackAsync(bool withFile = false)
+    private async Task<(Guid AlbumId, Guid TrackId, Guid ArtistId)> SeedOrphanTrackAsync(bool withFile = false)
     {
         var groupId = Guid.NewGuid();
         var libraryId = Guid.NewGuid();
@@ -131,9 +186,11 @@ public class MusicOrphanCleanupHelperTests
             MetadataFallbackLanguage = "en"
         });
 
+        var artistId = Guid.NewGuid();
         var albumId = Guid.NewGuid();
         var trackId = Guid.NewGuid();
-        var album = new MusicAlbum { Id = albumId, Title = "Album" };
+        var artist = new MusicArtist { Id = artistId, Title = "Artist" };
+        var album = new MusicAlbum { Id = albumId, Title = "Album", ArtistId = artistId, Artist = artist };
         var track = new MusicTrack
         {
             Id = trackId,
@@ -141,6 +198,7 @@ public class MusicOrphanCleanupHelperTests
             AlbumId = albumId,
             Album = album
         };
+        _context.Medias.Add(artist);
         _context.Medias.Add(album);
         _context.Medias.Add(track);
 
@@ -160,6 +218,6 @@ public class MusicOrphanCleanupHelperTests
         }
 
         await _context.SaveChangesAsync();
-        return (albumId, trackId);
+        return (albumId, trackId, artistId);
     }
 }
