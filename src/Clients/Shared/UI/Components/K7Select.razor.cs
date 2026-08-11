@@ -16,6 +16,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
     [Parameter] public Func<TValue?, string>? ToStringFunc { get; set; }
     [Parameter] public string Label { get; set; } = "";
     [Parameter] public string Placeholder { get; set; } = "";
+    [Parameter] public string? HelperText { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Clearable { get; set; }
     [Parameter] public bool FullWidth { get; set; } = true;

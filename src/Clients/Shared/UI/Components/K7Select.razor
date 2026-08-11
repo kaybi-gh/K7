@@ -53,4 +53,8 @@
             <K7Icon Icon="@Phosphor.CaretDown" Class="k7-select-icon"></K7Icon>
         </button>
     </div>
+    @if (!string.IsNullOrEmpty(HelperText))
+    {
+        <span class="k7-field-helper">@HelperText</span>
+    }
 </div>

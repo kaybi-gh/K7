@@ -53,4 +53,23 @@ public class K7SelectTests
         // Assert
         cut.Find(".k7-select-text").TextContent.Should().Be("Two");
     }
+
+    [Test]
+    public void Render_ShouldShowHelperText_WhenProvided()
+    {
+        // Arrange
+        using var ctx = new BunitContext();
+        ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
+
+        // Act
+        var cut = ctx.Render(builder =>
+        {
+            builder.OpenComponent<K7Select<string>>(0);
+            builder.AddAttribute(1, nameof(K7Select<string>.HelperText), "Pick a value");
+            builder.CloseComponent();
+        });
+
+        // Assert
+        cut.Find(".k7-field-helper").TextContent.Should().Be("Pick a value");
+    }
 }
