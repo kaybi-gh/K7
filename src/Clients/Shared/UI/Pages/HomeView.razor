@@ -43,7 +43,9 @@ else
                 {
                     @foreach (var row in GetVisibleRows())
                     {
-                        @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                        <div @key="row.Config.Id">
+                            @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                        </div>
                     }
                 }
             </VerticalCarousel>
@@ -68,23 +70,41 @@ else
 
             @foreach (var row in GetVisibleRows())
             {
-                @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                <div @key="row.Config.Id">
+                    @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                </div>
             }
 
             @if (!hasAnyCarousel)
             {
-                <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
+                @RenderEmptyState()
             }
         }
 
         @if (_isTv == true && FeedStore.IsLoaded && !isLoading && !GetVisibleRows().Any() && !_isOffline)
         {
-            <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
+            @RenderEmptyState()
         }
     </div>
 }
 
-@{ RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
+@{ RenderFragment RenderEmptyState()
+{
+    if (_isAdmin && !_hasConfiguredLibraries)
+    {
+        return @<K7EmptyState Icon="@Phosphor.Folders" Title="@L["SetupLibrariesTitle"]" Subtitle="@L["SetupLibrariesSubtitle"]">
+            <ActionContent>
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" Href="/admin/libraries">
+                    @L["SetupLibrariesAction"]
+                </K7Button>
+            </ActionContent>
+        </K7EmptyState>;
+    }
+
+    return @<K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />;
+}
+
+RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {
     return @<Carousel Title="@GetRowTitle(row.Title)" ContentKey="@GetCarouselContentKey(items)">
         @for (var cardIndex = 0; cardIndex < items.Count; cardIndex++)

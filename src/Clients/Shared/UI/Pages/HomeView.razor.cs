@@ -8,6 +8,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System.Net.Http;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -25,10 +26,12 @@ public partial class HomeView : IAsyncDisposable
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
 
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
+    private bool _hasConfiguredLibraries = true;
     private bool? _isTv;
     private MediaCardViewModel? _focusedItem;
     private bool _focusRestored;
@@ -36,13 +39,12 @@ public partial class HomeView : IAsyncDisposable
     private bool _homeRestoreLoadFailed;
     private IJSObjectReference? _homeRestoreModule;
     private bool _hubHomeActive;
-    private bool _feedUpdatePending;
+
+    private bool _canTrackProgress;
 
     private bool isLoading => FeedStore.IsLoading;
 
     private bool _isOffline => FeedStore.IsOffline;
-
-    private bool _canTrackProgress => FeedStore.CanTrackProgress;
 
     private IReadOnlyList<HomeFeedRow> _rows => FeedStore.Rows;
 
@@ -75,11 +77,31 @@ public partial class HomeView : IAsyncDisposable
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
         _canSetWatchState = role is K7.Server.Domain.Constants.Roles.User or K7.Server.Domain.Constants.Roles.Administrator;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+        // Resolve in the Blazor UI scope - HomeFeedStore must not open a fresh DI scope for auth
+        // (WASM DeserializedAuthenticationStateProvider is single-consume).
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
 
         FeedStore.Changed += OnFeedStoreChanged;
         FeedHub.Changed += OnFeedHubChanged;
         _hubHomeActive = IsHubHomeActive();
-        await FeedStore.EnsureLoadedAsync();
+        await FeedStore.EnsureLoadedAsync(_canTrackProgress);
+
+        if (_isAdmin)
+        {
+            try
+            {
+                var libraries = await LibraryService.GetLibrariesAsync();
+                _hasConfiguredLibraries = libraries.Count > 0;
+            }
+            catch (HttpRequestException)
+            {
+                _hasConfiguredLibraries = true;
+            }
+            catch (InvalidOperationException)
+            {
+                _hasConfiguredLibraries = true;
+            }
+        }
 
         if (_isTv == true)
         {
@@ -108,12 +130,25 @@ public partial class HomeView : IAsyncDisposable
 
     private async Task OnHubHomeBecameActiveAsync()
     {
-        if (_feedUpdatePending)
+        // FeedHub parks Home while watching on Movie/Serie: store updates are buffered and
+        // Continue Watching membership can lag. Soft-refresh CW on return; other rows keep
+        // in-place Progress patches from ProgressUpdated.
+        try
         {
-            _feedUpdatePending = false;
-            StateHasChanged();
-            await Task.Yield();
+            await FeedStore.RefreshContinueWatchingAsync();
         }
+        catch (HttpRequestException)
+        {
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Yield();
 
         // Wait for FeedHub to drop inert / paint the active page before focusing.
         await Task.Yield();
@@ -122,21 +157,35 @@ public partial class HomeView : IAsyncDisposable
         await RestoreLastFocusedCardAsync();
     }
 
+    private async Task TryFocusHomeCarouselAsync()
+    {
+        if (_isTv != true)
+            return;
+
+        try
+        {
+            var onAppNav = await JSRuntime.InvokeAsync<bool>("K7.isAppNavFocused");
+            if (onAppNav)
+                return;
+
+            await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
     private async Task RestoreLastFocusedCardAsync()
     {
         if (NavigationState.SavedFocus is not { } saved || ResolveSavedFocus(saved) is not { } resolved)
         {
-            if (_isTv == true)
-            {
-                try
-                {
-                    await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            }
-
+            await TryFocusHomeCarouselAsync();
             return;
         }
 
@@ -165,9 +214,7 @@ public partial class HomeView : IAsyncDisposable
         {
             var focused = await JSRuntime.InvokeAsync<bool>("K7.focusById", GetHomeCardId(resolved.MediaId), true);
             if (!focused && _isTv == true)
-            {
-                await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
-            }
+                await TryFocusHomeCarouselAsync();
         }
         catch (JSException)
         {
@@ -270,7 +317,7 @@ public partial class HomeView : IAsyncDisposable
 
         try
         {
-            await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+            await TryFocusHomeCarouselAsync();
             _focusRestored = true;
         }
         catch (InvalidOperationException)
@@ -280,20 +327,13 @@ public partial class HomeView : IAsyncDisposable
 
     private void OnFeedStoreChanged()
     {
-        // While Home is parked (or another hub page is showing), buffer store updates.
-        // Flushing while hidden would rebuild carousels and reset Embla; applying on return
-        // keeps scroll identical when nothing changed, and shows new media when something did.
+        // While Home is parked (or another hub page is showing), skip re-renders.
+        // OnHubHomeBecameActiveAsync refreshes Continue Watching and paints on return.
         if (FeedHub.IsEnabled && !FeedHub.IsHubRouteActive)
-        {
-            _feedUpdatePending = true;
             return;
-        }
 
         if (FeedHub.IsEnabled && FeedHub.ActiveKey is { } active && active != FeedHubKey.Home)
-        {
-            _feedUpdatePending = true;
             return;
-        }
 
         InvokeAsync(StateHasChanged).FireAndForget();
     }

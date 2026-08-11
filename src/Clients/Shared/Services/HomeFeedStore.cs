@@ -9,6 +9,7 @@ using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Shared.Services;
 
@@ -20,6 +21,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private readonly IDeviceService _deviceService;
     private readonly IConnectivityService _connectivity;
     private readonly ISharedProfileSessionService _sharedProfileSession;
+    private readonly ILogger<HomeFeedStore> _logger;
 
     private readonly List<HomeFeedRow> _rows = [];
     private readonly object _sync = new();
@@ -66,7 +68,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         MediaCacheStore cacheStore,
         IDeviceService deviceService,
         IConnectivityService connectivity,
-        ISharedProfileSessionService sharedProfileSession)
+        ISharedProfileSessionService sharedProfileSession,
+        ILogger<HomeFeedStore> logger)
     {
         _scopeFactory = scopeFactory;
         _hubClient = hubClient;
@@ -74,6 +77,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _deviceService = deviceService;
         _connectivity = connectivity;
         _sharedProfileSession = sharedProfileSession;
+        _logger = logger;
         _loadedSharedProfileId = sharedProfileSession.ActiveGroupId;
         _connectivity.ConnectivityChanged += OnConnectivityChanged;
         _sharedProfileSession.ActiveGroupChanged += OnActiveGroupChanged;
@@ -92,11 +96,14 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         IsOffline = false;
         InvalidateCache();
-        return EnsureLoadedAsync(cancellationToken);
+        return EnsureLoadedAsync(CanTrackProgress, cancellationToken);
     }
 
-    public Task EnsureLoadedAsync(CancellationToken cancellationToken = default)
+    public Task EnsureLoadedAsync(bool canTrackProgress, CancellationToken cancellationToken = default)
     {
+        var capabilityEnabled = !CanTrackProgress && canTrackProgress;
+        CanTrackProgress = canTrackProgress;
+
         lock (_sync)
         {
             var currentProfileId = _sharedProfileSession.ActiveGroupId;
@@ -112,7 +119,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             }
 
             if (_isLoaded && _loadTask is { IsCompletedSuccessfully: true })
+            {
+                // Capability flipped on after a previous load that skipped CW rows.
+                if (capabilityEnabled)
+                    return LoadSkippedContinueWatchingAsync(cancellationToken);
+
                 return Task.CompletedTask;
+            }
 
             if (_loadTask is { IsFaulted: true } or { IsCanceled: true })
                 _loadTask = null;
@@ -153,6 +166,24 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         Interlocked.Increment(ref _catalogRefreshGeneration);
         await RefreshAllRowsAsync();
+        NotifyChanged();
+    }
+
+    public async Task RefreshContinueWatchingAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_isLoaded || IsLoading || IsOffline)
+        {
+            _pendingRefresh = true;
+            return;
+        }
+
+        if (!CanTrackProgress)
+            return;
+
+        Interlocked.Increment(ref _catalogRefreshGeneration);
+        InvalidateCache();
+        var ok = await RefreshContinueWatchingRowsAsync();
+        _pendingRefresh = !ok;
         NotifyChanged();
     }
 
@@ -222,12 +253,23 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     {
         try
         {
-            await EnsureLoadedAsync();
+            await EnsureLoadedAsync(CanTrackProgress);
         }
         catch
         {
             // Best effort; UI will reflect store state on next Changed.
         }
+    }
+
+    private async Task LoadSkippedContinueWatchingAsync(CancellationToken cancellationToken = default)
+    {
+        if (!CanTrackProgress)
+            return;
+
+        InvalidateCache();
+        var ok = await RefreshContinueWatchingRowsAsync();
+        _pendingRefresh = !ok;
+        NotifyChanged();
     }
 
     private async Task LoadAsync(CancellationToken cancellationToken)
@@ -241,8 +283,6 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         IsOffline = false;
         NotifyChanged();
 
-        CanTrackProgress = await ExecuteInScopeAsync(async sp =>
-            await sp.GetRequiredService<IFeatureAccessService>().HasCapabilityAsync(Capability.CanResumePlayback));
         _isTv = await _deviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         if (IsLoadSuperseded(loadGeneration, profileAtStart))
@@ -314,10 +354,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         if (_pendingRefresh)
         {
-            _pendingRefresh = false;
             Interlocked.Increment(ref _catalogRefreshGeneration);
             InvalidateCache();
-            await RefreshAllRowsAsync();
+            var rows = GetRowsSnapshot();
+            var results = await Task.WhenAll(rows.Select(RefreshRowAsync));
+            _pendingRefresh = results.Any(ok => !ok);
             NotifyChanged();
         }
     }
@@ -389,12 +430,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             {
                 for (var i = 0; i < row.Items.Count; i++)
                 {
-                    if (row.Items[i].Id != id)
+                    var item = row.Items[i];
+                    if (item.Id != id && item.ParentId != id)
                         continue;
 
                     // Mutate in place so Blazor keeps the same card instance (@key) and posters do not blink.
-                    row.Items[i].Progress = progressPercentage;
-                    row.Items[i].Watched = isCompleted;
+                    item.Progress = progressPercentage;
+                    item.Watched = isCompleted;
                     changed = true;
                 }
             }
@@ -403,15 +445,23 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (changed)
             NotifyChanged();
 
-        // Membership may still change (enter/leave Keep Watching). Debounce so progress ticks
-        // only patch bars; a quiet period triggers one soft membership sync.
+        // Membership may still change (enter/leave Keep Watching). Patch existing bars live;
+        // debounce membership refresh so progress ticks do not storm the feed API.
+        // Completion still refreshes immediately so the card leaves CW without waiting.
         if (GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
-            ScheduleContinueWatchingRefresh(isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay);
+        {
+            var delay = isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay;
+            ScheduleContinueWatchingRefresh(delay);
+        }
 
-        // Serie/season home cards use parent ids while progress is reported on episodes.
-        // Also refresh other rows so Watched badges catch up after completion or episode progress.
+        // Soft re-fetch non-CW rows on completion or series progress so Watched / episode
+        // aggregates catch up without chasing every movie progress tick.
         if (isCompleted || mediaType is MediaType.SerieEpisode or MediaType.SerieSeason or MediaType.Serie)
-            ScheduleWatchStateRefresh(isCompleted ? TimeSpan.Zero : WatchStateRefreshDelay);
+        {
+            ScheduleWatchStateRefresh(
+                mediaId,
+                isCompleted ? TimeSpan.Zero : WatchStateRefreshDelay);
+        }
     }
 
     private void ScheduleContinueWatchingRefresh(TimeSpan delay)
@@ -429,7 +479,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                     await Task.Delay(delay, token);
 
                 InvalidateCache();
-                await RefreshContinueWatchingRowsAsync();
+                var ok = await RefreshContinueWatchingRowsAsync();
+                if (!ok)
+                    _pendingRefresh = true;
                 if (!token.IsCancellationRequested)
                     NotifyChanged();
             }
@@ -439,12 +491,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }, token);
     }
 
-    private void ScheduleWatchStateRefresh(TimeSpan delay)
+    private void ScheduleWatchStateRefresh(Guid mediaId, TimeSpan delay)
     {
         _watchStateRefreshCts?.Cancel();
         _watchStateRefreshCts?.Dispose();
         _watchStateRefreshCts = new CancellationTokenSource();
         var token = _watchStateRefreshCts.Token;
+        var id = mediaId.ToString();
 
         _ = Task.Run(async () =>
         {
@@ -454,7 +507,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                     await Task.Delay(delay, token);
 
                 InvalidateCache();
-                await RefreshNonContinueWatchingRowsAsync();
+                var rows = GetRowsSnapshot()
+                    .Where(r => !r.Config.ContinueWatching
+                        && r.Items.Any(i => i.Id == id || i.ParentId == id))
+                    .ToList();
+                await Task.WhenAll(rows.Select(RefreshRowAsync));
                 if (!token.IsCancellationRequested)
                     NotifyChanged();
             }
@@ -513,7 +570,12 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }
 
         Interlocked.Increment(ref _catalogRefreshGeneration);
-        _ = RefreshAllRowsAsync().ContinueWith(_ => NotifyChanged(), TaskScheduler.Default);
+        _ = RefreshAllRowsAsync().ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+                _pendingRefresh = true;
+            NotifyChanged();
+        }, TaskScheduler.Default);
     }
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
@@ -637,15 +699,19 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             items);
     }
 
-    private async Task RefreshContinueWatchingRowsAsync()
+    private async Task<bool> RefreshContinueWatchingRowsAsync()
     {
         var rows = GetRowsSnapshot().Where(r => r.Config.ContinueWatching).ToList();
-        await Task.WhenAll(rows.Select(RefreshRowAsync));
+        if (rows.Count == 0)
+            return true;
+
+        var results = await Task.WhenAll(rows.Select(RefreshRowAsync));
+        return results.All(ok => ok);
     }
 
     private async Task RefreshAllRowsAsync()
     {
-        await Task.WhenAll(GetRowsSnapshot().Select(RefreshRowAsync));
+        await Task.WhenAll(GetRowsSnapshot().Select(async row => await RefreshRowAsync(row)));
     }
 
     private async Task RefreshNonContinueWatchingRowsAsync()
@@ -654,12 +720,12 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         await Task.WhenAll(rows.Select(RefreshRowAsync));
     }
 
-    private async Task RefreshRowAsync(HomeFeedRow row)
+    private async Task<bool> RefreshRowAsync(HomeFeedRow row)
     {
         var query = BuildQuery(row.Config);
         var items = await FetchRowAsync(query);
         if (items is null)
-            return;
+            return false;
 
         var cacheKey = BuildCacheKey(row.Config);
         _cacheStore.Set(cacheKey, items);
@@ -668,6 +734,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         {
             ApplyRowItems(row.Items, items);
         }
+
+        return true;
     }
 
     private async Task LoadRowAsync(HomeRowConfigDto config, List<MediaCardViewModel> target, CancellationToken cancellationToken)
@@ -816,8 +884,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 return feedPage.Items.Select(item => item.ToCardViewModel(apiClient)).ToList();
             });
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Home feed row refresh failed (ContinueWatching={ContinueWatching})", query.ContinueWatching);
             return null;
         }
     }
@@ -858,10 +927,14 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         ContinueWatching = config.ContinueWatching ? true : null,
         LibraryIds = config.LibraryIds?.ToArray(),
         MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
-        OrderBy = config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+        // Continue Watching membership is ordered server-side; do not send LastInteractedDesc
+        // (or any OrderBy) so InferStrategy cannot be confused by leftover layout options.
+        OrderBy = config.ContinueWatching
+            ? null
+            : config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
         Detailed = _isTv,
         PageNumber = 1,
-        PageSize = config.PageSize
+        PageSize = config.PageSize > 0 ? config.PageSize : 20
     };
 
     private string BuildCacheKey(HomeRowConfigDto config)

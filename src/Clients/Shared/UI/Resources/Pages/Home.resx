@@ -31,6 +31,9 @@
   <data name="EmptyStateTitle" xml:space="preserve"><value>Rien à afficher</value></data>
   <data name="RemovedFromContinueWatching" xml:space="preserve"><value>{0} retiré de Reprendre</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre bibliothèque est vide, ou aucun contenu ne vous est accessible.</value></data>
+  <data name="SetupLibrariesTitle" xml:space="preserve"><value>Configurez vos bibliotheques</value></data>
+  <data name="SetupLibrariesSubtitle" xml:space="preserve"><value>Aucune bibliotheque n'est configuree. Ajoutez un dossier de medias pour commencer.</value></data>
+  <data name="SetupLibrariesAction" xml:space="preserve"><value>Configurer les bibliotheques</value></data>
   <data name="OfflineTitle" xml:space="preserve"><value>Vous êtes hors-ligne</value></data>
   <data name="OfflineSubtitle" xml:space="preserve"><value>Impossible de joindre le serveur. Vos téléchargements restent accessibles.</value></data>
   <data name="GoToDownloads" xml:space="preserve"><value>Voir mes téléchargements</value></data>
