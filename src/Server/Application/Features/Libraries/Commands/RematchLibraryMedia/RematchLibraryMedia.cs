@@ -1,10 +1,8 @@
 using Ardalis.GuardClauses;
 using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
 using K7.Server.Application.Features.Diagnostics.Services;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 using MediatR;
@@ -14,7 +12,6 @@ using ValidationException = K7.Server.Application.Common.Exceptions.ValidationEx
 
 namespace K7.Server.Application.Features.Libraries.Commands.RematchLibraryMedia;
 
-[Authorize(Roles = Roles.Administrator)]
 public record RematchLibraryMediaCommand(Guid LibraryId) : IRequest<int>;
 
 public class RematchLibraryMediaCommandHandler(
@@ -64,18 +61,22 @@ public class RematchLibraryMediaCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
 
-        await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
+        // Detach is committed. Finish enqueue without honouring cancellation so a timeout or
+        // operator cancel cannot leave files orphaned with no CreateMedia work queued.
+        var enqueueToken = CancellationToken.None;
+
+        await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, enqueueToken);
         cacheInvalidator.InvalidateAll();
 
         var fileIds = files.Select(f => f.Id).ToList();
         var tasks = await orphanIndexedFileFixBuilder.BuildCreateMediaTasksAsync(
             fileIds,
-            cancellationToken,
+            enqueueToken,
             BackgroundTaskTriggeredBy.User,
             formerMediaIdsByIndexedFileId);
 
         if (tasks.Count > 0)
-            await sender.Send(new CreateBackgroundTasksBatchCommand(tasks), cancellationToken);
+            await sender.Send(new CreateBackgroundTasksBatchCommand(tasks), enqueueToken);
 
         logger.LogInformation(
             "Rematch library {LibraryId}: detached {DetachedCount} files, queued {TaskCount} CreateMedia tasks",

@@ -1,5 +1,8 @@
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.RematchLibraryMedia;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
@@ -16,7 +19,17 @@ public class RematchLibraryMedia : IEndpoint
             Guid id,
             CancellationToken cancellationToken) =>
         {
-            await sender.Send(new RematchLibraryMediaCommand(id), cancellationToken);
+            await sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new RematchLibraryMediaCommand(id),
+                TargetEntityId = id,
+                TargetEntityTypeName = nameof(Library),
+                Lane = BackgroundTaskLane.LibraryScan,
+                WorkClass = BackgroundTaskWorkClass.CriticalLink,
+                TriggeredBy = BackgroundTaskTriggeredBy.User,
+                MaxAttempts = 3,
+                TimeoutSeconds = 3600
+            }, cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.AdminOnly)

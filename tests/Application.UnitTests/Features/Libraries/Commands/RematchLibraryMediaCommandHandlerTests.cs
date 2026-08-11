@@ -231,6 +231,35 @@ public class RematchLibraryMediaCommandHandlerTests
         await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTasksBatchCommand>(), Arg.Any<CancellationToken>());
     }
 
+    [Test]
+    public async Task Handle_ShouldStillEnqueueCreateMedia_WhenRequestCancelledAfterDetach()
+    {
+        var media = new Movie { Id = Guid.NewGuid(), Title = "A" };
+        _context.Medias.Add(media);
+
+        var library = await _context.Libraries.SingleAsync(l => l.Id == _libraryId);
+        library.MediaType = LibraryMediaType.Movie;
+        library.Title = "Movies";
+
+        _context.IndexedFiles.Add(CreateFile("/media/movies/A.mkv", "A.mkv", media.Id, title: "A"));
+        await _context.SaveChangesAsync();
+
+        using var cts = new CancellationTokenSource();
+        _availability.RebuildForLibraryAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                cts.Cancel();
+                return Task.CompletedTask;
+            });
+
+        var taskCount = await _handler.Handle(new RematchLibraryMediaCommand(_libraryId), cts.Token);
+
+        taskCount.Should().Be(1);
+        await _sender.Received(1).Send(
+            Arg.Any<CreateBackgroundTasksBatchCommand>(),
+            CancellationToken.None);
+    }
+
     private IndexedFile CreateFile(string path, string name, Guid? mediaId, string title) =>
         new()
         {
