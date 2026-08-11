@@ -21,6 +21,11 @@ public sealed class LibraryFolderWatcherService(
     private readonly Lock _sync = new();
     private readonly Dictionary<Guid, WatchedLibrary> _watchedLibraries = [];
     private readonly Dictionary<Guid, PendingScan> _pendingScans = [];
+    /// <summary>
+    /// Libraries whose root could not be watched (often NFS/CIFS without inotify). Tracked so the
+    /// 5-minute reload does not spam Warning; still retried in case the mount starts supporting watches.
+    /// </summary>
+    private readonly Dictionary<Guid, FailedWatchState> _failedWatchLibraries = [];
     private CancellationToken _stoppingToken;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -73,6 +78,9 @@ public sealed class LibraryFolderWatcherService(
                 StopWatcher(libraryId);
             }
 
+            foreach (var libraryId in _failedWatchLibraries.Keys.Except(desiredIds).ToList())
+                _failedWatchLibraries.Remove(libraryId);
+
             foreach (var library in libraries)
             {
                 if (_watchedLibraries.ContainsKey(library.Id))
@@ -88,10 +96,12 @@ public sealed class LibraryFolderWatcherService(
         if (library.RootPath is null || !Directory.Exists(library.RootPath))
         {
             logger.LogInformation("Skipping realtime monitor for library {LibraryId}: root path unavailable", library.Id);
+            _failedWatchLibraries.Remove(library.Id);
             return;
         }
 
         var watched = new WatchedLibrary(library.Id, library.RootPath);
+        Exception? rootWatchError = null;
 
         try
         {
@@ -103,8 +113,12 @@ public sealed class LibraryFolderWatcherService(
             while (stack.Count > 0)
             {
                 var currentDir = stack.Pop();
-                if (!TryAddDirectoryWatch(watched, currentDir))
+                if (!TryAddDirectoryWatch(watched, currentDir, out var watchError))
+                {
+                    if (string.Equals(currentDir, library.RootPath, StringComparison.OrdinalIgnoreCase))
+                        rootWatchError = watchError;
                     continue;
+                }
 
                 IEnumerable<string> subDirs;
                 try
@@ -129,11 +143,35 @@ public sealed class LibraryFolderWatcherService(
 
             if (watched.Watchers.Count == 0)
             {
-                logger.LogWarning("Realtime monitor for library {LibraryId} created no watches at {RootPath}", library.Id, library.RootPath);
                 watched.Dispose();
+
+                var previous = _failedWatchLibraries.GetValueOrDefault(library.Id);
+                var sameFailure = previous is not null
+                    && string.Equals(previous.RootPath, library.RootPath, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(previous.ErrorMessage, rootWatchError?.Message, StringComparison.Ordinal);
+
+                if (!sameFailure)
+                {
+                    logger.LogWarning(
+                        rootWatchError,
+                        "Realtime monitor for library {LibraryId} created no watches at {RootPath}. Common causes: filesystem without inotify (NFS/CIFS), permissions, or inotify limits. Disable realtime monitoring or rely on AutoScanIntervalHours",
+                        library.Id,
+                        library.RootPath);
+                }
+                else
+                {
+                    logger.LogDebug(
+                        rootWatchError,
+                        "Realtime monitor for library {LibraryId} still has no watches at {RootPath}",
+                        library.Id,
+                        library.RootPath);
+                }
+
+                _failedWatchLibraries[library.Id] = new FailedWatchState(library.RootPath, rootWatchError?.Message);
                 return;
             }
 
+            _failedWatchLibraries.Remove(library.Id);
             _watchedLibraries[library.Id] = watched;
             logger.LogInformation(
                 "Started realtime monitor for library {LibraryId} at {RootPath} ({WatchCount} directory watches)",
@@ -143,11 +181,14 @@ public sealed class LibraryFolderWatcherService(
         {
             watched.Dispose();
             logger.LogWarning(ex, "Failed to start realtime monitor for library {LibraryId}", library.Id);
+            _failedWatchLibraries[library.Id] = new FailedWatchState(library.RootPath, ex.Message);
         }
     }
 
-    private bool TryAddDirectoryWatch(WatchedLibrary watched, string directoryPath)
+    private bool TryAddDirectoryWatch(WatchedLibrary watched, string directoryPath, out Exception? error)
     {
+        error = null;
+
         if (FileInfoHelper.IsExcludedPath(directoryPath))
             return false;
 
@@ -189,6 +230,7 @@ public sealed class LibraryFolderWatcherService(
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or ArgumentException)
         {
+            error = ex;
             logger.LogDebug(ex, "Could not watch directory for library {LibraryId}: {Path}", watched.LibraryId, directoryPath);
             return false;
         }
@@ -204,7 +246,7 @@ public sealed class LibraryFolderWatcherService(
             lock (_sync)
             {
                 if (_watchedLibraries.TryGetValue(libraryId, out var watched))
-                    TryAddDirectoryWatch(watched, path);
+                    TryAddDirectoryWatch(watched, path, out _);
             }
         }
 
@@ -236,7 +278,7 @@ public sealed class LibraryFolderWatcherService(
             }
 
             if (!FileInfoHelper.IsExcludedPath(newPath) && Directory.Exists(newPath) && watched is not null)
-                TryAddDirectoryWatch(watched, newPath);
+                TryAddDirectoryWatch(watched, newPath, out _);
         }
 
         OnFileSystemEvent(libraryId, oldPath);
@@ -362,6 +404,8 @@ public sealed class LibraryFolderWatcherService(
         public HashSet<string> Paths { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Timer? DebounceTimer;
     }
+
+    private sealed record FailedWatchState(string RootPath, string? ErrorMessage);
 }
 
 public interface ILibraryFolderWatcher

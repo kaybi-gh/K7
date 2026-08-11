@@ -164,4 +164,41 @@ public class MediaLibraryAvailabilityServiceTests
 
         mediaIds.Should().BeEquivalentTo([episodeId, seasonId, serieId]);
     }
+
+    [Test]
+    public async Task EnsureFromIndexedFilesAsync_ShouldNotThrow_WhenTwoWritersRaceOnSamePair()
+    {
+        var movieId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        _context.Medias.Add(new Movie { Id = movieId, Title = "Inception" });
+        _context.IndexedFiles.Add(new IndexedFile
+        {
+            Id = fileId,
+            LibraryId = _libraryId,
+            MediaId = movieId,
+            Name = "Inception",
+            Extension = ".mkv",
+            Path = "/media/Inception.mkv",
+            Hash = 1,
+            Size = 1
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+        await using var context2 = new ApplicationDbContext(options);
+        var sut2 = new MediaLibraryAvailabilityService(
+            context2,
+            Substitute.For<IMediaQueryCacheInvalidator>(),
+            Substitute.For<ILogger<MediaLibraryAvailabilityService>>());
+
+        var task1 = _sut.EnsureFromIndexedFilesAsync(_libraryId, [fileId]);
+        var task2 = sut2.EnsureFromIndexedFilesAsync(_libraryId, [fileId]);
+        await Task.WhenAll(task1, task2);
+
+        (await _context.MediaLibraryAvailabilities.CountAsync(a =>
+            a.LibraryId == _libraryId && a.MediaId == movieId)).Should().Be(1);
+    }
 }

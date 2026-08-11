@@ -103,17 +103,67 @@ public sealed class MediaLibraryAvailabilityService(
         if (pairs.Count == 0)
             return;
 
-        foreach (var batch in pairs.Chunk(InsertBatchSize))
+        // Collapse accidental duplicates inside one writer; concurrent writers still need conflict handling below.
+        var uniquePairs = pairs
+            .GroupBy(p => (p.LibraryId, p.MediaId))
+            .Select(g => g.First())
+            .ToList();
+
+        foreach (var batch in uniquePairs.Chunk(InsertBatchSize))
         {
-            context.MediaLibraryAvailabilities.AddRange(batch.Select(p => new MediaLibraryAvailability
+            var entities = batch.Select(p => new MediaLibraryAvailability
             {
                 LibraryId = p.LibraryId,
                 MediaId = p.MediaId
-            }));
+            }).ToList();
 
-            await context.SaveChangesAsync(cancellationToken);
+            context.MediaLibraryAvailabilities.AddRange(entities);
+
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex) when (IsDuplicateAvailability(ex))
+            {
+                // Rebuild (scan) races Ensure (CreateMedia), and two Ensures can race on shared
+                // parents (serie/album/artist). Detach the batch and insert one-by-one like
+                // CreateBackgroundTasksBatch does for unique active-task races.
+                DetachAvailabilities(entities);
+
+                foreach (var entity in entities)
+                {
+                    var exists = await context.MediaLibraryAvailabilities
+                        .AsNoTracking()
+                        .AnyAsync(
+                            a => a.LibraryId == entity.LibraryId && a.MediaId == entity.MediaId,
+                            cancellationToken);
+                    if (exists)
+                        continue;
+
+                    context.MediaLibraryAvailabilities.Add(entity);
+                    try
+                    {
+                        await context.SaveChangesAsync(cancellationToken);
+                    }
+                    catch (DbUpdateException rowEx) when (IsDuplicateAvailability(rowEx))
+                    {
+                        DetachAvailabilities([entity]);
+                    }
+                }
+            }
+
             if (clearChangeTracker)
                 ClearChangeTracker();
+        }
+    }
+
+    private void DetachAvailabilities(IEnumerable<MediaLibraryAvailability> entities)
+    {
+        foreach (var entity in entities)
+        {
+            var entry = context.Entry(entity);
+            if (entry.State != EntityState.Detached)
+                entry.State = EntityState.Detached;
         }
     }
 
@@ -122,4 +172,9 @@ public sealed class MediaLibraryAvailabilityService(
         if (context is DbContext dbContext)
             dbContext.ChangeTracker.Clear();
     }
+
+    private static bool IsDuplicateAvailability(DbUpdateException ex) =>
+        ex.InnerException?.Message.Contains("PK_MediaLibraryAvailabilities", StringComparison.OrdinalIgnoreCase) == true
+        || ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
+        || ex.InnerException?.Message.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) == true;
 }
