@@ -21,5 +21,6 @@
     {
         <K7Button OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(false)))">@NoText</K7Button>
     }
-    <K7Button Color="primary" Variant="filled" OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(true)))">@YesText</K7Button>
+    <K7Button Color="primary" Variant="filled" data-initial-focus
+              OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(true)))">@YesText</K7Button>
 </div>

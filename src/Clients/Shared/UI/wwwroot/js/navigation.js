@@ -28,6 +28,7 @@ var SpatialNav = (function () {
     var _sectionLastFocused = {};
     var _currentSectionId = null;
     var _pageFocusSettled = false;
+    var _userChoseAppNav = false;
     var _tvTextEditStartedAt = 0;
     var _tvEditDismissViaBack = false;
     var TV_TEXT_EDIT_BLUR_GRACE_MS = 400;
@@ -1854,6 +1855,17 @@ var SpatialNav = (function () {
 
     document.addEventListener('toggle', handleNavGroupToggle, true);
 
+    // Track intentional AppNav focus so delayed focusFirst / MutationObserver
+    // retries do not yank the user back to the page carousel.
+    document.addEventListener('focusin', function (e) {
+        if (!e.target || !isAppNavFocusable(e.target)) return;
+        var from = e.relatedTarget;
+        if (from && from.closest && !from.closest('.app-nav') && !isInsideInactiveFeedHub(from)) {
+            _userChoseAppNav = true;
+            markPageFocusSettled();
+        }
+    }, true);
+
     document.addEventListener('focus', function (e) {
         if (_guardingFocus) return;
 
@@ -1967,12 +1979,19 @@ var SpatialNav = (function () {
             document.querySelector('.app-main')
         ];
         for (var i = 0; i < roots.length; i++) {
-            if (roots[i]) {
-                var scoped = roots[i].querySelector(selector);
-                if (scoped) return scoped;
+            if (!roots[i]) continue;
+            var matches = roots[i].querySelectorAll(selector);
+            for (var j = 0; j < matches.length; j++) {
+                if (!isInsideInactiveFeedHub(matches[j]))
+                    return matches[j];
             }
         }
-        return document.querySelector(selector);
+        var fallback = document.querySelectorAll(selector);
+        for (var k = 0; k < fallback.length; k++) {
+            if (!isInsideInactiveFeedHub(fallback[k]))
+                return fallback[k];
+        }
+        return null;
     }
 
     function isStandaloneAuthPage() {
@@ -1999,19 +2018,23 @@ var SpatialNav = (function () {
 
     function focusTargetElement(el) {
         if (!el || !el.isConnected) return false;
+        if (isInsideInactiveFeedHub(el)) return false;
         if (el.closest('[data-carousel-item]')) {
             scrollCarouselToElement(el);
         }
-        if (el.matches(FOCUSABLE)) {
+        if (el.matches(FOCUSABLE) && isElementVisible(el)) {
             applyDomFocus(el);
             return true;
         }
-        var focusable = el.querySelector(FOCUSABLE);
+        var focusable = Array.from(el.querySelectorAll(FOCUSABLE)).find(function (candidate) {
+            return !isInsideInactiveFeedHub(candidate) && isElementVisible(candidate);
+        });
         if (focusable) {
             applyDomFocus(focusable);
             return true;
         }
-        if (el.matches('input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])')) {
+        if (el.matches('input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])')
+            && isElementVisible(el)) {
             applyDomFocus(el);
             return true;
         }
@@ -2043,10 +2066,19 @@ var SpatialNav = (function () {
         var markers = document.querySelectorAll('[data-initial-focus]');
         for (var i = 0; i < markers.length; i++) {
             var marker = markers[i];
+            if (isInsideInactiveFeedHub(marker)) continue;
             var selector = marker.getAttribute('data-initial-focus');
             if (isInitialFocusSelector(selector)) {
-                var target = marker.querySelector(selector) || queryFocusSelector(selector);
-                if (target) return target;
+                var scoped = null;
+                var scopedMatches = marker.querySelectorAll(selector);
+                for (var s = 0; s < scopedMatches.length; s++) {
+                    if (!isInsideInactiveFeedHub(scopedMatches[s])) {
+                        scoped = scopedMatches[s];
+                        break;
+                    }
+                }
+                var target = scoped || queryFocusSelector(selector);
+                if (target && !isInsideInactiveFeedHub(target)) return target;
                 continue;
             }
             return marker;
@@ -2060,6 +2092,7 @@ var SpatialNav = (function () {
 
     function resetPageFocusSettled() {
         _pageFocusSettled = false;
+        _userChoseAppNav = false;
     }
 
     function isAppNavFocusable(el) {
@@ -2077,8 +2110,11 @@ var SpatialNav = (function () {
 
             // After initial page focus landed, do not yank focus back from the navbar
             // on delayed retries (user may have already moved up intentionally).
-            if (_pageFocusSettled && isAppNavFocusable(document.activeElement)) {
+            // Also stop retrying once the user has moved from page content to AppNav.
+            if (isAppNavFocusable(document.activeElement)
+                && (_pageFocusSettled || _userChoseAppNav || index > 0)) {
                 resolved = true;
+                markPageFocusSettled();
                 return;
             }
 
@@ -2151,8 +2187,11 @@ var SpatialNav = (function () {
         if (/^H[1-6]$/.test(el.tagName)) return true;
         if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') === '-1' && !el.matches(FOCUSABLE)) return true;
         // Pull focus off the navbar only until the page's initial focus has landed.
-        // After that, MutationObserver refresh must not yank focus back from intentional nav use.
-        if (!_pageFocusSettled && el.closest && el.closest('.app-nav') && getPageFocusTarget()) return true;
+        // After that (or once the user intentionally moved to AppNav), do not yank back.
+        if (el.closest && el.closest('.app-nav') && getPageFocusTarget()) {
+            if (_pageFocusSettled || _userChoseAppNav) return false;
+            return true;
+        }
         if (isStandaloneAuthPage()) {
             var authTarget = getPageFocusTarget();
             if (authTarget && el !== authTarget && !authTarget.contains(el)) return true;
@@ -3958,6 +3997,11 @@ K7.focusById = function (id, preventScroll) {
     var target = el.querySelector('.focusable') || el;
     target.focus({ preventScroll: !!preventScroll });
     return true;
+};
+
+K7.isAppNavFocused = function () {
+    var el = document.activeElement;
+    return !!(el && el.closest && el.closest('.app-nav'));
 };
 
 K7.RatingStars = {

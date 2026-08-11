@@ -1,5 +1,8 @@
 @namespace K7.Clients.Shared.UI.Components
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
+@using K7.Clients.Shared.UI.Helpers
+@using Microsoft.AspNetCore.Components
 @using Microsoft.JSInterop
 
 <K7IconButton Icon="@Phosphor.ArrowLeft"
@@ -11,14 +14,6 @@
 @code {
     [Parameter] public string Class { get; set; } = "";
 
-    private async Task GoBack()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("history.back");
-        }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
-        {
-        }
-    }
+    private Task GoBack() =>
+        NavigationHistoryHelper.NavigateBackOrHomeAsync(JS, Navigation);
 }
