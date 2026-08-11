@@ -140,15 +140,56 @@ public class ApplicationDbContextInitializer(
             return;
 
         var existingHash = await settingsService.GetAsync(ServerSettingKeys.SetupTokenHash);
-        if (!string.IsNullOrWhiteSpace(existingHash))
+        var storedToken = await settingsService.GetAsync(ServerSettingKeys.SetupToken);
+        var envToken = Environment.GetEnvironmentVariable("K7_SETUP_TOKEN");
+
+        // Env always wins when set: operators pin K7_SETUP_TOKEN and expect it to be honored.
+        if (!string.IsNullOrWhiteSpace(envToken))
+        {
+            if (!string.IsNullOrWhiteSpace(existingHash)
+                && SetupTokenHelper.VerifyToken(envToken, existingHash))
+            {
+                await PersistAndLogSetupTokenAsync(envToken, existingHash);
+            }
+            else
+            {
+                await PersistAndLogSetupTokenAsync(envToken, hash: null);
+            }
+
             return;
+        }
 
-        var token = Environment.GetEnvironmentVariable("K7_SETUP_TOKEN");
-        if (string.IsNullOrWhiteSpace(token))
-            token = SetupTokenHelper.GenerateToken();
+        // Re-log the same token on every restart until setup completes.
+        if (!string.IsNullOrWhiteSpace(existingHash)
+            && !string.IsNullOrWhiteSpace(storedToken)
+            && SetupTokenHelper.VerifyToken(storedToken, existingHash))
+        {
+            await PersistAndLogSetupTokenAsync(storedToken, existingHash);
+            return;
+        }
 
-        await settingsService.SetAsync(ServerSettingKeys.SetupTokenHash, SetupTokenHelper.HashToken(token));
+        // First boot, or legacy hash-only installs without recoverable plaintext: mint a fresh token.
+        var token = SetupTokenHelper.GenerateToken();
+        await PersistAndLogSetupTokenAsync(token, hash: null);
+    }
+
+    private async Task PersistAndLogSetupTokenAsync(string token, string? hash)
+    {
+        var tokenHash = hash ?? SetupTokenHelper.HashToken(token);
+        await settingsService.SetAsync(ServerSettingKeys.SetupTokenHash, tokenHash);
+        await settingsService.SetAsync(ServerSettingKeys.SetupToken, token);
         setupTokenProvider.SetToken(token);
-        logger.LogWarning("K7 setup token required for initial admin creation: {SetupToken}", token);
+        LogSetupTokenBanner(token);
+    }
+
+    private void LogSetupTokenBanner(string token)
+    {
+        // Literal "K7_SETUP_TOKEN=" so operators can grep docker/k8s logs for the env var name they expect.
+        logger.LogWarning("");
+        logger.LogWarning("============================================================");
+        logger.LogWarning("K7 first-run setup required. Use this token on /setup:");
+        logger.LogWarning("K7_SETUP_TOKEN={SetupToken}", token);
+        logger.LogWarning("============================================================");
+        logger.LogWarning("");
     }
 }

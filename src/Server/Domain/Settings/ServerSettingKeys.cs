@@ -7,6 +7,11 @@ public static class ServerSettingKeys
 {
     public static readonly SettingKey<bool> SetupCompleted = new("SetupCompleted");
     public static readonly SettingKey<string> SetupTokenHash = new("SetupTokenHash");
+    /// <summary>
+    /// Plaintext setup token kept only until first-run setup completes, so it can be re-logged on every restart.
+    /// Removed together with <see cref="SetupTokenHash"/> when setup finishes.
+    /// </summary>
+    public static readonly SettingKey<string> SetupToken = new("SetupToken");
     public static readonly SettingKey<string> DefaultLanguage = new("DefaultLanguage", "en");
     public static readonly SettingKey<string> DefaultTheme = new("DefaultTheme", "default-dark");
     public static readonly SettingKey<int> BackgroundTaskWorkerCount = new("BackgroundTaskWorkerCount", BackgroundTaskScheduling.DefaultWorkerCount);

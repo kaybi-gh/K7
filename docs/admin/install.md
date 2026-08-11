@@ -75,7 +75,7 @@ You can finish first-run in any of these ways:
 
 1. Open the server URL.
 2. Create the first **Administrator** with a username + password (email is optional).
-3. If a setup token field is shown, enter the token from the server logs (or set `K7_SETUP_TOKEN` before first start). The token stops anyone who can reach `/setup` from becoming admin without server access.
+3. If a setup token field is shown, enter the token from the server logs. Look for a line containing `K7_SETUP_TOKEN=` (re-logged on every restart until setup completes), or set `K7_SETUP_TOKEN` before first start. The token stops anyone who can reach `/setup` from becoming admin without server access.
 
 Password rules (Identity defaults): length at least 10, upper and lower case, a digit, at least 4 distinct characters.
 

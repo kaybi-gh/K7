@@ -30,6 +30,10 @@ public sealed class LibraryFolderWatcherService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await SetupCompletionGate.WaitUntilCompletedAsync(scopeFactory, logger, stoppingToken);
+        if (stoppingToken.IsCancellationRequested)
+            return;
+
         logger.LogInformation("LibraryFolderWatcherService started");
         _stoppingToken = stoppingToken;
 

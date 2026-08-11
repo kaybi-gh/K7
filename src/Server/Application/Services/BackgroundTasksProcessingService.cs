@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -87,6 +88,11 @@ public class BackgroundTasksProcessingService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _stoppingToken = stoppingToken;
+        var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        await SetupCompletionGate.WaitUntilCompletedAsync(scopeFactory, _logger, stoppingToken);
+        if (stoppingToken.IsCancellationRequested)
+            return;
+
         var desiredCount = await ReadWorkerCountAsync(stoppingToken);
         UpdateSettingsCache(desiredCount, await ReadLaneLimitsAsync(stoppingToken));
         _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", desiredCount);

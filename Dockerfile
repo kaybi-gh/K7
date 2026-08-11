@@ -72,6 +72,10 @@ COPY --from=build /publish .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENV ASPNETCORE_HTTP_PORTS=7080
+# Quieter default logs in containers; keep K7 + host lifetime at Information for startup/setup.
+ENV Serilog__MinimumLevel__Default=Warning
+ENV Serilog__MinimumLevel__Override__K7=Information
+ENV Serilog__MinimumLevel__Override__Microsoft.Hosting.Lifetime=Information
 EXPOSE 7080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS http://127.0.0.1:7080/health || exit 1

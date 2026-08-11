@@ -231,14 +231,16 @@ Created at startup under Config: `dataprotection-keys`, `openiddict-keys`.
 | `Serilog:*` | `Serilog__*` | Standard Serilog config. Always writes Console + File under `Paths:Logs`. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | same | If set, OpenTelemetry sink is added. |
 
-Example: `Serilog__MinimumLevel__Default=Debug`.
+Defaults (shipped `appsettings.json` / Docker image): `MinimumLevel.Default=Warning`, with overrides `K7=Information` and `Microsoft.Hosting.Lifetime=Information` so startup and first-run setup stay visible. Example to increase verbosity: `Serilog__MinimumLevel__Default=Debug`.
+
+While setup is incomplete, every server restart logs a Warning banner containing a literal `K7_SETUP_TOKEN=...` line so `docker logs` / `kubectl logs` can be grepped for `K7_SETUP_TOKEN`. The plaintext token is cleared once setup completes.
 
 ## Bootstrap / setup (environment only)
 
 | Env | Description |
 |---|---|
 | `K7_ADMIN_USERNAME` and/or `K7_ADMIN_EMAIL` + `K7_ADMIN_PASSWORD` | Create first admin and complete setup on first boot. Prefer `K7_ADMIN_USERNAME`; `K7_ADMIN_EMAIL` alone still works as username (and is stored as email when it contains `@`). |
-| `K7_SETUP_TOKEN` | Required for the **password** setup wizard (or auto-generated and logged). Not required for OIDC setup. |
+| `K7_SETUP_TOKEN` | Required for the **password** setup wizard (or auto-generated and logged as `K7_SETUP_TOKEN=...`). Not required for OIDC setup. |
 | `PUID` / `PGID` | Container UID/GID (default `911`). |
 | `SmokeTest:SkipFfmpegVerification` | Skip ffmpeg check at startup (tests). |
 

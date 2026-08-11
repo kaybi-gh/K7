@@ -42,15 +42,14 @@ public class SetupService(
                 return Result.Failure(["Setup has already been completed."]);
 
             if (!await ValidateSetupTokenAsync(setupToken, cancellationToken))
-                return Result.Failure(["A valid setup token is required. Check the server logs from first boot or set K7_SETUP_TOKEN."]);
+                return Result.Failure(["A valid setup token is required. Check the server logs for K7_SETUP_TOKEN= or set K7_SETUP_TOKEN."]);
 
             var adminResult = await CreateAdminAsync(userName, password, email, cancellationToken);
             if (!adminResult.Succeeded)
                 return adminResult;
 
             await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
-            await settingsService.RemoveAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
-            setupTokenProvider.Clear();
+            await ClearSetupTokenAsync(cancellationToken);
             return Result.Success();
         }
         finally
@@ -73,14 +72,20 @@ public class SetupService(
                 return adminResult;
 
             await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true, cancellationToken);
-            await settingsService.RemoveAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
-            setupTokenProvider.Clear();
+            await ClearSetupTokenAsync(cancellationToken);
             return Result.Success();
         }
         finally
         {
             _setupLock.Release();
         }
+    }
+
+    private async Task ClearSetupTokenAsync(CancellationToken cancellationToken)
+    {
+        await settingsService.RemoveAsync(ServerSettingKeys.SetupTokenHash, cancellationToken);
+        await settingsService.RemoveAsync(ServerSettingKeys.SetupToken, cancellationToken);
+        setupTokenProvider.Clear();
     }
 
     private async Task<bool> ValidateSetupTokenAsync(string? setupToken, CancellationToken cancellationToken)

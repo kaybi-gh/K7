@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Federation.Commands.SyncPeerMetadata;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,10 @@ public class PeerSyncSchedulerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await SetupCompletionGate.WaitUntilCompletedAsync(scopeFactory, logger, stoppingToken);
+        if (stoppingToken.IsCancellationRequested)
+            return;
+
         logger.LogInformation("PeerSyncSchedulerService started");
 
         while (!stoppingToken.IsCancellationRequested)

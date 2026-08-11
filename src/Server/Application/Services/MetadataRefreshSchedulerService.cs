@@ -18,6 +18,10 @@ public class MetadataRefreshSchedulerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await SetupCompletionGate.WaitUntilCompletedAsync(scopeFactory, logger, stoppingToken);
+        if (stoppingToken.IsCancellationRequested)
+            return;
+
         logger.LogInformation("MetadataRefreshSchedulerService started");
 
         while (!stoppingToken.IsCancellationRequested)
