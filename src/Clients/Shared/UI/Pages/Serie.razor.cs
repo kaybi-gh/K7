@@ -236,8 +236,11 @@ public partial class Serie : IAsyncDisposable
     {
         if (_serie is null) return;
 
+        // Serie.IndexedFiles is empty (files live on episodes): fetch a sample episode for path / search defaults.
+        var sampleFiles = await ResolveSerieSampleIndexedFilesAsync();
+
         var (searchQuery, searchYear) = ReIdentifySearchDefaultsHelper.FromIndexedFiles(
-            _serie.IndexedFiles,
+            sampleFiles,
             MediaType.Serie,
             fallbackQuery: _serie.Title,
             fallbackYear: _serie.ReleaseDate?.Year);
@@ -249,7 +252,7 @@ public partial class Serie : IAsyncDisposable
             { x => x.InitialSearchYear, searchYear },
             { x => x.MediaType, MediaType.Serie },
             { x => x.LibraryId, GetLibraryIdForReIdentify() },
-            { x => x.SourcePath, ReIdentifySearchDefaultsHelper.ResolveSourcePath(_serie.IndexedFiles, MediaType.Serie) }
+            { x => x.SourcePath, ReIdentifySearchDefaultsHelper.ResolveSourcePath(sampleFiles, MediaType.Serie) }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
@@ -261,6 +264,47 @@ public partial class Serie : IAsyncDisposable
             Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
             NavigationManager.NavigateTo("/");
         }
+    }
+
+    /// <summary>
+    /// Files are attached to episodes, not the serie. Load the first episode with a local file
+    /// so the re-identify dialog can show the series folder / sample path.
+    /// </summary>
+    private async Task<IReadOnlyList<IndexedFileDto>?> ResolveSerieSampleIndexedFilesAsync()
+    {
+        if (_serie?.IndexedFiles is { Count: > 0 } existing)
+            return existing;
+
+        var orderedSeasons = _seasons
+            .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber);
+
+        try
+        {
+            foreach (var season in orderedSeasons)
+            {
+                if (await k7ServerService.GetMediaAsync(season.Id) is not SerieSeasonDto seasonDto)
+                    continue;
+
+                var episodeLite = (seasonDto.Episodes ?? [])
+                    .Where(e => e.IndexedFileId.HasValue)
+                    .OrderBy(e => e.EpisodeNumber)
+                    .FirstOrDefault();
+                if (episodeLite is null)
+                    continue;
+
+                if (await k7ServerService.GetMediaAsync(episodeLite.Id) is SerieEpisodeDto episode
+                    && episode.IndexedFiles is { Count: > 0 } files)
+                {
+                    return files;
+                }
+            }
+        }
+        catch
+        {
+            // Non-critical: dialog still opens without source path context.
+        }
+
+        return _serie?.IndexedFiles;
     }
 
     private async Task RefreshMetadataAsync()
