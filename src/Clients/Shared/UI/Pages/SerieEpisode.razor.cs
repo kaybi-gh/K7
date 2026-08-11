@@ -311,7 +311,7 @@ public partial class SerieEpisode : IAsyncDisposable
         if (result is { Canceled: false })
         {
             Snackbar.Add(L["ReIdentifyFileSent"], K7Severity.Success);
-            NavigationManager.NavigateTo("/");
+            await NavigationHistoryHelper.NavigateBackOrHomeAsync(JSRuntime, NavigationManager);
         }
     }
 

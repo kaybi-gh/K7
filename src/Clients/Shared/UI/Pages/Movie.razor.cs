@@ -402,7 +402,7 @@ public partial class Movie : IAsyncDisposable
         if (result != null && !result.Canceled)
         {
             Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
-            NavigationManager.NavigateTo("/");
+            await NavigationHistoryHelper.NavigateBackOrHomeAsync(JSRuntime, NavigationManager);
         }
     }
 
@@ -438,7 +438,7 @@ public partial class Movie : IAsyncDisposable
         if (result != null && !result.Canceled)
         {
             Snackbar.Add(L["ReIdentifyFileSent"], K7Severity.Success);
-            NavigationManager.NavigateTo("/");
+            await NavigationHistoryHelper.NavigateBackOrHomeAsync(JSRuntime, NavigationManager);
         }
     }
 

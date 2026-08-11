@@ -340,7 +340,7 @@ public partial class MusicAlbumDetail : IDisposable
         if (result is { Canceled: false })
         {
             Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
-            NavigationManager.NavigateTo("/");
+            await NavigationHistoryHelper.NavigateBackOrHomeAsync(JSRuntime, NavigationManager);
         }
     }
 
