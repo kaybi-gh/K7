@@ -79,6 +79,7 @@ public static class ContinueWatchingEligibility
         if (lastInteractedAt is null)
             return false;
 
+        // MinResumeDurationSeconds filters by total media runtime (player Duration), not time watched.
         if (policy.MinResumeDurationSeconds > 0
             && lastKnownDurationSeconds > 0
             && lastKnownDurationSeconds < policy.MinResumeDurationSeconds)

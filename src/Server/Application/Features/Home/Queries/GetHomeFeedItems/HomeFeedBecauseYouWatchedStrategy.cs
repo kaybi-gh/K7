@@ -11,7 +11,10 @@ internal sealed class HomeFeedBecauseYouWatchedStrategy(
     IHomeRecommendationService homeRecommendationService)
 {
     public async Task<PaginatedList<HomeFeedItemDto>> HandleAsync(
-        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+        GetHomeFeedItemsQuery request,
+        Guid? userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken)
     {
         if (!userId.HasValue)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
@@ -34,10 +37,11 @@ internal sealed class HomeFeedBecauseYouWatchedStrategy(
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
             .Include(x => ((MusicAlbum)x).Artist)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
+
+        await HomeFeedUserWatchState.ApplyAsync(context, items, userId.Value, sharedProfileId, cancellationToken);
 
         var itemsById = items.ToDictionary(i => i.Id);
         var orderedItems = recommendedIds
@@ -48,7 +52,7 @@ internal sealed class HomeFeedBecauseYouWatchedStrategy(
 
         var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, orderedItems, cancellationToken);
         var feedItems = orderedItems.Select(i => HomeFeedItemMapper.MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
-        await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, cancellationToken);
+        await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, sharedProfileId, cancellationToken);
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 }

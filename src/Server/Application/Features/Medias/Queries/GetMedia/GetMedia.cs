@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
@@ -19,6 +20,7 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
         await accessGuard.EnsureAccessAsync(request.Id, cancellationToken);
 
         Guid? userId = currentUser.Id;
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
 
         var query = context.Medias
             .AsNoTracking()
@@ -117,6 +119,16 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .SingleOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
+
+        if (sharedProfileId is { } profileId && userId is { } actingUserId)
+        {
+            await SharedProfileUserStateOverlay.ApplyAsync(
+                context,
+                entity,
+                profileId,
+                actingUserId,
+                cancellationToken);
+        }
 
         var totalPlayCount = await context.UserMediaStates
             .Where(s => s.MediaId == request.Id && s.PlayCount > 0)

@@ -14,7 +14,10 @@ internal sealed class HomeFeedTopLevelStrategy(
     MediaAccessFilter mediaAccessFilter)
 {
     public async Task<PaginatedList<HomeFeedItemDto>> HandleAsync(
-        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+        GetHomeFeedItemsQuery request,
+        Guid? userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken)
     {
         // Only top-level entities: Movie, Serie, MusicAlbum
         var query = context.Medias
@@ -50,18 +53,7 @@ internal sealed class HomeFeedTopLevelStrategy(
             .ToListAsync(cancellationToken);
 
         if (userId.HasValue)
-        {
-            var userStates = await context.UserMediaStates
-                .AsNoTracking()
-                .Where(s => s.UserId == userId.Value && pageIds.Contains(s.MediaId))
-                .ToDictionaryAsync(s => s.MediaId, cancellationToken);
-
-            foreach (var item in items)
-            {
-                if (userStates.TryGetValue(item.Id, out var state))
-                    item.UserMediaStates = [state];
-            }
-        }
+            await HomeFeedUserWatchState.ApplyAsync(context, items, userId.Value, sharedProfileId, cancellationToken);
 
         var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, items, cancellationToken);
         var itemsById = items.ToDictionary(m => m.Id);
@@ -71,7 +63,7 @@ internal sealed class HomeFeedTopLevelStrategy(
             .ToList();
 
         if (userId.HasValue)
-            await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, cancellationToken);
+            await HomeFeedSerieWatchState.ApplyAsync(context, feedItems, userId.Value, sharedProfileId, cancellationToken);
 
         return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
     }

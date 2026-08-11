@@ -67,10 +67,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         var result = strategy switch
         {
             FeedStrategy.ContinueWatching => await _continueWatchingStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken),
-            FeedStrategy.RecentlyAdded => await _recentlyAddedStrategy.HandleAsync(request, userId, cancellationToken),
-            FeedStrategy.RecommendedForYou => await _recommendedStrategy.HandleAsync(request, userId, cancellationToken),
-            FeedStrategy.BecauseYouWatched => await _becauseYouWatchedStrategy.HandleAsync(request, userId, cancellationToken),
-            _ => await _topLevelStrategy.HandleAsync(request, userId, cancellationToken)
+            FeedStrategy.RecentlyAdded => await _recentlyAddedStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken),
+            FeedStrategy.RecommendedForYou => await _recommendedStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken),
+            FeedStrategy.BecauseYouWatched => await _becauseYouWatchedStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken),
+            _ => await _topLevelStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken)
         };
 
         var ttl = strategy switch

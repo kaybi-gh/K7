@@ -18,7 +18,10 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
     MediaAccessFilter mediaAccessFilter)
 {
     public async Task<PaginatedList<HomeFeedItemDto>> HandleAsync(
-        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+        GetHomeFeedItemsQuery request,
+        Guid? userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken)
     {
         // Fetch child-level items (episodes, tracks, movies) ordered by created desc.
         // Then aggregate: group episodes by serie/season, tracks by album.
@@ -38,19 +41,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         var rawItems = await LoadRecentlyAddedMediasAsync(pageIds, cancellationToken);
 
         if (userId.HasValue)
-        {
-            var rawIds = rawItems.Select(x => x.Id).ToList();
-            var userStates = await context.UserMediaStates
-                .AsNoTracking()
-                .Where(s => s.UserId == userId.Value && rawIds.Contains(s.MediaId))
-                .ToDictionaryAsync(s => s.MediaId, cancellationToken);
-
-            foreach (var item in rawItems)
-            {
-                if (userStates.TryGetValue(item.Id, out var state))
-                    item.UserMediaStates = [state];
-            }
-        }
+            await HomeFeedUserWatchState.ApplyAsync(context, rawItems, userId.Value, sharedProfileId, cancellationToken);
 
         var serieSeasonCounts = await SerieSeasonCountHelper.GetCountsBySerieIdsAsync(
             context,

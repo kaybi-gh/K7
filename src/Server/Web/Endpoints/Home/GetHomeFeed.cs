@@ -28,6 +28,7 @@ public class GetHomeFeed : IEndpoint
             var result = await sender.Send(query);
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
+            httpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
             return Results.Ok(result.ToDto(x => x));
         })
         .RequireAuthorization(Policies.GuestOrAbove)

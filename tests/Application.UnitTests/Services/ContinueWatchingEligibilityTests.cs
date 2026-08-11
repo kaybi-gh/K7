@@ -73,10 +73,36 @@ public class ContinueWatchingEligibilityTests
         ContinueWatchingEligibility.GetWindowCutoff(policy, DateTime.UtcNow).Should().BeNull();
     }
 
+    [Test]
+    public void MeetsResumeThreshold_ShouldReturnFalse_WhenDurationBelowMinResumeDuration()
+    {
+        var state = CreateState(progress: 35, lastKnownDurationSeconds: 60);
+
+        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
+    }
+
+    [Test]
+    public void MeetsResumeThreshold_ShouldReturnTrue_WhenDurationUnknownEvenIfBelowMinWouldApply()
+    {
+        // Unknown runtime (0) must not exclude a title that clears MinResumePercent.
+        var state = CreateState(progress: 35, lastKnownDurationSeconds: 0);
+
+        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeTrue();
+    }
+
+    [Test]
+    public void MeetsResumeThreshold_ShouldReturnFalse_WhenProgressBelowPercent()
+    {
+        var state = CreateState(progress: 2, lastKnownDurationSeconds: 3600);
+
+        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
+    }
+
     private static UserMediaState CreateState(
         bool excluded = false,
         double progress = 0,
-        DateTime? lastInteractedAt = null)
+        DateTime? lastInteractedAt = null,
+        double lastKnownDurationSeconds = 3600)
     {
         return new UserMediaState
         {
@@ -84,7 +110,7 @@ public class ContinueWatchingEligibilityTests
             MediaId = Guid.NewGuid(),
             ExcludedFromContinueWatching = excluded,
             ProgressPercentage = progress,
-            LastKnownDurationSeconds = 3600,
+            LastKnownDurationSeconds = lastKnownDurationSeconds,
             LastInteractedAt = lastInteractedAt ?? DateTime.UtcNow,
             IsCompleted = false
         };
