@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace K7.Shared;
 
 public static class SupportedLanguages
@@ -53,9 +55,10 @@ public static class SupportedLanguages
     /// </summary>
     public static LanguageOption? FindByCode(string code)
     {
+        var normalized = LanguageNormalizer.NormalizeToIso6391(code) ?? code.Trim();
         for (var i = 0; i < Metadata.Count; i++)
         {
-            if (string.Equals(Metadata[i].Code, code, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(Metadata[i].Code, normalized, StringComparison.OrdinalIgnoreCase))
                 return Metadata[i];
         }
 
@@ -69,6 +72,61 @@ public static class SupportedLanguages
     {
         var option = FindByCode(code);
         return option?.NativeLabel ?? code;
+    }
+
+    /// <summary>
+    /// Same label shape as K7LanguageSelect: native name, plus UI-translated name in parentheses when different.
+    /// </summary>
+    public static string FormatSelectLabel(LanguageOption lang)
+    {
+        try
+        {
+            var culture = CultureInfo.GetCultureInfo(lang.Code);
+            var translated = culture.DisplayName;
+            if (string.IsNullOrEmpty(translated)
+                || string.Equals(translated, lang.NativeLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                return lang.NativeLabel;
+            }
+
+            return $"{lang.NativeLabel} ({translated})";
+        }
+        catch (CultureNotFoundException)
+        {
+            return lang.NativeLabel;
+        }
+    }
+
+    /// <summary>
+    /// Formats a language code like K7LanguageSelect. Unknown codes fall back to CultureInfo when possible.
+    /// </summary>
+    public static string FormatSelectLabel(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code) || LanguageNormalizer.IsUndetermined(code))
+            return code;
+
+        var option = FindByCode(code);
+        if (option is not null)
+            return FormatSelectLabel(option);
+
+        try
+        {
+            var normalized = LanguageNormalizer.NormalizeToIso6391(code) ?? code.Trim();
+            var culture = CultureInfo.GetCultureInfo(normalized);
+            var native = culture.NativeName;
+            var translated = culture.DisplayName;
+            if (string.IsNullOrEmpty(translated)
+                || string.Equals(translated, native, StringComparison.OrdinalIgnoreCase))
+            {
+                return native;
+            }
+
+            return $"{native} ({translated})";
+        }
+        catch (CultureNotFoundException)
+        {
+            return code.ToUpperInvariant();
+        }
     }
 }
 

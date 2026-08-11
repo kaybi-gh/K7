@@ -5,6 +5,7 @@ using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos;
 
 namespace K7.Server.Application.Features.Stats.Queries.GetWatchStats;
@@ -68,12 +69,15 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         if (until.HasValue)
             sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt <= until.Value);
 
-        var topSkippedItems = await BuildTopSkippedItemsAsync(
-            sessionsQuery,
-            mediaTypes,
-            since,
-            until,
-            cancellationToken);
+        // Skip ranking is music-only (short listens). Video "incomplete" watches are not skips.
+        var topSkippedItems = mediaTypes.Contains(MediaType.MusicTrack)
+            ? await BuildTopSkippedItemsAsync(
+                sessionsQuery,
+                [MediaType.MusicTrack],
+                since,
+                until,
+                cancellationToken)
+            : [];
 
         var sessions = await sessionsWithMedia
             .Select(s => new SessionRow(
@@ -563,14 +567,18 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .Select(i => i.Id)
             .ToList();
 
-        Dictionary<Guid, Guid> trackAlbums = [];
+        Dictionary<Guid, TrackNav> trackNav = [];
         if (trackIds.Count > 0)
         {
-            trackAlbums = await context.Medias
+            trackNav = await context.Medias
                 .AsNoTracking()
                 .OfType<MusicTrack>()
                 .Where(t => trackIds.Contains(t.Id))
-                .ToDictionaryAsync(t => t.Id, t => t.AlbumId, cancellationToken);
+                .Select(t => new TrackNav(
+                    t.Id,
+                    t.AlbumId,
+                    t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title))
+                .ToDictionaryAsync(t => t.TrackId, cancellationToken);
         }
 
         Dictionary<Guid, EpisodeNav> episodeNav = [];
@@ -580,17 +588,25 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 .AsNoTracking()
                 .OfType<SerieEpisode>()
                 .Where(e => episodeIds.Contains(e.Id))
-                .Select(e => new EpisodeNav(e.Id, e.SerieId, e.Season.SeasonNumber, e.EpisodeNumber))
+                .Select(e => new EpisodeNav(
+                    e.Id,
+                    e.SerieId,
+                    e.Serie!.Title,
+                    e.Season.SeasonNumber,
+                    e.EpisodeNumber))
                 .ToDictionaryAsync(e => e.EpisodeId, cancellationToken);
         }
 
         return items.Select(item =>
         {
             if (item.MediaType == nameof(MediaType.MusicTrack)
-                && trackAlbums.TryGetValue(item.Id, out var albumId)
-                && albumId != Guid.Empty)
+                && trackNav.TryGetValue(item.Id, out var track))
             {
-                return item with { ParentId = albumId };
+                return item with
+                {
+                    ParentId = track.AlbumId != Guid.Empty ? track.AlbumId : item.ParentId,
+                    Name = MediaDisplayTitles.FormatTrack(track.ArtistTitle, item.Name)
+                };
             }
 
             if (item.MediaType == nameof(MediaType.SerieEpisode)
@@ -600,7 +616,12 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 {
                     ParentId = nav.SerieId,
                     SeasonNumber = nav.SeasonNumber,
-                    EpisodeNumber = nav.EpisodeNumber
+                    EpisodeNumber = nav.EpisodeNumber,
+                    Name = MediaDisplayTitles.FormatEpisode(
+                        nav.SerieTitle,
+                        item.Name,
+                        nav.SeasonNumber,
+                        nav.EpisodeNumber)
                 };
             }
 
@@ -608,7 +629,12 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         }).ToList();
     }
 
-    private sealed record EpisodeNav(Guid EpisodeId, Guid SerieId, int SeasonNumber, int EpisodeNumber);
+    private sealed record EpisodeNav(
+        Guid EpisodeId,
+        Guid SerieId,
+        string? SerieTitle,
+        int SeasonNumber,
+        int EpisodeNumber);
 
     private sealed record SessionRow(
         Guid MediaId,
@@ -629,4 +655,6 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         string? AlbumTitle);
 
     private sealed record EpisodeRelation(Guid EpisodeId, Guid SerieId, string? SerieTitle);
+
+    private sealed record TrackNav(Guid TrackId, Guid AlbumId, string? ArtistTitle);
 }

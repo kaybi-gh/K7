@@ -6,6 +6,7 @@ using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Navigation;
 
@@ -139,12 +140,20 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
 
         var episodeNavById = await context.Medias.OfType<SerieEpisode>()
             .Where(e => mediaIds.Contains(e.Id))
-            .Select(e => new { e.Id, e.SerieId, SeasonNumber = e.Season.SeasonNumber, e.EpisodeNumber })
+            .Select(e => new EpisodeNav(
+                e.Id,
+                e.SerieId,
+                e.Serie!.Title,
+                e.Season.SeasonNumber,
+                e.EpisodeNumber))
             .ToDictionaryAsync(e => e.Id, cancellationToken);
 
         var trackNavById = await context.Medias.OfType<MusicTrack>()
             .Where(t => mediaIds.Contains(t.Id))
-            .Select(t => new { t.Id, t.AlbumId })
+            .Select(t => new TrackNav(
+                t.Id,
+                t.AlbumId,
+                t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title))
             .ToDictionaryAsync(t => t.Id, cancellationToken);
 
         var libraryByMedia = await context.IndexedFiles
@@ -251,7 +260,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             {
                 ReferenceId = g.ReferenceId,
                 MediaId = g.MediaId,
-                MediaTitle = media?.Title,
+                MediaTitle = FormatHistoryMediaTitle(media?.Title, media?.Type, episodeNav, trackNav),
                 MediaType = media?.Type.ToString(),
                 MediaUrl = media is not null
                     ? MediaPageUrls.Build(
@@ -287,6 +296,27 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
         };
     }
 
+    private static string? FormatHistoryMediaTitle(
+        string? title,
+        MediaType? mediaType,
+        EpisodeNav? episodeNav,
+        TrackNav? trackNav)
+    {
+        if (mediaType == MediaType.SerieEpisode && episodeNav is not null)
+        {
+            return MediaDisplayTitles.FormatEpisode(
+                episodeNav.SerieTitle,
+                title,
+                episodeNav.SeasonNumber,
+                episodeNav.EpisodeNumber);
+        }
+
+        if (mediaType == MediaType.MusicTrack && trackNav is not null)
+            return MediaDisplayTitles.FormatTrack(trackNav.ArtistTitle, title);
+
+        return title;
+    }
+
     private static DateTime? GetPeriodStart(string period) => period switch
     {
         "week" => DateTime.UtcNow.AddDays(-7),
@@ -294,4 +324,13 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
         "year" => DateTime.UtcNow.AddYears(-1),
         _ => null
     };
+
+    private sealed record EpisodeNav(
+        Guid Id,
+        Guid SerieId,
+        string? SerieTitle,
+        int SeasonNumber,
+        int EpisodeNumber);
+
+    private sealed record TrackNav(Guid Id, Guid AlbumId, string? ArtistTitle);
 }

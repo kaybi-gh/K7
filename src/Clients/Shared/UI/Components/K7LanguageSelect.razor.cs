@@ -1,4 +1,3 @@
-using System.Globalization;
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
 
@@ -20,22 +19,6 @@ public partial class K7LanguageSelect
     /// </summary>
     [Parameter] public IReadOnlyList<LanguageOption> Languages { get; set; } = SupportedLanguages.Metadata;
 
-    private static string GetDisplayText(LanguageOption lang)
-    {
-        try
-        {
-            var culture = CultureInfo.GetCultureInfo(lang.Code);
-            var translated = culture.DisplayName;
-            if (string.IsNullOrEmpty(translated) || string.Equals(translated, lang.NativeLabel, StringComparison.OrdinalIgnoreCase))
-            {
-                return lang.NativeLabel;
-            }
-
-            return $"{lang.NativeLabel} ({translated})";
-        }
-        catch
-        {
-            return lang.NativeLabel;
-        }
-    }
+    private static string GetDisplayText(LanguageOption lang) =>
+        SupportedLanguages.FormatSelectLabel(lang);
 }

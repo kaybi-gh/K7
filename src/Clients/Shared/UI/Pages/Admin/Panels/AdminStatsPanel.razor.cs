@@ -3,6 +3,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
@@ -95,6 +96,8 @@ public partial class AdminStatsPanel
     };
 
     private bool IsMusicOnly => _selectedMediaType == "MusicTrack";
+    private bool ShowMusicRankings => _selectedMediaType is "" or "MusicTrack";
+    private bool ShowShowRankings => _selectedMediaType is "" or "SerieEpisode";
 
     protected override async Task OnInitializedAsync()
     {
@@ -324,10 +327,10 @@ public partial class AdminStatsPanel
                 .ToList();
 
             _audioLangRankRows = pd.TopAudioLanguages
-                .Select(l => new StatsRankRow(FormatLanguage(l.Label), l.Count.ToString()))
+                .Select(l => ToLanguageRankRow(l.Label, l.Count))
                 .ToList();
             _subtitleLangRankRows = pd.TopSubtitleLanguages
-                .Select(l => new StatsRankRow(FormatLanguage(l.Label), l.Count.ToString()))
+                .Select(l => ToLanguageRankRow(l.Label, l.Count))
                 .ToList();
             _transcodeRankRows = pd.TopTranscodeReasons
                 .Select(r => new StatsRankRow(r.Label, r.Count.ToString()))
@@ -411,9 +414,9 @@ public partial class AdminStatsPanel
         Theme = new Theme { Mode = Mode.Dark }
     };
 
-    private static string FormatLanguage(string code)
-    {
-        var lang = K7.Shared.SupportedLanguages.FindByCode(code);
-        return lang?.NativeLabel ?? code.ToUpperInvariant();
-    }
+    private static StatsRankRow ToLanguageRankRow(string code, int count) =>
+        new(
+            SupportedLanguages.FormatSelectLabel(code),
+            count.ToString(),
+            SupportedLanguages.FindByCode(code)?.CountryCode);
 }

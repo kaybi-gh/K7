@@ -175,9 +175,16 @@
 
             <div class="stats-top-grid">
                 <StatsMediaRankedTable Title="@TopItemsLabel" Items="_stats.TopItems" />
-                <StatsMediaRankedTable Title="@L["TopArtists"]" Items="_stats.TopArtists" MediaTypeOverride="MusicArtist" />
-                <StatsMediaRankedTable Title="@L["TopAlbums"]" Items="_stats.TopAlbums" MediaTypeOverride="MusicAlbum" />
-                <StatsMediaRankedTable Title="@L["TopShows"]" Items="_stats.TopShows" MediaTypeOverride="Serie" />
+                @if (ShowMusicRankings)
+                {
+                    <StatsMediaRankedTable Title="@L["TopSkipped"]" Items="_stats.TopSkippedItems" />
+                    <StatsMediaRankedTable Title="@L["TopArtists"]" Items="_stats.TopArtists" MediaTypeOverride="MusicArtist" />
+                    <StatsMediaRankedTable Title="@L["TopAlbums"]" Items="_stats.TopAlbums" MediaTypeOverride="MusicAlbum" />
+                }
+                @if (ShowShowRankings)
+                {
+                    <StatsMediaRankedTable Title="@L["TopShows"]" Items="_stats.TopShows" MediaTypeOverride="Serie" />
+                }
             </div>
 
             @if (!IsMusicOnly && _stats.PlaybackDetails is { } pd)
@@ -375,6 +382,25 @@
         white-space: nowrap;
         max-width: 0;
         width: 100%;
+    }
+
+    .stats-table-lang {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .stats-table-flag {
+        flex-shrink: 0;
+    }
+
+    .stats-table-name__text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
     }
 
     .stats-table-count {

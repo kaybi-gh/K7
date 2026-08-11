@@ -45,6 +45,7 @@
   <data name="TopEpisodes" xml:space="preserve"><value>Top episodes</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top artists</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top albums</value></data>
+  <data name="TopSkipped" xml:space="preserve"><value>Most skipped</value></data>
   <data name="TopShows" xml:space="preserve"><value>Top shows</value></data>
   <data name="Period" xml:space="preserve"><value>Period</value></data>
   <data name="MediaType" xml:space="preserve"><value>Media type</value></data>

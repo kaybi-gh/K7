@@ -10,7 +10,15 @@
                 {
                     <tr class="focusable" tabindex="0">
                         <td class="stats-table-rank">@(index + 1)</td>
-                        <td class="stats-table-name">@row.Name</td>
+                        <td class="stats-table-name">
+                            <div class="stats-table-lang">
+                                @if (!string.IsNullOrEmpty(row.FlagCountryCode))
+                                {
+                                    <span class="fi fi-@row.FlagCountryCode stats-table-flag"></span>
+                                }
+                                <span class="stats-table-name__text">@row.Name</span>
+                            </div>
+                        </td>
                         <td class="stats-table-count">@row.Count</td>
                     </tr>
                 }

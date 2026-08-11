@@ -1,3 +1,4 @@
+using K7.Shared;
 using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Clients.Shared.Helpers;
@@ -19,17 +20,8 @@ public static class VideoPlayerTitleHelper
         string? serieName,
         string? episodeTitle,
         int seasonNumber,
-        int episodeNumber)
-    {
-        var code = $"S{seasonNumber:D2}E{episodeNumber:D2}";
-
-        if (string.IsNullOrWhiteSpace(episodeTitle))
-            return string.IsNullOrWhiteSpace(serieName) ? code : $"{serieName} ({code})";
-
-        return string.IsNullOrWhiteSpace(serieName)
-            ? $"{episodeTitle} ({code})"
-            : $"{serieName} - {episodeTitle} ({code})";
-    }
+        int episodeNumber) =>
+        MediaDisplayTitles.FormatEpisode(serieName, episodeTitle, seasonNumber, episodeNumber);
 
     public static string FormatEpisode(SerieEpisodeDto episode) =>
         FormatEpisode(episode.SerieTitle, episode.Title, episode.SeasonNumber, episode.EpisodeNumber);
