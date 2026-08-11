@@ -51,12 +51,18 @@ public partial class SerieSeason : IAsyncDisposable
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
     private Guid? _castLoadEpisodeId;
+    private DebouncedActionRunner? _progressRefreshRunner;
 
     private bool HasDisplayableCast => _focusedEpisodeDisplayableCast.Count > 0;
 
     protected override void OnInitialized()
     {
+        _progressRefreshRunner = new DebouncedActionRunner(
+            RefreshProgressFromHubAsync,
+            InvokeAsync,
+            delayMs: 800);
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated += OnProgressUpdated;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -71,6 +77,25 @@ public partial class SerieSeason : IAsyncDisposable
         // becomes available without user action.
         InvokeAsync(() => ReloadSeasonAsync(bypassCache: true)).FireAndForget();
     }
+
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
+    {
+        if (_season is null)
+            return;
+
+        if (mediaId != _season.Id && !_episodes.Any(e => e.Id == mediaId))
+            return;
+
+        // Ignore self-echo while this client is playing any episode on this season page.
+        if (PlaybackProgressTracker.CurrentMediaId is { } playingId
+            && _episodes.Any(e => e.Id == playingId))
+            return;
+
+        _progressRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshProgressFromHubAsync() =>
+        await ReloadSeasonAsync(bypassCache: true);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -552,6 +577,8 @@ public partial class SerieSeason : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        _progressRefreshRunner?.Dispose();
 
         if (!_seasonTvScrollInitialized)
             return;

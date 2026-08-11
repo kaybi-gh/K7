@@ -78,20 +78,52 @@
 .serie-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    justify-content: flex-start;
+    gap: var(--space-3);
     margin-top: var(--space-6);
     flex-wrap: wrap;
 }
 
 .serie-actions-primary {
     display: flex;
-    align-items: center;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-2);
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.serie-actions-primary--split {
+    gap: var(--space-1);
+}
+
+.serie-actions-play,
+.serie-actions-primary ::deep .serie-actions-play {
+    min-height: 48px;
+    border-radius: var(--radius-md);
+}
+
+.serie-actions-primary--split .serie-actions-play,
+.serie-actions-primary--split ::deep .serie-actions-play {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.serie-actions-replay,
+.serie-actions-primary ::deep .serie-actions-replay {
+    flex: 0 0 auto;
+    align-self: stretch;
+    box-sizing: border-box;
+    width: 48px;
+    min-height: 48px;
+    padding: 0 !important;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .serie-actions-secondary {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: 0;
+    flex-shrink: 0;
 }
 
 @media (min-width: 600px) {
@@ -156,21 +188,58 @@
     }
 
     .serie-actions {
-        flex-direction: row;
+        flex-direction: column;
         flex-wrap: nowrap;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-2);
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: var(--space-3);
         width: 100%;
     }
 
     .serie-actions-primary {
+        flex-direction: row;
+        align-items: stretch;
+        flex-wrap: nowrap;
         width: auto;
+        max-width: 100%;
+        flex: 0 1 auto;
+        gap: var(--space-2);
+    }
+
+    .serie-actions-primary--split {
+        gap: var(--space-1);
+    }
+
+    .serie-actions-play,
+    .serie-actions-primary ::deep .serie-actions-play {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        min-height: 48px;
+        justify-content: center;
+        padding: 12px 16px;
+        font-size: var(--text-base);
+    }
+
+    .serie-actions-primary ::deep .serie-actions-play .k7-icon {
+        font-size: var(--text-lg);
+    }
+
+    .serie-actions-replay,
+    .serie-actions-primary ::deep .serie-actions-replay {
+        flex: 0 0 auto;
+        align-self: stretch;
+        width: 48px;
+        min-height: 48px;
+        padding: 0 !important;
     }
 
     .serie-actions-secondary {
+        width: 100%;
         flex: 0 0 auto;
-        justify-content: flex-start;
+        justify-content: space-evenly;
+        gap: 0;
+        flex-wrap: nowrap;
     }
 }
 

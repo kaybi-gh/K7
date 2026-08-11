@@ -31,6 +31,9 @@
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="Remove" xml:space="preserve"><value>Retirer</value></data>
   <data name="Continue" xml:space="preserve"><value>Continuer</value></data>
+  <data name="Resume" xml:space="preserve"><value>Reprendre</value></data>
+  <data name="ResumeAtTime" xml:space="preserve"><value>Reprendre a {0}</value></data>
+  <data name="PlayFromBeginning" xml:space="preserve"><value>Lire depuis le debut</value></data>
   <data name="Previous" xml:space="preserve"><value>Précédent</value></data>
   <data name="Next" xml:space="preserve"><value>Suivant</value></data>
   <data name="Loading" xml:space="preserve"><value>Chargement…</value></data>

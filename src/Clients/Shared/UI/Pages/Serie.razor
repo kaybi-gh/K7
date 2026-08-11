@@ -19,6 +19,7 @@
 @inject IAmbientThemeService AmbientThemeService
 @inject IAudioPlayerService AudioPlayerService
 @inject IDeviceStorageService DeviceStorageService
+@inject ISpatialNavService SpatialNav
 
 <PageTitle>@_serie?.Title</PageTitle>
 
@@ -117,14 +118,29 @@ else if (_serie is not null)
                     </div>
                 }
 
-                <div class="d-flex mt-6 serie-actions" data-tv-scroll-zone="actions">
-                    <div class="d-flex serie-actions-primary">
+                <div class="serie-actions mt-6" data-tv-scroll-zone="actions">
+                    <div class="@(CanResumePlayback ? "serie-actions-primary serie-actions-primary--split" : "serie-actions-primary")">
                         <K7Button Disabled="@(_seasons.Count == 0)"
                                    Variant="filled"
                                    StartIcon="@Phosphor.Play"
                                    Color="primary"
                                    Size="lg"
-                                   OnClick="WatchAsync" data-initial-focus>@S["Play"]</K7Button>
+                                   Class="serie-actions-play"
+                                   OnClick="() => WatchAsync(fromBeginning: false)"
+                                   data-initial-focus>
+                            @PrimaryPlayLabel
+                        </K7Button>
+                        @if (CanResumePlayback)
+                        {
+                            <K7Button Disabled="@(_seasons.Count == 0)"
+                                       Variant="outlined"
+                                       StartIcon="@Phosphor.ClockCounterClockwise"
+                                       Color="primary"
+                                       Size="lg"
+                                       Class="serie-actions-replay"
+                                       AriaLabel="@S["PlayFromBeginning"]"
+                                       OnClick="() => WatchAsync(fromBeginning: true)" />
+                        }
                     </div>
 
                     <div class="serie-actions-secondary">

@@ -26,6 +26,11 @@ internal enum EpisodePlaybackResult
 
 internal static class SeriePlaybackHelper
 {
+    public static bool IsInProgress(LiteSerieEpisodeDto? episode) =>
+        episode?.UserState is { IsCompleted: false }
+        && (episode.UserState.LastPlaybackPosition > 0
+            || episode.UserState is { ProgressPercentage: > 0 and < 100 });
+
     public static async Task<LiteSerieEpisodeDto?> ResolveEpisodeToPlayAsync(
         IMediaService mediaService,
         IReadOnlyList<LiteSerieSeasonDto> seasons,
@@ -58,6 +63,7 @@ internal static class SeriePlaybackHelper
         IFeatureAccessService featureAccess,
         IFederationService federationService,
         IK7ServerService apiClient,
+        bool fromBeginning = false,
         CancellationToken cancellationToken = default)
     {
         var episodeMedia = await mediaService.GetMediaAsync(episode.Id, cancellationToken, bypassCache: true);
@@ -65,10 +71,15 @@ internal static class SeriePlaybackHelper
             return EpisodePlaybackResult.NotPlayable;
 
         double? startPosition = null;
-        if (await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+        if (!fromBeginning
+            && await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && episodeDto.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
             startPosition = episodeDto.UserState.LastPlaybackPosition;
+        }
+        else if (fromBeginning)
+        {
+            startPosition = 0;
         }
 
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();

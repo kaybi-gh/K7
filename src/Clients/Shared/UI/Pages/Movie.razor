@@ -156,14 +156,30 @@ else
                 </div>
 
                 <div class="movie-actions" data-tv-scroll-zone="actions">
-                    <K7Button Disabled="@(!HasPlayableFiles())" 
-                               Variant="filled" 
-                               StartIcon="@Phosphor.Play" 
-                               Color="primary" 
-                               Size="lg"
-                               Class="movie-actions-play"
-                               OnClick="PlayAsync" data-initial-focus>@S["Play"]</K7Button>   
-                    
+                    <div class="@(CanResumePlayback ? "movie-actions-primary movie-actions-primary--split" : "movie-actions-primary")">
+                        <K7Button Disabled="@(!HasPlayableFiles())"
+                                   Variant="filled"
+                                   StartIcon="@Phosphor.Play"
+                                   Color="primary"
+                                   Size="lg"
+                                   Class="movie-actions-play"
+                                   OnClick="() => PlayAsync(fromBeginning: false)"
+                                   data-initial-focus>
+                            @PrimaryPlayLabel
+                        </K7Button>
+                        @if (CanResumePlayback)
+                        {
+                            <K7Button Disabled="@(!HasPlayableFiles())"
+                                       Variant="outlined"
+                                       StartIcon="@Phosphor.ClockCounterClockwise"
+                                       Color="primary"
+                                       Size="lg"
+                                       Class="movie-actions-replay"
+                                       AriaLabel="@S["PlayFromBeginning"]"
+                                       OnClick="() => PlayAsync(fromBeginning: true)" />
+                        }
+                    </div>
+
                     <div class="movie-actions-secondary">
                     @if (_canRate)
                     {

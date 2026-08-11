@@ -60,11 +60,17 @@ public partial class Movie : IAsyncDisposable
     private MediaReviewsSection? _reviewsSection;
     private int? _movieUserRating;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
+    private DebouncedActionRunner? _progressRefreshRunner;
 
     protected override void OnInitialized()
     {
         _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+        _progressRefreshRunner = new DebouncedActionRunner(
+            RefreshProgressFromHubAsync,
+            InvokeAsync,
+            delayMs: 800);
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated += OnProgressUpdated;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -75,6 +81,25 @@ public partial class Movie : IAsyncDisposable
         // A file of this movie was just probed: silently refetch so the play button
         // becomes functional without user action (isPicturesRefresh reuses the silent path).
         InvokeAsync(() => LoadMovieAsync(isPicturesRefresh: true)).FireAndForget();
+    }
+
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
+    {
+        if (_movie is null || mediaId != _movie.Id)
+            return;
+
+        // Ignore self-echo while this client is reporting progress (avoids a brief "watched"
+        // flash when the player emits a bogus short duration on start).
+        if (PlaybackProgressTracker.CurrentMediaId == mediaId)
+            return;
+
+        _progressRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshProgressFromHubAsync()
+    {
+        await RefreshMovieUserStateAsync();
+        StateHasChanged();
     }
 
     private bool HasTvBelowContent =>
@@ -215,7 +240,7 @@ public partial class Movie : IAsyncDisposable
             _initialFocusApplied = true;
             try
             {
-                await SpatialNav.FocusFirstAsync("[data-initial-focus]");
+                await SpatialNav.FocusFirstAsync(".movie-actions-play[data-initial-focus], [data-tv-scroll-zone='actions'] [data-initial-focus]");
             }
             catch (InvalidOperationException) { }
         }
@@ -226,7 +251,7 @@ public partial class Movie : IAsyncDisposable
         _overviewExpanded = !_overviewExpanded;
     }
 
-    private async Task PlayAsync()
+    private async Task PlayAsync(bool fromBeginning = false)
     {
         if (_movie is null || (!HasPlayableFiles()))
         {
@@ -238,7 +263,7 @@ public partial class Movie : IAsyncDisposable
         // Remote file playback (federation)
         if (_selectedRemoteFile is not null)
         {
-            await PlayRemoteFileAsync(_selectedRemoteFile);
+            await PlayRemoteFileAsync(_selectedRemoteFile, fromBeginning);
             return;
         }
 
@@ -268,12 +293,7 @@ public partial class Movie : IAsyncDisposable
 
         var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
 
-        double? startPosition = null;
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            startPosition = _movie.UserState.LastPlaybackPosition;
-        }
+        var startPosition = ResolveStartPosition(fromBeginning);
 
         try
         {
@@ -284,6 +304,33 @@ public partial class Movie : IAsyncDisposable
             // Cached metadata said the file was playable, but the server has not probed it yet.
             Snackbar.Add(S["MediaPreparingPlayback"], K7Severity.Info);
         }
+    }
+
+    private bool CanResumePlayback =>
+        _canTrackProgress
+        && _movie?.UserState is { LastPlaybackPosition: > 0, IsCompleted: false };
+
+    private string PrimaryPlayLabel
+    {
+        get
+        {
+            if (!CanResumePlayback)
+                return S["Play"];
+
+            var position = PlaybackPositionFormatter.TryFormat(_movie?.UserState?.LastPlaybackPosition ?? 0);
+            if (position is not null)
+                return string.Format(S["ResumeAtTime"], position);
+
+            return S["Resume"];
+        }
+    }
+
+    private double? ResolveStartPosition(bool fromBeginning)
+    {
+        if (fromBeginning || !CanResumePlayback)
+            return fromBeginning ? 0 : null;
+
+        return _movie!.UserState!.LastPlaybackPosition;
     }
 
     private async Task RefreshMovieUserStateAsync()
@@ -301,7 +348,7 @@ public partial class Movie : IAsyncDisposable
         return (_movie.IndexedFiles is { Count: > 0 }) || (_movie.RemoteIndexedFiles is { Count: > 0 });
     }
 
-    private async Task PlayRemoteFileAsync(RemoteIndexedFileDto remoteFile)
+    private async Task PlayRemoteFileAsync(RemoteIndexedFileDto remoteFile, bool fromBeginning = false)
     {
         if (_movie is null) return;
 
@@ -314,12 +361,7 @@ public partial class Movie : IAsyncDisposable
         var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
         var videoMetadata = details?.FileMetadata as VideoFileMetadataDto;
 
-        double? startPosition = null;
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
-        {
-            startPosition = _movie.UserState.LastPlaybackPosition;
-        }
+        var startPosition = ResolveStartPosition(fromBeginning);
 
         await PlayerService.PlayRemoteIndexedFileAsync(
             remoteFile.Id,
@@ -648,6 +690,8 @@ public partial class Movie : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        _progressRefreshRunner?.Dispose();
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

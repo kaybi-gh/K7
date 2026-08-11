@@ -43,6 +43,7 @@ public partial class SerieEpisode : IAsyncDisposable
     private bool _tvScrollInitialized;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
     private Guid? _watchedEpisodeId;
+    private DebouncedActionRunner? _progressRefreshRunner;
 
     private string DominantColorStyle => DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor);
 
@@ -52,6 +53,41 @@ public partial class SerieEpisode : IAsyncDisposable
     protected override void OnInitialized()
     {
         _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+        _progressRefreshRunner = new DebouncedActionRunner(
+            RefreshProgressFromHubAsync,
+            InvokeAsync,
+            delayMs: 800);
+        K7HubClient.ProgressUpdated += OnProgressUpdated;
+    }
+
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
+    {
+        if (_episode is null)
+            return;
+
+        // Ignore self-echo while this client is reporting progress (avoids a brief "watched"
+        // flash when the player emits a bogus short duration on start).
+        if (PlaybackProgressTracker.CurrentMediaId == mediaId)
+            return;
+
+        if (mediaId == _episode.Id)
+        {
+            _progressRefreshRunner?.Schedule();
+            return;
+        }
+
+        // Sibling carousel badges (watched / progress) when another episode in the season updates.
+        if (mediaType == MediaType.SerieEpisode && _moreEpisodes.Any(e => e.Id == mediaId))
+            InvokeAsync(ReloadMoreEpisodesAsync).FireAndForget();
+    }
+
+    private async Task RefreshProgressFromHubAsync() =>
+        await RefreshCurrentEpisodeProgressAsync();
+
+    private async Task RefreshCurrentEpisodeProgressAsync()
+    {
+        await RefreshEpisodeUserStateAsync();
+        StateHasChanged();
     }
 
     protected override async Task OnParametersSetAsync()
@@ -197,7 +233,7 @@ public partial class SerieEpisode : IAsyncDisposable
         _dominantColor = still?.DominantColor;
     }
 
-    private async Task PlayAsync()
+    private async Task PlayAsync(bool fromBeginning = false)
     {
         if (_episode is null || _indexedFile is null) return;
 
@@ -216,7 +252,11 @@ public partial class SerieEpisode : IAsyncDisposable
         var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(_episode);
 
         double? startPosition = null;
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+        if (fromBeginning)
+        {
+            startPosition = 0;
+        }
+        else if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && _episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
             startPosition = _episode.UserState.LastPlaybackPosition;
@@ -235,6 +275,24 @@ public partial class SerieEpisode : IAsyncDisposable
             _stillUrl,
             startPosition,
             videoMetadata.Chapters);
+    }
+
+    private bool CanResumePlayback =>
+        _episode?.UserState is { LastPlaybackPosition: > 0, IsCompleted: false };
+
+    private string PrimaryPlayLabel
+    {
+        get
+        {
+            if (!CanResumePlayback)
+                return S["Play"];
+
+            var position = PlaybackPositionFormatter.TryFormat(_episode?.UserState?.LastPlaybackPosition ?? 0);
+            if (position is not null)
+                return string.Format(S["ResumeAtTime"], position);
+
+            return S["Resume"];
+        }
     }
 
     private async Task RefreshEpisodeUserStateAsync()
@@ -391,6 +449,8 @@ public partial class SerieEpisode : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        _progressRefreshRunner?.Dispose();
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)

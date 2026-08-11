@@ -98,23 +98,31 @@ else if (_episode is not null)
                     </div>
 
                     <div class="episode-actions" data-tv-scroll-zone="actions">
-                        <K7Button Variant="filled"
-                                   Color="primary"
-                                   StartIcon="@Phosphor.Play"
-                                   OnClick="PlayAsync"
-                                   Size="lg"
-                                   Class="episode-actions-play" data-initial-focus>
-                            @(_episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Continue"] : S["Play"])
-                        </K7Button>
+                        <div class="@(CanResumePlayback ? "episode-actions-primary episode-actions-primary--split" : "episode-actions-primary")">
+                            <K7Button Variant="filled"
+                                       Color="primary"
+                                       StartIcon="@Phosphor.Play"
+                                       OnClick="() => PlayAsync(fromBeginning: false)"
+                                       Size="lg"
+                                       Class="episode-actions-play" data-initial-focus>
+                                @PrimaryPlayLabel
+                            </K7Button>
+                            @if (CanResumePlayback)
+                            {
+                                <K7Button Variant="outlined"
+                                           StartIcon="@Phosphor.ClockCounterClockwise"
+                                           Color="primary"
+                                           Size="lg"
+                                           Class="episode-actions-replay"
+                                           AriaLabel="@S["PlayFromBeginning"]"
+                                           OnClick="() => PlayAsync(fromBeginning: true)" />
+                            }
+                        </div>
 
                         <div class="episode-actions-secondary">
                             @if (_canRate)
                             {
                                 <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
-                            }
-                            @if (_episode.UserState is { ProgressPercentage: > 0 and < 100 })
-                            {
-                                <K7ProgressBar Value="@_episode.UserState.ProgressPercentage" Style="max-width: 200px;" />
                             }
 
                             @if (_indexedFile is not null)

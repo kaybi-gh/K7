@@ -48,13 +48,21 @@ public partial class Serie : IAsyncDisposable
     private Guid? _libraryGroupId;
     private List<SerieStudioNetworkChip> _studioNetworkChips = [];
     private MediaReviewsSection? _reviewsSection;
+    private LiteSerieEpisodeDto? _resumeEpisode;
+    private bool _initialFocusApplied;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
     private Timer? _indexedFilesDebounceTimer;
+    private DebouncedActionRunner? _progressRefreshRunner;
 
     protected override void OnInitialized()
     {
         _metadataRefreshWatcher = new MediaMetadataRefreshWatcher(K7HubClient, InvokeAsync);
+        _progressRefreshRunner = new DebouncedActionRunner(
+            RefreshProgressFromHubAsync,
+            InvokeAsync,
+            delayMs: 800);
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated += OnProgressUpdated;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -71,6 +79,41 @@ public partial class Serie : IAsyncDisposable
             null,
             TimeSpan.FromMilliseconds(500),
             Timeout.InfiniteTimeSpan);
+    }
+
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
+    {
+        if (_serie is null || !_canTrackProgress)
+            return;
+
+        if (mediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist)
+            return;
+
+        // Ignore self-echo while playing an episode of this serie on this client.
+        if (PlaybackProgressTracker.CurrentSerieId == _serie.Id
+            || PlaybackProgressTracker.CurrentMediaId == mediaId)
+            return;
+
+        // Episode ticks use episode ids; only react to this serie, its seasons, or the
+        // current resume episode (not every SerieEpisode in the household).
+        var relevant = mediaId == _serie.Id
+            || _resumeEpisode?.Id == mediaId
+            || _seasons.Any(s => s.Id == mediaId);
+
+        if (!relevant)
+            return;
+
+        _progressRefreshRunner?.Schedule();
+    }
+
+    private async Task RefreshProgressFromHubAsync()
+    {
+        if (_serie is null || !_canTrackProgress)
+            return;
+
+        await ReloadSerieAsync();
+        await RefreshResumeEpisodeAsync();
+        StateHasChanged();
     }
 
     private bool HasTvBelowContent =>
@@ -110,6 +153,8 @@ public partial class Serie : IAsyncDisposable
         {
             _loading = true;
             _tvScrollInitialized = false;
+            _initialFocusApplied = false;
+            _resumeEpisode = null;
             _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         }
 
@@ -173,7 +218,36 @@ public partial class Serie : IAsyncDisposable
         if (isBackgroundRefresh && media is SerieDto)
             Snackbar.Add(S["RefreshMetadataCompleted"], K7Severity.Success);
 
+        if (!isPicturesRefresh && _canTrackProgress && _seasons.Count > 0)
+            await RefreshResumeEpisodeAsync();
+        else if (!_canTrackProgress)
+            _resumeEpisode = null;
+
         StateHasChanged();
+    }
+
+    private async Task RefreshResumeEpisodeAsync()
+    {
+        var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
+        _resumeEpisode = SeriePlaybackHelper.IsInProgress(episode) ? episode : null;
+    }
+
+    private bool CanResumePlayback =>
+        _canTrackProgress && SeriePlaybackHelper.IsInProgress(_resumeEpisode);
+
+    private string PrimaryPlayLabel
+    {
+        get
+        {
+            if (!CanResumePlayback)
+                return S["Play"];
+
+            var position = PlaybackPositionFormatter.TryFormat(_resumeEpisode?.UserState?.LastPlaybackPosition ?? 0);
+            if (position is not null)
+                return string.Format(S["ResumeAtTime"], position);
+
+            return S["Resume"];
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -190,6 +264,16 @@ public partial class Serie : IAsyncDisposable
                 await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
             }
         }
+
+        if (!_initialFocusApplied && !_loading && _serie is not null && _isTv)
+        {
+            _initialFocusApplied = true;
+            try
+            {
+                await SpatialNav.FocusFirstAsync(".serie-actions-play[data-initial-focus], [data-tv-scroll-zone='actions'] [data-initial-focus]");
+            }
+            catch (InvalidOperationException) { }
+        }
     }
 
     private string? GetSeasonPosterUrl(LiteSerieSeasonDto season)
@@ -204,14 +288,19 @@ public partial class Serie : IAsyncDisposable
         NavigationManager.NavigateTo($"/series/{Id}/seasons/{season.SeasonNumber}");
     }
 
-    private async Task WatchAsync()
+    private async Task WatchAsync(bool fromBeginning = false)
     {
         if (_seasons.Count == 0)
             return;
 
-        var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
+        var episode = _resumeEpisode
+            ?? await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
         if (episode is null)
             return;
+
+        // Play from beginning always restarts the in-progress episode (or the next episode) at 0.
+        if (!fromBeginning && !SeriePlaybackHelper.IsInProgress(episode))
+            fromBeginning = false;
 
         await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
 
@@ -223,7 +312,8 @@ public partial class Serie : IAsyncDisposable
             PlaybackProgressTracker,
             FeatureAccess,
             FederationService,
-            apiClient);
+            apiClient,
+            fromBeginning: fromBeginning);
 
         if (result == EpisodePlaybackResult.AwaitingProbe)
         {
@@ -557,6 +647,8 @@ public partial class Serie : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
+        K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        _progressRefreshRunner?.Dispose();
         _indexedFilesDebounceTimer?.Dispose();
         _metadataRefreshWatcher?.Dispose();
 
