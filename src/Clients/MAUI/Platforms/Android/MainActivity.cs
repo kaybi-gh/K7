@@ -97,7 +97,9 @@ public class MainActivity : MauiAppCompatActivity
     }
 
     private static bool IsDpadNavigationKey(Keycode keyCode) =>
-        keyCode is Keycode.DpadLeft or Keycode.DpadRight or Keycode.DpadUp or Keycode.DpadDown;
+        keyCode is Keycode.DpadLeft or Keycode.DpadRight or Keycode.DpadUp or Keycode.DpadDown
+            or Keycode.SystemNavigationLeft or Keycode.SystemNavigationRight
+            or Keycode.SystemNavigationUp or Keycode.SystemNavigationDown;
 
     private bool TryHandleTvSelectKey(KeyEvent e, BlazorPage page)
     {

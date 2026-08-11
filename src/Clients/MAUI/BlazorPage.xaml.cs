@@ -380,6 +380,13 @@ public partial class BlazorPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible && _nativeOverlay is not null)
+            {
+                // Route through overlay so next-episode / chrome focus owns the key.
+                _ = TryHandleNativeVideoKey("mediaplaypause");
+                return;
+            }
+
             if (_playerService.IsVisible)
             {
                 if (_playerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing)
@@ -632,6 +639,11 @@ public partial class BlazorPage : ContentPage
         // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
         ConfigureNativeVideoPlayerAfterOpen();
 #if ANDROID
+        // Android uses system volume; clear any stuck MediaElement mute from earlier volume swipes
+        // (native chrome hides the mute button, so users cannot recover otherwise).
+        if (_playerService.IsMuted || NativePlayer.ShouldMute)
+            _playerService.Unmute();
+
         if (source.PendingSeekTime is double pendingSeek && pendingSeek > 1)
             RememberSeekTarget(pendingSeek);
 

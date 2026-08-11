@@ -90,7 +90,7 @@
                             <K7IconButton Icon="@Phosphor.UsersThree" OnClick="@OnSyncPlayToggle" AriaLabel="SyncPlay" Color="@(SyncPlaySidebarOpen ? "active" : "")" />
                         }
 
-                    @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
+                    @if (_deviceType != Server.Domain.Enums.DeviceType.TV)
                     {
                         <K7IconButton Icon="@(PlayerService.IsFullScreen ? Phosphor.CornersIn : Phosphor.CornersOut)" OnClick="ToggleFullscreen" AriaLabel="Toggle fullscreen" />
                     }

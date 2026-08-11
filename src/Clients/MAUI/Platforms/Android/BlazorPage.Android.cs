@@ -36,7 +36,12 @@ public partial class BlazorPage
         {
             var key = MapAndroidDpadKey(e);
             if (key is null)
-                return false;
+            {
+                // Unknown directional-ish codes: still swallow so Android View focus cannot
+                // jump onto transport Buttons underneath the next-episode offer.
+                NativeVideoDebug.Log("Dpad unmapped keyCode=" + (int)e.KeyCode + " consumed");
+                return true;
+            }
 
             var isKeyUp = e.Action == Android.Views.KeyEventActions.Up;
             if (e.Action == Android.Views.KeyEventActions.Down && e.RepeatCount > 0)
@@ -45,7 +50,9 @@ public partial class BlazorPage
             // Always consume while native chrome owns video - even if a specific key is a no-op.
             NativeVideoDebug.Log(
                 "Dpad key=" + key + " up=" + isKeyUp + " repeat=" + e.RepeatCount
-                + " focusWeb=" + HasWebViewWindowFocus());
+                + " focusWeb=" + HasWebViewWindowFocus()
+                + " nep=" + (_nativeOverlay?.IsNextEpisodeOfferVisible == true)
+                + " modal=" + (_nativeOverlay?.IsInputModalActive == true));
             _ = TryHandleNativeVideoKey(key, isKeyUp);
             return true;
         }
@@ -57,10 +64,10 @@ public partial class BlazorPage
     private static string? MapAndroidDpadKey(Android.Views.KeyEvent e) =>
         e.KeyCode switch
         {
-            Android.Views.Keycode.DpadLeft => "dpad_left",
-            Android.Views.Keycode.DpadRight => "dpad_right",
-            Android.Views.Keycode.DpadUp => "dpad_up",
-            Android.Views.Keycode.DpadDown => "dpad_down",
+            Android.Views.Keycode.DpadLeft or Android.Views.Keycode.SystemNavigationLeft => "dpad_left",
+            Android.Views.Keycode.DpadRight or Android.Views.Keycode.SystemNavigationRight => "dpad_right",
+            Android.Views.Keycode.DpadUp or Android.Views.Keycode.SystemNavigationUp => "dpad_up",
+            Android.Views.Keycode.DpadDown or Android.Views.Keycode.SystemNavigationDown => "dpad_down",
             _ => null
         };
 

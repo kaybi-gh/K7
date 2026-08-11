@@ -20,8 +20,6 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private double _panStartBrightness;
     private double _panStartVolume;
-    private double _panStartX;
-    private bool _panSideLeft;
     private System.Timers.Timer? _rippleTimer;
 
     private void BuildGestureVisuals()
@@ -75,33 +73,11 @@ public sealed partial class NativeVideoPlayerOverlay
         ripple.Opacity = 0;
     }
 
-    private void OnPointerPressed(object? sender, PointerEventArgs e)
+    private void OnDoubleTapped(bool isRight)
     {
-        var pos = e.GetPosition(_tapCatcher);
-        if (pos is null)
+        if (!IsPhoneOrTablet() || IsNextEpisodeVisible)
             return;
 
-        _panStartX = pos.Value.X;
-        var width = _tapCatcher.Width > 0 ? _tapCatcher.Width : Width;
-        if (width <= 0)
-            width = 400;
-        _panSideLeft = _panStartX < width / 2;
-    }
-
-    private void OnDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (!IsPhoneOrTablet())
-            return;
-
-        var pos = e.GetPosition(_tapCatcher);
-        if (pos is null)
-            return;
-
-        var width = _tapCatcher.Width > 0 ? _tapCatcher.Width : Width;
-        if (width <= 0)
-            width = 400;
-
-        var isRight = pos.Value.X >= width / 2;
         var delta = isRight ? _player.SkipForwardSeconds : -_player.SkipBackSeconds;
         _player.Seek(Math.Clamp(_player.CurrentTime + delta, 0, Math.Max(_player.Duration, 0)));
         ShowHud(
@@ -127,9 +103,9 @@ public sealed partial class NativeVideoPlayerOverlay
         _rippleTimer.Start();
     }
 
-    private void OnPanUpdated(object? sender, PanUpdatedEventArgs e)
+    private void OnPanUpdated(PanUpdatedEventArgs e, bool panSideLeft)
     {
-        if (!IsPhoneOrTablet())
+        if (!IsPhoneOrTablet() || IsNextEpisodeVisible)
             return;
 
         // Vertical scrub only; ignore mostly-horizontal pans.
@@ -146,28 +122,48 @@ public sealed partial class NativeVideoPlayerOverlay
                 break;
             case GestureStatus.Running:
             {
-                _swipeIndicator.IsVisible = true;
-                var side = _panSideLeft ? SwipeSide.Left : SwipeSide.Right;
+                var side = panSideLeft ? SwipeSide.Left : SwipeSide.Right;
 
-                if (side == SwipeSide.Left && _brightness is not null)
+                if (side == SwipeSide.Left)
                 {
+                    if (_brightness is null)
+                        return;
+
+                    _swipeIndicator.IsVisible = true;
                     var next = Math.Clamp(_panStartBrightness - e.TotalY / 600, 0.05, 1);
                     _brightness.SetBrightness(next);
                     if (!_brightness.SupportsNativeBrightness)
                         _brightnessDimOverlay.Opacity = 1.0 - next;
                     UpdateSwipeIndicator(SwipeSide.Left, NativePlayerGlyphs.Sun, next);
                 }
-                else if (side == SwipeSide.Right)
+                else
                 {
+                    _swipeIndicator.IsVisible = true;
                     var next = Math.Clamp(_panStartVolume - e.TotalY / 600, 0, 1);
-                    if (_volumeService is not null)
+                    if (_volumeService?.SupportsNativeVolume == true)
+                    {
+                        // System stream volume owns loudness on Android phones/TV. Do not toggle
+                        // MediaElement mute - there is no unmute control in native chrome, and a
+                        // stuck ShouldMute silences video while music still works.
                         _volumeService.SetVolume(next);
+                    }
+                    else if (_volumeService is not null)
+                    {
+                        _volumeService.SetVolume(next);
+                        if (next <= 0)
+                            _player.Mute();
+                        else if (_player.IsMuted)
+                            _player.Unmute();
+                    }
                     else
+                    {
                         _player.SetVolume(next);
-                    if (next <= 0)
-                        _player.Mute();
-                    else if (_player.IsMuted)
-                        _player.Unmute();
+                        if (next <= 0)
+                            _player.Mute();
+                        else if (_player.IsMuted)
+                            _player.Unmute();
+                    }
+
                     UpdateSwipeIndicator(SwipeSide.Right, NativePlayerGlyphs.SpeakerHigh, next);
                     UpdateTransport();
                 }

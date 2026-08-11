@@ -93,7 +93,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private readonly Border _volumePopover = new();
     private readonly NativeSeekBar _seekBar;
     private readonly NativePlaybackSettingsPanel _settings;
-    private readonly BoxView _tapCatcher = new();
+    // Split left/right catchers so vertical pan side does not depend on PointerPressed
+    // (finger pans on Android often never fire PointerPressed before PanGestureRecognizer).
+    private readonly Grid _gestureLayer = new();
+    private readonly BoxView _leftCatcher = new();
+    private readonly BoxView _rightCatcher = new();
 
     private bool _castPanelOpen;
     private bool _syncPlayPanelOpen;
@@ -116,6 +120,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private Timer? _dpadHoldTimer;
     private string? _dpadHoldKey;
     private bool _dpadHoldScrubArmed;
+    /// <summary>Dialog-style layer (next-episode) that owns all input and hides chrome.</summary>
+    private bool _inputModalActive;
     private static readonly TimeSpan DpadHoldScrubDelay = TimeSpan.FromMilliseconds(320);
     private static readonly TimeSpan DpadHoldInterval = TimeSpan.FromMilliseconds(110);
     private IReadOnlyList<MediaSegmentDto>? _segments;
@@ -176,6 +182,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         BackgroundColor = Colors.Transparent;
         IsVisible = false;
         InputTransparent = false;
+        // Match MediaElement edge-to-edge so the scrim bleeds under system bars/cutouts
+        // (RootGrid is SafeAreaEdges=None; layouts default to Container and would inset).
+        SafeAreaEdges = SafeAreaEdges.None;
 
         BuildLayout();
         WireEvents();
@@ -183,7 +192,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     }
 
     public bool IsChromeVisible =>
-        _showChrome || _settings.IsOpen || _volumeOpen || _seekScrubbing || _castPanelOpen || _syncPlayPanelOpen;
+        !_inputModalActive
+        && (_showChrome || _settings.IsOpen || _volumeOpen || _seekScrubbing || _castPanelOpen || _syncPlayPanelOpen);
 
     public void Attach()
     {
@@ -209,6 +219,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SetCastPanelOpen(false);
         SetSyncPlayPanelOpen(false);
         DismissNextEpisode();
+        RestoreBrightness();
+    }
+
+    private void RestoreBrightness()
+    {
+        _brightness?.ResetBrightness();
+        _brightnessDimOverlay.Opacity = 0;
     }
 
     public void SetActive(bool active)
@@ -355,8 +372,28 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         key = key.ToLowerInvariant();
         if (!isKeyUp)
-            NativeVideoDebug.Log("HandleKey key=" + key + " chrome=" + _showChrome + " scrub=" + _seekScrubbing + " device=" + _deviceType);
+            NativeVideoDebug.Log(
+                "HandleKey key=" + key
+                + " chrome=" + _showChrome
+                + " chromeVis=" + _chrome.IsVisible
+                + " modal=" + _inputModalActive
+                + " nep=" + IsNextEpisodeVisible
+                + " scrub=" + _seekScrubbing
+                + " device=" + _deviceType);
 
+        // Modal dialog (next-episode): only Back + modal keys. Chrome is fully blocked.
+        if (_inputModalActive || IsNextEpisodeVisible)
+        {
+            if (key is "escape" or "browserback" or "goback" or "back")
+            {
+                StopDpadHold();
+                return HandleBack();
+            }
+
+            return HandleNextEpisodeKey(key, isKeyUp);
+        }
+
+        // Back always goes through HandleBack.
         if (key is "escape" or "browserback" or "goback" or "back")
         {
             StopDpadHold();
@@ -387,9 +424,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             ToggleFullscreen();
             return true;
         }
-
-        if (IsNextEpisodeVisible)
-            return HandleNextEpisodeKey(key, isKeyUp);
 
         if (_settings.IsOpen || _castPanelOpen || _syncPlayPanelOpen)
         {
@@ -610,7 +644,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnDpadHoldTick()
     {
-        if (_dpadHoldKey is null || !_dpadHoldScrubArmed)
+        if (_dpadHoldKey is null || !_dpadHoldScrubArmed || IsNextEpisodeVisible)
             return;
 
         if (_dpadHoldKey is "dpad_left" or "dpad_right")
@@ -640,25 +674,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void BuildLayout()
     {
-        _tapCatcher.Color = Color.FromArgb("#01000000");
-        _tapCatcher.InputTransparent = false;
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += OnBackgroundTapped;
-        tap.NumberOfTapsRequired = 1;
-        _tapCatcher.GestureRecognizers.Add(tap);
-
-        var doubleTap = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
-        doubleTap.Tapped += OnDoubleTapped;
-        _tapCatcher.GestureRecognizers.Add(doubleTap);
-
-        var pan = new PanGestureRecognizer();
-        pan.PanUpdated += OnPanUpdated;
-        _tapCatcher.GestureRecognizers.Add(pan);
-
-        var pointer = new PointerGestureRecognizer();
-        pointer.PointerPressed += OnPointerPressed;
-        _tapCatcher.GestureRecognizers.Add(pointer);
-        Children.Add(_tapCatcher);
+        _gestureLayer.ColumnDefinitions =
+        [
+            new ColumnDefinition(GridLength.Star),
+            new ColumnDefinition(GridLength.Star)
+        ];
+        ConfigureGestureCatcher(_leftCatcher, panSideLeft: true);
+        ConfigureGestureCatcher(_rightCatcher, panSideLeft: false);
+        Grid.SetColumn(_leftCatcher, 0);
+        Grid.SetColumn(_rightCatcher, 1);
+        _gestureLayer.Add(_leftCatcher);
+        _gestureLayer.Add(_rightCatcher);
+        Children.Add(_gestureLayer);
 
         BuildGestureVisuals();
 
@@ -686,7 +713,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _chrome.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _chrome.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
         _chrome.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        // Empty middle passes taps to gesture catchers; bars must still receive touches.
+        // CascadeInputTransparent=false is required: with the default (true), children of
+        // an InputTransparent parent never get input on Android (tap -> hide chrome).
         _chrome.InputTransparent = true;
+        _chrome.CascadeInputTransparent = false;
+        // Keep transport clear of notches/system bars while the scrim sibling stays full-bleed.
+        _chrome.SafeAreaEdges = new SafeAreaEdges(SafeAreaRegions.Container);
 
         BuildTopBar();
         BuildBottomBar();
@@ -694,7 +727,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         Grid.SetRow(_bottomBar, 2);
         _chrome.Children.Add(_topBar);
         _chrome.Children.Add(_bottomBar);
-        // Make interactive children receive input
         _topBar.InputTransparent = false;
         _bottomBar.InputTransparent = false;
         Children.Add(_chrome);
@@ -750,6 +782,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _skipSegmentButton.TextColor = Colors.Black;
         _skipSegmentButton.Padding = new Thickness(16, 10);
         _skipSegmentButton.Clicked += (_, _) => SkipActiveSegment();
+        DisablePlatformFocus(_skipSegmentButton);
         Children.Add(_skipSegmentButton);
 
         BuildDevicePanel();
@@ -890,6 +923,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         button.FontSize = 20;
         button.Padding = new Thickness(10, 6);
         button.FontAutoScalingEnabled = false;
+        // TV uses software focus rings; native Button focus steals DPAD from next-episode.
+        DisablePlatformFocus(button);
     }
 
     private static Button CreateIconButton(string glyph)
@@ -897,6 +932,24 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         var button = new Button { Text = glyph };
         StyleTransportButton(button);
         return button;
+    }
+
+    /// <summary>Prevent Android View focus navigation from hijacking DPAD (software focus only).</summary>
+    private static void DisablePlatformFocus(VisualElement element)
+    {
+        void Apply()
+        {
+#if ANDROID
+            if (element.Handler?.PlatformView is Android.Views.View view)
+            {
+                view.Focusable = false;
+                view.FocusableInTouchMode = false;
+            }
+#endif
+        }
+
+        Apply();
+        element.HandlerChanged += (_, _) => Apply();
     }
 
     private void WireEvents()
@@ -1017,11 +1070,17 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
     {
+        if (_inputModalActive || IsNextEpisodeVisible)
+            return;
+
         if (_settings.IsOpen)
         {
             _settings.Close();
             return;
         }
+
+        if (_castPanelOpen || _syncPlayPanelOpen)
+            return;
 
         if (DateTime.UtcNow < _suppressShowUntil)
             return;
@@ -1093,6 +1152,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void ShowChrome()
     {
+        if (_inputModalActive || IsNextEpisodeVisible)
+            return;
+
         _showChrome = true;
         UpdateChromeVisibility();
         ResetHideTimer();
@@ -1100,15 +1162,21 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void ShowChromeWithTvFocus()
     {
+        if (_inputModalActive || IsNextEpisodeVisible)
+            return;
+
         ShowChrome();
         // Default TV focus on play/pause (Blazor SpatialNav.FocusFirstAsync(".play-pause-btn")).
         SetTvChromeFocusSlot(TvFocusSlot.Play);
     }
 
-    private void HideChrome()
+    private void HideChrome(bool force = false)
     {
-        if (_settings.IsOpen || _seekScrubbing)
+        if (!force && (_settings.IsOpen || _seekScrubbing))
             return;
+
+        if (force && _seekScrubbing)
+            CancelTvScrub();
 
         _showChrome = false;
         SetVolumeOpen(false);
@@ -1116,6 +1184,41 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _suppressShowUntil = DateTime.UtcNow.AddMilliseconds(500);
         UpdateChromeVisibility();
         StopHideTimer();
+    }
+
+    /// <summary>
+    /// Enter/exit a dialog-style input modal. While active, transport chrome and gestures are
+    /// fully blocked - only the modal layer (next-episode) receives keys and touches.
+    /// </summary>
+    private void SetInputModalActive(bool active)
+    {
+        _inputModalActive = active;
+        StopDpadHold();
+        StopHideTimer();
+
+        if (active)
+        {
+            if (_seekScrubbing)
+                CancelTvScrub();
+            _settings.Close();
+            SetCastPanelOpen(false);
+            SetSyncPlayPanelOpen(false);
+            SetVolumeOpen(false);
+            _showChrome = false;
+            _chrome.IsVisible = false;
+            _chromeGradient.IsVisible = false;
+            _skipSegmentButton.IsVisible = false;
+            _seekPreview.IsVisible = false;
+            SetGestureCatchersInputTransparent(true);
+            ClearTvChromeFocus();
+        }
+        else
+        {
+            SetGestureCatchersInputTransparent(false);
+        }
+
+        UpdateChromeVisibility();
+        NativeVideoDebug.Log("InputModal active=" + active);
     }
 
     private List<TvFocusSlot> GetVisibleTvFocusSlots()
@@ -1263,7 +1366,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         var timeout = overrideTimeout
             ?? (_deviceType == DeviceType.TV ? OverlayTimeoutTv : OverlayTimeoutDesktop);
         _hideTimer = new Timer(timeout.TotalMilliseconds) { AutoReset = false };
-        _hideTimer.Elapsed += (_, _) => MainThread.BeginInvokeOnMainThread(HideChrome);
+        _hideTimer.Elapsed += (_, _) => MainThread.BeginInvokeOnMainThread(() => HideChrome());
         _hideTimer.Start();
     }
 
@@ -1371,6 +1474,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (!_seekScrubbing)
         {
+            if (IsNextEpisodeVisible)
+                return;
+
             _seekBar.BeginEdit();
             _seekScrubbing = true;
             ShowChrome();
@@ -1410,13 +1516,17 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void ClosePlayer()
     {
         HideChrome();
+        RestoreBrightness();
         _player.Stop();
         _ = _player.HideAsync();
     }
 
     private void OnPlaybackEnded()
     {
-        ShowChrome();
+        // Hide transport so TV/remote focus moves to the next-episode offer (Blazor SpatialNav
+        // layer parity). Force-hide even if seek-scrub was still armed at Ended.
+        StopDpadHold();
+        HideChrome(force: true);
         _ = LoadNextEpisodeOfferAsync();
     }
 
@@ -1597,4 +1707,29 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private bool IsDesktopLike() => _deviceType is DeviceType.Desktop or DeviceType.Unknown;
     private bool IsPhoneOrTablet() => _deviceType is DeviceType.Phone or DeviceType.Tablet;
+
+    private void ConfigureGestureCatcher(BoxView catcher, bool panSideLeft)
+    {
+        catcher.Color = Color.FromArgb("#01000000");
+        catcher.InputTransparent = false;
+
+        var tap = new TapGestureRecognizer { NumberOfTapsRequired = 1 };
+        tap.Tapped += OnBackgroundTapped;
+        catcher.GestureRecognizers.Add(tap);
+
+        var doubleTap = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
+        // Left catcher => skip back; right catcher => skip forward.
+        doubleTap.Tapped += (_, _) => OnDoubleTapped(isRight: !panSideLeft);
+        catcher.GestureRecognizers.Add(doubleTap);
+
+        var pan = new PanGestureRecognizer();
+        pan.PanUpdated += (_, e) => OnPanUpdated(e, panSideLeft);
+        catcher.GestureRecognizers.Add(pan);
+    }
+
+    private void SetGestureCatchersInputTransparent(bool value)
+    {
+        _leftCatcher.InputTransparent = value;
+        _rightCatcher.InputTransparent = value;
+    }
 }

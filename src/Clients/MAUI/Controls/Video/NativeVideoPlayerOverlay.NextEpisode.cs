@@ -28,7 +28,6 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private LiteSerieEpisodeDto? _nextEpisode;
     private LiteSerieEpisodeDto? _nepCurrentEpisode;
-    private bool _nepVisible;
     private string _nepBehavior = "AutoPlay";
     private int _nepCountdownSeconds;
     private int _nepCountdownDuration;
@@ -37,22 +36,33 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private Border? _nepReplayCard;
     private Border? _nepPlayCard;
-    private Button? _nepDismissButton;
+    private Border? _nepDismissButton;
     private int _nepFocusIndex; // 0=replay, 1=play, 2=dismiss
+    private int _nepLastCardFocus = 1; // remembered when moving down to Dismiss
 
-    private bool IsNextEpisodeVisible => _nepVisible;
+    /// <summary>True while the next-episode offer covers the player (TV focus + touch owner).</summary>
+    internal bool IsNextEpisodeOfferVisible => _nextEpisodeOverlay.IsVisible;
+
+    /// <summary>True while a dialog-style input modal blocks chrome underneath.</summary>
+    internal bool IsInputModalActive => _inputModalActive;
+
+    private bool IsNextEpisodeVisible => _nextEpisodeOverlay.IsVisible;
 
     private void BuildNextEpisodeOverlay()
     {
+        // Full-bleed dim (same as video / chrome scrim); do not inset for safe area.
+        _nextEpisodeOverlay.SafeAreaEdges = SafeAreaEdges.None;
         _nextEpisodeOverlay.BackgroundColor = Color.FromArgb("#E6000000");
         _nextEpisodeOverlay.IsVisible = false;
+        _nextEpisodeOverlay.InputTransparent = false;
+        _nextEpisodeOverlay.CascadeInputTransparent = false;
+        _nextEpisodeOverlay.ZIndex = 20;
         _nextEpisodeOverlay.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
         _nextEpisodeOverlay.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _nextEpisodeOverlay.Padding = new Thickness(24);
 
-        var activityTap = new TapGestureRecognizer();
-        activityTap.Tapped += (_, _) => PauseNextEpisodeCountdown();
-        _nextEpisodeOverlay.GestureRecognizers.Add(activityTap);
+        // Do not put a TapGestureRecognizer on the root Grid: on Android it steals taps from
+        // child buttons/cards. Pause countdown from explicit control interactions instead.
 
         var cards = new HorizontalStackLayout { Spacing = 16, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
 
@@ -74,15 +84,26 @@ public sealed partial class NativeVideoPlayerOverlay
         _nepAutoplayFooter.Children.Add(_nepProgressBar);
         _nepAutoplayFooter.Children.Add(_nepCountdownLabel);
 
-        _nepDismissButton = new Button
+        _nepDismissButton = new Border
         {
-            Text = NativeStrings.Dismiss,
-            TextColor = Colors.White,
+            Stroke = Colors.Transparent,
+            StrokeThickness = 0,
             BackgroundColor = Color.FromArgb("#33FFFFFF"),
+            Padding = new Thickness(16, 10),
             HorizontalOptions = LayoutOptions.Center,
-            Margin = new Thickness(0, 12, 0, 0)
+            Margin = new Thickness(0, 12, 0, 0),
+            Content = new Label
+            {
+                Text = NativeStrings.Dismiss,
+                TextColor = Colors.White,
+                HorizontalTextAlignment = TextAlignment.Center,
+                VerticalTextAlignment = TextAlignment.Center
+            },
+            StrokeShape = new RoundRectangle { CornerRadius = 8 }
         };
-        _nepDismissButton.Clicked += (_, _) => _ = DismissNextEpisodeAsync();
+        var dismissTap = new TapGestureRecognizer();
+        dismissTap.Tapped += (_, _) => _ = DismissNextEpisodeAsync();
+        _nepDismissButton.GestureRecognizers.Add(dismissTap);
 
         var footerStack = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.Center };
         footerStack.Children.Add(_nepAutoplayFooter);
@@ -104,8 +125,10 @@ public sealed partial class NativeVideoPlayerOverlay
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
             Content = NativeIconText.CreateContent(actionIcon, actionText, fontSize: 14),
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 }
+            StrokeShape = new RoundRectangle { CornerRadius = 8 }
         };
+        // Real Button.Clicked is more reliable on Android than a root-level TapGestureRecognizer
+        // competing with siblings; the offer root no longer hosts a steal-all tap.
         var tap = new TapGestureRecognizer();
         tap.Tapped += (_, _) => onAction();
         actionButton.GestureRecognizers.Add(tap);
@@ -138,7 +161,15 @@ public sealed partial class NativeVideoPlayerOverlay
     private bool HandleNextEpisodeKey(string key, bool isKeyUp)
     {
         if (!IsNextEpisodeVisible)
-            return false;
+            return _inputModalActive; // swallow while modal latch is still held
+
+        // Media keys: activate focused action (do not restart the finished video under the offer).
+        if (key is "space" or "mediaplaypause" or "mediaplay" or "mediapause")
+        {
+            if (!isKeyUp)
+                ActivateNepFocus();
+            return true;
+        }
 
         // Key-up: consume so chrome-hidden skip logic never fires under the overlay.
         if (isKeyUp)
@@ -146,15 +177,48 @@ public sealed partial class NativeVideoPlayerOverlay
 
         PauseNextEpisodeCountdown();
 
-        if (key is "arrowleft" or "left" or "dpad_left" or "arrowup" or "up" or "dpad_up")
+        NativeVideoDebug.Log("NextEpisode key=" + key + " focus=" + _nepFocusIndex);
+
+        var left = key is "arrowleft" or "left" or "dpad_left";
+        var right = key is "arrowright" or "right" or "dpad_right";
+        var up = key is "arrowup" or "up" or "dpad_up";
+        var down = key is "arrowdown" or "down" or "dpad_down";
+
+        // Spatial nav: Replay | Play on a row, Dismiss below. Modal owns all keys - no chrome leak.
+        if (down)
         {
-            SetNepFocusIndex(_nepFocusIndex <= 0 ? 2 : _nepFocusIndex - 1);
+            if (_nepFocusIndex <= 1)
+                _nepLastCardFocus = _nepFocusIndex;
+            SetNepFocusIndex(2);
             return true;
         }
 
-        if (key is "arrowright" or "right" or "dpad_right" or "arrowdown" or "down" or "dpad_down")
+        if (up)
         {
-            SetNepFocusIndex(_nepFocusIndex >= 2 ? 0 : _nepFocusIndex + 1);
+            if (_nepFocusIndex == 2)
+                SetNepFocusIndex(_nepLastCardFocus);
+            return true;
+        }
+
+        if (left)
+        {
+            if (_nepFocusIndex == 2)
+                SetNepFocusIndex(0);
+            else
+                SetNepFocusIndex(Math.Max(0, _nepFocusIndex - 1));
+            if (_nepFocusIndex <= 1)
+                _nepLastCardFocus = _nepFocusIndex;
+            return true;
+        }
+
+        if (right)
+        {
+            if (_nepFocusIndex == 2)
+                SetNepFocusIndex(1);
+            else
+                SetNepFocusIndex(Math.Min(1, _nepFocusIndex + 1));
+            if (_nepFocusIndex <= 1)
+                _nepLastCardFocus = _nepFocusIndex;
             return true;
         }
 
@@ -177,13 +241,12 @@ public sealed partial class NativeVideoPlayerOverlay
     {
         ApplyNepCardFocus(_nepReplayCard, _nepFocusIndex == 0);
         ApplyNepCardFocus(_nepPlayCard, _nepFocusIndex == 1);
+        ApplyNepCardFocus(_nepDismissButton, _nepFocusIndex == 2);
         if (_nepDismissButton is not null)
         {
             _nepDismissButton.BackgroundColor = _nepFocusIndex == 2
                 ? Color.FromArgb("#66FFFFFF")
                 : Color.FromArgb("#33FFFFFF");
-            _nepDismissButton.BorderColor = _nepFocusIndex == 2 ? Colors.White : Colors.Transparent;
-            _nepDismissButton.BorderWidth = _nepFocusIndex == 2 ? 2 : 0;
         }
     }
 
@@ -279,14 +342,26 @@ public sealed partial class NativeVideoPlayerOverlay
         _nepNextStill.Source = GetStillUrl(_nextEpisode.Pictures);
         _nepNextInfo.Text = FormatEpisodeLabel(_nextEpisode);
 
-        _nepVisible = true;
-        _nextEpisodeOverlay.IsVisible = true;
-        SetNepFocusIndex(1); // Default TV focus on Play Next
+        void ShowOffer()
+        {
+            SetInputModalActive(true);
+            _nextEpisodeOverlay.IsVisible = true;
+            _nextEpisodeOverlay.ZIndex = 100;
+            _nepLastCardFocus = 1;
+            SetNepFocusIndex(1); // Default TV focus on Play Next
 
-        if (_nepBehavior == "AutoPlay")
-            StartNextEpisodeCountdown(AutoPlayCountdownSeconds);
+            if (_nepBehavior == "AutoPlay")
+                StartNextEpisodeCountdown(AutoPlayCountdownSeconds);
+            else
+                _nepAutoplayFooter.IsVisible = false;
+
+            NativeVideoDebug.Log("NextEpisode modal open focus=Play");
+        }
+
+        if (MainThread.IsMainThread)
+            ShowOffer();
         else
-            _nepAutoplayFooter.IsVisible = false;
+            MainThread.BeginInvokeOnMainThread(ShowOffer);
     }
 
     private string? GetStillUrl(IReadOnlyList<MetadataPictureDto>? pictures)
@@ -395,7 +470,6 @@ public sealed partial class NativeVideoPlayerOverlay
     /// the player. Mirrors NextEpisodeOverlay.Reset()/OnPlaybackStateChangedAsync(Playing).</summary>
     private void ResetNextEpisodeState()
     {
-        _nepVisible = false;
         _nextEpisodeOverlay.IsVisible = false;
         _nextEpisode = null;
         _nepCurrentEpisode = null;
@@ -404,6 +478,8 @@ public sealed partial class NativeVideoPlayerOverlay
         _nepCountdownActive = false;
         _nepCountdownSeconds = 0;
         _nepCountdownDuration = 0;
+        SetInputModalActive(false);
+        NativeVideoDebug.Log("NextEpisode modal closed");
     }
 
     private void DismissNextEpisode() => ResetNextEpisodeState();
