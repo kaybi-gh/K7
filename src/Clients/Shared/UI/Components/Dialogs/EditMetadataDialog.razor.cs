@@ -97,6 +97,7 @@ public partial class EditMetadataDialog : IDisposable
 
     // Tabs
     private int _activeTab;
+    private bool _showImagesTab => _allowedPictureTypes.Count > 0;
     private IReadOnlyList<TabOption<int>> _tabOptions => [
         new(0, L["TabMetadata"]),
         new(1, L["TabImages"])
@@ -190,6 +191,8 @@ public partial class EditMetadataDialog : IDisposable
     {
         _isPersonMode = false;
         _canGenerateStillFromSource = false;
+        _canBrowseProviderImages = false;
+        _allowedPictureTypes = [];
         _title = media.Title;
         _sortTitle = media.SortTitle;
         _originalTitle = media.OriginalTitle;
@@ -276,7 +279,6 @@ public partial class EditMetadataDialog : IDisposable
                 _trackNumber = track.TrackNumber;
                 _discNumber = track.DiscNumber;
                 _lyrics = track.Lyrics;
-                _allowedPictureTypes = [MetadataPictureType.Cover];
                 break;
 
             case MusicAlbumDto album:

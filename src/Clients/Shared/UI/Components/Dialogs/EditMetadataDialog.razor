@@ -2,9 +2,12 @@
 @using K7.Server.Domain.Enums
 
 <div @ref="_dialogContentRef" class="k7-dialog-content edit-metadata-dialog">
-    <K7Tabs TValue="int" Tabs="_tabOptions" Value="_activeTab" ValueChanged="OnTabChangedAsync" Class="mb-3" />
+    @if (_showImagesTab)
+    {
+        <K7Tabs TValue="int" Tabs="_tabOptions" Value="_activeTab" ValueChanged="OnTabChangedAsync" Class="mb-3" />
+    }
 
-    @if (_activeTab == 0)
+    @if (_activeTab == 0 || !_showImagesTab)
     {
     <div class="d-flex flex-col">
         <div class="field-row">
@@ -225,7 +228,7 @@
     </div>
     }
 
-    @if (_activeTab == 1)
+    @if (_activeTab == 1 && _showImagesTab)
     {
     <div class="d-flex flex-col images-tab">
         <p class="images-tab-hint">@L["ImagesApplyImmediately"]</p>
@@ -371,7 +374,7 @@
 
 </div>
 <div class="k7-dialog-actions">
-    @if (_activeTab == 0)
+    @if (_activeTab == 0 || !_showImagesTab)
     {
         <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>
         <K7Button Variant="filled" OnClick="Submit" Disabled="@_isSubmitting">@L["Save"]</K7Button>
