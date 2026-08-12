@@ -43,18 +43,24 @@ public class HomeLayoutMaintenanceService(IApplicationDbContext context) : IHome
 
         foreach (var setting in userSettings)
             TryUpdateSetting(setting, validLibraryIds);
+
+        var sharedProfileSettings = await context.SharedProfileSettings
+            .Where(s => s.Key == UserSettingKeys.HomeLayout.Name)
+            .ToListAsync(cancellationToken);
+
+        foreach (var setting in sharedProfileSettings)
+            TryUpdateSetting(setting, validLibraryIds);
     }
 
     private static void TryUpdateSetting(Domain.Entities.Settings.BaseSetting setting, HashSet<Guid> validLibraryIds)
     {
-        var layout = JsonSerializer.Deserialize<HomeLayoutDto>(setting.Value);
-        if (layout is null)
+        if (!HomeLayoutSettingSerializer.TryDeserialize(setting.Value, out var layout) || layout is null)
             return;
 
         var sanitized = HomeLayoutSanitizer.Sanitize(layout, validLibraryIds);
         if (!HomeLayoutSanitizer.HasChanges(layout, sanitized))
             return;
 
-        setting.Value = JsonSerializer.Serialize(sanitized);
+        setting.Value = HomeLayoutSettingSerializer.Serialize(sanitized);
     }
 }
