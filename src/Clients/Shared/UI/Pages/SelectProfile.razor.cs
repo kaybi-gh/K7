@@ -315,10 +315,8 @@ public partial class SelectProfile
             }
             else
             {
-                LocalUserService.Remove(host.IdentityUserId);
-                _users = LocalUserService.GetAll();
                 Snackbar.Add(string.Format(L["SessionExpired"], host.UserName), K7Severity.Error);
-                ShowCarousel();
+                await ReconnectExpiredProfileAsync(host, group);
             }
         }
         catch (HttpRequestException)
@@ -373,10 +371,8 @@ public partial class SelectProfile
             }
             else
             {
-                LocalUserService.Remove(user.IdentityUserId);
-                _users = LocalUserService.GetAll();
                 Snackbar.Add(string.Format(L["SessionExpired"], user.UserName), K7Severity.Error);
-                ShowCarousel();
+                await ReconnectExpiredProfileAsync(user);
             }
         }
         catch (HttpRequestException)
@@ -551,6 +547,68 @@ public partial class SelectProfile
         }
     }
 
+    /// <summary>
+    /// Interactive re-login after a dead refresh token. Mirrors AddUserAsync post-success so we
+    /// leave select-profile, refresh local cards (reconnect badge), and restore a shared group.
+    /// </summary>
+    private async Task ReconnectExpiredProfileAsync(LocalUser user, SharedProfileDto? group = null)
+    {
+        if (_isTv)
+        {
+            Navigation.NavigateTo("/linkdevice");
+            return;
+        }
+
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.LoginAsync();
+
+            var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+            _users = LocalUserService.GetAll();
+
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                ShowCarousel();
+                return;
+            }
+
+            var subject = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? authState.User.FindFirst("sub")?.Value;
+
+            if (!string.IsNullOrEmpty(subject))
+            {
+                LocalUserService.SetLastActiveId(subject);
+                var active = _users.FirstOrDefault(u =>
+                    string.Equals(u.IdentityUserId, subject, StringComparison.Ordinal));
+                if (active is not null)
+                    MarkSoloUnlockedIfNeeded(active);
+            }
+
+            if (group is not null
+                && !string.IsNullOrEmpty(subject)
+                && string.Equals(subject, group.HostIdentityUserId, StringComparison.Ordinal))
+            {
+                SharedProfileSession.SetActiveGroup(group);
+                RecordSharedProfileSelection(group.Id);
+            }
+            else if (!string.IsNullOrEmpty(subject))
+            {
+                RecordUserSelection(subject);
+            }
+
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, K7Severity.Error);
+            _users = LocalUserService.GetAll();
+            ShowCarousel();
+        }
+    }
+
     private void OnSingleUserModeChanged(bool value)
     {
         _singleUserMode = value;
@@ -594,6 +652,19 @@ public partial class SelectProfile
     {
         var name = user.DisplayName ?? user.UserName;
         return string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+    }
+
+    private static bool NeedsReconnect(LocalUser user) =>
+        string.IsNullOrEmpty(user.RefreshToken);
+
+    private bool GroupHostNeedsReconnect(SharedProfileDto group)
+    {
+        if (string.IsNullOrEmpty(group.HostIdentityUserId))
+            return false;
+
+        var host = _users.FirstOrDefault(u =>
+            string.Equals(u.IdentityUserId, group.HostIdentityUserId, StringComparison.Ordinal));
+        return host is not null && NeedsReconnect(host);
     }
 
     private static string GetMemberInitial(SharedProfileMemberDto member)

@@ -30,4 +30,5 @@
   <data name="ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
   <data name="EnterGroupPin" xml:space="preserve"><value>Shared profile PIN</value></data>
   <data name="HostNotOnDevice" xml:space="preserve"><value>Add this shared profile's host account on this device.</value></data>
+  <data name="NeedsReconnect" xml:space="preserve"><value>Session expired - sign in again</value></data>
 </root>

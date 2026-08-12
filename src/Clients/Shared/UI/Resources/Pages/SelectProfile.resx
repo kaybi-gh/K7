@@ -30,4 +30,5 @@
   <data name="ContinueOffline" xml:space="preserve"><value>Continuer hors ligne</value></data>
   <data name="EnterGroupPin" xml:space="preserve"><value>PIN du profil partagé</value></data>
   <data name="HostNotOnDevice" xml:space="preserve"><value>Ajoutez le compte hôte de ce profil partagé sur cet appareil.</value></data>
+  <data name="NeedsReconnect" xml:space="preserve"><value>Session expirée - reconnectez-vous</value></data>
 </root>

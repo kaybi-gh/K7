@@ -34,7 +34,16 @@
                             <K7Avatar Class="ma-2" Size="xl" Color="primary"
                                       Image="@user.AvatarUrl"
                                       Letter="@GetInitial(user)"
-                                      UserId="@user.UserId" />
+                                      UserId="@user.UserId">
+                                @if (NeedsReconnect(user))
+                                {
+                                    <span class="select-profile-reconnect-badge"
+                                          title="@L["NeedsReconnect"]"
+                                          aria-label="@L["NeedsReconnect"]">
+                                        <K7Icon Icon="@Phosphor.ArrowClockwise" IconSize="@K7IconSize.Sm" />
+                                    </span>
+                                }
+                            </K7Avatar>
                             <div class="select-profile-name">
                                 <span class="select-profile-name-text">
                                     <span class="select-profile-name-inner">@(user.DisplayName ?? user.UserName)</span>
@@ -61,12 +70,31 @@
                                     <K7Avatar Class="ma-2" Size="xl"
                                               Image="@group.AvatarUrl"
                                               Letter="@(string.IsNullOrEmpty(group.Name) ? "?" : group.Name[..1].ToUpperInvariant())"
-                                              Alt="@group.Name" />
+                                              Alt="@group.Name">
+                                        @if (GroupHostNeedsReconnect(group))
+                                        {
+                                            <span class="select-profile-reconnect-badge"
+                                                  title="@L["NeedsReconnect"]"
+                                                  aria-label="@L["NeedsReconnect"]">
+                                                <K7Icon Icon="@Phosphor.ArrowClockwise" IconSize="@K7IconSize.Sm" />
+                                            </span>
+                                        }
+                                    </K7Avatar>
                                 }
                                 else
                                 {
-                                    <K7AvatarGroup Class="ma-2" Size="xl"
-                                                   Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
+                                    <span class="select-profile-group-avatars-wrap">
+                                        <K7AvatarGroup Class="ma-2" Size="xl"
+                                                       Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
+                                        @if (GroupHostNeedsReconnect(group))
+                                        {
+                                            <span class="select-profile-reconnect-badge"
+                                                  title="@L["NeedsReconnect"]"
+                                                  aria-label="@L["NeedsReconnect"]">
+                                                <K7Icon Icon="@Phosphor.ArrowClockwise" IconSize="@K7IconSize.Sm" />
+                                            </span>
+                                        }
+                                    </span>
                                 }
                             </div>
                             <div class="select-profile-name">

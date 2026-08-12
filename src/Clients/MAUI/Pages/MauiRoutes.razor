@@ -7,6 +7,9 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(K7.Clients.Shared.UI.Layout.MainLayout)">
                 <Authorizing>
+                    <div class="d-flex flex-col align-center justify-center h-screen">
+                        <K7Spinner />
+                    </div>
                 </Authorizing>
                 <NotAuthorized>
                     @if (context.User.Identity?.IsAuthenticated == true)

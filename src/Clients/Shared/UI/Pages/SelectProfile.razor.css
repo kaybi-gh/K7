@@ -128,9 +128,33 @@
     margin: var(--space-2);
 }
 
+.select-profile-page ::deep .select-profile-group-avatars-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
 .select-profile-page ::deep .select-profile-group-avatars > .k7-avatar,
-.select-profile-page ::deep .select-profile-group-avatars > .k7-avatar-group {
+.select-profile-page ::deep .select-profile-group-avatars > .k7-avatar-group,
+.select-profile-page ::deep .select-profile-group-avatars-wrap > .k7-avatar-group {
     margin: 0;
+}
+
+.select-profile-page ::deep .select-profile-reconnect-badge {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: var(--color-surface-1);
+    color: var(--color-warning);
+    border: 2px solid var(--color-bg);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
