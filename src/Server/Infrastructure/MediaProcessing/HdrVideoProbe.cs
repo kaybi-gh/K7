@@ -4,6 +4,9 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 /// <summary>
 /// Detects HDR transfer characteristics via ffprobe for optional HDR-to-SDR tonemap.
+/// Only PQ/HLG (and related) color_transfer values count as HDR. 10-bit HEVC Main 10
+/// without HDR transfer tags is SDR and must not trigger tonemap (zscale fails with
+/// "no path between colorspaces" when transfer is unspecified).
 /// </summary>
 internal static class HdrVideoProbe
 {
@@ -18,11 +21,7 @@ internal static class HdrVideoProbe
     public static async Task<bool> IsHdrAsync(string inputFilePath, CancellationToken cancellationToken = default)
     {
         var transfer = await TryReadColorTransferAsync(inputFilePath, cancellationToken);
-        if (IsHdrTransfer(transfer))
-            return true;
-
-        // Fallback when color_transfer is unset but the stream is clearly 10-bit HDR-ish.
-        return await LooksLikeTenBitAsync(inputFilePath, cancellationToken);
+        return IsHdrTransfer(transfer);
     }
 
     public static bool IsHdrTransfer(string? colorTransfer)
@@ -60,35 +59,5 @@ internal static class HdrVideoProbe
             cancellationToken: cancellationToken);
 
         return transfer;
-    }
-
-    private static async Task<bool> LooksLikeTenBitAsync(
-        string inputFilePath,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var analysis = await FFProbe.AnalyseAsync(inputFilePath, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-            var stream = analysis.PrimaryVideoStream;
-            if (stream is null)
-                return false;
-
-            if (stream.BitDepth >= 10)
-                return true;
-
-            var pix = stream.PixelFormat;
-            if (string.IsNullOrEmpty(pix))
-                return false;
-
-            return pix.Contains("p010", StringComparison.OrdinalIgnoreCase)
-                || pix.Contains("yuv420p10", StringComparison.OrdinalIgnoreCase)
-                || pix.Contains("yuv422p10", StringComparison.OrdinalIgnoreCase)
-                || pix.Contains("yuv444p10", StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
     }
 }

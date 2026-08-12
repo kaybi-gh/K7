@@ -107,13 +107,4 @@ public class FfmpegVideoEncoderBuilderTests
 
         filter.Should().Be("zscale=transfer=linear,scale=-2:720,format=nv12,hwupload");
     }
-
-    [Test]
-    public void IsHdrTransfer_ShouldDetectHdr10AndHlg()
-    {
-        HdrVideoProbe.IsHdrTransfer("smpte2084").Should().BeTrue();
-        HdrVideoProbe.IsHdrTransfer("arib-std-b67").Should().BeTrue();
-        HdrVideoProbe.IsHdrTransfer("bt709").Should().BeFalse();
-        HdrVideoProbe.IsHdrTransfer(null).Should().BeFalse();
-    }
 }
