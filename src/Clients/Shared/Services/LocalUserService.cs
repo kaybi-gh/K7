@@ -76,6 +76,20 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         Persist(users);
     }
 
+    public void ClearRefreshToken(string identityUserId)
+    {
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        var users = GetAll();
+        var user = users.FirstOrDefault(u => u.IdentityUserId == identityUserId);
+        if (user is null)
+            return;
+
+        user.RefreshToken = string.Empty;
+        Persist(users);
+    }
+
     public void Remove(string identityUserId)
     {
         var users = GetAll();

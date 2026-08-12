@@ -8,6 +8,7 @@ public interface ILocalUserService
     LocalUser? GetLastActive();
     void SaveOrUpdate(LocalUser user);
     void UpdateRefreshToken(string identityUserId, string refreshToken);
+    void ClearRefreshToken(string identityUserId);
     void Remove(string identityUserId);
     void SetLastActiveId(string identityUserId);
     void ClearLastActiveId();

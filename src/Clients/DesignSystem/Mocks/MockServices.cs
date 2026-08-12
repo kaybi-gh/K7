@@ -61,6 +61,7 @@ public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProv
         bool forceRefresh = false) => Task.FromResult(true);
     public Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public void SignInOffline(LocalUser user) { }
+    public Task EndSessionAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
@@ -150,6 +151,7 @@ public sealed class MockLocalUserService : ILocalUserService
     public LocalUser? GetLastActive() => null;
     public void SaveOrUpdate(LocalUser user) { }
     public void UpdateRefreshToken(string identityUserId, string refreshToken) { }
+    public void ClearRefreshToken(string identityUserId) { }
     public void Remove(string identityUserId) { }
     public void SetLastActiveId(string identityUserId) { }
     public void ClearLastActiveId() { }

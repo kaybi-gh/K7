@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.MAUI.Services.Authentication;
@@ -57,6 +58,13 @@ public sealed class AuthSessionKeeper : IDisposable
 
         try
         {
+            // Wait for cold-start restore so we never race it on /connect/token.
+            if (_auth is AuthenticationStateProvider stateProvider)
+                await stateProvider.GetAuthenticationStateAsync();
+
+            if (string.IsNullOrEmpty(_deviceStorage.Get(PreferenceKeys.REFRESH_TOKEN)))
+                return;
+
             await _auth.TryRefreshAsync(forceRefresh: forceRefresh);
         }
         catch (Exception ex)

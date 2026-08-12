@@ -9,6 +9,7 @@ public class StubbedLocalUserService : ILocalUserService
     public LocalUser? GetLastActive() => null;
     public void SaveOrUpdate(LocalUser user) { }
     public void UpdateRefreshToken(string identityUserId, string refreshToken) { }
+    public void ClearRefreshToken(string identityUserId) { }
     public void Remove(string identityUserId) { }
     public void SetLastActiveId(string identityUserId) { }
     public void ClearLastActiveId() { }

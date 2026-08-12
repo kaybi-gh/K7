@@ -36,6 +36,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private Task? _restoreTask;
     private readonly object _initLock = new();
     private static readonly AsyncLocal<bool> RestoreOnCallStack = new();
+    /// <summary>
+    /// Last refresh token successfully redeemed in this process. Redeeming it again triggers
+    /// OpenIddict rolling-token reuse detection and revokes the whole authorization family.
+    /// </summary>
+    private string? _lastRedeemedRefreshToken;
 
     /// <summary>
     /// True while cold-start restore is running on this async flow. The auth HTTP handler
@@ -247,6 +252,25 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
+    public Task EndSessionAsync(CancellationToken cancellationToken = default)
+    {
+        var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
+            ?? _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+        ClearStoredTokens();
+        _viewingGroupSession?.ClearActiveGroup();
+
+        // Keep the local profile so SelectProfile can reconnect. Drop the refresh token so
+        // we never redeem a revoked RT (OpenIddict rolling reuse).
+        if (!string.IsNullOrEmpty(identityUserId))
+            _localUserService.ClearRefreshToken(identityUserId);
+
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+        return Task.CompletedTask;
+    }
+
     public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
@@ -367,39 +391,75 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN) ?? localUser.RefreshToken;
 
-        if (await TryRefreshTokenAsync(refreshToken))
+        var outcome = await TryRefreshTokenAsync(refreshToken);
+        if (outcome == RefreshOutcome.Success)
         {
             await SaveLocalUserFromCurrentUserAsync();
             await RestoreSharedProfileAsync();
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
+            return;
         }
-        else
+
+        // Invalid grant / revoked family: stay anonymous so AuthorizeRouteView redirects to
+        // select-profile. Signing in offline would satisfy [Authorize] with an empty online UI.
+        if (outcome == RefreshOutcome.InvalidGrant)
         {
-            // Do not delete the local profile on a failed cold-start refresh - single-user
-            // mode should still land in an offline session so the user is not stuck on
-            // select-profile after a transient token/server error.
             ClearStoredTokens();
-            SignInOffline(localUser);
-            await RestoreSharedProfileAsync();
+            if (!string.IsNullOrEmpty(localUser.IdentityUserId))
+                _localUserService.ClearRefreshToken(localUser.IdentityUserId);
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            NotifyAuthenticationStateChanged(
+                Task.FromResult(new AuthenticationState(_currentUser)));
+            return;
         }
+
+        // Transient failure with network hiccups: keep an offline session for local media / AA.
+        ClearStoredTokens();
+        SignInOffline(localUser);
+        await RestoreSharedProfileAsync();
     }
 
-    private async Task<bool> TryRefreshTokenAsync(
+    private enum RefreshOutcome
+    {
+        Success,
+        TransientFailure,
+        InvalidGrant
+    }
+
+    private async Task<RefreshOutcome> TryRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default,
         string? rejectedAccessToken = null,
         bool forUserSwitch = false,
         bool forceRefresh = false)
     {
-        if (string.IsNullOrEmpty(refreshToken))
-            return false;
-
         await _refreshLock.WaitAsync(cancellationToken);
         try
         {
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                // Empty RT means the session cannot be renewed (e.g. after InvalidGrant cleared it).
+                // Do not treat as transient: solo restore would otherwise SignInOffline and skip
+                // select-profile / reconnect badge on the next cold start.
+                var accessTokenWhenEmpty = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
+                var mustHitWhenEmpty = forceRefresh
+                    || (!string.IsNullOrEmpty(rejectedAccessToken)
+                        && string.Equals(accessTokenWhenEmpty, rejectedAccessToken, StringComparison.Ordinal));
+
+                if (!forUserSwitch
+                    && !mustHitWhenEmpty
+                    && TryRestoreFromAccessToken(accessTokenWhenEmpty))
+                    return RefreshOutcome.Success;
+
+                return RefreshOutcome.InvalidGrant;
+            }
+
             var requestedRefreshToken = refreshToken;
             refreshToken = ResolveRefreshTokenForGrant(requestedRefreshToken, forUserSwitch);
+
+            if (string.IsNullOrEmpty(refreshToken))
+                return RefreshOutcome.InvalidGrant;
 
             var accessToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
 
@@ -413,19 +473,43 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             if (!forUserSwitch
                 && !mustHitTokenEndpoint
                 && TryRestoreFromAccessToken(accessToken))
-                return true;
+                return RefreshOutcome.Success;
+
+            // Another waiter may already have redeemed this RT while we queued on the lock.
+            // Never redeem the same RT twice in-process (OpenIddict rolling reuse revocation).
+            if (!string.IsNullOrEmpty(_lastRedeemedRefreshToken)
+                && string.Equals(refreshToken, _lastRedeemedRefreshToken, StringComparison.Ordinal))
+            {
+                var rotated = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+                if (!string.IsNullOrEmpty(rotated)
+                    && !string.Equals(rotated, _lastRedeemedRefreshToken, StringComparison.Ordinal))
+                {
+                    refreshToken = rotated;
+                }
+                else if (!mustHitTokenEndpoint && TryRestoreFromAccessToken(accessToken))
+                {
+                    return RefreshOutcome.Success;
+                }
+                else
+                {
+                    return RefreshOutcome.TransientFailure;
+                }
+            }
 
             try
             {
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cts.CancelAfter(TimeSpan.FromSeconds(15));
 
+                var redeemingRefreshToken = refreshToken;
                 var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
                 {
                     CancellationToken = cts.Token,
-                    RefreshToken = refreshToken,
+                    RefreshToken = redeemingRefreshToken,
                     ProviderName = "K7"
                 });
+
+                _lastRedeemedRefreshToken = redeemingRefreshToken;
 
                 _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
@@ -435,7 +519,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     PersistRefreshToken(result.RefreshToken);
 
                 if (!HasPersistedSessionTokens())
-                    return false;
+                    return RefreshOutcome.TransientFailure;
 
                 // Refresh token flow may not include the name claim in the principal.
                 if (_currentUser.Identity?.Name is null)
@@ -455,7 +539,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     catch { }
                 }
 
-                return true;
+                return RefreshOutcome.Success;
             }
             catch (HttpRequestException)
             {
@@ -465,9 +549,14 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             {
                 throw;
             }
+            catch (ProtocolException ex) when (
+                ex.Error is Errors.InvalidGrant or Errors.InvalidToken)
+            {
+                return RefreshOutcome.InvalidGrant;
+            }
             catch
             {
-                return false;
+                return RefreshOutcome.TransientFailure;
             }
         }
         finally
@@ -483,20 +572,37 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
         if (string.IsNullOrEmpty(refreshToken))
-            return false;
+        {
+            // Online principal without a refresh token cannot recover - end session so the
+            // guard sends the user to select-profile instead of a hollow authenticated shell.
+            if (_currentUser.Identity?.IsAuthenticated == true
+                && _currentUser.Identity.AuthenticationType != "Offline")
+            {
+                await EndSessionAsync(cancellationToken);
+            }
 
-        var success = await TryRefreshTokenAsync(
+            return false;
+        }
+
+        var outcome = await TryRefreshTokenAsync(
             refreshToken,
             cancellationToken,
             rejectedAccessToken,
             forceRefresh: forceRefresh);
-        if (success)
+        if (outcome == RefreshOutcome.Success)
         {
             await SaveLocalUserFromCurrentUserAsync(cancellationToken);
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            return true;
         }
 
-        return success;
+        if (outcome == RefreshOutcome.InvalidGrant)
+        {
+            await EndSessionAsync(cancellationToken);
+            return false;
+        }
+
+        return false;
     }
 
     public async Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default)
@@ -516,8 +622,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         // user would keep us signed in as that previous user.
         ClearActiveSession();
 
-        if (!await TryRefreshTokenAsync(localUser.RefreshToken, cancellationToken, forUserSwitch: true))
+        var outcome = await TryRefreshTokenAsync(localUser.RefreshToken, cancellationToken, forUserSwitch: true);
+        if (outcome != RefreshOutcome.Success)
+        {
+            if (outcome == RefreshOutcome.InvalidGrant)
+                _localUserService.ClearRefreshToken(identityUserId);
             return false;
+        }
 
         if (!string.Equals(GetCurrentIdentityUserId(), identityUserId, StringComparison.Ordinal))
         {

@@ -107,7 +107,7 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
             if (!isOfflineSession && Interlocked.CompareExchange(ref _logoutTriggered, 1, 0) == 0)
             {
                 var authProvider2 = _serviceProvider.GetRequiredService<ICustomAuthenticationStateProvider>();
-                await authProvider2.LogoutAsync(cancellationToken);
+                await authProvider2.EndSessionAsync(cancellationToken);
             }
         }
         finally

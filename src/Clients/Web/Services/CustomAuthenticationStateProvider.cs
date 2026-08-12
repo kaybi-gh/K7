@@ -37,6 +37,8 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
         return Task.CompletedTask;
     }
 
+    public Task EndSessionAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         var redirectUri = Uri.EscapeDataString(_navigationManager.ToBaseRelativePath(_navigationManager.Uri));

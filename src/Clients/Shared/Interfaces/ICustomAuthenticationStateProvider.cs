@@ -30,6 +30,13 @@ public interface ICustomAuthenticationStateProvider
     /// <param name="identityUserId">The Identity user id of the LocalUser to switch to.</param>
     Task<bool> SwitchToUserAsync(string identityUserId, CancellationToken cancellationToken = default);
     void SignInOffline(LocalUser user);
+    /// <summary>
+    /// Clears the online session without removing the local profile card (401 / revoked RT).
+    /// </summary>
+    Task EndSessionAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Signs out and removes the current profile from this device.
+    /// </summary>
     Task LogoutAsync(CancellationToken cancellationToken = default);
 }
 
