@@ -1283,9 +1283,10 @@ public class K7MediaLibraryService : MediaLibraryService,
                     }
                     else
                     {
+                        // Never hand Media3 an unresolved item (no URI) - ExoPlayer NPEs in
+                        // DefaultMediaSourceFactory.createMediaSource when Uri is null.
                         _syncingFromExoPlayer = false;
-                        if (item is not null)
-                            resolvedItems.Add(item);
+                        Log.Warn(Tag, $"OnAddMediaItems: no playable tracks for {mediaId}");
                     }
                 }
             }

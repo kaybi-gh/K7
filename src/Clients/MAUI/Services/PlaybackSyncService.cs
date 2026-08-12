@@ -71,7 +71,7 @@ public class PlaybackSyncService
 
                         await _streamingService.ReportPlaybackProgressAsync(
                             evt.MediaId,
-                            Guid.Empty,
+                            Guid.NewGuid(),
                             evt.IndexedFileId,
                             evt.Position,
                             evt.Duration,

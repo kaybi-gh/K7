@@ -118,6 +118,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     private async Task SendReportAsync(Guid mediaId, Guid? indexedFileId, Guid sessionId, double position, double duration, PlaybackState state)
     {
         if (!_canReport) return;
+        if (sessionId == Guid.Empty) return;
 
         if (!_connectivity.IsOnline && indexedFileId.HasValue)
         {
