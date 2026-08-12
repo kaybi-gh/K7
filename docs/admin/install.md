@@ -30,6 +30,8 @@ For anything beyond a local trial (OIDC, federation, reverse proxy), set `BaseUr
 
 Point a library at `/media/movies` (or replace the `movies` volume in compose with a bind mount to your real media folder). To build the image locally instead of pulling GHCR: `docker build -t k7-server:latest .` then set `image: k7-server:latest` on the `k7-server` service.
 
+For production, set a realistic Docker memory limit on `k7-server` (home setups often use `mem_limit: 2g`). See [Operating - Memory and container sizing](operating.md#memory-and-container-sizing).
+
 The sample publishes Postgres on host port `5432` for convenience. On a public host, remove that `ports` mapping (or bind `127.0.0.1:5432` only) so the database is not reachable from the internet - see [configuration.md](configuration.md#hardening-checklist).
 
 Sqlite is supported for small trials but is less performant than Postgres and not recommended for production - see [configuration.md](configuration.md#database).

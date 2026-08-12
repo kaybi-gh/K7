@@ -14,7 +14,7 @@ Guides for people who **use**, **operate**, or **develop** K7.
 |---|---|
 | [Install and run](admin/install.md) | Docker, volumes, first-run, upgrades |
 | [Configuration](admin/configuration.md) | Settings, OIDC, reverse proxy, security |
-| [Operating](admin/operating.md) | Libraries, transcoding, federation, admin UI |
+| [Operating](admin/operating.md) | Libraries, memory sizing, transcoding, federation, admin UI |
 | [Backup and troubleshooting](admin/backup-and-troubleshooting.md) | Backups, logs, common failures |
 | [Import tool](../tools/K7.Import/README.md) | Migrate from Plex / Jellyfin / Spotify / etc. |
 

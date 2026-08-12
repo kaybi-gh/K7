@@ -207,6 +207,7 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - Enable federation only when needed; treat peering as trust.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
 - Behind a reverse proxy: prefer not publishing K7 `:7080` on the LAN while `TrustPrivateProxies` is true (default).
+- Set a realistic Docker `mem_limit` on `k7-server` (see [Operating - Memory](operating.md#memory-and-container-sizing)).
 
 There is no comprehensive in-app rate limiting documented; put abusive-traffic controls at the reverse proxy if you expose K7 broadly.
 

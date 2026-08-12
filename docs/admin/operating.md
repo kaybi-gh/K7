@@ -2,6 +2,56 @@
 
 Day-to-day administration after [install](install.md) and [configuration](configuration.md). End-user features: [Using K7](../user/guide.md).
 
+## Memory and container sizing
+
+K7 is a long-running .NET process. After a library scan or heavy work, Docker **memory used** (Working Set) can stay elevated even with **0 streams and 0 background tasks**. That is usually the runtime keeping pages for reuse, not a leak. Prefer Admin health **Memory used** vs **GC heap**: if the GC heap is clearly lower and stable across scans, treat sticky RSS as normal.
+
+The published image defaults to **Workstation GC** (lower idle RAM for self-hosted). Large multi-user hosts can switch back with `DOTNET_gcServer=1`. The image also sets `MALLOC_TRIM_THRESHOLD_=131072` so native allocators (Skia / glibc) return memory more eagerly.
+
+### Suggested `mem_limit` for `k7-server`
+
+Size for the **peak** (scan, probe, optional software transcode), not the idle floor. A very high limit (for example 8g) gives the GC little reason to shrink the Working Set at rest.
+
+| Profile | Limit | Typical fit |
+|---|---|---|
+| Small / trial | `1g` | Small library, direct play, little concurrency |
+| Home | `2g` | Typical house: scan + metadata + 1-2 plays |
+| Comfort | `3g`-`4g` | Large libraries, soft-transcode, several users |
+
+Postgres is a separate container (~256-512 MiB extra).
+
+### Concurrent streams (rough guide)
+
+Playback peak depends on **how** clients play, not only on how many watch at once. Use these as order-of-magnitude add-ons on top of the base limit above. They are not a precise formula.
+
+| Playback mode | Extra RAM per concurrent stream (order of magnitude) |
+|---|---|
+| Direct play / remux | Negligible for the K7 process |
+| Hardware encode (VAAPI / NVENC) | About **0.1-0.3 GiB** process RAM (GPU memory is separate) |
+| Software video transcode | About **0.5-1.5 GiB** depending on resolution and filters |
+
+Examples:
+
+- Home, mostly direct play, up to 2 clients: **`2g`** is usually enough.
+- Home, 2 plays with 1 software transcode: aim for **`2g`-`3g`**.
+- Four concurrent software transcodes: **`4g`+**.
+
+Library scan and probe peaks are separate from stream count. Size for the worse of "large scan" and "max concurrent transcodes", not the sum of every worst case at once unless that can really happen together.
+
+Optional: `DOTNET_GCConserveMemory=5` (values 1-9) makes the GC keep a smaller managed heap at the cost of more collections. Details: [.NET garbage collector config - Conserve memory](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector#conserve-memory).
+
+Example Compose fragment:
+
+```yaml
+k7-server:
+  mem_limit: 2g
+  environment:
+    DOTNET_GCConserveMemory: "5"   # optional
+    # DOTNET_gcServer: "1"         # optional: Server GC on large hosts
+```
+
+Cold start at rest is often roughly **350-450 MiB**. After activity with a generous limit, **500-900 MiB** sticky RSS is common. Suspect a managed leak only if **GC heap** climbs unboundedly on every scan without plateauing.
+
 ## Libraries and media organization
 
 Administrators create libraries in the admin UI and point each at a root folder visible inside the container (for example `/media/movies`).

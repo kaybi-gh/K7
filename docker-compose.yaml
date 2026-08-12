@@ -39,6 +39,8 @@ services:
         condition: service_healthy
     ports:
       - "7080:7080/tcp"
+    # Optional: size for peak scan/transcode, not idle floor. See docs/admin/operating.md#memory-and-container-sizing
+    # mem_limit: 2g
     # Hardware transcoding (optional). Stock image falls back to libx264/libx265.
     # Intel/AMD VAAPI - see docs/admin/operating.md#hardware-acceleration
     # devices:

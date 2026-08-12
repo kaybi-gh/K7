@@ -72,6 +72,8 @@ COPY --from=build /publish .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENV ASPNETCORE_HTTP_PORTS=7080
+# Return native heap (Skia/glibc) more eagerly.
+ENV MALLOC_TRIM_THRESHOLD_=131072
 # Quieter default logs in containers; keep K7 + host lifetime at Information for startup/setup.
 ENV Serilog__MinimumLevel__Default=Warning
 ENV Serilog__MinimumLevel__Override__K7=Information
