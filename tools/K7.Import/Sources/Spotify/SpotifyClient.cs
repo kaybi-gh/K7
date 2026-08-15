@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -10,6 +11,11 @@ public sealed class SpotifyClient : ISourceClient
     private readonly HttpClient _httpClient;
     private readonly string? _dataDir;
     private readonly bool _hasApiToken;
+    private bool _hasUserProfile;
+    private bool _catalogAvailable;
+    private bool _useBatchTrackFetch = true;
+
+    public List<string> TokenWarnings { get; } = [];
 
     public SpotifyClient(string? accessToken, string? dataDir = null)
     {
@@ -28,17 +34,44 @@ public sealed class SpotifyClient : ISourceClient
 
     public async Task<SourceServerInfo> ValidateConnectionAsync(CancellationToken cancellationToken = default)
     {
-        if (_hasApiToken)
+        if (!_hasApiToken)
+            return new SourceServerInfo { Name = "Spotify", Version = null };
+
+        using var me = await _httpClient.GetAsync("v1/me", cancellationToken);
+        if (me.IsSuccessStatusCode)
         {
-            var response = await _httpClient.GetAsync("v1/me", cancellationToken);
-            response.EnsureSuccessStatusCode();
+            _hasUserProfile = true;
+            _catalogAvailable = true;
+            return new SourceServerInfo { Name = "Spotify", Version = "user" };
         }
-        return new SourceServerInfo { Name = "Spotify", Version = null };
+
+        // Client-credentials tokens cannot call /v1/me. Probe a single catalog track
+        // (batch GET /v1/tracks?ids= and Search are restricted for new Dev Mode apps).
+        using var probe = await _httpClient.GetAsync(
+            "v1/tracks/11dFghVXANMlKmJXsNCbNl?market=FR", cancellationToken);
+        if (probe.IsSuccessStatusCode)
+        {
+            _catalogAvailable = true;
+            return new SourceServerInfo { Name = "Spotify", Version = "app" };
+        }
+
+        var detail = await ReadSpotifyErrorAsync(probe);
+        var hint = "Spotify API token was rejected"
+            + (string.IsNullOrWhiteSpace(detail) ? "." : $": {detail}")
+            + " History matching will use titles only. New Dev Mode apps need the app owner on Spotify Premium; Search and batch GET /tracks are blocked.";
+
+        if (_dataDir is not null && Directory.Exists(_dataDir))
+        {
+            TokenWarnings.Add(hint);
+            return new SourceServerInfo { Name = "Spotify", Version = "export" };
+        }
+
+        throw new HttpRequestException($"Spotify API token was rejected ({(int)probe.StatusCode}): {detail}");
     }
 
     public async Task<List<SourceUser>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
-        if (_hasApiToken)
+        if (_hasUserProfile)
         {
             var profile = await _httpClient.GetFromJsonAsync<JsonElement>("v1/me", cancellationToken);
             return
@@ -124,7 +157,7 @@ public sealed class SpotifyClient : ISourceClient
     {
         var libraries = new List<SourceLibrary>();
 
-        if (_hasApiToken)
+        if (_hasUserProfile)
         {
             libraries.Add(new SourceLibrary { Id = "saved-tracks", Name = "Liked Songs", MediaType = "music" });
             libraries.Add(new SourceLibrary { Id = "saved-albums", Name = "Saved Albums", MediaType = "music" });
@@ -146,14 +179,15 @@ public sealed class SpotifyClient : ISourceClient
             "saved-tracks" => await GetSavedTracksAsync(progress, cancellationToken),
             "saved-albums" => await GetSavedAlbumTracksAsync(progress, cancellationToken),
             "recently-played" => await GetRecentlyPlayedAsync(progress, cancellationToken),
-            "streaming-history" => LoadStreamingHistoryFromExport(progress),
+            "streaming-history" => await HydrateSpotifyTrackMetadataAsync(
+                LoadStreamingHistoryFromExport(progress), progress, cancellationToken),
             _ => []
         };
     }
 
     public async Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        if (_hasApiToken)
+        if (_hasUserProfile)
             return await GetPlaylistsFromApiAsync(cancellationToken);
 
         return LoadPlaylistsFromExport();
@@ -411,7 +445,8 @@ public sealed class SpotifyClient : ISourceClient
                     LastPlayedAt = playedAt,
                     MediaType = "music",
                     ArtistName = recentArtistName,
-                    AlbumName = recentAlbumName
+                    AlbumName = recentAlbumName,
+                    Popularity = ParsePopularity(track)
                 };
             }
         }
@@ -580,7 +615,8 @@ public sealed class SpotifyClient : ISourceClient
                     Title = name,
                     ProviderIds = ParseTrackProviderIds(track),
                     ArtistName = artistName,
-                    AlbumName = albumName
+                    AlbumName = albumName,
+                    Popularity = ParsePopularity(track)
                 });
             }
 
@@ -615,7 +651,8 @@ public sealed class SpotifyClient : ISourceClient
             Rating = liked ? 10.0 : null,
             MediaType = "music",
             ArtistName = artistName,
-            AlbumName = albumName
+            AlbumName = albumName,
+            Popularity = ParsePopularity(track)
         };
     }
 
@@ -633,5 +670,212 @@ public sealed class SpotifyClient : ISourceClient
         }
 
         return providerIds;
+    }
+
+    private static int? ParsePopularity(JsonElement track)
+    {
+        if (track.TryGetProperty("popularity", out var popularity) && popularity.ValueKind == JsonValueKind.Number
+            && popularity.TryGetInt32(out var value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    private async Task<List<SourceMediaItem>> HydrateSpotifyTrackMetadataAsync(
+        List<SourceMediaItem> items,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        if (items.Count == 0 || !_hasApiToken || !_catalogAvailable)
+            return items;
+
+        var spotifyIds = items
+            .Select(i => i.ProviderIds.TryGetValue("spotify", out var id) ? id : null)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (spotifyIds.Count == 0)
+            return items;
+
+        var isrcById = new Dictionary<string, string>(StringComparer.Ordinal);
+        var albumById = new Dictionary<string, string>(StringComparer.Ordinal);
+        var popularityById = new Dictionary<string, int>(StringComparer.Ordinal);
+        var done = 0;
+
+        foreach (var chunk in spotifyIds.Chunk(50))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var tracks = await GetTracksByIdsAsync(chunk, cancellationToken);
+            if (tracks is null)
+            {
+                progress?.Report("spotify metadata skipped (API token rejected or unavailable)");
+                break;
+            }
+
+            foreach (var track in tracks)
+            {
+                if (track.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var id = track.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String
+                    ? idProp.GetString()
+                    : null;
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+
+                var ids = ParseTrackProviderIds(track);
+                if (ids.TryGetValue("isrc", out var isrc))
+                    isrcById.TryAdd(id, isrc);
+
+                if (track.TryGetProperty("album", out var album) && album.ValueKind == JsonValueKind.Object
+                    && album.TryGetProperty("name", out var albumName) && albumName.ValueKind == JsonValueKind.String)
+                {
+                    var name = albumName.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        albumById.TryAdd(id, name);
+                }
+
+                var popularity = ParsePopularity(track);
+                if (popularity is not null)
+                    popularityById.TryAdd(id, popularity.Value);
+            }
+
+            done += chunk.Length;
+            progress?.Report($"spotify metadata {Math.Min(done, spotifyIds.Count)}/{spotifyIds.Count}");
+        }
+
+        if (isrcById.Count == 0 && albumById.Count == 0 && popularityById.Count == 0)
+            return items;
+
+        return [.. items.Select(item =>
+        {
+            if (!item.ProviderIds.TryGetValue("spotify", out var sid))
+                return item;
+
+            var ids = new Dictionary<string, string>(item.ProviderIds, StringComparer.OrdinalIgnoreCase);
+            if (isrcById.TryGetValue(sid, out var isrc))
+                ids["isrc"] = isrc;
+
+            var albumName = item.AlbumName;
+            if (string.IsNullOrWhiteSpace(albumName) && albumById.TryGetValue(sid, out var hydratedAlbum))
+                albumName = hydratedAlbum;
+
+            var popularity = item.Popularity;
+            if (popularityById.TryGetValue(sid, out var hydratedPopularity))
+                popularity = hydratedPopularity;
+
+            return item with { ProviderIds = ids, AlbumName = albumName, Popularity = popularity };
+        })];
+    }
+
+    private async Task<List<JsonElement>?> GetTracksByIdsAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        if (_useBatchTrackFetch)
+        {
+            var batched = await TryGetTracksBatchAsync(ids, cancellationToken);
+            if (batched is not null)
+                return batched;
+
+            _useBatchTrackFetch = false;
+        }
+
+        var tracks = new List<JsonElement>(ids.Count);
+        foreach (var id in ids)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var track = await GetTrackByIdAsync(id, cancellationToken);
+            if (track is null)
+                return tracks.Count > 0 ? tracks : null;
+
+            tracks.Add(track.Value);
+        }
+
+        return tracks;
+    }
+
+    private async Task<List<JsonElement>?> TryGetTracksBatchAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var url = $"v1/tracks?ids={string.Join(",", ids)}&market=FR";
+        using var response = await SendWithRetryAsync(url, cancellationToken);
+        if (response is null)
+            return null;
+
+        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+        if (doc.ValueKind != JsonValueKind.Object || !doc.TryGetProperty("tracks", out var tracks)
+            || tracks.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return [.. tracks.EnumerateArray().Where(t => t.ValueKind == JsonValueKind.Object)];
+    }
+
+    private async Task<JsonElement?> GetTrackByIdAsync(string id, CancellationToken cancellationToken)
+    {
+        var url = $"v1/tracks/{Uri.EscapeDataString(id)}?market=FR";
+        using var response = await SendWithRetryAsync(url, cancellationToken);
+        if (response is null)
+            return null;
+
+        if (response.StatusCode is HttpStatusCode.NotFound)
+            return null;
+
+        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+        return doc.ValueKind == JsonValueKind.Object ? doc : null;
+    }
+
+    private async Task<HttpResponseMessage?> SendWithRetryAsync(string url, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            if ((int)response.StatusCode == 429 || response.StatusCode is HttpStatusCode.ServiceUnavailable)
+            {
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                if (response.Headers.RetryAfter?.Delta is TimeSpan retryAfter)
+                    delay = retryAfter;
+                response.Dispose();
+                await Task.Delay(delay, cancellationToken);
+                continue;
+            }
+
+            return response;
+        }
+
+        return null;
+    }
+
+    private static async Task<string> ReadSpotifyErrorAsync(HttpResponseMessage response)
+    {
+        var text = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(text))
+            return $"{(int)response.StatusCode} {response.ReasonPhrase}";
+
+        try
+        {
+            var json = JsonSerializer.Deserialize<JsonElement>(text);
+            if (json.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
+                && error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
+            {
+                return message.GetString() ?? text;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return text.Length > 300 ? text[..300] : text;
     }
 }

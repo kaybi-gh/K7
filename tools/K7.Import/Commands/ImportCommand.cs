@@ -23,7 +23,7 @@ public sealed class ImportCommand
         var sourceUrlOption = new Option<string>("--source-url") { Description = "Source server URL (not required for spotify)" };
         var sourceApiKeyOption = new Option<string>("--source-api-key") { Description = "Source server API key / token (not required for spotify with --spotify-data-dir)" };
         var k7UrlOption = new Option<string>("--k7-url") { Description = "K7 server URL", Required = true };
-        var dryRunOption = new Option<bool>("--dry-run") { Description = "Preview changes without applying them" };
+        var dryRunOption = new Option<bool>("--dry-run") { Description = "Preview matching and import counts without writing" };
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify export folder (streaming history and/or Playlist*.json account data)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
@@ -38,6 +38,14 @@ public sealed class ImportCommand
         {
             Description = "Map Plex file path prefix to K7 indexed path prefix (format: plexPrefix:k7Prefix or plexPrefix=>k7Prefix). Repeatable.",
             AllowMultipleArgumentsPerToken = true
+        };
+        var reportOption = new Option<string>("--report", "-o")
+        {
+            Description = "Write the full import/dry-run report to a UTF-8 text file (recommended for large imports)"
+        };
+        var tracearrServerOption = new Option<string>("--tracearr-server")
+        {
+            Description = "Tracearr only: filter history to one media server (plex|jellyfin|emby, or a Tracearr server UUID / UUID prefix)"
         };
 
         var command = new RootCommand("K7 Import Tool - Import media data from Plex, Jellyfin, Tautulli, Tracearr, or Spotify into K7");
@@ -57,6 +65,8 @@ public sealed class ImportCommand
         command.Add(ratingModeOption);
         command.Add(progressModeOption);
         command.Add(pathMapOption);
+        command.Add(reportOption);
+        command.Add(tracearrServerOption);
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
@@ -74,6 +84,8 @@ public sealed class ImportCommand
             var createMissing = !parseResult.GetValue(onlyMatchExistingOption);
             var fetchMetadata = parseResult.GetValue(fetchMetadataOption);
             var pathMaps = parseResult.GetValue(pathMapOption) ?? [];
+            var reportPath = parseResult.GetValue(reportOption);
+            var tracearrServer = parseResult.GetValue(tracearrServerOption);
 
             var strategy = new MergeStrategy
             {
@@ -85,15 +97,31 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeDynamicPlaylists, createMissing, fetchMetadata, strategy, pathMaps, cancellationToken);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeDynamicPlaylists, createMissing, fetchMetadata, strategy, pathMaps, reportPath, tracearrServer, cancellationToken);
         });
 
         return command;
     }
 
-    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool autoMapUsers, bool includeDynamicPlaylists, bool createMissing, bool fetchMetadata, MergeStrategy strategy, string[] pathMapArgs, CancellationToken cancellationToken)
+    private static async Task RunAsync(
+        string source,
+        string sourceUrl,
+        string sourceApiKey,
+        string k7Url,
+        bool dryRun,
+        ImportScope scope,
+        string? spotifyDataDir,
+        string[] userMappings,
+        bool autoMapUsers,
+        bool includeDynamicPlaylists,
+        bool createMissing,
+        bool fetchMetadata,
+        MergeStrategy strategy,
+        string[] pathMapArgs,
+        string? reportPath,
+        string? tracearrServer,
+        CancellationToken cancellationToken)
     {
-
         var sourceLower = source.ToLowerInvariant();
         if (scope.History && sourceLower is "plex" or "jellyfin")
         {
@@ -101,25 +129,50 @@ public sealed class ImportCommand
             scope = scope with { History = false };
         }
 
-        // 1. Create source client
         if (sourceLower != "spotify" && string.IsNullOrEmpty(sourceApiKey))
             throw new ArgumentException("--source-api-key is required for this source.");
+
+        if (!string.IsNullOrWhiteSpace(tracearrServer) && sourceLower != "tracearr")
+            throw new ArgumentException("--tracearr-server is only valid with --source tracearr.");
 
         ISourceClient sourceClient = sourceLower switch
         {
             "plex" => new PlexClient(sourceUrl, sourceApiKey) { IncludeDynamicPlaylists = includeDynamicPlaylists },
             "jellyfin" => new JellyfinClient(sourceUrl, sourceApiKey),
             "tautulli" => new TautulliClient(sourceUrl, sourceApiKey),
-            "tracearr" => new TracearrClient(sourceUrl, sourceApiKey),
+            "tracearr" => new TracearrClient(sourceUrl, sourceApiKey, tracearrServer),
             "spotify" => new SpotifyClient(sourceApiKey, spotifyDataDir),
             _ => throw new ArgumentException($"Unknown source: {source}. Use 'plex', 'jellyfin', 'tautulli', 'tracearr', or 'spotify'.")
         };
 
-        // 2. Validate source connection
         AnsiConsole.MarkupLine("[bold]Connecting to source server...[/]");
         var serverInfo = await sourceClient.ValidateConnectionAsync(cancellationToken);
         AnsiConsole.MarkupLine($"[green]Connected to {serverInfo.Name} (v{serverInfo.Version})[/]");
 
+        if (sourceClient is SpotifyClient spotifyWarnings)
+        {
+            foreach (var warning in spotifyWarnings.TokenWarnings)
+                AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(warning)}[/]");
+        }
+
+        if (sourceClient is TracearrClient tracearrClient)
+        {
+            if (tracearrClient.Servers.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]Tracearr reported no media servers.[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[bold]Tracearr media servers:[/]");
+                foreach (var server in tracearrClient.Servers)
+                    AnsiConsole.MarkupLine($"  - {Markup.Escape(server.Type)}  {Markup.Escape(server.Id)}");
+
+                if (!string.IsNullOrWhiteSpace(tracearrServer))
+                    AnsiConsole.MarkupLine($"[dim]Filtering with --tracearr-server {Markup.Escape(tracearrServer)}[/]");
+                else
+                    AnsiConsole.MarkupLine("[dim]Tip: pass --tracearr-server plex|jellyfin|emby (or a server UUID) to import one backend only.[/]");
+            }
+        }
         if (sourceClient is SpotifyClient spotifyClient && !string.IsNullOrEmpty(spotifyDataDir))
         {
             if (scope.History && !spotifyClient.HasStreamingHistoryExport())
@@ -133,50 +186,54 @@ public sealed class ImportCommand
             }
         }
 
-        // 3. Authenticate with K7
         AnsiConsole.MarkupLine("[bold]Authenticating with K7...[/]");
         var authenticator = new DeviceCodeAuthenticator(k7Url);
         await authenticator.AuthenticateAsync(cancellationToken);
         AnsiConsole.MarkupLine("[green]Authenticated with K7.[/]");
 
         var k7Client = new K7ApiClient(k7Url, authenticator.AccessToken!);
+        var report = new ImportReport { DryRun = dryRun };
 
-        // 4. Get users from source and K7
         var sourceUsers = await sourceClient.GetUsersAsync(cancellationToken);
+        if (sourceClient is PlexClient plexClient)
+        {
+            foreach (var warning in plexClient.TokenWarnings)
+                AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(warning)}[/]");
+        }
         var k7Users = await k7Client.GetUsersAsync(cancellationToken);
-
-        // 5. Resolve user mappings
         var parsedMappings = ParseUserMappings(userMappings);
-        var userMap = await ResolveUserMappingsAsync(
-            sourceUsers, k7Users, parsedMappings, k7Client, source, dryRun, autoMapUsers, cancellationToken);
+        var userPlans = await ResolveUserMappingsAsync(
+            sourceUsers, k7Users, parsedMappings, k7Client, sourceLower, dryRun, autoMapUsers, cancellationToken);
+        report.Users.AddRange(userPlans);
 
-        if (userMap.Count == 0)
+        var activePlans = userPlans.Where(p => p.Kind is not UserMappingKind.Skipped).ToList();
+        if (activePlans.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No users to import. Exiting.[/]");
+            ImportReportPrinter.Print(report, scope, reportPath);
             return;
         }
 
-        // 6. Get libraries
         var libraries = await sourceClient.GetLibrariesAsync(cancellationToken);
         if (sourceLower == "spotify" && !string.IsNullOrEmpty(spotifyDataDir))
-        {
             libraries = libraries.Where(l => l.Id != "recently-played").ToList();
-        }
 
         AnsiConsole.MarkupLine($"[bold]Found {libraries.Count} libraries:[/]");
         foreach (var lib in libraries)
-        {
             AnsiConsole.MarkupLine($"  - {lib.Name} ({lib.MediaType ?? "unknown"})");
-        }
 
-        // 7. Collect items with interactions and match once
         var pathMaps = MediaMatcher.ParsePathMaps(pathMapArgs);
-        var matcher = new MediaMatcher(k7Client, pathMaps);
+        var spotifyIdBridge = sourceLower == "spotify"
+            ? new SpotifyIdBridge(spotifyDataDir is not null
+                ? Path.Combine(spotifyDataDir, "k7-spotify-id-bridge.json")
+                : null)
+            : null;
+        var matcher = new MediaMatcher(k7Client, pathMaps, spotifyIdBridge);
         var deviceResolver = new ImportDeviceResolver(k7Client);
-        var totalResult = new ImportResult();
 
         var userLibraryItems = new Dictionary<string, Dictionary<string, List<SourceMediaItem>>>();
         var libraryMatches = new Dictionary<string, Dictionary<string, Guid>>();
+        var libraryItemStatus = new Dictionary<string, Dictionary<string, MatchStatus>>();
 
         if (scope.History || scope.Ratings)
         {
@@ -185,8 +242,9 @@ public sealed class ImportCommand
                 {
                     var interactedItemsPerLibrary = new Dictionary<string, Dictionary<string, SourceMediaItem>>();
 
-                    foreach (var (sourceUser, _) in userMap)
+                    foreach (var plan in activePlans)
                     {
+                        var sourceUser = plan.Source;
                         userLibraryItems[sourceUser.Id] = [];
 
                         foreach (var library in libraries)
@@ -198,8 +256,18 @@ public sealed class ImportCommand
                             var progress = new Progress<string>(detail =>
                                 ctx.Status($"Fetching {library.Name} for {sourceUser.DisplayName} - {detail}"));
 
-                            var allItems = await sourceClient.GetLibraryItemsAsync(
-                                library.Id, sourceUser.Id, progress, cancellationToken);
+                            List<SourceMediaItem> allItems;
+                            try
+                            {
+                                allItems = await sourceClient.GetLibraryItemsAsync(
+                                    library.Id, sourceUser.Id, progress, cancellationToken);
+                            }
+                            catch (Exception ex)
+                            {
+                                AnsiConsole.MarkupLine(
+                                    $"[yellow]Skipping {libraryLabel} for {userLabel}: {Markup.Escape(ex.Message)}[/]");
+                                allItems = [];
+                            }
 
                             var filtered = allItems.Where(i =>
                                 (scope.History && (i.PlayCount > 0 || i.IsCompleted || i.PlayHistory.Count > 0))
@@ -232,7 +300,7 @@ public sealed class ImportCommand
                             if (deduced.Count > 0)
                             {
                                 pathMaps = pathMaps.Concat(deduced).ToList();
-                                matcher = new MediaMatcher(k7Client, pathMaps);
+                                matcher = new MediaMatcher(k7Client, pathMaps, spotifyIdBridge);
                             }
                         }
                     }
@@ -247,89 +315,132 @@ public sealed class ImportCommand
                         if (!interactedItemsPerLibrary.TryGetValue(library.Id, out var interacted) || interacted.Count == 0)
                         {
                             libraryMatches[library.Id] = [];
+                            libraryItemStatus[library.Id] = [];
                             continue;
                         }
 
                         var itemsToMatch = interacted.Values.ToList();
                         ctx.Status($"Matching {itemsToMatch.Count} interacted items from {library.Name}...");
-                        var (matches, createdCount) = await matcher.MatchItemsAsync(
+                        var outcome = await matcher.MatchItemsAsync(
                             itemsToMatch,
-                            createMissing: createMissing && !dryRun,
-                            fetchMetadata,
+                            createMissing: createMissing,
+                            fetchMetadata: fetchMetadata,
+                            dryRun: dryRun,
+                            progress: new Progress<string>(msg => ctx.Status(msg)),
                             cancellationToken);
 
-                        totalResult.MatchedItems += matches.Count;
-                        totalResult.CreatedMedias += createdCount;
-                        totalResult.UnmatchedItems += itemsToMatch.Count(i => !matches.ContainsKey(i.Id));
-                        foreach (var item in itemsToMatch.Where(i => !matches.ContainsKey(i.Id)))
-                            totalResult.UnmatchedTitles.Add($"{item.Title} ({item.Year})");
+                        report.MergeMedia(outcome);
+                        libraryMatches[library.Id] = outcome.Matches;
+                        libraryItemStatus[library.Id] = outcome.ItemResults
+                            .ToDictionary(r => r.Item.Id, r => r.Status, StringComparer.Ordinal);
 
-                        libraryMatches[library.Id] = matches;
+                        AnsiConsole.MarkupLine(
+                            $"[dim]Matched {library.Name}: {outcome.Matches.Count} existing, " +
+                            $"{(dryRun ? outcome.WouldCreateCount : outcome.CreatedCount)} " +
+                            $"{(dryRun ? "would create" : "created")}, {outcome.UnmatchedCount} unmatched[/]");
                     }
-
-                    totalResult.MatchedByExternalId = matcher.MatchedByExternalId;
-                    totalResult.MatchedByPath = matcher.MatchedByPath;
-                    totalResult.MatchedExistingByTitle = matcher.MatchedByTitleOrExisting;
                 });
         }
 
-        // 8. Import per user using pre-computed matches
-        foreach (var (sourceUser, k7UserId) in userMap)
+        foreach (var plan in activePlans)
         {
-            AnsiConsole.MarkupLine($"\n[bold blue]Importing data for {sourceUser.DisplayName}...[/]");
+            var sourceUser = plan.Source;
+            var preview = new UserImportPreview { Plan = plan };
+            report.PerUser.Add(preview);
+
+            AnsiConsole.MarkupLine($"\n[bold blue]{(dryRun ? "Previewing" : "Importing")} data for {sourceUser.DisplayName}...[/]");
 
             await AnsiConsole.Status()
-                .StartAsync("Importing user data...", async ctx =>
+                .StartAsync(dryRun ? "Previewing user data..." : "Importing user data...", async ctx =>
                 {
-                    if (!dryRun && (scope.History || scope.Ratings))
+                    if (scope.History || scope.Ratings)
                     {
                         foreach (var library in libraries)
                         {
-                            if (!libraryMatches.TryGetValue(library.Id, out var matches) || matches.Count == 0)
-                                continue;
-
                             if (!userLibraryItems.TryGetValue(sourceUser.Id, out var libItems)
                                 || !libItems.TryGetValue(library.Id, out var items)
                                 || items.Count == 0)
                                 continue;
 
+                            libraryMatches.TryGetValue(library.Id, out var matches);
+                            matches ??= [];
+                            libraryItemStatus.TryGetValue(library.Id, out var statuses);
+                            statuses ??= [];
+
                             if (scope.History)
                             {
-                                var stateItems = items
-                                    .Where(i => matches.ContainsKey(i.Id) && (i.PlayCount > 0 || i.IsCompleted))
-                                    .Select(i => new BulkUpsertMediaStatesRequest.MediaStateItem
+                                var historyItems = items
+                                    .Where(i => i.PlayCount > 0 || i.IsCompleted || i.PlayHistory.Count > 0)
+                                    .ToList();
+                                AccumulateMediaCounts(historyItems, statuses, dryRun,
+                                    out var matched, out var wouldCreate, out var created, out var unmatched);
+                                preview.HistorySourceItems += historyItems.Count;
+                                preview.HistoryMatched += matched;
+                                preview.HistoryWouldCreate += wouldCreate;
+                                preview.HistoryCreated += created;
+                                preview.HistoryUnmatched += unmatched;
+
+                                var stateItems = historyItems
+                                    .Where(i => matches.ContainsKey(i.Id))
+                                    .GroupBy(i => matches[i.Id])
+                                    .Select(g =>
                                     {
-                                        MediaId = matches[i.Id],
-                                        PlayCount = i.PlayCount,
-                                        LastPlaybackPosition = i.LastPlaybackPosition ?? 0,
-                                        ProgressPercentage = CalculateProgressPercentage(i),
-                                        IsCompleted = i.IsCompleted,
-                                        LastInteractedAt = i.LastPlayedAt
+                                        var latest = g.MaxBy(i => i.LastPlayedAt ?? DateTime.MinValue) ?? g.First();
+                                        return new BulkUpsertMediaStatesRequest.MediaStateItem
+                                        {
+                                            MediaId = g.Key,
+                                            PlayCount = g.Sum(i => i.PlayCount),
+                                            LastPlaybackPosition = latest.LastPlaybackPosition ?? 0,
+                                            ProgressPercentage = CalculateProgressPercentage(latest),
+                                            IsCompleted = g.Any(i => i.IsCompleted),
+                                            LastInteractedAt = g.Max(i => i.LastPlayedAt)
+                                        };
                                     })
-                                    .DistinctBy(i => i.MediaId)
                                     .ToList();
 
-                                if (stateItems.Count > 0)
+                                var sessionCount = historyItems
+                                    .Where(i => matches.ContainsKey(i.Id))
+                                    .Sum(i => i.PlayHistory.Count);
+
+                                if (dryRun)
                                 {
-                                    ctx.Status($"Importing {stateItems.Count} watch states for {sourceUser.Name}...");
-                                    totalResult.ImportedWatchStates += await k7Client.BulkUpsertMediaStatesAsync(k7UserId, stateItems, strategy, cancellationToken);
+                                    preview.WatchStates += stateItems.Count;
+                                    preview.PlaybackSessions += sessionCount;
                                 }
-
-                                var sessionItems = await BuildPlaybackSessionItemsAsync(
-                                    items, matches, deviceResolver, cancellationToken);
-
-                                if (sessionItems.Count > 0)
+                                else
                                 {
-                                    ctx.Status($"Importing {sessionItems.Count} playback sessions for {sourceUser.Name}...");
-                                    totalResult.ImportedPlaybackSessions += await k7Client.BulkCreatePlaybackSessionsAsync(k7UserId, sessionItems, cancellationToken);
+                                    var sessionItems = await BuildPlaybackSessionItemsAsync(
+                                        historyItems, matches, deviceResolver, cancellationToken);
+
+                                    if (stateItems.Count > 0)
+                                    {
+                                        ctx.Status($"Importing {stateItems.Count} watch states for {sourceUser.Name}...");
+                                        preview.WatchStates += await k7Client.BulkUpsertMediaStatesAsync(
+                                            plan.K7UserId, stateItems, strategy, cancellationToken);
+                                    }
+
+                                    if (sessionItems.Count > 0)
+                                    {
+                                        ctx.Status($"Importing {sessionItems.Count} playback sessions for {sourceUser.Name}...");
+                                        preview.PlaybackSessions += await k7Client.BulkCreatePlaybackSessionsAsync(
+                                            plan.K7UserId, sessionItems, cancellationToken);
+                                    }
                                 }
                             }
 
                             if (scope.Ratings)
                             {
-                                // DistinctBy MediaId: several Plex items can match the same K7 media.
-                                var ratingItems = items
-                                    .Where(i => matches.ContainsKey(i.Id) && i.Rating is > 0)
+                                var ratingSource = items.Where(i => i.Rating is > 0).ToList();
+                                AccumulateMediaCounts(ratingSource, statuses, dryRun,
+                                    out var matched, out var wouldCreate, out var created, out var unmatched);
+                                preview.RatingsSourceItems += ratingSource.Count;
+                                preview.RatingsMatched += matched;
+                                preview.RatingsWouldCreate += wouldCreate;
+                                preview.RatingsCreated += created;
+                                preview.RatingsUnmatched += unmatched;
+
+                                var ratingItems = ratingSource
+                                    .Where(i => matches.ContainsKey(i.Id))
                                     .Select(i => new BulkUpsertRatingsRequest.RatingItem
                                     {
                                         MediaId = matches[i.Id],
@@ -338,159 +449,198 @@ public sealed class ImportCommand
                                     .DistinctBy(i => i.MediaId)
                                     .ToList();
 
-                                if (ratingItems.Count > 0)
+                                if (dryRun)
+                                {
+                                    preview.RatingsToImport += ratingItems.Count;
+                                }
+                                else if (ratingItems.Count > 0)
                                 {
                                     ctx.Status($"Importing {ratingItems.Count} ratings for {sourceUser.Name}...");
-                                    totalResult.ImportedRatings += await k7Client.BulkUpsertRatingsAsync(k7UserId, ratingItems, strategy, cancellationToken);
+                                    preview.RatingsToImport += await k7Client.BulkUpsertRatingsAsync(
+                                        plan.K7UserId, ratingItems, strategy, cancellationToken);
                                 }
                             }
                         }
                     }
 
-                    if (scope.Playlists)
+                    if (!scope.Playlists)
+                        return;
+
+                    ctx.Status("Fetching playlists...");
+                    var playlists = await sourceClient.GetPlaylistsAsync(sourceUser.Id, cancellationToken);
+                    AnsiConsole.MarkupLine($"[dim]Found {playlists.Count} playlist(s) for {Markup.Escape(sourceUser.Name)}[/]");
+
+                    foreach (var playlist in playlists)
                     {
-                        ctx.Status("Fetching playlists...");
-                        var playlists = await sourceClient.GetPlaylistsAsync(sourceUser.Id, cancellationToken);
-                        AnsiConsole.MarkupLine($"[dim]Found {playlists.Count} playlist(s) for {Markup.Escape(sourceUser.Name)}[/]");
-                        foreach (var preview in playlists.Take(20))
-                            AnsiConsole.MarkupLine($"  [dim]- {Markup.Escape(preview.Title)} ({preview.Items.Count} items)[/]");
-                        if (playlists.Count > 20)
-                            AnsiConsole.MarkupLine($"  [dim]...and {playlists.Count - 20} more[/]");
-
-                        var smartCount = playlists.Count(p => p.IsDynamic);
-                        if (!includeDynamicPlaylists && smartCount > 0)
+                        if (playlist.IsDynamic && !includeDynamicPlaylists)
                         {
-                            ctx.Status(
-                                $"Skipping {smartCount} smart/dynamic playlist(s) for {sourceUser.Name} " +
-                                "(recreate as K7 dynamic playlists, or use --include-dynamic-playlists)");
-                            playlists = playlists.Where(p => !p.IsDynamic).ToList();
-                            totalResult.SkippedDynamicPlaylists += smartCount;
+                            preview.SkippedDynamicPlaylists++;
+                            preview.Playlists.Add(new PlaylistPreview
+                            {
+                                Title = playlist.Title,
+                                IsDynamic = true,
+                                Skipped = true,
+                                SkipReason = "dynamic playlist",
+                                SourceItems = playlist.Items.Count
+                            });
+                            continue;
                         }
 
-                        if (dryRun) return;
+                        var defaultMediaType = playlist.MediaType ?? "music";
+                        ctx.Status($"Matching playlist '{playlist.Title}' ({playlist.Items.Count} items)...");
+                        var outcome = await matcher.MatchPlaylistItemsAsync(
+                            playlist.Items,
+                            defaultMediaType,
+                            createMissing: createMissing,
+                            fetchMetadata: fetchMetadata && createMissing && !dryRun,
+                            dryRun: dryRun,
+                            cancellationToken);
 
-                        foreach (var playlist in playlists)
+                        report.MergeMedia(outcome);
+
+                        var playlistPreview = new PlaylistPreview
                         {
-                            var defaultMediaType = playlist.MediaType ?? "music";
-                            // Same createMissing as history: virtual file-less tracks are allowed unless
-                            // --only-match-existing (they show up under "Afficher les titres indisponibles").
-                            var (playlistMatches, playlistCreated) = await matcher.MatchPlaylistItemsAsync(
-                                playlist.Items,
-                                defaultMediaType,
-                                createMissing: createMissing && !dryRun,
-                                fetchMetadata: fetchMetadata && createMissing && !dryRun,
-                                cancellationToken);
+                            Title = playlist.Title,
+                            IsDynamic = playlist.IsDynamic,
+                            SourceItems = playlist.Items.Count,
+                            Matched = outcome.MatchedExisting.Count(),
+                            WouldCreate = outcome.WouldCreateCount,
+                            Created = outcome.CreatedCount,
+                            Unmatched = outcome.UnmatchedCount
+                        };
+                        preview.Playlists.Add(playlistPreview);
 
-                            totalResult.CreatedMedias += playlistCreated;
-                            var matchedCount = playlistMatches.Count;
-                            var unmatchedCount = Math.Max(0, playlist.Items.Count - matchedCount);
-                            AnsiConsole.MarkupLine(
-                                $"[dim]Playlist '{Markup.Escape(playlist.Title)}': {playlist.Items.Count} source, {matchedCount} matched ({playlistCreated} virtual), {unmatchedCount} unmatched[/]");
+                        AnsiConsole.MarkupLine(
+                            $"[dim]Playlist '{Markup.Escape(playlist.Title)}': {playlist.Items.Count} source, " +
+                            $"{playlistPreview.Matched} matched, " +
+                            $"{(dryRun ? playlistPreview.WouldCreate : playlistPreview.Created)} " +
+                            $"{(dryRun ? "would create" : "created")}, {playlistPreview.Unmatched} unmatched[/]");
 
-                            if (matchedCount == 0) continue;
+                        if (dryRun || outcome.Matches.Count == 0)
+                            continue;
 
-                            var playlistMediaType = playlist.MediaType switch
+                        var playlistMediaType = playlist.MediaType switch
+                        {
+                            "music" => MediaType.MusicTrack,
+                            _ => null as MediaType?
+                        };
+
+                        if (playlistMediaType is null)
+                        {
+                            var firstMatchedMediaId = outcome.Matches.Values.First();
+                            var firstMatchedType = await k7Client.GetMediaTypeAsync(firstMatchedMediaId, cancellationToken);
+                            playlistMediaType = firstMatchedType switch
                             {
-                                "music" => MediaType.MusicTrack,
-                                _ => null as MediaType?
+                                MediaType.Movie => MediaType.Movie,
+                                MediaType.SerieEpisode => MediaType.SerieEpisode,
+                                MediaType.MusicTrack => MediaType.MusicTrack,
+                                _ => MediaType.Movie
                             };
-
-                            if (playlistMediaType is null)
-                            {
-                                var firstMatchedMediaId = playlistMatches.Values.First();
-                                var firstMatchedType = await k7Client.GetMediaTypeAsync(firstMatchedMediaId, cancellationToken);
-                                playlistMediaType = firstMatchedType switch
-                                {
-                                    MediaType.Movie => MediaType.Movie,
-                                    MediaType.SerieEpisode => MediaType.SerieEpisode,
-                                    MediaType.MusicTrack => MediaType.MusicTrack,
-                                    _ => MediaType.Movie
-                                };
-                            }
-
-                            var sourceLabel = sourceLower switch
-                            {
-                                "plex" => "Plex",
-                                "jellyfin" => "Jellyfin",
-                                "spotify" => "Spotify",
-                                "tautulli" => "Tautulli",
-                                "tracearr" => "Tracearr",
-                                _ => char.ToUpperInvariant(sourceLower[0]) + sourceLower[1..]
-                            };
-                            var playlistTitle = playlist.Title.StartsWith($"{sourceLabel} - ", StringComparison.OrdinalIgnoreCase)
-                                ? playlist.Title
-                                : $"{sourceLabel} - {playlist.Title}";
-
-                            ctx.Status($"Importing playlist '{playlistTitle}' ({matchedCount}/{playlist.Items.Count})...");
-                            var mediaIds = playlist.Items
-                                .Where(i => playlistMatches.ContainsKey(i.Id))
-                                .Select(i => playlistMatches[i.Id])
-                                .ToList();
-
-                            var importResult = await k7Client.ImportUserPlaylistAsync(
-                                k7UserId,
-                                playlistTitle,
-                                playlistMediaType.Value,
-                                mediaIds,
-                                cancellationToken);
-
-                            if (importResult.WasCreated || importResult.AddedItemCount > 0)
-                                totalResult.ImportedPlaylists++;
                         }
+
+                        var sourceLabel = sourceLower switch
+                        {
+                            "plex" => "Plex",
+                            "jellyfin" => "Jellyfin",
+                            "spotify" => "Spotify",
+                            "tautulli" => "Tautulli",
+                            "tracearr" => "Tracearr",
+                            _ => char.ToUpperInvariant(sourceLower[0]) + sourceLower[1..]
+                        };
+                        var playlistTitle = playlist.Title.StartsWith($"{sourceLabel} - ", StringComparison.OrdinalIgnoreCase)
+                            ? playlist.Title
+                            : $"{sourceLabel} - {playlist.Title}";
+
+                        ctx.Status($"Importing playlist '{playlistTitle}' ({outcome.Matches.Count}/{playlist.Items.Count})...");
+                        var mediaIds = playlist.Items
+                            .Where(i => outcome.Matches.ContainsKey(i.Id))
+                            .Select(i => outcome.Matches[i.Id])
+                            .ToList();
+
+                        await k7Client.ImportUserPlaylistAsync(
+                            plan.K7UserId,
+                            playlistTitle,
+                            playlistMediaType.Value,
+                            mediaIds,
+                            cancellationToken);
                     }
                 });
         }
 
-        // 9. Summary
-        AnsiConsole.WriteLine();
-        var table = new Table();
-        table.AddColumn("Metric");
-        table.AddColumn("Count");
-        table.AddRow("Matched items (total)", totalResult.MatchedItems.ToString());
-        table.AddRow("  via external ID", totalResult.MatchedByExternalId.ToString());
-        table.AddRow("  via file path", totalResult.MatchedByPath.ToString());
-        table.AddRow("  via title/identity (existing)", totalResult.MatchedExistingByTitle.ToString());
-        table.AddRow("Created virtual media", totalResult.CreatedMedias.ToString());
-        table.AddRow("Unmatched items", totalResult.UnmatchedItems.ToString());
-        table.AddRow("Imported watch states", totalResult.ImportedWatchStates.ToString());
-        table.AddRow("Imported playback sessions", totalResult.ImportedPlaybackSessions.ToString());
-        table.AddRow("Imported ratings", totalResult.ImportedRatings.ToString());
-        table.AddRow("Imported playlists", totalResult.ImportedPlaylists.ToString());
-        if (totalResult.SkippedDynamicPlaylists > 0)
-            table.AddRow("Skipped dynamic playlists", totalResult.SkippedDynamicPlaylists.ToString());
-        AnsiConsole.Write(table);
+        var skippedScopes = new List<string>();
+        if (!scope.History) skippedScopes.Add("history");
+        if (!scope.Ratings) skippedScopes.Add("ratings");
+        if (!scope.Playlists) skippedScopes.Add("playlists");
+        if (skippedScopes.Count > 0)
+            AnsiConsole.MarkupLine($"[dim]Skipped scopes: {string.Join(", ", skippedScopes)}[/]");
 
-        if (totalResult.SkippedDynamicPlaylists > 0)
+        ImportReportPrinter.Print(report, scope, reportPath);
+    }
+
+    private static void AccumulateMediaCounts(
+        IReadOnlyList<SourceMediaItem> items,
+        IReadOnlyDictionary<string, MatchStatus> statuses,
+        bool dryRun,
+        out int matched,
+        out int wouldCreate,
+        out int created,
+        out int unmatched)
+    {
+        matched = 0;
+        wouldCreate = 0;
+        created = 0;
+        unmatched = 0;
+
+        var wouldCreateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var createdKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in items)
         {
-            AnsiConsole.MarkupLine(
-                "[dim]Plex smart/dynamic playlists were skipped. Recreate them as K7 dynamic playlists, " +
-                "or re-run with --include-dynamic-playlists for a static snapshot.[/]");
-        }
-
-        var skipped = new List<string>();
-        if (!scope.History) skipped.Add("history");
-        if (!scope.Ratings) skipped.Add("ratings");
-        if (!scope.Playlists) skipped.Add("playlists");
-        if (skipped.Count > 0)
-            AnsiConsole.MarkupLine($"[dim]Skipped: {string.Join(", ", skipped)}[/]");
-
-        if (totalResult.UnmatchedTitles.Count > 0)
-        {
-            AnsiConsole.MarkupLine($"\n[yellow]Unmatched titles ({totalResult.UnmatchedTitles.Count}):[/]");
-            foreach (var title in totalResult.UnmatchedTitles.Take(50))
+            if (!statuses.TryGetValue(item.Id, out var status))
             {
-                AnsiConsole.MarkupLine($"  [dim]- {Markup.Escape(title)}[/]");
+                unmatched++;
+                continue;
             }
-            if (totalResult.UnmatchedTitles.Count > 50)
+
+            switch (status)
             {
-                AnsiConsole.MarkupLine($"  [dim]...and {totalResult.UnmatchedTitles.Count - 50} more[/]");
+                case MatchStatus.MatchedByExternalId:
+                case MatchStatus.MatchedByPath:
+                case MatchStatus.MatchedByTitle:
+                    matched++;
+                    break;
+                case MatchStatus.WouldCreate:
+                    if (item.MediaType == "music")
+                    {
+                        if (wouldCreateKeys.Add(MusicItemCollapser.IdentityKey(item)))
+                            wouldCreate++;
+                    }
+                    else
+                    {
+                        wouldCreate++;
+                    }
+
+                    break;
+                case MatchStatus.Created:
+                    if (item.MediaType == "music")
+                    {
+                        if (createdKeys.Add(MusicItemCollapser.IdentityKey(item)))
+                            created++;
+                    }
+                    else
+                    {
+                        created++;
+                    }
+
+                    break;
+                default:
+                    unmatched++;
+                    break;
             }
         }
 
-        if (dryRun)
-        {
-            AnsiConsole.MarkupLine("\n[yellow bold]DRY RUN - no changes were applied.[/]");
-        }
+        if (!dryRun)
+            wouldCreate = 0;
     }
 
     private static async Task<List<BulkCreatePlaybackSessionsRequest.PlaybackSessionItem>> BuildPlaybackSessionItemsAsync(
@@ -550,8 +700,6 @@ public sealed class ImportCommand
         if (item.DurationSeconds is > 0 && item.LastPlaybackPosition is > 0)
             return Math.Min(100.0, item.LastPlaybackPosition.Value / item.DurationSeconds.Value * 100.0);
 
-        // Tracearr/Tautulli often have play history without a resume position.
-        // Use a mid-progress value so incomplete items can enter Keep Watching.
         if (item.PlayCount > 0 || item.LastPlayedAt is not null)
             return 50;
 
@@ -565,14 +713,13 @@ public sealed class ImportCommand
         {
             var parts = mapping.Split(':', 2);
             if (parts.Length == 2)
-            {
                 result[parts[0].Trim()] = parts[1].Trim();
-            }
         }
+
         return result;
     }
 
-    private static async Task<Dictionary<SourceUser, Guid>> ResolveUserMappingsAsync(
+    private static async Task<List<UserPlan>> ResolveUserMappingsAsync(
         List<SourceUser> sourceUsers,
         List<K7.Shared.Dtos.Users.UserDto> k7Users,
         Dictionary<string, string> explicitMappings,
@@ -582,30 +729,34 @@ public sealed class ImportCommand
         bool autoMapUsers,
         CancellationToken cancellationToken)
     {
-        var result = new Dictionary<SourceUser, Guid>();
+        var plans = new List<UserPlan>();
 
         if (sourceUsers.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No users found on source server.[/]");
-            return result;
+            return plans;
         }
 
         AnsiConsole.MarkupLine($"\n[bold]Source users ({sourceUsers.Count}):[/]");
         foreach (var user in sourceUsers)
-        {
             AnsiConsole.MarkupLine($"  - {user.DisplayName} (id: {user.Id})");
-        }
 
         AnsiConsole.MarkupLine($"\n[bold]K7 users ({k7Users.Count}):[/]");
         foreach (var user in k7Users)
-        {
             AnsiConsole.MarkupLine($"  - {user.UserName} (id: {user.Id})");
-        }
 
         foreach (var sourceUser in sourceUsers)
         {
             if (string.IsNullOrWhiteSpace(sourceUser.Name))
             {
+                plans.Add(new UserPlan
+                {
+                    Source = sourceUser,
+                    K7UserId = Guid.Empty,
+                    TargetUsername = "(none)",
+                    Kind = UserMappingKind.Skipped,
+                    SkipReason = "empty name"
+                });
                 AnsiConsole.MarkupLine($"[yellow]Skipping source user with empty name (id: {sourceUser.Id}).[/]");
                 continue;
             }
@@ -617,53 +768,92 @@ public sealed class ImportCommand
 
                 if (k7User is not null)
                 {
-                    result[sourceUser] = k7User.Id;
+                    plans.Add(new UserPlan
+                    {
+                        Source = sourceUser,
+                        K7UserId = k7User.Id,
+                        TargetUsername = k7User.UserName ?? k7Username,
+                        Kind = UserMappingKind.MappedExisting
+                    });
                     AnsiConsole.MarkupLine($"[green]Mapped {sourceUser.Name} -> {k7User.UserName}[/]");
                 }
                 else
                 {
+                    plans.Add(new UserPlan
+                    {
+                        Source = sourceUser,
+                        K7UserId = Guid.Empty,
+                        TargetUsername = k7Username,
+                        Kind = UserMappingKind.Skipped,
+                        SkipReason = $"K7 user '{k7Username}' not found"
+                    });
                     AnsiConsole.MarkupLine($"[yellow]K7 user '{k7Username}' not found. Skipping {sourceUser.Name}.[/]");
                 }
+
+                continue;
             }
-            else
+
+            if (autoMapUsers)
             {
-                if (autoMapUsers)
+                var exactMatch = k7Users.FirstOrDefault(u =>
+                    string.Equals(u.UserName, sourceUser.Name, StringComparison.OrdinalIgnoreCase));
+                if (exactMatch is not null)
                 {
-                    var exactMatch = k7Users.FirstOrDefault(u =>
-                        string.Equals(u.UserName, sourceUser.Name, StringComparison.OrdinalIgnoreCase));
-                    if (exactMatch is not null)
+                    plans.Add(new UserPlan
                     {
-                        result[sourceUser] = exactMatch.Id;
-                        AnsiConsole.MarkupLine($"[green]Auto-mapped {sourceUser.Name} -> {exactMatch.UserName}[/]");
-                        continue;
-                    }
-                }
-
-                // Create temp user
-                var tempUsername = $"{sourceType}-{sourceUser.Name.ToLowerInvariant().Replace(' ', '-')}";
-                AnsiConsole.MarkupLine($"[dim]No mapping for {sourceUser.Name}, will use temp user '{tempUsername}'[/]");
-
-                if (!dryRun)
-                {
-                    var existing = k7Users.FirstOrDefault(u =>
-                        string.Equals(u.UserName, tempUsername, StringComparison.OrdinalIgnoreCase));
-
-                    if (existing is not null)
-                    {
-                        result[sourceUser] = existing.Id;
-                    }
-                    else
-                    {
-                        var created = await k7Client.CreateUserAsync(tempUsername, "User", cancellationToken);
-                        result[sourceUser] = created.Id;
-                        k7Users.Add(created);
-                        AnsiConsole.MarkupLine($"[green]Created temp K7 user '{tempUsername}'[/]");
-                    }
+                        Source = sourceUser,
+                        K7UserId = exactMatch.Id,
+                        TargetUsername = exactMatch.UserName ?? sourceUser.Name,
+                        Kind = UserMappingKind.AutoMapped
+                    });
+                    AnsiConsole.MarkupLine($"[green]Auto-mapped {sourceUser.Name} -> {exactMatch.UserName}[/]");
+                    continue;
                 }
             }
+
+            var tempUsername = $"{sourceType}-{sourceUser.Name.ToLowerInvariant().Replace(' ', '-')}";
+            var existingTemp = k7Users.FirstOrDefault(u =>
+                string.Equals(u.UserName, tempUsername, StringComparison.OrdinalIgnoreCase));
+
+            if (existingTemp is not null)
+            {
+                plans.Add(new UserPlan
+                {
+                    Source = sourceUser,
+                    K7UserId = existingTemp.Id,
+                    TargetUsername = tempUsername,
+                    Kind = UserMappingKind.ReuseTemp
+                });
+                AnsiConsole.MarkupLine($"[dim]No mapping for {sourceUser.Name}, reusing temp user '{tempUsername}'[/]");
+                continue;
+            }
+
+            if (dryRun)
+            {
+                plans.Add(new UserPlan
+                {
+                    Source = sourceUser,
+                    K7UserId = Guid.NewGuid(),
+                    TargetUsername = tempUsername,
+                    Kind = UserMappingKind.WouldCreateTemp
+                });
+                AnsiConsole.MarkupLine($"[dim]No mapping for {sourceUser.Name}, would create temp user '{tempUsername}'[/]");
+                continue;
+            }
+
+            var created = await k7Client.CreateUserAsync(tempUsername, "User", cancellationToken);
+            k7Users.Add(created);
+            plans.Add(new UserPlan
+            {
+                Source = sourceUser,
+                K7UserId = created.Id,
+                TargetUsername = tempUsername,
+                Kind = UserMappingKind.CreatedTemp
+            });
+            AnsiConsole.MarkupLine($"[green]Created temp K7 user '{tempUsername}'[/]");
         }
 
-        return result;
+        return plans;
     }
 
     private static ImportScope ParseIncludeScope(string[]? include)
@@ -677,6 +867,4 @@ public sealed class ImportCommand
             Ratings: set.Contains("ratings"),
             Playlists: set.Contains("playlists"));
     }
-
-    private sealed record ImportScope(bool History, bool Ratings, bool Playlists);
 }

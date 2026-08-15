@@ -6,10 +6,10 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via accountID when available. Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
+| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via plex.tv share / Home-user tokens (not `accountID`). PIN-protected Home users are skipped. Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
 | **Jellyfin** | No | Yes (like=10, dislike=1) | Yes (incl. Liked Songs from favorites) | No per-play timestamps, use Tracearr for history. Heart favorites become a "Liked Songs" playlist (Audio) plus "Favoris" for movies/episodes |
-| **Tracearr** | Yes | No | No | Per-play history with timestamps and provider IDs |
-| **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata |
+| **Tracearr** | Yes | No | No | Requires Tracearr **2.0+** (public API v2). Per-play history with timestamps plus TMDb/IMDb/TVDb IDs when available |
+| **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata. Uses Plex `title` (not `full_title`) and parses agent guids (`tmdb` / `imdb` / `tvdb`) when present. History rows rarely include guids, so the importer also calls `get_metadata` once per series (`grandparent_rating_key`) and attaches those ids as parent-series ids. A history row tagged `episode` with no show title is treated as a movie (Plex/Tautulli sometimes mis-tags films like Parasite) |
 | **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 (API) | Yes (API or `Playlist*.json` export) | Use `--spotify-data-dir` for history and/or account-data playlists |
 
 ### What gets imported
@@ -55,8 +55,18 @@ If an import goes wrong, restore that pre-import backup. Partial cleanup in the 
   See also: [Plex Support - Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 - **Jellyfin**: Dashboard > API Keys > Create
 - **Tautulli**: Settings > Web Interface > API Key
-- **Tracearr**: Settings > Generate API Key
-- **Spotify**: Generate an access token at https://developer.spotify.com/console with `user-library-read`, `user-read-recently-played`, and `playlist-read-private` scopes
+- **Tracearr** (2.0+): Settings > General > Generate API Key (Bearer `trr_pub_...`). Older Tracearr 1.x / API v1 is not supported.
+- **Spotify**: there is no long-lived API key (the old Web API console / Try it token generator is deprecated). Create an app at https://developer.spotify.com/dashboard (enable **Web API**), then mint a 1-hour token:
+  - **Catalog / ISRC matching** (enough for `--spotify-data-dir` history): Client Credentials. In the app Settings copy Client ID + Client Secret, then:
+    ```powershell
+    $r = Invoke-RestMethod -Method Post -Uri "https://accounts.spotify.com/api/token" `
+      -ContentType "application/x-www-form-urlencoded" `
+      -Body @{ grant_type = "client_credentials"; client_id = "YOUR_CLIENT_ID"; client_secret = "YOUR_CLIENT_SECRET" }
+    $r.access_token
+    ```
+    Pass that `access_token` to `--source-api-key`. Do not pass the client secret.
+    New Developer Dashboard apps are **Development Mode** (Feb 2026): the **app owner must be Spotify Premium**, Search/batch `GET /tracks` are limited or removed, and a 403 here usually means Premium is missing or the token cannot call catalog endpoints. Title matching still runs from the export if the API is rejected.
+  - **Liked songs / live playlists / recently played**: needs a user OAuth token (`user-library-read`, `user-read-recently-played`, `playlist-read-private`). Client Credentials cannot read your library.
 
 ### Spotify Data Export
 
@@ -68,6 +78,8 @@ Spotify offers two related downloads from https://www.spotify.com/account/privac
 | **Account data** | `Playlist*.json` (`{ "playlists": [ ... ] }`) | Playlists (when no Spotify API token is provided). |
 
 Without an API token, playlists are read from `Playlist*.json`. With `--source-api-key`, playlists come from the Spotify Web API instead. Liked songs / ratings still require the API (`saved-tracks`).
+
+Pass both `--spotify-data-dir` and `--source-api-key` for history import: the export has Spotify track IDs but no ISRC, while K7 tracks typically have MusicBrainz ISRCs and **no** Spotify IDs. Matching then tries, in order: title/artist/album against K7, Spotify catalog `GET /v1/tracks` (ISRC, 50 ids per request; needs a working token / Premium for new Dev Mode apps), then Odesli/Songlink **only for titles still unmatched**. Odesli results are cached in `k7-spotify-id-bridge.json` under `--spotify-data-dir`. MusicBrainz live search is not used (1 request/sec, no reverse Spotify-id bulk API). ListenBrainz/MetaBrainz labs only map MBID to Spotify, not the other way. Title matching also folds curly vs ASCII apostrophes, hyphen vs space (`Cerf-volant` / `Cerf volant`), and drops `Original Version` / remaster suffixes (not Live / Remix / Acoustic).
 
 `Playlist*.json` alone does **not** contain listen history - request **Extended streaming history** for that.
 
@@ -98,7 +110,9 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | Option | Description |
 |---|---|
 | `--source-url` | Source server URL (required for plex, jellyfin, tautulli; not needed for spotify) |
-| `--dry-run` | Preview what would be imported without making any changes |
+| `--dry-run` | Full preview without writing: user plans, media match/create/unmatched counts, per-user history/ratings/playlists |
+| `--report`, `-o` | Write the full report (including complete media lists) to a UTF-8 text file. Console then shows a summary only |
+| `--tracearr-server` | Tracearr only: limit history to one backend (`plex`, `jellyfin`, `emby`, or a Tracearr server UUID). Listed at connect time |
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
 | `--spotify-data-dir` | Path to Spotify export folder (`endsong_*` / `StreamingHistory_*` for history, `Playlist*.json` for playlists) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
@@ -154,6 +168,15 @@ k7-import -s spotify \
   --include history
 ```
 
+**Import Spotify history with ISRC matching (export + API token):**
+```bash
+k7-import -s spotify \
+  --source-api-key "your-spotify-access-token" \
+  --k7-url http://localhost:7080 \
+  --spotify-data-dir ~/Downloads/my_spotify_data/Spotify\ Extended\ Streaming\ History \
+  --include history
+```
+
 **Import only playlists from Jellyfin:**
 ```bash
 k7-import -s jellyfin \
@@ -170,6 +193,29 @@ k7-import -s tracearr \
   --source-api-key "your-tracearr-api-key" \
   --k7-url http://localhost:7080 \
   --include history
+```
+
+**Dry-run with full report file (recommended for large libraries):**
+```bash
+k7-import -s tracearr \
+  --source-url http://192.168.1.10:7878 \
+  --source-api-key "your-tracearr-api-key" \
+  --k7-url http://localhost:7080 \
+  --include history \
+  --dry-run \
+  --report ./tracearr-dry-run.txt
+```
+
+**Tracearr history from Plex only (skip Jellyfin/Emby plays):**
+```bash
+k7-import -s tracearr \
+  --source-url http://192.168.1.10:7878 \
+  --source-api-key "your-tracearr-api-key" \
+  --k7-url http://localhost:7080 \
+  --tracearr-server plex \
+  --include history \
+  --dry-run \
+  --report ./tracearr-plex-only.txt
 ```
 
 ## Authentication with K7
@@ -195,6 +241,17 @@ With `--user-mapping`, data is imported directly into existing K7 users:
 --user-mapping "PlexUser:k7user" --user-mapping "AnotherUser:anotherk7user"
 ```
 
+## Plex per-user ratings and playlists
+
+Plex `userRating` and `/playlists` always belong to the **authenticated token**, not to `accountID`. The importer therefore asks plex.tv for each friend's share token (and switches to PIN-less Plex Home users), then queries PMS with that token.
+
+- The admin token owner always imports.
+- Shared friends import when plex.tv returns their `accessToken`.
+- Plex Home users with a PIN are skipped (Plex requires the PIN to switch). Use Tautulli/Tracearr for their watch history.
+- If plex.tv is unreachable, only the token owner is imported.
+
+Map those Plex names onto K7 accounts with `--user-mapping` / `--auto-map-users` so ratings land on the right K7 user instead of a temp `plex-*` account.
+
 ## Plex Dynamic Playlists
 
 Plex smart (dynamic) playlists are **skipped by default**. Their filter rules do not map cleanly to K7, and importing the current item list would freeze a stale snapshot.
@@ -218,6 +275,12 @@ Items are matched between the source and K7 in this order:
 1. **External IDs** (TMDb, IMDb, TVDb, MusicBrainz recording / release-group, ISRC, then other providers)
 2. **File path** (Plex `Media.Part.file`, remapped with `--path-map` and/or auto-deduced mount prefixes)
 3. **Title / identity** via bulk create (links to an existing indexed media when identity matches, otherwise creates virtual media unless `--only-match-existing`). Playlist imports use the same rule and log `matched (N virtual) / unmatched` per playlist.
+
+Combined episode files (`S07E25-E26`): Partie 1 matches the first catalog episode. Partie 2 matches a later catalog episode **only when that number exists** in K7. If it does not (The Office Search Committee as one TMDb episode), Partie 2 is left unmatched so the file is not watched twice on E25, and no virtual E26 is created.
+
+Series title identity also folds ` : ` vs `:`, comma vs colon subtitles (`90210 Beverly Hills : ...` / `90210 Beverly Hills, ...`), `/` vs fraction slash, trailing `.!?`, filler words (`Presents`), Japanese `ou`/`o` (Bungou / Bungo), country suffixes (`(US)`), FR/EN repeated-word titles (`Face to Face` / `Face a face`), and a trailing `(YYYY)` when that leaves a single series (so `Hunter x Hunter` maps to `Hunter x Hunter (2011)`, but `One Piece` does not bind to both the anime and `One Piece (2023)`). Shared nicknames (`Konosuba`) keep every prefixed series and pick the one that uniquely has that `SxxExx`, but a full title hit stays on that show even when another franchise series has the same `SxxExx` (Konosuba Explosion, Ranking of Kings : Le tresor du courage). Parent-series guids are ignored in that case so Tautulli cannot pull the match onto the main show. A single nickname hit is not enough (`DanMachi` must not bind to Sword Oratoria). An English (or localized) subtitle after ` - ` / ` : ` matches the full K7 title (`Daemons of the Shadow Realm` -> `Tsugai - Daemons of the Shadow Realm`). Distinctive last tokens (`Mayfair`) and a last-resort TMDb/TVDb search (existing K7 external id only) cover translated titles. Parent-series ids from Tautulli `get_metadata` resolve the show, then `SxxExx`. External IDs must match the same media kind: an episode item cannot attach to a series or movie.
+
+Music title identity also folds curly vs ASCII apostrophes, hyphen vs space, `&` / `and`, and recording-edition suffixes (`Original Version`, remaster) while keeping Live / Remix / Acoustic distinct. Soundtrack artist credits can match an album prefix (`Arcane` vs `Arcane: League of Legends...`). Latin artist names match MusicBrainz sort names (`First Last` / `Last, First`) when K7 still shows the official native-script name. Same-title editions (different Spotify ids / ISRCs) collapse to one media: if any edition already matches K7, the whole group attaches there (K7 ISRC first, then a playable library file, then a virtual). Otherwise one virtual is created from the most popular Spotify track, all Spotify ids are kept, and only that popular ISRC is stored. A later library scan attaches a file to that virtual when the tags carry the same ISRC. Covers stay distinct (same title, different artist). Spotify export items can carry ISRC from the catalog API (bulk, when the token works) or from Odesli on leftover unmatched titles. K7 already stores ISRCs from MusicBrainz metadata refresh, so that is the reliable Spotify-to-library link (library tracks rarely have Spotify IDs).
 
 MusicBrainz notes: K7 albums use `musicbrainz` = release-group. Plex album/release MBIDs are imported as `musicbrainz-release` so they do not collide. Track MBIDs (recordings) keep the `musicbrainz` key and match K7 tracks after metadata refresh.
 
@@ -249,10 +312,20 @@ The summary separates:
 | Metric | Meaning |
 |---|---|
 | Matched via external ID / path / title | Existing K7 media found |
-| Created virtual media | New lightweight media created for unmatched source items |
+| Created / would create virtual media | New lightweight media for unmatched source items (dry-run reports "would create" without writing) |
 | Unmatched items | No match and virtual creation disabled or not applicable |
 
-Unmatched titles are listed at the end of the import.
+In `--dry-run`, the tool still resolves users (including temp accounts it *would* create), fetches source data, and matches against K7. The final report includes:
+
+- **Users**: mapped / auto-mapped / would create temp / skipped
+- **Media matching**: matched (by external id / path / title), would create virtual, unmatched
+- **Per user**: history / ratings / playlists counts with matched vs unmatched
+- **Playlists**: each playlist with source / matched / would create / unmatched (or skipped)
+- **Full media lists**: every matched, would-create, and unmatched item with status, title, source id, K7 id when known, provider ids, and file paths
+
+For large imports, pass `--report report.txt` (or `-o report.txt`): the complete lists go to the file, and the console keeps a short summary (first 30 of each media list).
+
+Tip: use `--auto-map-users` or `--user-mapping Kaybi:kaybi` so dry-run shows real target accounts instead of temp `tracearr-*` users.
 
 ## Merge Strategy
 

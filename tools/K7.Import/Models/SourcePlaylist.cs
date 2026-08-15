@@ -18,7 +18,9 @@ public sealed record SourcePlaylistItem
     public string? ArtistName { get; init; }
     public string? AlbumName { get; init; }
     public int? Year { get; init; }
+    public string? MediaType { get; init; }
     public string? SeriesTitle { get; init; }
     public int? SeasonNumber { get; init; }
     public int? EpisodeNumber { get; init; }
+    public int? Popularity { get; init; }
 }

@@ -1,5 +1,6 @@
 using K7.Import.Clients;
 using K7.Import.Models;
+using K7.Shared;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
 using Spectre.Console;
@@ -10,41 +11,122 @@ public sealed class MediaMatcher
 {
     private readonly K7ApiClient _k7Client;
     private readonly IReadOnlyList<(string PlexPrefix, string K7Prefix)> _pathMaps;
+    private readonly SpotifyIdBridge? _spotifyIdBridge;
 
-    public MediaMatcher(K7ApiClient k7Client, IReadOnlyList<(string PlexPrefix, string K7Prefix)>? pathMaps = null)
+    public MediaMatcher(
+        K7ApiClient k7Client,
+        IReadOnlyList<(string PlexPrefix, string K7Prefix)>? pathMaps = null,
+        SpotifyIdBridge? spotifyIdBridge = null)
     {
         _k7Client = k7Client;
         _pathMaps = pathMaps ?? [];
+        _spotifyIdBridge = spotifyIdBridge;
     }
 
     public int MatchedByExternalId { get; private set; }
     public int MatchedByPath { get; private set; }
     public int MatchedByTitleOrExisting { get; private set; }
 
-    public async Task<(Dictionary<string, Guid> Matches, int CreatedCount)> MatchItemsAsync(
+    public async Task<MatchOutcome> MatchItemsAsync(
         IReadOnlyList<SourceMediaItem> items,
         bool createMissing = false,
         bool fetchMetadata = false,
+        bool dryRun = false,
+        IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        // Dry-run never writes virtual medias; still resolve against existing K7 titles,
+        // then classify remaining creatable items as "would create".
+        var writeMissing = createMissing && !dryRun;
+        var statuses = new Dictionary<string, MatchStatus>(StringComparer.Ordinal);
+        items = items.Select(EpisodeIdentityParser.Enrich).Select(CoerceOrphanEpisodeToMovie).ToList();
+
         var matched = await MatchByExternalIdsAsync(items, cancellationToken);
-        MatchedByExternalId += matched.Count;
+        var matchedByExternalId = matched.Keys.ToHashSet(StringComparer.Ordinal);
 
-        var pathMatched = await MatchByPathsAsync(items, matched, cancellationToken);
-        MatchedByPath += pathMatched;
+        await MatchByPathsAsync(items, matched, cancellationToken);
+        DropLaterRangePartsSharingMedia(items, matched);
 
-        var beforeResolve = matched.Count;
-        var createdCount = await ResolveUnresolvedAsync(items, matched, createMissing, fetchMetadata, cancellationToken);
-        MatchedByTitleOrExisting += matched.Count - beforeResolve - createdCount;
+        foreach (var id in matched.Keys)
+        {
+            statuses[id] = matchedByExternalId.Contains(id)
+                ? MatchStatus.MatchedByExternalId
+                : MatchStatus.MatchedByPath;
+        }
 
-        return (matched, createdCount);
+        MatchedByExternalId += statuses.Values.Count(s => s is MatchStatus.MatchedByExternalId);
+        MatchedByPath += statuses.Values.Count(s => s is MatchStatus.MatchedByPath);
+
+        var beforeResolve = matched.Keys.ToHashSet(StringComparer.Ordinal);
+        var (createdCount, createdKeys) = await ResolveUnresolvedAsync(
+            items, matched, writeMissing, fetchMetadata, cancellationToken);
+
+        if (_spotifyIdBridge is not null)
+        {
+            var unresolved = items
+                .Where(i => !matched.ContainsKey(i.Id))
+                .Where(NeedsSpotifyIdBridge)
+                .ToList();
+            if (unresolved.Count > 0)
+            {
+                var enriched = await _spotifyIdBridge.EnrichAsync(unresolved, progress, cancellationToken);
+                if (enriched.Exists(HasNewExternalMusicId))
+                {
+                    var byId = enriched.ToDictionary(i => i.Id, StringComparer.Ordinal);
+                    items = [.. items.Select(i => byId.TryGetValue(i.Id, out var next) ? next : i)];
+                    var (bridgedCreated, bridgedKeys) = await ResolveUnresolvedAsync(
+                        items, matched, writeMissing, fetchMetadata, cancellationToken);
+                    createdCount += bridgedCreated;
+                    foreach (var key in bridgedKeys)
+                        createdKeys.Add(key);
+                }
+            }
+        }
+
+        foreach (var id in matched.Keys.Except(beforeResolve))
+        {
+            statuses[id] = createdKeys.Contains(id)
+                ? MatchStatus.Created
+                : MatchStatus.MatchedByTitle;
+        }
+
+        MatchedByTitleOrExisting += matched.Count - beforeResolve.Count - createdCount;
+
+        foreach (var item in items)
+        {
+            if (statuses.ContainsKey(item.Id))
+                continue;
+
+            statuses[item.Id] = createMissing && dryRun && IsCreatable(item) && !IsLaterCombinedRangeEpisode(item)
+                ? MatchStatus.WouldCreate
+                : MatchStatus.Unmatched;
+        }
+
+        var itemResults = items.Select(item => new ItemMatchResult
+        {
+            Item = item,
+            Status = statuses[item.Id],
+            MediaId = matched.TryGetValue(item.Id, out var mediaId) ? mediaId : null
+        }).ToList();
+
+        return new MatchOutcome
+        {
+            Matches = matched,
+            ItemResults = itemResults,
+            CreatedCount = MusicItemCollapser.DistinctCreates(
+                itemResults.Where(r => r.Status is MatchStatus.Created)).Count,
+            WouldCreateCount = MusicItemCollapser.DistinctCreates(
+                itemResults.Where(r => r.Status is MatchStatus.WouldCreate)).Count,
+            UnmatchedCount = itemResults.Count(r => r.Status is MatchStatus.Unmatched)
+        };
     }
 
-    public async Task<(Dictionary<string, Guid> Matches, int CreatedCount)> MatchPlaylistItemsAsync(
+    public async Task<MatchOutcome> MatchPlaylistItemsAsync(
         IReadOnlyList<SourcePlaylistItem> items,
         string defaultMediaType = "music",
         bool createMissing = false,
         bool fetchMetadata = false,
+        bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
         var asMediaItems = items.Select(i => new SourceMediaItem
@@ -59,12 +141,76 @@ public sealed class MediaMatcher
             SeriesTitle = i.SeriesTitle,
             SeasonNumber = i.SeasonNumber,
             EpisodeNumber = i.EpisodeNumber,
-            MediaType = defaultMediaType,
+            MediaType = i.MediaType ?? defaultMediaType,
             PlayCount = 0,
-            IsCompleted = false
+            IsCompleted = false,
+            Popularity = i.Popularity
         }).ToList();
 
-        return await MatchItemsAsync(asMediaItems, createMissing, fetchMetadata, cancellationToken);
+        return await MatchItemsAsync(asMediaItems, createMissing, fetchMetadata, dryRun, progress: null, cancellationToken);
+    }
+
+    private static bool NeedsSpotifyIdBridge(SourceMediaItem item) =>
+        item.MediaType == "music"
+        && item.ProviderIds.ContainsKey("spotify")
+        && !item.ProviderIds.ContainsKey("isrc")
+        && !item.ProviderIds.ContainsKey("musicbrainz");
+
+    private static bool HasNewExternalMusicId(SourceMediaItem item) =>
+        item.ProviderIds.ContainsKey("isrc") || item.ProviderIds.ContainsKey("musicbrainz");
+
+    private static bool IsCreatable(SourceMediaItem item) =>
+        item.MediaType is "movie" or "music" or "episode" or "serie";
+
+    /// <summary>
+    /// Tautulli/Plex sometimes tags a movie as episode with no show (no grandparent).
+    /// Without a series title, episode matching cannot work; treat it as a movie.
+    /// </summary>
+    private static SourceMediaItem CoerceOrphanEpisodeToMovie(SourceMediaItem item)
+    {
+        if (item.MediaType != "episode" || !string.IsNullOrWhiteSpace(item.SeriesTitle))
+            return item;
+
+        return item with
+        {
+            MediaType = "movie",
+            SeasonNumber = null,
+            EpisodeNumber = null,
+            EpisodeNumberEnd = null,
+            EpisodeRangeStart = null
+        };
+    }
+
+    private static bool IsLaterCombinedRangeEpisode(SourceMediaItem item) =>
+        item.EpisodeRangeStart is int start
+        && item.EpisodeNumber is int episode
+        && episode > start;
+
+    /// <summary>
+    /// Combined file (S07E25-E26): Plex/Jellyfin expose Partie 1 and Partie 2 as two items
+    /// with the same path. Both path-match the covering episode. Keep the first number only
+    /// so one watch lands on E25. A later number that matched a *different* media (real E26)
+    /// is left alone.
+    /// </summary>
+    private static void DropLaterRangePartsSharingMedia(
+        IReadOnlyList<SourceMediaItem> items,
+        Dictionary<string, Guid> matched)
+    {
+        foreach (var item in items)
+        {
+            if (!IsLaterCombinedRangeEpisode(item) || !matched.TryGetValue(item.Id, out var mediaId))
+                continue;
+
+            var earlierPartSharesMedia = items.Any(other =>
+                other.Id != item.Id
+                && other.EpisodeNumber == item.EpisodeRangeStart
+                && other.SeasonNumber == item.SeasonNumber
+                && matched.TryGetValue(other.Id, out var otherMediaId)
+                && otherMediaId == mediaId);
+
+            if (earlierPartSharesMedia)
+                matched.Remove(item.Id);
+        }
     }
 
     public static List<(string PlexPrefix, string K7Prefix)> ParsePathMaps(IEnumerable<string> maps)
@@ -267,6 +413,10 @@ public sealed class MediaMatcher
                     if (isMusic && !hit.HasIndexedFiles)
                         continue;
 
+                    if (hit.MediaType is not null
+                        && !ImportMediaTypeCompatibility.IsCompatible(item.MediaType, hit.MediaType))
+                        continue;
+
                     matched[item.Id] = hit.MediaId!.Value;
                     break;
                 }
@@ -284,6 +434,10 @@ public sealed class MediaMatcher
                     continue;
 
                 if (isMusic && !hit.HasIndexedFiles)
+                    continue;
+
+                if (hit.MediaType is not null
+                    && !ImportMediaTypeCompatibility.IsCompatible(item.MediaType, hit.MediaType))
                     continue;
 
                 matched[item.Id] = hit.MediaId!.Value;
@@ -358,19 +512,21 @@ public sealed class MediaMatcher
         }
     }
 
-    private async Task<int> ResolveUnresolvedAsync(
+    private async Task<(int CreatedCount, HashSet<string> CreatedKeys)> ResolveUnresolvedAsync(
         IReadOnlyList<SourceMediaItem> items,
         Dictionary<string, Guid> matched,
         bool createMissing,
         bool fetchMetadata,
         CancellationToken cancellationToken)
     {
+        var createdKeys = new HashSet<string>(StringComparer.Ordinal);
         var unresolved = items
             .Where(i => !matched.ContainsKey(i.Id))
-            .Where(i => i.MediaType is "movie" or "music" or "episode" or "serie")
+            .Where(IsCreatable)
+            .Where(i => !IsLaterCombinedRangeEpisode(i))
             .ToList();
         if (unresolved.Count == 0)
-            return 0;
+            return (0, createdKeys);
 
         var bulkItems = unresolved.Select(ToBulkCreateItem).ToList();
         var result = await _k7Client.BulkCreateMediasAsync(
@@ -387,10 +543,13 @@ public sealed class MediaMatcher
 
             matched.TryAdd(r.Key, r.MediaId);
             if (r.WasCreated)
+            {
                 createdCount++;
+                createdKeys.Add(r.Key);
+            }
         }
 
-        return createdCount;
+        return (createdCount, createdKeys);
     }
 
     private static BulkCreateMediasRequest.BulkCreateMediaItem ToBulkCreateItem(SourceMediaItem item)
@@ -405,13 +564,20 @@ public sealed class MediaMatcher
             Key = item.Id,
             MediaType = item.MediaType ?? "music",
             Title = item.Title,
+            OriginalTitle = item.OriginalTitle,
             Year = item.Year,
             ExternalIds = externalIds,
+            SeriesExternalIds = item.SeriesProviderIds.Count > 0
+                ? new Dictionary<string, string>(item.SeriesProviderIds, StringComparer.OrdinalIgnoreCase)
+                : [],
             ArtistName = item.ArtistName,
             AlbumName = item.AlbumName,
+            Popularity = item.Popularity,
+            AdditionalSpotifyIds = item.AdditionalSpotifyIds,
             SeriesTitle = item.SeriesTitle,
             SeasonNumber = item.SeasonNumber,
-            EpisodeNumber = item.EpisodeNumber
+            EpisodeNumber = item.EpisodeNumber,
+            EpisodeNumberEnd = item.EpisodeNumberEnd
         };
     }
 
