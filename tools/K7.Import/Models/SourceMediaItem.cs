@@ -6,8 +6,12 @@ public sealed record SourceMediaItem
     public required string Title { get; init; }
     public int? Year { get; init; }
     public Dictionary<string, string> ProviderIds { get; init; } = [];
+    public Dictionary<string, string> SeriesProviderIds { get; init; } = [];
     public List<string> FilePaths { get; init; } = [];
     public int PlayCount { get; init; }
+    /// <summary>Spotify popularity 0-100 when known. Used to pick the canonical ISRC.</summary>
+    public int? Popularity { get; init; }
+    public IReadOnlyList<string> AdditionalSpotifyIds { get; init; } = [];
     public double? LastPlaybackPosition { get; init; }
     public double? DurationSeconds { get; init; }
     public double? ProgressPercentage { get; init; }
@@ -16,11 +20,14 @@ public sealed record SourceMediaItem
     public double? Rating { get; init; }
 
     public string? MediaType { get; init; }
+    public string? OriginalTitle { get; init; }
     public string? ArtistName { get; init; }
     public string? AlbumName { get; init; }
     public string? SeriesTitle { get; init; }
     public int? SeasonNumber { get; init; }
     public int? EpisodeNumber { get; init; }
+    public int? EpisodeNumberEnd { get; init; }
+    public int? EpisodeRangeStart { get; init; }
 
     public List<SourcePlayEntry> PlayHistory { get; init; } = [];
 }

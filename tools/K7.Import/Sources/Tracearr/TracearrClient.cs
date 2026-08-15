@@ -1,16 +1,27 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using K7.Import.Models;
 
 namespace K7.Import.Sources.Tracearr;
 
+/// <summary>
+/// Tracearr public API v2 client (Tracearr 2.0+). API v1 is not supported.
+/// </summary>
 public sealed class TracearrClient : ISourceClient
 {
-    private readonly HttpClient _httpClient;
+    private const string ApiPrefix = "/api/v2/public";
+    private const int PageSize = 100;
 
-    public TracearrClient(string serverUrl, string apiKey)
+    private readonly HttpClient _httpClient;
+    private readonly string? _serverFilter;
+    private IReadOnlyList<TracearrServerInfo>? _servers;
+    private IReadOnlyList<string>? _resolvedServerIds;
+
+    public TracearrClient(string serverUrl, string apiKey, string? serverFilter = null)
     {
+        _serverFilter = string.IsNullOrWhiteSpace(serverFilter) ? null : serverFilter.Trim();
         _httpClient = new HttpClient
         {
             BaseAddress = new Uri(serverUrl.TrimEnd('/'))
@@ -18,114 +29,268 @@ public sealed class TracearrClient : ISourceClient
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }
 
+    public IReadOnlyList<TracearrServerInfo> Servers => _servers ?? [];
+
     public async Task<SourceServerInfo> ValidateConnectionAsync(CancellationToken cancellationToken = default)
     {
-        var doc = await _httpClient.GetFromJsonAsync<JsonElement>("/api/v1/public/health", cancellationToken);
+        using var response = await _httpClient.GetAsync($"{ApiPrefix}/docs", cancellationToken);
+        if (response.StatusCode is System.Net.HttpStatusCode.NotFound)
+        {
+            throw new InvalidOperationException(
+                "Tracearr public API v2 was not found. K7.Import requires Tracearr 2.0 or later.");
+        }
+
+        response.EnsureSuccessStatusCode();
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+        var version = doc.TryGetProperty("info", out var info) && info.TryGetProperty("version", out var ver)
+            ? ver.GetString()
+            : null;
+
+        await EnsureServersResolvedAsync(cancellationToken);
+
         return new SourceServerInfo
         {
             Name = "Tracearr",
-            Version = doc.TryGetProperty("version", out var ver) ? ver.GetString() : null
+            Version = version
         };
     }
 
     public async Task<List<SourceUser>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureServersResolvedAsync(cancellationToken);
+
         var users = new List<SourceUser>();
-        var page = 1;
-        const int pageSize = 100;
+        string? cursor = null;
 
         while (true)
         {
-            var doc = await _httpClient.GetFromJsonAsync<JsonElement>(
-                $"/api/v1/public/users?page={page}&pageSize={pageSize}", cancellationToken);
-
+            var path = BuildCursorPath($"{ApiPrefix}/users", cursor);
+            var doc = await GetJsonAsync(path, cancellationToken);
             var data = doc.GetProperty("data");
+
             foreach (var user in data.EnumerateArray())
             {
                 var id = user.GetProperty("id").GetString()!;
-                var name = user.TryGetProperty("displayName", out var dn) ? dn.GetString() : null;
-                name ??= user.TryGetProperty("username", out var un) ? un.GetString() : null;
-                var serverName = user.TryGetProperty("serverName", out var sn) && sn.ValueKind == JsonValueKind.String
-                    ? sn.GetString()
-                    : null;
-                serverName ??= user.TryGetProperty("serverId", out var sid) && sid.ValueKind == JsonValueKind.String
-                    ? sid.GetString()
-                    : null;
+                var name = TryGetString(user, "username") ?? "Unknown";
+                var detail = BuildUserDetail(user, _resolvedServerIds);
+
+                // When filtering by server, skip identities with no remaining account on that server.
+                if (_resolvedServerIds is { Count: > 0 } && detail is null
+                    && !UserHasFilteredAccount(user, _resolvedServerIds))
+                {
+                    continue;
+                }
 
                 if (!users.Exists(u => u.Id == id))
+                {
                     users.Add(new SourceUser
                     {
                         Id = id,
-                        Name = name ?? "Unknown",
-                        Detail = string.IsNullOrWhiteSpace(serverName) ? null : serverName
+                        Name = name,
+                        Detail = detail
                     });
+                }
             }
 
-            var meta = doc.GetProperty("meta");
-            var total = meta.GetProperty("total").GetInt32();
-            if (page * pageSize >= total) break;
-            page++;
+            cursor = ReadNextCursor(doc);
+            if (cursor is null)
+                break;
         }
 
         return users;
     }
 
-    public Task<List<SourceLibrary>> GetLibrariesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<SourceLibrary>> GetLibrariesAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(new List<SourceLibrary>
+        await EnsureServersResolvedAsync(cancellationToken);
+
+        if (_resolvedServerIds is { Count: > 0 })
         {
-            new() { Id = "all", Name = "All Servers", MediaType = null }
-        });
+            var selected = Servers.Where(s => _resolvedServerIds.Contains(s.Id)).ToList();
+            var label = selected.Count == 1
+                ? $"{selected[0].Type} ({selected[0].Id})"
+                : string.Join(", ", selected.Select(s => s.Type));
+            return
+            [
+                new SourceLibrary
+                {
+                    Id = "filtered",
+                    Name = $"Tracearr ({label})",
+                    MediaType = null
+                }
+            ];
+        }
+
+        return
+        [
+            new SourceLibrary { Id = "all", Name = "All Servers", MediaType = null }
+        ];
     }
 
-    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(
+        string libraryId,
+        string userId,
+        IProgress<string>? progress = null,
+        CancellationToken cancellationToken = default)
     {
-        // Tracearr's /history endpoint returns sessions per user (embedded in the response).
-        // We paginate through all history and aggregate per media item.
+        await EnsureServersResolvedAsync(cancellationToken);
+
+        if (_resolvedServerIds is null || _resolvedServerIds.Count == 0)
+            return await FetchHistoryAsync(userId, serverId: null, progress, cancellationToken);
+
+        // API accepts one server_id per request; merge when the filter matches several servers.
+        if (_resolvedServerIds.Count == 1)
+            return await FetchHistoryAsync(userId, _resolvedServerIds[0], progress, cancellationToken);
+
+        var merged = new Dictionary<string, SourceMediaItem>(StringComparer.Ordinal);
+        var serverIndex = 0;
+        foreach (var serverId in _resolvedServerIds)
+        {
+            serverIndex++;
+            var serverProgress = progress is null
+                ? null
+                : new Progress<string>(detail =>
+                    progress.Report($"server {serverIndex}/{_resolvedServerIds.Count} - {detail}"));
+
+            var items = await FetchHistoryAsync(userId, serverId, serverProgress, cancellationToken);
+            foreach (var item in items)
+            {
+                if (merged.TryGetValue(item.Id, out var existing))
+                {
+                    merged[item.Id] = existing with
+                    {
+                        PlayCount = existing.PlayCount + item.PlayCount,
+                        LastPlayedAt = item.LastPlayedAt > existing.LastPlayedAt ? item.LastPlayedAt : existing.LastPlayedAt,
+                        IsCompleted = existing.IsCompleted || item.IsCompleted
+                    };
+                    existing.PlayHistory.AddRange(item.PlayHistory);
+                }
+                else
+                {
+                    merged[item.Id] = item;
+                }
+            }
+        }
+
+        return [.. merged.Values];
+    }
+
+    public Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new List<SourcePlaylist>());
+    }
+
+    private async Task EnsureServersResolvedAsync(CancellationToken cancellationToken)
+    {
+        if (_servers is not null)
+            return;
+
+        var doc = await GetJsonAsync($"{ApiPrefix}/libraries", cancellationToken);
+        var servers = new Dictionary<string, TracearrServerInfo>(StringComparer.OrdinalIgnoreCase);
+
+        if (doc.TryGetProperty("data", out var data) && data.ValueKind is JsonValueKind.Array)
+        {
+            foreach (var library in data.EnumerateArray())
+            {
+                var id = TryGetString(library, "server_id");
+                if (id is null || servers.ContainsKey(id))
+                    continue;
+
+                var type = TryGetString(library, "server_type") ?? "unknown";
+                servers[id] = new TracearrServerInfo(id, type);
+            }
+        }
+
+        _servers = servers.Values.OrderBy(s => s.Type).ThenBy(s => s.Id).ToList();
+        _resolvedServerIds = ResolveServerFilter(_serverFilter, _servers);
+    }
+
+    private static IReadOnlyList<string>? ResolveServerFilter(
+        string? filter,
+        IReadOnlyList<TracearrServerInfo> servers)
+    {
+        if (filter is null)
+            return null;
+
+        if (servers.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "Tracearr returned no media servers. Cannot apply --tracearr-server.");
+        }
+
+        var available = string.Join(", ", servers.Select(s => $"{s.Type}:{s.Id}"));
+
+        // Exact server id
+        var byId = servers.Where(s => string.Equals(s.Id, filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (byId.Count == 1)
+            return [byId[0].Id];
+
+        // UUID prefix
+        var byPrefix = servers.Where(s => s.Id.StartsWith(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (byPrefix.Count == 1)
+            return [byPrefix[0].Id];
+        if (byPrefix.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"--tracearr-server '{filter}' matches multiple server ids. Use a full id. Available: {available}");
+        }
+
+        // server_type: plex / jellyfin / emby
+        var byType = servers
+            .Where(s => string.Equals(s.Type, filter, StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.Id)
+            .ToList();
+        if (byType.Count > 0)
+            return byType;
+
+        throw new InvalidOperationException(
+            $"--tracearr-server '{filter}' matched no Tracearr server. Use plex|jellyfin|emby or a server id. Available: {available}");
+    }
+
+    private async Task<List<SourceMediaItem>> FetchHistoryAsync(
+        string userId,
+        string? serverId,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
         var itemsByKey = new Dictionary<string, SourceMediaItem>();
-        var page = 1;
-        const int pageSize = 100;
+        string? cursor = null;
         var sessionsProcessed = 0;
-        var totalSessions = 0;
-        var totalPages = 0;
+        var page = 1;
 
         progress?.Report("page 1...");
 
         while (true)
         {
-            var doc = await _httpClient.GetFromJsonAsync<JsonElement>(
-                $"/api/v1/public/history?page={page}&pageSize={pageSize}&userId={Uri.EscapeDataString(userId)}", cancellationToken);
+            var extras = new List<(string Key, string Value)> { ("user_id", userId) };
+            if (serverId is not null)
+                extras.Add(("server_id", serverId));
 
-            var meta = doc.GetProperty("meta");
-            totalSessions = meta.GetProperty("total").GetInt32();
-            totalPages = Math.Max(1, (int)Math.Ceiling(totalSessions / (double)pageSize));
-
+            var path = BuildCursorPath($"{ApiPrefix}/history", cursor, [.. extras]);
+            var doc = await GetJsonAsync(path, cancellationToken);
             var data = doc.GetProperty("data");
+
             foreach (var session in data.EnumerateArray())
             {
-                // Filter to sessions for this specific user
-                var user = session.GetProperty("user");
-                var sessionUserId = user.GetProperty("id").GetString();
-                if (sessionUserId != userId) continue;
-
                 sessionsProcessed++;
 
-                var mediaTitle = session.TryGetProperty("mediaTitle", out var mt) ? mt.GetString() : null;
-                if (mediaTitle is null) continue;
+                var mediaTitle = TryGetString(session, "media_title");
+                if (mediaTitle is null)
+                    continue;
 
-                var mediaType = session.TryGetProperty("mediaType", out var mtp) ? mtp.GetString() : null;
-                var watched = session.TryGetProperty("watched", out var w) && w.GetBoolean();
-
-                var startedAt = session.TryGetProperty("startedAt", out var sa) && sa.ValueKind == JsonValueKind.String
-                    ? DateTime.Parse(sa.GetString()!, null, System.Globalization.DateTimeStyles.RoundtripKind)
-                    : (DateTime?)null;
-
-                var durationMs = session.TryGetProperty("durationMs", out var dm) && dm.ValueKind == JsonValueKind.Number
-                    ? dm.GetInt64() : 0L;
+                var mediaType = TryGetString(session, "media_type");
+                var watched = TryGetBool(session, "watched") == true;
+                var startedAt = TryGetDateTime(session, "started_at");
+                var durationMs = TryGetInt64(session, "duration_ms") ?? 0L;
                 var durationSeconds = durationMs / 1000.0;
 
-                // Build a stable key from media identity
-                var key = BuildMediaKey(session, mediaTitle, mediaType);
+                // Music often arrives with empty artist_name; title is "Song - Artist".
+                var artistName = TryGetString(session, "artist_name");
+                var albumName = TryGetString(session, "album_name");
+                if (mediaType is "track" && string.IsNullOrWhiteSpace(artistName))
+                    TrySplitMusicTitle(mediaTitle, out mediaTitle, out artistName);
+
+                var key = BuildMediaKey(session, mediaTitle, mediaType, artistName, albumName);
 
                 var playEntry = startedAt is not null
                     ? new SourcePlayEntry
@@ -133,20 +298,19 @@ public sealed class TracearrClient : ISourceClient
                         PlayedAt = startedAt.Value,
                         DurationSeconds = durationSeconds,
                         IsCompleted = watched,
-                        IsTranscode = session.TryGetProperty("isTranscode", out var isTr) && isTr.ValueKind == JsonValueKind.True ? true
-                            : isTr.ValueKind == JsonValueKind.False ? false : null,
-                        VideoDecision = session.TryGetProperty("videoDecision", out var vd) && vd.ValueKind == JsonValueKind.String ? vd.GetString() : null,
-                        AudioDecision = session.TryGetProperty("audioDecision", out var ad) && ad.ValueKind == JsonValueKind.String ? ad.GetString() : null,
-                        Bitrate = session.TryGetProperty("bitrate", out var br) && br.ValueKind == JsonValueKind.Number ? br.GetInt32() : null,
-                        SourceVideoCodec = session.TryGetProperty("sourceVideoCodec", out var svc) && svc.ValueKind == JsonValueKind.String ? svc.GetString() : null,
-                        SourceAudioCodec = session.TryGetProperty("sourceAudioCodec", out var sac) && sac.ValueKind == JsonValueKind.String ? sac.GetString() : null,
-                        SourceVideoWidth = session.TryGetProperty("sourceVideoWidth", out var svw) && svw.ValueKind == JsonValueKind.Number ? svw.GetInt32() : null,
-                        SourceVideoHeight = session.TryGetProperty("sourceVideoHeight", out var svh) && svh.ValueKind == JsonValueKind.Number ? svh.GetInt32() : null,
-                        StreamVideoCodec = session.TryGetProperty("streamVideoCodec", out var stvc) && stvc.ValueKind == JsonValueKind.String ? stvc.GetString() : null,
-                        StreamAudioCodec = session.TryGetProperty("streamAudioCodec", out var stac) && stac.ValueKind == JsonValueKind.String ? stac.GetString() : null,
-                        DeviceName = session.TryGetProperty("device", out var dev) && dev.ValueKind == JsonValueKind.String ? dev.GetString() : null,
-                        Platform = session.TryGetProperty("platform", out var plat) && plat.ValueKind == JsonValueKind.String ? plat.GetString() : null,
-                        Player = session.TryGetProperty("player", out var pl) && pl.ValueKind == JsonValueKind.String ? pl.GetString() : null
+                        IsTranscode = TryGetBool(session, "is_transcode"),
+                        VideoDecision = TryGetString(session, "video_decision"),
+                        AudioDecision = TryGetString(session, "audio_decision"),
+                        Bitrate = TryGetInt32(session, "bitrate"),
+                        SourceVideoCodec = TryGetString(session, "source_video_codec"),
+                        SourceAudioCodec = TryGetString(session, "source_audio_codec"),
+                        SourceVideoWidth = TryGetInt32(session, "source_video_width"),
+                        SourceVideoHeight = TryGetInt32(session, "source_video_height"),
+                        StreamVideoCodec = TryGetString(session, "stream_video_codec"),
+                        StreamAudioCodec = TryGetString(session, "stream_audio_codec"),
+                        DeviceName = TryGetString(session, "device"),
+                        Platform = TryGetString(session, "platform"),
+                        Player = TryGetString(session, "player")
                     }
                     : null;
 
@@ -163,24 +327,11 @@ public sealed class TracearrClient : ISourceClient
                 }
                 else
                 {
-                    var showTitle = session.TryGetProperty("showTitle", out var st) && st.ValueKind == JsonValueKind.String
-                        ? st.GetString() : null;
-                    var seasonNumber = session.TryGetProperty("seasonNumber", out var sn) && sn.ValueKind == JsonValueKind.Number
-                        ? sn.GetInt32() : (int?)null;
-                    var episodeNumber = session.TryGetProperty("episodeNumber", out var en) && en.ValueKind == JsonValueKind.Number
-                        ? en.GetInt32() : (int?)null;
-                    var year = session.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.Number
-                        ? y.GetInt32() : (int?)null;
-                    var artistName = session.TryGetProperty("artistName", out var an) && an.ValueKind == JsonValueKind.String
-                        ? an.GetString() : null;
-                    var albumName = session.TryGetProperty("albumName", out var aln) && aln.ValueKind == JsonValueKind.String
-                        ? aln.GetString() : null;
-
                     var item = new SourceMediaItem
                     {
                         Id = key,
                         Title = mediaTitle,
-                        Year = year,
+                        Year = TryGetInt32(session, "year"),
                         ProviderIds = ParseProviderIds(session),
                         PlayCount = 1,
                         LastPlayedAt = startedAt,
@@ -195,9 +346,9 @@ public sealed class TracearrClient : ISourceClient
                         },
                         ArtistName = artistName,
                         AlbumName = albumName,
-                        SeriesTitle = showTitle,
-                        SeasonNumber = seasonNumber,
-                        EpisodeNumber = episodeNumber
+                        SeriesTitle = TryGetString(session, "show_title"),
+                        SeasonNumber = TryGetInt32(session, "season_number"),
+                        EpisodeNumber = TryGetInt32(session, "episode_number")
                     };
 
                     if (playEntry is not null)
@@ -207,43 +358,164 @@ public sealed class TracearrClient : ISourceClient
                 }
             }
 
+            cursor = ReadNextCursor(doc);
             progress?.Report(
-                $"page {page}/{totalPages} ({sessionsProcessed}/{totalSessions} sessions, {itemsByKey.Count} medias)");
+                $"page {page} ({sessionsProcessed} sessions, {itemsByKey.Count} medias)" +
+                (cursor is null ? "" : "..."));
 
-            if (page * pageSize >= totalSessions)
+            if (cursor is null)
                 break;
+
             page++;
-            progress?.Report($"page {page}/{totalPages}...");
+            progress?.Report($"page {page}...");
         }
 
         return [.. itemsByKey.Values];
     }
 
-    public Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
+    private async Task<JsonElement> GetJsonAsync(string path, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new List<SourcePlaylist>());
+        using var response = await _httpClient.GetAsync(path, cancellationToken);
+        if (response.StatusCode is System.Net.HttpStatusCode.NotFound)
+        {
+            throw new InvalidOperationException(
+                "Tracearr public API v2 was not found. K7.Import requires Tracearr 2.0 or later.");
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
     }
 
-    private static string BuildMediaKey(JsonElement session, string mediaTitle, string? mediaType)
+    private static string BuildCursorPath(string basePath, string? cursor, params (string Key, string Value)[] extra)
     {
-        // Build a stable composite key to aggregate sessions for the same media item
+        var sb = new StringBuilder(basePath);
+        sb.Append("?pageSize=").Append(PageSize);
+        if (cursor is not null)
+            sb.Append("&cursor=").Append(Uri.EscapeDataString(cursor));
+
+        foreach (var (key, value) in extra)
+            sb.Append('&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
+
+        return sb.ToString();
+    }
+
+    private static string? ReadNextCursor(JsonElement doc)
+    {
+        if (!doc.TryGetProperty("meta", out var meta))
+            return null;
+
+        if (!meta.TryGetProperty("nextCursor", out var next) || next.ValueKind is JsonValueKind.Null)
+            return null;
+
+        var value = next.GetString();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static bool UserHasFilteredAccount(JsonElement user, IReadOnlyList<string> serverIds)
+    {
+        if (!user.TryGetProperty("accounts", out var accounts) || accounts.ValueKind is not JsonValueKind.Array)
+            return false;
+
+        foreach (var account in accounts.EnumerateArray())
+        {
+            if (TryGetString(account, "removed_at") is not null)
+                continue;
+
+            var serverId = TryGetString(account, "server_id");
+            if (serverId is not null && serverIds.Contains(serverId, StringComparer.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string? BuildUserDetail(JsonElement user, IReadOnlyList<string>? serverIdsFilter)
+    {
+        if (!user.TryGetProperty("accounts", out var accounts) || accounts.ValueKind is not JsonValueKind.Array)
+            return null;
+
+        var parts = new List<string>();
+        foreach (var account in accounts.EnumerateArray())
+        {
+            if (TryGetString(account, "removed_at") is not null)
+                continue;
+
+            var serverId = TryGetString(account, "server_id");
+            if (serverIdsFilter is { Count: > 0 }
+                && (serverId is null || !serverIdsFilter.Contains(serverId, StringComparer.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var serverType = TryGetString(account, "server_type");
+            var accountName = TryGetString(account, "username");
+            if (serverType is null && accountName is null)
+                continue;
+
+            parts.Add(accountName is null
+                ? serverType!
+                : serverType is null
+                    ? accountName
+                    : $"{accountName}@{serverType}");
+        }
+
+        return parts.Count == 0 ? null : string.Join(", ", parts.Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static void TrySplitMusicTitle(string mediaTitle, out string title, out string? artistName)
+    {
+        title = mediaTitle;
+        artistName = null;
+        var idx = LastTitleArtistSeparatorIndex(mediaTitle);
+        if (idx <= 0 || idx + 3 >= mediaTitle.Length)
+            return;
+
+        title = mediaTitle[..idx].Trim();
+        artistName = mediaTitle[(idx + 3)..].Trim();
+        if (title.Length == 0 || artistName.Length == 0 || LastTitleArtistSeparatorIndex(artistName) >= 0)
+        {
+            title = mediaTitle;
+            artistName = null;
+        }
+    }
+
+    private static int LastTitleArtistSeparatorIndex(string title)
+    {
+        var hyphen = title.LastIndexOf(" - ", StringComparison.Ordinal);
+        var enDash = title.LastIndexOf(" \u2013 ", StringComparison.Ordinal);
+        var emDash = title.LastIndexOf(" \u2014 ", StringComparison.Ordinal);
+        return Math.Max(hyphen, Math.Max(enDash, emDash));
+    }
+
+    private static string BuildMediaKey(
+        JsonElement session,
+        string mediaTitle,
+        string? mediaType,
+        string? artistName,
+        string? albumName)
+    {
+        // Prefer Tracearr's canonical media identity when present (one row per title across servers).
+        var mediaId = TryGetString(session, "media_id");
+        if (!string.IsNullOrWhiteSpace(mediaId))
+            return $"media:{mediaId}";
+
         return mediaType switch
         {
             "episode" => string.Join("|",
                 "episode",
-                session.TryGetProperty("showTitle", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() : "",
-                session.TryGetProperty("seasonNumber", out var sn) && sn.ValueKind == JsonValueKind.Number ? sn.GetInt32().ToString() : "",
-                session.TryGetProperty("episodeNumber", out var en) && en.ValueKind == JsonValueKind.Number ? en.GetInt32().ToString() : "",
+                TryGetString(session, "show_title") ?? "",
+                TryGetInt32(session, "season_number")?.ToString() ?? "",
+                TryGetInt32(session, "episode_number")?.ToString() ?? "",
                 mediaTitle),
             "track" => string.Join("|",
                 "track",
-                session.TryGetProperty("artistName", out var an) && an.ValueKind == JsonValueKind.String ? an.GetString() : "",
-                session.TryGetProperty("albumName", out var aln) && aln.ValueKind == JsonValueKind.String ? aln.GetString() : "",
+                artistName ?? "",
+                albumName ?? "",
                 mediaTitle),
             _ => string.Join("|",
                 mediaType ?? "unknown",
                 mediaTitle,
-                session.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.Number ? y.GetInt32().ToString() : "")
+                TryGetInt32(session, "year")?.ToString() ?? "")
         };
     }
 
@@ -251,20 +523,27 @@ public sealed class TracearrClient : ISourceClient
     {
         var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        TryAddStringId(providerIds, "tmdb", session, "tmdbId");
-        TryAddStringId(providerIds, "imdb", session, "imdbId");
-        TryAddStringId(providerIds, "tvdb", session, "tvdbId");
+        TryAddId(providerIds, "tmdb", session, "tmdb_id");
+        TryAddId(providerIds, "imdb", session, "imdb_id");
+        TryAddId(providerIds, "tvdb", session, "tvdb_id");
 
-        if (session.TryGetProperty("guid", out var guid) && guid.ValueKind == JsonValueKind.String)
-            ParseGuidValue(providerIds, guid.GetString());
-
-        if (session.TryGetProperty("ratingKey", out var ratingKey) && ratingKey.ValueKind == JsonValueKind.String)
-            providerIds.TryAdd("plex", ratingKey.GetString()!);
+        var ratingKey = TryGetString(session, "rating_key");
+        if (!string.IsNullOrWhiteSpace(ratingKey))
+        {
+            var serverType = TryGetString(session, "server_type");
+            var provider = serverType switch
+            {
+                "jellyfin" => "jellyfin",
+                "emby" => "emby",
+                _ => "plex"
+            };
+            providerIds.TryAdd(provider, ratingKey);
+        }
 
         return providerIds;
     }
 
-    private static void TryAddStringId(
+    private static void TryAddId(
         Dictionary<string, string> providerIds,
         string provider,
         JsonElement session,
@@ -284,22 +563,48 @@ public sealed class TracearrClient : ISourceClient
             providerIds.TryAdd(provider, id);
     }
 
-    private static void ParseGuidValue(Dictionary<string, string> providerIds, string? guid)
+    private static string? TryGetString(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static bool? TryGetBool(JsonElement element, string propertyName)
     {
-        if (string.IsNullOrWhiteSpace(guid))
-            return;
+        if (!element.TryGetProperty(propertyName, out var value))
+            return null;
 
-        var separatorIndex = guid.IndexOf("://", StringComparison.Ordinal);
-        if (separatorIndex <= 0)
-            return;
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => null
+        };
+    }
 
-        var provider = guid[..separatorIndex];
-        var slashIndex = provider.LastIndexOf('/');
-        if (slashIndex >= 0)
-            provider = provider[(slashIndex + 1)..];
+    private static int? TryGetInt32(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind is not JsonValueKind.Number)
+            return null;
 
-        var value = guid[(separatorIndex + 3)..];
-        if (!string.IsNullOrWhiteSpace(provider) && !string.IsNullOrWhiteSpace(value))
-            providerIds.TryAdd(provider.ToLowerInvariant(), value);
+        return value.TryGetInt32(out var i) ? i : null;
+    }
+
+    private static long? TryGetInt64(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind is not JsonValueKind.Number)
+            return null;
+
+        return value.TryGetInt64(out var i) ? i : null;
+    }
+
+    private static DateTime? TryGetDateTime(JsonElement element, string propertyName)
+    {
+        var raw = TryGetString(element, propertyName);
+        if (raw is null)
+            return null;
+
+        return DateTime.Parse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind);
     }
 }
+
+public sealed record TracearrServerInfo(string Id, string Type);

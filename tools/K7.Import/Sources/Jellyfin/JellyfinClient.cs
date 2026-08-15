@@ -365,6 +365,14 @@ public sealed class JellyfinClient : ISourceClient
             Title = item.GetProperty("Name").GetString()!,
             ProviderIds = ParseProviderIds(item, itemType),
             FilePaths = filePaths,
+            MediaType = itemType switch
+            {
+                "Movie" => "movie",
+                "Episode" => "episode",
+                "Audio" => "music",
+                "Series" => "serie",
+                _ => null
+            },
             ArtistName = artistName,
             AlbumName = itemType == "Audio" && item.TryGetProperty("Album", out var album) && album.ValueKind == JsonValueKind.String
                 ? album.GetString()

@@ -1,39 +1,58 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using K7.Import.Matching;
 using K7.Import.Models;
 
 namespace K7.Import.Sources.Plex;
 
-public sealed partial class PlexClient : ISourceClient
+public sealed class PlexClient : ISourceClient
 {
     // Plex metadata type IDs.
     private const int PlexTypeMovie = 1;
     private const int PlexTypeShow = 2;
     private const int PlexTypeEpisode = 4;
     private const int PlexTypeTrack = 10;
+    private static readonly string ClientIdentifier = Guid.NewGuid().ToString();
 
+    private readonly string _ownerToken;
     private readonly HttpClient _httpClient;
+    private readonly HttpClient _plexTv;
+    private readonly Dictionary<string, string> _tokensByKey = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _accessibleLibrariesByToken = new(StringComparer.Ordinal);
+    private readonly List<string> _tokenWarnings = [];
     private Dictionary<string, string>? _libraryTypes;
+    private string? _machineIdentifier;
+    private string? _ownerName;
+    private bool _tokensResolved;
 
     public bool IncludeDynamicPlaylists { get; init; }
+
+    public IReadOnlyList<string> TokenWarnings => _tokenWarnings;
 
     public PlexClient(string serverUrl, string token)
     {
         if (string.IsNullOrWhiteSpace(serverUrl))
             throw new ArgumentException("--source-url is required for Plex (e.g. http://192.168.1.10:32400).");
 
+        _ownerToken = NormalizeToken(token);
         _httpClient = new HttpClient
         {
             BaseAddress = new Uri(serverUrl.TrimEnd('/'))
         };
-        _httpClient.DefaultRequestHeaders.Add("X-Plex-Token", NormalizeToken(token));
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+        _plexTv = new HttpClient { BaseAddress = new Uri("https://plex.tv") };
+        _plexTv.DefaultRequestHeaders.Add("Accept", "application/xml");
+        _plexTv.DefaultRequestHeaders.Add("X-Plex-Token", _ownerToken);
+        _plexTv.DefaultRequestHeaders.Add("X-Plex-Client-Identifier", ClientIdentifier);
+        _plexTv.DefaultRequestHeaders.Add("X-Plex-Product", "K7.Import");
+        _plexTv.Timeout = TimeSpan.FromSeconds(20);
     }
 
     public async Task<SourceServerInfo> ValidateConnectionAsync(CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync("/", cancellationToken);
+        var response = await PmsGetAsync("/", _ownerToken, cancellationToken);
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             throw new InvalidOperationException(
@@ -45,10 +64,18 @@ public sealed partial class PlexClient : ISourceClient
         response.EnsureSuccessStatusCode();
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
         var container = doc.GetProperty("MediaContainer");
+        _machineIdentifier = container.TryGetProperty("machineIdentifier", out var mid)
+            ? mid.GetString()
+            : null;
+        _ownerName = container.TryGetProperty("myPlexUsername", out var ownerName)
+            ? ownerName.GetString()
+            : null;
+        IndexToken(_ownerToken, "owner", _ownerName);
+
         return new SourceServerInfo
         {
-            Name = container.GetProperty("friendlyName").GetString() ?? "Plex",
-            Version = container.GetProperty("version").GetString()
+            Name = container.TryGetProperty("friendlyName", out var name) ? name.GetString() ?? "Plex" : "Plex",
+            Version = container.TryGetProperty("version", out var ver) ? ver.GetString() : null
         };
     }
 
@@ -65,26 +92,197 @@ public sealed partial class PlexClient : ISourceClient
         return value;
     }
 
+    private Task<HttpResponseMessage> PmsGetAsync(string path, string token, CancellationToken cancellationToken)
+    {
+        var separator = path.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        return _httpClient.GetAsync($"{path}{separator}X-Plex-Token={Uri.EscapeDataString(token)}", cancellationToken);
+    }
+
+    private string? TryGetUserToken(string userId) =>
+        _tokensByKey.TryGetValue(userId, out var token) ? token : null;
+
+    private void IndexToken(string token, params string?[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (!string.IsNullOrWhiteSpace(key))
+                _tokensByKey.TryAdd(key, token);
+        }
+    }
+
+    private void BindTokenAliases(string userId, string name)
+    {
+        if (_tokensByKey.ContainsKey(userId))
+            return;
+
+        if (_tokensByKey.TryGetValue(name, out var token))
+            _tokensByKey.TryAdd(userId, token);
+    }
+
+    private async Task EnsureUserTokensAsync(CancellationToken cancellationToken)
+    {
+        if (_tokensResolved)
+            return;
+
+        _tokensResolved = true;
+        IndexToken(_ownerToken, "owner", _ownerName);
+
+        try
+        {
+            await LoadSharedServerTokensAsync(cancellationToken);
+            await LoadHomeUserTokensAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _tokenWarnings.Add(
+                "Could not reach plex.tv to resolve per-user tokens (" + ex.Message + "). " +
+                "Only the Plex token owner will import ratings and playlists.");
+        }
+    }
+
+    private async Task LoadSharedServerTokensAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_machineIdentifier))
+            return;
+
+        using var response = await _plexTv.GetAsync(
+            $"/api/servers/{Uri.EscapeDataString(_machineIdentifier)}/shared_servers",
+            cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        var xml = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(xml))
+            return;
+
+        var doc = XDocument.Parse(xml);
+        foreach (var server in doc.Descendants().Where(e => e.Name.LocalName is "SharedServer"))
+        {
+            var token = (string?)server.Attribute("accessToken");
+            if (string.IsNullOrWhiteSpace(token))
+                continue;
+
+            IndexToken(
+                token,
+                (string?)server.Attribute("userID"),
+                (string?)server.Attribute("username"),
+                (string?)server.Attribute("email"),
+                (string?)server.Attribute("title"));
+        }
+    }
+
+    private async Task LoadHomeUserTokensAsync(CancellationToken cancellationToken)
+    {
+        using var response = await _plexTv.GetAsync("/api/home/users", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        var xml = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(xml))
+            return;
+
+        var doc = XDocument.Parse(xml);
+        foreach (var user in doc.Descendants().Where(e => e.Name.LocalName is "User"))
+        {
+            var id = (string?)user.Attribute("id");
+            var title = (string?)user.Attribute("title");
+            var username = (string?)user.Attribute("username");
+            var email = (string?)user.Attribute("email");
+            var uuid = (string?)user.Attribute("uuid");
+            var protectedPin = IsXmlTrue(user.Attribute("protected"));
+
+            if (protectedPin)
+            {
+                if (!string.IsNullOrWhiteSpace(title))
+                    _tokenWarnings.Add($"Plex Home user '{title}' has a PIN; ratings/playlists were skipped.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+                continue;
+
+            if (TryGetUserToken(id) is not null
+                || (!string.IsNullOrWhiteSpace(title) && TryGetUserToken(title) is not null))
+            {
+                BindTokenAliases(id, title ?? id);
+                continue;
+            }
+
+            var token = await SwitchHomeUserAsync(id, uuid, cancellationToken);
+            if (string.IsNullOrWhiteSpace(token))
+                continue;
+
+            IndexToken(token, id, uuid, title, username, email);
+        }
+    }
+
+    private async Task<string?> SwitchHomeUserAsync(string id, string? uuid, CancellationToken cancellationToken)
+    {
+        foreach (var path in new[]
+        {
+            $"/api/home/users/{Uri.EscapeDataString(id)}/switch",
+            string.IsNullOrWhiteSpace(uuid) ? null : $"/api/v2/home/users/{Uri.EscapeDataString(uuid)}/switch"
+        })
+        {
+            if (path is null)
+                continue;
+
+            using var response = await _plexTv.PostAsync(path, content: null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                continue;
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(body))
+                continue;
+
+            if (body.TrimStart().StartsWith('{'))
+            {
+                using var json = JsonDocument.Parse(body);
+                if (json.RootElement.TryGetProperty("authToken", out var auth)
+                    || json.RootElement.TryGetProperty("authenticationToken", out auth))
+                {
+                    return auth.GetString();
+                }
+
+                continue;
+            }
+
+            var xml = XDocument.Parse(body);
+            var token = xml.Descendants().Select(e =>
+                    (string?)e.Attribute("authenticationToken")
+                    ?? (string?)e.Attribute("authToken"))
+                .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
+            if (token is not null)
+                return token;
+        }
+
+        return null;
+    }
+
+    private static bool IsXmlTrue(XAttribute? attribute)
+    {
+        var value = attribute?.Value;
+        return value is "1" or "true" or "True";
+    }
+
     public async Task<List<SourceUser>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureUserTokensAsync(cancellationToken);
+
         var users = new List<SourceUser>();
 
-        var identityResponse = await _httpClient.GetAsync("/", cancellationToken);
-        identityResponse.EnsureSuccessStatusCode();
-        var identityDoc = await identityResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
-        var container = identityDoc.GetProperty("MediaContainer");
-        if (container.TryGetProperty("myPlexUsername", out var ownerName))
+        if (!string.IsNullOrWhiteSpace(_ownerName))
         {
             users.Add(new SourceUser
             {
                 Id = "owner",
-                Name = ownerName.GetString() ?? "Owner"
+                Name = _ownerName
             });
         }
 
         try
         {
-            var accountsResponse = await _httpClient.GetAsync("/accounts", cancellationToken);
+            var accountsResponse = await PmsGetAsync("/accounts", _ownerToken, cancellationToken);
             if (accountsResponse.IsSuccessStatusCode)
             {
                 var accountsDoc = await accountsResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -99,9 +297,7 @@ public sealed partial class PlexClient : ISourceClient
                             continue;
 
                         if (users.All(u => !string.Equals(u.Name, name, StringComparison.OrdinalIgnoreCase)))
-                        {
                             users.Add(new SourceUser { Id = id, Name = name });
-                        }
                     }
                 }
             }
@@ -109,6 +305,21 @@ public sealed partial class PlexClient : ISourceClient
         catch
         {
             // /accounts may not be available on all setups
+        }
+
+        foreach (var user in users)
+            BindTokenAliases(user.Id, user.Name);
+
+        var skipped = users
+            .Where(u => TryGetUserToken(u.Id) is null)
+            .Select(u => u.Name)
+            .ToList();
+        if (skipped.Count > 0)
+        {
+            _tokenWarnings.Add(
+                "Plex ratings/playlists for " + string.Join(", ", skipped) +
+                " were skipped: no per-user token (PIN-protected Home user, or plex.tv share token unavailable). " +
+                "History for those users still comes from Tautulli/Tracearr.");
         }
 
         return users;
@@ -122,8 +333,15 @@ public sealed partial class PlexClient : ISourceClient
 
     public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        var token = TryGetUserToken(userId);
+        if (token is null)
+            return [];
+
         var typesToFetch = await ResolvePlexTypesToFetchAsync(libraryId, cancellationToken);
         if (typesToFetch.Count == 0)
+            return [];
+
+        if (!await UserCanAccessLibraryAsync(token, libraryId, cancellationToken))
             return [];
 
         var items = new List<SourceMediaItem>();
@@ -136,15 +354,51 @@ public sealed partial class PlexClient : ISourceClient
                 : typeLabel;
 
             items.AddRange(await FetchLibraryItemsOfTypeAsync(
-                libraryId, userId, plexType, typePrefix, progress, cancellationToken));
+                libraryId, token, plexType, typePrefix, progress, cancellationToken));
         }
 
         return items;
     }
 
+    private async Task<bool> UserCanAccessLibraryAsync(
+        string token,
+        string libraryId,
+        CancellationToken cancellationToken)
+    {
+        if (!_accessibleLibrariesByToken.TryGetValue(token, out var libraryIds))
+        {
+            libraryIds = [];
+            try
+            {
+                var response = await PmsGetAsync("/library/sections", token, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+                    if (doc.TryGetProperty("MediaContainer", out var container)
+                        && container.TryGetProperty("Directory", out var directories))
+                    {
+                        foreach (var dir in EnumerateJsonArrayOrObject(directories))
+                        {
+                            if (dir.TryGetProperty("key", out var key) && key.GetString() is { Length: > 0 } id)
+                                libraryIds.Add(id);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Treat as no libraries; per-request 403 handling still applies.
+            }
+
+            _accessibleLibrariesByToken[token] = libraryIds;
+        }
+
+        return libraryIds.Contains(libraryId);
+    }
+
     private async Task<List<SourceMediaItem>> FetchLibraryItemsOfTypeAsync(
         string libraryId,
-        string userId,
+        string token,
         int plexType,
         string typePrefix,
         IProgress<string>? progress,
@@ -170,13 +424,17 @@ public sealed partial class PlexClient : ISourceClient
                 progress?.Report($"{typePrefix} page {page}...");
             }
 
-            var accountQuery = !string.Equals(userId, "owner", StringComparison.OrdinalIgnoreCase)
-                ? $"&accountID={Uri.EscapeDataString(userId)}"
-                : string.Empty;
-
-            var response = await _httpClient.GetAsync(
-                $"/library/sections/{libraryId}/all?type={plexType}&X-Plex-Container-Start={offset}&X-Plex-Container-Size={pageSize}&includeGuids=1{accountQuery}",
+            var response = await PmsGetAsync(
+                $"/library/sections/{libraryId}/all?type={plexType}&X-Plex-Container-Start={offset}&X-Plex-Container-Size={pageSize}&includeGuids=1",
+                token,
                 cancellationToken);
+            if (response.StatusCode is System.Net.HttpStatusCode.Forbidden
+                or System.Net.HttpStatusCode.Unauthorized
+                or System.Net.HttpStatusCode.NotFound)
+            {
+                return items;
+            }
+
             response.EnsureSuccessStatusCode();
             var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
             var container = doc.GetProperty("MediaContainer");
@@ -216,9 +474,22 @@ public sealed partial class PlexClient : ISourceClient
         _ => $"type-{plexType}"
     };
 
+    private static IEnumerable<JsonElement> EnumerateJsonArrayOrObject(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+                yield return item;
+        }
+        else if (element.ValueKind == JsonValueKind.Object)
+        {
+            yield return element;
+        }
+    }
+
     private async Task<List<SourceLibrary>> LoadLibrariesAsync(CancellationToken cancellationToken)
     {
-        var response = await _httpClient.GetAsync("/library/sections", cancellationToken);
+        var response = await PmsGetAsync("/library/sections", _ownerToken, cancellationToken);
         response.EnsureSuccessStatusCode();
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
         var directories = doc.GetProperty("MediaContainer").GetProperty("Directory");
@@ -263,12 +534,11 @@ public sealed partial class PlexClient : ISourceClient
     public async Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var playlists = new List<SourcePlaylist>();
+        var token = TryGetUserToken(userId);
+        if (token is null)
+            return playlists;
 
-        var playlistsUrl = !string.Equals(userId, "owner", StringComparison.OrdinalIgnoreCase)
-            ? $"/playlists?accountID={Uri.EscapeDataString(userId)}"
-            : "/playlists";
-
-        var response = await _httpClient.GetAsync(playlistsUrl, cancellationToken);
+        var response = await PmsGetAsync("/playlists", token, cancellationToken);
         if (!response.IsSuccessStatusCode) return playlists;
 
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -302,8 +572,8 @@ public sealed partial class PlexClient : ISourceClient
                 continue;
             }
 
-            var itemsResponse = await _httpClient.GetAsync(
-                $"/playlists/{ratingKey}/items?includeGuids=1", cancellationToken);
+            var itemsResponse = await PmsGetAsync(
+                $"/playlists/{ratingKey}/items?includeGuids=1", token, cancellationToken);
             if (!itemsResponse.IsSuccessStatusCode) continue;
 
             var itemsDoc = await itemsResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -320,6 +590,14 @@ public sealed partial class PlexClient : ISourceClient
                         Title = item.GetProperty("title").GetString()!,
                         ProviderIds = ParseGuids(item, itemType),
                         FilePaths = ParseFilePaths(item),
+                        MediaType = itemType switch
+                        {
+                            "movie" => "movie",
+                            "episode" => "episode",
+                            "show" => "serie",
+                            "track" => "music",
+                            _ => null
+                        },
                         ArtistName = itemType == "track"
                             ? (item.TryGetProperty("grandparentTitle", out var gpt) ? gpt.GetString() : null)
                             : null,
@@ -463,41 +741,6 @@ public sealed partial class PlexClient : ISourceClient
         return providerIds;
     }
 
-    private static void TryAddNormalizedGuid(Dictionary<string, string> providerIds, string raw, string? plexType)
-    {
-        var match = PlexGuidRegex().Match(raw);
-        if (!match.Success)
-            return;
-
-        var scheme = match.Groups[1].Value.ToLowerInvariant();
-        var value = match.Groups[2].Value;
-
-        // plex:// internal ids are not useful for cross-server matching
-        if (scheme is "plex" or "com.plexapp.agents.none")
-            return;
-
-        var provider = scheme switch
-        {
-            "themoviedb" or "tmdb" => "tmdb",
-            "thetvdb" or "tvdb" => "tvdb",
-            "imdb" => "imdb",
-            "mbid" or "musicbrainz" => MapMusicBrainzProvider(plexType),
-            _ => scheme
-        };
-
-        if (provider is "imdb" && !value.StartsWith("tt", StringComparison.OrdinalIgnoreCase) && value.All(char.IsDigit))
-            value = "tt" + value;
-
-        providerIds.TryAdd(provider, value);
-    }
-
-    /// <summary>
-    /// K7 albums use musicbrainz = release-group. Plex track MBIDs are typically recordings;
-    /// album/release MBIDs must not collide with release-group lookups.
-    /// </summary>
-    private static string MapMusicBrainzProvider(string? plexType) =>
-        plexType == "track" ? "musicbrainz" : "musicbrainz-release";
-
-    [GeneratedRegex(@"^([a-zA-Z0-9.]+)://(.+)$")]
-    private static partial Regex PlexGuidRegex();
+    private static void TryAddNormalizedGuid(Dictionary<string, string> providerIds, string raw, string? plexType) =>
+        PlexGuidParser.TryAdd(providerIds, raw, plexType);
 }

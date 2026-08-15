@@ -1,11 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.RegularExpressions;
+using K7.Import.Matching;
 using K7.Import.Models;
 
 namespace K7.Import.Sources.Tautulli;
 
-public sealed partial class TautulliClient : ISourceClient
+public sealed class TautulliClient : ISourceClient
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
@@ -73,6 +73,7 @@ public sealed partial class TautulliClient : ISourceClient
     public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         var itemsByKey = new Dictionary<string, SourceMediaItem>();
+        var seriesKeyByItem = new Dictionary<string, string>(StringComparer.Ordinal);
         var start = 0;
         const int pageSize = 100;
         var totalCount = 0;
@@ -102,9 +103,6 @@ public sealed partial class TautulliClient : ISourceClient
                 var ratingKey = entry.TryGetProperty("rating_key", out var rk) ? rk.ToString() : null;
                 if (ratingKey is null) continue;
 
-                var guid = entry.TryGetProperty("guid", out var g) ? g.GetString() : null;
-                var providerIds = ParsePlexGuids(guid);
-
                 var lastPlayedAt = entry.TryGetProperty("stopped", out var stopped) && stopped.ValueKind == JsonValueKind.Number
                     ? DateTimeOffset.FromUnixTimeSeconds(stopped.GetInt64()).UtcDateTime
                     : (DateTime?)null;
@@ -114,6 +112,8 @@ public sealed partial class TautulliClient : ISourceClient
                 var percentComplete = ReadInt(entry, "percent_complete") ?? 0;
 
                 var mediaType = entry.TryGetProperty("media_type", out var mt) ? mt.GetString() : null;
+                var guid = entry.TryGetProperty("guid", out var g) ? g.GetString() : null;
+                var providerIds = ParsePlexGuids(guid, mediaType);
                 var playEntry = ParsePlayEntry(entry, isCompleted, percentComplete);
 
                 if (itemsByKey.TryGetValue(ratingKey, out var existing))
@@ -132,15 +132,30 @@ public sealed partial class TautulliClient : ISourceClient
                 }
                 else
                 {
-                    var grandparentTitle = entry.TryGetProperty("grandparent_title", out var gpt) ? gpt.GetString() : null;
-                    var parentTitle = entry.TryGetProperty("parent_title", out var pt) ? pt.GetString() : null;
+                    var grandparentTitle = ReadString(entry, "grandparent_title");
+                    var parentTitle = ReadString(entry, "parent_title");
                     var parentMediaIndex = ReadInt(entry, "parent_media_index");
                     var mediaIndex = ReadInt(entry, "media_index");
+                    var title = ReadString(entry, "title") ?? ReadString(entry, "full_title") ?? "";
+                    var originalTitle = ReadString(entry, "original_title");
+                    var grandparentRatingKey = entry.TryGetProperty("grandparent_rating_key", out var gprk)
+                        ? gprk.ToString()
+                        : null;
+                    var isEpisode = mediaType == "episode" && !string.IsNullOrWhiteSpace(grandparentTitle);
+                    var resolvedType = mediaType switch
+                    {
+                        "movie" => "movie",
+                        "episode" when isEpisode => "episode",
+                        "episode" => "movie",
+                        "track" => "music",
+                        _ => mediaType
+                    };
 
                     var item = new SourceMediaItem
                     {
                         Id = ratingKey,
-                        Title = entry.TryGetProperty("full_title", out var ft) ? ft.GetString()! : entry.GetProperty("title").GetString()!,
+                        Title = title,
+                        OriginalTitle = originalTitle,
                         Year = ReadInt(entry, "year"),
                         ProviderIds = providerIds,
                         PlayCount = 1,
@@ -148,19 +163,16 @@ public sealed partial class TautulliClient : ISourceClient
                         IsCompleted = isCompleted,
                         ProgressPercentage = percentComplete > 0 ? percentComplete : null,
                         Rating = null,
-                        MediaType = mediaType switch
-                        {
-                            "movie" => "movie",
-                            "episode" => "episode",
-                            "track" => "music",
-                            _ => mediaType
-                        },
+                        MediaType = resolvedType,
                         ArtistName = mediaType == "track" ? grandparentTitle : null,
                         AlbumName = mediaType == "track" ? parentTitle : null,
-                        SeriesTitle = mediaType == "episode" ? grandparentTitle : null,
-                        SeasonNumber = mediaType == "episode" ? parentMediaIndex : null,
-                        EpisodeNumber = mediaType == "episode" ? mediaIndex : null
+                        SeriesTitle = isEpisode ? grandparentTitle : null,
+                        SeasonNumber = isEpisode ? parentMediaIndex : null,
+                        EpisodeNumber = isEpisode ? mediaIndex : null
                     };
+
+                    if (isEpisode && !string.IsNullOrWhiteSpace(grandparentRatingKey))
+                        seriesKeyByItem[ratingKey] = grandparentRatingKey;
 
                     if (playEntry is not null)
                         item.PlayHistory.Add(playEntry);
@@ -194,6 +206,7 @@ public sealed partial class TautulliClient : ISourceClient
             }
         }
 
+        await EnrichSeriesGuidsAsync(itemsByKey, seriesKeyByItem, progress, cancellationToken);
         return [.. itemsByKey.Values];
     }
 
@@ -306,22 +319,123 @@ public sealed partial class TautulliClient : ISourceClient
         };
     }
 
-    private static Dictionary<string, string> ParsePlexGuids(string? guid)
+    private async Task EnrichSeriesGuidsAsync(
+        Dictionary<string, SourceMediaItem> itemsByKey,
+        Dictionary<string, string> seriesKeyByItem,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        var seriesKeys = seriesKeyByItem.Values
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (seriesKeys.Count == 0)
+            return;
+
+        progress?.Report($"series guids 0/{seriesKeys.Count}...");
+        var guidsBySeries = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        var done = 0;
+        using var gate = new SemaphoreSlim(6);
+
+        var tasks = seriesKeys.Select(async seriesKey =>
+        {
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                var guids = await FetchMetadataGuidsAsync(seriesKey, "show", cancellationToken);
+                var completed = Interlocked.Increment(ref done);
+                if (completed % 25 == 0 || completed == seriesKeys.Count)
+                    progress?.Report($"series guids {completed}/{seriesKeys.Count}");
+
+                return (seriesKey, guids);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+
+        foreach (var (seriesKey, guids) in await Task.WhenAll(tasks))
+        {
+            if (guids.Count > 0)
+                guidsBySeries[seriesKey] = guids;
+        }
+
+        if (guidsBySeries.Count == 0)
+            return;
+
+        foreach (var (itemId, seriesKey) in seriesKeyByItem)
+        {
+            if (!itemsByKey.TryGetValue(itemId, out var item))
+                continue;
+            if (!guidsBySeries.TryGetValue(seriesKey, out var guids))
+                continue;
+
+            itemsByKey[itemId] = item with
+            {
+                SeriesProviderIds = new Dictionary<string, string>(guids, StringComparer.OrdinalIgnoreCase)
+            };
+        }
+    }
+
+    private async Task<Dictionary<string, string>> FetchMetadataGuidsAsync(
+        string ratingKey,
+        string plexType,
+        CancellationToken cancellationToken)
     {
         var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        if (guid is not null)
+        try
         {
-            var match = PlexGuidRegex().Match(guid);
-            if (match.Success)
+            var url = Endpoint("get_metadata") + $"&rating_key={Uri.EscapeDataString(ratingKey)}";
+            var doc = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
+            if (doc.ValueKind != JsonValueKind.Object
+                || !doc.TryGetProperty("response", out var response)
+                || !response.TryGetProperty("data", out var data)
+                || data.ValueKind != JsonValueKind.Object)
             {
-                providerIds.TryAdd(match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value);
+                return providerIds;
             }
+
+            if (data.TryGetProperty("guids", out var guids) && guids.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var guid in guids.EnumerateArray())
+                    TryAddMetadataGuid(providerIds, guid, plexType);
+            }
+
+            if (data.TryGetProperty("guid", out var primary) && primary.ValueKind == JsonValueKind.String)
+                PlexGuidParser.TryAdd(providerIds, primary.GetString(), plexType);
+        }
+        catch (HttpRequestException)
+        {
+            return providerIds;
+        }
+        catch (JsonException)
+        {
+            return providerIds;
         }
 
         return providerIds;
     }
 
-    [GeneratedRegex(@"plex://\w+/([a-z]+)://(.+)")]
-    private static partial Regex PlexGuidRegex();
+    private static void TryAddMetadataGuid(Dictionary<string, string> providerIds, JsonElement guid, string plexType)
+    {
+        if (guid.ValueKind == JsonValueKind.String)
+        {
+            PlexGuidParser.TryAdd(providerIds, guid.GetString(), plexType);
+            return;
+        }
+
+        if (guid.ValueKind == JsonValueKind.Object && guid.TryGetProperty("id", out var id)
+            && id.ValueKind == JsonValueKind.String)
+        {
+            PlexGuidParser.TryAdd(providerIds, id.GetString(), plexType);
+        }
+    }
+
+    private static Dictionary<string, string> ParsePlexGuids(string? guid, string? mediaType)
+    {
+        var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        PlexGuidParser.TryAdd(providerIds, guid, mediaType);
+        return providerIds;
+    }
 }
