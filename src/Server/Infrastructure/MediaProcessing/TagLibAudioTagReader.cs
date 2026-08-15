@@ -66,7 +66,8 @@ public class TagLibAudioTagReader : IAudioTagReader
                 MusicBrainzReleaseGroupId = NullIfEmpty(tag.MusicBrainzReleaseGroupId),
                 MusicBrainzArtistId = NullIfEmpty(tag.MusicBrainzArtistId),
                 MusicBrainzAlbumArtistId = NullIfEmpty(tag.MusicBrainzReleaseArtistId),
-                MusicBrainzRecordingId = NullIfEmpty(tag.MusicBrainzTrackId)
+                MusicBrainzRecordingId = NullIfEmpty(tag.MusicBrainzTrackId),
+                Isrc = NullIfEmpty(ReadIsrc(tag, id3v2))
             };
         }
         catch (Exception ex)
@@ -84,6 +85,27 @@ public class TagLibAudioTagReader : IAudioTagReader
     private static IReadOnlyList<string> CleanList(string[]? values)
         => values?.Where(static s => !string.IsNullOrWhiteSpace(s)).Select(static s => s.Trim()).ToList()
            ?? [];
+
+    private static string? ReadIsrc(TagLib.Tag tag, TagLib.Id3v2.Tag? id3v2)
+    {
+        if (!string.IsNullOrWhiteSpace(tag.ISRC))
+            return tag.ISRC;
+
+        if (id3v2 is null)
+            return null;
+
+        foreach (var frame in id3v2.GetFrames("TSRC"))
+        {
+            if (frame is not TagLib.Id3v2.TextInformationFrame text)
+                continue;
+
+            var value = text.Text.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return null;
+    }
 
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

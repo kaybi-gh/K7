@@ -454,6 +454,20 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 continue;
             }
 
+            var existingByRecording = await FindExistingTrackByRecordingIdsAsync(tags, cancellationToken);
+            if (existingByRecording is not null)
+            {
+                AttachFileToExistingTrack(
+                    existingByRecording,
+                    indexedFile,
+                    album,
+                    tags,
+                    trackTitle,
+                    trackNumber,
+                    vacatedAlbumIds);
+                continue;
+            }
+
             // Re-link to existing orphan track (no IndexedFiles) when album was reused
             if (!isNewAlbum)
             {
@@ -590,6 +604,88 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .OrderByDescending(g => g.Count())
             .Select(g => g.First().Album)
             .FirstOrDefault();
+    }
+
+    private async Task<MusicTrack?> FindExistingTrackByRecordingIdsAsync(
+        AudioTagData? tags,
+        CancellationToken cancellationToken)
+    {
+        if (tags is null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(tags.Isrc))
+        {
+            var byIsrc = await LoadTrackByExternalIdAsync("isrc", tags.Isrc, cancellationToken);
+            if (byIsrc is not null)
+                return byIsrc;
+        }
+
+        if (!string.IsNullOrWhiteSpace(tags.MusicBrainzRecordingId))
+        {
+            var byRecording = await LoadTrackByExternalIdAsync(
+                "musicbrainz",
+                tags.MusicBrainzRecordingId,
+                cancellationToken);
+            if (byRecording is not null)
+                return byRecording;
+        }
+
+        return null;
+    }
+
+    private async Task<MusicTrack?> LoadTrackByExternalIdAsync(
+        string providerName,
+        string value,
+        CancellationToken cancellationToken)
+    {
+        var track = await _identityLookup.FindMediaByExternalIdAsync<MusicTrack>(
+            providerName,
+            value,
+            cancellationToken);
+        if (track is null)
+            return null;
+
+        await _context.Entry(track).Collection(t => t.IndexedFiles).LoadAsync(cancellationToken);
+        await _context.Entry(track).Collection(t => t.ExternalIds).LoadAsync(cancellationToken);
+        return track;
+    }
+
+    private static void AttachFileToExistingTrack(
+        MusicTrack track,
+        IndexedFile indexedFile,
+        MusicAlbum album,
+        AudioTagData? tags,
+        string? trackTitle,
+        int? trackNumber,
+        HashSet<Guid> vacatedAlbumIds)
+    {
+        var isVirtual = !track.IndexedFiles.Any();
+        if (isVirtual && track.AlbumId != album.Id)
+        {
+            vacatedAlbumIds.Add(track.AlbumId);
+            track.AlbumId = album.Id;
+            track.Album = album;
+            if (!album.Tracks.Any(t => t.Id == track.Id))
+                album.Tracks.Add(track);
+        }
+
+        if (!track.IndexedFiles.Any(f => f.Id == indexedFile.Id))
+            track.IndexedFiles.Add(indexedFile);
+
+        if (isVirtual && !string.IsNullOrWhiteSpace(trackTitle))
+        {
+            track.Title = trackTitle;
+            track.SortTitle = MediaSortTitleHelper.Compute(trackTitle);
+        }
+
+        if (isVirtual && trackNumber is not null)
+            track.TrackNumber = trackNumber;
+
+        if (!string.IsNullOrWhiteSpace(tags?.Isrc))
+            UpsertExternalId(track, "isrc", tags.Isrc);
+
+        if (!string.IsNullOrWhiteSpace(tags?.MusicBrainzRecordingId))
+            UpsertExternalId(track, "musicbrainz", tags.MusicBrainzRecordingId);
     }
 
     private static bool UpsertExternalId(BaseMedia media, string providerName, string value)

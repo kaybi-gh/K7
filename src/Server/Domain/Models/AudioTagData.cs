@@ -31,4 +31,7 @@ public sealed record AudioTagData
 
     /// <summary>MusicBrainz recording / track id from tags.</summary>
     public string? MusicBrainzRecordingId { get; init; }
+
+    /// <summary>ISRC from tags (ID3 TSRC / iTunes ISRC).</summary>
+    public string? Isrc { get; init; }
 }

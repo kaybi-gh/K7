@@ -200,6 +200,56 @@ public class CreateMediaMusicIdentityTests
     }
 
     [Test]
+    public async Task Handle_ShouldAttachFileToVirtualTrack_WhenIsrcMatches()
+    {
+        var artist = new MusicArtist { Title = "Otis Redding", SortTitle = "Otis Redding" };
+        var virtualAlbum = new MusicAlbum { Title = "Spotify", Artist = artist };
+        var virtualTrack = new MusicTrack
+        {
+            Title = "(Sittin' On) The Dock of the Bay",
+            SortTitle = "(Sittin' On) The Dock of the Bay",
+            Album = virtualAlbum,
+            Artist = artist
+        };
+        virtualTrack.ExternalIds.Add(new ExternalId { ProviderName = "isrc", Value = "USAT29900865" });
+        virtualTrack.ExternalIds.Add(new ExternalId { ProviderName = "spotify", Value = "3zBhihYUHBmGd2bcQIobrF" });
+        _context.Medias.AddRange(artist, virtualAlbum, virtualTrack);
+        await _context.SaveChangesAsync();
+        var virtualTrackId = virtualTrack.Id;
+
+        var fileId = Guid.NewGuid();
+        _tagReader.ReadTags(Arg.Any<string>(), Arg.Any<bool>()).Returns(new AudioTagData
+        {
+            Title = "(Sittin' On) The Dock of the Bay",
+            Album = "The Dock of the Bay",
+            AlbumArtists = ["Otis Redding"],
+            Artists = ["Otis Redding"],
+            TrackNumber = 1,
+            Isrc = "USAT29900865"
+        });
+
+        _context.IndexedFiles.Add(CreateIndexedFile(fileId, "(Sittin' On) The Dock of the Bay", "The Dock of the Bay", "Otis Redding"));
+        await _context.SaveChangesAsync();
+
+        await _handler.Handle(new CreateMediaCommand
+        {
+            MediaType = MediaType.MusicAlbum,
+            LibraryId = _libraryId,
+            IndexedFileIds = [fileId]
+        }, CancellationToken.None);
+
+        var tracks = await _context.Medias.OfType<MusicTrack>()
+            .Include(t => t.IndexedFiles)
+            .Include(t => t.Album)
+            .ToListAsync();
+        tracks.Should().ContainSingle();
+        tracks[0].Id.Should().Be(virtualTrackId);
+        tracks[0].IndexedFiles.Should().ContainSingle(f => f.Id == fileId);
+        tracks[0].Album.Should().NotBeNull();
+        tracks[0].Album!.Title.Should().Be("The Dock of the Bay");
+    }
+
+    [Test]
     public async Task Handle_ShouldAttachArtistMbid_WhenExistingArtistMatchedByName()
     {
         var artist = new MusicArtist { Title = "Justin Timberlake", SortTitle = "Justin Timberlake" };
