@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Shared;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +60,7 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
                     e.ProviderName,
                     e.Value,
                     e.MediaId,
+                    Type = e.Media!.Type,
                     HasIndexedFiles = e.Media != null && e.Media.IndexedFiles.Any()
                 })
                 .ToListAsync(cancellationToken);
@@ -79,6 +81,7 @@ public class LookupMediasByExternalIdsQueryHandler(IApplicationDbContext context
                     Provider = item.Provider,
                     Value = item.Value,
                     MediaId = match?.MediaId,
+                    MediaType = match is null ? null : ImportMediaTypeCompatibility.ToImportType(match.Type),
                     HasIndexedFiles = match?.HasIndexedFiles ?? false
                 });
             }
