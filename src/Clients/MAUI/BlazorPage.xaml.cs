@@ -50,6 +50,7 @@ public partial class BlazorPage : ContentPage
     private static readonly TimeSpan MediaFailedReportDedupeWindow = TimeSpan.FromSeconds(30);
     private int _nativeAuthRecoveryCount;
     private DateTime _lastNativeAuthRecoveryUtc = DateTime.MinValue;
+    private bool _openingNativeSource;
     private double? _authRebindResumeOverride;
     private ICustomAuthenticationStateProvider? _authStateProvider;
     private bool _accessTokenChangedSubscribed;
@@ -551,7 +552,14 @@ public partial class BlazorPage : ContentPage
                 MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
                 // ExoPlayer stays Opening while HLS init + early segments load.
                 MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Buffering,
-                MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
+                MediaElementState.Stopped => NativeVideoPlaybackEnd.ShouldTreatStoppedAsEnded(
+                    _openingNativeSource,
+                    _playerService.IsVisible,
+                    _playerService.PlaybackState,
+                    NativePlayer.Duration.TotalSeconds,
+                    NativePlayer.Position.TotalSeconds)
+                    ? Server.Domain.Enums.PlaybackState.Ended
+                    : Server.Domain.Enums.PlaybackState.Idle,
                 _ => Server.Domain.Enums.PlaybackState.Unknown,
             };
 
@@ -628,30 +636,38 @@ public partial class BlazorPage : ContentPage
 
         _nativeAuthRecoveryCount = 0;
 
-        // Baseline open path: Stop() then assign Source. Never Source=null first -
-        // nulling the surface fires MediaFailed on Android and kills the next open mid-HLS.
-        NativePlayer.Stop();
-        NativePlayer.ShouldAutoPlay = true;
-        // CommunityToolkit.Maui.MediaElement 9.0+ (PR #3169) applies UriMediaSource.HttpHeaders via
-        // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
-        // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
-        NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
-        // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
-        ConfigureNativeVideoPlayerAfterOpen();
+        _openingNativeSource = true;
+        try
+        {
+            // Baseline open path: Stop() then assign Source. Never Source=null first -
+            // nulling the surface fires MediaFailed on Android and kills the next open mid-HLS.
+            NativePlayer.Stop();
+            NativePlayer.ShouldAutoPlay = true;
+            // CommunityToolkit.Maui.MediaElement 9.0+ (PR #3169) applies UriMediaSource.HttpHeaders via
+            // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
+            // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
+            NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
+            // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
+            ConfigureNativeVideoPlayerAfterOpen();
 #if ANDROID
-        // Android uses system volume; clear any stuck MediaElement mute from earlier volume swipes
-        // (native chrome hides the mute button, so users cannot recover otherwise).
-        if (_playerService.IsMuted || NativePlayer.ShouldMute)
-            _playerService.Unmute();
+            // Android uses system volume; clear any stuck MediaElement mute from earlier volume swipes
+            // (native chrome hides the mute button, so users cannot recover otherwise).
+            if (_playerService.IsMuted || NativePlayer.ShouldMute)
+                _playerService.Unmute();
 
-        if (source.PendingSeekTime is double pendingSeek && pendingSeek > 1)
-            RememberSeekTarget(pendingSeek);
+            if (source.PendingSeekTime is double pendingSeek && pendingSeek > 1)
+                RememberSeekTarget(pendingSeek);
 
-        // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
-        // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
-        BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
+            // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
+            // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
+            BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
 #endif
-        NativePlayer.Play();
+            NativePlayer.Play();
+        }
+        finally
+        {
+            _openingNativeSource = false;
+        }
 
         AttachPendingSeekHandler(source);
         if (MauiNativeVideoChrome.IsEnabled)
@@ -870,6 +886,9 @@ public partial class BlazorPage : ContentPage
     private void NativePlayer_MediaEnded(object? sender, EventArgs e)
     {
 #if !WINDOWS
+        if (_openingNativeSource || !_playerService.IsVisible)
+            return;
+
         _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Ended;
 #endif
     }
@@ -1752,11 +1771,20 @@ public partial class BlazorPage : ContentPage
         if (resumeAt > 1)
             source.PendingSeekTime = resumeAt;
 
-        NativePlayer.Stop();
-        NativePlayer.ShouldAutoPlay = true;
-        NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
-        ConfigureNativeVideoPlayerAfterOpen();
-        NativePlayer.Play();
+        _openingNativeSource = true;
+        try
+        {
+            NativePlayer.Stop();
+            NativePlayer.ShouldAutoPlay = true;
+            NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
+            ConfigureNativeVideoPlayerAfterOpen();
+            NativePlayer.Play();
+        }
+        finally
+        {
+            _openingNativeSource = false;
+        }
+
         AttachPendingSeekHandler(source);
     }
 #endif

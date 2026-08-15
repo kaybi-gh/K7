@@ -292,18 +292,23 @@ public sealed partial class NativeVideoPlayerOverlay
         _nepCountdownTimer = null;
     }
 
-    private async Task LoadNextEpisodeOfferAsync()
+    /// <summary>
+    /// Shows the next-episode offer when this is a series episode with a successor.
+    /// Returns false when there is nothing to offer (movie, last episode, or behavior Off)
+    /// so the player can close.
+    /// </summary>
+    private async Task<bool> TryLoadNextEpisodeOfferAsync()
     {
         if (_mediaService is null || _progressTracker is null)
-            return;
+            return false;
 
         if (_nepBehavior == "Off")
-            return;
+            return false;
 
         var serieId = _progressTracker.CurrentSerieId;
         var episodeId = _progressTracker.CurrentMediaId ?? _player.Source?.MediaId;
         if (serieId is null || episodeId is null)
-            return;
+            return false;
 
         try
         {
@@ -337,7 +342,7 @@ public sealed partial class NativeVideoPlayerOverlay
         }
 
         if (_nextEpisode is null)
-            return;
+            return false;
 
         _nepNextStill.Source = GetStillUrl(_nextEpisode.Pictures);
         _nepNextInfo.Text = FormatEpisodeLabel(_nextEpisode);
@@ -362,6 +367,8 @@ public sealed partial class NativeVideoPlayerOverlay
             ShowOffer();
         else
             MainThread.BeginInvokeOnMainThread(ShowOffer);
+
+        return true;
     }
 
     private string? GetStillUrl(IReadOnlyList<MetadataPictureDto>? pictures)

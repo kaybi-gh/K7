@@ -109,11 +109,19 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async Task HandlePlaybackEndedAsync()
     {
-        if (_behavior == "Off") return;
+        if (_behavior == "Off")
+        {
+            await ClosePlayerAfterEndAsync();
+            return;
+        }
 
         var serieId = PlaybackProgressTracker.CurrentSerieId;
         var episodeId = PlaybackProgressTracker.CurrentMediaId;
-        if (serieId is null || episodeId is null) return;
+        if (serieId is null || episodeId is null)
+        {
+            await ClosePlayerAfterEndAsync();
+            return;
+        }
 
         try
         {
@@ -141,10 +149,15 @@ public partial class NextEpisodeOverlay : IDisposable
         }
         catch
         {
+            await ClosePlayerAfterEndAsync();
             return;
         }
 
-        if (_nextEpisode is null) return;
+        if (_nextEpisode is null)
+        {
+            await ClosePlayerAfterEndAsync();
+            return;
+        }
 
         _stillUrl = ApiClient.GetAbsoluteUri(
             _nextEpisode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
@@ -263,6 +276,11 @@ public partial class NextEpisodeOverlay : IDisposable
     {
         PauseCountdown();
         Reset();
+        await ClosePlayerAfterEndAsync();
+    }
+
+    private async Task ClosePlayerAfterEndAsync()
+    {
         PlayerService.Stop();
         await PlayerService.HideAsync();
     }

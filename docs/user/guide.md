@@ -77,6 +77,7 @@ Change server later: **Settings -> General** -> disconnect (trash), then enter a
 - **Audio** and **subtitle** tracks
 - **Intro / outro skip** when markers exist and your settings allow it
 - **Play on device** for remote control or Chromecast - see [Watching together and casting](#watching-together-and-casting)
+- When a **movie** or the **last episode** finishes, the player closes. Other series episodes can offer the next one (optional autoplay countdown)
 
 ### Settings
 

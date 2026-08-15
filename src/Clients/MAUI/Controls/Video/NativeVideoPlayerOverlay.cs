@@ -133,6 +133,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private VideoPlayerSettingsDto? _videoSettings;
     private bool _showChapterTicks = true;
     private Guid? _segmentsMediaId;
+    private bool _handlingPlaybackEnded;
 
     private static readonly TimeSpan OverlayTimeoutDesktop = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan OverlayTimeoutTv = TimeSpan.FromSeconds(5);
@@ -1523,11 +1524,38 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnPlaybackEnded()
     {
+        if (_handlingPlaybackEnded)
+            return;
+
+        _handlingPlaybackEnded = true;
         // Hide transport so TV/remote focus moves to the next-episode offer (Blazor SpatialNav
         // layer parity). Force-hide even if seek-scrub was still armed at Ended.
         StopDpadHold();
         HideChrome(force: true);
-        _ = LoadNextEpisodeOfferAsync();
+        _ = HandlePlaybackEndedAsync();
+    }
+
+    private async Task HandlePlaybackEndedAsync()
+    {
+        var mediaId = _player.Source?.MediaId;
+        try
+        {
+            var offered = await TryLoadNextEpisodeOfferAsync();
+            if (offered)
+                return;
+
+            if (!_player.IsVisible || _player.Source?.MediaId != mediaId)
+                return;
+
+            if (MainThread.IsMainThread)
+                ClosePlayer();
+            else
+                await MainThread.InvokeOnMainThreadAsync(ClosePlayer);
+        }
+        finally
+        {
+            _handlingPlaybackEnded = false;
+        }
     }
 
     private async Task LoadPreferencesAsync()
