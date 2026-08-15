@@ -84,6 +84,70 @@ public static class LanguageNormalizer
         return language;
     }
 
+    /// <summary>
+    /// Returns a display label for a regional dub variant (VFF, VFQ, ...) when the
+    /// language tag or track title carries one. These share an ISO language but must
+    /// stay visible so two French tracks are distinguishable.
+    /// </summary>
+    public static string? TryGetLanguageVariant(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return null;
+
+        var trimmed = input.Trim();
+        if (LanguageVariants.TryGetValue(trimmed, out var exact))
+            return exact;
+
+        foreach (var (alias, label) in VariantScanAliases)
+        {
+            if (ContainsWholeWord(trimmed, alias))
+                return label;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// True when <paramref name="input"/> is exactly a known variant alias (vff, vfq, ...).
+    /// </summary>
+    public static bool IsLanguageVariantAlias(string? input) =>
+        !string.IsNullOrWhiteSpace(input) && LanguageVariants.ContainsKey(input.Trim());
+
+    /// <summary>
+    /// True when the value is only an ISO language code or language name, with no
+    /// extra meaning (commentary, VFF, ...).
+    /// </summary>
+    public static bool IsGenericLanguageLabel(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return true;
+
+        if (TryGetLanguageVariant(input) is not null)
+            return false;
+
+        return NormalizeToIso6391(input) is not null;
+    }
+
+    /// <summary>
+    /// True when a track name adds nothing beyond the already-known ISO language.
+    /// Variant tags such as VFF/VFQ are never redundant.
+    /// </summary>
+    public static bool IsRedundantTrackName(string? name, string? language)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return true;
+
+        if (TryGetLanguageVariant(name) is not null)
+            return false;
+
+        if (string.Equals(name.Trim(), language, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var normalized = NormalizeToIso6391(name);
+        return normalized is not null
+            && string.Equals(normalized, language, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string TrimTitleForLanguageHint(string title)
     {
         var end = title.Length;
@@ -181,6 +245,7 @@ public static class LanguageNormalizer
         ["vf"] = "fr",
         ["vfq"] = "fr",
         ["vfi"] = "fr",
+        ["qpf"] = "fr",
 
         // English
         ["en"] = "en",
@@ -455,6 +520,31 @@ public static class LanguageNormalizer
     private static readonly (string Alias, string Code)[] TitleScanAliases =
         Aliases
             .Where(entry => !IsUndetermined(entry.Value))
+            .OrderByDescending(entry => entry.Key.Length)
+            .Select(entry => (entry.Key, entry.Value))
+            .ToArray();
+
+    /// <summary>
+    /// Canonical labels for dub variants that collapse to the same ISO 639-1 code.
+    /// Keys are matched case-insensitively as whole words in titles.
+    /// </summary>
+    private static readonly Dictionary<string, string> LanguageVariants = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["vff"] = "VFF",
+        ["vfq"] = "VFQ",
+        ["vfi"] = "VFI",
+        ["vf"] = "VF",
+        ["qpf"] = "VFQ",
+        ["truefrench"] = "VFF",
+        ["true french"] = "VFF",
+        ["quebec"] = "VFQ",
+        ["québec"] = "VFQ",
+        ["quebecois"] = "VFQ",
+        ["québécois"] = "VFQ"
+    };
+
+    private static readonly (string Alias, string Label)[] VariantScanAliases =
+        LanguageVariants
             .OrderByDescending(entry => entry.Key.Length)
             .Select(entry => (entry.Key, entry.Value))
             .ToArray();

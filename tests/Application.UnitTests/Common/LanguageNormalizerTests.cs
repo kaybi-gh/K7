@@ -20,6 +20,7 @@ public class LanguageNormalizerTests
     [TestCase("VFQ", "fr")]
     [TestCase("vf", "fr")]
     [TestCase("vfi", "fr")]
+    [TestCase("qpf", "fr")]
     public void NormalizeToIso6391_French_Variants(string input, string expected)
     {
         LanguageNormalizer.NormalizeToIso6391(input).Should().Be(expected);
@@ -293,5 +294,37 @@ public class LanguageNormalizerTests
     public void ResolveSubtitleLanguage_ShouldInferFromTitle_WhenContainerLanguageUndetermined()
     {
         LanguageNormalizer.ResolveSubtitleLanguage("und", "English (SDH)").Should().Be("en");
+    }
+
+    [TestCase("vff", "VFF")]
+    [TestCase("VFQ", "VFQ")]
+    [TestCase("vfi", "VFI")]
+    [TestCase("vf", "VF")]
+    [TestCase("qpf", "VFQ")]
+    [TestCase("French VFF", "VFF")]
+    [TestCase("TrueFrench", "VFF")]
+    [TestCase("Quebec", "VFQ")]
+    public void TryGetLanguageVariant_ShouldReturnCanonicalLabel(string input, string expected)
+    {
+        LanguageNormalizer.TryGetLanguageVariant(input).Should().Be(expected);
+    }
+
+    [TestCase("fra")]
+    [TestCase("french")]
+    [TestCase("Commentary")]
+    [TestCase(null)]
+    public void TryGetLanguageVariant_ShouldReturnNull_WhenNoVariant(string? input)
+    {
+        LanguageNormalizer.TryGetLanguageVariant(input).Should().BeNull();
+    }
+
+    [Test]
+    public void IsRedundantTrackName_ShouldKeepVffDistinctFromFrench()
+    {
+        LanguageNormalizer.IsRedundantTrackName("vff", "fr").Should().BeFalse();
+        LanguageNormalizer.IsRedundantTrackName("vfq", "fr").Should().BeFalse();
+        LanguageNormalizer.IsRedundantTrackName("fra", "fr").Should().BeTrue();
+        LanguageNormalizer.IsRedundantTrackName("french", "fr").Should().BeTrue();
+        LanguageNormalizer.IsRedundantTrackName("fr", "fr").Should().BeTrue();
     }
 }
