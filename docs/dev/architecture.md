@@ -131,3 +131,9 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 ## Video playback (MAUI)
 
 During video play on Android/iOS, MAUI uses a **native XAML overlay** on top of `MediaElement` (TextureView). Windows MAUI keeps Video.js + Blazor controls in WebView2. Browse UI stays Blazor Hybrid. Details and the Windows `#EXT-X-MAP` limitation: [video-playback.md](video-playback.md).
+
+## Offline downloads (MAUI)
+
+Offline transfers run in-process via `DownloadManager` (`HttpClient` streaming). The queue is in-memory: force-stop or process death still loses in-progress transfers (completed files persist in SQLite + `AppData/downloads`).
+
+On Android, a `dataSync` foreground service (`DownloadForegroundService`) with an ongoing notification keeps the process alive while **user** downloads are queued, preparing, or transferring. Music-cache lookahead does not start that service (playback already has a media foreground service). Other MAUI platforms have no equivalent keep-alive yet.

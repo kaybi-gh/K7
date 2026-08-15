@@ -197,6 +197,9 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         builder.Services.AddSingleton<IConnectivityService, ConnectivityService>();
         builder.Services.AddSingleton<IOfflineMediaStore, OfflineMediaStore>();
         builder.Services.AddSingleton<IPlaybackJournal, PlaybackJournal>();
+#if !ANDROID
+        builder.Services.AddSingleton<IDownloadKeepAlive, NoOpDownloadKeepAlive>();
+#endif
         builder.Services.AddSingleton<IDownloadManager, Services.DownloadManager>();
         builder.Services.AddSingleton<IMusicCacheService, MusicCacheService>();
         builder.Services.AddSingleton<PlaybackSyncService>();

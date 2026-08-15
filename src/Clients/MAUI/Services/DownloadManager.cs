@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using K7.Clients.MAUI.Constants;
+using K7.Clients.MAUI.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -18,6 +20,7 @@ public class DownloadManager : IDownloadManager
     private readonly IConnectivityService _connectivity;
     private readonly IDeviceStorageService _deviceStorageService;
     private readonly IDeviceService _deviceService;
+    private readonly IDownloadKeepAlive _keepAlive;
     private readonly ILogger<DownloadManager> _logger;
 
     private readonly List<DownloadQueueItem> _queue = [];
@@ -42,6 +45,7 @@ public class DownloadManager : IDownloadManager
         IConnectivityService connectivity,
         IDeviceStorageService deviceStorageService,
         IDeviceService deviceService,
+        IDownloadKeepAlive keepAlive,
         ILogger<DownloadManager> logger)
     {
         _downloadService = downloadService;
@@ -50,6 +54,7 @@ public class DownloadManager : IDownloadManager
         _connectivity = connectivity;
         _deviceStorageService = deviceStorageService;
         _deviceService = deviceService;
+        _keepAlive = keepAlive;
         _logger = logger;
         // Start unpaused so WaitIfMusicCachePausedAsync does not block forever before first Set.
         _musicCacheResumeTcs.TrySetResult();
@@ -135,6 +140,7 @@ public class DownloadManager : IDownloadManager
         };
 
         _queue.Add(item);
+        SyncKeepAlive();
 
         _ = Task.Run(() => ProcessDownloadAsync(item), _globalCts.Token);
     }
@@ -153,6 +159,7 @@ public class DownloadManager : IDownloadManager
             _queue.Remove(item);
         }
 
+        SyncKeepAlive();
         return Task.CompletedTask;
     }
 
@@ -167,6 +174,7 @@ public class DownloadManager : IDownloadManager
         }
         _downloadCts.Clear();
         _queue.Clear();
+        SyncKeepAlive();
         return Task.CompletedTask;
     }
 
@@ -279,6 +287,7 @@ public class DownloadManager : IDownloadManager
         {
             semaphore.Release();
             _downloadCts.TryRemove(item.DownloadId, out _);
+            SyncKeepAlive();
         }
     }
 
@@ -411,5 +420,10 @@ public class DownloadManager : IDownloadManager
     {
         item.Status = status;
         ProgressChanged?.Invoke(new DownloadProgressInfo(item.DownloadId, item.Progress, item.DownloadedBytes, item.TotalBytes));
+    }
+
+    private void SyncKeepAlive()
+    {
+        _keepAlive.SetActive(DownloadQueueKeepAlive.RequiresKeepAlive(_queue));
     }
 }

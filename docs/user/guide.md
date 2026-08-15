@@ -164,6 +164,8 @@ Per-item visibility on playlists or collections can tighten or target sharing fu
 
 **Native apps only** (not the web app). Download from movies, episodes, albums, artists, or playlists; manage under **My Space -> Downloads**.
 
+On Android, an ongoing notification keeps transfers running when the app is in the background or swiped away. Force-stopping the app still cancels in-progress downloads.
+
 **Settings -> Offline**: storage limits, Wi-Fi vs mobile data, music cache lookahead. Progress made offline syncs when the server is reachable again. If the server does not answer on profile selection, you may be offered **Continue offline**.
 
 ## Watching together and casting
