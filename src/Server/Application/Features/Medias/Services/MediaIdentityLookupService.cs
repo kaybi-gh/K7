@@ -1,8 +1,14 @@
 using System.Linq.Expressions;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Interfaces;
+using K7.Server.Domain.Models;
 using K7.Shared.Dtos.Requests;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Services;
 
@@ -10,13 +16,19 @@ namespace K7.Server.Application.Features.Medias.Services;
 /// Shared lookup helpers for resolving existing media identity (by external id or normalized title key),
 /// used by media creation flows to dedupe against already-indexed media.
 /// </summary>
-public class MediaIdentityLookupService(IApplicationDbContext context)
+public class MediaIdentityLookupService(
+    IApplicationDbContext context,
+    IServiceProvider? serviceProvider = null,
+    ILogger<MediaIdentityLookupService>? logger = null)
 {
-    public async Task<Dictionary<(string Provider, string Value), Guid>> LookupByExternalIdsAsync(
+    private static readonly string[] SerieProviderKeys = ["tmdb", "tvdb"];
+    private readonly Dictionary<string, Guid?> _providerSeriesCache = new(StringComparer.OrdinalIgnoreCase);
+
+    public async Task<Dictionary<(string Provider, string Value), (Guid MediaId, MediaType Type)>> LookupByExternalIdsAsync(
         List<BulkCreateMediasRequest.BulkCreateMediaItem> items,
         CancellationToken cancellationToken = default)
     {
-        var result = new Dictionary<(string, string), Guid>();
+        var result = new Dictionary<(string, string), (Guid MediaId, MediaType Type)>();
         var allPairs = items.SelectMany(i => i.ExternalIds.Select(e => (e.Key, e.Value))).Distinct().ToList();
 
         foreach (var batch in allPairs.Chunk(500))
@@ -52,6 +64,7 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
                     e.ProviderName,
                     e.Value,
                     e.MediaId,
+                    Type = e.Media!.Type,
                     HasIndexedFiles = e.Media != null && e.Media.IndexedFiles.Any()
                 })
                 .ToListAsync(cancellationToken);
@@ -59,7 +72,9 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             foreach (var match in matches.Where(m => m.MediaId.HasValue)
                          .OrderByDescending(m => m.HasIndexedFiles))
             {
-                result.TryAdd((match.ProviderName.ToLowerInvariant(), match.Value), match.MediaId!.Value);
+                result.TryAdd(
+                    (match.ProviderName.ToLowerInvariant(), match.Value),
+                    (match.MediaId!.Value, match.Type));
             }
         }
 
@@ -80,12 +95,9 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
 
         if (titles.Count == 0) return result;
 
-        var titlesLower = titles.Select(t => t.ToLowerInvariant()).ToList();
-
         var series = await context.Medias
             .OfType<Serie>()
-            .Where(s => s.Title != null && titlesLower.Contains(s.Title.ToLower()))
-            .Select(s => new { s.Id, s.Title, s.ReleaseDate })
+            .Select(s => new SeriesYearRow(s.Id, s.Title, s.OriginalTitle, s.ReleaseDate))
             .ToListAsync(cancellationToken);
 
         foreach (var item in items)
@@ -93,16 +105,19 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             var key = MediaIdentityKeys.NormalizeSerieTitle(item.Title, item.Year);
             if (result.ContainsKey(key)) continue;
 
-            var match = series.FirstOrDefault(s =>
+            var candidates = MediaIdentityKeys.ResolveSeriesMatches(
+                item.Title,
+                series,
+                s => s.Title,
+                s => s.OriginalTitle);
+
+            var match = candidates.FirstOrDefault(s => MediaIdentityKeys.YearsCompatible(item.Year, s.ReleaseDate));
+            if (match is null)
             {
-                if (!string.Equals(s.Title, item.Title, StringComparison.OrdinalIgnoreCase))
-                    return false;
-
-                if (item.Year is null || s.ReleaseDate is null)
-                    return true;
-
-                return s.ReleaseDate.Value.Year == item.Year.Value;
-            });
+                var providerId = await ResolveSeriesViaProvidersAsync(item.Title, item.Year, cancellationToken);
+                if (providerId is not null)
+                    match = series.FirstOrDefault(s => s.Id == providerId.Value);
+            }
 
             if (match is not null)
                 result.TryAdd(key, match.Id);
@@ -117,84 +132,101 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
     {
         var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
-        var trackTitles = items
-            .Select(i => i.Title)
-            .Where(t => !string.IsNullOrEmpty(t))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var resolvedItems = items.Select(item =>
+        {
+            var (title, artistName) = MediaIdentityKeys.ResolveMusicTitleAndArtist(item.Title, item.ArtistName);
+            return (Item: item, Title: title, ArtistName: artistName);
+        }).ToList();
 
-        var normalizedTitles = items
-            .Select(i => MediaIdentityKeys.StripRedundantArtistFromTitle(
-                MediaIdentityKeys.StripFeatureCredits(i.Title), i.ArtistName))
-            .Where(t => !string.IsNullOrEmpty(t))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var allTitles = MediaIdentityKeys.TitleLookupVariants(
+            resolvedItems.SelectMany(r => new[] { r.Item.Title, r.Title }).ToArray());
 
-        var strippedTitles = trackTitles
+        var strippedTitles = allTitles
             .Select(MediaIdentityKeys.StripFeatureCredits)
             .Where(t => !string.IsNullOrEmpty(t))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-        var allTitles = trackTitles.Concat(strippedTitles).Concat(normalizedTitles)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        allTitles = MediaIdentityKeys.TitleLookupVariants([.. allTitles, .. strippedTitles]);
 
         if (allTitles.Count == 0) return result;
 
         var allTitlesLower = allTitles.Select(t => t.ToLowerInvariant()).ToList();
+        var sortTitlesLower = allTitles
+            .Select(MediaSortTitleHelper.Compute)
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Select(t => t!.ToLowerInvariant())
+            .Distinct()
+            .ToList();
 
-        // Include DB titles that only differ by (feat./ft./with ...) or a trailing " - Artist".
+        // Exact title IN (...) keeps accented titles even when Postgres LOWER() is ASCII-only.
+        // SortTitle is already folded (Efile), so it matches when LOWER(Title) does not.
+        // Also include DB titles that only differ by (feat./ft./with ...) or a trailing " - Artist".
         var tracks = await context.Medias
             .OfType<MusicTrack>()
-            .Where(t => t.Title != null && t.IndexedFiles.Any())
-            .Where(t => allTitlesLower.Any(at =>
-                t.Title!.ToLower() == at
-                || t.Title.ToLower().StartsWith(at + " (")
-                || t.Title.ToLower().StartsWith(at + " [")
-                || t.Title.ToLower().StartsWith(at + " - ")))
+            .Where(t => t.Title != null && (
+                allTitles.Contains(t.Title)
+                || (t.SortTitle != null && sortTitlesLower.Contains(t.SortTitle.ToLower()))
+                || allTitlesLower.Contains(t.Title.ToLower())
+                || allTitlesLower.Any(at =>
+                    t.Title.ToLower().StartsWith(at + " (")
+                    || t.Title.ToLower().StartsWith(at + " [")
+                    || t.Title.ToLower().StartsWith(at + " - "))))
             .Select(t => new
             {
                 t.Id,
                 t.Title,
                 AlbumTitle = t.Album != null ? t.Album.Title : null,
-                ArtistName = t.Artist != null ? t.Artist.Title : (t.Album != null ? t.Album.Artist!.Title : null)
+                ArtistName = t.Artist != null ? t.Artist.Title : (t.Album != null ? t.Album.Artist!.Title : null),
+                ArtistSortTitle = t.Artist != null
+                    ? t.Artist.SortTitle
+                    : (t.Album != null ? t.Album.Artist!.SortTitle : null),
+                HasFiles = t.IndexedFiles.Any()
             })
             .ToListAsync(cancellationToken);
 
-        foreach (var item in items)
+        foreach (var resolved in resolvedItems)
         {
+            var item = resolved.Item;
             var key = MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title);
             if (result.ContainsKey(key)) continue;
 
-            var itemTitleCore = MediaIdentityKeys.StripRedundantArtistFromTitle(
-                MediaIdentityKeys.StripFeatureCredits(item.Title), item.ArtistName);
-            var itemArtist = MediaIdentityKeys.NormalizePersonName(item.ArtistName);
-            var itemAlbum = MediaIdentityKeys.NormalizePersonName(item.AlbumName);
+            var itemTitleCore = resolved.Title;
+            var itemArtist = MediaIdentityKeys.IsVariousArtist(resolved.ArtistName)
+                ? null
+                : MediaIdentityKeys.NormalizePersonName(resolved.ArtistName);
+            var itemAlbum = MediaIdentityKeys.StripAlbumEditionSuffix(
+                MediaIdentityKeys.NormalizePersonName(item.AlbumName));
 
             // Title core must match on both sides (so "When You Know - Puggy" == "When You Know"
             // after stripping), then require artist and/or album - never title alone when artist is known.
             var candidates = tracks.Where(t =>
             {
-                var dbTitleCore = MediaIdentityKeys.StripRedundantArtistFromTitle(
-                    MediaIdentityKeys.StripFeatureCredits(t.Title!), t.ArtistName);
-                return string.Equals(t.Title, item.Title, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(dbTitleCore, itemTitleCore, StringComparison.OrdinalIgnoreCase);
+                var dbTitleCore = MediaIdentityKeys.StripTrackEditionSuffix(
+                    MediaIdentityKeys.StripRedundantArtistFromTitle(
+                        MediaIdentityKeys.StripFeatureCredits(t.Title!), t.ArtistName));
+                return MediaIdentityKeys.MatchesIgnoringDiacritics(t.Title, item.Title)
+                    || MediaIdentityKeys.MatchesIgnoringDiacritics(t.Title, itemTitleCore)
+                    || MediaIdentityKeys.MatchesIgnoringDiacritics(dbTitleCore, itemTitleCore);
             }).ToList();
 
             if (candidates.Count == 0)
                 continue;
 
-            var match = candidates.FirstOrDefault(t =>
-            {
-                var dbArtist = MediaIdentityKeys.NormalizePersonName(t.ArtistName);
-                var dbAlbum = MediaIdentityKeys.NormalizePersonName(t.AlbumTitle);
-                var artistMatch = itemArtist is not null && dbArtist is not null
-                    && string.Equals(dbArtist, itemArtist, StringComparison.OrdinalIgnoreCase);
-                var albumMatch = itemAlbum is not null && dbAlbum is not null
-                    && string.Equals(dbAlbum, itemAlbum, StringComparison.OrdinalIgnoreCase);
-                return artistMatch || albumMatch;
-            });
+            var match = candidates
+                .OrderByDescending(t => t.HasFiles)
+                .FirstOrDefault(t =>
+                {
+                    var dbArtist = MediaIdentityKeys.NormalizePersonName(t.ArtistName);
+                    var dbArtistSort = MediaIdentityKeys.NormalizePersonName(t.ArtistSortTitle);
+                    var dbAlbum = MediaIdentityKeys.StripAlbumEditionSuffix(
+                        MediaIdentityKeys.NormalizePersonName(t.AlbumTitle));
+                    var artistMatch = itemArtist is not null
+                        && (MediaIdentityKeys.PersonNamesMatch(dbArtist, itemArtist)
+                            || MediaIdentityKeys.PersonNamesMatch(dbArtistSort, itemArtist));
+                    var albumMatch = MediaIdentityKeys.AlbumTitlesOverlap(itemAlbum, dbAlbum)
+                        || MediaIdentityKeys.AlbumTitlesOverlap(itemArtist, dbAlbum)
+                        || MediaIdentityKeys.AlbumTitlesOverlap(itemAlbum, dbArtist);
+                    return artistMatch || albumMatch;
+                });
 
             // Only fall back to unique title when the source has no artist/album to compare.
             if (match is null && itemArtist is null && itemAlbum is null && candidates.Count == 1)
@@ -213,21 +245,28 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
     {
         var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
-        var titles = items
-            .Select(i => i.Title)
-            .Where(t => !string.IsNullOrWhiteSpace(t))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var titles = MediaIdentityKeys.TitleLookupVariants(
+            items.SelectMany(i => new[] { i.Title, i.OriginalTitle }).ToArray());
 
         if (titles.Count == 0) return result;
 
         var titlesLower = titles.Select(t => t.ToLowerInvariant()).ToList();
+        var sortTitlesLower = titles
+            .Select(MediaSortTitleHelper.Compute)
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Select(t => t!.ToLowerInvariant())
+            .Distinct()
+            .ToList();
 
         var movies = await context.Medias
             .OfType<Movie>()
-            .Where(m => m.Title != null && titlesLower.Contains(m.Title.ToLower()))
-            .Where(m => m.IndexedFiles.Any())
-            .Select(m => new { m.Id, m.Title, m.ReleaseDate })
+            .Where(m => m.IndexedFiles.Any() && m.Title != null && (
+                titles.Contains(m.Title)
+                || (m.OriginalTitle != null && titles.Contains(m.OriginalTitle))
+                || (m.SortTitle != null && sortTitlesLower.Contains(m.SortTitle.ToLower()))
+                || titlesLower.Contains(m.Title.ToLower())
+                || (m.OriginalTitle != null && titlesLower.Contains(m.OriginalTitle.ToLower()))))
+            .Select(m => new { m.Id, m.Title, m.OriginalTitle, m.ReleaseDate })
             .ToListAsync(cancellationToken);
 
         foreach (var item in items)
@@ -237,13 +276,11 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
 
             var match = movies.FirstOrDefault(m =>
             {
-                if (!string.Equals(m.Title, item.Title, StringComparison.OrdinalIgnoreCase))
-                    return false;
-
-                if (item.Year is null || m.ReleaseDate is null)
-                    return true;
-
-                return m.ReleaseDate.Value.Year == item.Year.Value;
+                var titleMatch = MediaIdentityKeys.MatchesIgnoringDiacritics(m.Title, item.Title)
+                    || MediaIdentityKeys.MatchesIgnoringDiacritics(m.OriginalTitle, item.Title)
+                    || MediaIdentityKeys.MatchesIgnoringDiacritics(m.Title, item.OriginalTitle)
+                    || MediaIdentityKeys.MatchesIgnoringDiacritics(m.OriginalTitle, item.OriginalTitle);
+                return titleMatch && MediaIdentityKeys.YearsCompatible(item.Year, m.ReleaseDate);
             });
 
             if (match is not null)
@@ -259,23 +296,41 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
     {
         var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
-        var seriesTitles = items
+        var queryTitles = items
             .Select(i => i.SeriesTitle ?? "Unknown Series")
+            .Where(t => !string.IsNullOrWhiteSpace(t))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (seriesTitles.Count == 0) return result;
+        var seriesRows = await context.Medias
+            .OfType<Serie>()
+            .Select(s => new SeriesRow(s.Id, s.Title, s.OriginalTitle))
+            .ToListAsync(cancellationToken);
+
+        var matchingSeriesIds = await LookupSeriesIdsByExternalIdsAsync(
+            items.Select(i => i.SeriesExternalIds), cancellationToken);
+
+        foreach (var queryTitle in queryTitles)
+        {
+            foreach (var id in await ResolveEpisodeSeriesIdsAsync(queryTitle, seriesRows, cancellationToken))
+            {
+                matchingSeriesIds.Add(id);
+            }
+        }
+
+        if (matchingSeriesIds.Count == 0) return result;
 
         var episodes = await context.Medias
             .OfType<SerieEpisode>()
-            .Where(e => e.Serie != null && e.Serie.Title != null && seriesTitles.Contains(e.Serie.Title))
-            .Where(e => e.IndexedFiles.Any())
+            .Where(e => matchingSeriesIds.Contains(e.SerieId))
             .Select(e => new
             {
                 e.Id,
                 e.Title,
+                e.OriginalTitle,
                 e.EpisodeNumber,
-                SeriesTitle = e.Serie!.Title,
+                e.SerieId,
+                HasIndexedFiles = e.IndexedFiles.Any(),
                 SeasonNumber = e.Season != null ? e.Season.SeasonNumber : (int?)null
             })
             .ToListAsync(cancellationToken);
@@ -288,23 +343,58 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             var seriesTitle = item.SeriesTitle ?? "Unknown Series";
             var seasonNumber = item.SeasonNumber;
             var episodeNumber = item.EpisodeNumber;
-
-            var match = episodes.FirstOrDefault(e =>
+            if ((!seasonNumber.HasValue || !episodeNumber.HasValue)
+                && MediaIdentityKeys.TryParseSeasonEpisodeRange(item.Title, out var parsedSeason, out var parsedEpisode, out _))
             {
-                if (!string.Equals(e.SeriesTitle, seriesTitle, StringComparison.OrdinalIgnoreCase))
-                    return false;
+                seasonNumber ??= parsedSeason;
+                episodeNumber ??= parsedEpisode;
+            }
 
-                if (seasonNumber.HasValue && e.SeasonNumber.HasValue && e.SeasonNumber != seasonNumber)
-                    return false;
+            var allowedSeriesIds = (await ResolveEpisodeSeriesIdsAsync(seriesTitle, seriesRows, cancellationToken))
+                .ToHashSet();
 
-                if (episodeNumber.HasValue && e.EpisodeNumber != episodeNumber)
-                    return false;
+            // Parent-series guids (Tautulli) often point at the franchise show. Use them
+            // only when the episode title did not already pick a unique series.
+            if (allowedSeriesIds.Count != 1)
+            {
+                foreach (var id in await LookupSeriesIdsByExternalIdsAsync([item.SeriesExternalIds], cancellationToken))
+                    allowedSeriesIds.Add(id);
+            }
 
-                if (!episodeNumber.HasValue && !string.Equals(e.Title, item.Title, StringComparison.OrdinalIgnoreCase))
-                    return false;
+            var seriesEpisodes = episodes
+                .Where(e => allowedSeriesIds.Contains(e.SerieId))
+                .ToList();
 
-                return true;
-            });
+            var numbered = seriesEpisodes
+                .Where(e =>
+                {
+                    if (seasonNumber.HasValue && e.SeasonNumber.HasValue && e.SeasonNumber != seasonNumber)
+                        return false;
+
+                    if (episodeNumber.HasValue && e.EpisodeNumber != episodeNumber)
+                        return false;
+
+                    if (!episodeNumber.HasValue
+                        && !EpisodeTitleMatches(e.Title, e.OriginalTitle, item.Title, item.OriginalTitle))
+                        return false;
+
+                    return true;
+                })
+                .ToList();
+
+            var match = numbered.Select(e => e.SerieId).Distinct().Count() == 1
+                ? numbered.OrderByDescending(e => e.HasIndexedFiles).First()
+                : null;
+
+            // Anime often uses a different season layout than Plex; unique episode title still maps.
+            if (match is null && !string.IsNullOrWhiteSpace(item.Title))
+            {
+                var byTitle = seriesEpisodes
+                    .Where(e => EpisodeTitleMatches(e.Title, e.OriginalTitle, item.Title, item.OriginalTitle))
+                    .ToList();
+                if (byTitle.Count == 1)
+                    match = byTitle[0];
+            }
 
             if (match is not null)
                 result.TryAdd(key, match.Id);
@@ -370,5 +460,163 @@ public class MediaIdentityLookupService(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
 
         return candidates.FirstOrDefault(a => MusicArtistNameNormalizer.NamesMatch(a.Title, name));
+    }
+
+    private async Task<HashSet<Guid>> ResolveEpisodeSeriesIdsAsync(
+        string queryTitle,
+        IReadOnlyList<SeriesRow> seriesRows,
+        CancellationToken cancellationToken)
+    {
+        var ids = new HashSet<Guid>();
+        foreach (var match in MediaIdentityKeys.ResolveSeriesMatches(
+            queryTitle, seriesRows, s => s.Title, s => s.OriginalTitle))
+        {
+            ids.Add(match.Id);
+        }
+
+        // A unique full-title hit is the show. Do not also add the franchise parent
+        // (Ranking of Kings vs Ranking of Kings : Le tresor...) or S01Exx is ambiguous.
+        if (ids.Count == 1)
+            return ids;
+
+        // Only when the full title did not resolve: two+ short-name hits (Konosuba +
+        // spin-off) stay in play and SxxExx picks. Do not add them on top of an exact
+        // title hit, or S01Exx on both shows becomes ambiguous.
+        // A single short-name hit is ignored (DanMachi must not bind to Sword Oratoria).
+        if (ids.Count == 0)
+        {
+            var prefix = MediaIdentityKeys.FindSeriesByShortNamePrefix(
+                queryTitle, seriesRows, s => s.Title, s => s.OriginalTitle);
+            if (prefix.Count >= 2)
+            {
+                foreach (var match in prefix)
+                    ids.Add(match.Id);
+            }
+        }
+
+        if (ids.Count == 0)
+        {
+            var token = MediaIdentityKeys.DistinctiveLastToken(queryTitle);
+            var tokenHits = MediaIdentityKeys.FindSeriesContainingToken(
+                token, seriesRows, s => s.Title, s => s.OriginalTitle);
+            foreach (var match in tokenHits)
+                ids.Add(match.Id);
+        }
+
+        if (ids.Count == 0)
+        {
+            var providerId = await ResolveSeriesViaProvidersAsync(queryTitle, year: null, cancellationToken);
+            if (providerId is not null)
+                ids.Add(providerId.Value);
+        }
+
+        return ids;
+    }
+
+    private sealed record SeriesRow(Guid Id, string? Title, string? OriginalTitle);
+
+    private sealed record SeriesYearRow(Guid Id, string? Title, string? OriginalTitle, DateOnly? ReleaseDate);
+
+    private async Task<HashSet<Guid>> LookupSeriesIdsByExternalIdsAsync(
+        IEnumerable<Dictionary<string, string>?> seriesIdSets,
+        CancellationToken cancellationToken)
+    {
+        var fakeItems = seriesIdSets
+            .Where(ids => ids is { Count: > 0 })
+            .Select((ids, index) => new BulkCreateMediasRequest.BulkCreateMediaItem
+            {
+                Key = $"series-ext-{index}",
+                MediaType = "serie",
+                Title = "",
+                ExternalIds = ids!
+            })
+            .ToList();
+
+        if (fakeItems.Count == 0)
+            return [];
+
+        var lookup = await LookupByExternalIdsAsync(fakeItems, cancellationToken);
+        return lookup.Values
+            .Where(hit => hit.Type == MediaType.Serie)
+            .Select(hit => hit.MediaId)
+            .ToHashSet();
+    }
+
+    private async Task<Guid?> ResolveSeriesViaProvidersAsync(
+        string title,
+        int? year,
+        CancellationToken cancellationToken)
+    {
+        if (serviceProvider is null || string.IsNullOrWhiteSpace(title))
+            return null;
+
+        var cacheKey = year is null ? title : $"{title}|{year.Value}";
+        if (_providerSeriesCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        Guid? resolved = null;
+        var identification = new MediaIdentification(title)
+        {
+            SeriesTitle = title,
+            ReleaseYear = year is > 0 ? new DateOnly(year.Value, 1, 1) : null
+        };
+
+        foreach (var providerKey in SerieProviderKeys)
+        {
+            var provider = serviceProvider.GetKeyedService<ISerieMetadataProvider>(providerKey);
+            if (provider is null)
+                continue;
+
+            try
+            {
+                var providerId = await provider.SearchSerieAsync(
+                    identification,
+                    "fr",
+                    MetadataProviderNames.DefaultLanguage,
+                    cancellationToken);
+                if (string.IsNullOrWhiteSpace(providerId))
+                    continue;
+
+                var serie = await FindMediaByExternalIdAsync<Serie>(
+                    provider.ProviderName, providerId, cancellationToken);
+                if (serie is null)
+                    continue;
+
+                logger?.LogInformation(
+                    "Resolved series {Title} via {Provider} {ProviderId} to {MediaId}",
+                    title, provider.ProviderName, providerId, serie.Id);
+                resolved = serie.Id;
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "Series provider search failed for {Title} via {Provider}", title, providerKey);
+            }
+        }
+
+        _providerSeriesCache[cacheKey] = resolved;
+        return resolved;
+    }
+
+    private static bool EpisodeTitleMatches(string? dbTitle, string? dbOriginal, string? itemTitle, string? itemOriginal)
+    {
+        if (MediaIdentityKeys.MatchesIgnoringDiacritics(dbTitle, itemTitle)
+            || MediaIdentityKeys.MatchesIgnoringDiacritics(dbOriginal, itemTitle)
+            || MediaIdentityKeys.MatchesIgnoringDiacritics(dbTitle, itemOriginal)
+            || MediaIdentityKeys.MatchesIgnoringDiacritics(dbOriginal, itemOriginal))
+        {
+            return true;
+        }
+
+        foreach (var left in MediaIdentityKeys.EpisodeTitleSegments(dbTitle, dbOriginal))
+        {
+            foreach (var right in MediaIdentityKeys.EpisodeTitleSegments(itemTitle, itemOriginal))
+            {
+                if (MediaIdentityKeys.MatchesIgnoringDiacritics(left, right))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

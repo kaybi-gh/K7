@@ -11141,6 +11141,12 @@
               "string"
             ]
           },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "year": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -11151,6 +11157,27 @@
             "format": "int32"
           },
           "externalIds": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "additionalSpotifyIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "popularity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "seriesExternalIds": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
@@ -11184,6 +11211,15 @@
             "format": "int32"
           },
           "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "episodeNumberEnd": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",

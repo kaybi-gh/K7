@@ -10,6 +10,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
+using K7.Shared;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
 
@@ -45,18 +46,23 @@ public class BulkCreateMediasCommandHandler(
 
         foreach (var item in itemsWithExternalIds)
         {
-            foreach (var (provider, value) in item.ExternalIds)
+            foreach (var (provider, value) in OrderedExternalIds(item))
             {
-                if (externalIdLookup.TryGetValue((provider.ToLowerInvariant(), value), out var mediaId))
-                {
-                    resultMap.TryAdd(item.Key, (mediaId, false));
-                    break;
-                }
+                if (!externalIdLookup.TryGetValue((provider.ToLowerInvariant(), value), out var hit))
+                    continue;
+
+                if (!ImportMediaTypeCompatibility.IsCompatible(item.MediaType, hit.Type))
+                    continue;
+
+                resultMap.TryAdd(item.Key, (hit.MediaId, false));
+                break;
             }
         }
 
         // Music: an earlier import may have attached Spotify (etc.) ids to virtual file-less
         // tracks. Do not let those block title matching against the real library copy.
+        // Keep the virtual hit and restore it when title matching finds nothing.
+        var virtualMusicHits = new Dictionary<string, (Guid MediaId, bool WasCreated)>();
         if (resultMap.Count > 0)
         {
             var musicKeys = request.Items
@@ -75,13 +81,16 @@ public class BulkCreateMediasCommandHandler(
 
                 foreach (var key in musicKeys)
                 {
-                    if (!playableIds.Contains(resultMap[key].MediaId))
-                        resultMap.Remove(key);
+                    if (playableIds.Contains(resultMap[key].MediaId))
+                        continue;
+
+                    virtualMusicHits[key] = resultMap[key];
+                    resultMap.Remove(key);
                 }
             }
         }
 
-        // 2. Title-based dedup for music items without ExternalId match
+        // 2. Title-based dedup for music items without a playable ExternalId match
         var unmatchedMusic = request.Items
             .Where(i => i.MediaType == "music" && !resultMap.ContainsKey(i.Key))
             .ToList();
@@ -98,6 +107,11 @@ public class BulkCreateMediasCommandHandler(
                 }
             }
         }
+
+        foreach (var (key, hit) in virtualMusicHits)
+            resultMap.TryAdd(key, hit);
+
+        await PropagateMusicGroupMatchesAsync(request.Items, resultMap, cancellationToken);
 
         var unmatchedMovies = request.Items
             .Where(i => i.MediaType == "movie" && !resultMap.ContainsKey(i.Key))
@@ -432,7 +446,8 @@ public class BulkCreateMediasCommandHandler(
             var representative = group.Items[0];
             var albumKey = MediaIdentityKeys.NormalizeKey(representative.ArtistName ?? "", representative.AlbumName ?? "Unknown Album");
             var album = albumCache[albumKey];
-            var title = MediaIdentityKeys.StripRedundantArtistFromTitle(representative.Title, representative.ArtistName);
+            var title = MediaIdentityKeys.StripTrackEditionSuffix(
+                MediaIdentityKeys.StripRedundantArtistFromTitle(representative.Title, representative.ArtistName));
 
             var track = new MusicTrack
             {
@@ -440,7 +455,7 @@ public class BulkCreateMediasCommandHandler(
                 SortTitle = MediaSortTitleHelper.Compute(title),
                 AlbumId = album.Id
             };
-            AddExternalIds(track, representative.ExternalIds);
+            AddExternalIds(track, MusicExternalIdSets(group));
             context.Medias.Add(track);
             pending.Add((track, group));
 
@@ -488,11 +503,10 @@ public class BulkCreateMediasCommandHandler(
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var existingSeriesList = await context.Medias.OfType<Serie>()
-            .Where(s => s.Title != null && seriesTitles.Contains(s.Title))
-            .ToListAsync(cancellationToken);
+        var existingSeriesList = await context.Medias.OfType<Serie>().ToListAsync(cancellationToken);
 
-        var existingSeries = existingSeriesList
+        var existingSeriesByExactTitle = existingSeriesList
+            .Where(s => s.Title is not null)
             .GroupBy(s => s.Title!, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
@@ -501,25 +515,32 @@ public class BulkCreateMediasCommandHandler(
 
         foreach (var title in seriesTitles)
         {
-            if (existingSeries.TryGetValue(title, out var existing))
+            var identityHits = MediaIdentityKeys.ResolveSeriesMatches(
+                title, existingSeriesList, s => s.Title, s => s.OriginalTitle);
+            if (identityHits.Count == 1)
+            {
+                serieCache[title] = identityHits[0];
+                continue;
+            }
+
+            if (existingSeriesByExactTitle.TryGetValue(title, out var existing))
             {
                 serieCache[title] = existing;
+                continue;
             }
-            else
+
+            var representative = episodeGroups
+                .First(g => string.Equals(g.Items[0].SeriesTitle ?? "Unknown Series", title, StringComparison.OrdinalIgnoreCase))
+                .Items[0];
+            var serie = new Serie
             {
-                var representative = episodeGroups
-                    .First(g => string.Equals(g.Items[0].SeriesTitle ?? "Unknown Series", title, StringComparison.OrdinalIgnoreCase))
-                    .Items[0];
-                var serie = new Serie
-                {
-                    Title = title,
-                    SortTitle = MediaSortTitleHelper.Compute(title),
-                    ReleaseDate = representative.Year is { } y ? new DateOnly(y, 1, 1) : null
-                };
-                context.Medias.Add(serie);
-                newSeries.Add(serie);
-                serieCache[title] = serie;
-            }
+                Title = title,
+                SortTitle = MediaSortTitleHelper.Compute(title),
+                ReleaseDate = representative.Year is { } y ? new DateOnly(y, 1, 1) : null
+            };
+            context.Medias.Add(serie);
+            newSeries.Add(serie);
+            serieCache[title] = serie;
         }
 
         if (newSeries.Count > 0)
@@ -660,11 +681,25 @@ public class BulkCreateMediasCommandHandler(
         pending.Clear();
     }
 
-    private static void AddExternalIds(BaseMedia media, Dictionary<string, string> externalIds)
+    private static void AddExternalIds(BaseMedia media, Dictionary<string, string> externalIds) =>
+        AddExternalIds(media, [externalIds]);
+
+    private static void AddExternalIds(BaseMedia media, IEnumerable<Dictionary<string, string>> idSets)
     {
-        foreach (var (provider, value) in externalIds)
+        foreach (var externalIds in idSets)
         {
-            media.ExternalIds.Add(new ExternalId { ProviderName = provider, Value = value });
+            foreach (var (provider, value) in externalIds)
+            {
+                if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(value))
+                    continue;
+
+                if (media.ExternalIds.Any(e =>
+                        string.Equals(e.ProviderName, provider, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(e.Value, value, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                media.ExternalIds.Add(new ExternalId { ProviderName = provider, Value = value });
+            }
         }
     }
 
@@ -686,6 +721,7 @@ public class BulkCreateMediasCommandHandler(
             // Find duplicates in the batch by matching ExternalIds
             foreach (var other in items.Where(o => o.Key != item.Key && !assigned.Contains(o.Key) && o.MediaType == item.MediaType))
             {
+                var grouped = false;
                 if (item.ExternalIds.Count > 0 && other.ExternalIds.Count > 0)
                 {
                     var hasCommon = item.ExternalIds.Any(e =>
@@ -693,34 +729,151 @@ public class BulkCreateMediasCommandHandler(
                         string.Equals(v, e.Value, StringComparison.OrdinalIgnoreCase));
 
                     if (hasCommon)
-                    {
-                        group.Items.Add(other);
-                        assigned.Add(other.Key);
-                    }
+                        grouped = true;
                 }
-                else if (item.MediaType == "music" &&
-                         string.Equals(MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title),
-                                       MediaIdentityKeys.NormalizeMusicTitle(other.ArtistName, other.Title),
-                                       StringComparison.OrdinalIgnoreCase))
+
+                if (!grouped && item.MediaType == "music" &&
+                    string.Equals(MediaIdentityKeys.NormalizeMusicTitle(item.ArtistName, item.Title),
+                                  MediaIdentityKeys.NormalizeMusicTitle(other.ArtistName, other.Title),
+                                  StringComparison.OrdinalIgnoreCase))
                 {
-                    group.Items.Add(other);
-                    assigned.Add(other.Key);
+                    grouped = true;
                 }
-                else if (item.MediaType is "movie" or "serie" &&
+                else if (!grouped && item.MediaType is "movie" or "serie" &&
                          string.Equals(MediaIdentityKeys.NormalizeMovieTitle(item.Title, item.Year),
                                        MediaIdentityKeys.NormalizeMovieTitle(other.Title, other.Year),
                                        StringComparison.OrdinalIgnoreCase))
                 {
-                    group.Items.Add(other);
-                    assigned.Add(other.Key);
+                    grouped = true;
                 }
+
+                if (!grouped)
+                    continue;
+
+                group.Items.Add(other);
+                assigned.Add(other.Key);
             }
 
             assigned.Add(item.Key);
             groups.Add(group);
         }
 
+        foreach (var group in groups.Where(g => g.MediaType == "music" && g.Items.Count > 1))
+        {
+            group.Items.Sort(CompareMusicRepresentative);
+        }
+
         return groups;
+    }
+
+    private static int CompareMusicRepresentative(
+        BulkCreateMediasRequest.BulkCreateMediaItem left,
+        BulkCreateMediasRequest.BulkCreateMediaItem right)
+    {
+        var popularity = (right.Popularity ?? int.MinValue).CompareTo(left.Popularity ?? int.MinValue);
+        if (popularity != 0)
+            return popularity;
+
+        return string.Compare(left.Key, right.Key, StringComparison.Ordinal);
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> OrderedExternalIds(
+        BulkCreateMediasRequest.BulkCreateMediaItem item)
+    {
+        // Prefer K7 ISRC / MusicBrainz hits over a leftover Spotify id on a virtual track.
+        string[] priority = ["isrc", "musicbrainz"];
+        foreach (var provider in priority)
+        {
+            if (item.ExternalIds.TryGetValue(provider, out var value))
+                yield return new KeyValuePair<string, string>(provider, value);
+        }
+
+        foreach (var pair in item.ExternalIds)
+        {
+            if (priority.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            yield return pair;
+        }
+    }
+
+    private async Task PropagateMusicGroupMatchesAsync(
+        IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> items,
+        Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        CancellationToken cancellationToken)
+    {
+        var music = items.Where(i => i.MediaType == "music").ToList();
+        if (music.Count == 0)
+            return;
+
+        foreach (var group in music.GroupBy(
+                     i => MediaIdentityKeys.NormalizeMusicTitle(i.ArtistName, i.Title),
+                     StringComparer.OrdinalIgnoreCase))
+        {
+            var members = group.ToList();
+            var hitMembers = members.Where(i => resultMap.ContainsKey(i.Key)).ToList();
+            if (hitMembers.Count == 0)
+                continue;
+
+            var mediaIds = hitMembers.Select(i => resultMap[i.Key].MediaId).Distinct().ToList();
+            var playableIds = (await context.Medias
+                    .Where(m => mediaIds.Contains(m.Id) && m.IndexedFiles.Any())
+                    .Select(m => m.Id)
+                    .ToListAsync(cancellationToken))
+                .ToHashSet();
+
+            var chosen = PickGroupMediaId(hitMembers, resultMap, playableIds);
+            foreach (var item in members)
+                resultMap.TryAdd(item.Key, (chosen, false));
+        }
+    }
+
+    private static Guid PickGroupMediaId(
+        List<BulkCreateMediasRequest.BulkCreateMediaItem> hitMembers,
+        Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        HashSet<Guid> playableIds)
+    {
+        var isrcPlayable = hitMembers.FirstOrDefault(i =>
+            HasIsrc(i) && playableIds.Contains(resultMap[i.Key].MediaId));
+        if (isrcPlayable is not null)
+            return resultMap[isrcPlayable.Key].MediaId;
+
+        var playable = hitMembers.FirstOrDefault(i => playableIds.Contains(resultMap[i.Key].MediaId));
+        if (playable is not null)
+            return resultMap[playable.Key].MediaId;
+
+        var isrcVirtual = hitMembers.FirstOrDefault(HasIsrc);
+        if (isrcVirtual is not null)
+            return resultMap[isrcVirtual.Key].MediaId;
+
+        return resultMap[hitMembers[0].Key].MediaId;
+    }
+
+    private static bool HasIsrc(BulkCreateMediasRequest.BulkCreateMediaItem item) =>
+        item.ExternalIds.Keys.Any(k => k.Equals("isrc", StringComparison.OrdinalIgnoreCase));
+
+    private static IEnumerable<Dictionary<string, string>> MusicExternalIdSets(BatchGroup group)
+    {
+        for (var i = 0; i < group.Items.Count; i++)
+        {
+            var item = group.Items[i];
+            var ids = new Dictionary<string, string>(item.ExternalIds, StringComparer.OrdinalIgnoreCase);
+            if (i > 0)
+                ids.Remove("isrc");
+
+            yield return ids;
+
+            foreach (var spotifyId in item.AdditionalSpotifyIds ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(spotifyId))
+                    continue;
+
+                yield return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["spotify"] = spotifyId
+                };
+            }
+        }
     }
 
     private static string? ResolveSortTitle(BulkCreateMediasRequest.BulkCreateMediaItem item) =>
