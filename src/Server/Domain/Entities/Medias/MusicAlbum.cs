@@ -16,6 +16,8 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
     {
         if (!IsFieldLocked(nameof(Title)))
             Title = metadata.Title ?? Title;
+        if (!IsFieldLocked(nameof(OriginalTitle)))
+            OriginalTitle = metadata.OriginalTitle ?? OriginalTitle;
         if (!IsFieldLocked(nameof(SortTitle)))
             SortTitle = metadata.SortTitle ?? SortTitle;
         if (!IsFieldLocked(nameof(ReleaseDate)))

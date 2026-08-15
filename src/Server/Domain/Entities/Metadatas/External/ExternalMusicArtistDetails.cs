@@ -2,6 +2,9 @@ namespace K7.Server.Domain.Entities.Metadatas.External;
 
 public class ExternalMusicArtistDetails
 {
+    public string? Name { get; init; }
+    public string? OriginalName { get; init; }
+    public string? SortName { get; init; }
     public string? Biography { get; init; }
     public string? ImageUrl { get; init; }
     public string? Country { get; init; }

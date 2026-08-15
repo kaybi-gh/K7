@@ -149,16 +149,26 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             }
         }
 
-        var albumTitle = releaseGroup?.Title ?? release?.Title;
+        var officialAlbumTitle = releaseGroup?.Title ?? release?.Title;
+        var localizedAlbum = MusicBrainzLocalizedName.Resolve(
+            officialAlbumTitle,
+            releaseGroup?.SortName ?? release?.SortName,
+            ConcatAliases(releaseGroup?.Aliases, release?.Aliases),
+            language);
+        var albumTitle = string.IsNullOrWhiteSpace(localizedAlbum.Name) ? officialAlbumTitle : localizedAlbum.Name;
         var metadata = new ExternalMusicAlbumMetadata
         {
             Title = albumTitle,
-            SortTitle = releaseGroup?.SortName ?? release?.SortName ?? MediaSortTitleHelper.Compute(albumTitle),
+            OriginalTitle = localizedAlbum.OriginalName,
+            SortTitle = localizedAlbum.SortName
+                ?? releaseGroup?.SortName
+                ?? release?.SortName
+                ?? MediaSortTitleHelper.Compute(albumTitle),
             ReleaseDate = ParseDate(releaseGroup?.FirstReleaseDate ?? release?.Date),
             Genres = ExtractGenreTags(releaseGroup?.Genres, releaseGroup?.Tags),
             ExternalIds = externalIds,
-            Tracks = ExtractTracks(release),
-            Artists = ExtractArtists(release),
+            Tracks = ExtractTracks(release, language),
+            Artists = ExtractArtists(release, language),
             Pictures = await FetchCoverArtAsync(releaseGroupId, releaseId, cancellationToken)
         };
 
@@ -408,7 +418,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags+url-rels+artist-credits&fmt=json";
+            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags+url-rels+artist-credits+aliases&fmt=json";
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbReleaseGroup>(url, JsonOptions, cancellationToken);
         }
@@ -496,7 +506,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            var url = $"{BaseUrl}/release/{releaseId}?inc=recordings+artist-credits+isrcs&fmt=json";
+            var url = $"{BaseUrl}/release/{releaseId}?inc=recordings+artist-credits+isrcs+aliases&fmt=json";
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbRelease>(url, JsonOptions, cancellationToken);
         }
@@ -572,7 +582,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             .Select(g => g.Name!)
             .ToList();
 
-    private static IList<ExternalMusicTrackMetadata> ExtractTracks(MbRelease? release)
+    private static IList<ExternalMusicTrackMetadata> ExtractTracks(MbRelease? release, string language)
     {
         if (release?.Media == null) return [];
 
@@ -590,11 +600,15 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             {
                 var credits = (track.ArtistCredit ?? [])
                     .Where(ac => ac.Artist is not null && !string.IsNullOrEmpty(ac.Artist.Id))
-                    .Select(ac => new ExternalMusicTrackArtistCredit
+                    .Select(ac =>
                     {
-                        Name = ac.Artist!.Name ?? ac.Name ?? "Unknown",
-                        MusicBrainzArtistId = ac.Artist.Id,
-                        IsGuest = !albumArtistIds.Contains(ac.Artist.Id)
+                        var artist = ac.Artist!;
+                        return new ExternalMusicTrackArtistCredit
+                        {
+                            Name = LocalizeArtistCredit(ac, language),
+                            MusicBrainzArtistId = artist.Id,
+                            IsGuest = !albumArtistIds.Contains(artist.Id)
+                        };
                     })
                     .ToList();
 
@@ -615,21 +629,59 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return tracks;
     }
 
-    private static IList<ExternalMusicArtistMetadata> ExtractArtists(MbRelease? release)
+    private static IList<ExternalMusicArtistMetadata> ExtractArtists(MbRelease? release, string language)
     {
         if (release?.ArtistCredit == null) return [];
 
         return release.ArtistCredit
             .Where(ac => ac.Artist != null && !string.IsNullOrEmpty(ac.Artist.Id))
-            .Select(ac => new ExternalMusicArtistMetadata
+            .Select(ac =>
             {
-                Name = ac.Artist!.Name ?? ac.Name ?? "Unknown",
-                SortName = ac.Artist!.SortName ?? MediaSortTitleHelper.Compute(ac.Artist!.Name ?? ac.Name),
-                MusicBrainzArtistId = ac.Artist.Id
+                var localized = LocalizeArtist(ac.Artist!, ac.Name, language);
+                return new ExternalMusicArtistMetadata
+                {
+                    Name = localized.Name,
+                    OriginalName = localized.OriginalName,
+                    SortName = localized.SortName ?? ac.Artist!.SortName ?? MediaSortTitleHelper.Compute(localized.Name),
+                    MusicBrainzArtistId = ac.Artist!.Id
+                };
             })
             .DistinctBy(a => a.MusicBrainzArtistId)
             .ToList();
     }
+
+    private static string LocalizeArtistCredit(MbArtistCredit credit, string language)
+    {
+        if (credit.Artist is null)
+            return credit.Name ?? "Unknown";
+
+        var localized = LocalizeArtist(credit.Artist, credit.Name, language);
+        return string.IsNullOrWhiteSpace(localized.Name) ? credit.Name ?? "Unknown" : localized.Name;
+    }
+
+    private static LocalizedName LocalizeArtist(MbArtist artist, string? creditName, string language)
+        => MusicBrainzLocalizedName.Resolve(
+            artist.Name ?? creditName,
+            artist.SortName,
+            MapAliases(artist.Aliases),
+            language,
+            unfoldPersonSortName: true);
+
+    private static IReadOnlyList<MusicBrainzNameAlias> MapAliases(IEnumerable<MbAlias>? aliases)
+        => (aliases ?? [])
+            .Where(static a => !string.IsNullOrWhiteSpace(a.Name))
+            .Select(static a => new MusicBrainzNameAlias(
+                a.Name!,
+                a.Locale,
+                a.Primary == true,
+                a.Type,
+                a.SortName))
+            .ToList();
+
+    private static IEnumerable<MusicBrainzNameAlias> ConcatAliases(
+        IEnumerable<MbAlias>? first,
+        IEnumerable<MbAlias>? second)
+        => MapAliases(first).Concat(MapAliases(second));
 
     internal static DateOnly? ParseDate(string? date)
     {
@@ -651,6 +703,13 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             var artist = await FetchArtistAsync(providerId, cancellationToken);
             if (artist == null) return null;
+
+            var localized = MusicBrainzLocalizedName.Resolve(
+                artist.Name,
+                artist.SortName,
+                MapAliases(artist.Aliases),
+                language,
+                unfoldPersonSortName: true);
 
             var country = artist.Area?.Name;
             var wikidataUrl = artist.Relations?
@@ -685,7 +744,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 [
                     new ExternalMusicArtistMember
                     {
-                        Name = artist.Name ?? "Unknown",
+                        Name = string.IsNullOrWhiteSpace(localized.Name) ? artist.Name ?? "Unknown" : localized.Name,
                         MusicBrainzArtistId = providerId,
                         IsActive = true
                     }
@@ -694,6 +753,9 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
             return new ExternalMusicArtistDetails
             {
+                Name = string.IsNullOrWhiteSpace(localized.Name) ? artist.Name : localized.Name,
+                OriginalName = localized.OriginalName,
+                SortName = localized.SortName ?? artist.SortName,
                 Country = country,
                 MusicBrainzArtistId = providerId,
                 WikidataId = wikidataId,
@@ -754,7 +816,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private async Task<MbArtistDetail?> FetchArtistAsync(string mbid, CancellationToken ct)
     {
         await _rateLimiter.WaitAsync(Host, ct);
-        var url = $"{BaseUrl}/artist/{Uri.EscapeDataString(mbid)}?inc=url-rels+artist-rels&fmt=json";
+        var url = $"{BaseUrl}/artist/{Uri.EscapeDataString(mbid)}?inc=url-rels+artist-rels+aliases&fmt=json";
         return await _httpClient.GetFromJsonAsync<MbArtistDetail>(url, JsonOptions, ct);
     }
 
@@ -984,6 +1046,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public List<MbGenre>? Genres { get; init; }
         public List<MbGenre>? Tags { get; init; }
         public List<MbRelation>? Relations { get; init; }
+        public List<MbAlias>? Aliases { get; init; }
         [JsonPropertyName("artist-credit")]
         public List<MbArtistCredit>? ArtistCredit { get; init; }
     }
@@ -1013,6 +1076,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public string? SortName { get; init; }
         public string? Date { get; init; }
         public List<MbMedium>? Media { get; init; }
+        public List<MbAlias>? Aliases { get; init; }
         [JsonPropertyName("artist-credit")]
         public List<MbArtistCredit>? ArtistCredit { get; init; }
         [JsonPropertyName("release-group")]
@@ -1031,6 +1095,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public string? Name { get; init; }
         public string? SortName { get; init; }
         public string? Type { get; init; }
+        public List<MbAlias>? Aliases { get; init; }
     }
 
     private record MbMedium
@@ -1075,9 +1140,20 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private record MbArtistDetail
     {
         public string? Name { get; init; }
+        public string? SortName { get; init; }
         public string? Type { get; init; }
         public MbArea? Area { get; init; }
         public List<MbRelation>? Relations { get; init; }
+        public List<MbAlias>? Aliases { get; init; }
+    }
+
+    private record MbAlias
+    {
+        public string? Name { get; init; }
+        public string? Locale { get; init; }
+        public bool? Primary { get; init; }
+        public string? Type { get; init; }
+        public string? SortName { get; init; }
     }
 
     private record MbReleaseGroupSearchResult

@@ -70,6 +70,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Include(m => m.Pictures)
             .Include(m => m.PersonRoles)
                 .ThenInclude(pr => pr.Person)
+                    .ThenInclude(p => p.PortraitPicture)
             .Include(m => m.PersonRoles)
                 .ThenInclude(pr => pr.ExternalIds)
             .Include(m => m.PersonRoles)
@@ -89,6 +90,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 .Include(m => m.Pictures)
                 .Include(m => m.PersonRoles)
                     .ThenInclude(pr => pr.Person)
+                        .ThenInclude(p => p.PortraitPicture)
                 .Include(m => m.PersonRoles)
                     .ThenInclude(pr => pr.ExternalIds)
                 .Include(m => m.PersonRoles)
@@ -390,6 +392,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     if (!string.IsNullOrEmpty(mbDetails.ImdbId) && !artist.ExternalIds.Any(e => e.ProviderName == "imdb"))
                         artist.ExternalIds.Add(new ExternalId { ProviderName = "imdb", Value = mbDetails.ImdbId, MediaId = artist.Id });
                 }
+
+                ApplyMusicArtistLocalizedNames(artist, mbDetails.Name, mbDetails.OriginalName, mbDetails.SortName);
 
                 await SyncArtistMembersAsync(artist, mbDetails.Members, request.Language, cancellationToken);
 
@@ -776,13 +780,15 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         // Match album artist by name; never fall back to Artists[0] (VA / multi-artist albums).
         var artistMetadata = metadata.Artists?.FirstOrDefault(a =>
-            MusicArtistNameNormalizer.NamesMatch(a.Name, artist.Title));
+            MusicArtistNameNormalizer.NamesMatch(a.Name, artist.Title)
+            || MusicArtistNameNormalizer.NamesMatch(a.OriginalName, artist.Title)
+            || MediaIdentityKeys.PersonNamesMatch(a.Name, artist.Title)
+            || MediaIdentityKeys.PersonNamesMatch(a.OriginalName, artist.Title)
+            || MediaIdentityKeys.PersonNamesMatch(a.SortName, artist.Title)
+            || MediaIdentityKeys.PersonNamesMatch(a.SortName, artist.SortTitle));
 
-        if (!artist.IsFieldLocked(nameof(MusicArtist.SortTitle))
-            && artistMetadata?.SortName is not null)
-        {
-            artist.SortTitle = artistMetadata.SortName;
-        }
+        if (artistMetadata is not null)
+            ApplyMusicArtistLocalizedNames(artist, artistMetadata.Name, artistMetadata.OriginalName, artistMetadata.SortName);
 
         var mbExternalId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
         if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)) && mbExternalId is null && !string.IsNullOrEmpty(artistMetadata?.MusicBrainzArtistId))
@@ -826,6 +832,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Country)) && !string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))
                     artist.Country = mbDetails.Country;
+
+                ApplyMusicArtistLocalizedNames(artist, mbDetails.Name, mbDetails.OriginalName, mbDetails.SortName);
 
                 mbImageUrl = mbDetails.ImageUrl;
 
@@ -886,6 +894,20 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 });
             }
         }
+    }
+
+    private static void ApplyMusicArtistLocalizedNames(
+        MusicArtist artist,
+        string? name,
+        string? originalName,
+        string? sortName)
+    {
+        if (!artist.IsFieldLocked(nameof(MusicArtist.Title)) && !string.IsNullOrWhiteSpace(name))
+            artist.Title = name;
+        if (!artist.IsFieldLocked(nameof(MusicArtist.OriginalTitle)) && !string.IsNullOrWhiteSpace(originalName))
+            artist.OriginalTitle = originalName;
+        if (!artist.IsFieldLocked(nameof(MusicArtist.SortTitle)) && !string.IsNullOrWhiteSpace(sortName))
+            artist.SortTitle = sortName;
     }
 
     private async Task<MusicArtist> FindOrCreateMusicArtistAsync(string name, string? sortName, string? musicBrainzId, CancellationToken cancellationToken)
@@ -1082,6 +1104,9 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             if (existingPerson is null)
                 continue;
+
+            await PersonMetadataMergeHelper.EnsurePortraitPictureLoadedAsync(
+                _context, existingPerson, cancellationToken);
 
             foreach (var duplicate in matchedPersons.Where(p => !ReferenceEquals(p, existingPerson)))
                 PersonMetadataMergeHelper.MergeMissingPersonData(existingPerson, duplicate);
