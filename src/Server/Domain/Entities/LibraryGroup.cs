@@ -7,6 +7,7 @@ public class LibraryGroup : BaseAuditableEntity
     public string? Description { get; set; }
     public string? Icon { get; set; }
     public string? CardColor { get; set; }
+    public ExploreTapAction ExploreTapAction { get; set; } = ExploreTapAction.Suggestions;
 
     public MetadataPicture? CoverPicture { get; set; }
     public IList<Library> Libraries { get; set; } = [];

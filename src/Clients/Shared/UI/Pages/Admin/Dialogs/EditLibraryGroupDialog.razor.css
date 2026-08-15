@@ -52,6 +52,21 @@
     margin-bottom: 2px;
 }
 
+.tap-action-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.tap-action-field__label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.tap-action-field ::deep .k7-button-group {
+    align-self: flex-start;
+}
+
 .library-group-card-preview {
     max-width: 280px;
 }

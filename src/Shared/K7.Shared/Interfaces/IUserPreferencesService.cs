@@ -11,6 +11,9 @@ public interface IUserPreferencesService
     Task<HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default);
     Task UpdateHomeLayoutAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default);
     Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default);
+    Task<GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default);
+    Task UpdateUserGeneralPreferencesAsync(GeneralPreferencesDto settings, CancellationToken cancellationToken = default);
+    Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default);
     Task<VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateUserVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default);
     Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);

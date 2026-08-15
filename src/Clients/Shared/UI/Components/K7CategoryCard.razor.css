@@ -118,6 +118,12 @@
     text-overflow: ellipsis;
 }
 
+.k7-category-card--menu-open {
+    z-index: 2;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 .k7-category-card__icon-badge {
     flex-shrink: 0;
     display: flex;

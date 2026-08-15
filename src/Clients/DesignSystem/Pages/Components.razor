@@ -468,13 +468,20 @@
 
     <section id="k7-category-card" class="ds-section">
         <h2>K7CategoryCard</h2>
-        <p class="ds-description">Full-width card with gradient background, bold italic title, description, and icon badge. Designed for mobile category/browse menus.</p>
+        <p class="ds-description">Full-width card with gradient background, bold italic title, description, and icon badge. Optional long-press / right-click menu for alternate destinations.</p>
         <div class="ds-preview ds-preview--block" style="max-width:480px">
             <div style="display:flex;flex-direction:column;gap:var(--space-3)">
                 <K7CategoryCard Title="Films"
                                 Description="Cinematic wonders"
                                 Icon="@Phosphor.FilmSlate"
-                                GradientStart="rgba(110,25,25,0.92)"                                IconColor="rgba(0,0,0,0.55)" />
+                                GradientStart="rgba(110,25,25,0.92)"
+                                IconColor="rgba(0,0,0,0.55)"
+                                ContextMenuTitle="Films">
+                    <ContextMenu>
+                        <K7MenuItem Icon="rows">Suggestions</K7MenuItem>
+                        <K7MenuItem Icon="squares-four">Browse</K7MenuItem>
+                    </ContextMenu>
+                </K7CategoryCard>
                 <K7CategoryCard Title="Series"
                                 Description="Binge-worthy stories"
                                 Icon="@Phosphor.MonitorPlay"

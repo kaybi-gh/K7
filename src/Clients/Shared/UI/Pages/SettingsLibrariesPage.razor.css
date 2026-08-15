@@ -31,6 +31,24 @@
     color: var(--color-text-secondary);
 }
 
+.settings-libraries__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.settings-libraries__section-title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.settings-libraries__section ::deep .k7-button-group {
+    align-self: flex-start;
+}
+
 ::deep .settings-libraries__group .k7-checkbox-list {
     max-height: none;
 }

@@ -1010,6 +1010,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("ExploreTapAction")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Icon")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");

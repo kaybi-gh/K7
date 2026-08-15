@@ -45,4 +45,6 @@
   <data name="NoLibraryGroup" xml:space="preserve"><value>Groupe introuvable</value></data>
   <data name="OtherUsers" xml:space="preserve"><value>Autres utilisateurs</value></data>
   <data name="OtherUsersDesc" xml:space="preserve"><value>Profils locaux et pairs directement connectés</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Catalogue</value></data>
 </root>

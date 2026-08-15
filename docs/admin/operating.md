@@ -71,6 +71,10 @@ For Movie and Serie libraries, **Chapter extraction** (enabled by default) store
 
 Files already indexed without chapters show as **Chapters not extracted** in Admin diagnostics when the library setting is on. Fix with **Extract chapters**, or play the file once (lazy sync extract on stream session).
 
+### Explore feed
+
+Category cards on Explore open a per-group feed (`/explore?library-group={id}`) by default, or library browse (`/library-groups/{id}`) when that group's tap action is Browse. Set the default per group in Admin -> Library groups (edit dialog). Users can override each group under Settings -> Libraries. Long-press or right-click on a card still offers both destinations.
+
 ### Theme songs
 
 Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs; optional per-device disable on the same page. Server default: Admin -> Experience -> General). Theme continues across related series pages (serie / season / episode) and cast person digressions; a finished theme does not restart on return to the same media. Leaving that media context fades out, and opening another media with a theme crossfades.

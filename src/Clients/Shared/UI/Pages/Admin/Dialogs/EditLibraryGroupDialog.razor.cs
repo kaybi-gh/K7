@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
@@ -22,6 +23,7 @@ public partial class EditLibraryGroupDialog
     private string? _description;
     private string? _icon;
     private string _cardColor = "#781e1e";
+    private ExploreTapAction _exploreTapAction = ExploreTapAction.Suggestions;
     private string? _coverDominantColor;
     private CoverPickerResult? _pendingCover;
     private Guid? _currentCoverPictureId;
@@ -51,6 +53,12 @@ public partial class EditLibraryGroupDialog
         PreviewImageUrl is not null
         && DominantColorCss.ToHexColor(_coverDominantColor) is not null;
 
+    private IReadOnlyList<ButtonGroupOption<ExploreTapAction>> TapActionOptions =>
+    [
+        new(ExploreTapAction.Suggestions, L["ExploreTapSuggestions"]),
+        new(ExploreTapAction.Browse, L["ExploreTapBrowse"])
+    ];
+
     protected override void OnInitialized()
     {
         _title = Group.Title;
@@ -59,6 +67,7 @@ public partial class EditLibraryGroupDialog
         _currentCoverPictureId = Group.CoverPictureId;
         _coverDominantColor = Group.CoverDominantColor;
         _cardColor = Group.CardColor ?? LibraryGroupCardColors.GetDefaultHex(Group.MediaType);
+        _exploreTapAction = Group.ExploreTapAction;
         _previewColors = LibraryGroupCardColors.GetRgbaColors(Group.MediaType, Group.CardColor);
     }
 
@@ -148,7 +157,8 @@ public partial class EditLibraryGroupDialog
                 Title = _title,
                 Description = _description,
                 Icon = _icon,
-                CardColor = cardColor ?? string.Empty
+                CardColor = cardColor ?? string.Empty,
+                ExploreTapAction = _exploreTapAction
             });
 
             if (_pendingCover?.SourcePictureId.HasValue == true)

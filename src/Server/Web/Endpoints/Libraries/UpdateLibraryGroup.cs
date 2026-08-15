@@ -24,7 +24,8 @@ public class UpdateLibraryGroup : IEndpoint
                 Title = request.Title,
                 Description = request.Description,
                 Icon = request.Icon,
-                CardColor = request.CardColor
+                CardColor = request.CardColor,
+                ExploreTapAction = request.ExploreTapAction
             }, cancellationToken);
 
             return Results.NoContent();

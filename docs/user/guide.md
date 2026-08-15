@@ -124,7 +124,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Profile | Settings -> Account | Avatar, display name (also password, email, PIN, 2FA for password accounts) |
 | Look and language | Settings -> General | Theme (light / dark), interface language, theme songs |
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
-| Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows) |
+| Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows); per-group tap action on Explore (suggestions vs browse) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |
 | Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages - see [Playback](#playback) |
 | Music player | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
@@ -135,6 +135,8 @@ Session **quality** stays in the player menu only (not a saved preference).
 ## My Space and libraries
 
 Libraries are on Home (and library browse). What you see depends on admin library / profile access, plus your own library exclusions above.
+
+**Explore** lists your library groups as category cards. Tapping a card opens that group's feed by default, or the library browse page when **Settings -> Libraries -> tap / click action** is set to Browse (admin default: Admin -> Library groups). Long-press or right-click on a card still offers both destinations.
 
 **My Space** is your personal corner:
 

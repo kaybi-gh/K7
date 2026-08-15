@@ -846,6 +846,9 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.GeneralPreferencesDto());
+    public Task UpdateUserGeneralPreferencesAsync(K7.Shared.Dtos.GeneralPreferencesDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.VideoPlayerSettingsDto());
     public Task UpdateUserVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

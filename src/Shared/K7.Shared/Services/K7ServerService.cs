@@ -1587,6 +1587,24 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<IndexedFileDto>(_serializerOptions, cancellationToken);
     }
 
+    public async Task<GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<GeneralPreferencesDto>("api/users/me/preferences/general", _serializerOptions, cancellationToken);
+        return result ?? new GeneralPreferencesDto();
+    }
+
+    public async Task UpdateUserGeneralPreferencesAsync(GeneralPreferencesDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/general", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/general", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.GetAsync("api/server/preferences/video-player", cancellationToken);

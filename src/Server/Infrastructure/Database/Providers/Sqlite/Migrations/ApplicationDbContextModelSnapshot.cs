@@ -1035,6 +1035,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ExploreTapAction")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Icon")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");

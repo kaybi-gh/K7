@@ -58,7 +58,12 @@
   <data name="TabLibraries" xml:space="preserve"><value>Libraries</value></data>
   <data name="TabHome" xml:space="preserve"><value>Home</value></data>
   <data name="LibrariesPageTitle" xml:space="preserve"><value>Libraries</value></data>
-  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choose which libraries to hide from your view.</value></data>
+  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choose which libraries to hide, and what a tap on each Explore category does.</value></data>
+  <data name="LibrariesSection" xml:space="preserve"><value>Libraries</value></data>
+  <data name="ExploreTapActionSection" xml:space="preserve"><value>Tap / click action</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="ExploreTapActionHint" xml:space="preserve"><value>Suggestions opens the explore feed. Browse opens the library page directly.</value></data>
   <data name="LibrariesPageEmpty" xml:space="preserve"><value>No libraries available.</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>

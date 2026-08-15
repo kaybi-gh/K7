@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.LibraryGroups.Commands.UpdateLibraryGroup;
 
@@ -12,6 +13,7 @@ public record UpdateLibraryGroupCommand : IRequest
     public string? Description { get; init; }
     public string? Icon { get; init; }
     public string? CardColor { get; init; }
+    public ExploreTapAction? ExploreTapAction { get; init; }
 }
 
 public class UpdateLibraryGroupCommandHandler(IApplicationDbContext context) : IRequestHandler<UpdateLibraryGroupCommand>
@@ -27,6 +29,7 @@ public class UpdateLibraryGroupCommandHandler(IApplicationDbContext context) : I
         if (request.Description is not null) entity.Description = request.Description;
         if (request.Icon is not null) entity.Icon = request.Icon;
         if (request.CardColor is not null) entity.CardColor = string.IsNullOrEmpty(request.CardColor) ? null : request.CardColor;
+        if (request.ExploreTapAction is { } tapAction) entity.ExploreTapAction = tapAction;
 
         await context.SaveChangesAsync(cancellationToken);
     }

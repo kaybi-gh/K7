@@ -1,5 +1,6 @@
 @page "/settings/libraries"
 @layout SettingsLayout
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
@@ -21,6 +22,9 @@
         else
         {
             <p class="settings-libraries__description">@L["LibrariesPageDescription"]</p>
+            <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+                @L["ExploreTapActionHint"]
+            </K7Alert>
             <div class="settings-libraries__groups">
                 @foreach (var group in _groups)
                 {
@@ -29,11 +33,24 @@
                     {
                         <K7Paper Outlined="true" Class="settings-libraries__group">
                             <span class="settings-libraries__group-title">@group.Title</span>
-                            <K7CheckboxList TItem="LibraryDto"
-                                            Items="libs"
-                                            IsChecked="@(lib => !_selfExcludedIds.Contains(lib.Id))"
-                                            CheckedChanged="@(e => ToggleLibrary(e.Item.Id, !e.Checked))"
-                                            ItemLabel="@(lib => lib.Title)" />
+
+                            <div class="settings-libraries__section">
+                                <span class="settings-libraries__section-title">@L["LibrariesSection"]</span>
+                                <K7CheckboxList TItem="LibraryDto"
+                                                Items="libs"
+                                                IsChecked="@(lib => !_selfExcludedIds.Contains(lib.Id))"
+                                                CheckedChanged="@(e => ToggleLibrary(e.Item.Id, !e.Checked))"
+                                                ItemLabel="@(lib => lib.Title)" />
+                            </div>
+
+                            <div class="settings-libraries__section">
+                                <span class="settings-libraries__section-title">@L["ExploreTapActionSection"]</span>
+                                <K7ButtonGroup TValue="ExploreTapAction"
+                                               Options="TapActionOptions"
+                                               Value="GetTapAction(group.Id)"
+                                               ValueChanged="@(action => SetTapAction(group.Id, action))"
+                                               AriaLabel="@L["ExploreTapActionSection"]" />
+                            </div>
                         </K7Paper>
                     }
                 }

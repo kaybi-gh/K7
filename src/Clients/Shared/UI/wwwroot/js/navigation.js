@@ -772,7 +772,8 @@ var SpatialNav = (function () {
 
     function isMediaCardMenuOpen(card) {
         if (!card) return false;
-        if (card.classList.contains('media-card--menu-open')) return true;
+        if (card.classList.contains('media-card--menu-open')
+            || card.classList.contains('k7-category-card--menu-open')) return true;
         if (card.querySelector('.k7-menu-dropdown--open')) return true;
         return false;
     }
@@ -960,13 +961,14 @@ var SpatialNav = (function () {
             if (container) activeEl = e.target;
         }
         if (!container) return null;
-        var card = container.closest('.media-card');
+        var card = container.closest('.media-card') || container.closest('.k7-category-card');
         if (!card) return null;
         return {
             container: container,
             card: card,
             activeEl: activeEl,
             link: card.querySelector('a.media-card-link[href]')
+                || card.querySelector('button.k7-category-card__hit')
         };
     }
 

@@ -1,3 +1,4 @@
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities
 @using Microsoft.AspNetCore.Components.Forms
 @inject IStringLocalizer<EditLibraryGroupDialog> L
@@ -71,6 +72,18 @@
                       OnClick="ApplyCoverDominantColorAsync">
                 @L["UseCoverDominantColor"]
             </K7Button>
+        </div>
+
+        <div class="tap-action-field">
+            <span class="tap-action-field__label">@L["ExploreTapActionSection"]</span>
+            <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+                @L["ExploreTapActionHint"]
+            </K7Alert>
+            <K7ButtonGroup TValue="ExploreTapAction"
+                           Options="TapActionOptions"
+                           Value="_exploreTapAction"
+                           ValueChanged="@(action => _exploreTapAction = action)"
+                           AriaLabel="@L["ExploreTapActionSection"]" />
         </div>
 
         <div class="mt-3">

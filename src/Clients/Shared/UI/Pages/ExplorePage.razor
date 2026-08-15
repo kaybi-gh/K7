@@ -2,6 +2,7 @@
 @layout ExploreLayout
 @using K7.Clients.Shared.Helpers
 @using K7.Clients.Shared.Interfaces
+@using K7.Server.Domain.Enums
 @inject ILibraryService LibraryService
 @inject IStringLocalizer<ExplorePage> L
 @inject NavigationManager NavigationManager
@@ -44,7 +45,17 @@ else
                                 ImageUrl="@imageUrl"
                                 CardColor="@group.CardColor"
                                 Class="k7-category-card--lg"
-                                OnClick="@(() => NavigationManager.NavigateTo($"/explore?library-group={group.Id}"))" />
+                                ContextMenuTitle="@group.Title"
+                                OnClick="@(() => OnCategoryClick(group.Id))">
+                    <ContextMenu>
+                        <K7MenuItem Icon="rows" OnClick="@(() => NavigateToGroup(group.Id, ExploreTapAction.Suggestions))">
+                            @L["ExploreTapSuggestions"]
+                        </K7MenuItem>
+                        <K7MenuItem Icon="squares-four" OnClick="@(() => NavigateToGroup(group.Id, ExploreTapAction.Browse))">
+                            @L["ExploreTapBrowse"]
+                        </K7MenuItem>
+                    </ContextMenu>
+                </K7CategoryCard>
             }
             @if (_showSocialDirectory)
             {

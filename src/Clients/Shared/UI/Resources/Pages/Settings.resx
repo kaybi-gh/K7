@@ -58,7 +58,12 @@
   <data name="TabLibraries" xml:space="preserve"><value>Bibliothèques</value></data>
   <data name="TabHome" xml:space="preserve"><value>Accueil</value></data>
   <data name="LibrariesPageTitle" xml:space="preserve"><value>Bibliothèques</value></data>
-  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choisissez les bibliothèques à masquer de votre espace.</value></data>
+  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choisissez les bibliothèques à masquer, et l'action au clic sur chaque groupe dans Explorer.</value></data>
+  <data name="LibrariesSection" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="ExploreTapActionSection" xml:space="preserve"><value>Action au clic</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Catalogue</value></data>
+  <data name="ExploreTapActionHint" xml:space="preserve"><value>Suggestions ouvre le fil d'exploration. Catalogue ouvre directement la bibliothèque.</value></data>
   <data name="LibrariesPageEmpty" xml:space="preserve"><value>Aucune bibliothèque disponible.</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Rien à afficher</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre bibliothèque est vide, ou aucun contenu ne vous est accessible.</value></data>

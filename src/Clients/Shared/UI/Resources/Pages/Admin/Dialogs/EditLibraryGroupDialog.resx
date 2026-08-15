@@ -34,4 +34,8 @@
   <data name="ColorLabel" xml:space="preserve"><value>Couleur de la carte</value></data>
   <data name="UseCoverDominantColor" xml:space="preserve"><value>Couleur de l'image</value></data>
   <data name="PreviewLabel" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="ExploreTapActionSection" xml:space="preserve"><value>Action au clic</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Catalogue</value></data>
+  <data name="ExploreTapActionHint" xml:space="preserve"><value>Suggestions ouvre le fil d'exploration. Catalogue ouvre directement la bibliothèque.</value></data>
 </root>

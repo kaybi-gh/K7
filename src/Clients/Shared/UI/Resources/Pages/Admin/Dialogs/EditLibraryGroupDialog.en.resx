@@ -34,4 +34,8 @@
   <data name="ColorLabel" xml:space="preserve"><value>Card color</value></data>
   <data name="UseCoverDominantColor" xml:space="preserve"><value>Use image color</value></data>
   <data name="PreviewLabel" xml:space="preserve"><value>Preview</value></data>
+  <data name="ExploreTapActionSection" xml:space="preserve"><value>Tap / click action</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="ExploreTapActionHint" xml:space="preserve"><value>Suggestions opens the explore feed. Browse opens the library page directly.</value></data>
 </root>

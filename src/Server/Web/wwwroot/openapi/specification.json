@@ -485,6 +485,51 @@
         }
       }
     },
+    "/api/users/me/preferences/general": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserGeneralPreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserGeneralPreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserGeneralPreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneralPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/preferences/home-layout": {
       "delete": {
         "tags": [
@@ -12524,6 +12569,9 @@
       "DynamicPlaylistOrderBy": {
         "type": "integer"
       },
+      "ExploreTapAction": {
+        "type": "integer"
+      },
       "ExternalIdDto": {
         "required": [
           "providerName",
@@ -12848,6 +12896,17 @@
           },
           "action": {
             "$ref": "#/components/schemas/DiagnosticFixAction"
+          }
+        }
+      },
+      "GeneralPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "exploreTapActions": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ExploreTapAction"
+            }
           }
         }
       },
@@ -13355,6 +13414,9 @@
               "null",
               "string"
             ]
+          },
+          "exploreTapAction": {
+            "$ref": "#/components/schemas/ExploreTapAction"
           },
           "coverPictureId": {
             "type": [
@@ -20239,6 +20301,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "exploreTapAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExploreTapAction"
+              }
             ]
           }
         }

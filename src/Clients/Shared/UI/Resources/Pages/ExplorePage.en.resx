@@ -87,6 +87,8 @@
   <data name="BrowseAll" xml:space="preserve"><value>Browse all</value></data>
 
   <data name="NoLibraryGroup" xml:space="preserve"><value>Group not found</value></data>
+  <data name="ExploreTapSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="ExploreTapBrowse" xml:space="preserve"><value>Browse</value></data>
 
 </root>
 
