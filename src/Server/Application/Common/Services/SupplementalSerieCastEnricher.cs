@@ -4,6 +4,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Common.Services;
 
@@ -34,17 +35,7 @@ public static class SupplementalSerieCastEnricher
 
             matchedSupplemental.Add(match);
             PersonMetadataMergeHelper.MergeMissingPersonData(primary.Person, match.Person);
-
-            if (primary.PortraitPicture is null && match.PortraitPicture?.OriginalRemoteUri is not null)
-            {
-                primary.PortraitPicture = new MetadataPicture
-                {
-                    OriginalRemoteUri = match.PortraitPicture.OriginalRemoteUri,
-                    Type = MetadataPictureType.Portrait,
-                    PersonRoleId = primary.Id == Guid.Empty ? null : primary.Id,
-                    PersonId = primary.Person.Id == Guid.Empty ? null : primary.Person.Id
-                };
-            }
+            CopyRolePortraitIfMissing(primary, match);
         }
 
         var rolesToAppend = supplementalRoles
@@ -187,6 +178,22 @@ public static class SupplementalSerieCastEnricher
         }
 
         return left.Type == right.Type;
+    }
+
+    private static void CopyRolePortraitIfMissing(BasePersonRole primary, BasePersonRole match)
+    {
+        if (primary.PortraitPicture is not null || match.PortraitPicture?.OriginalRemoteUri is null)
+            return;
+
+        // Role portraits must not set PersonId: MetadataPictures.PersonId is unique (Person.PortraitPicture 1:1).
+        var picture = new MetadataPicture
+        {
+            OriginalRemoteUri = match.PortraitPicture.OriginalRemoteUri,
+            Type = MetadataPictureType.Portrait,
+            PersonRoleId = primary.Id == Guid.Empty ? null : primary.Id
+        };
+        picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
+        primary.PortraitPicture = picture;
     }
 
     private static string? GetExternalId(Person person, string providerName) =>

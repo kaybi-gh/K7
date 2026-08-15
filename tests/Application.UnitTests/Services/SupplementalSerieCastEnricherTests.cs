@@ -3,6 +3,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.UnitTests.Services;
 
@@ -130,6 +131,53 @@ public class SupplementalSerieCastEnricherTests
         SupplementalSerieCastEnricher.Enrich(tvdbRoles, tmdbRoles);
 
         person.Biography.Should().Be("Bio from TMDb");
+    }
+
+    [Test]
+    public void Enrich_ShouldCopyRolePortraitWithoutPersonId()
+    {
+        var tvdbActor = CreateTvdbActor("Steve Carell", "Michael Scott", "296970");
+        tvdbActor.Id = Guid.NewGuid();
+        tvdbActor.Person.Id = Guid.NewGuid();
+
+        var tmdbActor = CreateTmdbActor("Steve Carell", "Michael Scott", "4495", "nm0136797");
+        tmdbActor.PortraitPicture = new MetadataPicture
+        {
+            OriginalRemoteUri = new Uri("https://image.tmdb.org/t/p/original/carell.jpg"),
+            Type = MetadataPictureType.Portrait
+        };
+
+        SupplementalSerieCastEnricher.Enrich([tvdbActor], [tmdbActor]);
+
+        tvdbActor.PortraitPicture.Should().NotBeNull();
+        tvdbActor.PortraitPicture!.PersonId.Should().BeNull();
+        tvdbActor.PortraitPicture.PersonRoleId.Should().Be(tvdbActor.Id);
+        tvdbActor.PortraitPicture.OriginalRemoteUri.Should().Be(tmdbActor.PortraitPicture.OriginalRemoteUri);
+        tvdbActor.PortraitPicture.DomainEvents.Should().ContainSingle()
+            .Which.Should().BeOfType<MetadataPictureCreatedEvent>();
+    }
+
+    [Test]
+    public void Enrich_ShouldKeepExistingRolePortrait()
+    {
+        var existingUri = new Uri("https://artworks.thetvdb.com/existing.jpg");
+        var tvdbActor = CreateTvdbActor("Steve Carell", "Michael Scott", "296970");
+        tvdbActor.PortraitPicture = new MetadataPicture
+        {
+            OriginalRemoteUri = existingUri,
+            Type = MetadataPictureType.Portrait
+        };
+
+        var tmdbActor = CreateTmdbActor("Steve Carell", "Michael Scott", "4495", null);
+        tmdbActor.PortraitPicture = new MetadataPicture
+        {
+            OriginalRemoteUri = new Uri("https://image.tmdb.org/t/p/original/carell.jpg"),
+            Type = MetadataPictureType.Portrait
+        };
+
+        SupplementalSerieCastEnricher.Enrich([tvdbActor], [tmdbActor]);
+
+        tvdbActor.PortraitPicture!.OriginalRemoteUri.Should().Be(existingUri);
     }
 
     [Test]

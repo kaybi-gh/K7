@@ -126,6 +126,9 @@ public sealed class SerieSupplementalCastEnrichmentService(
             if (existingPerson is null)
                 continue;
 
+            await PersonMetadataMergeHelper.EnsurePortraitPictureLoadedAsync(
+                _context, existingPerson, cancellationToken);
+
             foreach (var duplicate in matchedPersons.Where(p => !ReferenceEquals(p, existingPerson)))
                 PersonMetadataMergeHelper.MergeMissingPersonData(existingPerson, duplicate);
 

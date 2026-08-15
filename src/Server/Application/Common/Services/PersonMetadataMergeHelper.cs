@@ -1,7 +1,9 @@
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Common.Services;
 
@@ -86,4 +88,18 @@ public static class PersonMetadataMergeHelper
         person.ExternalIds.Any(e => string.Equals(e.ProviderName, preferredProvider, StringComparison.OrdinalIgnoreCase))
         && string.IsNullOrWhiteSpace(person.Biography)
         && person.Birthday is null;
+
+    public static async Task EnsurePortraitPictureLoadedAsync(
+        IApplicationDbContext context,
+        Person person,
+        CancellationToken cancellationToken = default)
+    {
+        var entry = context.Entry(person);
+        if (entry.State == EntityState.Detached)
+            return;
+
+        var reference = entry.Reference(p => p.PortraitPicture);
+        if (!reference.IsLoaded)
+            await reference.LoadAsync(cancellationToken);
+    }
 }

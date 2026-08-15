@@ -43,6 +43,11 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
             .Include(s => s.PersonRoles)
                 .ThenInclude(pr => pr.Person)
                     .ThenInclude(p => p.ExternalIds)
+            .Include(s => s.PersonRoles)
+                .ThenInclude(pr => pr.Person)
+                    .ThenInclude(p => p.PortraitPicture)
+            .Include(s => s.PersonRoles)
+                .ThenInclude(pr => pr.PortraitPicture)
             .Include(s => s.Ratings)
             .FirstOrDefaultAsync(s => s.Id == request.MediaId, cancellationToken);
         Guard.Against.NotFound(request.MediaId, serie);
