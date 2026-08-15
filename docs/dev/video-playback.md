@@ -19,7 +19,8 @@ Android keeps `AndroidViewType=TextureView` so the XAML overlay composites above
 `NativeVideoPlayerOverlay` (`src/Clients/MAUI/Controls/Video/`) targets 1:1 parity with the Blazor
 `VideoPlayerControlsOverlay`: transport, seek bar with chapter ticks/sprite thumbnail preview and
 hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, with TV D-pad
-focus navigation), cast + remote device picker, SyncPlay (members, chat, reactions, floating
+focus navigation; audio and subtitle labels are the normalized language plus the original
+track name in parentheses when it is not just the ISO code), cast + remote device picker, SyncPlay (members, chat, reactions, floating
 reaction overlay), skip segment (cooldown + auto-dismiss), next-episode countdown/autoplay, and
 touch gestures (brightness/volume swipe with dim overlay, double-tap skip with ripple). When
 playback reaches the end, a series episode with a successor shows the next-episode offer. A movie

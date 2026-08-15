@@ -11,6 +11,7 @@ using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
+using K7.Shared;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
@@ -334,12 +335,13 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             .ThenBy(t => t.Index)
             .ToList();
 
+        var usedAudioNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var track in audioTracks)
         {
             var isDefault = query.DefaultAudioTrackIndex.HasValue
                 ? track.Index == query.DefaultAudioTrackIndex.Value
                 : track == audioTracks[0];
-            var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Track {track.Index}";
+            var trackName = AudioTrackDisplayHelper.FormatHlsName(track.Name, track.Language, track.Index, usedAudioNames);
             var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
 
             var trackAudioParams = new List<string>

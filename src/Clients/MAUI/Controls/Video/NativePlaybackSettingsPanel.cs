@@ -456,18 +456,21 @@ public sealed class NativePlaybackSettingsPanel : Border
 
     private static string FormatAudio(AudioFileTrackDto track)
     {
-        var lang = string.IsNullOrWhiteSpace(track.Language) ? "Unknown" : track.Language;
-        var codec = string.IsNullOrWhiteSpace(track.Codec) ? "" : $" - {track.Codec}";
+        var label = AudioTrackDisplayHelper.FormatLabel(track);
         var flag = NativeLanguageFlags.GetFlagEmoji(track.Language);
-        return string.IsNullOrEmpty(flag) ? $"{lang}{codec}" : $"{flag} {lang}{codec}";
+        return string.IsNullOrEmpty(flag) ? label : $"{flag} {label}";
     }
 
     private static string FormatSubtitle(SubtitleFileTrackDto track)
     {
-        var lang = string.IsNullOrWhiteSpace(track.Language) ? "Unknown" : track.Language;
-        var name = string.IsNullOrWhiteSpace(track.Name) ? "" : $" - {track.Name}";
+        var type = track.IsHearingImpaired
+            ? NativeStrings.SubtitleTypeHearingImpaired
+            : track.IsForced
+                ? NativeStrings.SubtitleTypeForced
+                : NativeStrings.SubtitleTypeFull;
+        var label = AudioTrackDisplayHelper.FormatSubtitleLabel(track, type);
         var flag = NativeLanguageFlags.GetFlagEmoji(track.Language);
-        return string.IsNullOrEmpty(flag) ? $"{lang}{name}" : $"{flag} {lang}{name}";
+        return string.IsNullOrEmpty(flag) ? label : $"{flag} {label}";
     }
 
     private sealed class Row(Border view, Action activate)

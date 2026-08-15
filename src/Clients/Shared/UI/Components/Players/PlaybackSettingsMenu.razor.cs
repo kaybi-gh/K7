@@ -1,4 +1,3 @@
-using System.Globalization;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -353,59 +352,17 @@ public partial class PlaybackSettingsMenu : IDisposable
         await PlayerService.ChangeQualityAsync(quality);
     }
 
-    private string GetAudioTrackLabel(AudioFileTrackDto track)
-    {
-        var language = GetTranslatedLanguageName(track.Language ?? "und");
-        var channels = track.ChannelLayout?.Split('(')[0].Trim();
-        var details = !string.IsNullOrEmpty(channels)
-            ? $"{track.Codec} {channels}"
-            : track.Codec;
-
-        if (!string.IsNullOrEmpty(track.Name)
-            && !string.Equals(track.Name, track.Language, StringComparison.OrdinalIgnoreCase)
-            && !IsLanguageCode(track.Name)
-            && !track.Name.Contains(track.Codec ?? "", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"{language} - {track.Name} ({details})";
-        }
-
-        return $"{language} ({details})";
-    }
+    private static string GetAudioTrackLabel(AudioFileTrackDto track) =>
+        AudioTrackDisplayHelper.FormatLabel(track);
 
     private string GetSubtitleTrackLabel(SubtitleFileTrackDto track)
     {
-        var language = GetTranslatedLanguageName(track.Language ?? "und");
         var type = track.IsHearingImpaired
             ? L["SubtitleTypeHearingImpaired"]
             : track.IsForced
                 ? L["SubtitleTypeForced"]
                 : L["SubtitleTypeFull"];
-        return $"{language} - {type} ({track.Codec})";
-    }
-
-    private static string GetTranslatedLanguageName(string code)
-    {
-        if (string.IsNullOrEmpty(code) || code == "und")
-            return code;
-
-        try
-        {
-            var culture = CultureInfo.GetCultureInfo(code);
-            if (!string.IsNullOrEmpty(culture.DisplayName) && culture.DisplayName != code)
-                return char.ToUpper(culture.DisplayName[0]) + culture.DisplayName[1..];
-        }
-        catch
-        {
-            // CultureInfo doesn't recognize this code
-        }
-
-        return SupportedLanguages.GetDisplayLabel(code);
-    }
-
-    private static bool IsLanguageCode(string value)
-    {
-        return value.Length is 2 or 3
-            && value.All(c => c is >= 'a' and <= 'z');
+        return AudioTrackDisplayHelper.FormatSubtitleLabel(track, type);
     }
 
     public void Dispose()

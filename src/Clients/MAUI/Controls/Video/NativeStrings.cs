@@ -44,6 +44,9 @@ internal static class NativeStrings
     public static string Audio => "Audio";
     public static string Subtitles => IsFrench ? "Sous-titres" : "Subtitles";
     public static string SubtitlesOff => IsFrench ? "Désactivés" : "Off";
+    public static string SubtitleTypeFull => IsFrench ? "Complet" : "Full";
+    public static string SubtitleTypeForced => IsFrench ? "Forcé" : "Forced";
+    public static string SubtitleTypeHearingImpaired => "SDH";
     public static string Quality => IsFrench ? "Qualité" : "Quality";
     public static string Speed => IsFrench ? "Vitesse" : "Speed";
     public static string AspectRatio => IsFrench ? "Format d'image" : "Aspect ratio";

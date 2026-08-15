@@ -37,7 +37,9 @@ public class MediaAnalysisService : IMediaAnalysisService
             Index = primaryAudio.Index,
             IsDefault = true,
             Language = LanguageNormalizer.NormalizeOrPassthrough(primaryAudio.Language),
-            Name = primaryAudio.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? primaryAudio.Language,
+            Name = AudioTrackDisplayHelper.ResolveStoredName(
+                primaryAudio.Tags?.FirstOrDefault(t => t.Key == "title").Value,
+                primaryAudio.Language),
             Codec = primaryAudio.CodecName,
             Channels = primaryAudio.Channels,
             ChannelLayout = primaryAudio.ChannelLayout,
@@ -218,7 +220,9 @@ public class MediaAnalysisService : IMediaAnalysisService
             Index = x.Index,
             IsDefault = IsDefaultTrack(hasDefaultAudio, x.Disposition, x.Index),
             Language = LanguageNormalizer.NormalizeOrPassthrough(x.Language),
-            Name = x.Tags?.FirstOrDefault(x => x.Key == "title").Value ?? x.Language,
+            Name = AudioTrackDisplayHelper.ResolveStoredName(
+                x.Tags?.FirstOrDefault(t => t.Key == "title").Value,
+                x.Language),
             Codec = x.CodecName,
             Channels = x.Channels,
             ChannelLayout = x.ChannelLayout,
@@ -266,17 +270,18 @@ public class MediaAnalysisService : IMediaAnalysisService
         bool hasDefaultSub = mediaAnalysis.SubtitleStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
         return [.. mediaAnalysis.SubtitleStreams.Select(x =>
         {
-            var name = x.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? x.Language;
+            var title = x.Tags?.FirstOrDefault(t => t.Key == "title").Value;
+            var name = AudioTrackDisplayHelper.ResolveStoredName(title, x.Language);
             return new SubtitleFileTrack
             {
                 Index = x.Index,
                 IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
-                Language = LanguageNormalizer.ResolveSubtitleLanguage(x.Language, name),
+                Language = LanguageNormalizer.ResolveSubtitleLanguage(x.Language, title ?? x.Language),
                 Name = name,
                 Codec = x.CodecName,
                 IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
-                IsForced = IsForcedSubtitle(x.Disposition, name),
-                IsHearingImpaired = IsHearingImpairedSubtitle(x.Disposition, name)
+                IsForced = IsForcedSubtitle(x.Disposition, title ?? name),
+                IsHearingImpaired = IsHearingImpairedSubtitle(x.Disposition, title ?? name)
             };
         })];
     }
