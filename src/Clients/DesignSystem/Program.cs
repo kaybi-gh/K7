@@ -60,6 +60,7 @@ builder.Services.AddSingleton<K7HubClient>();
 
 // Server API mock services
 builder.Services.AddSingleton<IK7ServerService, MockK7ServerService>();
+builder.Services.AddSingleton<IFederationService, MockFederationService>();
 builder.Services.AddSingleton<IMediaService, MockMediaService>();
 builder.Services.AddSingleton<ILibraryService, MockLibraryService>();
 builder.Services.AddSingleton<IPlaylistService, MockPlaylistService>();

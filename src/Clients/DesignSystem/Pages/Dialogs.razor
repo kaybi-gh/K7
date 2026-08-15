@@ -1,5 +1,9 @@
 @page "/dialogs"
 @using K7.Clients.Shared.UI.Extensions
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities
+@using K7.Shared.Dtos.Entities.Metadatas.Files
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
 @inject IDeviceService DeviceService
@@ -114,7 +118,7 @@
 
     <section id="playback-options" class="ds-section">
         <h2>PlaybackOptionsDialog</h2>
-        <p class="ds-description">Selects the audio/subtitle tracks and playback file for a movie.</p>
+        <p class="ds-description">Selects the release (resolution, audio, local vs federated) and audio/subtitle tracks for a movie.</p>
         <div class="ds-preview ds-preview--bare">
             <K7Button OnClick="ShowPlaybackOptionsDialog">Playback options</K7Button>
         </div>
@@ -130,7 +134,62 @@
 </div>
 
 @code {
-    private static readonly MovieDto _demoMovie = new() { Id = Guid.NewGuid(), Title = "Dune" };
+    private static readonly MovieDto _demoMovie = new()
+    {
+        Id = Guid.NewGuid(),
+        Title = "Dune",
+        IndexedFiles =
+        [
+            DemoFile("Dune", VideoResolutionIdentifier._1080p, "hevc", "vff", "en", 12L * 1024 * 1024 * 1024),
+            DemoFile("Dune", VideoResolutionIdentifier._2160p, "hevc", "vfq", "en", 38L * 1024 * 1024 * 1024)
+        ],
+        RemoteIndexedFiles =
+        [
+            new RemoteIndexedFileDto
+            {
+                Id = Guid.NewGuid(),
+                PeerServerId = Guid.NewGuid(),
+                RemoteFileId = Guid.NewGuid(),
+                RemoteMediaId = Guid.NewGuid(),
+                Name = "Dune",
+                Extension = ".mkv",
+                Size = 8L * 1024 * 1024 * 1024,
+                VideoResolution = VideoResolutionIdentifier._720p
+            }
+        ]
+    };
+
+    private static IndexedFileDto DemoFile(
+        string name,
+        VideoResolutionIdentifier resolution,
+        string codec,
+        string frenchName,
+        string otherLanguage,
+        long size) => new()
+    {
+        Id = Guid.NewGuid(),
+        LibraryId = Guid.NewGuid(),
+        Name = name,
+        Extension = ".mkv",
+        Path = $@"D:\Movies\{name}.mkv",
+        Hash = 1,
+        Size = size,
+        FileMetadata = new VideoFileMetadataDto
+        {
+            Container = "mkv",
+            VideoBitrate = 5_000_000,
+            VideoResolution = resolution,
+            AudioTracks =
+            [
+                new AudioFileTrackDto { Index = 0, Language = "fr", Name = frenchName, Codec = "ac3", Channels = 6, ChannelLayout = "5.1" },
+                new AudioFileTrackDto { Index = 1, Language = otherLanguage, Codec = "ac3", Channels = 6, ChannelLayout = "5.1" }
+            ],
+            VideoTracks =
+            [
+                new VideoFileTrackDto { Index = 0, Width = 1920, Height = 1080, Codec = codec, Profile = "main", Level = 150 }
+            ]
+        }
+    };
     private static readonly MovieDto _demoMediaForFiles = new() { Id = Guid.NewGuid(), Title = "Oppenheimer" };
 
     private async Task ShowMessageBox()

@@ -461,6 +461,42 @@ public sealed class MockK7ServerService : IK7ServerService
     public Uri? GetAbsoluteUri(string? relativePath) => null;
 }
 
+public sealed class MockFederationService : IFederationService
+{
+    public Task<List<PeerServerDto>> GetPeerServersAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new List<PeerServerDto>());
+
+    public Task<List<PeerRequestDto>> GetPeerRequestsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new List<PeerRequestDto>());
+
+    public Task RequestPeerAsync(string remoteUrl, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task AcceptPeerAsync(Guid requestId, IReadOnlyList<Guid> sharedLibraryIds, bool autoShareNewLibraries = false, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task RejectPeerAsync(Guid requestId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task UpdatePeerAsync(Guid peerId, UpdatePeerRequest request, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<bool> TestPeerAsync(Guid peerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task RevokePeerAsync(Guid peerId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task SyncPeerAsync(Guid peerId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<List<PeerShareAgreementDto>> DiscoverPeerLibrariesAsync(Guid peerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new List<PeerShareAgreementDto>());
+
+    public Task<IndexedFileDto?> GetRemoteFileDetailsAsync(Guid remoteFileId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IndexedFileDto?>(null);
+}
+
 public sealed class MockMediaService : IMediaService
 {
     public Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<HomeFeedItemDto>?>(null);

@@ -381,25 +381,14 @@ public partial class Movie : IAsyncDisposable
     {
         if (_movie is null) return;
 
-        var movieForDialog = _movie;
-
-        // For remote-only movies, fetch file details from the peer
-        if (_movie.IndexedFiles is not { Count: > 0 } && _movie.RemoteIndexedFiles is { Count: > 0 })
-        {
-            var remoteFile = _selectedRemoteFile ?? _movie.RemoteIndexedFiles.First();
-            var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
-            if (details is null) return;
-
-            movieForDialog = _movie with { IndexedFiles = [details] };
-            _selectedFile = details;
-        }
-
-        if (movieForDialog.IndexedFiles is not { Count: > 0 }) return;
+        if (!HasPlayableFiles())
+            return;
 
         var parameters = new K7DialogParameters<PlaybackOptionsDialog>
         {
-            { x => x.Movie, movieForDialog },
-            { x => x.InitialFileId, _selectedFile?.Id }
+            { x => x.Movie, _movie },
+            { x => x.InitialFileId, _selectedFile?.Id },
+            { x => x.InitialRemoteFileId, _selectedRemoteFile?.Id }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
@@ -410,6 +399,7 @@ public partial class Movie : IAsyncDisposable
         if (result != null && !result.Canceled && result.Data is PlaybackOptionsResult optionsResult)
         {
             _selectedFile = optionsResult.SelectedFile;
+            _selectedRemoteFile = optionsResult.RemoteFile;
             _selectedAudioFileTrack = optionsResult.AudioTrack;
             _selectedSubtitleFileTrack = optionsResult.SubtitleTrack;
 

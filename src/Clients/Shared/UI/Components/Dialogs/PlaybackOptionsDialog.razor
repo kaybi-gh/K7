@@ -8,12 +8,12 @@
 
 <div class="k7-dialog-content">
         <div class="d-flex flex-col data-nav-col">
-            @if (Movie.IndexedFiles != null && Movie.IndexedFiles.Count > 1)
+            @if (ShowFilePicker)
             {
-                <K7Select TValue="IndexedFileDto" @bind-Value="SelectedFile" Label="@L["File"]" Variant="filled" ToStringFunc="@(f => f?.Name)">
-                    @foreach (var file in Movie.IndexedFiles)
+                <K7Select TValue="PlaybackReleaseOption" @bind-Value="SelectedRelease" Label="@L["File"]" Variant="filled" ToStringFunc="GetReleaseLabel">
+                    @foreach (var release in _releases)
                     {
-                        <K7SelectItem Value="@file" Text="@file.Name">@file.Name</K7SelectItem>
+                        <K7SelectItem Value="@release" Text="@GetReleaseLabel(release)">@GetReleaseLabel(release)</K7SelectItem>
                     }
                 </K7Select>
             }

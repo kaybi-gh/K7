@@ -41,6 +41,9 @@ Until Microsoft adds support (or K7 offers a Windows-specific playlist without `
 
 Shared branch flag: [`WindowsVideoPlayback.UsesWebVideoPlayer`](../../src/Clients/Shared/Helpers/WindowsVideoPlayback.cs).
 
+`PlaybackOptionsDialog` lists movie releases by resolution, audio languages, codec, size, and
+Local vs Federated when several files exist (not the media title).
+
 ## Related
 
 - Client hosts: [developing.md](developing.md#maui-blazor-hybrid)

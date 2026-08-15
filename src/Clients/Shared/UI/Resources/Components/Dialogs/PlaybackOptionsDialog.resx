@@ -21,6 +21,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="DialogTitle" xml:space="preserve"><value>Options de lecture</value></data>
   <data name="File" xml:space="preserve"><value>Fichier</value></data>
+  <data name="Local" xml:space="preserve"><value>Local</value></data>
+  <data name="Federated" xml:space="preserve"><value>Fédération</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Piste audio</value></data>
   <data name="SubtitleTrack" xml:space="preserve"><value>Sous-titres</value></data>
 </root>
