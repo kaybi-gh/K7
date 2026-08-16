@@ -23,6 +23,8 @@
         <PackageReference Include="FluentAssertions" />
         <PackageReference Include="Respawn" />
         <PackageReference Include="Testcontainers.PostgreSql" />
+        <!-- Force patched SSH.NET; Testcontainers still resolves an older vulnerable transitive. -->
+        <PackageReference Include="SSH.NET" />
     </ItemGroup>
 
     <ItemGroup>
