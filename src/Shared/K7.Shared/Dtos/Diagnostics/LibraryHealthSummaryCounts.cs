@@ -1,4 +1,5 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Diagnostics;
 
 namespace K7.Shared.Dtos.Diagnostics;
 
@@ -20,70 +21,58 @@ public readonly record struct DiagnosticsFilterContext(
 
 public static class LibraryHealthSummaryCounts
 {
-    public static readonly DiagnosticIssue[] ErrorIssues =
-    [
-        DiagnosticIssue.OrphanFile,
-        DiagnosticIssue.MissingFiles,
-        DiagnosticIssue.MissingFileMetadata
-    ];
-
-    public static readonly DiagnosticIssue[] WarningIssues =
-    [
-        DiagnosticIssue.UnidentifiedFile,
-        DiagnosticIssue.MissingHlsSegments,
-        DiagnosticIssue.MissingChapters,
-        DiagnosticIssue.MissingThemeSong,
-        DiagnosticIssue.MissingIntroOutro,
-        DiagnosticIssue.MissingPictures,
-        DiagnosticIssue.MissingMetadata,
-        DiagnosticIssue.MissingExternalId,
-        DiagnosticIssue.StaleMetadata,
-        DiagnosticIssue.InaccessiblePath,
-        DiagnosticIssue.DuplicateExternalId
-    ];
-
-    public static readonly DiagnosticIssue[] InfoIssues =
-    [
-        DiagnosticIssue.MissingAudioAnalysis,
-        DiagnosticIssue.SuspectedDuplicateMedia
-    ];
+    public static readonly DiagnosticIssue[] ErrorIssues = DiagnosticIssueTaxonomy.ErrorIssues;
+    public static readonly DiagnosticIssue[] WarningIssues = DiagnosticIssueTaxonomy.WarningIssues;
+    public static readonly DiagnosticIssue[] InfoIssues = DiagnosticIssueTaxonomy.InfoIssues;
 
     public static int SumErrors(IEnumerable<LibraryHealthSummaryDto> summaries) =>
-        summaries.Sum(l => l.OrphanIndexedFileCount + l.MediaWithoutFilesCount + l.MissingFileMetadataCount);
+        summaries.Sum(l => l.OrphanIndexedFileCount
+            + l.MissingFileMetadataCount
+            + l.MediaMissingExternalIdCount
+            + l.InaccessiblePathCount);
 
     public static int SumWarnings(IEnumerable<LibraryHealthSummaryDto> summaries) =>
-        summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount + l.MissingChaptersCount
-            + l.MissingThemeSongCount + l.MissingIntroOutroCount
-            + l.MediaMissingPicturesCount + l.MediaMissingExternalIdCount + l.MediaMissingMetadataCount
-            + l.StaleMetadataCount + l.InaccessiblePathCount + l.DuplicateExternalIdCount);
+        summaries.Sum(l => l.DuplicateExternalIdCount);
 
     public static int SumInfo(IEnumerable<LibraryHealthSummaryDto> summaries) =>
-        summaries.Sum(l => l.MissingAudioAnalysisCount + l.SuspectedDuplicateMediaCount);
+        summaries.Sum(l => l.MissingHlsSegmentsCount
+            + l.MissingChaptersCount
+            + l.MissingThemeSongCount
+            + l.MissingIntroOutroCount
+            + l.MediaMissingPicturesCount
+            + l.StaleMetadataCount
+            + l.MissingAudioAnalysisCount
+            + l.MissingMembersCount
+            + l.SuspectedDuplicateMediaCount
+            + l.MediaMissingMetadataCount);
 
     public static int SumTotal(IEnumerable<LibraryHealthSummaryDto> summaries) =>
         SumErrors(summaries) + SumWarnings(summaries) + SumInfo(summaries);
 
     public static int SumLibraryIssues(LibraryHealthSummaryDto summary) =>
-        summary.OrphanIndexedFileCount + summary.UnidentifiedIndexedFileCount + summary.MissingFileMetadataCount
-        + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount + summary.MissingThemeSongCount
-        + summary.MissingIntroOutroCount
-        + summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
-        + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
-        + summary.MissingAudioAnalysisCount + summary.InaccessiblePathCount
-        + summary.DuplicateExternalIdCount + summary.SuspectedDuplicateMediaCount;
+        DiagnosticIssueTaxonomy.SurfacedIssues.Sum(issue => CountIssue(summary, issue));
 
     public static int SumIssue(IEnumerable<LibraryHealthSummaryDto> summaries, DiagnosticIssue issue) =>
-        summaries.Sum(s => CountIssue(s, issue));
+        summaries.Sum(s => CountIssue(s, DiagnosticIssueTaxonomy.Canonicalize(issue)));
 
     public static int SumEntityType(IEnumerable<LibraryHealthSummaryDto> summaries, DiagnosticEntityType entityType) =>
         summaries.Sum(s => CountEntityType(s, entityType));
+
+    public static int SumWorkClass(IEnumerable<LibraryHealthSummaryDto> summaries, DiagnosticWorkClass workClass) =>
+        DiagnosticIssueTaxonomy.IssuesForWorkClass(workClass).Sum(issue => SumIssue(summaries, issue));
 
     public static int SumSeverity(
         IEnumerable<LibraryHealthSummaryDto> summaries,
         IReadOnlyCollection<DiagnosticIssue> severityIssues,
         DiagnosticsFilterContext context,
-        DiagnosticsFilterExclusions exclusions) =>
-        severityIssues.Sum(issue => SumIssue(summaries, issue, context, exclusions | DiagnosticsFilterExclusions.Severity));
+        DiagnosticsFilterExclusions exclusions)
+    {
+        var excludesSeverity = exclusions | DiagnosticsFilterExclusions.Severity;
+        return severityIssues
+            .Select(DiagnosticIssueTaxonomy.Canonicalize)
+            .Distinct()
+            .Sum(issue => SumIssue(summaries, issue, context, excludesSeverity));
+    }
 
     public static int SumIssue(
         IEnumerable<LibraryHealthSummaryDto> summaries,
@@ -91,6 +80,7 @@ public static class LibraryHealthSummaryCounts
         DiagnosticsFilterContext context,
         DiagnosticsFilterExclusions exclusions)
     {
+        issue = DiagnosticIssueTaxonomy.Canonicalize(issue);
         if (!MatchesFilters(issue, context, exclusions))
             return 0;
 
@@ -103,7 +93,7 @@ public static class LibraryHealthSummaryCounts
         DiagnosticEntityType entityType,
         DiagnosticsFilterContext context,
         DiagnosticsFilterExclusions exclusions) =>
-        Enum.GetValues<DiagnosticIssue>()
+        DiagnosticIssueTaxonomy.SurfacedIssues
             .Where(issue => IssueBelongsToEntityType(issue, entityType))
             .Sum(issue => SumIssue(summaries, issue, context, exclusions | DiagnosticsFilterExclusions.EntityType));
 
@@ -111,7 +101,7 @@ public static class LibraryHealthSummaryCounts
         LibraryHealthSummaryDto summary,
         DiagnosticsFilterContext context,
         DiagnosticsFilterExclusions exclusions) =>
-        Enum.GetValues<DiagnosticIssue>()
+        DiagnosticIssueTaxonomy.SurfacedIssues
             .Sum(issue => SumIssue([summary], issue, context, exclusions | DiagnosticsFilterExclusions.Library));
 
     private static IEnumerable<LibraryHealthSummaryDto> FilterLibraries(
@@ -132,14 +122,14 @@ public static class LibraryHealthSummaryCounts
     {
         if (!exclusions.HasFlag(DiagnosticsFilterExclusions.Issue)
             && context.Issue.HasValue
-            && context.Issue != issue)
+            && DiagnosticIssueTaxonomy.Canonicalize(context.Issue.Value) != issue)
         {
             return false;
         }
 
         if (!exclusions.HasFlag(DiagnosticsFilterExclusions.Severity)
             && context.SeverityIssues is { Count: > 0 }
-            && !context.SeverityIssues.Contains(issue))
+            && !context.SeverityIssues.Select(DiagnosticIssueTaxonomy.Canonicalize).Contains(issue))
         {
             return false;
         }
@@ -154,23 +144,13 @@ public static class LibraryHealthSummaryCounts
         return true;
     }
 
-    private static bool IssueBelongsToEntityType(DiagnosticIssue issue, DiagnosticEntityType entityType) => entityType switch
-    {
-        DiagnosticEntityType.IndexedFile => issue is DiagnosticIssue.OrphanFile or DiagnosticIssue.UnidentifiedFile
-            or DiagnosticIssue.MissingFileMetadata or DiagnosticIssue.MissingHlsSegments or DiagnosticIssue.MissingChapters,
-        DiagnosticEntityType.Media => issue is DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingExternalId
-            or DiagnosticIssue.MissingMetadata or DiagnosticIssue.MissingFiles or DiagnosticIssue.StaleMetadata
-            or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingThemeSong
-            or DiagnosticIssue.MissingIntroOutro or DiagnosticIssue.DuplicateExternalId
-            or DiagnosticIssue.SuspectedDuplicateMedia,
-        DiagnosticEntityType.Library => issue is DiagnosticIssue.InaccessiblePath,
-        _ => false
-    };
+    private static bool IssueBelongsToEntityType(DiagnosticIssue issue, DiagnosticEntityType entityType) =>
+        DiagnosticIssueTaxonomy.GetEntityType(issue) == entityType;
 
     private static int CountIssue(LibraryHealthSummaryDto summary, DiagnosticIssue issue) => issue switch
     {
         DiagnosticIssue.OrphanFile => summary.OrphanIndexedFileCount,
-        DiagnosticIssue.UnidentifiedFile => summary.UnidentifiedIndexedFileCount,
+        DiagnosticIssue.UnidentifiedFile => 0,
         DiagnosticIssue.MissingFileMetadata => summary.MissingFileMetadataCount,
         DiagnosticIssue.MissingHlsSegments => summary.MissingHlsSegmentsCount,
         DiagnosticIssue.MissingChapters => summary.MissingChaptersCount,
@@ -181,7 +161,8 @@ public static class LibraryHealthSummaryCounts
         DiagnosticIssue.MissingExternalId => summary.MediaMissingExternalIdCount,
         DiagnosticIssue.StaleMetadata => summary.StaleMetadataCount,
         DiagnosticIssue.MissingAudioAnalysis => summary.MissingAudioAnalysisCount,
-        DiagnosticIssue.MissingFiles => summary.MediaWithoutFilesCount,
+        DiagnosticIssue.MissingFiles => 0,
+        DiagnosticIssue.MissingMembers => summary.MissingMembersCount,
         DiagnosticIssue.DuplicateExternalId => summary.DuplicateExternalIdCount,
         DiagnosticIssue.SuspectedDuplicateMedia => summary.SuspectedDuplicateMediaCount,
         DiagnosticIssue.InaccessiblePath => summary.InaccessiblePathCount,
@@ -190,12 +171,20 @@ public static class LibraryHealthSummaryCounts
 
     private static int CountEntityType(LibraryHealthSummaryDto summary, DiagnosticEntityType entityType) => entityType switch
     {
-        DiagnosticEntityType.IndexedFile => summary.OrphanIndexedFileCount + summary.UnidentifiedIndexedFileCount
-            + summary.MissingFileMetadataCount + summary.MissingHlsSegmentsCount + summary.MissingChaptersCount,
-        DiagnosticEntityType.Media => summary.MediaMissingPicturesCount + summary.MediaMissingExternalIdCount
-            + summary.MediaMissingMetadataCount + summary.MediaWithoutFilesCount + summary.StaleMetadataCount
-            + summary.MissingAudioAnalysisCount + summary.MissingThemeSongCount + summary.MissingIntroOutroCount
-            + summary.DuplicateExternalIdCount + summary.SuspectedDuplicateMediaCount,
+        DiagnosticEntityType.IndexedFile => summary.OrphanIndexedFileCount
+            + summary.MissingFileMetadataCount
+            + summary.MissingHlsSegmentsCount
+            + summary.MissingChaptersCount,
+        DiagnosticEntityType.Media => summary.MediaMissingPicturesCount
+            + summary.MediaMissingExternalIdCount
+            + summary.MediaMissingMetadataCount
+            + summary.StaleMetadataCount
+            + summary.MissingAudioAnalysisCount
+            + summary.MissingThemeSongCount
+            + summary.MissingIntroOutroCount
+            + summary.DuplicateExternalIdCount
+            + summary.SuspectedDuplicateMediaCount
+            + summary.MissingMembersCount,
         DiagnosticEntityType.Library => summary.InaccessiblePathCount,
         _ => 0
     };
