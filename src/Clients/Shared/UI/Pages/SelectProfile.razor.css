@@ -6,13 +6,45 @@
     min-height: 100vh;
     padding: var(--spacing-6);
     width: 100%;
-    max-width: 800px;
+    max-width: 100%;
+    align-self: stretch;
+    box-sizing: border-box;
     margin: 0 auto;
     gap: var(--spacing-6);
 }
 
 .select-profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-4);
     width: 100%;
+    align-self: stretch;
+    min-width: 0;
+}
+
+.select-profile-title {
+    display: inline-block;
+    position: relative;
+    text-align: center;
+    margin: 0;
+}
+
+.select-profile-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    top: 100%;
+    margin-top: var(--spacing-1);
+    height: 1px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 65%, transparent), transparent);
+}
+
+.select-profile-page ::deep .carousel-wrapper {
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
 }
 
 .select-profile-page ::deep .select-profile-card {

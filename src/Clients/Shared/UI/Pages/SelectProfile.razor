@@ -23,7 +23,8 @@
     else
     {
         <section class="select-profile-section">
-            <Carousel @ref="_carousel" Title="@L["Prompt"]" ShowLoopBack="false">
+            <h6 class="select-profile-title">@L["Prompt"]</h6>
+            <Carousel @ref="_carousel" ShowLoopBack="false">
                 @foreach (var user in _users)
                 {
                     <CarouselItem @key="@($"user-{user.IdentityUserId}")">

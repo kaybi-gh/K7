@@ -48,7 +48,11 @@ public class SharedProfileLocalCache(
 
     public void UpdateCache(IReadOnlyList<SharedProfileDto> groups)
     {
-        var json = JsonSerializer.Serialize(groups);
+        var byId = GetCached().ToDictionary(g => g.Id);
+        foreach (var group in groups)
+            byId[group.Id] = group;
+
+        var json = JsonSerializer.Serialize(byId.Values.ToList());
         storage.Set(PreferenceKeys.SHARED_PROFILES_CACHE, json);
     }
 }
