@@ -230,6 +230,7 @@ var SpatialNav = (function () {
         if (_refreshTimer) clearTimeout(_refreshTimer);
         _refreshTimer = setTimeout(function () {
             _refreshTimer = null;
+            syncAllDetailsContentInert();
             if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
             lockActivatableInputs();
             ensurePageFocus();
@@ -238,6 +239,7 @@ var SpatialNav = (function () {
     }
 
     function refresh() {
+        syncAllDetailsContentInert();
         if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
         lockActivatableInputs();
         focusActivatableInOpenMenus();
@@ -301,7 +303,7 @@ var SpatialNav = (function () {
 
     function getFocusables(container) {
         return Array.from(container.querySelectorAll(FOCUSABLE)).filter(function (el) {
-            if (isInClosedSidebarNavGroup(el)) return false;
+            if (isInClosedDetailsContent(el)) return false;
             if (isInsideInactiveFeedHub(el)) return false;
             if (el.closest('[data-carousel-item]')) {
                 return isElementVisible(el) && isVisibleInCarouselViewport(el);
@@ -310,16 +312,15 @@ var SpatialNav = (function () {
         });
     }
 
-    function isSidebarNavGroupOpen(details) {
-        return !!(details && details.matches && details.matches('details.nav-group') && details.open);
-    }
-
-    function isInClosedSidebarNavGroup(el) {
+    // Hidden content inside a closed <details> must not receive spatial-nav / tab focus.
+    // Applies to sidebar nav groups and K7ExpansionPanel (and any other details).
+    function isInClosedDetailsContent(el) {
         if (!el || !el.closest) return false;
-        var group = el.closest('details.nav-group:not([open])');
-        if (!group) return false;
-        if (el.matches && el.matches('summary.nav-group-toggle')) return false;
-        return group.contains(el);
+        var details = el.closest('details:not([open])');
+        if (!details) return false;
+        var summary = details.querySelector(':scope > summary');
+        if (summary && (el === summary || summary.contains(el))) return false;
+        return true;
     }
 
     function clearStaleSectionLastFocused(details) {
@@ -336,37 +337,56 @@ var SpatialNav = (function () {
             delete _sectionLastFocused[sectionId];
             return;
         }
-        if (!isSidebarNavGroupOpen(details) && details.contains(last)) {
+        if (!details.open && details.contains(last)) {
             delete _sectionLastFocused[sectionId];
         }
     }
 
-    function relocateFocusFromCollapsedNavGroup(details) {
-        if (!details || isSidebarNavGroupOpen(details)) return;
+    function relocateFocusFromCollapsedDetails(details) {
+        if (!details || details.open) return;
         var active = document.activeElement;
         if (!active || !details.contains(active)) return;
-        if (active.matches && active.matches('summary.nav-group-toggle')) return;
-        var summary = details.querySelector('summary.nav-group-toggle');
+        var summary = details.querySelector(':scope > summary');
+        if (summary && (active === summary || summary.contains(active))) return;
         if (summary && isElementVisible(summary)) {
             summary.focus({ preventScroll: true });
         }
     }
 
+    function syncDetailsContentInert(details) {
+        if (!details || !details.children) return;
+        var kids = details.children;
+        for (var i = 0; i < kids.length; i++) {
+            var child = kids[i];
+            if (child.tagName === 'SUMMARY') continue;
+            if (details.open) child.removeAttribute('inert');
+            else child.setAttribute('inert', '');
+        }
+    }
+
+    function syncAllDetailsContentInert() {
+        var list = document.querySelectorAll('details.k7-expansion, details.nav-group');
+        for (var i = 0; i < list.length; i++) syncDetailsContentInert(list[i]);
+    }
+
     function ensureSidebarFocusVisible() {
         var active = document.activeElement;
-        if (!active || !isInClosedSidebarNavGroup(active)) return false;
-        var group = active.closest('details.nav-group');
-        if (!group) return false;
-        relocateFocusFromCollapsedNavGroup(group);
+        if (!active || !isInClosedDetailsContent(active)) return false;
+        var details = active.closest('details');
+        if (!details) return false;
+        relocateFocusFromCollapsedDetails(details);
         return true;
     }
 
     function handleNavGroupToggle(e) {
         var details = e.target;
-        if (!details || !details.matches || !details.matches('details.nav-group')) return;
-        clearStaleSectionLastFocused(details);
+        if (!details || !details.matches || !details.matches('details')) return;
+        syncDetailsContentInert(details);
+        if (details.matches('details.nav-group')) {
+            clearStaleSectionLastFocused(details);
+        }
         if (!details.open) {
-            relocateFocusFromCollapsedNavGroup(details);
+            relocateFocusFromCollapsedDetails(details);
         }
         scheduleRefresh();
     }
@@ -411,6 +431,77 @@ var SpatialNav = (function () {
         var pageScroll = el.closest('.page-scrollable');
         if (pageScroll) return pageScroll;
         return document.querySelector('.app-main');
+    }
+
+    // Dialog / panel overflow: when the last (or first) focusable inside a
+    // scrollable region is focused but more content remains, arrow keys should
+    // scroll before Spatial Navigation leaves to a sibling outside (e.g. Close).
+    function findOverflowScrollParent(el) {
+        var node = el;
+        while (node && node !== document.body && node.nodeType === 1) {
+            var style = window.getComputedStyle(node);
+            var oy = style.overflowY;
+            if ((oy === 'auto' || oy === 'scroll' || oy === 'overlay')
+                && node.scrollHeight > node.clientHeight + 1) {
+                return node;
+            }
+            node = node.parentElement;
+        }
+        return null;
+    }
+
+    function shouldIgnoreOverflowScroll(container) {
+        if (!container || !container.classList) return true;
+        if (container.classList.contains('page-scrollable')) return true;
+        if (container.classList.contains('app-main')) return true;
+        if (container.hasAttribute('data-tv-scroll')) return true;
+        if (container.closest && container.closest('[data-carousel]')) return true;
+        if (container.closest && container.closest('.k7-menu-dropdown')) return true;
+        return false;
+    }
+
+    function isEdgeFocusableInOverflow(el, container, direction) {
+        var items = getFocusables(container);
+        if (items.length === 0) return el === container;
+        var idx = items.indexOf(el);
+        if (idx < 0) return false;
+        if (direction === 'down') return idx === items.length - 1;
+        return idx === 0;
+    }
+
+    function tryScrollOverflowOnArrow(el, arrowKey) {
+        if (!el || !el.closest) return false;
+        if (arrowKey !== 'ArrowDown' && arrowKey !== 'ArrowUp') return false;
+
+        var container = null;
+        var selfStyle = window.getComputedStyle(el);
+        var selfOy = selfStyle.overflowY;
+        if ((selfOy === 'auto' || selfOy === 'scroll' || selfOy === 'overlay')
+            && el.scrollHeight > el.clientHeight + 1) {
+            container = el;
+        } else {
+            container = findOverflowScrollParent(el);
+        }
+        if (!container || shouldIgnoreOverflowScroll(container)) return false;
+
+        var maxScroll = container.scrollHeight - container.clientHeight;
+        if (maxScroll <= 1) return false;
+
+        var step = Math.max(56, Math.round(container.clientHeight * 0.45));
+        var atTop = container.scrollTop <= 1;
+        var atBottom = container.scrollTop >= maxScroll - 1;
+
+        if (arrowKey === 'ArrowDown') {
+            if (atBottom) return false;
+            if (container !== el && !isEdgeFocusableInOverflow(el, container, 'down')) return false;
+            container.scrollBy({ top: step, behavior: 'smooth' });
+            return true;
+        }
+
+        if (atTop) return false;
+        if (container !== el && !isEdgeFocusableInOverflow(el, container, 'up')) return false;
+        container.scrollBy({ top: -step, behavior: 'smooth' });
+        return true;
     }
 
     function scrollCardIntoTvView(root, el) {
@@ -1787,6 +1878,14 @@ var SpatialNav = (function () {
                     return;
                 }
             }
+            // Help dialogs / overflow panels: scroll remaining content before leaving
+            // the region (e.g. last expansion header -> dialog Close).
+            if ((arrowKey === 'ArrowDown' || arrowKey === 'ArrowUp')
+                && tryScrollOverflowOnArrow(el, arrowKey)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -2367,7 +2466,7 @@ var SpatialNav = (function () {
                 navigableFilter: function (el) {
                     if (isInsideInactiveFeedHub(el)) return false;
                     if (window.getComputedStyle(el).visibility === 'hidden') return false;
-                    if (isInClosedSidebarNavGroup(el)) return false;
+                    if (isInClosedDetailsContent(el)) return false;
                     var layer = peekLayer();
                     if (layer && layer.el) {
                         return layer.el.contains(el);

@@ -1,9 +1,19 @@
 ﻿@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.Enums
 
-<details class="k7-expansion @Class" style="@Style" open="@Expanded">
-    <summary class="k7-expansion-header">
-        <span>@if (TitleContent is not null) { @TitleContent } else { @Text }</span>
-        <i class="ph ph-caret-down k7-expansion-icon"></i>
+<details class="k7-expansion @(Dense ? "k7-expansion--dense" : null) @Class" style="@Style" open="@Expanded">
+    <summary class="k7-expansion-header focusable" tabindex="0">
+        <K7Icon Icon="@Phosphor.CaretRight" IconSize="@K7IconSize.Sm" Class="k7-expansion-icon" />
+        <span class="k7-expansion-title">
+            @if (TitleContent is not null)
+            {
+                @TitleContent
+            }
+            else
+            {
+                @Text
+            }
+        </span>
     </summary>
     <div class="k7-expansion-content">
         @ChildContent
