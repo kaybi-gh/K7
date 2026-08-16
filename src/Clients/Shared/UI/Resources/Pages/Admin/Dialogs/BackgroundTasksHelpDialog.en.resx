@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="WhatTitle" xml:space="preserve"><value>What are background tasks?</value></data>
+  <data name="ScrollRegionAria" xml:space="preserve"><value>Background tasks help content, use arrow keys to scroll</value></data>
+  <data name="ExpandHint" xml:space="preserve"><value>Expand a section to read more. Use arrow keys then Enter to open or close. Keep pressing Down/Up to scroll long sections.</value></data>
+  <data name="WhatBody" xml:space="preserve"><value>Background tasks run the server's asynchronous work: indexing, media creation, metadata, video/audio analysis, thumbnails, federation, and more. They appear here with status, lane, and work class.</value></data>
+  <data name="ProvenanceBody" xml:space="preserve"><value>Each task records provenance (User, Scheduler, Watcher, System, Federation, Diagnostics). That is observability, not a scheduling axis. An explicit user action does start with a higher priority.</value></data>
+  <data name="WorkClassTitle" xml:space="preserve"><value>Work classes</value></data>
+  <data name="WorkClassIntro" xml:space="preserve"><value>Work class is product policy for stage and selection order (work class, then priority, then creation date). It is not operator-configurable.</value></data>
+  <data name="WorkClassHelp_CriticalProbe" xml:space="preserve"><value>Container probe (ffprobe): makes a media playable. Ranks above critical linking.</value></data>
+  <data name="WorkClassHelp_CriticalLink" xml:space="preserve"><value>Media creation and file linking: makes a media visible and navigable.</value></data>
+  <data name="WorkClassHelp_CriticalEnrich" xml:space="preserve"><value>Metadata refresh and main poster: makes a visible media presentable.</value></data>
+  <data name="WorkClassHelp_Prepare" xml:space="preserve"><value>Work that improves an already playable media (keyframes, stream preparation).</value></data>
+  <data name="WorkClassHelp_Polish" xml:space="preserve"><value>Polish: thumbnails, intro detection, image variants, content hashing.</value></data>
+  <data name="SpilloverBody" xml:space="preserve"><value>Workers prefer higher work classes, but spill over to eligible work on unsaturated lanes or providers when the preferred head of the queue cannot acquire a slot. A saturated CriticalEnrich Metadata backlog does not idle workers while Probe or Polish work is available.</value></data>
+  <data name="LanesTitle" xml:space="preserve"><value>Lanes and concurrency</value></data>
+  <data name="LanesBody" xml:space="preserve"><value>A lane answers which local resource a task saturates (Probe, LibraryScan, Metadata, FfmpegPrepare...). It is the only axis configurable under Settings. The limit is concurrency. 0 pauses that lane (useful to stop polish during a large import). Global worker count caps total parallelism.</value></data>
+  <data name="MetadataTitle" xml:space="preserve"><value>Metadata providers</value></data>
+  <data name="MetadataBody" xml:space="preserve"><value>On the Metadata lane, only one task is in flight per provider (tmdb, tvdb, musicbrainz...). The Metadata limit is the ceiling across providers (default 8). An HTTP 429 starts an admission cooldown until Retry-After: workers skip that provider and spill over to other work.</value></data>
+  <data name="CatalogTitle" xml:space="preserve"><value>Main task types</value></data>
+  <data name="TaskHelp_IndexLibraryFilesCommand" xml:space="preserve"><value>Walks a library filesystem and indexes source files.</value></data>
+  <data name="TaskHelp_CreateMediaCommand" xml:space="preserve"><value>Identifies and creates (or attaches) a media from indexed files.</value></data>
+  <data name="TaskHelp_RematchLibraryMediaCommand" xml:space="preserve"><value>Re-runs identification across a local library after matching or provider changes.</value></data>
+  <data name="TaskHelp_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Refreshes metadata and artwork from external providers.</value></data>
+  <data name="TaskHelp_CreateFileMetadatasCommand" xml:space="preserve"><value>Extracts container metadata (ffprobe) for an indexed file.</value></data>
+  <data name="TaskHelp_ExtractChaptersCommand" xml:space="preserve"><value>Extracts embedded file chapters into metadata.</value></data>
+  <data name="TaskHelp_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Computes HLS / keyframe segments for transmuxing.</value></data>
+  <data name="TaskHelp_DetectMediaSegmentsCommand" xml:space="preserve"><value>Detects intros and outros for a season (eligible episodes).</value></data>
+  <data name="TaskHelp_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Generates a serie theme song from an Intro segment.</value></data>
+  <data name="TaskHelp_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Runs audio analysis (AudioMuse) on a music track for search and radios.</value></data>
+</root>

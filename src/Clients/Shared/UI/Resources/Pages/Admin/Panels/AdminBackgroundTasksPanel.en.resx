@@ -20,6 +20,8 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SettingsTitle" xml:space="preserve"><value>Configuration</value></data>
+  <data name="HelpTitle" xml:space="preserve"><value>Background tasks help</value></data>
+  <data name="HelpAriaLabel" xml:space="preserve"><value>Background tasks help</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Worker count</value></data>
   <data name="SettingsSaved" xml:space="preserve"><value>Settings saved.</value></data>
@@ -92,6 +94,8 @@
   <data name="TaskType_EnrichMusicArtistWikidataCommand" xml:space="preserve"><value>Wikidata artist enrichment</value></data>
   <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Intro/outro detection</value></data>
   <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Theme song generation</value></data>
+  <data name="TaskType_ExtractChaptersCommand" xml:space="preserve"><value>Chapter extraction</value></data>
+  <data name="TaskType_RematchLibraryMediaCommand" xml:space="preserve"><value>Library rematch</value></data>
   <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Person metadata refresh</value></data>
   <data name="FilterByType" xml:space="preserve"><value>Filter by type</value></data>
   <data name="AllTypes" xml:space="preserve"><value>All types</value></data>

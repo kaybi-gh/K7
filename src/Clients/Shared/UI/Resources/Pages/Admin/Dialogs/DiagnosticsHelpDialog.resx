@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Intro" xml:space="preserve"><value>Le tableau de bord donne une vue d'ensemble de la sante des bibliotheques. La page Details liste les remontees filtrables et permet les corrections. La severite (Erreur / Avertissement / Info) classe les remontees. La classe de travail (Catalogue / Enrichissement / Finition) indique a quelle etape du pipeline le probleme se situe.</value></data>
+  <data name="IssuesTitle" xml:space="preserve"><value>Problemes surveilles</value></data>
+  <data name="ViewIssue" xml:space="preserve"><value>Voir</value></data>
+  <data name="MetaWorkClass" xml:space="preserve"><value>Classe</value></data>
+  <data name="MetaSeverity" xml:space="preserve"><value>Severite</value></data>
+  <data name="MetaAppliesTo" xml:space="preserve"><value>S'applique a</value></data>
+  <data name="MetaRemediation" xml:space="preserve"><value>Remediation :</value></data>
+  <data name="ScrollRegionAria" xml:space="preserve"><value>Contenu de l'aide diagnostics, utilisez les fleches pour defiler</value></data>
+  <data name="ExpandHint" xml:space="preserve"><value>Ouvrez un probleme pour voir la definition et la remediation.</value></data>
+  <data name="SeverityOrphanShort" xml:space="preserve"><value>Erreur</value></data>
+  <data name="SeverityError" xml:space="preserve"><value>Erreur</value></data>
+  <data name="SeverityWarning" xml:space="preserve"><value>Avertissement</value></data>
+  <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
+  <data name="SeverityOrphanDynamic" xml:space="preserve"><value>Erreur (identifie ou non)</value></data>
+
+  <data name="Def_OrphanFile" xml:space="preserve"><value>Fichier indexe present sur le disque mais non rattache a un media navigable. Couvre aussi les fichiers non identifies (anciennement UnidentifiedFile).</value></data>
+  <data name="Def_MissingFileMetadata" xml:space="preserve"><value>Le fichier n'a pas encore ete analyse (ffprobe) : codecs, duree et chapitres embarques manquent pour la lecture.</value></data>
+  <data name="Def_InaccessiblePath" xml:space="preserve"><value>Le chemin configure de la bibliotheque est inaccessible (montage, permissions, volume deconnecte).</value></data>
+  <data name="Def_DuplicateExternalId" xml:space="preserve"><value>Deux medias locaux du meme pair partagent le meme identifiant fournisseur. Signal fiable, pas de fusion automatique.</value></data>
+  <data name="Def_SuspectedDuplicateMedia" xml:space="preserve"><value>Deux medias du meme type partagent un titre normalise et une annee dans une bibliotheque. Plus bruyant (homonymes possibles).</value></data>
+  <data name="Def_MissingExternalId" xml:space="preserve"><value>Le media n'a pas d'identifiant fournisseur (TMDb, TVDB, MusicBrainz...). L'identification a probablement echoue.</value></data>
+  <data name="Def_MissingMetadata" xml:space="preserve"><value>Metadonnees descriptives absentes ou incompletes (synopsis, genres, credits...).</value></data>
+  <data name="Def_MissingPictures" xml:space="preserve"><value>Affiches, pochettes ou illustrations attendues manquent pour ce media.</value></data>
+  <data name="Def_StaleMetadata" xml:space="preserve"><value>Les metadonnees n'ont pas ete rafraichies depuis plus longtemps que le seuil configure.</value></data>
+  <data name="Def_MissingMembers" xml:space="preserve"><value>Un artiste musical n'a pas encore de credits / membres (PersonRoles).</value></data>
+  <data name="Def_MissingHlsSegments" xml:space="preserve"><value>Les segments HLS (keyframes) pour le transmux n'ont pas encore ete calcules pour ce fichier.</value></data>
+  <data name="Def_MissingChapters" xml:space="preserve"><value>Les chapitres embarques du fichier n'ont pas ete extraits alors que l'extraction est activee sur la bibliotheque.</value></data>
+  <data name="Def_MissingThemeSong" xml:space="preserve"><value>Serie eligibile a la generation de theme musical sans fichier theme disponible (sidecar ou extrait).</value></data>
+  <data name="Def_MissingIntroOutro" xml:space="preserve"><value>Episode eligibile a la detection d'intro/outro sans segments Intro ni Outro detectes.</value></data>
+  <data name="Def_MissingAudioAnalysis" xml:space="preserve"><value>Analyse audio (AudioMuse) absente pour un morceau musical.</value></data>
+
+  <data name="Bulk_OrphanFile" xml:space="preserve"><value>Relance la creation de media (RetryCreateMedia) pour rattacher les fichiers identifies. Les non identifies restent a re-identifier manuellement.</value></data>
+  <data name="Bulk_MissingFileMetadata" xml:space="preserve"><value>File l'extraction des metadonnees fichier (CreateFileMetadatas / ffprobe).</value></data>
+  <data name="Bulk_MissingExternalId" xml:space="preserve"><value>Lance une re-identification automatique des metadonnees.</value></data>
+  <data name="Bulk_MissingMetadata" xml:space="preserve"><value>File un rafraichissement des metadonnees depuis les fournisseurs.</value></data>
+  <data name="Bulk_MissingPictures" xml:space="preserve"><value>File un rafraichissement des metadonnees pour retelecharger les images manquantes.</value></data>
+  <data name="Bulk_StaleMetadata" xml:space="preserve"><value>File un rafraichissement des metadonnees obsoletes.</value></data>
+  <data name="Bulk_MissingMembers" xml:space="preserve"><value>File un rafraichissement pour completer les membres/credits artiste manquants.</value></data>
+  <data name="Bulk_MissingHlsSegments" xml:space="preserve"><value>File le calcul des segments HLS (ComputeHlsSegments).</value></data>
+  <data name="Bulk_MissingChapters" xml:space="preserve"><value>File l'extraction des chapitres embarques (ExtractChapters).</value></data>
+  <data name="Bulk_MissingThemeSong" xml:space="preserve"><value>File la generation du theme (ExtractSerieThemeSong), ou la detection d'intro si besoin.</value></data>
+  <data name="Bulk_MissingIntroOutro" xml:space="preserve"><value>File la detection d'intros/outros au niveau saison (DetectMediaSegments).</value></data>
+  <data name="Bulk_MissingAudioAnalysis" xml:space="preserve"><value>File l'analyse audio du morceau (AnalyzeMusicTrackAudio).</value></data>
+
+  <data name="Manual_InaccessiblePath" xml:space="preserve"><value>Action manuelle : donner a K7 les droits de lecture sur le dossier de la bibliotheque (permissions OS, montage, volume reconnecte).</value></data>
+  <data name="Manual_DuplicateExternalId" xml:space="preserve"><value>Pas de remediation integree pour le moment. Corriger exige une intervention manuelle en base de donnees (fusion / nettoyage des doublons).</value></data>
+  <data name="Manual_SuspectedDuplicateMedia" xml:space="preserve"><value>Pas de remediation integree pour le moment. Verifier les medias concernes et corriger manuellement si besoin (y compris en base de donnees).</value></data>
+</root>

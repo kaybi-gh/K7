@@ -1,0 +1,54 @@
+@using K7.Shared.Diagnostics
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<DiagnosticsHelpDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="diagnostics-help"
+         tabindex="0"
+         role="region"
+         aria-label="@L["ScrollRegionAria"]">
+        <p class="diagnostics-help__intro">@L["Intro"]</p>
+        <p class="diagnostics-help__hint">@L["ExpandHint"]</p>
+
+        @foreach (var workClass in WorkClassOrder)
+        {
+            var issues = IssuesForWorkClass(workClass);
+            if (issues.Count == 0)
+                continue;
+
+            <section class="diagnostics-help__group">
+                <h6 class="diagnostics-help__group-title">@GetWorkClassLabel(workClass)</h6>
+                <div class="diagnostics-help__panels">
+                    @foreach (var issue in issues)
+                    {
+                        <K7ExpansionPanel Dense="true">
+                            <TitleContent>
+                                <span>@GetIssueLabel(issue)</span>
+                                <span class="diagnostics-help__badges">
+                                    <span class="diagnostics-help__badge">@GetSeverityShortLabel(issue)</span>
+                                    <span class="diagnostics-help__badge diagnostics-help__badge--muted">@GetAppliesToLabel(issue)</span>
+                                </span>
+                            </TitleContent>
+                            <ChildContent>
+                                <p class="diagnostics-help__definition">@GetDefinition(issue)</p>
+                                <p class="diagnostics-help__bulk">
+                                    <span class="diagnostics-help__bulk-label">@L["MetaRemediation"]</span>
+                                    @GetRemediationExplanation(issue)
+                                </p>
+                                <div class="diagnostics-help__issue-actions">
+                                    <K7Button Size="sm" Variant="text" Color="primary" OnClick="@(() => NavigateToIssue(issue))">
+                                        @L["ViewIssue"]
+                                    </K7Button>
+                                </div>
+                            </ChildContent>
+                        </K7ExpansionPanel>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Close">@S["Close"]</K7Button>
+</div>

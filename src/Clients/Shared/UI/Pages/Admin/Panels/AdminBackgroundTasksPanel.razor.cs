@@ -343,6 +343,17 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }
     }
 
+    private async Task OpenHelpAsync()
+    {
+        var options = new K7DialogOptions
+        {
+            MaxWidth = K7DialogMaxWidth.Large,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+        await DialogService.ShowAsync<Dialogs.BackgroundTasksHelpDialog>(L["HelpTitle"], null, options);
+    }
+
     private async Task OpenSettingsDialogAsync()
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };

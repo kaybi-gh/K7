@@ -1,0 +1,56 @@
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<BackgroundTasksHelpDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="background-tasks-help"
+         tabindex="0"
+         role="region"
+         aria-label="@L["ScrollRegionAria"]">
+        <p class="background-tasks-help__hint">@L["ExpandHint"]</p>
+
+        <div class="background-tasks-help__panels">
+            <K7ExpansionPanel Dense="true" Expanded="true" Text="@L["WhatTitle"]">
+                <p>@L["WhatBody"]</p>
+                <p>@L["ProvenanceBody"]</p>
+            </K7ExpansionPanel>
+
+            <K7ExpansionPanel Dense="true" Text="@L["WorkClassTitle"]">
+                <p>@L["WorkClassIntro"]</p>
+                <ul class="background-tasks-help__list">
+                    @foreach (var workClass in WorkClassCatalog)
+                    {
+                        <li>
+                            <strong>@GetWorkClassLabel(workClass)</strong>
+                            <span>@GetWorkClassHelp(workClass)</span>
+                        </li>
+                    }
+                </ul>
+                <p>@L["SpilloverBody"]</p>
+            </K7ExpansionPanel>
+
+            <K7ExpansionPanel Dense="true" Text="@L["LanesTitle"]">
+                <p>@L["LanesBody"]</p>
+            </K7ExpansionPanel>
+
+            <K7ExpansionPanel Dense="true" Text="@L["MetadataTitle"]">
+                <p>@L["MetadataBody"]</p>
+            </K7ExpansionPanel>
+
+            <K7ExpansionPanel Dense="true" Text="@L["CatalogTitle"]">
+                <ul class="background-tasks-help__list">
+                    @foreach (var taskName in TaskCatalog)
+                    {
+                        <li>
+                            <strong>@GetTaskTypeLabel(taskName)</strong>
+                            <span>@GetTaskHelp(taskName)</span>
+                        </li>
+                    }
+                </ul>
+            </K7ExpansionPanel>
+        </div>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Close">@S["Close"]</K7Button>
+</div>

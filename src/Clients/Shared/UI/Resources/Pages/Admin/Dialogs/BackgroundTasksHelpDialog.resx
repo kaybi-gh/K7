@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="WhatTitle" xml:space="preserve"><value>Que sont les taches de fond ?</value></data>
+  <data name="ScrollRegionAria" xml:space="preserve"><value>Contenu de l'aide taches de fond, utilisez les fleches pour defiler</value></data>
+  <data name="ExpandHint" xml:space="preserve"><value>Ouvrez une section pour en lire le detail. Utilisez les fleches puis Entree pour ouvrir ou fermer. Continuez Bas/Haut pour defiler les longues sections.</value></data>
+  <data name="WhatBody" xml:space="preserve"><value>Les taches de fond executent le travail asynchrone du serveur : indexation, creation de medias, metadonnees, analyse video/audio, miniatures, federation, etc. Elles apparaissent ici avec leur statut, leur file (lane) et leur classe de travail.</value></data>
+  <data name="ProvenanceBody" xml:space="preserve"><value>Chaque tache enregistre sa provenance (Utilisateur, Planificateur, Surveillance, Systeme, Federation, Diagnostics). C'est de l'observabilite, pas un axe de priorite pour le planificateur. En revanche une action utilisateur demarre en general avec une priorite plus haute.</value></data>
+  <data name="WorkClassTitle" xml:space="preserve"><value>Classes de travail</value></data>
+  <data name="WorkClassIntro" xml:space="preserve"><value>La classe de travail definit l'etape produit et l'ordre de selection (classe puis priorite puis date de creation). Elle n'est pas configurable : c'est la politique du produit.</value></data>
+  <data name="WorkClassHelp_CriticalProbe" xml:space="preserve"><value>Analyse conteneur (ffprobe) : rend un media lisible. Rang au-dessus de la liaison critique.</value></data>
+  <data name="WorkClassHelp_CriticalLink" xml:space="preserve"><value>Creation de media et liaison de fichiers : rend un media visible et navigable.</value></data>
+  <data name="WorkClassHelp_CriticalEnrich" xml:space="preserve"><value>Rafraichissement metadonnees et affiche principale : rend un media presentable.</value></data>
+  <data name="WorkClassHelp_Prepare" xml:space="preserve"><value>Travail qui ameliore un media deja lisible (keyframes, preparation de flux).</value></data>
+  <data name="WorkClassHelp_Polish" xml:space="preserve"><value>Finition : miniatures, detection d'intro, variantes d'images, hash de contenu.</value></data>
+  <data name="SpilloverBody" xml:space="preserve"><value>Les workers preferent les classes elevees, mais debordent (spillover) vers du travail eligible sur des files ou providers non satures lorsque la tete de file preferee ne peut pas obtenir un creneau. Ainsi un backlog CriticalEnrich Metadata n'immobilise pas les workers si du travail Probe ou Polish est disponible.</value></data>
+  <data name="LanesTitle" xml:space="preserve"><value>Files (lanes) et concurrence</value></data>
+  <data name="LanesBody" xml:space="preserve"><value>Une lane repond a la question : quelle ressource locale cette tache sature (Probe, LibraryScan, Metadata, FfmpegPrepare...). C'est le seul axe configurable dans Configuration. La limite controle la concurrence. 0 met la lane en pause (utile pour stopper la finition pendant un gros import). Le nombre de workers global borne le parallelisme total.</value></data>
+  <data name="MetadataTitle" xml:space="preserve"><value>Providers de metadonnees</value></data>
+  <data name="MetadataBody" xml:space="preserve"><value>Sur la lane Metadata, une seule tache est en vol par provider (tmdb, tvdb, musicbrainz...). La limite Metadata est le plafond transversal entre providers (defaut 8). Un HTTP 429 declenche un cooldown d'admission jusqu'a Retry-After : les workers sautent ce provider et debordent vers d'autre travail.</value></data>
+  <data name="CatalogTitle" xml:space="preserve"><value>Principaux types de taches</value></data>
+  <data name="TaskHelp_IndexLibraryFilesCommand" xml:space="preserve"><value>Parcourt le systeme de fichiers d'une bibliotheque et indexe les fichiers sources.</value></data>
+  <data name="TaskHelp_CreateMediaCommand" xml:space="preserve"><value>Identifie et cree (ou rattache) un media a partir de fichiers indexes.</value></data>
+  <data name="TaskHelp_RematchLibraryMediaCommand" xml:space="preserve"><value>Re-execute l'identification sur toute une bibliotheque locale apres un changement d'algo ou de provider.</value></data>
+  <data name="TaskHelp_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Rafraichit les metadonnees et images depuis les providers externes.</value></data>
+  <data name="TaskHelp_CreateFileMetadatasCommand" xml:space="preserve"><value>Extrait les metadonnees conteneur (ffprobe) d'un fichier indexe.</value></data>
+  <data name="TaskHelp_ExtractChaptersCommand" xml:space="preserve"><value>Extrait les chapitres embarques du fichier vers les metadonnees.</value></data>
+  <data name="TaskHelp_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Calcule les segments HLS / keyframes pour le transmux.</value></data>
+  <data name="TaskHelp_DetectMediaSegmentsCommand" xml:space="preserve"><value>Detecte les intros et outros d'une saison (episodes eligibles).</value></data>
+  <data name="TaskHelp_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Genere le theme musical d'une serie a partir d'un segment Intro.</value></data>
+  <data name="TaskHelp_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Analyse audio d'un morceau (AudioMuse) pour la recherche et les radios.</value></data>
+</root>
