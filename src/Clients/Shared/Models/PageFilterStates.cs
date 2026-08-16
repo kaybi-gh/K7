@@ -16,7 +16,8 @@ public sealed record DiagnosticsFilterState(
     string? Severity,
     Guid? LibraryId,
     DiagnosticEntityType? EntityType,
-    DiagnosticIssue? Issue);
+    DiagnosticIssue? Issue,
+    DiagnosticWorkClass? WorkClass = null);
 
 public sealed record AdminPlaybackHistoryFilterState(
     Guid? UserId,

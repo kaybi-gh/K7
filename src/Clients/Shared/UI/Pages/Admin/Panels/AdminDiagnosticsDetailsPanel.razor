@@ -1,0 +1,201 @@
+@page "/admin/diagnostics/details"
+@layout AdminLayout
+@using K7.Server.Domain.Enums
+@using K7.Shared.Diagnostics
+@using K7.Shared.Dtos.Diagnostics
+@implements IDisposable
+@inject IStringLocalizer<AdminDiagnosticsPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="full-bleed-page diagnostics-page">
+    <div class="data-page-toolbar diagnostics-toolbar">
+        <div class="diagnostics-toolbar__row">
+            <K7Button Variant="text" Size="sm" Href="/admin/diagnostics" StartIcon="@Phosphor.ArrowLeft"
+                      Class="diagnostics-toolbar__back">
+                @L["Title"]
+            </K7Button>
+
+            <K7FilterMenu HasActiveFilters="@HasActiveFilters"
+                          ActiveLabel="@GetActiveFiltersLabel()"
+                          OnClear="ClearFiltersAsync">
+                <K7FilterMenuRoot>
+                    <K7FilterMenuSection>
+                        <div class="k7-filter-menu__section-label">@L["FilterSeverity"]</div>
+                        <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(_selectedSeverity is null)" OnClick="@(() => OnSeverityFilterChanged(null))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityErrors"], _errorCount)" Selected="@(_selectedSeverity == "error")" OnClick="@(() => OnSeverityFilterChanged("error"))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityWarnings"], _warningCount)" Selected="@(_selectedSeverity == "warning")" OnClick="@(() => OnSeverityFilterChanged("warning"))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityInfo"], _infoCount)" Selected="@(_selectedSeverity == "info")" OnClick="@(() => OnSeverityFilterChanged("info"))" />
+                        <hr class="k7-menu-divider" />
+                    </K7FilterMenuSection>
+                    <K7FilterMenuSection>
+                        <div class="k7-filter-menu__section-label">@L["FilterWorkClass"]</div>
+                        <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterWorkClass.HasValue)" OnClick="@(() => OnWorkClassFilterChanged(null))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["WorkClassCatalog"], GetWorkClassCount(DiagnosticWorkClass.Catalog))" Selected="@(_filterWorkClass == DiagnosticWorkClass.Catalog)" OnClick="@(() => OnWorkClassFilterChanged(DiagnosticWorkClass.Catalog))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["WorkClassEnrichment"], GetWorkClassCount(DiagnosticWorkClass.Enrichment))" Selected="@(_filterWorkClass == DiagnosticWorkClass.Enrichment)" OnClick="@(() => OnWorkClassFilterChanged(DiagnosticWorkClass.Enrichment))" />
+                        <K7FilterMenuPick Label="@FormatFilterLabel(L["WorkClassPolish"], GetWorkClassCount(DiagnosticWorkClass.Polish))" Selected="@(_filterWorkClass == DiagnosticWorkClass.Polish)" OnClick="@(() => OnWorkClassFilterChanged(DiagnosticWorkClass.Polish))" />
+                        <hr class="k7-menu-divider" />
+                    </K7FilterMenuSection>
+                    <K7FilterMenuGroup SubmenuKey="library" Title="@L["FilterLibrary"]">
+                        <ChildContent>
+                            <K7FilterMenuNav SubmenuKey="library" Label="@GetLibraryMenuLabel()" />
+                        </ChildContent>
+                        <SubmenuContent>
+                            <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterLibraryId.HasValue)" OnClick="@(() => OnLibraryFilterChanged(null))" />
+                            @if (_summaries is not null)
+                            {
+                                @foreach (var lib in _summaries)
+                                {
+                                    var libraryId = lib.LibraryId;
+                                    <K7FilterMenuPick Label="@FormatFilterLabel(lib.LibraryTitle, GetLibraryIssueCount(lib))" Selected="@(_filterLibraryId == libraryId)" OnClick="@(() => OnLibraryFilterChanged(libraryId))" />
+                                }
+                            }
+                        </SubmenuContent>
+                    </K7FilterMenuGroup>
+                    <K7FilterMenuGroup SubmenuKey="entityType" Title="@L["FilterEntityType"]">
+                        <ChildContent>
+                            <K7FilterMenuNav SubmenuKey="entityType" Label="@GetEntityTypeMenuLabel()" />
+                        </ChildContent>
+                        <SubmenuContent>
+                            <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterEntityType.HasValue)" OnClick="@(() => OnEntityTypeFilterChanged(null))" />
+                            <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeMedia"], GetEntityTypeCount(DiagnosticEntityType.Media))" Selected="@(_filterEntityType == DiagnosticEntityType.Media)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.Media))" />
+                            <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeIndexedFile"], GetEntityTypeCount(DiagnosticEntityType.IndexedFile))" Selected="@(_filterEntityType == DiagnosticEntityType.IndexedFile)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.IndexedFile))" />
+                            <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeLibrary"], GetEntityTypeCount(DiagnosticEntityType.Library))" Selected="@(_filterEntityType == DiagnosticEntityType.Library)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.Library))" />
+                        </SubmenuContent>
+                    </K7FilterMenuGroup>
+                    <K7FilterMenuGroup SubmenuKey="issue" Title="@L["FilterIssue"]">
+                        <ChildContent>
+                            <K7FilterMenuNav SubmenuKey="issue" Label="@GetIssueMenuLabel()" />
+                        </ChildContent>
+                        <SubmenuContent>
+                            <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterIssue.HasValue)" OnClick="@(() => OnIssueFilterChanged(null))" />
+                            @foreach (var issue in DiagnosticIssueTaxonomy.SurfacedIssues)
+                            {
+                                var current = issue;
+                                <K7FilterMenuPick Label="@FormatFilterLabel(GetIssueLabel(current), GetIssueCount(current))" Selected="@(_filterIssue == current)" OnClick="@(() => OnIssueFilterChanged(current))" />
+                            }
+                        </SubmenuContent>
+                    </K7FilterMenuGroup>
+                </K7FilterMenuRoot>
+            </K7FilterMenu>
+
+            <div class="data-page-toolbar__end diagnostics-toolbar__end">
+                <span class="k7-result-count">@GetResultCountLabel()</span>
+                @if (_filterIssue is null)
+                {
+                    <span class="text-caption diagnostics-toolbar__bulk-hint">@L["BulkFixHint"]</span>
+                }
+                else if (GetBulkFixAction() is not null && _totalCount > 0)
+                {
+                    <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench"
+                              OnClick="QueueAllFixesAsync" Disabled="_isQueueingAllFixes">
+                        @string.Format(L["QueueAllFixes"], _totalCount)
+                    </K7Button>
+                }
+                @if (_selectedItems.Count > 0 && GetBulkFixAction() is not null)
+                {
+                    <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
+                        @string.Format(L["FixSelected"], _selectedItems.Count)
+                    </K7Button>
+                }
+                <K7IconButton Icon="@Phosphor.Question" Size="sm" OnClick="OpenHelpAsync" AriaLabel="@L["HelpAriaLabel"]" />
+                <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync"
+                              Disabled="@(_isLoadingSummary || (_totalIssueCount > 0 && !_tableLoaded))"
+                              AriaLabel="@L["Refresh"]" />
+                <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+            </div>
+        </div>
+    </div>
+
+    <div class="data-page-body" aria-live="polite">
+        @if (_isLoadingSummary)
+        {
+            <K7ProgressBar Indeterminate="true" />
+        }
+        else if (_summaries is null || _totalIssueCount == 0)
+        {
+            <K7EmptyState Icon="@Phosphor.CheckCircle" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
+        }
+        else
+        {
+            <div class="diagnostics-table-stack">
+                @if (!_tableLoaded)
+                {
+                    <div class="diagnostics-loading" aria-busy="true">
+                        <K7ProgressBar Indeterminate="true" />
+                    </div>
+                }
+                else if (_totalCount == 0)
+                {
+                    <K7EmptyState Icon="@Phosphor.CheckCircle" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
+                }
+                @* Keep the table mounted while loading so Virtualize can measure; hide visually until loaded. *@
+                <div class="diagnostics-table-host @GetTableHostClass()">
+                    <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
+                                 RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
+                        <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColName"]" Hideable="false">
+                            <CellTemplate>
+                                <div class="diagnostics-name-cell">
+                                    @if (context.MediaUrl is not null)
+                                    {
+                                        <a href="@context.MediaUrl" class="text-sm diagnostics-name-cell__title">@context.EntityName</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-sm diagnostics-name-cell__title">@context.EntityName</span>
+                                    }
+                                    <span class="text-caption diagnostics-name-cell__meta" style="color: var(--color-text-muted);">
+                                        @GetEntityKindLabel(context)
+                                    </span>
+                                </div>
+                            </CellTemplate>
+                        </K7DataColumn>
+                        <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColLibrary"]" Property="@(i => i.LibraryTitle)" />
+                        <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColIssues"]">
+                            <CellTemplate>
+                                <div class="diagnostics-issues-list" title="@GetIssuesTooltip(context)">
+                                    @foreach (var issue in GetVisibleIssues(context))
+                                    {
+                                        <span class="diagnostics-issues-cell">
+                                            <span class="text-sm" style="color: var(--color-@(GetIssueColor(context, issue)));">
+                                                @GetIssueLabel(issue)
+                                            </span>
+                                            <span class="text-caption diagnostics-issues-cell__applies" style="color: var(--color-text-muted);">
+                                                @GetAppliesToLabel(issue)
+                                            </span>
+                                        </span>
+                                    }
+                                </div>
+                            </CellTemplate>
+                        </K7DataColumn>
+                        <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColActions"]" Width="128px" Hideable="false">
+                            <CellTemplate>
+                                <div class="diagnostics-actions-cell">
+                                    @if (GetVisibleIssues(context).Any(issue => SupportsIndexedFileReIdentify(context, issue)))
+                                    {
+                                        <K7IconButton Icon="@Phosphor.MagnifyingGlass" Size="sm"
+                                                      OnClick="@(() => OpenReIdentifyDialogAsync(context))"
+                                                      AriaLabel="@L["ActionReidentify"]" />
+                                    }
+                                    @foreach (var action in GetVisibleIssues(context)
+                                                  .Select(GetFixActionForIssue)
+                                                  .Where(action => action is not null)
+                                                  .Select(action => action!.Value)
+                                                  .Distinct())
+                                    {
+                                        <K7IconButton Icon="@GetFixActionIcon(action)" Size="sm"
+                                                      OnClick="@(() => FixItemAsync(context.EntityId, action))"
+                                                      AriaLabel="@GetFixActionLabel(action)" />
+                                    }
+                                    @if (context.MediaUrl is not null)
+                                    {
+                                        <K7IconButton Icon="@Phosphor.ArrowSquareOut" Size="sm" Href="@context.MediaUrl" AriaLabel="@L["GoToMedia"]" />
+                                    }
+                                </div>
+                            </CellTemplate>
+                        </K7DataColumn>
+                    </K7DataTable>
+                </div>
+            </div>
+        }
+    </div>
+</div>

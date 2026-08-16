@@ -28,6 +28,7 @@
   <data name="NoData" xml:space="preserve"><value>No data available.</value></data>
   <data name="Empty" xml:space="preserve"><value>No issues</value></data>
   <data name="EmptyDescription" xml:space="preserve"><value>Everything looks fine, or nothing matches your filters.</value></data>
+  <data name="EntityAndProblemCount" xml:space="preserve"><value>{0} item(s) · {1} problem(s)</value></data>
   <data name="MediaSection" xml:space="preserve"><value>Media</value></data>
   <data name="TotalMedia" xml:space="preserve"><value>Total</value></data>
   <data name="MissingPictures" xml:space="preserve"><value>Missing pictures</value></data>
@@ -37,7 +38,7 @@
   <data name="StaleMetadata" xml:space="preserve"><value>Stale metadata</value></data>
   <data name="IndexedFilesSection" xml:space="preserve"><value>Source files</value></data>
   <data name="TotalFiles" xml:space="preserve"><value>Total</value></data>
-  <data name="OrphanFiles" xml:space="preserve"><value>Orphan files</value></data>
+  <data name="OrphanFiles" xml:space="preserve"><value>Unlinked file</value></data>
   <data name="UnidentifiedFiles" xml:space="preserve"><value>Unidentified files</value></data>
   <data name="MissingFileMetadata" xml:space="preserve"><value>Missing file metadata</value></data>
   <data name="MissingHlsSegments" xml:space="preserve"><value>Missing HLS segments</value></data>
@@ -62,6 +63,14 @@
   <data name="FilterIssue" xml:space="preserve"><value>Issue</value></data>
   <data name="EntityTypeMedia" xml:space="preserve"><value>Media</value></data>
   <data name="EntityTypeIndexedFile" xml:space="preserve"><value>Source file</value></data>
+  <data name="EntityTypeLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Movie</value></data>
+  <data name="MediaTypeSerie" xml:space="preserve"><value>Series</value></data>
+  <data name="MediaTypeSerieSeason" xml:space="preserve"><value>Season</value></data>
+  <data name="MediaTypeSerieEpisode" xml:space="preserve"><value>Episode</value></data>
+  <data name="MediaTypeMusicArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="MediaTypeMusicAlbum" xml:space="preserve"><value>Album</value></data>
+  <data name="MediaTypeMusicTrack" xml:space="preserve"><value>Track</value></data>
   <data name="NoItems" xml:space="preserve"><value>No items.</value></data>
   <data name="ColName" xml:space="preserve"><value>Name</value></data>
   <data name="ColLibrary" xml:space="preserve"><value>Library</value></data>
@@ -81,9 +90,7 @@
   <data name="DetailStaleRefreshed" xml:space="preserve"><value>Last refreshed: {0} (threshold: {1} days)</value></data>
   <data name="DetailNeverRefreshed" xml:space="preserve"><value>Never refreshed</value></data>
   <data name="AcrossLibraries" xml:space="preserve"><value>{0} libraries</value></data>
-  <data name="ErrorsDescription" xml:space="preserve"><value>Action required</value></data>
-  <data name="WarningsDescription" xml:space="preserve"><value>Refresh available</value></data>
-  <data name="InfoDescription" xml:space="preserve"><value>Non-critical</value></data>
+  <data name="SeverityTotalsHint" xml:space="preserve"><value>KPI totals count issue occurrences by severity. Cards below count by issue type and can mix source files and medias.</value></data>
   <data name="ActionRefresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="ActionReidentify" xml:space="preserve"><value>Re-identify</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extract</value></data>
@@ -93,12 +100,58 @@
   <data name="ReIdentifyIndexedFileDialogTitle" xml:space="preserve"><value>Re-identify file</value></data>
   <data name="ReIdentifyIndexedFileSent" xml:space="preserve"><value>Re-identification started.</value></data>
   <data name="QueueAllFixes" xml:space="preserve"><value>Fix all ({0})</value></data>
+  <data name="FixAll" xml:space="preserve"><value>Fix all</value></data>
   <data name="AllFixesQueued" xml:space="preserve"><value>{0} fix task(s) queued.</value></data>
   <data name="AllLibraries" xml:space="preserve"><value>All libraries</value></data>
   <data name="ConfirmBulkFixTitle" xml:space="preserve"><value>Queue bulk fixes?</value></data>
-  <data name="ConfirmBulkFixMessage" xml:space="preserve"><value>{0} item(s) will be processed for "{1}" ({2}) in {3}. This will create many background tasks and may heavily load the server for a long time.</value></data>
+  <data name="ConfirmBulkFixMessage" xml:space="preserve"><value>{0} item(s) will be processed for "{1}" ({2}) in {3}. This queues background tasks and may load the server for a long time.
+
+{4}</value></data>
   <data name="ConfirmBulkFixConfirm" xml:space="preserve"><value>Queue</value></data>
+  <data name="ConfirmBulkFixDetail_Generic" xml:space="preserve"><value>What happens: the selected fix action is queued for each item.
+What to expect: some items may improve. Others can stay unchanged if the job fails, finds no data, or is not applicable.</value></data>
+  <data name="ConfirmBulkFixDetail_OrphanFile" xml:space="preserve"><value>What happens: queues media creation (RetryCreateMedia) for unlinked files.
+What to expect: files that already have identification may attach to a media. Files without identification usually stay unlinked until you re-identify them manually. Create/match failures also leave the file unlinked.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingFileMetadata" xml:space="preserve"><value>What happens: queues file metadata extraction (ffprobe / CreateFileMetadatas).
+What to expect: most readable files get container metadata. Corrupt, locked, or unsupported files can stay without file metadata.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingExternalId" xml:space="preserve"><value>What happens: queues automatic re-identification against metadata providers.
+What to expect: some medias may get an external ID. Many can stay unmatched if title/year/provider lookup finds nothing - nothing is forced and the issue can remain.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingMetadata" xml:space="preserve"><value>What happens: queues a metadata refresh from providers (works best when an external ID already exists).
+What to expect: genres/overview and similar fields may fill when the provider returns data. Empty or partial provider responses leave gaps. Items without a usable identity may not improve.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingPictures" xml:space="preserve"><value>What happens: queues a metadata refresh aimed at re-downloading missing artwork.
+What to expect: posters/backdrops may appear when the provider has images. If the provider has no art (or refresh fails), pictures can stay missing.</value></data>
+  <data name="ConfirmBulkFixDetail_StaleMetadata" xml:space="preserve"><value>What happens: queues a refresh for medias whose metadata is past the library refresh interval.
+What to expect: fields update when providers respond. Rate limits, errors, or unchanged remote data can leave items looking stale until a later run.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingMembers" xml:space="preserve"><value>What happens: queues a metadata refresh to complete missing artist members/credits.
+What to expect: members may fill when the provider returns credits. Incomplete provider data can leave the artist still missing members.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingHlsSegments" xml:space="preserve"><value>What happens: queues HLS / keyframe segment computation for eligible video files.
+What to expect: segments appear when transmuxing is enabled and probing succeeds. Failures leave HLS segments missing.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingChapters" xml:space="preserve"><value>What happens: queues extraction of embedded file chapters.
+What to expect: chapters appear when the file contains chapter atoms. Files without embedded chapters stay without chapters.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingThemeSong" xml:space="preserve"><value>What happens: queues theme song generation (and intro detection first when needed).
+What to expect: a theme file may be produced when usable intro audio exists. Otherwise the theme can stay missing.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingIntroOutro" xml:space="preserve"><value>What happens: queues season-level intro/outro detection.
+What to expect: Intro/Outro segments appear when the detector finds a reliable match. Short seasons or weak similarity can yield no segments.</value></data>
+  <data name="ConfirmBulkFixDetail_MissingAudioAnalysis" xml:space="preserve"><value>What happens: queues audio analysis (AudioMuse) for music tracks.
+What to expect: analysis completes for processable tracks. Failures leave analysis missing.</value></data>
   <data name="InaccessiblePath" xml:space="preserve"><value>Inaccessible path</value></data>
-  <data name="EntityTypeLibrary" xml:space="preserve"><value>Library</value></data>
   <data name="FilterBy" xml:space="preserve"><value>Filter</value></data>
+  <data name="FilterWorkClass" xml:space="preserve"><value>Work class</value></data>
+  <data name="WorkClassCatalog" xml:space="preserve"><value>Catalog</value></data>
+  <data name="WorkClassEnrichment" xml:space="preserve"><value>Enrichment</value></data>
+  <data name="WorkClassPolish" xml:space="preserve"><value>Polish</value></data>
+  <data name="BulkFixHint" xml:space="preserve"><value>Select an issue to bulk-fix.</value></data>
+  <data name="ViewAllIssues" xml:space="preserve"><value>View all issues</value></data>
+  <data name="WorkClassSeeAll" xml:space="preserve"><value>({0} see all)</value></data>
+  <data name="DashboardTitle" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="DashboardSubtitle" xml:space="preserve"><value>Overview of library health issues.</value></data>
+  <data name="HelpAriaLabel" xml:space="preserve"><value>Diagnostics help</value></data>
+  <data name="HelpTitle" xml:space="preserve"><value>Diagnostics help</value></data>
+  <data name="AppliesToIndexedFile" xml:space="preserve"><value>Source file</value></data>
+  <data name="AppliesToMedia" xml:space="preserve"><value>Media</value></data>
+  <data name="AppliesToLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="AppliesToSerie" xml:space="preserve"><value>Series</value></data>
+  <data name="PolishShortcutsTitle" xml:space="preserve"><value>Quick fixes</value></data>
+  <data name="PerLibraryTitle" xml:space="preserve"><value>Per library</value></data>
+  <data name="DetailsTitle" xml:space="preserve"><value>Issues</value></data>
 </root>

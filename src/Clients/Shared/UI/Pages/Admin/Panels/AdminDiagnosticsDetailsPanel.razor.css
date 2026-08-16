@@ -1,0 +1,181 @@
+.diagnostics-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    flex-wrap: nowrap;
+}
+
+.diagnostics-name-cell {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.diagnostics-name-cell__title,
+.diagnostics-name-cell__meta {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.diagnostics-name-cell__meta {
+    margin-top: 2px;
+}
+
+.diagnostics-issues-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-2);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.diagnostics-issues-cell {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    white-space: nowrap;
+    min-width: 0;
+    vertical-align: top;
+}
+
+.diagnostics-issues-cell + .diagnostics-issues-cell {
+    margin-left: var(--space-2);
+    padding-left: var(--space-2);
+    border-left: 1px solid var(--color-border);
+}
+
+.diagnostics-issues-cell__applies {
+    display: block;
+    line-height: 1.2;
+}
+
+.diagnostics-page .data-page-body ::deep .k7-data-table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+    padding: 0;
+}
+
+.diagnostics-page .data-page-body ::deep .k7-empty-state {
+    flex: 1;
+    width: 100%;
+}
+
+.diagnostics-table-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.diagnostics-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    padding: var(--space-4);
+    background: var(--color-bg);
+}
+
+.diagnostics-table-host {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Laid out for Virtualize measurement, but not visible until the first page is ready. */
+.diagnostics-table-host--measuring {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.diagnostics-table-host--hidden {
+    display: none;
+}
+
+.diagnostics-page .data-page-body ::deep .k7-data-table-el {
+    table-layout: auto;
+    min-width: 100%;
+}
+
+.diagnostics-toolbar__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+}
+
+.diagnostics-toolbar__back {
+    flex: 0 0 auto;
+}
+
+.diagnostics-toolbar__bulk-hint {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.diagnostics-toolbar .diagnostics-toolbar__end {
+    gap: var(--space-2);
+}
+
+@media (max-width: 599.98px) {
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el {
+        min-width: max-content;
+    }
+
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el th,
+    .diagnostics-page .data-page-body ::deep .k7-data-table-el td {
+        white-space: nowrap;
+    }
+
+    .diagnostics-name-cell {
+        max-width: 16rem;
+    }
+
+    .diagnostics-toolbar__row {
+        flex-wrap: nowrap;
+        gap: var(--space-2);
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu__activator {
+        max-width: 100%;
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .diagnostics-toolbar .diagnostics-toolbar__end {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        margin-left: auto !important;
+        flex-wrap: nowrap;
+        gap: var(--space-1);
+    }
+
+    .diagnostics-toolbar ::deep .k7-result-count {
+        font-size: var(--text-xs);
+        white-space: nowrap;
+    }
+
+    .diagnostics-toolbar__bulk-hint {
+        display: none;
+    }
+}

@@ -69,7 +69,10 @@ Access can be restricted per library and per profile beyond social visibility ru
 
 For Movie and Serie libraries, **Chapter extraction** (enabled by default) stores embedded file chapters (MKV, etc.) on video file metadata at probe time. Users can show or hide seekbar chapter ticks under Settings -> Video playback (server default under Admin -> Video playback). When ticks are on, the seekbar also shows intro/outro markers from detected media segments if present; overlapping file chapters win over duplicate intro/outro ticks.
 
-Files already indexed without chapters show as **Chapters not extracted** in Admin diagnostics when the library setting is on. Fix with **Extract chapters**, or play the file once (lazy sync extract on stream session).
+Files already indexed without chapters show as **Chapters not extracted** under Admin -> Diagnostics
+(details, polish work class) when the library setting is on. Fix with **Extract chapters**, Fix all
+from details, a polish shortcut on the diagnostics dashboard, or play the file once (lazy sync extract
+on stream session).
 
 ### Explore feed
 
@@ -242,7 +245,43 @@ Local testing: [`docker-compose.federation-test.yaml`](../../docker-compose.fede
 
 ### Dashboard and diagnostics
 
-Health overview and active streams (encoder / hardware vs software for the current decision).
+Admin Dashboard KPIs and Libraries issue chips link into **Admin -> Diagnostics**.
+
+- **`/admin/diagnostics` (dashboard):** media-health overview for K7 - severity totals, work-class
+  issue cards (with Fix all when a bulk fix exists), see-all count links, and per-library
+  Error/Warning/Info breakdown. Clicks deep-link into details.
+- **`/admin/diagnostics/details`:** work queue - filterable table, per-row fixes, re-identify, and
+  **Fix all** when a single fixable issue filter is active. Use the toolbar hint if Fix all is disabled.
+- **Bulk fix confirm dialog:** states what will be queued and realistic outcomes (including that
+  re-identify / refresh / create-media may find no match and leave some items unchanged).
+
+Severity (Error / Warning / Info) classifies findings - not a promise that a fix or refresh will
+succeed. Work class is the nature of the work:
+
+| Work class | FR | Examples |
+|---|---|---|
+| Catalog | Catalogue | Unlinked file (ex orphan/unidentified), missing file metadata, inaccessible path, duplicates |
+| Enrichment | Enrichissement | Missing external id, metadata, pictures, stale metadata, missing artist members |
+| Polish | Finition | HLS segments, chapters, theme song, intro/outro, audio analysis |
+
+**Severity bands (surfaced):**
+- **Error:** unlinked file, missing file metadata, missing external id, inaccessible library path
+- **Warning:** duplicate external id
+- **Info:** missing metadata / pictures / members, stale metadata, polish issues, suspected duplicates
+
+**Unlinked file** (`OrphanFile`): one surfaced issue for files with no media link and/or no identification.
+Always **Error**. Re-identify when identification is missing; Retry create media / Fix all when identification
+exists. `UnidentifiedFile` is kept for API compat but is not shown separately.
+
+**Missing members** is music artists with no person credits (`PersonRoles`), not missing episodes or tracks.
+
+**Missing files on a media** is not diagnosed: medias may intentionally remain without files for watch
+history, ratings, and stats.
+
+In-app **?** help on the diagnostics dashboard and details lists each surfaced issue, definition,
+applies-to scope, and what bulk fix will attempt.
+
+Admin Dashboard still shows a short health overview and active streams (encoder / hardware vs software).
 
 ### Users and authentication
 
@@ -260,6 +299,8 @@ Almost all personalization has server defaults (e.g. `/admin/video-playback`) an
 - Settings: `GET/PUT /api/admin/background-tasks/settings` (worker count default 3, `0` pauses all
   workers; per-lane concurrency including Metadata ceiling, `0` pauses that lane)
 - Library scans use the `library-scan` concurrency group (default limit 1). Workers reserve a group slot before claiming a task so the configured limit is not bypassed under parallel dequeue.
+- In-app **?** help on Admin -> Background tasks summarizes work classes, lanes, metadata-provider
+  limits, and the main task types (cheat sheet; this section remains the deep reference).
 
 #### Lanes and time-to-usable
 

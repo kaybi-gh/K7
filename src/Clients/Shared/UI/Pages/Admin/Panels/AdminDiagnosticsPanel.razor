@@ -1,164 +1,174 @@
 @page "/admin/diagnostics"
 @layout AdminLayout
 @using K7.Server.Domain.Enums
+@using K7.Shared.Diagnostics
 @using K7.Shared.Dtos.Diagnostics
 @implements IDisposable
 @inject IStringLocalizer<AdminDiagnosticsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="full-bleed-page diagnostics-page">
-    <div class="data-page-toolbar diagnostics-toolbar">
-        <div class="diagnostics-toolbar__row">
-        <K7FilterMenu HasActiveFilters="@HasActiveFilters"
-                      ActiveLabel="@GetActiveFiltersLabel()"
-                      OnClear="ClearFiltersAsync">
-            <K7FilterMenuRoot>
-                <K7FilterMenuSection>
-                    <div class="k7-filter-menu__section-label">@L["FilterSeverity"]</div>
-                    <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(_selectedSeverity is null)" OnClick="@(() => OnSeverityFilterChanged(null))" />
-                    <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityErrors"], _errorCount)" Selected="@(_selectedSeverity == "error")" OnClick="@(() => OnSeverityFilterChanged("error"))" />
-                    <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityWarnings"], _warningCount)" Selected="@(_selectedSeverity == "warning")" OnClick="@(() => OnSeverityFilterChanged("warning"))" />
-                    <K7FilterMenuPick Label="@FormatFilterLabel(L["SeverityInfo"], _infoCount)" Selected="@(_selectedSeverity == "info")" OnClick="@(() => OnSeverityFilterChanged("info"))" />
-                    <hr class="k7-menu-divider" />
-                </K7FilterMenuSection>
-                <K7FilterMenuGroup SubmenuKey="library" Title="@L["FilterLibrary"]">
-                    <ChildContent>
-                        <K7FilterMenuNav SubmenuKey="library" Label="@GetLibraryMenuLabel()" />
-                    </ChildContent>
-                    <SubmenuContent>
-                        <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterLibraryId.HasValue)" OnClick="@(() => OnLibraryFilterChanged(null))" />
-                        @if (_summaries is not null)
-                        {
-                            @foreach (var lib in _summaries)
-                            {
-                                var libraryId = lib.LibraryId;
-                                <K7FilterMenuPick Label="@FormatFilterLabel(lib.LibraryTitle, GetLibraryIssueCount(lib))" Selected="@(_filterLibraryId == libraryId)" OnClick="@(() => OnLibraryFilterChanged(libraryId))" />
-                            }
-                        }
-                    </SubmenuContent>
-                </K7FilterMenuGroup>
-                <K7FilterMenuGroup SubmenuKey="entityType" Title="@L["FilterEntityType"]">
-                    <ChildContent>
-                        <K7FilterMenuNav SubmenuKey="entityType" Label="@GetEntityTypeMenuLabel()" />
-                    </ChildContent>
-                    <SubmenuContent>
-                        <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterEntityType.HasValue)" OnClick="@(() => OnEntityTypeFilterChanged(null))" />
-                        <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeMedia"], GetEntityTypeCount(DiagnosticEntityType.Media))" Selected="@(_filterEntityType == DiagnosticEntityType.Media)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.Media))" />
-                        <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeIndexedFile"], GetEntityTypeCount(DiagnosticEntityType.IndexedFile))" Selected="@(_filterEntityType == DiagnosticEntityType.IndexedFile)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.IndexedFile))" />
-                        <K7FilterMenuPick Label="@FormatFilterLabel(L["EntityTypeLibrary"], GetEntityTypeCount(DiagnosticEntityType.Library))" Selected="@(_filterEntityType == DiagnosticEntityType.Library)" OnClick="@(() => OnEntityTypeFilterChanged(DiagnosticEntityType.Library))" />
-                    </SubmenuContent>
-                </K7FilterMenuGroup>
-                <K7FilterMenuGroup SubmenuKey="issue" Title="@L["FilterIssue"]">
-                    <ChildContent>
-                        <K7FilterMenuNav SubmenuKey="issue" Label="@GetIssueMenuLabel()" />
-                    </ChildContent>
-                    <SubmenuContent>
-                        <K7FilterMenuPick Label="@L["AllIssues"]" Selected="@(!_filterIssue.HasValue)" OnClick="@(() => OnIssueFilterChanged(null))" />
-                        @foreach (var issue in Enum.GetValues<DiagnosticIssue>())
-                        {
-                            var current = issue;
-                            <K7FilterMenuPick Label="@FormatFilterLabel(GetIssueLabel(current), GetIssueCount(current))" Selected="@(_filterIssue == current)" OnClick="@(() => OnIssueFilterChanged(current))" />
-                        }
-                    </SubmenuContent>
-                </K7FilterMenuGroup>
-            </K7FilterMenuRoot>
-        </K7FilterMenu>
-
-        <div class="data-page-toolbar__end diagnostics-toolbar__end">
-            <K7ResultCount Count="_totalCount" />
-            @if (_filterIssue is not null && GetBulkFixAction() is not null && _totalCount > 0)
-            {
-                <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench"
-                          OnClick="QueueAllFixesAsync" Disabled="_isQueueingAllFixes">
-                    @string.Format(L["QueueAllFixes"], _totalCount)
-                </K7Button>
-            }
-            @if (_selectedItems.Count > 0 && GetBulkFixAction() is not null)
-            {
-                <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
-                    @string.Format(L["FixSelected"], _selectedItems.Count)
-                </K7Button>
-            }
-            <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync" AriaLabel="@L["Refresh"]" />
-            <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+<div class="diagnostics-dashboard">
+    <div class="diagnostics-dashboard__header">
+        <div class="diagnostics-dashboard__title-block">
+            <h5>@L["DashboardTitle"]</h5>
+            <p class="text-caption diagnostics-dashboard__subtitle">@L["DashboardSubtitle"]</p>
         </div>
+        <div class="diagnostics-dashboard__actions">
+            <K7IconButton Icon="@Phosphor.Question" Size="sm" OnClick="OpenHelpAsync" AriaLabel="@L["HelpAriaLabel"]" />
+            <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync" Disabled="_isLoading"
+                          AriaLabel="@L["Refresh"]" />
+            <K7Button Size="sm" Variant="filled" Color="primary" Href="@BuildDetailsHref()" StartIcon="@Phosphor.ListBullets">
+                @L["ViewAllIssues"]
+            </K7Button>
         </div>
     </div>
 
-    <div class="data-page-body" aria-live="polite">
-        @if (_isLoadingSummary)
+    @if (_isLoading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_summaries is null || _totalIssueCount == 0)
+    {
+        <K7EmptyState Icon="@Phosphor.CheckCircle" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
+    }
+    else
+    {
+        <section class="diagnostics-dashboard__section" aria-label="@L["FilterSeverity"]">
+            <div class="diagnostics-dashboard__stat-grid">
+                <button type="button" class="diagnostics-dashboard__stat-link focusable"
+                        @onclick="@(() => NavigateToDetails(severity: "error"))">
+                    <K7Paper Outlined="true" Class="diagnostics-dashboard__stat-card">
+                        <span class="text-overline">@L["SeverityErrors"]</span>
+                        <h3 class="diagnostics-dashboard__stat-value diagnostics-dashboard__stat-value--error">@_errorCount</h3>
+                    </K7Paper>
+                </button>
+                <button type="button" class="diagnostics-dashboard__stat-link focusable"
+                        @onclick="@(() => NavigateToDetails(severity: "warning"))">
+                    <K7Paper Outlined="true" Class="diagnostics-dashboard__stat-card">
+                        <span class="text-overline">@L["SeverityWarnings"]</span>
+                        <h3 class="diagnostics-dashboard__stat-value diagnostics-dashboard__stat-value--warning">@_warningCount</h3>
+                    </K7Paper>
+                </button>
+                <button type="button" class="diagnostics-dashboard__stat-link focusable"
+                        @onclick="@(() => NavigateToDetails(severity: "info"))">
+                    <K7Paper Outlined="true" Class="diagnostics-dashboard__stat-card">
+                        <span class="text-overline">@L["SeverityInfo"]</span>
+                        <h3 class="diagnostics-dashboard__stat-value diagnostics-dashboard__stat-value--info">@_infoCount</h3>
+                    </K7Paper>
+                </button>
+            </div>
+            <p class="text-caption diagnostics-dashboard__stat-hint">@L["SeverityTotalsHint"]</p>
+        </section>
+
+        @foreach (var workClass in Enum.GetValues<DiagnosticWorkClass>())
         {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else if (_summaries is null || _totalIssueCount == 0)
-        {
-            <K7EmptyState Icon="@Phosphor.CheckCircle" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
-        }
-        else
-        {
-            <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
-                         RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
-                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColName"]" Hideable="false">
-                    <CellTemplate>
-                        <div class="diagnostics-name-cell">
-                            @if (context.MediaUrl is not null)
-                            {
-                                <a href="@context.MediaUrl" class="text-sm diagnostics-name-cell__title">@context.EntityName</a>
-                            }
-                            else
-                            {
-                                <span class="text-sm diagnostics-name-cell__title">@context.EntityName</span>
-                            }
-                            <span class="text-caption diagnostics-name-cell__meta" style="color: var(--color-text-muted);">
-                                @(context.EntityType switch
+            var issues = GetIssuesWithCount(workClass);
+            if (issues.Count == 0)
+            {
+                continue;
+            }
+
+            var workClassCount = GetWorkClassCount(workClass);
+            <section class="diagnostics-dashboard__section" aria-label="@GetWorkClassLabel(workClass)">
+                <div class="diagnostics-dashboard__section-heading">
+                    <h6 class="diagnostics-dashboard__section-title">@GetWorkClassLabel(workClass)</h6>
+                    <button type="button"
+                            class="diagnostics-dashboard__see-all focusable"
+                            @onclick="@(() => NavigateToDetails(workClass: workClass))">
+                        @string.Format(L["WorkClassSeeAll"], workClassCount)
+                    </button>
+                </div>
+                <div class="diagnostics-dashboard__issue-grid">
+                    @foreach (var (issue, count) in issues)
+                    {
+                        var canFix = DiagnosticIssueTaxonomy.SupportsBulkFix(issue);
+                        <K7Paper Outlined="true" Class="diagnostics-dashboard__issue-card">
+                            <button type="button"
+                                    class="diagnostics-dashboard__issue-card-body focusable"
+                                    @onclick="@(() => NavigateToDetails(issue: issue))">
+                                <div class="diagnostics-dashboard__issue-card-main">
+                                    <span class="text-sm diagnostics-dashboard__issue-label"
+                                          style="@(GetIssueLabelStyle(issue))">
+                                        @GetIssueLabel(issue)
+                                    </span>
+                                    <span class="diagnostics-dashboard__issue-count">@count</span>
+                                </div>
+                            </button>
+                            <div class="diagnostics-dashboard__issue-card-footer">
+                                <span class="text-caption diagnostics-dashboard__stat-caption">
+                                    @GetIssueCardCaption(issue)
+                                </span>
+                                @if (canFix)
                                 {
-                                    DiagnosticEntityType.Media => L["EntityTypeMedia"],
-                                    DiagnosticEntityType.Library => L["EntityTypeLibrary"],
-                                    _ => L["EntityTypeIndexedFile"]
-                                })
-                            </span>
-                        </div>
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColLibrary"]" Property="@(i => i.LibraryTitle)" />
-                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColIssues"]">
-                    <CellTemplate>
-                        @{
-                            var issue = context.Issues[0];
-                        }
-                        <span class="text-sm diagnostics-issues-cell" title="@GetIssueDetail(context, issue)" style="color: var(--color-@(GetIssueColor(issue)));">
-                            @GetIssueLabel(issue)
-                        </span>
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColActions"]" Width="128px" Hideable="false">
-                    <CellTemplate>
-                        @{
-                            var issue = context.Issues[0];
-                            var fixAction = GetFixActionForIssue(issue);
-                            var showReIdentify = SupportsIndexedFileReIdentify(context, issue);
-                        }
-                        <div class="diagnostics-actions-cell">
-                            @if (showReIdentify)
-                            {
-                                <K7IconButton Icon="@Phosphor.MagnifyingGlass" Size="sm"
-                                              OnClick="@(() => OpenReIdentifyDialogAsync(context))"
-                                              AriaLabel="@L["ActionReidentify"]" />
-                            }
-                            @if (fixAction is { } action)
-                            {
-                                <K7IconButton Icon="@GetFixActionIcon(action)" Size="sm"
-                                              OnClick="@(() => FixItemAsync(context.EntityId, action))"
-                                              AriaLabel="@GetFixActionLabel(action)" />
-                            }
-                            @if (context.MediaUrl is not null)
-                            {
-                                <K7IconButton Icon="@Phosphor.ArrowSquareOut" Size="sm" Href="@context.MediaUrl" AriaLabel="@L["GoToMedia"]" />
-                            }
-                        </div>
-                    </CellTemplate>
-                </K7DataColumn>
-            </K7DataTable>
+                                    <button type="button"
+                                            class="diagnostics-dashboard__issue-fix focusable"
+                                            @onclick="@(() => QueueIssueFixAsync(issue, count))"
+                                            disabled="@_isQueueingFix"
+                                            aria-label="@string.Format(L["QueueAllFixes"], count)">
+                                        <K7Icon Icon="@Phosphor.Wrench" IconSize="K7IconSize.Sm" />
+                                        <span>@L["FixAll"]</span>
+                                    </button>
+                                }
+                            </div>
+                        </K7Paper>
+                    }
+                </div>
+            </section>
         }
-    </div>
+
+        @if (_librariesWithIssues.Count > 0)
+        {
+            <section class="diagnostics-dashboard__section" aria-label="@L["PerLibraryTitle"]">
+                <h6 class="diagnostics-dashboard__section-title">@L["PerLibraryTitle"]</h6>
+                <K7Table TItem="LibraryHealthSummaryDto" Items="_librariesWithIssues" Dense="true" Hover="true"
+                         Class="diagnostics-dashboard__library-table"
+                         OnRowClick="OnLibraryRowClick">
+                    <HeaderContent>
+                        <th>@L["FilterLibrary"]</th>
+                        <th class="diagnostics-dashboard__library-col-kpi">@L["SeverityErrors"]</th>
+                        <th class="diagnostics-dashboard__library-col-kpi">@L["SeverityWarnings"]</th>
+                        <th class="diagnostics-dashboard__library-col-kpi">@L["SeverityInfo"]</th>
+                    </HeaderContent>
+                    <RowTemplate Context="library">
+                        @{
+                            var libraryId = library.LibraryId;
+                            var errors = LibraryHealthSummaryCounts.SumErrors([library]);
+                            var warnings = LibraryHealthSummaryCounts.SumWarnings([library]);
+                            var infos = LibraryHealthSummaryCounts.SumInfo([library]);
+                        }
+                        <td>
+                            <span class="text-sm diagnostics-dashboard__library-title">@library.LibraryTitle</span>
+                        </td>
+                        <td class="diagnostics-dashboard__library-col-kpi">
+                            <button type="button"
+                                    class="diagnostics-dashboard__library-kpi @(errors > 0 ? "focusable" : null)"
+                                    disabled="@(errors == 0)"
+                                    @onclick="@(() => NavigateToDetails(severity: "error", libraryId: libraryId))"
+                                    @onclick:stopPropagation="true">
+                                <span class="diagnostics-dashboard__library-kpi-value @(errors == 0 ? "diagnostics-dashboard__library-kpi-value--ok" : "diagnostics-dashboard__library-kpi-value--error")">@errors</span>
+                            </button>
+                        </td>
+                        <td class="diagnostics-dashboard__library-col-kpi">
+                            <button type="button"
+                                    class="diagnostics-dashboard__library-kpi @(warnings > 0 ? "focusable" : null)"
+                                    disabled="@(warnings == 0)"
+                                    @onclick="@(() => NavigateToDetails(severity: "warning", libraryId: libraryId))"
+                                    @onclick:stopPropagation="true">
+                                <span class="diagnostics-dashboard__library-kpi-value @(warnings == 0 ? "diagnostics-dashboard__library-kpi-value--ok" : "diagnostics-dashboard__library-kpi-value--warning")">@warnings</span>
+                            </button>
+                        </td>
+                        <td class="diagnostics-dashboard__library-col-kpi">
+                            <button type="button"
+                                    class="diagnostics-dashboard__library-kpi @(infos > 0 ? "focusable" : null)"
+                                    disabled="@(infos == 0)"
+                                    @onclick="@(() => NavigateToDetails(severity: "info", libraryId: libraryId))"
+                                    @onclick:stopPropagation="true">
+                                <span class="diagnostics-dashboard__library-kpi-value @(infos == 0 ? "diagnostics-dashboard__library-kpi-value--ok" : "diagnostics-dashboard__library-kpi-value--info")">@infos</span>
+                            </button>
+                        </td>
+                    </RowTemplate>
+                </K7Table>
+            </section>
+        }
+    }
 </div>
