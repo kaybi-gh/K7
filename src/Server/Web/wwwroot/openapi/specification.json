@@ -8282,6 +8282,13 @@
             }
           },
           {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DiagnosticSeverity"
+            }
+          },
+          {
             "name": "pageNumber",
             "in": "query",
             "schema": {
@@ -13487,8 +13494,10 @@
           "mediaMissingMetadataCount",
           "mediaWithoutFilesCount",
           "staleMetadataCount",
+          "missingMembersCount",
           "totalIndexedFileCount",
           "orphanIndexedFileCount",
+          "identifiedOrphanIndexedFileCount",
           "unidentifiedIndexedFileCount",
           "missingFileMetadataCount",
           "missingHlsSegmentsCount",
@@ -13562,6 +13571,14 @@
             ],
             "format": "int32"
           },
+          "missingMembersCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "totalIndexedFileCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -13571,6 +13588,14 @@
             "format": "int32"
           },
           "orphanIndexedFileCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "identifiedOrphanIndexedFileCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

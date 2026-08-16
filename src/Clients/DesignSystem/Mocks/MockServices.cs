@@ -781,7 +781,7 @@ public sealed class MockBackgroundTaskService : IBackgroundTaskService
 public sealed class MockDiagnosticsService : IDiagnosticsService
 {
     public Task<List<LibraryHealthSummaryDto>> GetDiagnosticsSummaryAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryHealthSummaryDto>());
-    public Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, IReadOnlyCollection<DiagnosticIssue>? issues = null, int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<DiagnosticItemDto>());
+    public Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, IReadOnlyCollection<DiagnosticIssue>? issues = null, int pageNumber = 1, int pageSize = 20, DiagnosticSeverity? severity = null, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<DiagnosticItemDto>());
     public Task<int> FixDiagnosticItemsAsync(IReadOnlyList<Guid> entityIds, DiagnosticFixAction action, CancellationToken cancellationToken = default) => Task.FromResult(0);
     public Task<int> QueueDiagnosticFixesAsync(DiagnosticIssue issue, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }

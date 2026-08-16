@@ -18,6 +18,7 @@ public class GetDiagnosticItems : IEndpoint
             [FromQuery] Guid? libraryId,
             [FromQuery] DiagnosticEntityType? entityType,
             [FromQuery(Name = "issue")] DiagnosticIssue[]? issues,
+            [FromQuery] DiagnosticSeverity? severity,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = PagingDefaults.DefaultPageSize,
             CancellationToken cancellationToken = default) =>
@@ -27,6 +28,7 @@ public class GetDiagnosticItems : IEndpoint
                 LibraryId = libraryId,
                 EntityType = entityType,
                 Issues = issues is { Length: > 0 } ? issues : null,
+                Severity = severity,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };

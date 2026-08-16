@@ -61,6 +61,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         var suspectedDuplicateCounts = await DuplicateMediaDiagnosticHelper.GetSuspectedDuplicateCountsByLibraryAsync(
             _context, cancellationToken);
         var mediaWithoutFilesCounts = await GetMediaWithoutFilesCountsAsync(cancellationToken);
+        var missingMembersCounts = await GetMissingMembersCountsAsync(cancellationToken);
 
         var musicLibraryIds = libraries
             .Where(l => l.MediaType == LibraryMediaType.Music)
@@ -88,6 +89,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             missingIntroOutroCounts.TryGetValue(library.Id, out var missingIntroOutroCount);
             inaccessiblePathCounts.TryGetValue(library.Id, out var inaccessiblePathCount);
             mediaWithoutFilesCounts.TryGetValue(library.Id, out var mediaWithoutFilesCount);
+            missingMembersCounts.TryGetValue(library.Id, out var missingMembersCount);
             missingAudioAnalysisCounts.TryGetValue(library.Id, out var missingAudioAnalysisCount);
             duplicateExternalIdCounts.TryGetValue(library.Id, out var duplicateExternalIdCount);
             suspectedDuplicateCounts.TryGetValue(library.Id, out var suspectedDuplicateMediaCount);
@@ -103,8 +105,10 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MediaMissingMetadataCount = linkedMediaStats.MediaMissingMetadataCount,
                 MediaWithoutFilesCount = mediaWithoutFilesCount,
                 StaleMetadataCount = linkedMediaStats.StaleMetadataCount,
+                MissingMembersCount = missingMembersCount,
                 TotalIndexedFileCount = fileStats?.TotalCount ?? 0,
-                OrphanIndexedFileCount = fileStats?.OrphanCount ?? 0,
+                OrphanIndexedFileCount = fileStats?.MergedUnlinkedCount ?? 0,
+                IdentifiedOrphanIndexedFileCount = fileStats?.IdentifiedOrphanCount ?? 0,
                 UnidentifiedIndexedFileCount = fileStats?.UnidentifiedCount ?? 0,
                 MissingFileMetadataCount = fileStats?.MissingFileMetadataCount ?? 0,
                 MissingHlsSegmentsCount = missingHlsSegmentsCount,
@@ -132,9 +136,17 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             {
                 LibraryId = g.Key,
                 TotalCount = g.Count(),
-                OrphanCount = g.Count(f => f.MediaId == null)
+                MissingFileMetadataCount = g.Count(f => f.FileMetadata == null)
             })
             .ToListAsync(cancellationToken);
+
+        // Owned-type null checks are not reliable inside GroupBy aggregates; use separate queries.
+        var identifiedOrphanCounts = await _context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.MediaId == null && f.Identification != null)
+            .GroupBy(f => f.LibraryId)
+            .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
 
         var unidentifiedCounts = await _context.IndexedFiles
             .AsNoTracking()
@@ -143,9 +155,9 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             .Select(g => new { LibraryId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
 
-        var missingFileMetadataCounts = await _context.IndexedFiles
+        var mergedUnlinkedCounts = await _context.IndexedFiles
             .AsNoTracking()
-            .Where(f => f.FileMetadata == null)
+            .Where(f => f.MediaId == null || f.Identification == null)
             .GroupBy(f => f.LibraryId)
             .Select(g => new { LibraryId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
@@ -155,9 +167,10 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             s => new IndexedFileLibraryStats(
                 s.LibraryId,
                 s.TotalCount,
-                s.OrphanCount,
+                identifiedOrphanCounts.GetValueOrDefault(s.LibraryId),
                 unidentifiedCounts.GetValueOrDefault(s.LibraryId),
-                missingFileMetadataCounts.GetValueOrDefault(s.LibraryId)));
+                mergedUnlinkedCounts.GetValueOrDefault(s.LibraryId),
+                s.MissingFileMetadataCount));
     }
 
     private async Task<Dictionary<Guid, int>> GetMissingHlsSegmentCountsAsync(CancellationToken cancellationToken)
@@ -226,6 +239,27 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         return counts.ToDictionary(x => x.LibraryId, x => x.Count);
     }
 
+    private async Task<Dictionary<Guid, int>> GetMissingMembersCountsAsync(CancellationToken cancellationToken)
+    {
+        // Mirror GetDiagnosticItems / DiagnosticIssueEntityResolver: MusicArtists with no PersonRoles,
+        // attributed to libraries via albums that have IndexedFiles.
+        var counts = await (
+            from artist in _context.Medias.OfType<MusicArtist>().AsNoTracking()
+            where !artist.PersonRoles.Any()
+            from album in _context.Medias.OfType<MusicAlbum>().AsNoTracking()
+            where album.ArtistId == artist.Id
+            join file in _context.IndexedFiles.AsNoTracking() on album.Id equals file.MediaId
+            where !_context.Libraries.Any(l => l.Id == file.LibraryId && l.PeerServerId != null)
+            select new { ArtistId = artist.Id, file.LibraryId }
+        )
+            .Distinct()
+            .GroupBy(x => x.LibraryId)
+            .Select(g => new { LibraryId = g.Key, Count = g.Select(x => x.ArtistId).Distinct().Count() })
+            .ToListAsync(cancellationToken);
+
+        return counts.ToDictionary(x => x.LibraryId, x => x.Count);
+    }
+
     private async Task<Dictionary<Guid, int>> GetMissingAudioAnalysisCountsAsync(
         IReadOnlyCollection<Guid> musicLibraryIds,
         CancellationToken cancellationToken)
@@ -283,11 +317,20 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 m.Id,
                 m.Type,
                 m.LastMetadataRefreshedAt,
-                HasPictures = m.Pictures.Any(),
                 HasExternalIds = m.ExternalIds.Any(),
                 HasGenre = m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
             })
             .ToDictionaryAsync(m => m.Id, cancellationToken);
+
+        var pictureTypes = await _context.MetadataPictures
+            .AsNoTracking()
+            .Where(p => p.MediaId != null && mediaIds.Contains(p.MediaId.Value))
+            .Select(p => new { Id = p.MediaId!.Value, p.Type })
+            .ToListAsync(cancellationToken);
+
+        var picturesByMedia = pictureTypes
+            .GroupBy(p => p.Id)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.Type).Distinct().ToHashSet());
 
         var seenByLibrary = libraries.ToDictionary(l => l.Id, _ => new HashSet<Guid>());
 
@@ -302,8 +345,13 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             var stats = statsByLibrary[pair.LibraryId];
             stats.TotalMediaCount++;
 
-            if (!flags.HasPictures)
-                stats.MediaMissingPicturesCount++;
+            var expectedPictures = GetExpectedPictureTypes(flags.Type);
+            if (expectedPictures.Count > 0)
+            {
+                var mediaPictureTypes = picturesByMedia.GetValueOrDefault(pair.MediaId);
+                if (mediaPictureTypes is null || expectedPictures.Any(t => !mediaPictureTypes.Contains(t)))
+                    stats.MediaMissingPicturesCount++;
+            }
 
             var isRefreshable = flags.Type is MediaType.Movie or MediaType.Serie or MediaType.MusicAlbum or MediaType.MusicArtist;
             var isEnrichable = flags.Type is MediaType.Movie or MediaType.Serie or MediaType.MusicAlbum;
@@ -392,11 +440,22 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         LibraryMediaType MediaType,
         int? MetadataRefreshIntervalDays);
 
+    private static IReadOnlyList<MetadataPictureType> GetExpectedPictureTypes(MediaType type) => type switch
+    {
+        MediaType.Movie => [MetadataPictureType.Poster, MetadataPictureType.Backdrop],
+        MediaType.Serie => [MetadataPictureType.Poster, MetadataPictureType.Backdrop],
+        MediaType.SerieSeason => [MetadataPictureType.Poster],
+        MediaType.SerieEpisode => [MetadataPictureType.Still],
+        MediaType.MusicAlbum => [MetadataPictureType.Cover],
+        _ => []
+    };
+
     private sealed record IndexedFileLibraryStats(
         Guid LibraryId,
         int TotalCount,
-        int OrphanCount,
+        int IdentifiedOrphanCount,
         int UnidentifiedCount,
+        int MergedUnlinkedCount,
         int MissingFileMetadataCount);
 
     private sealed record LinkedMediaLibraryStats(

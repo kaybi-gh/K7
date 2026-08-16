@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Models;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +81,63 @@ public class GetDiagnosticsSummaryQueryHandlerTests
         summary.LibraryId.Should().Be(libraryId);
         summary.MediaWithoutFilesCount.Should().Be(1);
         summary.TotalMediaCount.Should().Be(2);
+    }
+
+    [Test]
+    public async Task Handle_ShouldCountMergedOrphansAndIdentifiedOrphansSeparately()
+    {
+        var libraryId = SeedMovieLibrary();
+        var linkedMediaId = Guid.NewGuid();
+
+        _context.Medias.Add(new Movie { Id = linkedMediaId, Title = "Linked Unidentified" });
+        _context.IndexedFiles.AddRange(
+            new IndexedFile
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = libraryId,
+                Name = "identified-orphan",
+                Extension = ".mkv",
+                Path = "/media/identified-orphan.mkv",
+                ParentDirectory = "/media",
+                Hash = 1u,
+                Size = 1,
+                MediaId = null,
+                Identification = new MediaIdentification("Known") { ReleaseYear = new DateOnly(2020, 1, 1) }
+            },
+            new IndexedFile
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = libraryId,
+                Name = "unidentified-orphan",
+                Extension = ".mkv",
+                Path = "/media/unidentified-orphan.mkv",
+                ParentDirectory = "/media",
+                Hash = 2u,
+                Size = 1,
+                MediaId = null,
+                Identification = null
+            },
+            new IndexedFile
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = libraryId,
+                Name = "linked-unidentified",
+                Extension = ".mkv",
+                Path = "/media/linked-unidentified.mkv",
+                ParentDirectory = "/media",
+                Hash = 3u,
+                Size = 1,
+                MediaId = linkedMediaId,
+                Identification = null
+            });
+        await _context.SaveChangesAsync();
+
+        var summaries = await _handler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+        var summary = summaries.Should().ContainSingle(s => s.LibraryId == libraryId).Subject;
+
+        summary.IdentifiedOrphanIndexedFileCount.Should().Be(1);
+        summary.UnidentifiedIndexedFileCount.Should().Be(2);
+        summary.OrphanIndexedFileCount.Should().Be(3);
     }
 
     [Test]
