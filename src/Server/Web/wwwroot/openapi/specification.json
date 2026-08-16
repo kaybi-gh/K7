@@ -11513,6 +11513,9 @@
           "isPublic": {
             "type": "boolean"
           },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
+          },
           "userId": {
             "type": [
               "null",
@@ -13789,6 +13792,9 @@
           },
           "isPublic": {
             "type": "boolean"
+          },
+          "visibilityScope": {
+            "$ref": "#/components/schemas/VisibilityScope"
           },
           "userId": {
             "type": [

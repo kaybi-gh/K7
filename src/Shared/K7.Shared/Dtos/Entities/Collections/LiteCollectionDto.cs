@@ -9,6 +9,7 @@ public sealed record LiteCollectionDto
     public required string Title { get; init; }
     public string? Description { get; init; }
     public bool IsPublic { get; init; }
+    public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
     public Guid? UserId { get; init; }
     public MediaType? MediaType { get; init; }
     public MetadataPictureDto? CoverPicture { get; init; }

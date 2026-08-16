@@ -14,7 +14,7 @@
                       Variant="outlined"
                       Lines="3"
                       MaxLength="2000" />
-        <K7Switch @bind-Value="IsPublic" Label="@L["PublicLabel"]" />
+        <K7VisibilityScopeSelect Label="@L["VisibilityScope"]" @bind-Value="_visibilityScope" Variant="outlined" />
 
         <div class="picker-row">
             <span class="picker-row__label">@L["CoverLabel"]</span>

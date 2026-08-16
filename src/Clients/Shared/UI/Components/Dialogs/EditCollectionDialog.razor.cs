@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -15,9 +16,10 @@ public partial class EditCollectionDialog
     [Parameter] public Guid CollectionId { get; set; }
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string? Description { get; set; }
-    [Parameter] public bool IsPublic { get; set; }
+    [Parameter] public VisibilityScope VisibilityScope { get; set; } = VisibilityScope.Nobody;
     [Parameter] public Guid? CoverPictureId { get; set; }
 
+    private VisibilityScope _visibilityScope = VisibilityScope.Nobody;
     private CoverPickerResult? _pendingCover;
     private Guid? _currentCoverPictureId;
     private bool _removeCover;
@@ -51,6 +53,7 @@ public partial class EditCollectionDialog
     protected override async Task OnInitializedAsync()
     {
         _currentCoverPictureId = CoverPictureId;
+        _visibilityScope = VisibilityScope;
         await LoadItemPicturesAsync();
     }
 
@@ -119,7 +122,7 @@ public partial class EditCollectionDialog
             {
                 Title = Title.Trim(),
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
-                IsPublic = IsPublic
+                VisibilityScope = _visibilityScope
             });
 
             if (_removeCover)

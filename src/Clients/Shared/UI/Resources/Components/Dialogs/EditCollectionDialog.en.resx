@@ -22,7 +22,7 @@
   <data name="NameLabel" xml:space="preserve"><value>Collection name</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optional)</value></data>
-  <data name="PublicLabel" xml:space="preserve"><value>Public collection</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibility</value></data>
   <data name="Saving" xml:space="preserve"><value>Saving...</value></data>
   <data name="Updated" xml:space="preserve"><value>Collection updated</value></data>
   <data name="Error" xml:space="preserve"><value>Error while updating</value></data>

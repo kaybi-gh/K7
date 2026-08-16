@@ -27,7 +27,8 @@ public class UpdatePersonMetadata : IEndpoint
                 Biography = request.Biography,
                 Birthday = request.Birthday,
                 Deathday = request.Deathday,
-                BirthPlace = request.BirthPlace
+                BirthPlace = request.BirthPlace,
+                ExternalIds = request.ExternalIds
             }, cancellationToken);
 
             return Results.NoContent();

@@ -11,8 +11,8 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -849,6 +849,7 @@ public partial class EditMetadataDialog : IDisposable
             Revenue = _revenue,
             Status = _status,
             Network = _network,
+            AirDate = Media is SerieEpisodeDto ? ParseDate(_releaseDateStr) : null,
             Runtime = _runtime,
             Biography = _biography,
             Country = _country,

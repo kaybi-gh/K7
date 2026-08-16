@@ -42,7 +42,8 @@ public class UpdateMediaMetadata : IEndpoint
                 TrackNumber = request.TrackNumber,
                 DiscNumber = request.DiscNumber,
                 Lyrics = request.Lyrics,
-                LyricsLrc = request.LyricsLrc
+                LyricsLrc = request.LyricsLrc,
+                ExternalIds = request.ExternalIds
             }, cancellationToken);
 
             return Results.NoContent();

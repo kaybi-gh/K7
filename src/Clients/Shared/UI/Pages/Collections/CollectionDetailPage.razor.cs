@@ -296,7 +296,7 @@ public partial class CollectionDetailPage
 
             { x => x.Description, _collection.Description },
 
-            { x => x.IsPublic, _collection.IsPublic },
+            { x => x.VisibilityScope, _collection.VisibilityScope },
 
             { x => x.CoverPictureId, _collection.CoverPicture?.Id }
 

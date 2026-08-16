@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Users;
@@ -32,6 +33,24 @@ public class CommonMappingsTests
         dto.ItemCount.Should().Be(1);
         dto.IsDynamicPlaylist.Should().BeFalse();
         dto.VisibilityScope.Should().Be(VisibilityScope.LocalServer);
+    }
+
+    [Test]
+    public void ToCollectionDto_ShouldMapVisibilityScope()
+    {
+        var collection = new Collection
+        {
+            Id = Guid.NewGuid(),
+            Title = "Favs",
+            UserId = Guid.NewGuid(),
+            VisibilityScope = VisibilityScope.Federation,
+            IsPublic = true
+        };
+
+        var dto = collection.ToCollectionDto();
+
+        dto.VisibilityScope.Should().Be(VisibilityScope.Federation);
+        dto.IsPublic.Should().BeTrue();
     }
 
     [Test]
