@@ -16,26 +16,31 @@ public sealed class PlexClient : ISourceClient
     private static readonly string ClientIdentifier = Guid.NewGuid().ToString();
 
     private readonly string _ownerToken;
+    private readonly PlexLibraryDb? _libraryDb;
     private readonly HttpClient _httpClient;
     private readonly HttpClient _plexTv;
     private readonly Dictionary<string, string> _tokensByKey = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _userNamesById = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<string>> _accessibleLibrariesByToken = new(StringComparer.Ordinal);
     private readonly List<string> _tokenWarnings = [];
     private Dictionary<string, string>? _libraryTypes;
     private string? _machineIdentifier;
     private string? _ownerName;
+    private string? _ownerServerToken;
     private bool _tokensResolved;
 
     public bool IncludeDynamicPlaylists { get; init; }
 
     public IReadOnlyList<string> TokenWarnings => _tokenWarnings;
 
-    public PlexClient(string serverUrl, string token)
+    public PlexClient(string serverUrl, string token, string? plexDbPath = null)
     {
         if (string.IsNullOrWhiteSpace(serverUrl))
             throw new ArgumentException("--source-url is required for Plex (e.g. http://192.168.1.10:32400).");
 
         _ownerToken = NormalizeToken(token);
+        if (!string.IsNullOrWhiteSpace(plexDbPath))
+            _libraryDb = PlexLibraryDb.Load(plexDbPath);
         _httpClient = new HttpClient
         {
             BaseAddress = new Uri(serverUrl.TrimEnd('/'))
@@ -115,8 +120,97 @@ public sealed class PlexClient : ISourceClient
         if (_tokensByKey.ContainsKey(userId))
             return;
 
-        if (_tokensByKey.TryGetValue(name, out var token))
+        if (_tokensByKey.TryGetValue(name, out var token) && !IsOwnerToken(token))
             _tokensByKey.TryAdd(userId, token);
+    }
+
+    private bool IsOwnerToken(string token) =>
+        string.Equals(token, _ownerToken, StringComparison.Ordinal)
+        || (!string.IsNullOrWhiteSpace(_ownerServerToken)
+            && string.Equals(token, _ownerServerToken, StringComparison.Ordinal));
+
+    private async Task DropTokensThatMirrorOwnerAsync(
+        IReadOnlyList<SourceUser> users,
+        CancellationToken cancellationToken)
+    {
+        var ownerPrint = await SampleRatingFingerprintAsync(_ownerToken, cancellationToken);
+        if (string.IsNullOrWhiteSpace(ownerPrint))
+            return;
+
+        foreach (var user in users)
+        {
+            if (user.Id is "owner")
+                continue;
+
+            var token = TryGetUserToken(user.Id);
+            if (token is null || IsOwnerToken(token))
+                continue;
+
+            var print = await SampleRatingFingerprintAsync(token, cancellationToken);
+            if (print is null || print != ownerPrint)
+                continue;
+
+            _tokenWarnings.Add(
+                $"Plex user '{user.Name}' returned the same ratings as the admin token; skipped. " +
+                "Pass --plex-db with a copy of com.plexapp.plugins.library.db to read Home-user ratings.");
+            RevokeToken(token);
+        }
+    }
+
+    private void RevokeToken(string token)
+    {
+        var keys = _tokensByKey
+            .Where(pair => string.Equals(pair.Value, token, StringComparison.Ordinal)
+                && !string.Equals(pair.Key, "owner", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(pair.Key, _ownerName, StringComparison.OrdinalIgnoreCase))
+            .Select(pair => pair.Key)
+            .ToList();
+        foreach (var key in keys)
+            _tokensByKey.Remove(key);
+    }
+
+    private async Task<string?> SampleRatingFingerprintAsync(string token, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var libraries = await LoadLibrariesAsync(cancellationToken);
+            var library = libraries.FirstOrDefault(item => item.MediaType is "movie")
+                ?? libraries.FirstOrDefault();
+            if (library is null)
+                return null;
+
+            var types = await ResolvePlexTypesToFetchAsync(library.Id, cancellationToken);
+            if (types.Count == 0)
+                return null;
+
+            var response = await PmsGetAsync(
+                $"/library/sections/{library.Id}/all?type={types[0]}&X-Plex-Container-Start=0&X-Plex-Container-Size=80&includeGuids=1",
+                token,
+                cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+            if (!doc.TryGetProperty("MediaContainer", out var container)
+                || !container.TryGetProperty("Metadata", out var metadata))
+            {
+                return null;
+            }
+
+            var parts = new List<string>();
+            foreach (var item in metadata.EnumerateArray())
+            {
+                var parsed = ParseMediaItem(item);
+                if (parsed.Rating is > 0)
+                    parts.Add(parsed.Id + ":" + parsed.Rating.Value.ToString("0.#"));
+            }
+
+            return parts.Count == 0 ? null : string.Join("|", parts);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task EnsureUserTokensAsync(CancellationToken cancellationToken)
@@ -126,6 +220,7 @@ public sealed class PlexClient : ISourceClient
 
         _tokensResolved = true;
         IndexToken(_ownerToken, "owner", _ownerName);
+        _ownerServerToken = await TryResolveServerAccessTokenAsync(_ownerToken, cancellationToken);
 
         try
         {
@@ -201,27 +296,47 @@ public sealed class PlexClient : ISourceClient
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
-            if (TryGetUserToken(id) is not null
-                || (!string.IsNullOrWhiteSpace(title) && TryGetUserToken(title) is not null))
+            if (TryGetUserToken(id) is { } existing && !IsOwnerToken(existing))
             {
                 BindTokenAliases(id, title ?? id);
                 continue;
             }
 
-            var token = await SwitchHomeUserAsync(id, uuid, cancellationToken);
-            if (string.IsNullOrWhiteSpace(token))
+            var label = title ?? username ?? id;
+            var switched = await SwitchHomeUserAsync(id, uuid, title, username, cancellationToken);
+            if (switched is null)
+            {
+                _tokenWarnings.Add(
+                    $"Plex Home user '{label}' could not be switched; ratings/playlists were skipped.");
+                continue;
+            }
+
+            var serverToken = await ResolveServerAccessTokenAsync(switched.Value.Token, label, cancellationToken);
+            if (string.IsNullOrWhiteSpace(serverToken))
                 continue;
 
-            IndexToken(token, id, uuid, title, username, email);
+            if (IsOwnerToken(serverToken))
+            {
+                _tokenWarnings.Add(
+                    $"Plex Home user '{label}' resolved to the admin server token; skipped to avoid mixing ratings.");
+                continue;
+            }
+
+            IndexToken(serverToken, id, uuid, title, username, email);
         }
     }
 
-    private async Task<string?> SwitchHomeUserAsync(string id, string? uuid, CancellationToken cancellationToken)
+    private async Task<PlexSwitchIdentity?> SwitchHomeUserAsync(
+        string id,
+        string? uuid,
+        string? title,
+        string? username,
+        CancellationToken cancellationToken)
     {
         foreach (var path in new[]
         {
-            $"/api/home/users/{Uri.EscapeDataString(id)}/switch",
-            string.IsNullOrWhiteSpace(uuid) ? null : $"/api/v2/home/users/{Uri.EscapeDataString(uuid)}/switch"
+            string.IsNullOrWhiteSpace(uuid) ? null : $"/api/v2/home/users/{Uri.EscapeDataString(uuid)}/switch",
+            $"/api/home/users/{Uri.EscapeDataString(id)}/switch"
         })
         {
             if (path is null)
@@ -232,27 +347,73 @@ public sealed class PlexClient : ISourceClient
                 continue;
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (string.IsNullOrWhiteSpace(body))
+            var parsed = PlexHomeAuth.TryParseSwitchResponse(body);
+            if (parsed is null)
                 continue;
 
-            if (body.TrimStart().StartsWith('{'))
+            if (!PlexHomeAuth.IdentityMatches(parsed.Value, id, title, username))
             {
-                using var json = JsonDocument.Parse(body);
-                if (json.RootElement.TryGetProperty("authToken", out var auth)
-                    || json.RootElement.TryGetProperty("authenticationToken", out auth))
-                {
-                    return auth.GetString();
-                }
-
+                _tokenWarnings.Add(
+                    $"Plex Home switch for '{title ?? id}' returned '{parsed.Value.Title ?? parsed.Value.Id}'; skipped.");
                 continue;
             }
 
-            var xml = XDocument.Parse(body);
-            var token = xml.Descendants().Select(e =>
-                    (string?)e.Attribute("authenticationToken")
-                    ?? (string?)e.Attribute("authToken"))
-                .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
-            if (token is not null)
+            if (IsOwnerToken(parsed.Value.Token))
+            {
+                _tokenWarnings.Add(
+                    $"Plex Home switch for '{title ?? id}' returned the admin plex.tv token; skipped.");
+                continue;
+            }
+
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private async Task<string?> ResolveServerAccessTokenAsync(
+        string plexTvToken,
+        string label,
+        CancellationToken cancellationToken)
+    {
+        var token = await TryResolveServerAccessTokenAsync(plexTvToken, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(token))
+            return token;
+
+        _tokenWarnings.Add(
+            string.IsNullOrWhiteSpace(_machineIdentifier)
+                ? $"Plex Home user '{label}' has no server machine id; ratings/playlists were skipped."
+                : $"Plex Home user '{label}' has no server accessToken after switch; ratings/playlists were skipped.");
+        return null;
+    }
+
+    private async Task<string?> TryResolveServerAccessTokenAsync(
+        string plexTvToken,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_machineIdentifier))
+            return null;
+
+        using var client = new HttpClient { BaseAddress = new Uri("https://plex.tv"), Timeout = TimeSpan.FromSeconds(20) };
+        client.DefaultRequestHeaders.Add("X-Plex-Token", plexTvToken);
+        client.DefaultRequestHeaders.Add("X-Plex-Client-Identifier", ClientIdentifier);
+        client.DefaultRequestHeaders.Add("X-Plex-Product", "K7.Import");
+
+        foreach (var (path, accept) in new[]
+        {
+            ("/api/resources?includeHttps=1", "application/xml"),
+            ("/api/v2/resources?includeHttps=1", "application/json")
+        })
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.TryAddWithoutValidation("Accept", accept);
+            using var response = await client.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                continue;
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            var token = PlexHomeAuth.TryParseServerAccessToken(body, _machineIdentifier);
+            if (!string.IsNullOrWhiteSpace(token))
                 return token;
         }
 
@@ -278,6 +439,7 @@ public sealed class PlexClient : ISourceClient
                 Id = "owner",
                 Name = _ownerName
             });
+            _userNamesById["owner"] = _ownerName;
         }
 
         try
@@ -298,6 +460,7 @@ public sealed class PlexClient : ISourceClient
 
                         if (users.All(u => !string.Equals(u.Name, name, StringComparison.OrdinalIgnoreCase)))
                             users.Add(new SourceUser { Id = id, Name = name });
+                            _userNamesById[id] = name;
                     }
                 }
             }
@@ -307,18 +470,59 @@ public sealed class PlexClient : ISourceClient
             // /accounts may not be available on all setups
         }
 
+        if (_libraryDb is not null)
+        {
+            foreach (var account in _libraryDb.RatedAccounts)
+            {
+                if (users.Any(user =>
+                    string.Equals(user.Id, account.AccountId, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(account.Name)
+                        && string.Equals(user.Name, account.Name, StringComparison.OrdinalIgnoreCase))))
+                {
+                    continue;
+                }
+
+                var name = account.Name ?? account.AccountId;
+                users.Add(new SourceUser
+                {
+                    Id = account.AccountId,
+                    Name = name,
+                    Detail = "plex-db"
+                });
+                _userNamesById[account.AccountId] = name;
+                _tokenWarnings.Add(
+                    $"Plex DB account {account.AccountId} has {account.Count} rating(s) but is not in PMS /accounts. " +
+                    $"Import with --users {account.AccountId}.");
+            }
+        }
+
         foreach (var user in users)
             BindTokenAliases(user.Id, user.Name);
 
+        if (_libraryDb is not null)
+        {
+            var counts = _libraryDb.RatingCountLabels;
+            _tokenWarnings.Add(
+                counts.Count == 0
+                    ? "Plex DB opened but no per-account ratings were found (guid join)."
+                    : "Plex DB ratings by account: " + string.Join(", ", counts));
+        }
+        else
+        {
+            await DropTokensThatMirrorOwnerAsync(users, cancellationToken);
+        }
+
         var skipped = users
-            .Where(u => TryGetUserToken(u.Id) is null)
+            .Where(u => u.Id is not "owner"
+                && TryGetUserToken(u.Id) is null
+                && (_libraryDb is null || _libraryDb.RatingsFor(u.Id, u.Name).Count == 0))
             .Select(u => u.Name)
             .ToList();
         if (skipped.Count > 0)
         {
             _tokenWarnings.Add(
                 "Plex ratings/playlists for " + string.Join(", ", skipped) +
-                " were skipped: no per-user token (PIN-protected Home user, or plex.tv share token unavailable). " +
+                " were skipped: no isolated per-user token and no Plex DB ratings for that id/name. " +
                 "History for those users still comes from Tautulli/Tracearr.");
         }
 
@@ -333,7 +537,10 @@ public sealed class PlexClient : ISourceClient
 
     public async Task<List<SourceMediaItem>> GetLibraryItemsAsync(string libraryId, string userId, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        var useDbRatings = _libraryDb is not null && userId is not "owner";
         var token = TryGetUserToken(userId);
+        if (token is null && useDbRatings)
+            token = _ownerToken;
         if (token is null)
             return [];
 
@@ -357,7 +564,17 @@ public sealed class PlexClient : ISourceClient
                 libraryId, token, plexType, typePrefix, progress, cancellationToken));
         }
 
-        return items;
+        if (!useDbRatings)
+            return items;
+
+        _userNamesById.TryGetValue(userId, out var userName);
+        var dbRatings = _libraryDb!.RatingsFor(userId, userName);
+        return items
+            .Select(item => item with
+            {
+                Rating = dbRatings.TryGetValue(item.Id, out var rating) ? rating : null
+            })
+            .ToList();
     }
 
     private async Task<bool> UserCanAccessLibraryAsync(

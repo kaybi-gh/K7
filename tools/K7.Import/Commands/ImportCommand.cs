@@ -27,6 +27,7 @@ public sealed class ImportCommand
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify export folder (streaming history and/or Playlist*.json account data)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
+        var usersOption = new Option<string[]>("--users") { Description = "Only import these source users (remote id or remote name, case-insensitive). Repeatable. Off by default (all source users)", AllowMultipleArgumentsPerToken = true };
         var autoMapUsersOption = new Option<bool>("--auto-map-users") { Description = "Auto-map source users to K7 users with the same username (case-insensitive). Off by default; unmapped users get temp plex-/jellyfin-/... accounts" };
         var includeDynamicPlaylistsOption = new Option<bool>("--include-dynamic-playlists") { Description = "Import Plex smart/dynamic playlists as static snapshots (skipped by default; prefer recreating as K7 dynamic playlists)" };
         var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 - skip virtual media creation for unmatched items" };
@@ -47,6 +48,10 @@ public sealed class ImportCommand
         {
             Description = "Tracearr only: filter history to one media server (plex|jellyfin|emby, or a Tracearr server UUID / UUID prefix)"
         };
+        var plexDbOption = new Option<string>("--plex-db")
+        {
+            Description = "Plex only: path to a copy of com.plexapp.plugins.library.db (Home-user ratings by account_id; required when PMS serves admin ratings for local profiles)"
+        };
 
         var command = new RootCommand("K7 Import Tool - Import media data from Plex, Jellyfin, Tautulli, Tracearr, or Spotify into K7");
         command.Add(sourceOption);
@@ -57,6 +62,7 @@ public sealed class ImportCommand
         command.Add(includeOption);
         command.Add(spotifyDataDirOption);
         command.Add(userMappingOption);
+        command.Add(usersOption);
         command.Add(autoMapUsersOption);
         command.Add(includeDynamicPlaylistsOption);
         command.Add(onlyMatchExistingOption);
@@ -67,6 +73,7 @@ public sealed class ImportCommand
         command.Add(pathMapOption);
         command.Add(reportOption);
         command.Add(tracearrServerOption);
+        command.Add(plexDbOption);
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
@@ -78,6 +85,7 @@ public sealed class ImportCommand
             var include = parseResult.GetValue(includeOption);
             var spotifyDataDir = parseResult.GetValue(spotifyDataDirOption);
             var userMapping = parseResult.GetValue(userMappingOption) ?? [];
+            var userFilters = parseResult.GetValue(usersOption) ?? [];
             var autoMapUsers = parseResult.GetValue(autoMapUsersOption);
             var includeDynamicPlaylists = parseResult.GetValue(includeDynamicPlaylistsOption);
             var scope = ParseIncludeScope(include);
@@ -86,6 +94,7 @@ public sealed class ImportCommand
             var pathMaps = parseResult.GetValue(pathMapOption) ?? [];
             var reportPath = parseResult.GetValue(reportOption);
             var tracearrServer = parseResult.GetValue(tracearrServerOption);
+            var plexDbPath = parseResult.GetValue(plexDbOption);
 
             var strategy = new MergeStrategy
             {
@@ -97,7 +106,7 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, autoMapUsers, includeDynamicPlaylists, createMissing, fetchMetadata, strategy, pathMaps, reportPath, tracearrServer, cancellationToken);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, userFilters, autoMapUsers, includeDynamicPlaylists, createMissing, fetchMetadata, strategy, pathMaps, reportPath, tracearrServer, plexDbPath, cancellationToken);
         });
 
         return command;
@@ -112,6 +121,7 @@ public sealed class ImportCommand
         ImportScope scope,
         string? spotifyDataDir,
         string[] userMappings,
+        string[] userFilters,
         bool autoMapUsers,
         bool includeDynamicPlaylists,
         bool createMissing,
@@ -120,6 +130,7 @@ public sealed class ImportCommand
         string[] pathMapArgs,
         string? reportPath,
         string? tracearrServer,
+        string? plexDbPath,
         CancellationToken cancellationToken)
     {
         var sourceLower = source.ToLowerInvariant();
@@ -135,9 +146,12 @@ public sealed class ImportCommand
         if (!string.IsNullOrWhiteSpace(tracearrServer) && sourceLower != "tracearr")
             throw new ArgumentException("--tracearr-server is only valid with --source tracearr.");
 
+        if (!string.IsNullOrWhiteSpace(plexDbPath) && sourceLower != "plex")
+            throw new ArgumentException("--plex-db is only valid with --source plex.");
+
         ISourceClient sourceClient = sourceLower switch
         {
-            "plex" => new PlexClient(sourceUrl, sourceApiKey) { IncludeDynamicPlaylists = includeDynamicPlaylists },
+            "plex" => new PlexClient(sourceUrl, sourceApiKey, plexDbPath) { IncludeDynamicPlaylists = includeDynamicPlaylists },
             "jellyfin" => new JellyfinClient(sourceUrl, sourceApiKey),
             "tautulli" => new TautulliClient(sourceUrl, sourceApiKey),
             "tracearr" => new TracearrClient(sourceUrl, sourceApiKey, tracearrServer),
@@ -198,8 +212,32 @@ public sealed class ImportCommand
         if (sourceClient is PlexClient plexClient)
         {
             foreach (var warning in plexClient.TokenWarnings)
+            {
+                report.Warnings.Add(warning);
                 AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(warning)}[/]");
+            }
         }
+
+        var userFilter = SourceUserFilter.Apply(sourceUsers, userFilters);
+        if (userFilter.IsActive)
+        {
+            AnsiConsole.MarkupLine(
+                $"[dim]--users: kept {userFilter.Kept.Count}, skipped {userFilter.Excluded.Count}[/]");
+            foreach (var user in userFilter.Kept)
+            {
+                AnsiConsole.MarkupLine(
+                    $"  [green]kept[/] {Markup.Escape(user.DisplayName)} (id: {Markup.Escape(user.Id)})");
+            }
+
+            foreach (var filter in userFilter.UnmatchedFilters)
+            {
+                AnsiConsole.MarkupLine(
+                    $"[yellow]--users '{Markup.Escape(filter)}' matched no source user.[/]");
+            }
+
+            sourceUsers = userFilter.Kept.ToList();
+        }
+
         var k7Users = await k7Client.GetUsersAsync(cancellationToken);
         var parsedMappings = ParseUserMappings(userMappings);
         var userPlans = await ResolveUserMappingsAsync(

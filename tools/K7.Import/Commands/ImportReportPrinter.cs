@@ -42,6 +42,7 @@ internal static class ImportReportPrinter
         sb.AppendLine($"Generated: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}");
         sb.AppendLine();
 
+        AppendWarnings(sb, report);
         AppendUsers(sb, report);
         AppendMediaSummary(sb, report);
         AppendPerUser(sb, report, scope);
@@ -64,6 +65,7 @@ internal static class ImportReportPrinter
             ? "[yellow bold]DRY RUN report[/]"
             : "[bold]Import report[/]");
 
+        PrintWarnings(report);
         PrintUsers(report);
         PrintMediaSummary(report);
         PrintPerUser(report, scope);
@@ -239,6 +241,28 @@ internal static class ImportReportPrinter
 
         if (limit is not null && list.Count > limit.Value)
             AnsiConsole.MarkupLine($"  [dim]...and {list.Count - limit.Value} more (see --report file)[/]");
+    }
+
+    private static void PrintWarnings(ImportReport report)
+    {
+        if (report.Warnings.Count == 0)
+            return;
+
+        AnsiConsole.MarkupLine("\n[bold underline]Warnings[/]");
+        foreach (var warning in report.Warnings)
+            AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(warning)}[/]");
+    }
+
+    private static void AppendWarnings(StringBuilder sb, ImportReport report)
+    {
+        if (report.Warnings.Count == 0)
+            return;
+
+        sb.AppendLine("Warnings");
+        sb.AppendLine(new string('-', 72));
+        foreach (var warning in report.Warnings)
+            sb.AppendLine($"- {warning}");
+        sb.AppendLine();
     }
 
     private static void AppendUsers(StringBuilder sb, ImportReport report)

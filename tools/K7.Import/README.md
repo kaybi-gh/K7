@@ -6,7 +6,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Per-user via plex.tv share / Home-user tokens (not `accountID`). PIN-protected Home users are skipped. Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
+| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Owner + plex.tv friends via API tokens. Local Plex Home ratings need `--plex-db` (HTTP often returns the admin's stars). Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
 | **Jellyfin** | No | Yes (like=10, dislike=1) | Yes (incl. Liked Songs from favorites) | No per-play timestamps, use Tracearr for history. Heart favorites become a "Liked Songs" playlist (Audio) plus "Favoris" for movies/episodes |
 | **Tracearr** | Yes | No | No | Requires Tracearr **2.0+** (public API v2). Per-play history with timestamps plus TMDb/IMDb/TVDb IDs when available |
 | **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata. Uses Plex `title` (not `full_title`) and parses agent guids (`tmdb` / `imdb` / `tvdb`) when present. History rows rarely include guids, so the importer also calls `get_metadata` once per series (`grandparent_rating_key`) and attaches those ids as parent-series ids. A history row tagged `episode` with no show title is treated as a movie (Plex/Tautulli sometimes mis-tags films like Parasite) |
@@ -113,9 +113,11 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--dry-run` | Full preview without writing: user plans, media match/create/unmatched counts, per-user history/ratings/playlists |
 | `--report`, `-o` | Write the full report (including complete media lists) to a UTF-8 text file. Console then shows a summary only |
 | `--tracearr-server` | Tracearr only: limit history to one backend (`plex`, `jellyfin`, `emby`, or a Tracearr server UUID). Listed at connect time |
+| `--plex-db` | Plex only: path to a copy of `com.plexapp.plugins.library.db` (put `.db-wal` / `.db-shm` next to it if they exist). Required for local Home-user ratings |
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
 | `--spotify-data-dir` | Path to Spotify export folder (`endsong_*` / `StreamingHistory_*` for history, `Playlist*.json` for playlists) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
+| `--users` | Only import these source users (remote id or remote name, case-insensitive, repeatable). Default: all source users |
 | `--auto-map-users` | Auto-map source users to K7 users with the same username (case-insensitive). Off by default |
 | `--include-dynamic-playlists` | Import Plex smart/dynamic playlists as **static** snapshots. Off by default |
 | `--only-match-existing` | Only import data for media that already exists in K7 - skip virtual media creation for unmatched items |
@@ -134,6 +136,21 @@ k7-import -s plex \
   --source-api-key "your-plex-token" \
   --k7-url http://localhost:7080
 ```
+
+**Plex Home ratings (API token + library DB):**
+```bash
+k7-import -s plex \
+  --source-url http://192.168.1.10:32400 \
+  --source-api-key "your-plex-token" \
+  --k7-url http://localhost:7080 \
+  --include ratings \
+  --plex-db ./com.plexapp.plugins.library.db \
+  --users 20281801 \
+  --user-mapping "20281801:charlotte" \
+  --dry-run
+```
+
+`--source-url` and `--source-api-key` stay required: the DB supplies per-account stars, the PMS API still lists libraries and metadata for matching. Use the account id printed in `Plex DB ratings by account` (a Home display name on PMS may have a different id, or 0 rows).
 
 **Import from Jellyfin with user mapping:**
 ```bash
@@ -241,16 +258,44 @@ With `--user-mapping`, data is imported directly into existing K7 users:
 --user-mapping "PlexUser:k7user" --user-mapping "AnotherUser:anotherk7user"
 ```
 
+`--users` limits **which source users** are processed (remote id or remote name, case-insensitive). It does not replace `--user-mapping`. For Plex Home ratings, prefer the SQLite account id from the `--plex-db` warning line, not only the PMS display name:
+
+```bash
+--users 20281801 --user-mapping "20281801:charlotte"
+```
+
+Plex owner id is `owner` (name is `myPlexUsername`, often the plex.tv email). Unmatched `--users` values are warned and ignored.
+
 ## Plex per-user ratings and playlists
 
-Plex `userRating` and `/playlists` always belong to the **authenticated token**, not to `accountID`. The importer therefore asks plex.tv for each friend's share token (and switches to PIN-less Plex Home users), then queries PMS with that token.
+A Plex admin token is **not** enough for every user. PMS `userRating` and `/playlists` follow the request token, not `accountID`. There is no official "ratings for this Home profile" HTTP call.
 
-- The admin token owner always imports.
-- Shared friends import when plex.tv returns their `accessToken`.
-- Plex Home users with a PIN are skipped (Plex requires the PIN to switch). Use Tautulli/Tracearr for their watch history.
-- If plex.tv is unreachable, only the token owner is imported.
+| Who | What works | How |
+|---|---|---|
+| Server owner (admin token) | Ratings + static playlists | `--source-api-key` only |
+| plex.tv friends (shared server) | Ratings + playlists when plex.tv returns their `accessToken` | Same token; no `--plex-db` |
+| Local Plex Home profiles | Star ratings in SQLite only | `--plex-db` (see below) |
+| Home profile with a PIN | HTTP switch skipped | `--plex-db` for ratings; Tautulli/Tracearr for watch history |
 
-Map those Plex names onto K7 accounts with `--user-mapping` / `--auto-map-users` so ratings land on the right K7 user instead of a temp `plex-*` account.
+The HTTP Home-user path (plex.tv switch, then `/api/resources` for a server `accessToken`) is attempted, then **discarded** if it is the admin token or if PMS returns the same stars as the admin. Importing that payload would copy the owner's ratings onto `plex-charlotte`.
+
+### `--plex-db` (local Home ratings)
+
+Copy from the Plex host (stop Plex, or copy all three files if Plex is running):
+
+```
+.../Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db
+com.plexapp.plugins.library.db-wal
+com.plexapp.plugins.library.db-shm
+```
+
+Keep `-wal` / `-shm` next to the `.db` when they exist. Pass only the `.db` path. SQLite opens the siblings automatically.
+
+The report prints `Plex DB ratings by account: 1 (Kaybi)=5131, 20281801=2245, ...`. Use those **SQLite** ids with `--users` / `--user-mapping`. They often differ from PMS `/accounts` ids (a current Home user can have 0 rows while an unnamed older `account_id` still holds the stars).
+
+`--plex-db` does not replace `--source-url` / `--source-api-key`. The DB is the rating values; the API is still the catalog (titles, GUIDs, paths) and playlists.
+
+Map names or ids onto K7 accounts with `--user-mapping` / `--auto-map-users` so data does not land on temp `plex-*` users.
 
 ## Plex Dynamic Playlists
 

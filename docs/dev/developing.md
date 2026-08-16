@@ -129,7 +129,7 @@ New behavior should ship with tests in the matching project (unit, bUnit, functi
 
 | Project | What | CI |
 |---|---|---|
-| `Domain.UnitTests` / `Application.UnitTests` | Unit | `build.yml` (fast) |
+| `Domain.UnitTests` / `Application.UnitTests` / `Import.UnitTests` | Unit | `build.yml` (fast) |
 | `Clients.ComponentTests` | bUnit | fast |
 | `Web.SmokeTests` / `Clients.DesignSystem.SmokeTests` | Smoke | fast |
 | `Clients.MAUI.SmokeTests` | MAUI smoke | `maui-smoke` (Windows) |

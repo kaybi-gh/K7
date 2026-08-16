@@ -100,6 +100,7 @@ public sealed record UserImportPreview
 public sealed class ImportReport
 {
     public bool DryRun { get; init; }
+    public List<string> Warnings { get; } = [];
     public List<UserPlan> Users { get; } = [];
     public List<UserImportPreview> PerUser { get; } = [];
     public Dictionary<string, ItemMatchResult> MediaBySourceId { get; } = new(StringComparer.Ordinal);
