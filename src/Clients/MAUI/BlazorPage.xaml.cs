@@ -647,6 +647,9 @@ public partial class BlazorPage : ContentPage
             // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
             // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
             NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
+            NativeVideoDebug.Log(
+                "OpenNativePlayerSource local=" + LocalPlaybackUrl.IsLocalFile(source.Url)
+                + " url=" + (LocalPlaybackUrl.IsLocalFile(source.Url) ? "file" : "http"));
             // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
             ConfigureNativeVideoPlayerAfterOpen();
 #if ANDROID
@@ -660,7 +663,9 @@ public partial class BlazorPage : ContentPage
 
             // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
             // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
-            BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
+            // Skip local/offline files: HTTP factory cannot open filesystem or file:// URLs.
+            if (!LocalPlaybackUrl.IsLocalFile(source.Url))
+                BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
 #endif
             NativePlayer.Play();
         }
@@ -1633,8 +1638,13 @@ public partial class BlazorPage : ContentPage
 
     private MediaSource CreateMediaSourceWithAuth(string url)
     {
-        if (File.Exists(url))
-            return MediaSource.FromFile(url);
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(url, out var localPath) && File.Exists(localPath))
+        {
+            // FromUri(file://) without HTTP headers: ExoPlayer DefaultDataSource opens the file.
+            // FromFile(raw path) can SetUri("/data/...") which some ExoPlayer binds mishandle;
+            // never attach Authorization headers or the toolkit switches to DefaultHttpDataSource.
+            return MediaSource.FromUri(LocalPlaybackUrl.CreateFileUri(localPath));
+        }
 
         var authValue = ResolveNativePlayerAuthorizationHeader();
         if (!string.IsNullOrEmpty(authValue))

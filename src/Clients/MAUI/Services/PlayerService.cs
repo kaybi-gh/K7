@@ -682,6 +682,9 @@ internal class PlayerService(
 
     private static string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
     {
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(baseUrl, out var localPath))
+            return localPath;
+
         var url = baseUrl;
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]DefaultSubtitleTrackIndex=[^&]*", "");
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]SubtitleBurnInStreamIndex=[^&]*", "");
@@ -698,6 +701,9 @@ internal class PlayerService(
 
     private static string BuildManifestUrlWithAudioTrack(string baseUrl, int audioTrackIndex)
     {
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(baseUrl, out var localPath))
+            return localPath;
+
         var url = System.Text.RegularExpressions.Regex.Replace(
             baseUrl, @"[&?]DefaultAudioTrackIndex=[^&]*", "");
         var separator = url.Contains('?') ? "&" : "?";
@@ -709,6 +715,9 @@ internal class PlayerService(
     /// </summary>
     private static string BuildManifestUrlWithQuality(string baseUrl, VideoQualityOption? quality)
     {
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(baseUrl, out var localPath))
+            return localPath;
+
         var url = baseUrl;
         var qualityValue = quality is null || quality.IsOriginal ? (string?)null : quality.Label;
 
@@ -747,6 +756,9 @@ internal class PlayerService(
 
     private static string BuildManifestUrlWithStartPosition(string baseUrl, double? startPosition)
     {
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(baseUrl, out var localPath))
+            return localPath;
+
         var url = System.Text.RegularExpressions.Regex.Replace(baseUrl, @"[&?]startSeconds=[^&]*", "");
         url = url.TrimEnd('?', '&');
 

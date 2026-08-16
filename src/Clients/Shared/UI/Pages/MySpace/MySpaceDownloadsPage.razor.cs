@@ -189,21 +189,13 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
     {
         PlaybackProgressTracker.StartTracking(item.MediaId, isAuthenticated: true, indexedFileId: item.IndexedFileId);
 
-        if (item.SubtitleTracks is { Length: > 0 })
-        {
-            PlayerService.SetSubtitleTracks(item.SubtitleTracks);
-        }
-
-        await PlayerService.ShowAsync();
-        PlayerService.Source = new PlayerSource
-        {
-            MediaId = item.MediaId,
-            Url = item.MediaLocalPath,
-            MimeType = "video/mp4",
-            PendingSeekTime = item.LastPlaybackPosition > 0 ? item.LastPlaybackPosition : null
-        };
-
-        PlayerService.Play();
+        await PlayerService.PlayIndexedFileAsync(
+            item.IndexedFileId,
+            [],
+            item.SubtitleTracks,
+            mediaId: item.MediaId,
+            title: item.Title,
+            startPosition: item.LastPlaybackPosition > 0 ? item.LastPlaybackPosition : null);
     }
 
     private void OnProgressChanged(DownloadProgressInfo info)

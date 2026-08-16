@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
 using K7.Shared.Dtos;
@@ -113,7 +114,7 @@ public class StreamUriService : IStreamUriService
             PlaybackSettings = new PlaybackSettingsDto(),
             Source = new IndexedFileStreamUri
             {
-                Uri = new Uri(localPath),
+                Uri = LocalPlaybackUrl.CreateFileUri(localPath),
                 MimeType = GetMimeTypeFromExtension(localPath)
             }
         };

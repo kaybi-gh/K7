@@ -163,6 +163,9 @@ public partial class BlazorPage
     /// </summary>
     private void BindAndroidExoPlayerWithLongHttpTimeouts(string url)
     {
+        if (LocalPlaybackUrl.IsLocalFile(url))
+            return;
+
         const int connectTimeoutMs = 60_000;
         const int readTimeoutMs = 120_000;
 
@@ -246,6 +249,9 @@ public partial class BlazorPage
 
     private void BindAndroidExoPlayerWithLongHttpTimeoutsCore(string url, int connectTimeoutMs, int readTimeoutMs)
     {
+        if (LocalPlaybackUrl.IsLocalFile(url))
+            return;
+
         try
         {
             var player = UnwrapPlayer(GetPlayer(NativePlayer));

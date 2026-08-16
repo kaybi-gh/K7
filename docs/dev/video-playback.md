@@ -16,6 +16,8 @@ Browse / library UI stays Blazor Hybrid. On Android/iOS, when `IPlayerService.Is
 
 Android keeps `AndroidViewType=TextureView` so the XAML overlay composites above the picture. `SurfaceView` ignores normal Z-order and can hide sibling overlays.
 
+Offline / local files (`file://` or a filesystem path from the download store) use MediaElement `FromFile`. After assigning `Source`, Android rebinds ExoPlayer with `DefaultHttpDataSource` and longer timeouts so HLS `init.m4s` can wait on ffmpeg. That rebind is skipped for local files, otherwise playback never starts. `StreamUriService` builds a `file://` URI for offline sessions (`new Uri(androidPath)` throws `UriFormatException` because the path has no scheme).
+
 `NativeVideoPlayerOverlay` (`src/Clients/MAUI/Controls/Video/`) targets 1:1 parity with the Blazor
 `VideoPlayerControlsOverlay`: transport, seek bar with chapter ticks/sprite thumbnail preview and
 hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, with TV D-pad
