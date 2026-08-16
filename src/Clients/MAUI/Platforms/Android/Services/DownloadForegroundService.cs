@@ -156,14 +156,15 @@ public class DownloadForegroundService : Service
             .SetContentTitle(title)!
             .SetContentText(text)!
             .SetSmallIcon(Resource.Drawable.ic_notification)!
-            .SetColor(ContextCompat.GetColor(this, Resource.Color.colorAccent))
+            .SetColor(ContextCompat.GetColor(this, Resource.Color.colorAccent))!
             .SetOngoing(true)!
             .SetOnlyAlertOnce(true)!
             .SetContentIntent(openApp)!
             .SetProgress(100, percent, indeterminate)!
             .AddAction(0, DownloadKeepAliveStrings.Cancel, cancelIntent)!;
 
-        return builder.Build();
+        return builder.Build()
+            ?? throw new InvalidOperationException("Failed to build download notification.");
     }
 
     private static string FormatProgress(DownloadQueueItem item)
