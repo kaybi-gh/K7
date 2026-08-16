@@ -57,12 +57,33 @@ public sealed class MediaAccessFilter(IApplicationDbContext context)
     public IQueryable<Guid> GetAccessibleMediaIds(Guid userId) =>
         ApplyExclusions(context.Medias, userId).Select(m => m.Id);
 
-    public async Task<ContentRestrictionProfile?> GetRestrictionProfileAsync(
+    public Task<ContentRestrictionProfile?> GetRestrictionProfileAsync(
         Guid userId,
         CancellationToken cancellationToken = default) =>
-        await context.ContentRestrictionProfiles
+        GetRestrictionProfileAsync(userId, sharedProfileId: null, cancellationToken);
+
+    /// <summary>
+    /// Resolves the restriction profile for the current session: the shared profile's assigned
+    /// profile when a shared session is active (including none), otherwise the user's personal one.
+    /// </summary>
+    public async Task<ContentRestrictionProfile?> GetRestrictionProfileAsync(
+        Guid userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        if (sharedProfileId is { } profileId)
+        {
+            return await context.SharedProfiles
+                .AsNoTracking()
+                .Where(p => p.Id == profileId)
+                .Select(p => p.ContentRestrictionProfile)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        return await context.ContentRestrictionProfiles
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+    }
 
     /// <summary>
     /// Applies exclusions and the content restriction profile in one pass.

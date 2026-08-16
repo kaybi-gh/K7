@@ -2,6 +2,7 @@ using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Entities.Persons;
@@ -18,12 +19,17 @@ public record GetPersonKnownForQuery : IRequest<List<PersonKnownForItemDto>>
 
 public class GetPersonKnownForQueryHandler(
     IApplicationDbContext context,
-    IPersonCreditsProvider creditsProvider)
+    IPersonCreditsProvider creditsProvider,
+    IUser currentUser,
+    MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetPersonKnownForQuery, List<PersonKnownForItemDto>>
 {
     public async Task<List<PersonKnownForItemDto>> Handle(
         GetPersonKnownForQuery request, CancellationToken cancellationToken)
     {
+        if (await HasActiveRestrictionProfileAsync(cancellationToken))
+            return [];
+
         var person = await context.Persons
             .AsNoTracking()
             .Include(p => p.ExternalIds)
@@ -71,5 +77,16 @@ public class GetPersonKnownForQueryHandler(
                 PosterUrl = c.PosterPath
             })
             .ToList();
+    }
+
+    private async Task<bool> HasActiveRestrictionProfileAsync(CancellationToken cancellationToken)
+    {
+        if (currentUser.Id is not { } userId)
+            return false;
+
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(
+            userId, sharedProfileId, cancellationToken);
+        return restrictionProfile is not null;
     }
 }

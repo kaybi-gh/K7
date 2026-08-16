@@ -200,7 +200,7 @@ While a shared profile is active:
 
 - Home continue-watching is scoped to the profile only. Playback history and watch stats for the profile show group activity while the hat is on. Your personal history and stats include shared-profile sessions for every member of the group (via the acting player and co-viewer credits), not only the person who controlled playback.
 - The effective home layout is the profile's own layout if the host set one, otherwise the server default (never a member's personal layout).
-- Content restrictions come from the profile's assigned restriction profile, not the acting member's personal restrictions.
+- Content restrictions come from the profile's assigned restriction profile, not the acting member's personal restrictions. Person pages also hide **Known for** (external posters) and any filmography titles the restriction would block.
 - Playlists shared to the profile appear in members' navigation for the duration of the session.
 - Reviews stay personal. Leaving may transfer the host; if only one member would remain, the profile is removed.
 

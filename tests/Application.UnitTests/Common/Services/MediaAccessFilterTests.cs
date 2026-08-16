@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Infrastructure.Database.Context.Data;
@@ -169,5 +170,64 @@ public class MediaAccessFilterTests
         results.Should().Contain(activeRemoteMediaId);
         results.Should().NotContain(downRemoteMediaId);
         results.Should().Contain(_excludedMediaId);
+    }
+
+    [Test]
+    public async Task GetRestrictionProfileAsync_ShouldReturnPersonalProfile_WhenNoSharedProfile()
+    {
+        var profile = new ContentRestrictionProfile { Name = "Personal" };
+        _context.ContentRestrictionProfiles.Add(profile);
+        profile.Users.Add(await _context.Users.SingleAsync(u => u.Id == _userId));
+        await _context.SaveChangesAsync();
+
+        var result = await _filter.GetRestrictionProfileAsync(_userId);
+
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("Personal");
+    }
+
+    [Test]
+    public async Task GetRestrictionProfileAsync_ShouldReturnSharedProfileRestriction_WhenSharedSessionIsActive()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var personal = new ContentRestrictionProfile { Name = "Personal" };
+        var shared = new ContentRestrictionProfile { Name = "Shared" };
+        _context.ContentRestrictionProfiles.AddRange(personal, shared);
+        personal.Users.Add(await _context.Users.SingleAsync(u => u.Id == _userId));
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Kids",
+            HostUserId = _userId,
+            CreatedByUserId = _userId,
+            ContentRestrictionProfile = shared
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _filter.GetRestrictionProfileAsync(_userId, sharedProfileId);
+
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("Shared");
+    }
+
+    [Test]
+    public async Task GetRestrictionProfileAsync_ShouldReturnNull_WhenSharedProfileHasNoRestriction()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var personal = new ContentRestrictionProfile { Name = "Personal" };
+        _context.ContentRestrictionProfiles.Add(personal);
+        personal.Users.Add(await _context.Users.SingleAsync(u => u.Id == _userId));
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Adults",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _filter.GetRestrictionProfileAsync(_userId, sharedProfileId);
+
+        result.Should().BeNull();
     }
 }

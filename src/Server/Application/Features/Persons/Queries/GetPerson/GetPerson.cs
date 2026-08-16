@@ -1,13 +1,16 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
+using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 
 namespace K7.Server.Application.Features.Persons.Queries.GetPerson;
 
 public record GetPersonQuery(Guid Id) : IRequest<Person>;
 
-public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentUser, MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetPersonQuery, Person>
 {
     public async Task<Person> Handle(GetPersonQuery request, CancellationToken cancellationToken)
@@ -114,6 +117,31 @@ public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentU
         }
 
         entity.Roles = PersonRoleAvailabilityHelper.FilterPlayableRoles(entity.Roles, excludedLibraryIds);
+
+        if (currentUser.Id is { } restrictionUserId)
+            entity.Roles = await FilterRestrictedRolesAsync(entity.Roles, restrictionUserId, cancellationToken);
+
         return entity;
+    }
+
+    private async Task<List<BasePersonRole>> FilterRestrictedRolesAsync(
+        IEnumerable<BasePersonRole> roles,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(
+            userId, sharedProfileId, cancellationToken);
+        if (restrictionProfile is null)
+            return roles.ToList();
+
+        var roleMediaIds = roles.Select(r => r.MediaId).Distinct().ToList();
+        var allowedMediaIds = await ContentRestrictionEvaluator.ApplyRestriction(
+                context.Medias.AsNoTracking().Where(m => roleMediaIds.Contains(m.Id)),
+                restrictionProfile)
+            .Select(m => m.Id)
+            .ToHashSetAsync(cancellationToken);
+
+        return roles.Where(r => allowedMediaIds.Contains(r.MediaId)).ToList();
     }
 }

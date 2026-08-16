@@ -286,6 +286,7 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 ### Users and authentication
 
 - Activate Guest, roles, profile restrictions under Admin -> Users.
+- Restriction profiles hide matching library titles from browse, search, Home, and person filmography. Person **Known for** (external posters not in the library) is hidden entirely while a restriction profile is active, including on a shared profile.
 - Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
 - Authentication panel: **read-only** view of local / OIDC flags from config.
 
