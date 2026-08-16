@@ -19,7 +19,7 @@ public class PostgreSqlTestContainerDatabase : ITestDatabase
 
     public PostgreSqlTestContainerDatabase()
     {
-        _container = new PostgreSqlBuilder()
+        _container = new PostgreSqlBuilder("postgres:15.1")
             .WithAutoRemove(true)
             .Build();
     }
