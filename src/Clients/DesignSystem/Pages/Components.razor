@@ -544,12 +544,16 @@
 
     <section id="rating-stars" class="ds-section">
         <h2>RatingStars</h2>
-        <p class="ds-description">10-point scale displayed as stars (0-5). Supports interactive rating.</p>
+        <p class="ds-description">10-point scale shown as 0-5 stars with half-star steps. Drag (or click) to set; drag left to clear.</p>
         <div class="ds-preview">
             <div class="d-flex flex-col gap-2">
                 <div class="d-flex align-center gap-3">
                     <span style="font-size:var(--text-sm);width:60px">No rating</span>
                     <RatingStars MediaId="@Guid.NewGuid()" Value="null" Size="md" />
+                </div>
+                <div class="d-flex align-center gap-3">
+                    <span style="font-size:var(--text-sm);width:60px">1/10</span>
+                    <RatingStars MediaId="@Guid.NewGuid()" Value="1" Size="md" />
                 </div>
                 <div class="d-flex align-center gap-3">
                     <span style="font-size:var(--text-sm);width:60px">4/10</span>

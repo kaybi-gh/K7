@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="K7.Clients.ComponentTests" />
+  </ItemGroup>
+
+
+  <ItemGroup>
     <Content Update="libman.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>

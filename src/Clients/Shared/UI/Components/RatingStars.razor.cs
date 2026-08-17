@@ -7,6 +7,8 @@ using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
+internal sealed record RatingPointerRect(double Left, double Top, double Width, double Height);
+
 public partial class RatingStars : IAsyncDisposable
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -41,10 +43,12 @@ public partial class RatingStars : IAsyncDisposable
     private int? _valueBeforeEdit;
     private DotNetObjectReference<RatingStars>? _dotNetRef;
     private bool _syncSubscribed;
+    private bool _isDragging;
+    private bool _dragMoved;
+    private int? _pointerDownValue;
+    private RatingPointerRect? _pointerBounds;
 
-    private int StarCount => _currentValue.HasValue ? (int)Math.Ceiling(_currentValue.Value / 2.0) : 0;
-
-    private string DefaultAriaLabel => StarCount > 0 ? $"{StarCount}/5" : "0/5";
+    private string DefaultAriaLabel => RatingStarValue.FormatStarsLabel(_currentValue ?? 0);
 
     private string SizeClass => $"rating-stars--{NormalizedSize}";
 
@@ -62,12 +66,9 @@ public partial class RatingStars : IAsyncDisposable
         _ => K7IconSize.Sm
     };
 
-    private bool IsFilled(int star)
-    {
-        if (_hoveredValue.HasValue)
-            return star <= _hoveredValue.Value;
-        return star <= StarCount;
-    }
+    private int DisplayValue => _hoveredValue ?? _currentValue ?? 0;
+
+    private string StarModifierClass(int star) => RatingStarValue.StarModifierClass(star, DisplayValue);
 
     protected override void OnInitialized()
     {
@@ -132,14 +133,104 @@ public partial class RatingStars : IAsyncDisposable
         });
     }
 
-    private void OnPointerOver(int star)
+    private async Task OnPointerDown(PointerEventArgs e)
     {
-        _hoveredValue = star;
+        if (e.Button != 0)
+            return;
+
+        _isDragging = true;
+        _dragMoved = false;
+        await EnsurePointerBoundsAsync();
+        var value = ValueFromPointer(e.ClientX);
+        _pointerDownValue = value;
+        _hoveredValue = value;
     }
 
-    private void OnPointerOut()
+    private void OnPointerMove(PointerEventArgs e)
     {
+        if (_isDragging)
+        {
+            var value = ValueFromPointer(e.ClientX);
+            if (value != _pointerDownValue)
+                _dragMoved = true;
+            if (_hoveredValue != value)
+                _hoveredValue = value;
+            return;
+        }
+
+        if (e.PointerType is "mouse" or "pen")
+            _ = PreviewHoverAsync(e.ClientX);
+    }
+
+    private async Task OnPointerUp(PointerEventArgs e)
+    {
+        if (!_isDragging)
+            return;
+
+        var value = _hoveredValue ?? ValueFromPointer(e.ClientX);
+        if (_pointerBounds is { Width: > 0 } && !_dragMoved && value == (_currentValue ?? 0))
+            value = 0;
+
+        await EndPointerAsync(value);
+    }
+
+    private Task OnPointerCancel()
+    {
+        if (!_isDragging)
+            return Task.CompletedTask;
+
         _hoveredValue = null;
+        return EndPointerAsync(_currentValue ?? 0, persist: false);
+    }
+
+    private async Task EndPointerAsync(int value, bool persist = true)
+    {
+        _isDragging = false;
+        _dragMoved = false;
+        _pointerDownValue = null;
+        _hoveredValue = null;
+        _pointerBounds = null;
+        if (persist)
+            await CommitValueAsync(value);
+    }
+
+    private void OnPointerLeave()
+    {
+        if (_isDragging)
+            return;
+        _hoveredValue = null;
+        _pointerBounds = null;
+    }
+
+    private async Task PreviewHoverAsync(double clientX)
+    {
+        await EnsurePointerBoundsAsync();
+        var value = ValueFromPointer(clientX);
+        if (_hoveredValue != value)
+            _hoveredValue = value;
+    }
+
+    private async Task EnsurePointerBoundsAsync()
+    {
+        if (_pointerBounds is { Width: > 0 })
+            return;
+
+        try
+        {
+            _pointerBounds = await JS.InvokeAsync<RatingPointerRect>("K7.getBoundingRect", _element);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
+    }
+
+    private int ValueFromPointer(double clientX)
+    {
+        if (_pointerBounds is not { Width: > 0 } bounds)
+            return _hoveredValue ?? _currentValue ?? 0;
+
+        var ratio = (clientX - bounds.Left) / bounds.Width;
+        return RatingStarValue.FromRatio(ratio);
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
@@ -151,11 +242,12 @@ public partial class RatingStars : IAsyncDisposable
         if (!isEditing)
             return;
 
-        var newStars = e.Key == "ArrowRight"
-            ? Math.Min(5, StarCount + 1)
-            : Math.Max(0, StarCount - 1);
+        var current = _currentValue ?? 0;
+        var next = e.Key == "ArrowRight"
+            ? Math.Min(RatingStarValue.Max, current + 1)
+            : Math.Max(0, current - 1);
 
-        _currentValue = newStars > 0 ? newStars * 2 : null;
+        _currentValue = next > 0 ? next : null;
         await ValueChanged.InvokeAsync(_currentValue);
     }
 
@@ -168,7 +260,7 @@ public partial class RatingStars : IAsyncDisposable
     [JSInvokable("OnEditCommit")]
     public async Task OnEditCommit()
     {
-        var rating = _currentValue.HasValue ? _currentValue.Value : 0;
+        var rating = _currentValue ?? 0;
         if (DeferPersistence)
         {
             await ValueChanged.InvokeAsync(_currentValue);
@@ -186,20 +278,13 @@ public partial class RatingStars : IAsyncDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private Task OnStarClick(int star)
+    private async Task CommitValueAsync(int value)
     {
-        _hoveredValue = null;
-        var newStars = star == StarCount ? 0 : star;
-        return SetRating(newStars);
-    }
-
-    private async Task SetRating(int stars)
-    {
-        var newValue = stars * 2;
-        _currentValue = newValue > 0 ? newValue : null;
+        var normalized = value > 0 ? value : (int?)null;
+        _currentValue = normalized;
         await ValueChanged.InvokeAsync(_currentValue);
         if (!DeferPersistence)
-            await RateAsync(newValue);
+            await RateAsync(value);
     }
 
     private async Task RateAsync(int value)

@@ -309,11 +309,11 @@ a.media-review-card__name:hover {
     padding: 0;
 }
 
-.media-review-card__rating-pill ::deep .rating-star {
+.media-review-card__rating-pill ::deep .rating-star-empty {
     color: color-mix(in srgb, var(--color-text) 35%, transparent);
 }
 
-.media-review-card__rating-pill ::deep .rating-star.star--filled {
+.media-review-card__rating-pill ::deep .rating-star-fill {
     color: var(--color-text);
 }
 

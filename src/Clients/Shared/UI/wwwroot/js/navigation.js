@@ -4112,11 +4112,16 @@ K7.RatingStars = {
         var handlers = {
             start: function () { dotNetRef.invokeMethodAsync('OnEditStart'); },
             commit: function () { dotNetRef.invokeMethodAsync('OnEditCommit'); },
-            cancel: function () { dotNetRef.invokeMethodAsync('OnEditCancel'); }
+            cancel: function () { dotNetRef.invokeMethodAsync('OnEditCancel'); },
+            pointerDown: function (e) {
+                if (e.button != null && e.button !== 0) return;
+                try { el.setPointerCapture(e.pointerId); } catch (ex) { }
+            }
         };
         el.addEventListener('sn:editstart', handlers.start);
         el.addEventListener('sn:editcommit', handlers.commit);
         el.addEventListener('sn:editcancel', handlers.cancel);
+        el.addEventListener('pointerdown', handlers.pointerDown);
         K7.RatingStars._instances.set(el, handlers);
     },
     dispose: function (el) {
@@ -4125,6 +4130,7 @@ K7.RatingStars = {
             el.removeEventListener('sn:editstart', h.start);
             el.removeEventListener('sn:editcommit', h.commit);
             el.removeEventListener('sn:editcancel', h.cancel);
+            el.removeEventListener('pointerdown', h.pointerDown);
             K7.RatingStars._instances.delete(el);
         }
     }

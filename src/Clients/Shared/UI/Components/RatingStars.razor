@@ -11,11 +11,16 @@
         <span class="rating-stars rating-stars--readonly @SizeClass"
               role="img"
               aria-label="@(AriaLabel ?? DefaultAriaLabel)">
-            @for (var i = 1; i <= 5; i++)
+            @for (var i = 1; i <= RatingStarValue.StarCount; i++)
             {
                 var star = i;
-                <span class="rating-star @(IsFilled(star) ? "star--filled" : "")">
-                    <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" IconSize="@IconSize" />
+                <span class="rating-star @StarModifierClass(star)">
+                    <span class="rating-star-empty">
+                        <K7Icon Icon="@Phosphor.Star" IconSize="@IconSize" />
+                    </span>
+                    <span class="rating-star-fill">
+                        <K7Icon Icon="@Phosphor.Fill.Star" IconSize="@IconSize" />
+                    </span>
                 </span>
             }
         </span>
@@ -23,24 +28,34 @@
     else
     {
         <span @ref="_element"
-              class="rating-stars focusable @SizeClass"
+              class="rating-stars focusable @SizeClass @(_isDragging ? "rating-stars--dragging" : "")"
               role="slider"
               data-sn-activatable
               aria-valuemin="0"
-              aria-valuemax="5"
-              aria-valuenow="@StarCount"
+              aria-valuemax="@RatingStarValue.Max"
+              aria-valuenow="@DisplayValue"
+              aria-valuetext="@RatingStarValue.FormatStarsLabel(DisplayValue)"
               aria-label="Rating"
               tabindex="0"
               @onclick:stopPropagation="true"
-              @onkeydown="HandleKeyDown">
-            @for (var i = 1; i <= 5; i++)
+              @onpointerdown:stopPropagation="true"
+              @onkeydown="HandleKeyDown"
+              @onpointerdown="OnPointerDown"
+              @onpointermove="OnPointerMove"
+              @onpointerup="OnPointerUp"
+              @onlostpointercapture="OnPointerUp"
+              @onpointercancel="OnPointerCancel"
+              @onpointerleave="OnPointerLeave">
+            @for (var i = 1; i <= RatingStarValue.StarCount; i++)
             {
                 var star = i;
-                <span class="rating-star @(IsFilled(star) ? "star--filled" : "")"
-                      @onclick="() => OnStarClick(star)"
-                      @onpointerover="() => OnPointerOver(star)"
-                      @onpointerout="OnPointerOut">
-                    <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" IconSize="@IconSize" />
+                <span class="rating-star @StarModifierClass(star)">
+                    <span class="rating-star-empty">
+                        <K7Icon Icon="@Phosphor.Star" IconSize="@IconSize" />
+                    </span>
+                    <span class="rating-star-fill">
+                        <K7Icon Icon="@Phosphor.Fill.Star" IconSize="@IconSize" />
+                    </span>
                 </span>
             }
         </span>
