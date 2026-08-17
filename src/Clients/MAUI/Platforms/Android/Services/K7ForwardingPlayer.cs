@@ -1,14 +1,26 @@
+using AndroidX.Concurrent.Futures;
 using AndroidX.Media3.Common;
+using Google.Common.Util.Concurrent;
+
+#pragma warning disable XAOBS001 // ResolvableFuture is the only way to create IListenableFuture in .NET Android bindings
 
 namespace K7.Clients.MAUI.Platforms.Android.Services;
 
 /// <summary>
-/// Wraps an ExoPlayer instance to intercept next/previous commands from the MediaSession.
-/// This allows Android Auto and notification controls to trigger queue navigation
-/// through IAudioPlayerService instead of Media3's native playlist.
+/// Session-facing player that forwards to the active ExoPlayer and can swap that
+/// instance in place after a crossfade (Media3 ForwardingSimpleBasePlayer.setPlayer).
+/// Next/previous from Android Auto and notifications go through IAudioPlayerService
+/// instead of Media3's native playlist.
 /// </summary>
-public class K7ForwardingPlayer : ForwardingPlayer
+public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 {
+    // Media3 command constants: SEEK_TO_PREVIOUS=7, SEEK_TO_PREVIOUS_MEDIA_ITEM=8,
+    // SEEK_TO_NEXT=9, SEEK_TO_NEXT_MEDIA_ITEM=10
+    private const int CommandSeekToPrevious = 7;
+    private const int CommandSeekToPreviousMediaItem = 8;
+    private const int CommandSeekToNext = 9;
+    private const int CommandSeekToNextMediaItem = 10;
+
     private readonly Func<bool> _hasNext;
     private readonly Func<bool> _hasPrevious;
     private readonly Action _onSeekToNext;
@@ -27,44 +39,54 @@ public class K7ForwardingPlayer : ForwardingPlayer
         _onSeekToPrevious = onSeekToPrevious;
     }
 
-    public override bool HasNextMediaItem => _hasNext();
+    public void SetActivePlayer(IPlayer player) => Player = player;
 
-    public override bool HasPreviousMediaItem => _hasPrevious();
+    public void NotifyQueueChanged() => InvalidateState();
 
-    public override PlayerCommands AvailableCommands
+    protected override State GetState()
     {
-        get
+        var state = base.GetState()!;
+        var commands = new PlayerCommands.Builder()
+            .AddAll(state.AvailableCommands!)!;
+        if (_hasPrevious is not null && _hasPrevious())
         {
-            // Media3 command constants: SEEK_TO_PREVIOUS=7, SEEK_TO_PREVIOUS_MEDIA_ITEM=8,
-            // SEEK_TO_NEXT=9, SEEK_TO_NEXT_MEDIA_ITEM=10
-            var commands = base.AvailableCommands;
-            return new PlayerCommands.Builder()
-                .AddAll(commands)!
-                .Add(7)!  // COMMAND_SEEK_TO_PREVIOUS
-                .Add(8)!  // COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
-                .Add(9)!  // COMMAND_SEEK_TO_NEXT
-                .Add(10)! // COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
-                .Build()!;
+            commands.Add(CommandSeekToPrevious);
+            commands.Add(CommandSeekToPreviousMediaItem);
         }
+
+        if (_hasNext is not null && _hasNext())
+        {
+            commands.Add(CommandSeekToNext);
+            commands.Add(CommandSeekToNextMediaItem);
+        }
+
+        return state.BuildUpon()!.SetAvailableCommands(commands.Build()!)!.Build()!;
     }
 
-    public override void SeekToNextMediaItem()
+    protected override IListenableFuture HandleSeek(int mediaItemIndex, long positionMs, int seekCommand)
     {
-        _onSeekToNext();
+        if (seekCommand is CommandSeekToNext or CommandSeekToNextMediaItem)
+        {
+            _onSeekToNext();
+            return ImmediateVoid();
+        }
+
+        if (seekCommand is CommandSeekToPrevious or CommandSeekToPreviousMediaItem)
+        {
+            _onSeekToPrevious();
+            return ImmediateVoid();
+        }
+
+        return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
     }
 
-    public override void SeekToPreviousMediaItem()
-    {
-        _onSeekToPrevious();
-    }
+    // Service owns ExoPlayer lifetime; MediaSession.release must not release the audible player.
+    protected override IListenableFuture HandleRelease() => ImmediateVoid();
 
-    public override void SeekToNext()
+    private static IListenableFuture ImmediateVoid()
     {
-        _onSeekToNext();
-    }
-
-    public override void SeekToPrevious()
-    {
-        _onSeekToPrevious();
+        var future = ResolvableFuture.Create()!;
+        future.Set(null);
+        return future;
     }
 }

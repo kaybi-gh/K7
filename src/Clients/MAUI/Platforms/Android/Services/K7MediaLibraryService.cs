@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
@@ -15,7 +16,6 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
-using System.Net.Http.Headers;
 using Log = Android.Util.Log;
 using Resource = K7.Clients.MAUI.Resource;
 
@@ -186,6 +186,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         _videoSession?.Release();
         _session?.Release();
         _player?.RemoveListener(this);
+        _crossfadePlayer?.RemoveListener(this);
         _player?.Release();
         _crossfadePlayer?.Stop();
         _crossfadePlayer?.Release();
@@ -204,7 +205,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         return new ExoPlayerBuilder(this)!
             .SetMediaSourceFactory(_mediaSourceFactory as AndroidX.Media3.ExoPlayer.Source.IMediaSourceFactory)!
             .SetAudioAttributes(_audioAttributes!, handleAudioFocus)!
-            .SetHandleAudioBecomingNoisy(handleAudioFocus)!
+            .SetHandleAudioBecomingNoisy(true)!
             .SetWakeMode(AndroidX.Media3.Common.C.WakeModeLocal)!
             .Build()!;
 #pragma warning restore CS0618
@@ -231,6 +232,14 @@ public class K7MediaLibraryService : MediaLibraryService,
             // STATE_ENDED only fires after the last playlist item.
             if (playbackState == 4)
             {
+                if (_crossfadeInProgress)
+                {
+                    // Outgoing track finished during the blend. Incoming is already
+                    // audible; do not reload it onto this player (that cut is the bug).
+                    TransferPlaybackFocusToIncoming();
+                    return;
+                }
+
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     try
@@ -270,7 +279,8 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         // Track end reports isPlaying=false alongside STATE_ENDED; let OnTrackEndedAsync
         // own the transition so we do not overwrite with Paused and race NextAsync.
-        if (!isPlaying && _player?.PlaybackState == 4)
+        // During crossfade the outgoing player ending must not flip UI to Paused.
+        if (!isPlaying && (_crossfadeInProgress || _player?.PlaybackState == 4))
             return;
 
         try
@@ -296,6 +306,9 @@ public class K7MediaLibraryService : MediaLibraryService,
     public void OnPlayerError(PlaybackException? error)
     {
         Log.Error(Tag, $"ExoPlayer error: {error?.Message} (code={error?.ErrorCode})");
+        if (_crossfadeInProgress)
+            return;
+
         if (_audioPlayerService is not null)
         {
             _updatingFromPlayer = true;
@@ -464,25 +477,11 @@ public class K7MediaLibraryService : MediaLibraryService,
 
             await EqualPowerCrossfadeAsync(_player, _crossfadePlayer, Math.Max(0.25, durationSeconds), peak, ct);
 
-            // Hand off to the session player without a silent gap: keep secondary audible until primary is ready.
-            var handoffPosition = 0L;
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
-                handoffPosition = Math.Max(0L, _crossfadePlayer.CurrentPosition);
-                ApplySingleItemSource(source, startVolume: 0f);
-                _player.SeekTo(handoffPosition);
-            });
-
-            await WaitUntilReadyAsync(_player, ct);
-
-            await MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                _player.Volume = peak;
-                _player.PlayWhenReady = true;
-                _player.Play();
-                _crossfadePlayer.Stop();
-                _crossfadePlayer.ClearMediaItems();
-                _crossfadePlayer.Volume = 0f;
+                if (_crossfadePlayer is not null)
+                    _crossfadePlayer.Volume = peak;
+                PromoteIncomingInPlace();
             });
 
             _gaplessPrebufferedUrl = null;
@@ -691,7 +690,7 @@ public class K7MediaLibraryService : MediaLibraryService,
                 var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
                 var currentIndex = _audioPlayerService?.CurrentIndex ?? 0;
 
-                // Gapless: promote prebuffered secondary player instantly when URL matches.
+                // Gapless: promote the prebuffered secondary in place (do not reload).
                 if (_crossfadePlayer is not null
                     && string.Equals(_gaplessPrebufferedUrl, source.Url, StringComparison.Ordinal)
                     && _crossfadePlayer.PlaybackState is 2 or 3)
@@ -700,10 +699,7 @@ public class K7MediaLibraryService : MediaLibraryService,
                     _crossfadePlayer.Volume = peak;
                     _crossfadePlayer.PlayWhenReady = true;
                     _crossfadePlayer.Play();
-
-                    // Swap audio onto session player by seeking primary to same content.
-                    ApplySingleItemSource(source, startVolume: 0f);
-                    _ = PromoteGaplessAsync(peak);
+                    PromoteIncomingInPlace();
                     return;
                 }
 
@@ -747,49 +743,95 @@ public class K7MediaLibraryService : MediaLibraryService,
         });
     }
 
-    private async Task PromoteGaplessAsync(float peakVolume)
+    private void PromoteIncomingInPlace()
     {
-        if (_player is null || _crossfadePlayer is null) return;
+        if (_player is null || _crossfadePlayer is null || _forwardingPlayer is null)
+            return;
 
-        try
+        var outgoing = _player;
+        var incoming = _crossfadePlayer;
+
+        outgoing.RemoveListener(this);
+        incoming.AddListener(this);
+
+        if (_audioAttributes is not null)
         {
-            await WaitUntilReadyAsync(_player, CancellationToken.None);
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                if (_player is null || _crossfadePlayer is null) return;
-                _player.Volume = peakVolume;
-                _player.PlayWhenReady = true;
-                _player.Play();
-                _crossfadePlayer.Stop();
-                _crossfadePlayer.ClearMediaItems();
-                _crossfadePlayer.Volume = 0f;
-                _gaplessPrebufferedUrl = null;
-            });
+            incoming.SetAudioAttributes(_audioAttributes, true);
+            outgoing.SetAudioAttributes(_audioAttributes, false);
         }
-        catch (Exception ex)
+
+        _player = incoming;
+        _crossfadePlayer = outgoing;
+        _forwardingPlayer.SetActivePlayer(incoming);
+
+        outgoing.Stop();
+        outgoing.ClearMediaItems();
+        outgoing.Volume = 0f;
+        _gaplessPrebufferedUrl = null;
+
+        if (incoming.AudioSessionId != AndroidX.Media3.Common.C.AudioSessionIdUnset)
+            _audioEqualizer.Attach(incoming.AudioSessionId);
+
+        if (_audioPlayerService is not null)
         {
-            Log.Error(Tag, $"Gapless promote failed: {ex.Message}");
+            _updatingFromPlayer = true;
+            _audioPlayerService.CurrentTime = Math.Max(0, incoming.CurrentPosition) / 1000.0;
+            if (incoming.Duration > 0)
+                _audioPlayerService.Duration = incoming.Duration / 1000.0;
+            _audioPlayerService.PlaybackState = incoming.IsPlaying
+                ? PlaybackState.Playing
+                : PlaybackState.Paused;
+            _updatingFromPlayer = false;
         }
+
+        if (incoming.IsPlaying)
+            StartPositionUpdates();
+
+        Log.Info(Tag, "Promoted incoming player in place");
+        _forwardingPlayer.NotifyQueueChanged();
+    }
+
+    private void TransferPlaybackFocusToIncoming()
+    {
+        if (_audioAttributes is null || _crossfadePlayer is null)
+            return;
+
+        _crossfadePlayer.SetAudioAttributes(_audioAttributes, true);
+        _player?.SetAudioAttributes(_audioAttributes, false);
     }
 
     private Task OnPlayRequested()
     {
         if (_updatingFromPlayer) return Task.CompletedTask;
-        MainThread.BeginInvokeOnMainThread(() => _player?.Play());
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _player?.Play();
+            if (_crossfadeInProgress)
+                _crossfadePlayer?.Play();
+        });
         return Task.CompletedTask;
     }
 
     private Task OnPauseRequested()
     {
         if (_updatingFromPlayer) return Task.CompletedTask;
-        MainThread.BeginInvokeOnMainThread(() => _player?.Pause());
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _player?.Pause();
+            if (_crossfadeInProgress)
+                _crossfadePlayer?.Pause();
+        });
         return Task.CompletedTask;
     }
 
     private Task OnStopRequested()
     {
         if (_updatingFromPlayer) return Task.CompletedTask;
-        MainThread.BeginInvokeOnMainThread(() => _player?.Stop());
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _player?.Stop();
+            _crossfadePlayer?.Stop();
+        });
         return Task.CompletedTask;
     }
 
@@ -807,10 +849,11 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         _pendingTrack = track;
         RefreshLoudnessGain(applyToPlayer: !_crossfadeInProgress);
-        // Crossfade defers this event until after SetMediaItem; push metadata so
+        // Crossfade defers this event until after promote; push metadata so
         // Android Auto / notification never stay one track behind.
         if (!_crossfadeInProgress && !_syncingFromExoPlayer)
             SyncNowPlayingMetadata(track);
+        _forwardingPlayer?.NotifyQueueChanged();
     }
 
     private bool _acceptEncodingConfigured;

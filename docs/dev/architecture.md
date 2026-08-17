@@ -134,6 +134,10 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 
 During video play on Android/iOS, MAUI uses a **native XAML overlay** on top of `MediaElement` (TextureView). Windows MAUI keeps Video.js + Blazor controls in WebView2. Browse UI stays Blazor Hybrid. Details and the Windows `#EXT-X-MAP` limitation: [video-playback.md](video-playback.md).
 
+## Music playback (MAUI Android)
+
+Android music uses two Media3 ExoPlayers in `K7MediaLibraryService` (session player + idle player) so crossfade and gapless can overlap. After the blend, the incoming player is promoted in place (`ForwardingSimpleBasePlayer.setPlayer`); the next track is not reloaded onto the freed session player. Windows music stays on WebView2 / Web Audio. iOS uses dual `AVPlayer`.
+
 ## Offline downloads (MAUI)
 
 Offline transfers run in-process via `DownloadManager` (`HttpClient` streaming). The queue is in-memory: force-stop or process death still loses in-progress transfers (completed files persist in SQLite + `AppData/downloads`).
