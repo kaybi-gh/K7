@@ -36,7 +36,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private bool _isTv;
     private bool _hubHandlersRegistered;
     private bool _pendingRefresh;
-    private Guid? _loadedSharedProfileId;
+    private bool _hasFeedContext;
+    private Guid? _feedSharedProfileId;
+    private string? _feedIdentityUserId;
 
     private static readonly TimeSpan ContinueWatchingRefreshDelay = TimeSpan.FromSeconds(1.5);
     private static readonly TimeSpan WatchStateRefreshDelay = TimeSpan.FromSeconds(1.5);
@@ -78,61 +80,55 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _connectivity = connectivity;
         _sharedProfileSession = sharedProfileSession;
         _logger = logger;
-        _loadedSharedProfileId = sharedProfileSession.ActiveGroupId;
         _connectivity.ConnectivityChanged += OnConnectivityChanged;
         _sharedProfileSession.ActiveGroupChanged += OnActiveGroupChanged;
     }
 
     public Task ResetAndReloadAsync(CancellationToken cancellationToken = default)
     {
-        Interlocked.Increment(ref _loadGeneration);
-
-        lock (_sync)
-        {
-            _isLoaded = false;
-            _loadTask = null;
-            _rows.Clear();
-        }
-
-        IsOffline = false;
-        InvalidateCache();
-        return EnsureLoadedAsync(CanTrackProgress, cancellationToken);
+        InvalidateLoadedState();
+        return EnsureLoadedAsync(CanTrackProgress, _feedIdentityUserId, cancellationToken);
     }
 
-    public Task EnsureLoadedAsync(bool canTrackProgress, CancellationToken cancellationToken = default)
+    public Task EnsureLoadedAsync(
+        bool canTrackProgress,
+        string? identityUserId,
+        CancellationToken cancellationToken = default)
     {
         var capabilityEnabled = !CanTrackProgress && canTrackProgress;
         CanTrackProgress = canTrackProgress;
 
+        Task loadTask;
         lock (_sync)
         {
             var currentProfileId = _sharedProfileSession.ActiveGroupId;
-            if (_isLoaded
-                && _loadTask is { IsCompletedSuccessfully: true }
-                && _loadedSharedProfileId != currentProfileId)
+            if (_hasFeedContext && !IsSameFeedContext(identityUserId, currentProfileId))
             {
-                Interlocked.Increment(ref _loadGeneration);
-                _isLoaded = false;
-                _loadTask = null;
-                _rows.Clear();
+                InvalidateLoadedStateCore();
                 InvalidateCache();
             }
+
+            BindFeedContext(identityUserId, currentProfileId);
 
             if (_isLoaded && _loadTask is { IsCompletedSuccessfully: true })
             {
                 // Capability flipped on after a previous load that skipped CW rows.
                 if (capabilityEnabled)
-                    return LoadSkippedContinueWatchingAsync(cancellationToken);
-
-                return Task.CompletedTask;
+                    loadTask = LoadSkippedContinueWatchingAsync(cancellationToken);
+                else
+                    loadTask = Task.CompletedTask;
             }
+            else
+            {
+                if (_loadTask is { IsFaulted: true } or { IsCanceled: true })
+                    _loadTask = null;
 
-            if (_loadTask is { IsFaulted: true } or { IsCanceled: true })
-                _loadTask = null;
-
-            _loadTask ??= LoadAsync(cancellationToken);
-            return _loadTask;
+                _loadTask ??= LoadAsync(cancellationToken);
+                loadTask = _loadTask;
+            }
         }
+
+        return loadTask;
     }
 
     public void RemoveMedia(string mediaId)
@@ -192,19 +188,12 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _connectivity.ConnectivityChanged -= OnConnectivityChanged;
         _sharedProfileSession.ActiveGroupChanged -= OnActiveGroupChanged;
         UnregisterHubHandlers();
-        _picturesRefreshCts?.Cancel();
-        _picturesRefreshCts?.Dispose();
-        _membershipRefreshCts?.Cancel();
-        _membershipRefreshCts?.Dispose();
-        _continueWatchingRefreshCts?.Cancel();
-        _continueWatchingRefreshCts?.Dispose();
-        _watchStateRefreshCts?.Cancel();
-        _watchStateRefreshCts?.Dispose();
+        CancelBackgroundRefreshes();
     }
 
     private void OnActiveGroupChanged()
     {
-        if (_sharedProfileSession.ActiveGroupId == _loadedSharedProfileId && _isLoaded)
+        if (!_hasFeedContext || IsSameFeedContext(_feedIdentityUserId, _sharedProfileSession.ActiveGroupId))
             return;
 
         _ = ReloadAfterSharedProfileChangedAsync();
@@ -214,7 +203,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     {
         try
         {
-            await ResetAndReloadAsync();
+            await EnsureLoadedAsync(CanTrackProgress, _feedIdentityUserId);
         }
         catch
         {
@@ -253,7 +242,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     {
         try
         {
-            await EnsureLoadedAsync(CanTrackProgress);
+            await EnsureLoadedAsync(CanTrackProgress, _feedIdentityUserId);
         }
         catch
         {
@@ -277,7 +266,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         RegisterHubHandlers();
 
         var loadGeneration = Volatile.Read(ref _loadGeneration);
-        var profileAtStart = _sharedProfileSession.ActiveGroupId;
+        var profileAtStart = _feedSharedProfileId;
+        var identityAtStart = _feedIdentityUserId;
 
         IsLoading = true;
         IsOffline = false;
@@ -285,7 +275,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         _isTv = await _deviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
-        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+        if (IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
             return;
 
         HomeLayoutDto layout;
@@ -295,23 +285,23 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }
         catch (HttpRequestException) when (!_connectivity.IsOnline)
         {
-            CompleteLoad(loadGeneration, profileAtStart, offline: true);
+            CompleteLoad(loadGeneration, profileAtStart, identityAtStart, offline: true);
             return;
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested && !_connectivity.IsOnline)
         {
-            CompleteLoad(loadGeneration, profileAtStart, offline: true);
+            CompleteLoad(loadGeneration, profileAtStart, identityAtStart, offline: true);
             return;
         }
         catch (HttpRequestException)
         {
-            if (!IsLoadSuperseded(loadGeneration, profileAtStart))
+            if (!IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
                 FailTransientLoad();
             return;
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            if (!IsLoadSuperseded(loadGeneration, profileAtStart))
+            if (!IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
                 FailTransientLoad();
             return;
         }
@@ -320,7 +310,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             layout = new HomeLayoutDto { Rows = [] };
         }
 
-        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+        if (IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
             return;
 
         var rowConfigs = layout.Rows
@@ -330,7 +320,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         lock (_sync)
         {
-            if (IsLoadSuperseded(loadGeneration, profileAtStart))
+            if (IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
                 return;
 
             _rows.Clear();
@@ -346,10 +336,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         await Task.WhenAll(tasks);
 
-        if (IsLoadSuperseded(loadGeneration, profileAtStart))
+        if (IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
             return;
 
-        CompleteLoad(loadGeneration, profileAtStart, offline: false);
+        CompleteLoad(loadGeneration, profileAtStart, identityAtStart, offline: false);
         AppReadySignal.Signal();
 
         if (_pendingRefresh)
@@ -363,20 +353,68 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }
     }
 
-    private bool IsLoadSuperseded(int loadGeneration, Guid? profileAtStart) =>
+    private bool IsLoadSuperseded(int loadGeneration, Guid? profileAtStart, string? identityAtStart) =>
         loadGeneration != Volatile.Read(ref _loadGeneration)
-        || _sharedProfileSession.ActiveGroupId != profileAtStart;
+        || _feedSharedProfileId != profileAtStart
+        || !string.Equals(_feedIdentityUserId, identityAtStart, StringComparison.Ordinal);
 
-    private void CompleteLoad(int loadGeneration, Guid? profileId, bool offline)
+    private void CompleteLoad(int loadGeneration, Guid? profileId, string? identityUserId, bool offline)
     {
-        if (IsLoadSuperseded(loadGeneration, profileId))
+        if (IsLoadSuperseded(loadGeneration, profileId, identityUserId))
             return;
 
         IsOffline = offline;
         IsLoading = false;
-        _loadedSharedProfileId = profileId;
         _isLoaded = true;
         NotifyChanged();
+    }
+
+    private void InvalidateLoadedState()
+    {
+        lock (_sync)
+        {
+            InvalidateLoadedStateCore();
+        }
+
+        IsOffline = false;
+        InvalidateCache();
+    }
+
+    private void InvalidateLoadedStateCore()
+    {
+        Interlocked.Increment(ref _loadGeneration);
+        Interlocked.Increment(ref _catalogRefreshGeneration);
+        CancelBackgroundRefreshes();
+        _isLoaded = false;
+        _loadTask = null;
+        _rows.Clear();
+        IsLoading = false;
+    }
+
+    private void BindFeedContext(string? identityUserId, Guid? profileId)
+    {
+        _feedIdentityUserId = identityUserId;
+        _feedSharedProfileId = profileId;
+        _hasFeedContext = true;
+    }
+
+    private bool IsSameFeedContext(string? identityUserId, Guid? profileId) =>
+        string.Equals(_feedIdentityUserId, identityUserId, StringComparison.Ordinal)
+        && _feedSharedProfileId == profileId;
+
+    private void CancelBackgroundRefreshes()
+    {
+        CancelAndDispose(ref _picturesRefreshCts);
+        CancelAndDispose(ref _membershipRefreshCts);
+        CancelAndDispose(ref _continueWatchingRefreshCts);
+        CancelAndDispose(ref _watchStateRefreshCts);
+    }
+
+    private static void CancelAndDispose(ref CancellationTokenSource? cts)
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+        cts = null;
     }
 
     private void RegisterHubHandlers()
@@ -470,6 +508,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _continueWatchingRefreshCts?.Dispose();
         _continueWatchingRefreshCts = new CancellationTokenSource();
         var token = _continueWatchingRefreshCts.Token;
+        var generation = Volatile.Read(ref _loadGeneration);
 
         _ = Task.Run(async () =>
         {
@@ -478,11 +517,14 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 if (delay > TimeSpan.Zero)
                     await Task.Delay(delay, token);
 
+                if (generation != Volatile.Read(ref _loadGeneration))
+                    return;
+
                 InvalidateCache();
                 var ok = await RefreshContinueWatchingRowsAsync();
                 if (!ok)
                     _pendingRefresh = true;
-                if (!token.IsCancellationRequested)
+                if (!token.IsCancellationRequested && generation == Volatile.Read(ref _loadGeneration))
                     NotifyChanged();
             }
             catch (OperationCanceledException)
@@ -498,6 +540,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _watchStateRefreshCts = new CancellationTokenSource();
         var token = _watchStateRefreshCts.Token;
         var id = mediaId.ToString();
+        var generation = Volatile.Read(ref _loadGeneration);
 
         _ = Task.Run(async () =>
         {
@@ -506,13 +549,16 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 if (delay > TimeSpan.Zero)
                     await Task.Delay(delay, token);
 
+                if (generation != Volatile.Read(ref _loadGeneration))
+                    return;
+
                 InvalidateCache();
                 var rows = GetRowsSnapshot()
                     .Where(r => !r.Config.ContinueWatching
                         && r.Items.Any(i => i.Id == id || i.ParentId == id))
                     .ToList();
                 await Task.WhenAll(rows.Select(RefreshRowAsync));
-                if (!token.IsCancellationRequested)
+                if (!token.IsCancellationRequested && generation == Volatile.Read(ref _loadGeneration))
                     NotifyChanged();
             }
             catch (OperationCanceledException)
@@ -937,11 +983,23 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         PageSize = config.PageSize > 0 ? config.PageSize : 20
     };
 
-    private string BuildCacheKey(HomeRowConfigDto config)
+    internal static string BuildFeedCacheKey(
+        string? identityUserId,
+        Guid? sharedProfileId,
+        string title,
+        bool continueWatching)
     {
-        var scope = _sharedProfileSession.ActiveGroupId?.ToString("N") ?? "personal";
-        return MediaCacheStore.BuildKey("home-feed", scope, config.Title, config.ContinueWatching.ToString());
+        var userScope = string.IsNullOrEmpty(identityUserId) ? "anon" : identityUserId;
+        var profileScope = sharedProfileId?.ToString("N") ?? "personal";
+        return MediaCacheStore.BuildKey("home-feed", userScope, profileScope, title, continueWatching.ToString());
     }
+
+    private string BuildCacheKey(HomeRowConfigDto config) =>
+        BuildFeedCacheKey(
+            _feedIdentityUserId,
+            _sharedProfileSession.ActiveGroupId,
+            config.Title,
+            config.ContinueWatching);
 
     private static bool IsCardAffected(IReadOnlyList<MediaCardViewModel> items, Guid mediaId)
     {

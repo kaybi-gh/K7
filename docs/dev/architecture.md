@@ -130,6 +130,8 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 
 **Triad:** `.razor` + `.razor.cs` + optional `.razor.css`. Put logic in `.razor.cs`; keep `@code` only for tiny leaves (about 15 lines or fewer of parameters/no methods). Never leave both a non-trivial `@code` block and a `.razor.cs` on the same component. No third-party UI frameworks in pages. Theming and visual rules: [design.md](design.md). Localization and DesignSystem workflow: [developing.md](developing.md).
 
+Native clients keep Home mounted across navigation (`FeedHub`). `HomeFeedStore` is a process singleton scoped by identity user id plus the optional active shared profile id. Switching a local user (or shared profile) on MAUI reloads the home rows and continue-watching cache instead of reusing the previous feed. The SignalR hub reconnects so playback-progress events follow the new identity.
+
 ## Video playback (MAUI)
 
 During video play on Android/iOS, MAUI uses a **native XAML overlay** on top of `MediaElement` (TextureView). Windows MAUI keeps Video.js + Blazor controls in WebView2. Browse UI stays Blazor Hybrid. Details and the Windows `#EXT-X-MAP` limitation: [video-playback.md](video-playback.md).

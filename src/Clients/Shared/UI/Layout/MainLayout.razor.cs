@@ -34,6 +34,8 @@ public partial class MainLayout : IDisposable
     private DotNetObjectReference<MainLayout>? _selfRef;
     private ElementReference _reconnectAnimationContainer;
 
+    private string? _sessionUserId;
+
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
     protected override async Task OnInitializedAsync()
@@ -42,6 +44,8 @@ public partial class MainLayout : IDisposable
 
         if (DeviceService.GetClientType() == ClientType.Native && System.OperatingSystem.IsWindows())
             WebViewJsBridge.SetRuntime(JS);
+
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
 
         try
         {
@@ -57,6 +61,39 @@ public partial class MainLayout : IDisposable
             K7HubClient.ConnectionStateChanged += OnConnectionStateChanged;
         }
 
+        await EnsureUserSessionAsync();
+
+        var hubDeviceType = await DeviceService.GetDeviceTypeAsync();
+        FeedHub.SetEnabled(true);
+        // Bound RAM on phones/tablets: keep Home forever, at most 3 Explore/library-group pages.
+        if (hubDeviceType is DeviceType.Phone or DeviceType.Tablet)
+            FeedHub.SetMountLimit(3);
+        else
+            FeedHub.SetMountLimit(null);
+
+        FeedHub.Changed += OnFeedHubChanged;
+    }
+
+    private void OnFeedHubChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> task) =>
+        OnAuthenticationStateChangedAsync(task).FireAndForget(Logger);
+
+    private async Task OnAuthenticationStateChangedAsync(Task<AuthenticationState> task)
+    {
+        try
+        {
+            await task;
+            await EnsureUserSessionAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Hub session refresh failed");
+        }
+    }
+
+    private async Task EnsureUserSessionAsync()
+    {
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -66,10 +103,9 @@ public partial class MainLayout : IDisposable
 
             if (isAuth && !string.IsNullOrEmpty(userId))
             {
-                if (Connectivity.IsOnline)
-                {
+                var userChanged = !string.Equals(_sessionUserId, userId, StringComparison.Ordinal);
+                if (userChanged && Connectivity.IsOnline)
                     await DeviceInitializer.InitializeDeviceAsync(Services, userId);
-                }
 
                 var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
                 AudioProgressTracker.SetCanReport(canReport);
@@ -84,31 +120,26 @@ public partial class MainLayout : IDisposable
 
                 if (Connectivity.IsOnline)
                 {
-                    var deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
-                    var request = await DeviceService.GenerateCreateDeviceRequestAsync();
-                    var deviceName = request.DeviceName;
+                    string? deviceName = null;
+                    string? deviceType = null;
+                    if (userChanged || K7HubClient.State != HubConnectionState.Connected)
+                    {
+                        deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
+                        var request = await DeviceService.GenerateCreateDeviceRequestAsync();
+                        deviceName = request.DeviceName;
+                    }
 
                     await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName, deviceType);
                 }
+
+                _sessionUserId = userId;
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Hub startup failed");
         }
-
-        var hubDeviceType = await DeviceService.GetDeviceTypeAsync();
-        FeedHub.SetEnabled(true);
-        // Bound RAM on phones/tablets: keep Home forever, at most 3 Explore/library-group pages.
-        if (hubDeviceType is DeviceType.Phone or DeviceType.Tablet)
-            FeedHub.SetMountLimit(3);
-        else
-            FeedHub.SetMountLimit(null);
-
-        FeedHub.Changed += OnFeedHubChanged;
     }
-
-    private void OnFeedHubChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -203,6 +234,7 @@ public partial class MainLayout : IDisposable
     public void Dispose()
     {
         ThemeService.ThemeOnChange -= OnThemeChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         FeedHub.Changed -= OnFeedHubChanged;
         _overlayTimer?.Dispose();

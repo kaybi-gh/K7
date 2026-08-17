@@ -7,4 +7,6 @@ public interface IHomeNavigationState
     HomeFocusState? SavedFocus { get; }
 
     void Save(Guid rowId, string mediaId, int cardIndex);
+
+    void Clear();
 }

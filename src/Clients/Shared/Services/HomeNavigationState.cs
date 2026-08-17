@@ -9,4 +9,6 @@ public sealed class HomeNavigationState : IHomeNavigationState
 
     public void Save(Guid rowId, string mediaId, int cardIndex) =>
         SavedFocus = new HomeFocusState(rowId, mediaId, cardIndex);
+
+    public void Clear() => SavedFocus = null;
 }

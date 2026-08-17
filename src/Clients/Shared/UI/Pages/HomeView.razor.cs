@@ -7,8 +7,10 @@ using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using System.Net.Http;
+using System.Security.Claims;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -27,6 +29,7 @@ public partial class HomeView : IAsyncDisposable
 
     [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     private bool _canExclude;
     private bool _canSetWatchState;
@@ -41,6 +44,7 @@ public partial class HomeView : IAsyncDisposable
     private bool _hubHomeActive;
 
     private bool _canTrackProgress;
+    private string? _identityUserId;
 
     private bool isLoading => FeedStore.IsLoading;
 
@@ -73,18 +77,13 @@ public partial class HomeView : IAsyncDisposable
     {
         _isTv ??= await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
-        var role = await FeatureAccess.GetRoleAsync();
-        _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
-        _canSetWatchState = role is K7.Server.Domain.Constants.Roles.User or K7.Server.Domain.Constants.Roles.Administrator;
-        _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
-        // Resolve in the Blazor UI scope - HomeFeedStore must not open a fresh DI scope for auth
-        // (WASM DeserializedAuthenticationStateProvider is single-consume).
-        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
-
         FeedStore.Changed += OnFeedStoreChanged;
         FeedHub.Changed += OnFeedHubChanged;
+        AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
         _hubHomeActive = IsHubHomeActive();
-        await FeedStore.EnsureLoadedAsync(_canTrackProgress);
+        // Resolve auth in the Blazor UI scope - HomeFeedStore must not open a fresh DI scope
+        // (WASM DeserializedAuthenticationStateProvider is single-consume).
+        await BindIdentityAndLoadAsync();
 
         if (_isAdmin)
         {
@@ -112,6 +111,57 @@ public partial class HomeView : IAsyncDisposable
         }
     }
 
+    private async Task BindIdentityAndLoadAsync(Task<AuthenticationState>? authTask = null)
+    {
+        await BindIdentityAndCapabilitiesAsync(authTask);
+        await FeedStore.EnsureLoadedAsync(_canTrackProgress, _identityUserId);
+    }
+
+    private async Task BindIdentityAndCapabilitiesAsync(Task<AuthenticationState>? authTask = null)
+    {
+        var state = await (authTask ?? AuthStateProvider.GetAuthenticationStateAsync());
+        var userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? state.User.FindFirst("sub")?.Value;
+
+        if (!string.Equals(_identityUserId, userId, StringComparison.Ordinal))
+        {
+            _identityUserId = userId;
+            _emptyFeedRetried = false;
+            _focusRestored = false;
+            _focusedItem = null;
+            NavigationState.Clear();
+        }
+
+        var role = await FeatureAccess.GetRoleAsync();
+        _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
+        _canSetWatchState = role is K7.Server.Domain.Constants.Roles.User or K7.Server.Domain.Constants.Roles.Administrator;
+        _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+    }
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> task) =>
+        OnAuthenticationStateChangedAsync(task).FireAndForget();
+
+    private async Task OnAuthenticationStateChangedAsync(Task<AuthenticationState> task)
+    {
+        try
+        {
+            await BindIdentityAndLoadAsync(task);
+        }
+        catch (HttpRequestException)
+        {
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        if (IsHubHomeActive())
+            await InvokeAsync(StateHasChanged);
+    }
+
     private bool IsHubHomeActive() =>
         !FeedHub.IsEnabled
         || (FeedHub.IsHubRouteActive && FeedHub.ActiveKey == FeedHubKey.Home);
@@ -130,11 +180,12 @@ public partial class HomeView : IAsyncDisposable
 
     private async Task OnHubHomeBecameActiveAsync()
     {
-        // FeedHub parks Home while watching on Movie/Serie: store updates are buffered and
-        // Continue Watching membership can lag. Soft-refresh CW on return; other rows keep
-        // in-place Progress patches from ProgressUpdated.
+        // FeedHub parks Home while watching on Movie/Serie or while picking a profile.
+        // Re-bind identity so a user switch reloads the store; otherwise only CW membership
+        // can lag after playback.
         try
         {
+            await BindIdentityAndLoadAsync();
             await FeedStore.RefreshContinueWatchingAsync();
         }
         catch (HttpRequestException)
@@ -480,6 +531,7 @@ public partial class HomeView : IAsyncDisposable
     {
         FeedStore.Changed -= OnFeedStoreChanged;
         FeedHub.Changed -= OnFeedHubChanged;
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
 
         if (_homeRestoreModule is not null)
         {
