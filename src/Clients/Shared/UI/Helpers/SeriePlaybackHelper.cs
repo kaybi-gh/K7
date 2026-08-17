@@ -28,8 +28,8 @@ internal static class SeriePlaybackHelper
 {
     public static bool IsInProgress(LiteSerieEpisodeDto? episode) =>
         episode?.UserState is { IsCompleted: false }
-        && (episode.UserState.LastPlaybackPosition > 0
-            || episode.UserState is { ProgressPercentage: > 0 and < 100 });
+        && (episode.UserState.LastPlaybackPosition >= 1
+            || episode.UserState is { ProgressPercentage: >= 1 and < 100 });
 
     public static async Task<LiteSerieEpisodeDto?> ResolveEpisodeToPlayAsync(
         IMediaService mediaService,
@@ -42,8 +42,8 @@ internal static class SeriePlaybackHelper
 
         var inProgress = allEpisodes
             .Where(e => e.UserState is { IsCompleted: false }
-                && (e.UserState.LastPlaybackPosition > 0
-                    || e.UserState is { ProgressPercentage: > 0 and < 100 }))
+                && (e.UserState.LastPlaybackPosition >= 1
+                    || e.UserState is { ProgressPercentage: >= 1 and < 100 }))
             .OrderByDescending(e => e.UserState?.LastInteractedAt ?? DateTime.MinValue)
             .FirstOrDefault();
 
@@ -73,7 +73,7 @@ internal static class SeriePlaybackHelper
         double? startPosition = null;
         if (!fromBeginning
             && await featureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episodeDto.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            && episodeDto.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false })
         {
             startPosition = episodeDto.UserState.LastPlaybackPosition;
         }

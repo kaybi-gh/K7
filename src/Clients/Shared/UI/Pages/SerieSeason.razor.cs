@@ -355,7 +355,7 @@ public partial class SerieSeason : IAsyncDisposable
 
         double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && episodeDto.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            && episodeDto.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false })
         {
             startPosition = episodeDto.UserState.LastPlaybackPosition;
         }

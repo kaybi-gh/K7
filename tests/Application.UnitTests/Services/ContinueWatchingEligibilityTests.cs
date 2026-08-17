@@ -91,6 +91,42 @@ public class ContinueWatchingEligibilityTests
     }
 
     [Test]
+    public void MeetsThreshold_ShouldReturnTrue_WhenPlaceholderHasSubSecondPlayerTick()
+    {
+        var state = CreateState(progress: 0.02, lastInteractedAt: DateTime.UtcNow);
+        state.LastPlaybackPosition = 0.4;
+        state.PlayCount = 0;
+
+        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeTrue();
+        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeTrue();
+    }
+
+    [Test]
+    public void IsEligibleForContinueWatching_ShouldReturnTrue_WhenSerieEpisodeIsUnderResumePercent()
+    {
+        var state = CreateState(progress: 2, lastInteractedAt: DateTime.UtcNow);
+        state.LastPlaybackPosition = 48;
+        state.PlayCount = 0;
+
+        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeFalse();
+        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy).Should().BeFalse();
+        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy, isSerieEpisode: true)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void IsEligibleForContinueWatching_ShouldReturnTrue_WhenSerieEpisodeHasPlayCountButUnderResumePercent()
+    {
+        var state = CreateState(progress: 0.5, lastInteractedAt: DateTime.UtcNow);
+        state.LastPlaybackPosition = 0.4;
+        state.PlayCount = 1;
+
+        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeFalse();
+        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy, isSerieEpisode: true)
+            .Should().BeTrue();
+    }
+
+    [Test]
     public void MeetsResumeThreshold_ShouldReturnFalse_WhenProgressBelowPercent()
     {
         var state = CreateState(progress: 2, lastKnownDurationSeconds: 3600);

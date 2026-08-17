@@ -86,9 +86,15 @@ internal sealed class HomeFeedContinueWatchingStrategy(
                 LastInteractedAt = g.Max(x => x.LastInteractedAt),
                 MediaId = g
                     .OrderByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition > 0
-                            || (x.ProgressPercentage > 0 && x.ProgressPercentage < 100)))
-                    .ThenByDescending(x => x.LastInteractedAt)
+                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
+                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
+                                && x.ProgressPercentage < 100)))
+                    .ThenByDescending(x => !x.IsCompleted
+                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
+                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
+                                && x.ProgressPercentage < 100))
+                        ? x.LastInteractedAt
+                        : DateTime.MinValue)
                     .ThenBy(x => x.SeasonNumber == 0 ? int.MaxValue : x.SeasonNumber)
                     .ThenBy(x => x.EpisodeNumber)
                     .Select(x => x.Id)
@@ -166,9 +172,15 @@ internal sealed class HomeFeedContinueWatchingStrategy(
                 LastInteractedAt = g.Max(x => x.LastInteractedAt),
                 MediaId = g
                     .OrderByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition > 0
-                            || (x.ProgressPercentage > 0 && x.ProgressPercentage < 100)))
-                    .ThenByDescending(x => x.LastInteractedAt)
+                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
+                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
+                                && x.ProgressPercentage < 100)))
+                    .ThenByDescending(x => !x.IsCompleted
+                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
+                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
+                                && x.ProgressPercentage < 100))
+                        ? x.LastInteractedAt
+                        : DateTime.MinValue)
                     .ThenBy(x => x.SeasonNumber == 0 ? int.MaxValue : x.SeasonNumber)
                     .ThenBy(x => x.EpisodeNumber)
                     .Select(x => x.Id)

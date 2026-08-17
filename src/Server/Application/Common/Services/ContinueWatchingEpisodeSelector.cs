@@ -37,7 +37,8 @@ public static class ContinueWatchingEpisodeSelector
 
     private static bool IsInProgress(UserMediaState? state) =>
         state is { IsCompleted: false }
-        && (state.LastPlaybackPosition > 0 || state is { ProgressPercentage: > 0 and < 100 });
+        && (state.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
+            || state is { ProgressPercentage: >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent and < 100 });
 
     private static DateTime? GetLastInteractedAt(BaseMedia item) =>
         item.UserMediaStates.FirstOrDefault()?.LastInteractedAt;

@@ -308,7 +308,7 @@ public partial class Movie : IAsyncDisposable
 
     private bool CanResumePlayback =>
         _canTrackProgress
-        && _movie?.UserState is { LastPlaybackPosition: > 0, IsCompleted: false };
+        && _movie?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false };
 
     private string PrimaryPlayLabel
     {

@@ -257,7 +257,7 @@ public partial class SerieEpisode : IAsyncDisposable
             startPosition = 0;
         }
         else if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
-            && _episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            && _episode.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false })
         {
             startPosition = _episode.UserState.LastPlaybackPosition;
         }
@@ -278,7 +278,7 @@ public partial class SerieEpisode : IAsyncDisposable
     }
 
     private bool CanResumePlayback =>
-        _episode?.UserState is { LastPlaybackPosition: > 0, IsCompleted: false };
+        _episode?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false };
 
     private string PrimaryPlayLabel
     {

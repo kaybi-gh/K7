@@ -7,6 +7,17 @@ namespace K7.Server.Application.Common.Services;
 
 public static class ContinueWatchingEligibility
 {
+    /// <summary>
+    /// Sub-second player ticks are not a real resume point. Treat them as still-zero
+    /// so a next-episode placeholder is not ejected from Keep Watching.
+    /// </summary>
+    public const double PlaceholderNoisePositionSeconds = 1;
+
+    /// <summary>
+    /// Progress below 1% is noise from the first player ticks, not a started watch.
+    /// </summary>
+    public const double PlaceholderNoiseProgressPercent = 1;
+
     public static DateTime? GetWindowCutoff(VideoPlaybackPolicySettingsDto policy, DateTime utcNow) =>
         policy.ContinueWatchingMaxAgeDays > 0
             ? utcNow.AddDays(-policy.ContinueWatchingMaxAgeDays)
@@ -48,11 +59,21 @@ public static class ContinueWatchingEligibility
             state.LastPlaybackPosition,
             state.ProgressPercentage);
 
-    public static bool IsEligibleForContinueWatching(UserMediaState state, VideoPlaybackPolicySettingsDto policy) =>
-        MeetsResumeThreshold(state, policy) || IsContinueWatchingPlaceholder(state);
+    public static bool IsEligibleForContinueWatching(
+        UserMediaState state,
+        VideoPlaybackPolicySettingsDto policy,
+        bool isSerieEpisode = false) =>
+        MeetsResumeThreshold(state, policy)
+        || IsContinueWatchingPlaceholder(state)
+        || IsEarlySerieEpisodeWatch(state, policy, isSerieEpisode);
 
-    public static bool IsEligibleForContinueWatching(SharedProfileMediaState state, VideoPlaybackPolicySettingsDto policy) =>
-        MeetsResumeThreshold(state, policy) || IsContinueWatchingPlaceholder(state);
+    public static bool IsEligibleForContinueWatching(
+        SharedProfileMediaState state,
+        VideoPlaybackPolicySettingsDto policy,
+        bool isSerieEpisode = false) =>
+        MeetsResumeThreshold(state, policy)
+        || IsContinueWatchingPlaceholder(state)
+        || IsEarlySerieEpisodeWatch(state, policy, isSerieEpisode);
 
     private static bool IsContinueWatchingPlaceholder(
         bool isCompleted,
@@ -63,8 +84,41 @@ public static class ContinueWatchingEligibility
         !isCompleted
         && lastInteractedAt is not null
         && playCount == 0
-        && lastPlaybackPosition <= 0
-        && progressPercentage <= 0;
+        && lastPlaybackPosition < PlaceholderNoisePositionSeconds
+        && progressPercentage < PlaceholderNoiseProgressPercent;
+
+    private static bool IsEarlySerieEpisodeWatch(
+        bool isCompleted,
+        DateTime? lastInteractedAt,
+        double progressPercentage,
+        VideoPlaybackPolicySettingsDto policy,
+        bool isSerieEpisode) =>
+        isSerieEpisode
+        && !isCompleted
+        && lastInteractedAt is not null
+        && progressPercentage < policy.MinResumePercent;
+
+    private static bool IsEarlySerieEpisodeWatch(
+        UserMediaState state,
+        VideoPlaybackPolicySettingsDto policy,
+        bool isSerieEpisode) =>
+        IsEarlySerieEpisodeWatch(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.ProgressPercentage,
+            policy,
+            isSerieEpisode);
+
+    private static bool IsEarlySerieEpisodeWatch(
+        SharedProfileMediaState state,
+        VideoPlaybackPolicySettingsDto policy,
+        bool isSerieEpisode) =>
+        IsEarlySerieEpisodeWatch(
+            state.IsCompleted,
+            state.LastInteractedAt,
+            state.ProgressPercentage,
+            policy,
+            isSerieEpisode);
 
     private static bool MeetsResumeThreshold(
         bool isCompleted,
@@ -138,8 +192,10 @@ public static class ContinueWatchingEligibility
                     || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
                 && (s.ProgressPercentage >= minResumePercent
                     || (s.PlayCount == 0
-                        && s.LastPlaybackPosition <= 0
-                        && s.ProgressPercentage <= 0))));
+                        && s.LastPlaybackPosition < PlaceholderNoisePositionSeconds
+                        && s.ProgressPercentage < PlaceholderNoiseProgressPercent)
+                    || (x is SerieEpisode
+                        && s.ProgressPercentage < minResumePercent))));
 
         if (cutoff is not null)
         {
@@ -174,8 +230,10 @@ public static class ContinueWatchingEligibility
                     || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
                 && (s.ProgressPercentage >= minResumePercent
                     || (s.PlayCount == 0
-                        && s.LastPlaybackPosition <= 0
-                        && s.ProgressPercentage <= 0))));
+                        && s.LastPlaybackPosition < PlaceholderNoisePositionSeconds
+                        && s.ProgressPercentage < PlaceholderNoiseProgressPercent)
+                    || (x is SerieEpisode
+                        && s.ProgressPercentage < minResumePercent))));
 
         if (cutoff is not null)
         {

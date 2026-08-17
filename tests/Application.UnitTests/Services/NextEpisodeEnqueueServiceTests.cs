@@ -160,4 +160,43 @@ public class NextEpisodeEnqueueServiceTests
         next.LastPlaybackPosition.Should().Be(0);
         ContinueWatchingEligibility.IsContinueWatchingPlaceholder(next).Should().BeTrue();
     }
+
+    [Test]
+    public async Task EnqueueNextEpisodeAsync_ShouldSkipCompletedNext_AndPlaceholderFollowingEpisode()
+    {
+        var episode3Id = Guid.NewGuid();
+        var episode2 = await _context.Medias.OfType<SerieEpisode>().SingleAsync(e => e.Id == _episode2Id);
+        var episode3 = new SerieEpisode
+        {
+            Id = episode3Id,
+            SerieId = episode2.SerieId,
+            Serie = episode2.Serie,
+            SeasonId = episode2.SeasonId,
+            Season = episode2.Season,
+            EpisodeNumber = 3,
+            Title = "E3",
+            SortTitle = "E3"
+        };
+        _context.Medias.Add(episode3);
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = _episode2Id,
+            IsCompleted = true,
+            ProgressPercentage = 100,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-1)
+        });
+        await _context.SaveChangesAsync();
+
+        var timeNow = DateTime.UtcNow;
+        await _sut.EnqueueNextEpisodeAsync(_userId, _episode1Id, timeNow);
+        await _context.SaveChangesAsync();
+
+        var next = await _context.UserMediaStates
+            .SingleAsync(s => s.UserId == _userId && s.MediaId == episode3Id);
+
+        next.ProgressPercentage.Should().Be(0);
+        next.PlayCount.Should().Be(0);
+        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(next).Should().BeTrue();
+    }
 }

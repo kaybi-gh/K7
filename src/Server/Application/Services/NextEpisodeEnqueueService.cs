@@ -20,7 +20,13 @@ public class NextEpisodeEnqueueService(IApplicationDbContext context) : INextEpi
 {
     public async Task EnqueueNextEpisodeAsync(Guid userId, Guid episodeId, DateTime timeNow, CancellationToken cancellationToken = default)
     {
-        var nextEpisodeId = await ResolveNextEpisodeIdAsync(episodeId, cancellationToken);
+        var nextEpisodeId = await ResolveNextUnwatchedEpisodeIdAsync(
+            episodeId,
+            mediaId => context.UserMediaStates
+                .Where(s => s.UserId == userId && s.MediaId == mediaId)
+                .Select(s => (bool?)s.IsCompleted)
+                .FirstOrDefaultAsync(cancellationToken),
+            cancellationToken);
         if (nextEpisodeId is null)
             return;
 
@@ -56,7 +62,13 @@ public class NextEpisodeEnqueueService(IApplicationDbContext context) : INextEpi
         DateTime timeNow,
         CancellationToken cancellationToken = default)
     {
-        var nextEpisodeId = await ResolveNextEpisodeIdAsync(episodeId, cancellationToken);
+        var nextEpisodeId = await ResolveNextUnwatchedEpisodeIdAsync(
+            episodeId,
+            mediaId => context.SharedProfileMediaStates
+                .Where(s => s.SharedProfileId == sharedProfileId && s.MediaId == mediaId)
+                .Select(s => (bool?)s.IsCompleted)
+                .FirstOrDefaultAsync(cancellationToken),
+            cancellationToken);
         if (nextEpisodeId is null)
             return;
 
@@ -85,6 +97,28 @@ public class NextEpisodeEnqueueService(IApplicationDbContext context) : INextEpi
 
         nextState.LastInteractedAt = timeNow;
         nextState.ExcludedFromContinueWatching = false;
+    }
+
+    private async Task<Guid?> ResolveNextUnwatchedEpisodeIdAsync(
+        Guid episodeId,
+        Func<Guid, Task<bool?>> getIsCompletedAsync,
+        CancellationToken cancellationToken)
+    {
+        var currentId = episodeId;
+        for (var i = 0; i < 500; i++)
+        {
+            var nextId = await ResolveNextEpisodeIdAsync(currentId, cancellationToken);
+            if (nextId is null)
+                return null;
+
+            var isCompleted = await getIsCompletedAsync(nextId.Value);
+            if (isCompleted != true)
+                return nextId;
+
+            currentId = nextId.Value;
+        }
+
+        return null;
     }
 
     private async Task<Guid?> ResolveNextEpisodeIdAsync(Guid episodeId, CancellationToken cancellationToken)
