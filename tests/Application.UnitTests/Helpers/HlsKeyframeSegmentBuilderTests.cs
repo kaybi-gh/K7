@@ -61,11 +61,30 @@ public class HlsKeyframeSegmentBuilderTests
     }
 
     [Test]
-    public void BuildFromTimestamps_ShouldReturnEmpty_WhenNoKeyframes()
+    public void BuildFromTimestamps_ShouldEmitSingleFullDurationSegment_WhenNoKeyframesReported()
+    {
+        var fileMetadataId = Guid.NewGuid();
+        var indexedFileId = Guid.NewGuid();
+
+        var segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+            [],
+            10_000,
+            fileMetadataId,
+            indexedFileId);
+
+        segments.Should().ContainSingle();
+        segments[0].StartTimestamp.Should().Be(0);
+        segments[0].Duration.Should().Be(10_000);
+        segments[0].FileMetadataId.Should().Be(fileMetadataId);
+        segments[0].IndexedFileId.Should().Be(indexedFileId);
+    }
+
+    [Test]
+    public void BuildFromTimestamps_ShouldReturnEmpty_WhenDurationIsZero()
     {
         HlsKeyframeSegmentBuilder.BuildFromTimestamps(
-                [],
-                10_000,
+                [0],
+                0,
                 Guid.NewGuid(),
                 Guid.NewGuid())
             .Should().BeEmpty();

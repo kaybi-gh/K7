@@ -125,7 +125,7 @@ What to expect: fields update when providers respond. Rate limits, errors, or un
   <data name="ConfirmBulkFixDetail_MissingMembers" xml:space="preserve"><value>What happens: queues a metadata refresh to complete missing artist members/credits.
 What to expect: members may fill when the provider returns credits. Incomplete provider data can leave the artist still missing members.</value></data>
   <data name="ConfirmBulkFixDetail_MissingHlsSegments" xml:space="preserve"><value>What happens: queues HLS / keyframe segment computation for eligible video files.
-What to expect: segments appear when transmuxing is enabled and probing succeeds. Failures leave HLS segments missing.</value></data>
+What to expect: keyframe timestamps are stored when probing can read them. If none are reported, one segment covers the whole file from the start (always a valid decode point). Playback transcodes when transmux still cannot use that timeline.</value></data>
   <data name="ConfirmBulkFixDetail_MissingChapters" xml:space="preserve"><value>What happens: queues extraction of embedded file chapters.
 What to expect: chapters appear when the file contains chapter atoms. Files without embedded chapters stay without chapters.</value></data>
   <data name="ConfirmBulkFixDetail_MissingThemeSong" xml:space="preserve"><value>What happens: queues theme song generation (and intro detection first when needed).

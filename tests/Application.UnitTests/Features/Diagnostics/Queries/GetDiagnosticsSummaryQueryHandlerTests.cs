@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Features.Diagnostics.Queries.GetDiagnosticsSummary;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
@@ -163,6 +164,37 @@ public class GetDiagnosticsSummaryQueryHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldCountMissingHlsSegments_ForLocalTransmuxLibraries()
+    {
+        var libraryId = SeedMovieLibrary();
+        AddProbedMovieFile(libraryId, "/media/movie.mkv");
+        await _context.SaveChangesAsync();
+
+        var summaries = await _handler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+
+        summaries.Should().ContainSingle().Subject.MissingHlsSegmentsCount.Should().Be(1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldNotCountMissingHlsSegments_ForFederatedLibraries()
+    {
+        var peerId = Guid.NewGuid();
+        _context.PeerServers.Add(new PeerServer
+        {
+            Id = peerId,
+            Name = "Peer",
+            BaseUrl = "https://peer.test"
+        });
+        var libraryId = SeedMovieLibrary(peerId);
+        AddProbedMovieFile(libraryId, "/media/remote.mkv");
+        await _context.SaveChangesAsync();
+
+        var summaries = await _handler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+
+        summaries.Should().ContainSingle().Subject.MissingHlsSegmentsCount.Should().Be(0);
+    }
+
+    [Test]
     public async Task GetMissingIntroOutroCounts_ShouldNotRequireOnDiskFiles()
     {
         var libraryId = SeedSerieLibrary();
@@ -242,7 +274,7 @@ public class GetDiagnosticsSummaryQueryHandlerTests
         counts[libraryId].Should().Be(1);
     }
 
-    private Guid SeedMovieLibrary()
+    private Guid SeedMovieLibrary(Guid? peerServerId = null)
     {
         var groupId = Guid.NewGuid();
         var libraryId = Guid.NewGuid();
@@ -261,7 +293,9 @@ public class GetDiagnosticsSummaryQueryHandlerTests
             RootPath = "/media",
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
-            MetadataFallbackLanguage = "en"
+            MetadataFallbackLanguage = "en",
+            PeerServerId = peerServerId,
+            TransmuxingEnabled = true
         });
         _context.SaveChanges();
         return libraryId;
@@ -292,6 +326,32 @@ public class GetDiagnosticsSummaryQueryHandlerTests
         });
         _context.SaveChanges();
         return libraryId;
+    }
+
+    private void AddProbedMovieFile(Guid libraryId, string path)
+    {
+        var fileId = Guid.NewGuid();
+        _context.IndexedFiles.Add(new IndexedFile
+        {
+            Id = fileId,
+            LibraryId = libraryId,
+            MediaId = null,
+            Name = Path.GetFileNameWithoutExtension(path),
+            Extension = Path.GetExtension(path),
+            Path = path,
+            ParentDirectory = Path.GetDirectoryName(path) ?? "/media",
+            Hash = 1u,
+            Size = 1,
+            FileMetadata = new VideoFileMetadata
+            {
+                Id = Guid.NewGuid(),
+                IndexedFileId = fileId,
+                Container = "matroska",
+                Duration = TimeSpan.FromMinutes(42),
+                VideoBitrate = 4_000_000,
+                VideoResolution = VideoResolutionIdentifier._1080p
+            }
+        });
     }
 
     private void AddProbedEpisodeFile(Guid libraryId, Guid episodeId, string path)

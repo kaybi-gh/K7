@@ -178,7 +178,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
         var counts = await _context.IndexedFiles
             .AsNoTracking()
             .Where(f => f.FileMetadata != null && f.FileMetadata.Type == FileType.Video)
-            .Where(f => _context.Libraries.Any(l => l.Id == f.LibraryId && l.TransmuxingEnabled))
+            .Where(f => _context.Libraries.Any(l =>
+                l.Id == f.LibraryId && l.TransmuxingEnabled && l.PeerServerId == null))
             .Where(f => !_context.HlsSegments.Any(s => s.IndexedFileId == f.Id))
             .GroupBy(f => f.LibraryId)
             .Select(g => new { LibraryId = g.Key, Count = g.Count() })

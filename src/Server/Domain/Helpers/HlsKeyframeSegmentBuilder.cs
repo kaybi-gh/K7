@@ -19,7 +19,17 @@ public static class HlsKeyframeSegmentBuilder
         Guid indexedFileId,
         long minSegmentDurationMs = Hls.MinKeyframeSegmentDurationMs)
     {
-        if (keyframeTimestampsMs.Count == 0 || totalVideoDurationMs <= 0)
+        if (keyframeTimestampsMs.Count == 0)
+        {
+            // Start of file is always a decode point. An empty probe is a read miss, not a
+            // keyframe-less video; emit one segment covering the whole duration.
+            if (totalVideoDurationMs <= 0)
+                return [];
+
+            keyframeTimestampsMs = [0L];
+        }
+
+        if (totalVideoDurationMs <= 0)
             return [];
 
         var segments = new List<HlsSegment>();

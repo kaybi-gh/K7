@@ -125,7 +125,7 @@ Résultat attendu : les champs se mettent à jour si les fournisseurs répondent
   <data name="ConfirmBulkFixDetail_MissingMembers" xml:space="preserve"><value>Ce qui se passe : file un rafraîchissement pour compléter les membres/crédits artiste manquants.
 Résultat attendu : les membres peuvent se remplir si le fournisseur renvoie des crédits. Des données incomplètes peuvent laisser l'artiste sans membres.</value></data>
   <data name="ConfirmBulkFixDetail_MissingHlsSegments" xml:space="preserve"><value>Ce qui se passe : file le calcul des segments HLS / keyframes pour les fichiers vidéo éligibles.
-Résultat attendu : les segments apparaissent si le transmux est activé et le probe réussit. En cas d'échec, les segments HLS restent manquants.</value></data>
+Résultat attendu : les timestamps de keyframes sont enregistrés si le probe les lit. S'il n'en reporte aucune, un segment couvre tout le fichier depuis le début (toujours un point de décodage). La lecture passe en transcode si le transmux ne peut pas s'en servir.</value></data>
   <data name="ConfirmBulkFixDetail_MissingChapters" xml:space="preserve"><value>Ce qui se passe : file l'extraction des chapitres embarqués du fichier.
 Résultat attendu : les chapitres apparaissent s'ils existent dans le fichier. Sans chapitres embarqués, l'élément reste sans chapitres.</value></data>
   <data name="ConfirmBulkFixDetail_MissingThemeSong" xml:space="preserve"><value>Ce qui se passe : file la génération du thème (et la détection d'intro d'abord si besoin).

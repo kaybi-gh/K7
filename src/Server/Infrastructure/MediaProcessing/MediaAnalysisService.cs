@@ -1,4 +1,6 @@
-﻿using K7.Server.Application.Common.Configuration;
+﻿using FFMpegCore;
+using FFMpegCore.Enums;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -9,9 +11,6 @@ using K7.Server.Domain.Helpers;
 using K7.Server.Domain.Interfaces;
 using K7.Shared;
 using Microsoft.Extensions.Options;
-using FFMpegCore;
-using FFMpegCore.Enums;
-using System.Globalization;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -23,6 +22,8 @@ public class MediaAnalysisService : IMediaAnalysisService
     {
         _pathsConfiguration = pathsConfiguration.Value;
     }
+
+    private delegate bool TryParseKeyframeLine(string line, out long timestampMs);
 
     public async Task<AudioFileMetadata> GetAudioFileMetadataAsync(string filePath, CancellationToken cancellationToken = default)
     {
@@ -109,31 +110,44 @@ public class MediaAnalysisService : IMediaAnalysisService
         return formats[0];
     }
 
-    private async static Task<List<long>> ExtractKeyframeTimestampsAsync(string path, CancellationToken cancellationToken = default)
+    private static async Task<List<long>> ExtractKeyframeTimestampsAsync(
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        var quotedPath = $"\"{path}\"";
+        var packetTimestamps = await RunKeyframeProbeAsync(
+            $"-loglevel error -show_entries packet=pts_time,dts_time,flags -of csv=print_section=0 -select_streams v:0 {quotedPath}",
+            HlsKeyframeTimestampParser.TryParsePacketLine,
+            cancellationToken);
+
+        if (packetTimestamps.Count > 0)
+            return packetTimestamps;
+
+        return await RunKeyframeProbeAsync(
+            $"-loglevel error -skip_frame nokey -select_streams v:0 -show_entries frame=pts_time,pkt_pts_time,pkt_dts_time -of csv=print_section=0 {quotedPath}",
+            HlsKeyframeTimestampParser.TryParseKeyframeFrameLine,
+            cancellationToken);
+    }
+
+    private static async Task<List<long>> RunKeyframeProbeAsync(
+        string arguments,
+        TryParseKeyframeLine parseLine,
+        CancellationToken cancellationToken)
     {
         var timestamps = new List<long>();
-
-        await SafeProcessRunner.RunAsync(
+        var exitCode = await SafeProcessRunner.RunAsync(
             GlobalFFOptions.GetFFProbeBinaryPath(),
-            $"-loglevel error -show_entries packet=pts_time,flags -of csv=print_section=0 -select_streams v:0 \"{path}\"",
+            arguments,
             onStdout: line =>
             {
-                if (line.Contains(",K", StringComparison.Ordinal)) // 'K' for keyframe
-                {
-                    var index = line.IndexOf(',', StringComparison.Ordinal);
-                    if (index > 0)
-                    {
-                        var trimmedLine = line[..index];
-                        if (double.TryParse(trimmedLine, NumberStyles.Float, CultureInfo.InvariantCulture, out var ptsTime))
-                        {
-                            timestamps.Add((long)(ptsTime * 1000)); // Convert to milliseconds
-                        }
-                    }
-                }
+                if (parseLine(line, out var timestampMs))
+                    timestamps.Add(timestampMs);
             },
             timeout: TimeSpan.FromSeconds(300),
-            cancellationToken: cancellationToken
-        );
+            cancellationToken: cancellationToken);
+
+        if (exitCode != 0)
+            throw new InvalidOperationException($"ffprobe failed while extracting keyframes (exit {exitCode}).");
 
         return timestamps;
     }
@@ -147,19 +161,15 @@ public class MediaAnalysisService : IMediaAnalysisService
     {
         var keyframeTimestamps = await ExtractKeyframeTimestampsAsync(indexedFile.Path, cancellationToken);
 
-        if (keyframeTimestamps == null
-            || keyframeTimestamps.Count == 0
-            || indexedFile.FileMetadata == null)
-        {
+        if (indexedFile.FileMetadata == null)
             return [];
-        }
 
         // segmentsDuration retained for API compatibility. Video playlists use every source
         // keyframe (shared with demuxed audio). Only collapse pathological micro-GOPs.
         _ = segmentsDuration;
 
         return HlsKeyframeSegmentBuilder.BuildFromTimestamps(
-            keyframeTimestamps,
+            keyframeTimestamps ?? [],
             totalVideoDuration,
             indexedFile.FileMetadata.Id,
             indexedFile.Id);

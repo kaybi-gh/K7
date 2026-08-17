@@ -2,7 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Extensions;
+using K7.Server.Domain.Helpers;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
@@ -70,6 +70,14 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
                     request.SegmentsDuration,
                     (long)videoFileMetadata.Duration.TotalMilliseconds,
                     cancellationToken);
+                if (segments.Count == 0)
+                {
+                    segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+                        [],
+                        (long)videoFileMetadata.Duration.TotalMilliseconds,
+                        videoFileMetadata.Id,
+                        entity.Id);
+                }
                 _context.HlsSegments.RemoveRange(videoFileMetadata.HlsSegments);
                 videoFileMetadata.HlsSegments = segments;
                 break;
