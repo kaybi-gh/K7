@@ -86,6 +86,7 @@ builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
+builder.Services.AddSingleton<IUserRatingSync, UserRatingSync>();
 builder.Services.AddSingleton<MediaCacheStore>();
 builder.Services.AddSingleton<IHomeNavigationState, HomeNavigationState>();
 builder.Services.AddSingleton<IHubFocusNavigationState, HubFocusNavigationState>();

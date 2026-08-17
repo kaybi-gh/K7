@@ -18,7 +18,8 @@ public record UpsertMediaReviewCommand(Guid MediaId, UpsertMediaReviewRequest Re
 public class UpsertMediaReviewCommandHandler(
     IApplicationDbContext context,
     IUser currentUser,
-    IMediaAccessGuard accessGuard)
+    IMediaAccessGuard accessGuard,
+    IUserRatingNotifier ratingNotifier)
     : IRequestHandler<UpsertMediaReviewCommand, Guid>
 {
     public async Task<Guid> Handle(UpsertMediaReviewCommand command, CancellationToken cancellationToken)
@@ -68,6 +69,7 @@ public class UpsertMediaReviewCommandHandler(
                 context.MediaReviews.Remove(review);
 
             await context.SaveChangesAsync(cancellationToken);
+            await NotifyRatingUpdatedAsync(command.MediaId, command.Request.Rating, cancellationToken);
             return rating.Id;
         }
 
@@ -91,6 +93,19 @@ public class UpsertMediaReviewCommandHandler(
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        await NotifyRatingUpdatedAsync(command.MediaId, command.Request.Rating, cancellationToken);
         return review.Id;
+    }
+
+    private async Task NotifyRatingUpdatedAsync(Guid mediaId, int value, CancellationToken cancellationToken)
+    {
+        if (currentUser.IdentityId is { } identityId)
+        {
+            await ratingNotifier.NotifyUserRatingUpdatedAsync(
+                identityId,
+                mediaId,
+                value,
+                cancellationToken);
+        }
     }
 }

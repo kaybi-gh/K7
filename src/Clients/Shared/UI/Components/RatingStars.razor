@@ -2,6 +2,7 @@
 @inject IConnectivityService Connectivity
 @inject IPlaybackJournal PlaybackJournal
 @inject IFeatureAccessService FeatureAccess
+@inject IUserRatingSync Ratings
 
 @if (ReadOnly || _canRate)
 {

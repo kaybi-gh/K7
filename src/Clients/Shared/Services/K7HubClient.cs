@@ -30,7 +30,9 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
     public string? ConnectedUserId { get; private set; }
 
     public event Action<HubConnectionState>? ConnectionStateChanged;
+    public event Action? UserContextChanged;
     public event Action<Guid, double, bool, MediaType>? ProgressUpdated;
+    public event Action<Guid, int>? UserRatingUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid>? MediaMetadataRefreshed;
@@ -65,21 +67,38 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
     {
         if (string.IsNullOrEmpty(userId)) return;
 
-        ConnectedUserId = userId;
+        if (!string.IsNullOrEmpty(accessToken))
+            _accessToken = accessToken;
 
-        if (_started && _hubConnection?.State == HubConnectionState.Connected)
+        if (string.Equals(ConnectedUserId, userId, StringComparison.Ordinal)
+            && _started
+            && _hubConnection?.State == HubConnectionState.Connected)
             return;
 
         await _lock.WaitAsync();
         try
         {
-            if (_started && _hubConnection?.State == HubConnectionState.Connected)
+            if (!string.IsNullOrEmpty(accessToken))
+                _accessToken = accessToken;
+
+            var userChanged = !string.Equals(ConnectedUserId, userId, StringComparison.Ordinal);
+            if (userChanged)
+            {
+                ConnectedUserId = userId;
+                UserContextChanged?.Invoke();
+            }
+            else if (_started && _hubConnection?.State == HubConnectionState.Connected)
+            {
                 return;
+            }
 
             if (_hubConnection is not null)
             {
                 await _hubConnection.DisposeAsync();
+                _hubConnection = null;
             }
+
+            _started = false;
 
             var queryParams = new List<string>();
             if (!string.IsNullOrEmpty(deviceId))
@@ -93,8 +112,6 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
                 ? $"/hub?{string.Join('&', queryParams)}"
                 : "/hub";
             var hubUrl = new Uri(baseUri, hubPath);
-
-            _accessToken = accessToken;
 
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl, options =>
@@ -125,6 +142,11 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
             _hubConnection.On<Guid, double, bool, MediaType>("ReceivePlaybackProgress", (mediaId, progress, isCompleted, mediaType) =>
             {
                 ProgressUpdated?.Invoke(mediaId, progress, isCompleted, mediaType);
+            });
+
+            _hubConnection.On<Guid, int>("ReceiveUserRatingUpdated", (mediaId, value) =>
+            {
+                UserRatingUpdated?.Invoke(mediaId, value);
             });
 
             _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>

@@ -14,7 +14,8 @@ public class RateMediaCommandHandler(
     IApplicationDbContext context,
     IUser currentUser,
     IMediaAccessGuard accessGuard,
-    IMediaQueryCacheInvalidator cacheInvalidator)
+    IMediaQueryCacheInvalidator cacheInvalidator,
+    IUserRatingNotifier ratingNotifier)
     : IRequestHandler<RateMediaCommand>
 {
     public async Task Handle(RateMediaCommand request, CancellationToken cancellationToken)
@@ -47,5 +48,14 @@ public class RateMediaCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateAll();
+
+        if (currentUser.IdentityId is { } identityId)
+        {
+            await ratingNotifier.NotifyUserRatingUpdatedAsync(
+                identityId,
+                request.MediaId,
+                request.Value,
+                cancellationToken);
+        }
     }
 }

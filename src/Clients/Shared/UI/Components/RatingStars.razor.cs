@@ -37,8 +37,10 @@ public partial class RatingStars : IAsyncDisposable
     private ElementReference _element;
     private int? _currentValue;
     private int? _lastParameterValue;
+    private Guid _lastMediaId;
     private int? _valueBeforeEdit;
     private DotNetObjectReference<RatingStars>? _dotNetRef;
+    private bool _syncSubscribed;
 
     private int StarCount => _currentValue.HasValue ? (int)Math.Ceiling(_currentValue.Value / 2.0) : 0;
 
@@ -67,10 +69,15 @@ public partial class RatingStars : IAsyncDisposable
         return star <= StarCount;
     }
 
+    protected override void OnInitialized()
+    {
+        Ratings.Changed += OnRatingSyncChanged;
+        _syncSubscribed = true;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        _currentValue = Value;
-        _lastParameterValue = Value;
+        ApplyValueFromSyncOrParameter();
         if (!ReadOnly)
             _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
     }
@@ -94,11 +101,35 @@ public partial class RatingStars : IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        if (Value != _lastParameterValue)
+        ApplyValueFromSyncOrParameter();
+    }
+
+    private void ApplyValueFromSyncOrParameter()
+    {
+        if (!DeferPersistence && Ratings.TryGet(MediaId, out var cached))
+        {
+            _currentValue = cached;
+        }
+        else if (MediaId != _lastMediaId || Value != _lastParameterValue)
         {
             _currentValue = Value;
-            _lastParameterValue = Value;
         }
+
+        _lastMediaId = MediaId;
+        _lastParameterValue = Value;
+    }
+
+    private void OnRatingSyncChanged(Guid mediaId, int? value)
+    {
+        if (DeferPersistence || mediaId != MediaId || _currentValue == value)
+            return;
+
+        _currentValue = value;
+        _ = InvokeAsync(async () =>
+        {
+            await ValueChanged.InvokeAsync(value);
+            StateHasChanged();
+        });
     }
 
     private void OnPointerOver(int star)
@@ -173,6 +204,7 @@ public partial class RatingStars : IAsyncDisposable
 
     private async Task RateAsync(int value)
     {
+        Ratings.Set(MediaId, value > 0 ? value : null);
         try
         {
             if (Connectivity.IsOnline)
@@ -196,6 +228,12 @@ public partial class RatingStars : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_syncSubscribed)
+        {
+            Ratings.Changed -= OnRatingSyncChanged;
+            _syncSubscribed = false;
+        }
+
         if (_dotNetRef is not null)
         {
             try

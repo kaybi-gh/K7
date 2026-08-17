@@ -85,7 +85,9 @@ Migrations: always add for **both** providers - commands in [CONTRIBUTING.md](..
 
 ## SignalR and transcoding
 
-The Web host exposes a SignalR hub for remote control, Sync Play, and live UI updates. Proxies must allow WebSockets.
+The Web host exposes a SignalR hub for remote control, Sync Play, and live UI updates (playback progress, user ratings, library changes). Proxies must allow WebSockets.
+
+User ratings: `RateMedia` (and review upsert) broadcast `ReceiveUserRatingUpdated` to the acting user's hub group. Clients keep a session overlay (`IUserRatingSync`) so playlist/album/player `RatingStars` instances update immediately, including the originating session before the hub echo arrives.
 
 Playback: client requests a stream decision -> remux vs transcode -> encoder selection (software or hardware) -> temp files under `Paths:Transcoding`. Details: [Operating - Transcoding](../admin/operating.md#transcoding).
 
