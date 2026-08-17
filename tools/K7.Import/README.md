@@ -6,8 +6,8 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes (static only by default) | Owner + plex.tv friends via API tokens. Local Plex Home ratings need `--plex-db` (HTTP often returns the admin's stars). Smart/dynamic playlists are skipped unless `--include-dynamic-playlists` |
-| **Jellyfin** | No | Yes (like=10, dislike=1) | Yes (incl. Liked Songs from favorites) | No per-play timestamps, use Tracearr for history. Heart favorites become a "Liked Songs" playlist (Audio) plus "Favoris" for movies/episodes |
+| **Plex** | Aggregated watch states (no per-play sessions) | Yes (0-10 scale) | Yes (static only by default) | Owner + plex.tv friends via API tokens. Local Plex Home ratings need `--plex-db` (HTTP often returns the admin's stars). Smart/dynamic playlists are skipped unless `--include-dynamic-playlists`. Use Tautulli or Tracearr for per-play history. |
+| **Jellyfin** | Aggregated watch states (no per-play sessions) | Yes (like=10, dislike=1) | Yes (incl. Liked Songs from favorites) | No per-play timestamps. Use Tracearr for session history. Heart favorites become a "Liked Songs" playlist (Audio) plus "Favoris" for movies/episodes |
 | **Tracearr** | Yes | No | No | Requires Tracearr **2.0+** (public API v2). Per-play history with timestamps plus TMDb/IMDb/TVDb IDs when available |
 | **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata. Uses Plex `title` (not `full_title`) and parses agent guids (`tmdb` / `imdb` / `tvdb`) when present. History rows rarely include guids, so the importer also calls `get_metadata` once per series (`grandparent_rating_key`) and attaches those ids as parent-series ids. A history row tagged `episode` with no show title is treated as a movie (Plex/Tautulli sometimes mis-tags films like Parasite) |
 | **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 (API) | Yes (API or `Playlist*.json` export) | Use `--spotify-data-dir` for history and/or account-data playlists |
@@ -16,7 +16,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Data type | Description |
 |---|---|
-| **history** | Play count, last played position, completion status, last played date. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Re-importing skips duplicate playback sessions. |
+| **history** | Play count, last played position, completion status, last played date. Completed series episodes also enqueue the next unwatched episode for Keep Watching. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Direct Plex/Jellyfin APIs import aggregated watch states only. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
 | **playlists** | Playlist titles (prefixed with source, e.g. `Jellyfin - Liked Songs`) and their items (matched by provider IDs, file path, then title/artist identity). Unmatched items become virtual file-less medias unless `--only-match-existing` (show them via "Afficher les titres indisponibles"). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
 

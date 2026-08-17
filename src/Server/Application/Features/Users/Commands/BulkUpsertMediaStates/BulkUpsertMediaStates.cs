@@ -1,6 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Shared.Dtos.Requests;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +19,8 @@ public record BulkUpsertMediaStatesCommand : IRequest<int>
 
 public class BulkUpsertMediaStatesCommandHandler(
     IApplicationDbContext context,
-    IMediaQueryCacheInvalidator cacheInvalidator)
+    IMediaQueryCacheInvalidator cacheInvalidator,
+    INextEpisodeEnqueueService nextEpisodeEnqueueService)
     : IRequestHandler<BulkUpsertMediaStatesCommand, int>
 {
     public async Task<int> Handle(BulkUpsertMediaStatesCommand request, CancellationToken cancellationToken)
@@ -93,8 +96,49 @@ public class BulkUpsertMediaStatesCommandHandler(
         }
 
         await context.SaveChangesAsync(cancellationToken);
+
         if (upsertedCount > 0)
+        {
+            await EnqueueNextEpisodesAsync(request.UserId, existingStates, cancellationToken);
             cacheInvalidator.InvalidateAll();
+        }
+
         return upsertedCount;
+    }
+
+    private async Task EnqueueNextEpisodesAsync(
+        Guid userId,
+        Dictionary<Guid, UserMediaState> states,
+        CancellationToken cancellationToken)
+    {
+        var completedIds = states
+            .Where(kv => kv.Value.IsCompleted)
+            .Select(kv => kv.Key)
+            .ToList();
+        if (completedIds.Count == 0)
+            return;
+
+        var completedEpisodes = await context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => completedIds.Contains(e.Id))
+            .Select(e => new { e.Id, e.SerieId, SeasonNumber = e.Season.SeasonNumber, e.EpisodeNumber })
+            .ToListAsync(cancellationToken);
+        if (completedEpisodes.Count == 0)
+            return;
+
+        var latestBySerie = completedEpisodes
+            .GroupBy(e => e.SerieId)
+            .Select(g => g
+                .OrderByDescending(e => e.SeasonNumber == 0 ? int.MinValue : e.SeasonNumber)
+                .ThenByDescending(e => e.EpisodeNumber)
+                .First());
+
+        foreach (var episode in latestBySerie)
+        {
+            var interactedAt = states[episode.Id].LastInteractedAt ?? DateTime.UtcNow;
+            await nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, episode.Id, interactedAt, cancellationToken);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

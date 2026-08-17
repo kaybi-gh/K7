@@ -134,10 +134,10 @@ public sealed class ImportCommand
         CancellationToken cancellationToken)
     {
         var sourceLower = source.ToLowerInvariant();
-        if (scope.History && sourceLower is "plex" or "jellyfin")
+        var importPerPlaySessions = sourceLower is not "plex" and not "jellyfin";
+        if (scope.History && !importPerPlaySessions)
         {
-            AnsiConsole.MarkupLine("[yellow]History import is disabled for direct Plex/Jellyfin sources (no per-play timestamps). Use Tautulli or Tracearr for history. Continuing with ratings and playlists only.[/]");
-            scope = scope with { History = false };
+            AnsiConsole.MarkupLine("[yellow]Per-play sessions are not available from direct Plex/Jellyfin APIs. Importing aggregated watch states (progress, play count, completion). Use Tautulli or Tracearr for per-play history.[/]");
         }
 
         if (sourceLower != "spotify" && string.IsNullOrEmpty(sourceApiKey))
@@ -443,13 +443,11 @@ public sealed class ImportCommand
                                 if (dryRun)
                                 {
                                     preview.WatchStates += stateItems.Count;
-                                    preview.PlaybackSessions += sessionCount;
+                                    if (importPerPlaySessions)
+                                        preview.PlaybackSessions += sessionCount;
                                 }
                                 else
                                 {
-                                    var sessionItems = await BuildPlaybackSessionItemsAsync(
-                                        historyItems, matches, deviceResolver, cancellationToken);
-
                                     if (stateItems.Count > 0)
                                     {
                                         ctx.Status($"Importing {stateItems.Count} watch states for {sourceUser.Name}...");
@@ -457,11 +455,17 @@ public sealed class ImportCommand
                                             plan.K7UserId, stateItems, strategy, cancellationToken);
                                     }
 
-                                    if (sessionItems.Count > 0)
+                                    if (importPerPlaySessions)
                                     {
-                                        ctx.Status($"Importing {sessionItems.Count} playback sessions for {sourceUser.Name}...");
-                                        preview.PlaybackSessions += await k7Client.BulkCreatePlaybackSessionsAsync(
-                                            plan.K7UserId, sessionItems, cancellationToken);
+                                        var sessionItems = await BuildPlaybackSessionItemsAsync(
+                                            historyItems, matches, deviceResolver, cancellationToken);
+
+                                        if (sessionItems.Count > 0)
+                                        {
+                                            ctx.Status($"Importing {sessionItems.Count} playback sessions for {sourceUser.Name}...");
+                                            preview.PlaybackSessions += await k7Client.BulkCreatePlaybackSessionsAsync(
+                                                plan.K7UserId, sessionItems, cancellationToken);
+                                        }
                                     }
                                 }
                             }
