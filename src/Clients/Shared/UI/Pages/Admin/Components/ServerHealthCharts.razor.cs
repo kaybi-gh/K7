@@ -8,6 +8,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Components;
 public partial class ServerHealthCharts
 {
     [Parameter] public IReadOnlyList<ServerMetricsSnapshotDto> Snapshots { get; set; } = [];
+    [Parameter] public bool Compact { get; set; }
 
     private List<ChartDataPoint> _cpuData = [];
     private List<ChartDataPoint> _memoryData = [];
@@ -37,6 +38,20 @@ public partial class ServerHealthCharts
         }
 
         var latest = Snapshots[^1];
+        if (Compact)
+        {
+            if (_cpuData.Count > 0)
+            {
+                _cpuData = [];
+                _memoryData = [];
+                _networkData = [];
+            }
+
+            _builtSnapshotCount = Snapshots.Count;
+            _builtSnapshotTimestamp = latest.Timestamp;
+            return;
+        }
+
         if (Snapshots.Count == _builtSnapshotCount && latest.Timestamp == _builtSnapshotTimestamp)
             return;
 

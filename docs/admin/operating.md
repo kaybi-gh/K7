@@ -249,11 +249,17 @@ Admin Dashboard KPIs and Libraries issue chips link into **Admin -> Diagnostics*
 
 - **`/admin/diagnostics` (dashboard):** media-health overview for K7 - severity totals, work-class
   issue cards (with Fix all when a bulk fix exists), see-all count links, and per-library
-  Error/Warning/Info breakdown. Clicks deep-link into details.
+  Error/Warning/Info breakdown. Clicks deep-link into details. On TV, work-class issue cards are
+  omitted to keep the WebView lighter. Use **View all issues** or the per-library table.
 - **`/admin/diagnostics/details`:** work queue - filterable table, per-row fixes, re-identify, and
   **Fix all** when a single fixable issue filter is active. Use the toolbar hint if Fix all is disabled.
 - **Bulk fix confirm dialog:** states what will be queued and realistic outcomes (including that
   re-identify / refresh / create-media may find no match and leave some items unchanged).
+
+On TV (Android TV / native TV clients), Admin Dashboard skips live charts and metrics polling.
+Current CPU / RAM / network stay as numbers, active streams stay live, and background-task counts
+refresh on a longer debounce. Background tasks itself still live-updates, but at most about every
+10 seconds.
 
 Severity (Error / Warning / Info) classifies findings - not a promise that a fix or refresh will
 succeed. Work class is the nature of the work:

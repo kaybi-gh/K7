@@ -14,7 +14,8 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 public partial class AdminBackgroundTasksPanel : IDisposable
 {
     private const string FilterStorageKey = "admin.background-tasks";
-    private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan DesktopDebounceDelay = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan TvDebounceDelay = TimeSpan.FromSeconds(10);
     private static readonly BackgroundTaskStatus[] _allStatuses =
     [
         BackgroundTaskStatus.Pending,
@@ -42,6 +43,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "status")]
@@ -70,6 +72,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private bool _tableLoaded;
     private bool _pendingQuerySync;
     private int _tableKey;
+    private bool _isTv;
 
     private static readonly List<BackgroundTaskOrderingOption> SortOptions =
     [
@@ -81,8 +84,18 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskOrderingOption.NameDesc
     ];
 
+    private TimeSpan DebounceDelay => _isTv ? TvDebounceDelay : DesktopDebounceDelay;
+    private int TableOverscanCount => _isTv ? 3 : 10;
+
+    protected override void OnInitialized()
+    {
+        _isTv = DeviceService.CachedDeviceType == DeviceType.TV;
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+
         K7HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
 
         if (PageFilterUrlSync.HasAnyQuery(Navigation, "status", "taskType", "triggeredBy", "sort"))

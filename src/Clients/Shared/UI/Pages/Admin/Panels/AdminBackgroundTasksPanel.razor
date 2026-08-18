@@ -82,12 +82,12 @@
         <div class="background-tasks-table-host @(_tableLoaded && _totalCount == 0 ? "background-tasks-table-host--hidden" : null)">
             <K7DataTable @key="_tableKey" @ref="_tableRef" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync"
                          RowId="@(t => $"task-{t.Id}")"
-                         RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
+                         RowHeight="64" OverscanCount="TableOverscanCount" ShowToolbar="false" Surface="false" Height="100%">
                 <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false" Width="220px">
                     <CellTemplate>
                         <div class="task-name-cell">
                             <span class="text-sm task-name-label">@GetTaskTypeLabel(context.Name)</span>
-                            @if (!string.IsNullOrEmpty(context.ErrorDetails))
+                            @if (!_isTv && !string.IsNullOrEmpty(context.ErrorDetails))
                             {
                                 <p class="text-caption task-error-detail" style="color: var(--color-error);" title="@context.ErrorDetails">@context.ErrorDetails</p>
                             }

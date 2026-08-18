@@ -3,6 +3,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
@@ -62,13 +63,13 @@ public partial class AdminStatsPanel
     private List<StatsRankRow> _subtitleLangRankRows = [];
     private List<StatsRankRow> _transcodeRankRows = [];
 
-    private ApexChartOptions<ChartDataPoint> _areaChartOptions = CreateAreaChartOptions();
-    private ApexChartOptions<ChartDataPoint> _barChartOptionsHour = CreateBarChartOptions();
-    private ApexChartOptions<ChartDataPoint> _barChartOptionsDow = CreateBarChartOptions();
-    private ApexChartOptions<ChartDataPoint> _donutChartOptionsGenre = CreateDonutChartOptions();
-    private ApexChartOptions<ChartDataPoint> _donutChartOptionsDevice = CreateDonutChartOptions();
-    private ApexChartOptions<ChartDataPoint> _donutChartOptionsDecision = CreateDonutChartOptions();
-    private ApexChartOptions<ChartDataPoint> _donutChartOptionsResolution = CreateDonutChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _areaChartOptions = CreateAreaChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _barChartOptionsHour = CreateBarChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _barChartOptionsDow = CreateBarChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _donutChartOptionsGenre = CreateDonutChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _donutChartOptionsDevice = CreateDonutChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _donutChartOptionsDecision = CreateDonutChartOptions();
+    private readonly ApexChartOptions<ChartDataPoint> _donutChartOptionsResolution = CreateDonutChartOptions();
 
     private readonly List<ButtonGroupOption<string>> _periodOptions =
     [
@@ -99,9 +100,14 @@ public partial class AdminStatsPanel
     private bool ShowMusicRankings => _selectedMediaType is "" or "MusicTrack";
     private bool ShowShowRankings => _selectedMediaType is "" or "SerieEpisode";
 
+    protected override void OnInitialized()
+    {
+        _isTv = DeviceService.CachedDeviceType == DeviceType.TV;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        _isTv = await DeviceService.GetDeviceTypeAsync() == K7.Server.Domain.Enums.DeviceType.TV;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         try
         {
@@ -294,9 +300,11 @@ public partial class AdminStatsPanel
     {
         if (_stats is null) return;
 
-        _playsOverTimeData = _stats.PlaysOverTime
-            .Select(p => new ChartDataPoint(p.Date.ToString("MM/dd"), p.Count))
-            .ToList();
+        _playsOverTimeData = _isTv
+            ? []
+            : _stats.PlaysOverTime
+                .Select(p => new ChartDataPoint(p.Date.ToString("MM/dd"), p.Count))
+                .ToList();
 
         _hourData = _stats.PlaysByHourOfDay
             .Select(p => new ChartDataPoint($"{p.Hour}h", p.Count))

@@ -60,60 +60,63 @@
             <p class="text-caption diagnostics-dashboard__stat-hint">@L["SeverityTotalsHint"]</p>
         </section>
 
-        @foreach (var workClass in Enum.GetValues<DiagnosticWorkClass>())
+        @if (!_isTv)
         {
-            var issues = GetIssuesWithCount(workClass);
-            if (issues.Count == 0)
+            @foreach (var workClass in Enum.GetValues<DiagnosticWorkClass>())
             {
-                continue;
-            }
+                var issues = GetIssuesWithCount(workClass);
+                if (issues.Count == 0)
+                {
+                    continue;
+                }
 
-            var workClassCount = GetWorkClassCount(workClass);
-            <section class="diagnostics-dashboard__section" aria-label="@GetWorkClassLabel(workClass)">
-                <div class="diagnostics-dashboard__section-heading">
-                    <h6 class="diagnostics-dashboard__section-title">@GetWorkClassLabel(workClass)</h6>
-                    <button type="button"
-                            class="diagnostics-dashboard__see-all focusable"
-                            @onclick="@(() => NavigateToDetails(workClass: workClass))">
-                        @string.Format(L["WorkClassSeeAll"], workClassCount)
-                    </button>
-                </div>
-                <div class="diagnostics-dashboard__issue-grid">
-                    @foreach (var (issue, count) in issues)
-                    {
-                        var canFix = DiagnosticIssueTaxonomy.SupportsBulkFix(issue);
-                        <K7Paper Outlined="true" Class="diagnostics-dashboard__issue-card">
-                            <button type="button"
-                                    class="diagnostics-dashboard__issue-card-body focusable"
-                                    @onclick="@(() => NavigateToDetails(issue: issue))">
-                                <div class="diagnostics-dashboard__issue-card-main">
-                                    <span class="text-sm diagnostics-dashboard__issue-label"
-                                          style="@(GetIssueLabelStyle(issue))">
-                                        @GetIssueLabel(issue)
+                var workClassCount = GetWorkClassCount(workClass);
+                <section class="diagnostics-dashboard__section" aria-label="@GetWorkClassLabel(workClass)">
+                    <div class="diagnostics-dashboard__section-heading">
+                        <h6 class="diagnostics-dashboard__section-title">@GetWorkClassLabel(workClass)</h6>
+                        <button type="button"
+                                class="diagnostics-dashboard__see-all focusable"
+                                @onclick="@(() => NavigateToDetails(workClass: workClass))">
+                            @string.Format(L["WorkClassSeeAll"], workClassCount)
+                        </button>
+                    </div>
+                    <div class="diagnostics-dashboard__issue-grid">
+                        @foreach (var (issue, count) in issues)
+                        {
+                            var canFix = DiagnosticIssueTaxonomy.SupportsBulkFix(issue);
+                            <K7Paper Outlined="true" Class="diagnostics-dashboard__issue-card">
+                                <button type="button"
+                                        class="diagnostics-dashboard__issue-card-body focusable"
+                                        @onclick="@(() => NavigateToDetails(issue: issue))">
+                                    <div class="diagnostics-dashboard__issue-card-main">
+                                        <span class="text-sm diagnostics-dashboard__issue-label"
+                                              style="@(GetIssueLabelStyle(issue))">
+                                            @GetIssueLabel(issue)
+                                        </span>
+                                        <span class="diagnostics-dashboard__issue-count">@count</span>
+                                    </div>
+                                </button>
+                                <div class="diagnostics-dashboard__issue-card-footer">
+                                    <span class="text-caption diagnostics-dashboard__stat-caption">
+                                        @GetIssueCardCaption(issue)
                                     </span>
-                                    <span class="diagnostics-dashboard__issue-count">@count</span>
+                                    @if (canFix)
+                                    {
+                                        <button type="button"
+                                                class="diagnostics-dashboard__issue-fix focusable"
+                                                @onclick="@(() => QueueIssueFixAsync(issue, count))"
+                                                disabled="@_isQueueingFix"
+                                                aria-label="@string.Format(L["QueueAllFixes"], count)">
+                                            <K7Icon Icon="@Phosphor.Wrench" IconSize="K7IconSize.Sm" />
+                                            <span>@L["FixAll"]</span>
+                                        </button>
+                                    }
                                 </div>
-                            </button>
-                            <div class="diagnostics-dashboard__issue-card-footer">
-                                <span class="text-caption diagnostics-dashboard__stat-caption">
-                                    @GetIssueCardCaption(issue)
-                                </span>
-                                @if (canFix)
-                                {
-                                    <button type="button"
-                                            class="diagnostics-dashboard__issue-fix focusable"
-                                            @onclick="@(() => QueueIssueFixAsync(issue, count))"
-                                            disabled="@_isQueueingFix"
-                                            aria-label="@string.Format(L["QueueAllFixes"], count)">
-                                        <K7Icon Icon="@Phosphor.Wrench" IconSize="K7IconSize.Sm" />
-                                        <span>@L["FixAll"]</span>
-                                    </button>
-                                }
-                            </div>
-                        </K7Paper>
-                    }
-                </div>
-            </section>
+                            </K7Paper>
+                        }
+                    </div>
+                </section>
+            }
         }
 
         @if (_librariesWithIssues.Count > 0)

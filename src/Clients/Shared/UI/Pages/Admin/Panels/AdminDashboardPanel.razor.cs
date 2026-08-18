@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -11,10 +12,13 @@ public partial class AdminDashboardPanel : IDisposable
 {
     private const int MaxMetricPoints = 72;
     private static readonly TimeSpan MetricsPollInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DesktopTaskKpiDebounce = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan TvTaskKpiDebounce = TimeSpan.FromSeconds(10);
 
     [Inject] private IServerInfoService K7ServerService { get; set; } = default!;
     [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     private IReadOnlyList<ServerMetricsSnapshotDto> _metricSnapshots = [];
@@ -22,9 +26,13 @@ public partial class AdminDashboardPanel : IDisposable
     private int _warningCount;
     private int _infoCount;
     private int _runningTaskCount;
+    private bool _isTv;
     private PeriodicTimer? _metricsPollTimer;
     private CancellationTokenSource? _pollCts;
+    private Timer? _taskKpiDebounceTimer;
     private readonly CancellationTokenSource _cts = new();
+
+    private TimeSpan TaskKpiDebounce => _isTv ? TvTaskKpiDebounce : DesktopTaskKpiDebounce;
 
     private int OnlineUsersCount =>
         _metricSnapshots.Count > 0 ? _metricSnapshots[^1].OnlineUsersCount : 0;
@@ -32,11 +40,22 @@ public partial class AdminDashboardPanel : IDisposable
     private IReadOnlyList<ServerDiskVolumeDto> DiskVolumes =>
         _metricSnapshots.Count > 0 ? _metricSnapshots[^1].DiskVolumes : [];
 
+    protected override void OnInitialized()
+    {
+        _isTv = DeviceService.CachedDeviceType == DeviceType.TV;
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+
         HubClient.ServerMetricsUpdated += OnServerMetricsUpdated;
+        HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
 
         await Task.WhenAll(LoadKpisAsync(), LoadMetricsHistoryAsync(initialLoad: true));
+
+        if (_isTv)
+            return;
 
         _pollCts = new CancellationTokenSource();
         _metricsPollTimer = new PeriodicTimer(MetricsPollInterval);
@@ -57,6 +76,11 @@ public partial class AdminDashboardPanel : IDisposable
 
     private async Task LoadKpisAsync()
     {
+        await Task.WhenAll(LoadDiagnosticsKpiAsync(), LoadTaskKpiAsync());
+    }
+
+    private async Task LoadDiagnosticsKpiAsync()
+    {
         try
         {
             var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync(_cts.Token);
@@ -70,13 +94,19 @@ public partial class AdminDashboardPanel : IDisposable
             _warningCount = 0;
             _infoCount = 0;
         }
+    }
 
+    private async Task LoadTaskKpiAsync()
+    {
         try
         {
-            var summary = await BackgroundTaskService.GetSummaryAsync();
+            var summary = await BackgroundTaskService.GetSummaryAsync(cancellationToken: _cts.Token);
             _runningTaskCount = summary.StatusCounts
                 .Where(s => s.Status is BackgroundTaskStatus.InProgress or BackgroundTaskStatus.Pending or BackgroundTaskStatus.WaitingForRetry)
                 .Sum(s => s.Count);
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch
         {
@@ -123,8 +153,31 @@ public partial class AdminDashboardPanel : IDisposable
         });
     }
 
+    private void OnBackgroundTaskUpdated()
+    {
+        _taskKpiDebounceTimer?.Dispose();
+        _taskKpiDebounceTimer = new Timer(_ =>
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await LoadTaskKpiAsync();
+                StateHasChanged();
+            });
+        }, null, TaskKpiDebounce, Timeout.InfiniteTimeSpan);
+    }
+
     private bool TryApplySnapshots(IReadOnlyList<ServerMetricsSnapshotDto> snapshots)
     {
+        if (_isTv)
+        {
+            var latest = snapshots[^1];
+            if (_metricSnapshots.Count == 1 && _metricSnapshots[0].Timestamp == latest.Timestamp)
+                return false;
+
+            _metricSnapshots = [latest];
+            return true;
+        }
+
         if (_metricSnapshots.Count == snapshots.Count
             && snapshots.Count > 0
             && _metricSnapshots[^1].Timestamp == snapshots[^1].Timestamp)
@@ -141,6 +194,12 @@ public partial class AdminDashboardPanel : IDisposable
         if (_metricSnapshots.Count > 0 && _metricSnapshots[^1].Timestamp == snapshot.Timestamp)
             return false;
 
+        if (_isTv)
+        {
+            _metricSnapshots = [snapshot];
+            return true;
+        }
+
         var next = _metricSnapshots.ToList();
         next.Add(snapshot);
 
@@ -154,11 +213,13 @@ public partial class AdminDashboardPanel : IDisposable
     public void Dispose()
     {
         HubClient.ServerMetricsUpdated -= OnServerMetricsUpdated;
+        HubClient.BackgroundTaskUpdated -= OnBackgroundTaskUpdated;
 
         _cts.Cancel();
         _cts.Dispose();
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _metricsPollTimer?.Dispose();
+        _taskKpiDebounceTimer?.Dispose();
     }
 }

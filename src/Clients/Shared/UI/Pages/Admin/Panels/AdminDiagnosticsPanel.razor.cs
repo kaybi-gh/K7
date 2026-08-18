@@ -12,6 +12,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 public partial class AdminDiagnosticsPanel : IDisposable
 {
     [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -25,6 +26,7 @@ public partial class AdminDiagnosticsPanel : IDisposable
     private bool _isLoading = true;
     private bool _isQueueingFix;
     private bool _redirecting;
+    private bool _isTv;
     private Guid? _filterLibraryId;
     private int _totalIssueCount;
     private int _errorCount;
@@ -32,8 +34,15 @@ public partial class AdminDiagnosticsPanel : IDisposable
     private int _infoCount;
     private readonly CancellationTokenSource _cts = new();
 
+    protected override void OnInitialized()
+    {
+        _isTv = DeviceService.CachedDeviceType == DeviceType.TV;
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+
         if (PageFilterUrlSync.HasAnyQuery(Navigation, "issue", "entityType", "severity", "workClass"))
         {
             _redirecting = true;

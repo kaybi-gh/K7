@@ -66,6 +66,20 @@
     color: var(--color-text-muted);
 }
 
+.dashboard-health--compact .dashboard-health__current {
+    font-size: var(--text-h3-size, 1.75rem);
+    line-height: 1.2;
+}
+
+.dashboard-health--compact .dashboard-health__chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.dashboard-health--compact .dashboard-health__empty {
+    min-height: 0;
+}
+
 @media (max-width: 1199px) {
     .dashboard-health__charts {
         grid-template-columns: 1fr;
