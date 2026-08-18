@@ -3,6 +3,7 @@
 @inject IPlaybackJournal PlaybackJournal
 @inject IFeatureAccessService FeatureAccess
 @inject IUserRatingSync Ratings
+@inject ILocalUserService LocalUsers
 
 @if (ReadOnly || _canRate)
 {

@@ -1,10 +1,10 @@
 using CommunityToolkit.Maui;
-using K7.Clients.Shared.Helpers;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Data;
 using K7.Clients.MAUI.Interfaces;
 using K7.Clients.MAUI.Services;
 using K7.Clients.MAUI.Services.Authentication;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
@@ -174,7 +174,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<ISharedProfileLocalCache, SharedProfileLocalCache>();
         builder.Services.AddSingleton<ISharedProfileService, SharedProfileService>();
         builder.Services.AddSingleton<ISharedProfileSessionService, SharedProfileSessionService>();
-builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevicePinService>();
+        builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevicePinService>();
         builder.Services.AddSingleton<ILocalUserService, LocalUserService>();
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton<IUserRatingSync, UserRatingSync>();
@@ -203,7 +203,7 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
 #endif
         builder.Services.AddSingleton<IDownloadManager, Services.DownloadManager>();
         builder.Services.AddSingleton<IMusicCacheService, MusicCacheService>();
-        builder.Services.AddSingleton<PlaybackSyncService>();
+        builder.Services.AddSingleton<IPlaybackSyncService, PlaybackSyncService>();
 
         builder.Services.AddSingleton<K7DialogService>();
         builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
@@ -241,30 +241,23 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
         var app = builder.Build();
         System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
-        app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
-        app.Services.GetRequiredService<RemotePlaybackHandler>();
-
-        // Ensure offline DB is created
         var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();
-        using (var db = offlineDbFactory.CreateDbContext())
+        OfflineDbBootstrap.Start(offlineDbFactory);
+
+        // Event subscriptions only - do not block first frame on these graphs.
+        _ = Task.Run(() =>
         {
-            db.Database.EnsureCreated();
-
-            // Add columns introduced after initial schema
             try
             {
-                db.Database.ExecuteSqlRaw("ALTER TABLE DownloadedMedia ADD COLUMN LastPlaybackPosition REAL NOT NULL DEFAULT 0");
+                app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
+                app.Services.GetRequiredService<RemotePlaybackHandler>();
+                app.Services.GetRequiredService<IPlaybackSyncService>();
             }
-            catch { /* Column already exists */ }
-            try
+            catch (Exception ex)
             {
-                db.Database.ExecuteSqlRaw("ALTER TABLE PendingPlaybackEvents ADD COLUMN SharedProfileId TEXT NULL");
+                System.Diagnostics.Debug.WriteLine("K7 MAUI - playback handler init failed: " + ex);
             }
-            catch { /* Column already exists */ }
-        }
-
-        // Initialize playback sync serviceRembo
-        app.Services.GetRequiredService<PlaybackSyncService>();
+        });
 
         System.Diagnostics.Debug.WriteLine("K7 MAUI - CreateMauiApp returning");
         return app;
@@ -287,7 +280,6 @@ builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevic
 
         System.Diagnostics.Debug.WriteLine("K7 MAUI - Initializing SQLitePCL");
         SQLitePCL.Batteries_V2.Init();
-
         System.Diagnostics.Debug.WriteLine("K7 MAUI - Registering DbContext");
         services.AddDbContext<OpenIddictDbContext>(options =>
         {

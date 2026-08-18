@@ -298,12 +298,16 @@ public partial class RatingStars : IAsyncDisposable
             }
             else
             {
-                await PlaybackJournal.RecordRatingAsync(MediaId, value);
+                var identityUserId = LocalUsers.GetLastActive()?.IdentityUserId;
+                if (!string.IsNullOrEmpty(identityUserId))
+                    await PlaybackJournal.RecordRatingAsync(MediaId, value, identityUserId);
             }
         }
         catch (HttpRequestException)
         {
-            await PlaybackJournal.RecordRatingAsync(MediaId, value);
+            var identityUserId = LocalUsers.GetLastActive()?.IdentityUserId;
+            if (!string.IsNullOrEmpty(identityUserId))
+                await PlaybackJournal.RecordRatingAsync(MediaId, value, identityUserId);
         }
         catch
         {

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -300,7 +301,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (!string.IsNullOrEmpty(user.Email))
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
-        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Offline", Claims.Name, ClaimTypes.Role));
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, AuthIdentity.OfflineAuthenticationType, Claims.Name, ClaimTypes.Role));
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
         _deviceStorageService.Remove(PreferenceKeys.ACCESS_TOKEN);
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));

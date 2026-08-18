@@ -144,4 +144,6 @@ Android music uses two Media3 ExoPlayers in `K7MediaLibraryService` (session pla
 
 Offline transfers run in-process via `DownloadManager` (`HttpClient` streaming). The queue is in-memory: force-stop or process death still loses in-progress transfers (completed files persist in SQLite + `AppData/downloads`).
 
+Offline playback progress and ratings are queued in `PendingPlaybackEvents` with `IdentityUserId`. `PlaybackSyncService` flushes them only after first Blazor paint (past select-profile / splash) for the currently **online** authenticated user. Rows without a user id are dropped and never sent.
+
 On Android, a `dataSync` foreground service (`DownloadForegroundService`) with an ongoing notification keeps the process alive while **user** downloads are queued, preparing, or transferring. Music-cache lookahead does not start that service (playback already has a media foreground service). Other MAUI platforms have no equivalent keep-alive yet.

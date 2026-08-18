@@ -18,20 +18,20 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task<bool> IsAvailableOfflineAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         return await db.DownloadedMedia.AnyAsync(d => d.IndexedFileId == indexedFileId, cancellationToken);
     }
 
     public async Task<DownloadedMediaItem?> GetByIndexedFileIdAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.IndexedFileId == indexedFileId, cancellationToken);
         return entity is null ? null : ToModel(entity);
     }
 
     public async Task<IReadOnlyList<DownloadedMediaItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entities = await db.DownloadedMedia
             .OrderByDescending(d => d.DownloadedAt)
             .ToListAsync(cancellationToken);
@@ -40,7 +40,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task<IReadOnlyList<DownloadedMediaItem>> GetByMediaTypeAsync(MediaType mediaType, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entities = await db.DownloadedMedia
             .Where(d => d.MediaType == mediaType)
             .OrderByDescending(d => d.DownloadedAt)
@@ -50,7 +50,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task<OfflineStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var items = await db.DownloadedMedia
             .Select(d => new { d.FileSize, d.IsCacheItem })
             .ToListAsync(cancellationToken);
@@ -70,7 +70,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task AddAsync(DownloadedMediaItem item, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entity = new DownloadedMediaEntity
         {
             Id = item.Id,
@@ -97,7 +97,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task RemoveAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.IndexedFileId == indexedFileId, cancellationToken);
         if (entity is null) return;
 
@@ -111,7 +111,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task RemoveAllCacheItemsAsync(CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var cacheItems = await db.DownloadedMedia
             .Where(d => d.IsCacheItem)
             .ToListAsync(cancellationToken);
@@ -164,7 +164,7 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task UpdateLastPlaybackPositionAsync(Guid mediaId, double position, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
         if (entity is null) return;
 
@@ -175,8 +175,14 @@ public class OfflineMediaStore : IOfflineMediaStore
 
     public async Task<double> GetLastPlaybackPositionAsync(Guid mediaId, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
         return entity?.LastPlaybackPosition ?? 0;
+    }
+
+    private async Task<OfflineMediaDbContext> OpenAsync(CancellationToken cancellationToken)
+    {
+        await OfflineDbBootstrap.Ready.WaitAsync(cancellationToken);
+        return await _dbContextFactory.CreateDbContextAsync(cancellationToken);
     }
 }

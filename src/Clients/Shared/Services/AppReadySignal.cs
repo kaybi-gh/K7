@@ -4,10 +4,16 @@ public static class AppReadySignal
 {
     private static TaskCompletionSource<bool>? _tcs = new();
 
-    public static void Signal()
+    public static bool IsSignaled
     {
-        _tcs?.TrySetResult(true);
+        get
+        {
+            var tcs = _tcs;
+            return tcs is null || tcs.Task.IsCompleted;
+        }
     }
+
+    public static void Signal() => _tcs?.TrySetResult(true);
 
     public static Task WaitAsync(CancellationToken cancellationToken = default)
     {
@@ -16,8 +22,5 @@ public static class AppReadySignal
         return tcs.Task.WaitAsync(cancellationToken);
     }
 
-    public static void Reset()
-    {
-        _tcs = new TaskCompletionSource<bool>();
-    }
+    public static void Reset() => _tcs = new TaskCompletionSource<bool>();
 }

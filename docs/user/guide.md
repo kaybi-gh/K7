@@ -170,7 +170,7 @@ Per-item visibility on playlists or collections can tighten or target sharing fu
 
 On Android, an ongoing notification keeps transfers running when the app is in the background or swiped away. Force-stopping the app still cancels in-progress downloads.
 
-**Settings -> Offline**: storage limits, Wi-Fi vs mobile data, music cache lookahead. Progress made offline syncs when the server is reachable again. If the server does not answer on profile selection, you may be offered **Continue offline**.
+**Settings -> Offline**: storage limits, Wi-Fi vs mobile data, music cache lookahead. Progress and ratings made offline are stored on the device for that profile. They are sent to the server only after you pick a user on select-profile (or solo auto-login) and the session is online - never during splash, and never onto another profile. If the server does not answer on profile selection, you may be offered **Continue offline**.
 
 ## Watching together and casting
 

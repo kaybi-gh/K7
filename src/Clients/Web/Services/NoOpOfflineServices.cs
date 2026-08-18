@@ -45,12 +45,17 @@ public class NoOpConnectivityService : IConnectivityService
 
 public class NoOpPlaybackJournal : IPlaybackJournal
 {
-    public Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PendingPlaybackEvent>>([]);
+    public Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, string identityUserId, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, string identityUserId, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, string identityUserId, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordRatingAsync(Guid mediaId, int value, string identityUserId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(string identityUserId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PendingPlaybackEvent>>([]);
     public Task MarkSyncedAsync(IEnumerable<Guid> eventIds, CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public class NoOpPlaybackSyncService : IPlaybackSyncService
+{
+    public Task SyncPendingEventsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public class NoOpMusicCacheService : IMusicCacheService

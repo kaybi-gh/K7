@@ -15,6 +15,7 @@ public class AudioPlaybackProgressTrackerTests
     private IDeviceStorageService _storage = null!;
     private IConnectivityService _connectivity = null!;
     private IPlaybackJournal _journal = null!;
+    private ILocalUserService _localUsers = null!;
     private AudioPlaybackProgressTracker _sut = null!;
 
     [SetUp]
@@ -25,6 +26,13 @@ public class AudioPlaybackProgressTrackerTests
         _storage = Substitute.For<IDeviceStorageService>();
         _connectivity = Substitute.For<IConnectivityService>();
         _journal = Substitute.For<IPlaybackJournal>();
+        _localUsers = Substitute.For<ILocalUserService>();
+        _localUsers.GetLastActive().Returns(new LocalUser
+        {
+            IdentityUserId = "user-a",
+            UserName = "A",
+            RefreshToken = "rt"
+        });
 
         _connectivity.IsOnline.Returns(true);
         _storage.Get(PreferenceKeys.DEVICE_ID).Returns(Guid.NewGuid().ToString());
@@ -36,7 +44,8 @@ public class AudioPlaybackProgressTrackerTests
             _streaming,
             _storage,
             _connectivity,
-            _journal);
+            _journal,
+            _localUsers);
         _sut.SetCanReport(true);
     }
 

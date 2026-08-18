@@ -15,6 +15,7 @@ public class PlaybackProgressTrackerTests
     private IDeviceStorageService _storage = null!;
     private IConnectivityService _connectivity = null!;
     private IPlaybackJournal _journal = null!;
+    private ILocalUserService _localUsers = null!;
     private MediaCacheStore _cache = null!;
     private PlaybackProgressTracker _sut = null!;
     private PlayerSource _source = null!;
@@ -27,6 +28,7 @@ public class PlaybackProgressTrackerTests
         _storage = Substitute.For<IDeviceStorageService>();
         _connectivity = Substitute.For<IConnectivityService>();
         _journal = Substitute.For<IPlaybackJournal>();
+        _localUsers = Substitute.For<ILocalUserService>();
         _cache = new MediaCacheStore();
 
         _source = new PlayerSource
@@ -41,6 +43,12 @@ public class PlaybackProgressTrackerTests
         _player.CurrentTime.Returns(0d);
         _connectivity.IsOnline.Returns(true);
         _storage.Get(PreferenceKeys.DEVICE_ID).Returns(Guid.NewGuid().ToString());
+        _localUsers.GetLastActive().Returns(new LocalUser
+        {
+            IdentityUserId = "user-a",
+            UserName = "A",
+            RefreshToken = "rt"
+        });
 
         _sut = new PlaybackProgressTracker(
             _player,
@@ -48,6 +56,7 @@ public class PlaybackProgressTrackerTests
             _storage,
             _connectivity,
             _journal,
+            _localUsers,
             _cache);
     }
 
@@ -129,5 +138,48 @@ public class PlaybackProgressTrackerTests
             Arg.Any<Guid?>(),
             Arg.Any<Guid?>(),
             Arg.Any<Guid?>());
+    }
+
+    [Test]
+    public async Task Report_ShouldJournalForLastActiveUser_WhenOffline()
+    {
+        var mediaId = Guid.NewGuid();
+        var indexedFileId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _connectivity.IsOnline.Returns(false);
+        _sut.StartTracking(mediaId, isAuthenticated: true, indexedFileId: indexedFileId);
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        await _streaming.DidNotReceiveWithAnyArgs()
+            .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
+
+        await _journal.Received().RecordProgressAsync(
+            mediaId,
+            indexedFileId,
+            120d,
+            7200d,
+            "user-a",
+            Arg.Any<Guid?>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Report_ShouldNotJournal_WhenOfflineAndNoLastActiveUser()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _connectivity.IsOnline.Returns(false);
+        _localUsers.GetLastActive().Returns((LocalUser?)null);
+        _sut.StartTracking(mediaId, isAuthenticated: true, indexedFileId: Guid.NewGuid());
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        await _journal.DidNotReceiveWithAnyArgs()
+            .RecordProgressAsync(default, default, default, default, default!);
     }
 }

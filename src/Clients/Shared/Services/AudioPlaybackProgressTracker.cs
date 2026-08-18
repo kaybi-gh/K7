@@ -13,6 +13,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     private readonly IDeviceStorageService _deviceStorage;
     private readonly IConnectivityService _connectivity;
     private readonly IPlaybackJournal _journal;
+    private readonly ILocalUserService _localUsers;
     private readonly ISyncPlayService? _syncPlayService;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
@@ -33,6 +34,7 @@ public class AudioPlaybackProgressTracker : IDisposable
         IDeviceStorageService deviceStorage,
         IConnectivityService connectivity,
         IPlaybackJournal journal,
+        ILocalUserService localUsers,
         ISyncPlayService? syncPlayService = null)
     {
         _audio = audio;
@@ -40,6 +42,7 @@ public class AudioPlaybackProgressTracker : IDisposable
         _deviceStorage = deviceStorage;
         _connectivity = connectivity;
         _journal = journal;
+        _localUsers = localUsers;
         _syncPlayService = syncPlayService;
 
         _audio.CurrentTrackChanged += OnTrackChanged;
@@ -120,12 +123,11 @@ public class AudioPlaybackProgressTracker : IDisposable
         if (!_canReport) return;
         if (sessionId == Guid.Empty) return;
 
+        var identityUserId = _localUsers.GetLastActive()?.IdentityUserId;
+
         if (!_connectivity.IsOnline && indexedFileId.HasValue)
         {
-            if (state == PlaybackState.Ended)
-                await _journal.RecordCompletedAsync(mediaId, indexedFileId.Value, duration);
-            else
-                await _journal.RecordProgressAsync(mediaId, indexedFileId.Value, position, duration);
+            await RecordOfflineAsync(mediaId, indexedFileId.Value, position, duration, state, identityUserId);
             return;
         }
 
@@ -147,13 +149,25 @@ public class AudioPlaybackProgressTracker : IDisposable
         catch
         {
             if (indexedFileId.HasValue)
-            {
-                if (state == PlaybackState.Ended)
-                    await _journal.RecordCompletedAsync(mediaId, indexedFileId.Value, duration);
-                else
-                    await _journal.RecordProgressAsync(mediaId, indexedFileId.Value, position, duration);
-            }
+                await RecordOfflineAsync(mediaId, indexedFileId.Value, position, duration, state, identityUserId);
         }
+    }
+
+    private async Task RecordOfflineAsync(
+        Guid mediaId,
+        Guid indexedFileId,
+        double position,
+        double duration,
+        PlaybackState state,
+        string? identityUserId)
+    {
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        if (state == PlaybackState.Ended)
+            await _journal.RecordCompletedAsync(mediaId, indexedFileId, duration, identityUserId);
+        else
+            await _journal.RecordProgressAsync(mediaId, indexedFileId, position, duration, identityUserId);
     }
 
     private void StartTimer()

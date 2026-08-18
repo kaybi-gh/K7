@@ -34,6 +34,8 @@ public class OfflineMediaDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.IsSynced);
             entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => new { e.IdentityUserId, e.IsSynced });
+            entity.Property(e => e.IdentityUserId).HasMaxLength(128).IsRequired();
         });
 
         // SQLite does not support DateTimeOffset in ORDER BY. Store as sortable TEXT.
@@ -86,6 +88,7 @@ public class PendingPlaybackEventEntity
     public double Duration { get; set; }
     public int? RatingValue { get; set; }
     public Guid? SharedProfileId { get; set; }
+    public string IdentityUserId { get; set; } = string.Empty;
     public DateTimeOffset Timestamp { get; set; }
     public bool IsSynced { get; set; }
 }

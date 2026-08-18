@@ -116,6 +116,7 @@ public class RatingStarsTests
         ctx.Services.AddSingleton(Substitute.For<IRatingService>());
         ctx.Services.AddSingleton(Substitute.For<IConnectivityService>());
         ctx.Services.AddSingleton(Substitute.For<IPlaybackJournal>());
+        ctx.Services.AddSingleton(Substitute.For<ILocalUserService>());
         ctx.JSInterop.Mode = JSRuntimeMode.Loose;
         return ctx;
     }

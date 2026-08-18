@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
@@ -26,10 +27,12 @@ public partial class MainLayout : IDisposable
     [Inject] private SoftKeyboardJsBridge SoftKeyboardBridge { get; set; } = default!;
     [Inject] private IWindowsStreamFetchJsBridge WindowsStreamFetchBridge { get; set; } = default!;
     [Inject] private WebViewJsBridge WebViewJsBridge { get; set; } = default!;
+    [Inject] private IPlaybackSyncService PlaybackSync { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
     private bool _reconnectAnimationPlayed;
+    private bool _firstRenderDone;
     private Timer? _overlayTimer;
     private DotNetObjectReference<MainLayout>? _selfRef;
     private ElementReference _reconnectAnimationContainer;
@@ -47,14 +50,8 @@ public partial class MainLayout : IDisposable
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
 
-        try
-        {
-            await ThemeBootstrap.InitializeAsync(ThemeService, JS, ServerInfoService);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Theme bootstrap failed");
-        }
+        ThemeBootstrap.InitializeAsync(ThemeService, JS, ServerInfoService)
+            .FireAndForget(Logger, "Theme bootstrap failed");
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
@@ -62,15 +59,7 @@ public partial class MainLayout : IDisposable
         }
 
         await EnsureUserSessionAsync();
-
-        var hubDeviceType = await DeviceService.GetDeviceTypeAsync();
-        FeedHub.SetEnabled(true);
-        // Bound RAM on phones/tablets: keep Home forever, at most 3 Explore/library-group pages.
-        if (hubDeviceType is DeviceType.Phone or DeviceType.Tablet)
-            FeedHub.SetMountLimit(3);
-        else
-            FeedHub.SetMountLimit(null);
-
+        await BindFeedHubAsync();
         FeedHub.Changed += OnFeedHubChanged;
     }
 
@@ -85,6 +74,9 @@ public partial class MainLayout : IDisposable
         {
             await task;
             await EnsureUserSessionAsync();
+            await BindFeedHubAsync();
+            if (_firstRenderDone)
+                RequestOfflineStatsSync();
         }
         catch (Exception ex)
         {
@@ -101,38 +93,38 @@ public partial class MainLayout : IDisposable
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                          ?? authState.User.FindFirst("sub")?.Value;
 
-            if (isAuth && !string.IsNullOrEmpty(userId))
+            if (!isAuth || string.IsNullOrEmpty(userId))
             {
-                var userChanged = !string.Equals(_sessionUserId, userId, StringComparison.Ordinal);
-                if (userChanged && Connectivity.IsOnline)
-                    await DeviceInitializer.InitializeDeviceAsync(Services, userId);
+                _sessionUserId = null;
+                return;
+            }
 
-                var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
-                AudioProgressTracker.SetCanReport(canReport);
+            var userChanged = !string.Equals(_sessionUserId, userId, StringComparison.Ordinal);
+            _sessionUserId = userId;
 
-                var deviceStorageService = Services.GetRequiredService<IDeviceStorageService>();
-                var deviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+            if (userChanged && Connectivity.IsOnline)
+                DeviceInitializer.InitializeDeviceAsync(Services, userId)
+                    .FireAndForget(Logger, "Device init failed");
 
-                var baseUri = DeviceService.GetClientType() == ClientType.Web
-                    ? NavigationManager.ToAbsoluteUri("/")
-                    : K7ServerService.HttpClient.BaseAddress ?? NavigationManager.ToAbsoluteUri("/");
-                var accessToken = K7ServerService.HttpClient.DefaultRequestHeaders.Authorization?.Parameter;
+            var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
+            AudioProgressTracker.SetCanReport(canReport);
 
-                if (Connectivity.IsOnline)
-                {
-                    string? deviceName = null;
-                    string? deviceType = null;
-                    if (userChanged || K7HubClient.State != HubConnectionState.Connected)
-                    {
-                        deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
-                        var request = await DeviceService.GenerateCreateDeviceRequestAsync();
-                        deviceName = request.DeviceName;
-                    }
+            var deviceStorageService = Services.GetRequiredService<IDeviceStorageService>();
+            var deviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
-                    await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName, deviceType);
-                }
+            var baseUri = DeviceService.GetClientType() == ClientType.Web
+                ? NavigationManager.ToAbsoluteUri("/")
+                : K7ServerService.HttpClient.BaseAddress ?? NavigationManager.ToAbsoluteUri("/");
+            var accessToken = K7ServerService.HttpClient.DefaultRequestHeaders.Authorization?.Parameter;
 
-                _sessionUserId = userId;
+            if (Connectivity.IsOnline)
+            {
+                string? deviceType = null;
+                if (userChanged || K7HubClient.State != HubConnectionState.Connected)
+                    deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
+
+                K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName: null, deviceType)
+                    .FireAndForget(Logger, "Hub startup failed");
             }
         }
         catch (Exception ex)
@@ -141,10 +133,27 @@ public partial class MainLayout : IDisposable
         }
     }
 
+    private async Task BindFeedHubAsync()
+    {
+        if (string.IsNullOrEmpty(_sessionUserId))
+        {
+            FeedHub.SetEnabled(false);
+            return;
+        }
+
+        var hubDeviceType = await DeviceService.GetDeviceTypeAsync();
+        FeedHub.SetEnabled(true);
+        if (hubDeviceType is DeviceType.Phone or DeviceType.Tablet)
+            FeedHub.SetMountLimit(3);
+        else
+            FeedHub.SetMountLimit(null);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            AppReadySignal.Signal();
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
             await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);
@@ -172,6 +181,9 @@ public partial class MainLayout : IDisposable
             {
                 Logger.LogDebug(ex, "Windows stream fetch bridge registration failed");
             }
+
+            _firstRenderDone = true;
+            RequestOfflineStatsSync();
         }
 
         if (_showOverlay && !_reconnectAnimationPlayed)
@@ -185,6 +197,9 @@ public partial class MainLayout : IDisposable
             catch (JSException) { }
         }
     }
+
+    private void RequestOfflineStatsSync() =>
+        PlaybackSync.SyncPendingEventsAsync().FireAndForget(Logger, "Offline playback sync failed");
 
     [JSInvokable]
     public void OnHomeEscapeFirst()

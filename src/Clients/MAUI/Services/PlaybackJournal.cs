@@ -15,13 +15,21 @@ public class PlaybackJournal : IPlaybackJournal
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default)
+    public async Task RecordProgressAsync(
+        Guid mediaId,
+        Guid indexedFileId,
+        double position,
+        double duration,
+        string identityUserId,
+        Guid? sharedProfileId = null,
+        CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        if (now - _lastRecordedAt < ThrottleInterval) return;
+        if (now - _lastRecordedAt < ThrottleInterval)
+            return;
         _lastRecordedAt = now;
 
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
 
         var downloaded = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
         if (downloaded is not null)
@@ -30,38 +38,84 @@ public class PlaybackJournal : IPlaybackJournal
             downloaded.LastPlayedAt = now;
         }
 
-        db.PendingPlaybackEvents.Add(new PendingPlaybackEventEntity
+        if (!string.IsNullOrEmpty(identityUserId))
         {
-            Id = Guid.NewGuid(),
-            MediaId = mediaId,
-            IndexedFileId = indexedFileId,
-            EventType = PlaybackEventType.Progress,
-            Position = position,
-            Duration = duration,
-            SharedProfileId = sharedProfileId,
-            Timestamp = now,
-            IsSynced = false
-        });
+            db.PendingPlaybackEvents.Add(CreateEvent(
+                mediaId,
+                indexedFileId,
+                PlaybackEventType.Progress,
+                position,
+                duration,
+                identityUserId,
+                sharedProfileId,
+                ratingValue: null,
+                now));
+        }
 
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) =>
-        AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Completed, duration, duration, sharedProfileId, cancellationToken: cancellationToken);
+    public Task RecordCompletedAsync(
+        Guid mediaId,
+        Guid indexedFileId,
+        double duration,
+        string identityUserId,
+        Guid? sharedProfileId = null,
+        CancellationToken cancellationToken = default) =>
+        AddEventAsync(
+            mediaId,
+            indexedFileId,
+            PlaybackEventType.Completed,
+            duration,
+            duration,
+            identityUserId,
+            sharedProfileId,
+            cancellationToken: cancellationToken);
 
-    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) =>
-        AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Skipped, position, duration, sharedProfileId, cancellationToken: cancellationToken);
+    public Task RecordSkippedAsync(
+        Guid mediaId,
+        Guid indexedFileId,
+        double position,
+        double duration,
+        string identityUserId,
+        Guid? sharedProfileId = null,
+        CancellationToken cancellationToken = default) =>
+        AddEventAsync(
+            mediaId,
+            indexedFileId,
+            PlaybackEventType.Skipped,
+            position,
+            duration,
+            identityUserId,
+            sharedProfileId,
+            cancellationToken: cancellationToken);
 
-    public async Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default)
+    public Task RecordRatingAsync(
+        Guid mediaId,
+        int value,
+        string identityUserId,
+        CancellationToken cancellationToken = default) =>
+        AddEventAsync(
+            mediaId,
+            Guid.Empty,
+            PlaybackEventType.Rated,
+            0,
+            0,
+            identityUserId,
+            sharedProfileId: null,
+            ratingValue: value,
+            cancellationToken: cancellationToken);
+
+    public async Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(
+        string identityUserId,
+        CancellationToken cancellationToken = default)
     {
-        await AddEventAsync(mediaId, Guid.Empty, PlaybackEventType.Rated, 0, 0, null, ratingValue: value, cancellationToken: cancellationToken);
-    }
+        if (string.IsNullOrEmpty(identityUserId))
+            return [];
 
-    public async Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default)
-    {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var entities = await db.PendingPlaybackEvents
-            .Where(e => !e.IsSynced)
+            .Where(e => !e.IsSynced && e.IdentityUserId == identityUserId)
             .OrderBy(e => e.Timestamp)
             .ToListAsync(cancellationToken);
 
@@ -74,6 +128,7 @@ public class PlaybackJournal : IPlaybackJournal
             Position = e.Position,
             Duration = e.Duration,
             Timestamp = e.Timestamp,
+            IdentityUserId = e.IdentityUserId,
             RatingValue = e.RatingValue,
             SharedProfileId = e.SharedProfileId,
             IsSynced = e.IsSynced
@@ -82,7 +137,7 @@ public class PlaybackJournal : IPlaybackJournal
 
     public async Task MarkSyncedAsync(IEnumerable<Guid> eventIds, CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var db = await OpenAsync(cancellationToken);
         var ids = eventIds.ToList();
         var entities = await db.PendingPlaybackEvents
             .Where(e => ids.Contains(e.Id))
@@ -111,12 +166,39 @@ public class PlaybackJournal : IPlaybackJournal
         PlaybackEventType eventType,
         double position,
         double duration,
+        string identityUserId,
         Guid? sharedProfileId,
         int? ratingValue = null,
         CancellationToken cancellationToken = default)
     {
-        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        db.PendingPlaybackEvents.Add(new PendingPlaybackEventEntity
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        await using var db = await OpenAsync(cancellationToken);
+        db.PendingPlaybackEvents.Add(CreateEvent(
+            mediaId,
+            indexedFileId,
+            eventType,
+            position,
+            duration,
+            identityUserId,
+            sharedProfileId,
+            ratingValue,
+            DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static PendingPlaybackEventEntity CreateEvent(
+        Guid mediaId,
+        Guid indexedFileId,
+        PlaybackEventType eventType,
+        double position,
+        double duration,
+        string identityUserId,
+        Guid? sharedProfileId,
+        int? ratingValue,
+        DateTimeOffset timestamp) =>
+        new()
         {
             Id = Guid.NewGuid(),
             MediaId = mediaId,
@@ -126,9 +208,14 @@ public class PlaybackJournal : IPlaybackJournal
             Duration = duration,
             RatingValue = ratingValue,
             SharedProfileId = sharedProfileId,
-            Timestamp = DateTimeOffset.UtcNow,
+            IdentityUserId = identityUserId,
+            Timestamp = timestamp,
             IsSynced = false
-        });
-        await db.SaveChangesAsync(cancellationToken);
+        };
+
+    private async Task<OfflineMediaDbContext> OpenAsync(CancellationToken cancellationToken)
+    {
+        await OfflineDbBootstrap.Ready.WaitAsync(cancellationToken);
+        return await _dbContextFactory.CreateDbContextAsync(cancellationToken);
     }
 }

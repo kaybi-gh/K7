@@ -103,6 +103,7 @@ builder.Services.AddSingleton<IDownloadManager, NoOpDownloadManager>();
 builder.Services.AddSingleton<IOfflineMediaStore, NoOpOfflineMediaStore>();
 builder.Services.AddSingleton<IConnectivityService, NoOpConnectivityService>();
 builder.Services.AddSingleton<IPlaybackJournal, NoOpPlaybackJournal>();
+builder.Services.AddSingleton<IPlaybackSyncService, NoOpPlaybackSyncService>();
 builder.Services.AddSingleton<IMusicCacheService, NoOpMusicCacheService>();
 builder.Services.AddSingleton<IServerConnectionService, NoOpServerConnectionService>();
 builder.Services.AddSingleton<ICastService, WebCastService>();

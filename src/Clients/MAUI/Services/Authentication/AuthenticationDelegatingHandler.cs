@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -106,7 +107,7 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
             // Refresh failed, or retry still unauthorized after a real token rotation.
             var authStateProvider = _serviceProvider.GetRequiredService<AuthenticationStateProvider>();
             var authState = await authStateProvider.GetAuthenticationStateAsync();
-            var isOfflineSession = authState.User.Identity?.AuthenticationType == "Offline";
+            var isOfflineSession = authState.User.Identity?.AuthenticationType == AuthIdentity.OfflineAuthenticationType;
 
             if (!isOfflineSession && Interlocked.CompareExchange(ref _logoutTriggered, 1, 0) == 0)
             {

@@ -86,6 +86,7 @@ builder.Services.AddSingleton<ISharedProfileSessionService, MockSharedProfileSes
 builder.Services.AddSingleton<ISharedProfileLocalCache, MockSharedProfileLocalCache>();
 builder.Services.AddSingleton<ISharedProfileDevicePinService, MockSharedProfileDevicePinService>();
 builder.Services.AddSingleton<IPlaybackJournal, MockPlaybackJournal>();
+builder.Services.AddSingleton<IPlaybackSyncService, MockPlaybackSyncService>();
 builder.Services.AddSingleton<ICastService, MockCastService>();
 builder.Services.AddSingleton<ICastOrchestrationService, MockCastOrchestrationService>();
 builder.Services.AddSingleton<IRemoteControlService, MockRemoteControlService>();
