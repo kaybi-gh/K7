@@ -90,4 +90,19 @@ public static class MetadataPictureDisplayHelper
         // Unknown dimensions: assume usable until proven otherwise.
         return true;
     }
+
+    /// <summary>
+    /// TV hero full-bleed: blur square covers, and stills that are below the HD threshold.
+    /// Movie/serie backdrops and HD stills stay sharp.
+    /// </summary>
+    public static bool ShouldSoftenTvHeroBackdrop(MediaType? mediaType, MetadataPictureDto? heroPicture)
+    {
+        if (mediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist)
+            return true;
+
+        if (heroPicture?.Type != MetadataPictureType.Still)
+            return false;
+
+        return !IsHdStill(heroPicture);
+    }
 }

@@ -78,6 +78,9 @@ public static class LiteMediaMappings
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(pictureSize)?.OriginalString)?.AbsoluteUri,
             BackdropUrl = apiClient.GetAbsoluteUri(
                 backdropPicture?.GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri,
+            SoftHeroBackdrop = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(
+                GetMediaType(item),
+                backdropPicture),
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
             SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1,
@@ -148,6 +151,9 @@ public static class LiteMediaMappings
             AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
             PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient),
             BackdropUrl = ResolveHeroPictureUrl(backdropPicture, apiClient),
+            SoftHeroBackdrop = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(
+                item.MediaType,
+                backdropPicture),
             Watched = item.Watched,
             Progress = item.Progress,
             GroupCount = item.GroupCount,
@@ -178,6 +184,12 @@ public static class LiteMediaMappings
             ? ResolveHeroPictureUrl(backdropPicture, apiClient)
             : source.BackdropUrl;
 
+        var softHeroBackdrop = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(
+            source.MediaType,
+            backdropPicture);
+        if (backdropPicture is null && !softHeroBackdrop)
+            softHeroBackdrop = source.SoftHeroBackdrop;
+
         return source with
         {
             Overview = GetOverview(media),
@@ -187,6 +199,7 @@ public static class LiteMediaMappings
             Rating = GetBestRating(media.Ratings),
             ReleaseYear = source.ReleaseYear ?? media.ReleaseDate?.Year,
             BackdropUrl = backdropUrl ?? source.BackdropUrl,
+            SoftHeroBackdrop = softHeroBackdrop,
             AdditionalInformations = GetHeroAdditionalInformations(media) ?? source.AdditionalInformations
         };
     }

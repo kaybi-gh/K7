@@ -902,6 +902,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         || existing.SerieSeasonCount != next.SerieSeasonCount
         || existing.SerieReleaseYear != next.SerieReleaseYear
         || existing.NavigationTarget != next.NavigationTarget
+        || existing.SoftHeroBackdrop != next.SoftHeroBackdrop
         || !SameGenres(existing.Genres, next.Genres);
 
     private static bool SameGenres(IReadOnlyList<string>? left, IReadOnlyList<string>? right)

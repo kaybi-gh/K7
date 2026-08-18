@@ -69,10 +69,18 @@ public partial class HomeTvHero : IAsyncDisposable
         return true;
     }
 
-    private static bool ShouldUseSoftBackdrop(MediaCardViewModel? model) =>
-        model?.MediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist
-            or MediaType.SerieEpisode
-        || model?.Kind is MediaCardKind.Cover or MediaCardKind.Episode;
+    private static bool ShouldUseSoftBackdrop(MediaCardViewModel? model)
+    {
+        if (model is null)
+            return false;
+
+        if (model.SoftHeroBackdrop)
+            return true;
+
+        // Manual cards (playlists, collections) may omit SoftHeroBackdrop.
+        return model.Kind is MediaCardKind.Cover
+            || model.MediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist;
+    }
 
     private static string FormatBackdropCss(string? url)
     {

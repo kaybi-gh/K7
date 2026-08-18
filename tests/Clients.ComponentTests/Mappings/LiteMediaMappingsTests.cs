@@ -206,6 +206,71 @@ public class LiteMediaMappingsTests
         result.PictureUrl.Should().Contain("season-poster.jpg");
         result.PictureUrl.Should().NotContain("still.jpg");
         result.BackdropUrl.Should().Contain("still.jpg");
+        result.SoftHeroBackdrop.Should().BeFalse();
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldSoftenHeroBackdrop_WhenEpisodeStillIsBelowHd()
+    {
+        var stillUri = new Uri("/api/pictures/still.jpg", UriKind.Relative);
+        var item = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Breaking Bad",
+            MediaType = MediaType.SerieEpisode,
+            NavigationTarget = "/series/1/seasons/1#ep-2",
+            Pictures =
+            [
+                new MetadataPictureDto
+                {
+                    Id = Guid.NewGuid(),
+                    Type = MetadataPictureType.Still,
+                    Uri = stillUri,
+                    OriginalWidth = 640,
+                    OriginalHeight = 360
+                }
+            ]
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+
+        var result = item.ToCardViewModel(apiClient);
+
+        result.BackdropUrl.Should().Contain("still.jpg");
+        result.SoftHeroBackdrop.Should().BeTrue();
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldKeepHeroBackdropSharp_WhenEpisodeStillIsHd()
+    {
+        var stillUri = new Uri("/api/pictures/still.jpg", UriKind.Relative);
+        var item = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Breaking Bad",
+            MediaType = MediaType.SerieEpisode,
+            NavigationTarget = "/series/1/seasons/1#ep-2",
+            Pictures =
+            [
+                new MetadataPictureDto
+                {
+                    Id = Guid.NewGuid(),
+                    Type = MetadataPictureType.Still,
+                    Uri = stillUri,
+                    OriginalWidth = 1920,
+                    OriginalHeight = 1080
+                }
+            ]
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+
+        var result = item.ToCardViewModel(apiClient);
+
+        result.BackdropUrl.Should().Contain("still.jpg");
+        result.SoftHeroBackdrop.Should().BeFalse();
     }
 
     [Test]
@@ -276,5 +341,6 @@ public class LiteMediaMappingsTests
         result.BackdropUrl.Should().NotBeNullOrEmpty();
         result.BackdropUrl.Should().Contain("album-cover.jpg");
         result.ResolveHeroBackdropUrl().Should().Be(result.BackdropUrl);
+        result.SoftHeroBackdrop.Should().BeTrue();
     }
 }

@@ -16,6 +16,7 @@ public record MediaCardViewModel
     public string? Title { get; init; }
     public string? PictureUrl { get; init; }
     public string? BackdropUrl { get; init; }
+    public bool SoftHeroBackdrop { get; init; }
     public string? AdditionalInformations { get; init; }
     public bool Watched { get; set; } = false;
     public double Progress { get; set; } = 0;
