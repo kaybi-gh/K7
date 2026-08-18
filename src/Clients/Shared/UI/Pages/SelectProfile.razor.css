@@ -4,47 +4,35 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: var(--spacing-6);
+    padding-block: var(--space-6);
+    padding-inline: 0;
     width: 100%;
     max-width: 100%;
     align-self: stretch;
     box-sizing: border-box;
     margin: 0 auto;
-    gap: var(--spacing-6);
+    gap: var(--space-6);
+    --carousel-margin-start: max(var(--space-10), calc((100% - 25rem) / 2));
+    --carousel-margin-end: var(--space-10);
 }
 
 .select-profile-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-4);
     width: 100%;
     align-self: stretch;
     min-width: 0;
-}
-
-.select-profile-title {
-    display: inline-block;
-    position: relative;
-    text-align: center;
-    margin: 0;
-}
-
-.select-profile-title::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    width: 100%;
-    top: 100%;
-    margin-top: var(--spacing-1);
-    height: 1px;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 65%, transparent), transparent);
 }
 
 .select-profile-page ::deep .carousel-wrapper {
     width: 100%;
     max-width: 100%;
     align-self: stretch;
+}
+
+@media (max-width: 599.98px) {
+    .select-profile-page {
+        --carousel-margin-start: var(--space-4);
+        --carousel-margin-end: var(--space-4);
+    }
 }
 
 .select-profile-page ::deep .select-profile-card {
@@ -147,8 +135,11 @@
 .select-profile-switch {
     display: flex;
     align-items: center;
-    margin-top: var(--spacing-6);
-    padding-inline: var(--spacing-4);
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline-start: var(--carousel-margin-start);
+    padding-inline-end: var(--carousel-margin-end);
 }
 
 .select-profile-page ::deep .select-profile-group-avatars {

@@ -5,12 +5,14 @@ export function init(rootElement) {
     if (!viewportNode) return;
 
     var container = viewportNode.querySelector('.carousel-container') || viewportNode.firstElementChild;
-    var padStart = container ? parseInt(getComputedStyle(container).paddingInlineStart) || 0 : 0;
+    function getPadStart() {
+        return container ? parseInt(getComputedStyle(container).paddingInlineStart, 10) || 0 : 0;
+    }
 
     var embla = globalThis.EmblaCarousel(viewportNode, {
         containScroll: 'trimSnaps',
         skipSnaps: true,
-        align: function () { return padStart; },
+        align: function () { return getPadStart(); },
         slidesToScroll: 1
     });
 
@@ -111,7 +113,7 @@ export function init(rootElement) {
                 totalWidth += realSlides[i].offsetWidth;
                 if (i > 0) totalWidth += gap;
             }
-            totalWidth += padStart + (parseInt(getComputedStyle(container).paddingInlineEnd) || 0);
+            totalWidth += getPadStart() + (parseInt(getComputedStyle(container).paddingInlineEnd, 10) || 0);
             var needsLoopBack = totalWidth > viewportNode.offsetWidth;
             loopBackBtn.classList.toggle('visible', needsLoopBack);
             // Keep out of browser tab order until the control is actually shown (TV focus restore).

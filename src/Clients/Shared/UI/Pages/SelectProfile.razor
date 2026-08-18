@@ -23,8 +23,7 @@
     else
     {
         <section class="select-profile-section">
-            <h6 class="select-profile-title">@L["Prompt"]</h6>
-            <Carousel @ref="_carousel" ShowLoopBack="false">
+            <Carousel @ref="_carousel" Title="@L["Prompt"]" ShowLoopBack="false">
                 @foreach (var user in _users)
                 {
                     <CarouselItem @key="@($"user-{user.IdentityUserId}")">
@@ -128,7 +127,7 @@
         @if (_users.Count > 0)
         {
             <div class="select-profile-switch">
-                <K7Switch Class="ma-4" Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
+                <K7Switch Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
                            Label="@L["SingleUserMode"]" />
             </div>
         }
