@@ -1,7 +1,8 @@
 @inject IStringLocalizer<PinDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="pin-dialog" role="group" aria-label="@L["PinLabel"]">
+<div class="pin-dialog" role="group" aria-label="@L["PinLabel"]"
+     data-initial-focus=".pin-dialog__keypad .focusable">
     <div class="k7-dialog-content pin-dialog__content">
         @if (!string.IsNullOrEmpty(UserName))
         {

@@ -1,5 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -7,12 +6,10 @@ namespace K7.Clients.Shared.UI.Components.Dialogs;
 public partial class PinDialog : IAsyncDisposable
 {
     public const int PinLength = 4;
-    private const string FirstKeySelector = ".pin-dialog__keypad .k7-btn[data-initial-focus]";
 
     private static readonly char[] Digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
-    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
@@ -40,17 +37,6 @@ public partial class PinDialog : IAsyncDisposable
             await JS.InvokeVoidAsync("K7.pinDialogKeyCapture.attach", _jsRef);
         }
         catch (JSException)
-        {
-        }
-
-        // After dialog layer auto-focus, land on the first keypad key.
-        await Task.Delay(220);
-        try
-        {
-            await SpatialNav.RefreshAsync();
-            await SpatialNav.FocusFirstAsync(FirstKeySelector);
-        }
-        catch (InvalidOperationException)
         {
         }
     }

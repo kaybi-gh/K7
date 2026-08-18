@@ -182,7 +182,7 @@ var SpatialNav = (function () {
                 var initial = container.querySelector('[data-initial-focus]');
                 if (initial) {
                     var selector = initial.getAttribute('data-initial-focus');
-                    target = (selector && selector !== 'true' && selector !== '')
+                    target = isInitialFocusSelector(selector)
                         ? (container.querySelector(selector) || initial)
                         : initial;
                 }
@@ -2074,6 +2074,14 @@ var SpatialNav = (function () {
 
     function queryFocusSelector(selector) {
         if (!selector) return null;
+        var layer = peekLayer();
+        if (layer && layer.el) {
+            var inLayer = layer.el.querySelectorAll(selector);
+            for (var l = 0; l < inLayer.length; l++) {
+                if (!isInsideInactiveFeedHub(inLayer[l]))
+                    return inLayer[l];
+            }
+        }
         var roots = [
             document.querySelector('.app-main .page-viewport'),
             document.querySelector('.empty-layout'),
@@ -2223,6 +2231,16 @@ var SpatialNav = (function () {
             if (el && focusTargetElement(el)) {
                 resolved = true;
                 markPageFocusSettled();
+                return;
+            }
+
+            // A specific selector (dialog keypad, overlay control) must not fall back to
+            // the page's [data-initial-focus] - on select-profile that is the profile card.
+            var layer = peekLayer();
+            if (selector && layer && layer.type !== 'page') {
+                if (index < delays.length - 1) {
+                    setTimeout(function () { attempt(index + 1); }, delays[index + 1] - delays[index]);
+                }
                 return;
             }
 
@@ -3497,10 +3515,12 @@ K7._suppressEnterUntilKeyUp = false;
 K7._swallowNextEnterClick = false;
 K7._enterSuppressCallbacks = [];
 
-// Physical keyboard capture for PinDialog (works even if focus is behind the dialog).
+// Physical keyboard / TV numpad capture for PinDialog.
 K7.pinDialogKeyCapture = {
     _ref: null,
     _onKey: null,
+    _focusTimer: null,
+
     attach: function (dotNetRef) {
         this.detach();
         this._ref = dotNetRef;
@@ -3509,21 +3529,94 @@ K7.pinDialogKeyCapture = {
             if (!self._ref) return;
             if (!document.querySelector('.pin-dialog')) return;
 
+            var digit = K7.pinDialogKeyCapture._digitFromEvent(e);
+            if (digit !== null) {
+                e.preventDefault();
+                e.stopPropagation();
+                self._ref.invokeMethodAsync('OnCapturedKey', digit);
+                return;
+            }
+
             var key = e.key;
-            var isDigit = key.length === 1 && key >= '0' && key <= '9';
-            // Do not intercept Enter: keypad buttons need native OK/Enter activation.
-            if (!isDigit && key !== 'Backspace')
+            if (key !== 'Backspace')
                 return;
 
             e.preventDefault();
+            e.stopPropagation();
             self._ref.invokeMethodAsync('OnCapturedKey', key);
         };
-        // Bubble phase so spatial-nav capture (dialog Backspace rules) runs first.
-        document.addEventListener('keydown', this._onKey, false);
+        // Capture so TV number keys are seen even when focus is still on the profile card.
+        document.addEventListener('keydown', this._onKey, true);
+        this._focusKeypad();
     },
+
+    _digitFromEvent: function (e) {
+        var key = e.key || '';
+        if (key === 'Backspace' || key === 'Tab' || key === 'Enter' || key === 'Escape'
+            || key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight')
+            return null;
+        if (key.length === 1 && key >= '0' && key <= '9')
+            return key;
+        if (/^Numpad[0-9]$/.test(key))
+            return key.charAt(6);
+
+        var code = e.code || '';
+        if (/^Digit[0-9]$/.test(code))
+            return code.charAt(5);
+        if (/^Numpad[0-9]$/.test(code))
+            return code.charAt(6);
+
+        var kc = e.keyCode || 0;
+        if (kc >= 48 && kc <= 57)
+            return String(kc - 48);
+        if (kc >= 96 && kc <= 105)
+            return String(kc - 96);
+        // Android KEYCODE_0..9 (7-16) and KEYCODE_NUMPAD_0..9 (144-153) when e.key is omitted.
+        if (key === '' || key === 'Unidentified') {
+            if (kc >= 7 && kc <= 16)
+                return String(kc - 7);
+            if (kc >= 144 && kc <= 153)
+                return String(kc - 144);
+        }
+        return null;
+    },
+
+    _focusKeypad: function () {
+        var self = this;
+        function waitForEnterRelease() {
+            if (!self._ref) return;
+            if (window.K7 && (K7._suppressEnterUntilKeyUp || K7._swallowNextEnterClick)) {
+                self._focusTimer = setTimeout(waitForEnterRelease, 40);
+                return;
+            }
+            self._focusKeypadNow(0);
+        }
+        waitForEnterRelease();
+    },
+
+    _focusKeypadNow: function (attempt) {
+        var self = this;
+        var delays = [0, 50, 120, 250, 450, 800];
+        if (!self._ref) return;
+        var key = document.querySelector('.pin-dialog__keypad .focusable, .pin-dialog__keypad .k7-btn');
+        if (key) {
+            try { key.focus({ preventScroll: true }); } catch (ex) { }
+            if (document.activeElement === key)
+                return;
+        }
+        var next = attempt + 1;
+        if (next < delays.length) {
+            self._focusTimer = setTimeout(function () { self._focusKeypadNow(next); }, delays[next] - delays[attempt]);
+        }
+    },
+
     detach: function () {
+        if (this._focusTimer) {
+            clearTimeout(this._focusTimer);
+            this._focusTimer = null;
+        }
         if (this._onKey) {
-            document.removeEventListener('keydown', this._onKey, false);
+            document.removeEventListener('keydown', this._onKey, true);
             this._onKey = null;
         }
         this._ref = null;

@@ -113,7 +113,7 @@ Single tap shows or hides controls when you are not mid-gesture.
 | Up / Down | Volume |
 | Enter / Select | Show controls, or skip intro when offered |
 
-The rest of the app is spatially navigable (arrows / D-pad). Android TV also handles media Play/Pause/Stop and long-press Select where relevant.
+The rest of the app is spatially navigable (arrows / D-pad). Android TV also handles media Play/Pause/Stop and long-press Select where relevant. When a PIN dialog opens, the number pad is focused immediately so the remote's number keys type digits without an extra Down press.
 
 ## Customization
 
