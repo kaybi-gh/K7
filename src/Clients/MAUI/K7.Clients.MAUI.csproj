@@ -78,7 +78,7 @@
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0d0907" />
 
     <!-- Splash Screen -->
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0d0907" BaseSize="128,128" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0d0907" BaseSize="256,256" />
 
     <!-- Images -->
     <MauiImage Include="Resources\Images\*" />
@@ -112,6 +112,7 @@
     <PackageReference Include="Xamarin.GooglePlayServices.Basement" />
     <PackageReference Include="Xamarin.GooglePlayServices.Cast" />
     <PackageReference Include="Xamarin.GooglePlayServices.Cast.Framework" />
+    <PackageReference Include="SkiaSharp.Skottie" />
   </ItemGroup>
 
   <ItemGroup>
@@ -122,9 +123,6 @@
   <ItemGroup>
     <Compile Update="BlazorPage.xaml.cs">
       <DependentUpon>BlazorPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Update="LottieSplashPage.xaml.cs">
-      <DependentUpon>LottieSplashPage.xaml</DependentUpon>
     </Compile>
     <Compile Update="Platforms\iOS\Services\CodecService.cs">
       <ExcludeFromCurrentConfiguration>false</ExcludeFromCurrentConfiguration>
@@ -139,9 +137,6 @@
 
   <ItemGroup>
     <MauiXaml Update="SetupPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="LottieSplashPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>

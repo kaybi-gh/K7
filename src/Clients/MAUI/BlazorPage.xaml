@@ -6,7 +6,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
              x:Class="K7.Clients.MAUI.BlazorPage"
-             BackgroundColor="{DynamicResource PageBackgroundColor}"
+             BackgroundColor="#0d0907"
              Padding="0">
 
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
@@ -51,19 +51,33 @@
             </BlazorWebView.RootComponents>
         </BlazorWebView>
 
-        <!-- Splash overlay - covers BlazorWebView until Blazor is ready -->
+        <!-- Covers WebView until Blazor paints. Static mark matches the Android splash;
+             hidden once Lottie has opaque frames so ImageView cannot cover SKCanvasView. -->
         <Grid x:Name="SplashOverlay" ZIndex="3"
               BackgroundColor="#0d0907"
               HorizontalOptions="Fill"
               VerticalOptions="Fill"
               InputTransparent="False">
+            <Image x:Name="SplashLogo"
+                   Source="k7_logo.png"
+                   Aspect="AspectFit"
+                   WidthRequest="120"
+                   HeightRequest="120"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   InputTransparent="True"
+                   ZIndex="0" />
             <skia:SKLottieView x:Name="SplashAnimation"
                                Source="splash.json"
                                RepeatCount="-1"
+                               IsAnimationEnabled="True"
+                               BackgroundColor="Transparent"
                                WidthRequest="120"
                                HeightRequest="120"
                                HorizontalOptions="Center"
-                               VerticalOptions="Center" />
+                               VerticalOptions="Center"
+                               ZIndex="1"
+                               AnimationLoaded="OnSplashAnimationLoaded" />
         </Grid>
 
         <!-- Fallback close for native-only paths (Android/iOS); hidden on Windows (Blazor overlay handles close) -->

@@ -4,6 +4,19 @@ K7.Lottie = {
     _instances: {},
     _cache: {},
 
+    _ensurePlayer: function () {
+        if (window.lottie) return Promise.resolve();
+        if (this._playerPromise) return this._playerPromise;
+        this._playerPromise = new Promise(function (resolve) {
+            var script = document.createElement('script');
+            script.src = '_content/K7.Clients.Shared.UI/dist/lottie/build/player/lottie_light.min.js';
+            script.onload = function () { resolve(); };
+            script.onerror = function () { resolve(); };
+            document.head.appendChild(script);
+        });
+        return this._playerPromise;
+    },
+
     preload: function (path) {
         if (this._cache[path]) return;
         fetch(path)
@@ -13,34 +26,40 @@ K7.Lottie = {
     },
 
     play: function (container, path) {
-        if (!container || !window.lottie) return;
-        container.innerHTML = '';
-        var cached = this._cache[path];
-        var opts = {
-            container: container,
-            renderer: 'svg',
-            loop: true,
-            autoplay: true
-        };
-        if (cached) {
-            opts.animationData = cached;
-        } else {
-            opts.path = path;
-        }
-        window.lottie.loadAnimation(opts);
+        var self = this;
+        return this._ensurePlayer().then(function () {
+            if (!container || !window.lottie) return;
+            container.innerHTML = '';
+            var cached = self._cache[path];
+            var opts = {
+                container: container,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true
+            };
+            if (cached) {
+                opts.animationData = cached;
+            } else {
+                opts.path = path;
+            }
+            window.lottie.loadAnimation(opts);
+        });
     },
 
     create: function (id, container, path) {
-        if (!container || !window.lottie) return;
-        container.innerHTML = '';
-        var anim = window.lottie.loadAnimation({
-            container: container,
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: path
+        var self = this;
+        return this._ensurePlayer().then(function () {
+            if (!container || !window.lottie) return;
+            container.innerHTML = '';
+            var anim = window.lottie.loadAnimation({
+                container: container,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: path
+            });
+            self._instances[id] = anim;
         });
-        this._instances[id] = anim;
     },
 
     replay: function (id) {

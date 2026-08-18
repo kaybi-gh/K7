@@ -68,6 +68,12 @@ Android TV: leanback launcher category is registered - use a TV emulator for D-p
 
 Shared UI placement: [architecture.md](architecture.md#ui-layout).
 
+### MAUI startup
+
+Typical sequence for a returning multi-user device: Android DecorView Lottie plays once and holds, then `BlazorPage` is constructed under the overlay, then first paint of `/select-profile` (EmptyLayout) dismisses the overlay. Solo auto-login starts at `/` and dismisses on MainLayout first paint. First-run TV with Guest disabled starts at `/linkdevice`. Player scripts (`video.min.js`, audioplayer) load after first paint on Windows / Web, and are awaited if play happens before the prefetch finishes.
+
+On Android the Lottie is attached to the activity DecorView so it stays above WebView / MediaElement and survives `BlazorPage` construction. Windows / iOS keep `SKLottieView` on the Blazor overlay.
+
 ## DesignSystem
 
 `src/Clients/DesignSystem` is a **Blazor Server catalog** of the shared UI library (branding, tokens, components, players, dialogs, layout). It uses mock services - no K7 server required.

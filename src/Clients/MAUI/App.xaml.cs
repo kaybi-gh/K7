@@ -1,9 +1,14 @@
 using System.Diagnostics;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components.Authorization;
+#if ANDROID
+using K7.Clients.MAUI.Platforms.Android;
+#endif
 
 namespace K7.Clients.MAUI;
 
@@ -35,41 +40,92 @@ public partial class App : Application
         Debug.WriteLine("K7 MAUI - App.CreateWindow - start");
 
         K7.Clients.Shared.Services.AppReadySignal.Reset();
-        var splash = new LottieSplashPage();
-        var window = new Window(splash) { Title = "K7" };
+        MauiStartupVisual.Reset();
+        StartSessionRestore();
+#if ANDROID
+        _startPageAssigned = false;
+#endif
 
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
+        Dispatcher.DispatchDelayed(TimeSpan.FromSeconds(8), () =>
         {
-            try
-            {
-                Debug.WriteLine("K7 MAUI - Creating start page");
-                window.Page = GetStartPage();
-                Debug.WriteLine("K7 MAUI - Start page set");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"K7 MAUI - Start page creation failed: {ex}");
-
-                // Stale/corrupt server URL after a cache reset can break BlazorPage.
-                // Fall back to setup so the user can enter a fresh address.
-                try
-                {
-                    Preferences.Remove(PreferenceKeys.K7_SERVER_URL);
-                    window.Page = new SetupPage(_k7ServerManagerService, _playerService, _audioPlayerService);
-                    Debug.WriteLine("K7 MAUI - Fell back to SetupPage after start failure");
-                    return;
-                }
-                catch (Exception setupEx)
-                {
-                    Debug.WriteLine($"K7 MAUI - SetupPage fallback failed: {setupEx}");
-                }
-
-                window.Page = CreateStartupErrorPage(ex);
-            }
+            MauiStartupVisual.NotifyFirstFrame();
+            MauiStartupVisual.NotifyStartPageSet();
         });
 
-        Debug.WriteLine("K7 MAUI - App.CreateWindow - splash returned");
+#if ANDROID
+        var placeholder = new ContentPage { BackgroundColor = Color.FromArgb("#0d0907") };
+        var window = new Window(placeholder) { Title = "K7" };
+        AndroidStartupLottieOverlay.ReadyToBuildStartPage += () => AssignStartPage(window);
+        Dispatcher.DispatchDelayed(TimeSpan.FromSeconds(6), () => AssignStartPage(window));
+        Debug.WriteLine("K7 MAUI - App.CreateWindow - placeholder returned");
         return window;
+#else
+        ContentPage page;
+        try
+        {
+            page = GetStartPage();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"K7 MAUI - Start page creation failed: {ex}");
+            page = CreateStartupErrorPage(ex);
+        }
+
+        page.Loaded += OnStartPageLoaded;
+        var window = new Window(page) { Title = "K7" };
+        Debug.WriteLine("K7 MAUI - App.CreateWindow - start page returned");
+        return window;
+#endif
+    }
+
+#if ANDROID
+    private bool _startPageAssigned;
+
+    private void AssignStartPage(Window window)
+    {
+        if (_startPageAssigned)
+            return;
+
+        _startPageAssigned = true;
+        ContentPage page;
+        try
+        {
+            page = GetStartPage();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"K7 MAUI - Start page creation failed: {ex}");
+            page = CreateStartupErrorPage(ex);
+        }
+
+        page.Loaded += OnStartPageLoaded;
+        window.Page = page;
+        AndroidStartupLottieOverlay.ResumeTicker();
+    }
+#endif
+
+    private static void OnStartPageLoaded(object? sender, EventArgs e)
+    {
+        if (sender is Page page)
+            page.Loaded -= OnStartPageLoaded;
+
+        MauiStartupVisual.NotifyFirstFrame();
+        if (sender is not BlazorPage)
+        {
+#if ANDROID
+            AndroidStartupLottieOverlay.Dismiss();
+#endif
+        }
+
+        Application.Current?.Dispatcher.DispatchDelayed(
+            TimeSpan.FromSeconds(2),
+            MauiStartupVisual.NotifyStartPageSet);
+    }
+
+    private static void StartSessionRestore()
+    {
+        var auth = IPlatformApplication.Current?.Services.GetService<AuthenticationStateProvider>();
+        auth?.GetAuthenticationStateAsync().FireAndForget();
     }
 
     private ContentPage GetStartPage()
@@ -150,6 +206,7 @@ public partial class App : Application
         MainThread.BeginInvokeOnMainThread(() =>
         {
             AppReadySignal.Reset();
+            MauiStartupVisual.Reset();
 #if ANDROID
             Platform.CurrentActivity?.Recreate();
 #else

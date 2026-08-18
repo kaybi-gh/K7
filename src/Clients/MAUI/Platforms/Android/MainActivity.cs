@@ -4,6 +4,7 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using AndroidX.Core.View;
+using K7.Clients.MAUI.Platforms.Android;
 using K7.Clients.MAUI.Platforms.Android.Services;
 
 namespace K7.Clients.MAUI;
@@ -14,6 +15,7 @@ public class MainActivity : MauiAppCompatActivity
 {
     private long _selectDownTime;
     private bool _selectLongPressFired;
+    private bool _mediaLibraryStarted;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -38,10 +40,24 @@ public class MainActivity : MauiAppCompatActivity
             RequestPermissions([Android.Manifest.Permission.PostNotifications], requestCode: 0);
         }
 
-        // Start the MediaLibraryService so audio playback and notification controls work
-        // even without an Android Auto connection. Media3 auto-promotes to foreground on playback.
-        var serviceIntent = new Intent(this, typeof(K7MediaLibraryService));
-        StartService(serviceIntent);
+        // Media3/ExoPlayer init is heavy. Wait until the start page has painted so
+        // we do not freeze the overlay Lottie.
+        MauiStartupVisual.StartPageSet += OnStartPageSet;
+
+        AndroidStartupLottieOverlay.Show(this);
+    }
+
+    private void OnStartPageSet()
+    {
+        MauiStartupVisual.StartPageSet -= OnStartPageSet;
+        if (_mediaLibraryStarted || IsFinishing)
+            return;
+
+        _mediaLibraryStarted = true;
+        Window?.DecorView.Post(() =>
+        {
+            StartService(new Intent(this, typeof(K7MediaLibraryService)));
+        });
     }
 
     public override bool DispatchKeyEvent(KeyEvent? e)
@@ -155,5 +171,12 @@ public class MainActivity : MauiAppCompatActivity
             return window.Page as BlazorPage;
         }
         return null;
+    }
+
+    protected override void OnDestroy()
+    {
+        MauiStartupVisual.StartPageSet -= OnStartPageSet;
+        AndroidStartupLottieOverlay.Dismiss();
+        base.OnDestroy();
     }
 }

@@ -7,8 +7,12 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using System.ComponentModel;
+#if ANDROID
+using K7.Clients.MAUI.Platforms.Android;
+#endif
 
 namespace K7.Clients.MAUI;
 
@@ -81,11 +85,19 @@ public partial class BlazorPage : ContentPage
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
         InitializeComponent();
-        blazorWebView.StartPath = ResolveStartPath();
+        var startPath = ResolveStartPath();
+        blazorWebView.StartPath = startPath;
 #if WINDOWS
         SyncWindowsStreamAuthContext();
 #endif
         blazorWebView.WebResourceRequested += OnWebResourceRequested;
+#if ANDROID
+        if (AndroidStartupLottieOverlay.IsShown)
+        {
+            SplashAnimation.IsVisible = false;
+            SplashLogo.IsVisible = false;
+        }
+#endif
         InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
@@ -174,10 +186,26 @@ public partial class BlazorPage : ContentPage
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
+#if ANDROID
+                AndroidStartupLottieOverlay.Dismiss();
+#endif
                 SplashOverlay.IsVisible = false;
                 RootGrid.Children.Remove(SplashOverlay);
             });
         });
+    }
+
+    private void OnSplashAnimationLoaded(object? sender, EventArgs e)
+    {
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(400), RevealSplashLottie);
+    }
+
+    private void RevealSplashLottie()
+    {
+        if (SplashLogo is null || !SplashLogo.IsVisible)
+            return;
+
+        SplashLogo.IsVisible = false;
     }
 
     protected override bool OnBackButtonPressed()
