@@ -85,6 +85,7 @@ public class MiniMusicPlayerTests
         ctx.Services.AddSingleton(Substitute.For<IRatingService>());
         ctx.Services.AddSingleton(Substitute.For<IConnectivityService>());
         ctx.Services.AddSingleton(Substitute.For<IPlaybackJournal>());
+        ctx.Services.AddSingleton(Substitute.For<ILocalUserService>());
         ctx.Services.AddSingleton<IUserRatingSync, UserRatingSync>();
 
         var sharedLocalizer = Substitute.For<IStringLocalizer<SharedResource>>();
