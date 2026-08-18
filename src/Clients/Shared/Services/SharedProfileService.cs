@@ -59,8 +59,21 @@ public class SharedProfileService(
         await cache.RefreshAsync(cancellationToken);
     }
 
-    public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
-        api.VerifySharedProfilePinAsync(group.Id, pin, cancellationToken);
+    public async Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await api.VerifySharedProfilePinAsync(group.Id, pin, cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return group.PinHash is not null && PinVerifier.Verify(group.PinHash, pin);
+        }
+        catch (TaskCanceledException)
+        {
+            return group.PinHash is not null && PinVerifier.Verify(group.PinHash, pin);
+        }
+    }
 
     public Task<VideoPlaybackPolicySettingsDto> GetVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetSharedProfileVideoPlaybackPolicyAsync(id, cancellationToken);

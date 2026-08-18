@@ -1,7 +1,7 @@
 using K7.Server.Application.Features.Users.Commands.VerifyUserPin;
+using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using K7.Server.Web.Infrastructure;
 
 namespace K7.Server.Web.Endpoints.Users;
 
@@ -19,7 +19,7 @@ public class VerifyUserPin : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var isValid = await sender.Send(new VerifyUserPinCommand(userId, request.Pin), cancellationToken);
-            return isValid ? Results.Ok() : Results.Unauthorized();
+            return isValid ? Results.Ok() : Results.StatusCode(StatusCodes.Status403Forbidden);
         })
         .AllowAnonymous()
         .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)

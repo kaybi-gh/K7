@@ -50,6 +50,10 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
             return response;
 
+        // Wrong PIN used to return 401 and looked like a dead session. Skip refresh/logout.
+        if (PinVerifyHttp.IsPinVerifyRequest(request.RequestUri))
+            return response;
+
         var rejectedToken = request.Headers.Authorization?.Parameter;
 
         // Serialize refresh so concurrent 401s wait and retry with the new token instead of

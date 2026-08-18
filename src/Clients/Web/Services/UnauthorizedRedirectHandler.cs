@@ -1,5 +1,6 @@
 using System.Net;
 using K7.Clients.Shared.Interfaces;
+using K7.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Clients.Web.Services;
@@ -25,6 +26,9 @@ public class UnauthorizedRedirectHandler : DelegatingHandler
         var response = await base.SendAsync(request, cancellationToken);
 
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
+            return response;
+
+        if (PinVerifyHttp.IsPinVerifyRequest(request.RequestUri))
             return response;
 
         if (!_redirectGate.TryEnter())

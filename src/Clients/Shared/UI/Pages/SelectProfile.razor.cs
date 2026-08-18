@@ -289,12 +289,8 @@ public partial class SelectProfile
             return;
         }
 
-        if (host.HasPin)
-        {
-            var pinValid = await PromptPinAsync(host);
-            if (!pinValid)
-                return;
-        }
+        // The group PIN is the only lock on this card. The host account PIN applies when
+        // selecting that user, not when entering the shared profile.
 
         _loading = true;
         _showOfflineButton = false;

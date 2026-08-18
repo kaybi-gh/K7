@@ -12,12 +12,12 @@ using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfile
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileHomeLayout;
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileVideoPlaybackPolicy;
 using K7.Server.Application.Features.SharedProfiles.Commands.UploadSharedProfileAvatar;
-using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileHomeLayout;
-using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
-using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
 using K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileAudioPlaybackPolicy;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileHomeLayout;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfilePlaylistIds;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileVideoPlaybackPolicy;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Infrastructure;
@@ -193,7 +193,7 @@ public class VerifySharedProfilePinEndpoint : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var isValid = await sender.Send(new VerifySharedProfilePinCommand(id, request.Pin), cancellationToken);
-            return isValid ? Results.Ok() : Results.Unauthorized();
+            return isValid ? Results.Ok() : Results.StatusCode(StatusCodes.Status403Forbidden);
         })
         .AllowAnonymous()
         .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
