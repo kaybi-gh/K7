@@ -81,6 +81,7 @@ public partial class BlazorPage : ContentPage
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
         InitializeComponent();
+        blazorWebView.StartPath = ResolveStartPath();
 #if WINDOWS
         SyncWindowsStreamAuthContext();
 #endif
@@ -90,6 +91,21 @@ public partial class BlazorPage : ContentPage
         InitializeAudioPlayer();
         InitializeNativeVideoOverlay();
         Loaded += OnBlazorPageLoaded;
+    }
+
+    private static string ResolveStartPath()
+    {
+        var services = IPlatformApplication.Current?.Services;
+        var localUsers = services?.GetService<ILocalUserService>();
+        if (services is null || localUsers is null)
+            return MauiBlazorStartPath.SelectProfile;
+
+        var isTv = services.GetService<IDeviceService>()?.CachedDeviceType == Server.Domain.Enums.DeviceType.TV;
+        var guestEnabled = services.GetService<IDeviceStorageService>() is { } storage
+            ? CachedGuestAccess.TryGetEnabled(storage)
+            : null;
+
+        return MauiBlazorStartPath.Resolve(localUsers, isTv, guestEnabled);
     }
 
     private void OnBlazorPageLoaded(object? sender, EventArgs e)

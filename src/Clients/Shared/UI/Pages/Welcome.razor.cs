@@ -1,9 +1,9 @@
-﻿using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
-using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -38,26 +38,21 @@ public partial class Welcome : IDisposable
         }
 
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-
-        var storedJson = DeviceStorage.Get(PreferenceKeys.SERVER_INFO);
-        if (!string.IsNullOrEmpty(storedJson))
-        {
-            try
-            {
-                var cached = System.Text.Json.JsonSerializer.Deserialize<ServerInfoDto>(storedJson,
-                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                _guestEnabled = cached?.GuestEnabled == true;
-            }
-            catch { }
-        }
+        var cachedGuest = CachedGuestAccess.TryGetEnabled(DeviceStorage);
+        _guestEnabled = cachedGuest == true;
+        if (cachedGuest == false && TryBypassWelcomeWhenGuestUnavailable())
+            return;
 
         try
         {
             var serverInfo = await K7ServerService.GetServerInfoAsync();
-            _guestEnabled = serverInfo?.GuestEnabled == true;
-
-            var freshJson = System.Text.Json.JsonSerializer.Serialize(serverInfo);
-            DeviceStorage.Set(PreferenceKeys.SERVER_INFO, freshJson);
+            if (serverInfo is not null)
+            {
+                _guestEnabled = serverInfo.GuestEnabled;
+                DeviceStorage.Set(PreferenceKeys.SERVER_INFO, System.Text.Json.JsonSerializer.Serialize(serverInfo));
+                if (!serverInfo.GuestEnabled && TryBypassWelcomeWhenGuestUnavailable())
+                    return;
+            }
         }
         catch (Exception ex)
         {
@@ -66,6 +61,20 @@ public partial class Welcome : IDisposable
         }
 
         AppReadySignal.Signal();
+    }
+
+    /// <summary>
+    /// TV Sign In is the device-link QR. When Guest is known to be off, welcome would only show Sign In.
+    /// </summary>
+    private bool TryBypassWelcomeWhenGuestUnavailable()
+    {
+        if (!_isTv)
+            return false;
+
+        Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl)
+            ? "/linkdevice"
+            : $"/linkdevice?returnUrl={Uri.EscapeDataString(ReturnUrl)}", replace: true);
+        return true;
     }
 
     private async Task SignInAsync()

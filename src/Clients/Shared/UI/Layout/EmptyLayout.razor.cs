@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using K7.Clients.Shared.Services;
 
 namespace K7.Clients.Shared.UI.Layout;
 
@@ -10,6 +11,9 @@ public partial class EmptyLayout
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
+        {
+            AppReadySignal.Signal();
             await JS.InvokeVoidAsync("K7.dismissPreload");
+        }
     }
 }

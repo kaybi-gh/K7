@@ -35,6 +35,17 @@ public class FeedHubHostServiceTests
     }
 
     [Test]
+    public void UpdateLocation_ShouldNotMount_WhenDisabled()
+    {
+        var sut = new FeedHubHostService();
+        sut.UpdateLocation("https://k7.local/");
+
+        sut.IsEnabled.Should().BeFalse();
+        sut.IsHubRouteActive.Should().BeFalse();
+        sut.MountedKeys.Should().BeEmpty();
+    }
+
+    [Test]
     public void UpdateLocation_ShouldNotEvictHome_WhenMountLimitExceeded()
     {
         var sut = new FeedHubHostService();

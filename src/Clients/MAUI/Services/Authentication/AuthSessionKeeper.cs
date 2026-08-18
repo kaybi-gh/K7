@@ -58,14 +58,20 @@ public sealed class AuthSessionKeeper : IDisposable
 
         try
         {
-            // Wait for cold-start restore so we never race it on /connect/token.
             if (_auth is AuthenticationStateProvider stateProvider)
-                await stateProvider.GetAuthenticationStateAsync();
+            {
+                var state = await stateProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+                if (state.User.Identity?.IsAuthenticated != true)
+                    return;
+
+                if (!forceRefresh && !IsAccessTokenNearExpiry())
+                    return;
+            }
 
             if (string.IsNullOrEmpty(_deviceStorage.Get(PreferenceKeys.REFRESH_TOKEN)))
                 return;
 
-            await _auth.TryRefreshAsync(forceRefresh: forceRefresh);
+            await _auth.TryRefreshAsync(forceRefresh: forceRefresh).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

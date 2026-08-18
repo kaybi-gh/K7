@@ -8,7 +8,22 @@ namespace K7.Clients.Shared.Services;
 
 public static class DeviceInitializer
 {
+    private static readonly SemaphoreSlim InitGate = new(1, 1);
+
     public static async Task InitializeDeviceAsync(IServiceProvider services, string? userId = null)
+    {
+        await InitGate.WaitAsync();
+        try
+        {
+            await InitializeDeviceCoreAsync(services, userId);
+        }
+        finally
+        {
+            InitGate.Release();
+        }
+    }
+
+    private static async Task InitializeDeviceCoreAsync(IServiceProvider services, string? userId = null)
     {
         try
         {

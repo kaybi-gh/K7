@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 
@@ -8,6 +10,7 @@ public partial class RedirectToLogin
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private ILocalUserService LocalUserService { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
 
     protected override void OnInitialized()
     {
@@ -26,6 +29,11 @@ public partial class RedirectToLogin
         {
             target = $"/welcome?returnUrl={returnUrl}";
             forceLoad = true;
+        }
+        else if (DeviceService.CachedDeviceType == DeviceType.TV
+            && CachedGuestAccess.TryGetEnabled(DeviceStorage) == false)
+        {
+            target = $"/linkdevice?returnUrl={returnUrl}";
         }
         else
         {

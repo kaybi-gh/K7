@@ -13,7 +13,7 @@ How you sign in depends on how the administrator configured the server:
 | Admin-created local account | Username and password on the sign-in page (email optional) |
 | Self-registration | Sign-up page when the admin enabled it (**disabled by default**): username required, email optional |
 | OIDC / SSO | Provider button or automatic redirect when SSO is enabled (**disabled by default**) |
-| Guest | Welcome screen -> continue as guest when Guest is active (Admin -> Users; **inactive until enabled**) |
+| Guest | Welcome screen -> continue as guest when Guest is active (Admin -> Users; **inactive until enabled**). On a TV app, if Guest is off, the device-link QR opens directly instead of welcome. |
 
 Login uses your **username**. If you also set an email, you can sign in with that email as a convenience. Changing email later does not rename your username.
 

@@ -132,6 +132,8 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 
 Native clients keep Home mounted across navigation (`FeedHub`). `HomeFeedStore` is a process singleton scoped by identity user id plus the optional active shared profile id. Switching a local user (or shared profile) on MAUI reloads the home rows and continue-watching cache instead of reusing the previous feed. The SignalR hub reconnects so playback-progress events follow the new identity.
 
+MAUI `BlazorWebView.StartPath` opens `/select-profile` (or `/welcome` when no local users, `/linkdevice` on TV when Guest is disabled, or `/` for solo auto-login) so `MainLayout` / FeedHub do not run around `RedirectToLogin`.
+
 ## Video playback (MAUI)
 
 During video play on Android/iOS, MAUI uses a **native XAML overlay** on top of `MediaElement` (TextureView). Windows MAUI keeps Video.js + Blazor controls in WebView2. Browse UI stays Blazor Hybrid. Details and the Windows `#EXT-X-MAP` limitation: [video-playback.md](video-playback.md).
