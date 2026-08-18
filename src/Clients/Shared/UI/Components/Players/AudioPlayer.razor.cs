@@ -24,29 +24,37 @@ public partial class AudioPlayer : IAsyncDisposable
 
         if (AudioPlayerService.IsVisible && !_isInitialized)
         {
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("initAudioPlayer", _dotNetRef);
-            await JSRuntime.InvokeVoidAsync("K7.setupMediaSessionActions", _dotNetRef);
-            await JSRuntime.InvokeVoidAsync("K7.initKeyboardShortcuts", _dotNetRef);
-            _isInitialized = true;
-
-            // Apply persisted volume state
-            var deviceType = await DeviceService.GetDeviceTypeAsync();
-            if (deviceType is DeviceType.Phone or DeviceType.Tablet)
-            {
-                await JSRuntime.InvokeVoidAsync("audioSetVolume", 1.0);
-                await JSRuntime.InvokeVoidAsync("audioSetMuted", false);
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
-                await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
-            }
-            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
-            await JSRuntime.InvokeVoidAsync("audioSetKeepScreenOn", AudioPlayerService.KeepScreenOn);
-            await PushLoudnessSettingsAsync();
-            await PushEqSettingsAsync();
+            await EnsureWebAudioPlayerInitializedAsync();
         }
+    }
+
+    private async Task EnsureWebAudioPlayerInitializedAsync()
+    {
+        if (_disposed || _isInitialized)
+            return;
+
+        await PlaybackAssetLoader.EnsureAsync(JSRuntime);
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        await JSRuntime.InvokeVoidAsync("initAudioPlayer", _dotNetRef);
+        await JSRuntime.InvokeVoidAsync("K7.setupMediaSessionActions", _dotNetRef);
+        await JSRuntime.InvokeVoidAsync("K7.initKeyboardShortcuts", _dotNetRef);
+        _isInitialized = true;
+
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        if (deviceType is DeviceType.Phone or DeviceType.Tablet)
+        {
+            await JSRuntime.InvokeVoidAsync("audioSetVolume", 1.0);
+            await JSRuntime.InvokeVoidAsync("audioSetMuted", false);
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
+            await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
+        }
+        await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
+        await JSRuntime.InvokeVoidAsync("audioSetKeepScreenOn", AudioPlayerService.KeepScreenOn);
+        await PushLoudnessSettingsAsync();
+        await PushEqSettingsAsync();
     }
 
     protected override void OnInitialized()
@@ -240,22 +248,10 @@ public partial class AudioPlayer : IAsyncDisposable
 
     private async Task OnSourceChangedAsync(PlayerSource source)
     {
-        if (_disposed || string.IsNullOrEmpty(source.Url)) return;
+        if (_disposed || !UsesWebAudioPlayer() || string.IsNullOrEmpty(source.Url)) return;
 
         if (!_isInitialized)
-        {
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("initAudioPlayer", _dotNetRef);
-            await JSRuntime.InvokeVoidAsync("K7.setupMediaSessionActions", _dotNetRef);
-            await JSRuntime.InvokeVoidAsync("K7.initKeyboardShortcuts", _dotNetRef);
-            _isInitialized = true;
-
-            await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
-            await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
-            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
-            await PushLoudnessSettingsAsync();
-            await PushEqSettingsAsync();
-        }
+            await EnsureWebAudioPlayerInitializedAsync();
 
         // Push per-track loudness data for normalization
         await PushTrackLoudnessAsync();

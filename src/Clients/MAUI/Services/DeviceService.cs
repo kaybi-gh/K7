@@ -14,10 +14,21 @@ namespace K7.Clients.MAUI.Services;
 public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService, IMediaService mediaService) : IDeviceService
 {
     private readonly DeviceType _cachedDeviceType = ResolveDeviceType();
+    private readonly object _requestCacheLock = new();
+    private Task<CreateDeviceRequest>? _cachedCreateRequest;
+    private Task<List<MediaFormatDto>>? _cachedSupportedFormats;
 
     public DeviceType? CachedDeviceType => _cachedDeviceType;
 
-    public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
+    public Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
+    {
+        lock (_requestCacheLock)
+        {
+            return _cachedCreateRequest ??= GenerateCreateDeviceRequestCoreAsync();
+        }
+    }
+
+    private async Task<CreateDeviceRequest> GenerateCreateDeviceRequestCoreAsync()
     {
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var nativeDeviceDetails = await GetNativeDeviceDetailsAsync();
@@ -80,7 +91,15 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         };
     }
 
-    public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
+    public Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
+    {
+        lock (_requestCacheLock)
+        {
+            return _cachedSupportedFormats ??= GetSupportedMediaFormatsCoreAsync();
+        }
+    }
+
+    private async Task<List<MediaFormatDto>> GetSupportedMediaFormatsCoreAsync()
     {
         var allFormats = await mediaService.GetMediaFormatsAsync();
 

@@ -507,7 +507,11 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         if (_visualizerEnabled && _waveformPeaks is not null)
         {
-            try { await JS.InvokeVoidAsync("K7.Visualizer.setPeaks", _waveformPeaks); }
+            try
+            {
+                await PlaybackAssetLoader.EnsureAsync(JS);
+                await JS.InvokeVoidAsync("K7.Visualizer.setPeaks", _waveformPeaks);
+            }
             catch (JSException) { }
             catch (InvalidOperationException) { }
         }
@@ -942,6 +946,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             if (_visualizerEnabled)
             {
                 await Task.Yield();
+                await PlaybackAssetLoader.EnsureAsync(JS);
                 await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas, _waveformPeaks);
             }
             else

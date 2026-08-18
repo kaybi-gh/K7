@@ -60,6 +60,7 @@ public partial class VideoPlayer : IAsyncDisposable
                     };
 
                     _dotNetRef ??= DotNetObjectReference.Create(this);
+                    await PlaybackAssetLoader.EnsureAsync(JSRuntime);
 
                     await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
 

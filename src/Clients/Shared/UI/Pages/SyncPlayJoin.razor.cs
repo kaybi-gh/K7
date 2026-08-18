@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
@@ -76,6 +77,7 @@ public partial class SyncPlayJoin : IDisposable
     {
         if (string.IsNullOrWhiteSpace(_guestNickname)) return;
 
+        await PlaybackAssetLoader.EnsureAsync(JS);
         await JS.InvokeVoidAsync("K7.unlockAudio");
         _state = JoinState.Loading;
         await WaitForHubAndJoinAsync(_guestNickname.Trim());

@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
@@ -92,6 +93,7 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
 
         try
         {
+            await PlaybackAssetLoader.EnsureAsync(_js, cancellationToken);
             await _js.InvokeVoidAsync(
                 "K7.AmbientTheme.playBytes",
                 cancellationToken,

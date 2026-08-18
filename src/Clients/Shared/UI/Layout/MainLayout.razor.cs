@@ -154,6 +154,7 @@ public partial class MainLayout : IDisposable
         if (firstRender)
         {
             AppReadySignal.Signal();
+            PlaybackAssetLoader.Prefetch(JS);
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
             await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);

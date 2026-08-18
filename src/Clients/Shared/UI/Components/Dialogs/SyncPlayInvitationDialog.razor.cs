@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared.Dtos;
@@ -38,6 +39,7 @@ public partial class SyncPlayInvitationDialog
 
         try
         {
+            await PlaybackAssetLoader.EnsureAsync(JS);
             await JS.InvokeVoidAsync("K7.unlockAudio");
             var displayName = _isGuest && !string.IsNullOrWhiteSpace(_guestNickname)
                 ? _guestNickname.Trim()
