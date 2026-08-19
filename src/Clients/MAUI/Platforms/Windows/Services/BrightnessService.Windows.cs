@@ -5,11 +5,14 @@ public partial class BrightnessService
     public partial void SetBrightness(double brightness)
     {
         _brightness = Math.Clamp(brightness, 0, 1);
-        // Windows desktop: no screen brightness API available
+        _overridden = true;
     }
 
     public partial void ResetBrightness()
     {
+        _overridden = false;
         _brightness = 1.0;
     }
+
+    private partial double ReadCurrentBrightness() => _brightness;
 }

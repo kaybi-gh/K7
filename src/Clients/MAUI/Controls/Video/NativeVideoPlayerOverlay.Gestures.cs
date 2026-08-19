@@ -20,6 +20,7 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private double _panStartBrightness;
     private double _panStartVolume;
+    private bool _panOriginCaptured;
     private System.Timers.Timer? _rippleTimer;
 
     private void BuildGestureVisuals()
@@ -115,13 +116,13 @@ public sealed partial class NativeVideoPlayerOverlay
         switch (e.StatusType)
         {
             case GestureStatus.Started:
-                _panStartBrightness = _brightness?.Brightness ?? 1;
-                _panStartVolume = _volumeService?.SupportsNativeVolume == true
-                    ? _volumeService.Volume
-                    : (_player.IsMuted ? 0 : _player.Volume);
+                CapturePanOrigin();
                 break;
             case GestureStatus.Running:
             {
+                if (!_panOriginCaptured)
+                    CapturePanOrigin();
+
                 var side = panSideLeft ? SwipeSide.Left : SwipeSide.Right;
 
                 if (side == SwipeSide.Left)
@@ -130,7 +131,7 @@ public sealed partial class NativeVideoPlayerOverlay
                         return;
 
                     _swipeIndicator.IsVisible = true;
-                    var next = Math.Clamp(_panStartBrightness - e.TotalY / 600, 0.05, 1);
+                    var next = Math.Clamp(_panStartBrightness - e.TotalY / 600, 0, 1);
                     _brightness.SetBrightness(next);
                     if (!_brightness.SupportsNativeBrightness)
                         _brightnessDimOverlay.Opacity = 1.0 - next;
@@ -172,9 +173,19 @@ public sealed partial class NativeVideoPlayerOverlay
             }
             case GestureStatus.Completed:
             case GestureStatus.Canceled:
+                _panOriginCaptured = false;
                 _swipeIndicator.IsVisible = false;
                 break;
         }
+    }
+
+    private void CapturePanOrigin()
+    {
+        _panStartBrightness = _brightness?.Brightness ?? 1;
+        _panStartVolume = _volumeService?.SupportsNativeVolume == true
+            ? _volumeService.Volume
+            : (_player.IsMuted ? 0 : _player.Volume);
+        _panOriginCaptured = true;
     }
 
     private void UpdateSwipeIndicator(SwipeSide side, string icon, double percent)
