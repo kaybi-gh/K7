@@ -1,0 +1,45 @@
+@namespace K7.Clients.Shared.UI.Components.Dialogs
+@inject IStringLocalizer<ReassignPlaybackHistoryDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_profiles.Count == 0 && CurrentSharedProfileId is null)
+    {
+        <p class="text-sm">@L["NoSharedProfiles"]</p>
+    }
+    else
+    {
+        <p class="text-sm mb-3">@(IsBulk ? string.Format(L["PromptBulk"], TargetIds.Count) : string.Format(L["Prompt"], MediaTitle))</p>
+        <K7Select TValue="Guid"
+                  @bind-Value="_selectedId"
+                  Label="@L["Destination"]"
+                  Variant="outlined"
+                  FullWidth="true"
+                  ToStringFunc="FormatDestination">
+            <K7SelectItem TValue="Guid" Value="@Guid.Empty" Text="@L["PersonalProfile"]">
+                @L["PersonalProfile"]
+            </K7SelectItem>
+            @foreach (var profile in _profiles)
+            {
+                <K7SelectItem TValue="Guid" Value="@profile.Id" Text="@profile.Name">
+                    @profile.Name
+                </K7SelectItem>
+            }
+        </K7Select>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
+               Disabled="@(!CanSubmit)">
+        @if (_saving)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @L["Reassign"]
+    </K7Button>
+</div>

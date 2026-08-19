@@ -10,6 +10,16 @@
     color: var(--color-text-muted);
 }
 
+.playback-history-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-1);
+}
+
+.playback-history-page ::deep tr.is-selected {
+    background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
 .playback-history-page .data-page-body ::deep .k7-data-table-scroll {
     overflow-x: auto;
     overflow-y: auto;

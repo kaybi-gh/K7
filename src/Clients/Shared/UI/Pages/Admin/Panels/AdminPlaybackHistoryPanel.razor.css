@@ -80,6 +80,16 @@
     color: var(--color-error);
 }
 
+.history-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-1);
+}
+
+.history-page ::deep tr.is-selected {
+    background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
 @media (max-width: 599.98px) {
     .history-user-select {
         width: 100%;

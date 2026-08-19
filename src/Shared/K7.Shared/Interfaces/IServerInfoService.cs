@@ -1,5 +1,6 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.SharedProfiles;
 
 namespace K7.Shared.Interfaces;
 
@@ -10,6 +11,11 @@ public interface IServerInfoService
     Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
     Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
+    Task ReassignPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default);
+    Task DeletePlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default);
+    Task ReassignAdminPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default);
+    Task DeleteAdminPlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SharedProfileDto>> GetAdminSharedProfilesAsync(CancellationToken cancellationToken = default);
     Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default);
     Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default);
     Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default);

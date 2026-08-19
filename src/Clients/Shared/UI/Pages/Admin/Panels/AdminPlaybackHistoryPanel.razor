@@ -5,40 +5,87 @@
 @inject IUserAdminService UserAdminService
 @inject IStringLocalizer<AdminPlaybackHistoryPanel> L
 @inject IStringLocalizer<SharedResource> S
+@implements IAsyncDisposable
 
 <div class="full-bleed-page history-page">
     <div class="data-page-toolbar">
-        <h5 class="data-page-toolbar__title">@L["Title"]</h5>
-
-        <K7Select TValue="Guid?" Class="history-user-select data-toolbar-field"
-                  Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
-                  ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? _users.FirstOrDefault(u => u.Id == id)?.UserName ?? L["AllUsers"])"
-                  FullWidth="false">
-            @foreach (var user in _users)
-            {
-                var userLabel = user.DisplayName ?? user.UserName ?? user.Email;
-                <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
-            }
-        </K7Select>
-
-        <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
-        @if (_selectedPeriod == "custom")
+        @if (_selectionMode)
         {
-            <K7DateRangePicker From="_fromDate" To="_toDate" RangeChanged="OnDateRangeChanged"
-                               Label="@L["PickDates"]" HintSelectEnd="@L["SelectEndDate"]" />
+            <h5 class="data-page-toolbar__title">@string.Format(L["SelectedCount"], SelectedCount)</h5>
+            <div class="data-page-toolbar__end">
+                <K7Button Variant="text" OnClick="ToggleSelectAllAsync" Disabled="@(!HasSelectableItems || _busy)">
+                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                </K7Button>
+                <K7Button Variant="filled"
+                          StartIcon="@Phosphor.UserSwitch"
+                          OnClick="ReassignSelectedAsync"
+                          Disabled="@(SelectedReassignableCount == 0 || _busy)"
+                          AriaLabel="@L["ReassignSelected"]">
+                    @L["ReassignSelected"]
+                </K7Button>
+                <K7Button Variant="filled"
+                          Color="error"
+                          StartIcon="@Phosphor.Trash"
+                          OnClick="DeleteSelectedAsync"
+                          Disabled="@(SelectedDeletableCount == 0 || _busy)"
+                          AriaLabel="@L["DeleteSelected"]">
+                    @L["DeleteSelected"]
+                </K7Button>
+                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_busy" AriaLabel="@S["Cancel"]">
+                    @S["Cancel"]
+                </K7Button>
+            </div>
         }
+        else
+        {
+            <h5 class="data-page-toolbar__title">@L["Title"]</h5>
 
-        <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["MediaType"]" />
+            <K7Select TValue="Guid?" Class="history-user-select data-toolbar-field"
+                      Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
+                      ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? _users.FirstOrDefault(u => u.Id == id)?.UserName ?? L["AllUsers"])"
+                      FullWidth="false">
+                @foreach (var user in _users)
+                {
+                    var userLabel = user.DisplayName ?? user.UserName ?? user.Email;
+                    <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
+                }
+            </K7Select>
 
-        <div class="data-page-toolbar__end">
-            <K7ResultCount Count="_totalCount" />
-            <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
-        </div>
+            <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
+            @if (_selectedPeriod == "custom")
+            {
+                <K7DateRangePicker From="_fromDate" To="_toDate" RangeChanged="OnDateRangeChanged"
+                                   Label="@L["PickDates"]" HintSelectEnd="@L["SelectEndDate"]" />
+            }
+
+            <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["MediaType"]" />
+
+            <div class="data-page-toolbar__end">
+                <K7ResultCount Count="_totalCount" />
+                <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+                <K7IconButton Icon="@Phosphor.ListChecks"
+                              OnClick="EnterSelectionMode"
+                              Disabled="@(_totalCount == 0)"
+                              AriaLabel="@L["Select"]" />
+            </div>
+        }
     </div>
 
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync"
-                     RowHeight="48" @ref="_tableRef" OnRowClick="OnRowClicked" ShowToolbar="false" Surface="false" Height="100%">
+                     RowHeight="48" @ref="_tableRef" OnRowClick="OnRowClicked" ShowToolbar="false" Surface="false" Height="100%"
+                     RowClass="@(item => GetRowClass(item))">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
+                <CellTemplate>
+                    @if (CanSelect(context))
+                    {
+                        var selected = IsSelected(context.ReferenceId);
+                        <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
+                            <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                        </span>
+                    }
+                </CellTemplate>
+            </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Width="140px">
                 <CellTemplate>
                     <div class="history-date-cell">
@@ -127,6 +174,27 @@
             </K7DataColumn>
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]" Width="90px">
                 <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Actions"]" Width="96px" Hideable="false" Visible="@(!_selectionMode)">
+                <CellTemplate>
+                    <div class="history-actions" @onclick:stopPropagation="true">
+                        @if (context.CanReassign)
+                        {
+                            <K7IconButton Icon="@Phosphor.UserSwitch"
+                                          Size="sm"
+                                          AriaLabel="@L["ReassignAria"]"
+                                          OnClick="@(() => ReassignAsync(context))" />
+                        }
+                        @if (context.CanDelete)
+                        {
+                            <K7IconButton Icon="@Phosphor.Trash"
+                                          Size="sm"
+                                          Color="error"
+                                          AriaLabel="@L["DeleteAria"]"
+                                          OnClick="@(() => DeleteAsync(context))" />
+                        }
+                    </div>
+                </CellTemplate>
             </K7DataColumn>
         </K7DataTable>
     </div>

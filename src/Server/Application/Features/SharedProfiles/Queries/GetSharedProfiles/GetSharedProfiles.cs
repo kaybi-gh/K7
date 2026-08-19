@@ -8,7 +8,10 @@ using K7.Shared.Dtos.SharedProfiles;
 namespace K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
-public record GetSharedProfilesQuery : IRequest<IReadOnlyList<SharedProfileDto>>;
+public record GetSharedProfilesQuery : IRequest<IReadOnlyList<SharedProfileDto>>
+{
+    public bool AllProfiles { get; init; }
+}
 
 public class GetSharedProfilesQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetSharedProfilesQuery, IReadOnlyList<SharedProfileDto>>
@@ -18,10 +21,17 @@ public class GetSharedProfilesQueryHandler(IApplicationDbContext context, IUser 
         if (currentUser.Id is not { } userId)
             return [];
 
-        var groups = await context.SharedProfiles
+        var groupsQuery = context.SharedProfiles
             .AsNoTracking()
             .Include(g => g.Members)
-            .Where(g => g.HostUserId == userId || g.Members.Any(m => m.UserId == userId))
+            .AsQueryable();
+
+        if (!request.AllProfiles)
+        {
+            groupsQuery = groupsQuery.Where(g => g.HostUserId == userId || g.Members.Any(m => m.UserId == userId));
+        }
+
+        var groups = await groupsQuery
             .OrderBy(g => g.Name)
             .ToListAsync(cancellationToken);
 

@@ -295,9 +295,11 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 
 ### Users and authentication
 
-- Activate Guest, roles, profile restrictions under Admin -> Users.
+- Activate Guest, roles, profile restrictions, and per-user capability overrides under Admin -> Users.
 - Restriction profiles hide matching library titles from browse, search, Home, and person filmography. Person **Known for** (external posters not in the library) is hidden entirely while a restriction profile is active, including on a shared profile.
 - Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
+- Admin -> Playback history can reassign a play (personal or any shared profile) and delete rows. A personal delete updates that user's play/skip counts. A shared-profile delete removes the row for the whole group without un-watching members. Bulk select works like Admin -> Users. Delete requires `CanDeleteHistory`. Reassign requires `CanReassignHistory`.
+- `CanDeleteHistory` and `CanReassignHistory` are on by default for Administrator only (off for User and Guest). Enable them per User account when needed. Turning them off on an admin keeps history visible while blocking those actions.
 - Authentication panel: **read-only** view of local / OIDC flags from config.
 
 ### Server defaults vs user overrides

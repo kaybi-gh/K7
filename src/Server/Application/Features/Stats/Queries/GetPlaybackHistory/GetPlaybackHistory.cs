@@ -1,4 +1,5 @@
 using K7.Server.Application.Common;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
@@ -31,6 +32,33 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
 {
     public async Task<PlaybackHistoryPageDto> Handle(GetPlaybackHistoryQuery request, CancellationToken cancellationToken)
     {
+        var role = Roles.Guest;
+        if (currentUser.Id is { } viewerUserId)
+            role = await UserCapabilityEvaluator.GetRoleAsync(context, identityService, viewerUserId, cancellationToken);
+
+        var isAdmin = role == Roles.Administrator;
+        if (request.ShowAllUsers && !isAdmin)
+            throw new ForbiddenAccessException();
+
+        var isAdminHistoryView = request.ShowAllUsers && isAdmin;
+        var canDeleteHistory = false;
+        var canReassignHistory = false;
+        if (currentUser.Id is { } capUserId)
+        {
+            canDeleteHistory = await UserCapabilityEvaluator.HasForRoleAsync(
+                context,
+                capUserId,
+                role,
+                Capability.CanDeleteHistory,
+                cancellationToken);
+            canReassignHistory = await UserCapabilityEvaluator.HasForRoleAsync(
+                context,
+                capUserId,
+                role,
+                Capability.CanReassignHistory,
+                cancellationToken);
+        }
+
         IQueryable<MediaPlaybackSession> sessionsQuery;
 
         if (request.ShowAllUsers)
@@ -120,6 +148,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 MediaId = g.First().MediaId,
                 DeviceId = g.First().DeviceId,
                 UserId = g.First().UserId,
+                SharedProfileId = g.First().SharedProfileId,
                 SharedProfileName = g.First().SharedProfileNameSnapshot,
                 CoWatchingWithSnapshot = g.First().CoWatchingWithSnapshot
             });
@@ -175,6 +204,36 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 .Select(d => new { d.Id, d.DeviceName, d.ClientType })
                 .ToDictionaryAsync(d => d.Id, cancellationToken)
             : [];
+
+        var memberProfileIds = new HashSet<Guid>();
+        var hostedProfileIds = new HashSet<Guid>();
+        if (currentUser.Id is { } viewerId)
+        {
+            var memberships = await context.SharedProfiles
+                .AsNoTracking()
+                .Where(g => g.HostUserId == viewerId || g.Members.Any(m => m.UserId == viewerId))
+                .Select(g => new { g.Id, g.HostUserId })
+                .ToListAsync(cancellationToken);
+
+            foreach (var membership in memberships)
+            {
+                memberProfileIds.Add(membership.Id);
+                if (membership.HostUserId == viewerId)
+                    hostedProfileIds.Add(membership.Id);
+            }
+        }
+
+        var viewerCoViewedRefs = new HashSet<Guid>();
+        if (currentUser.Id is { } coViewerId && pagedGroups.Count > 0)
+        {
+            var pageRefs = pagedGroups.Select(g => g.ReferenceId).ToList();
+            var coViewed = await context.MediaPlaybackSessionCoViewers
+                .AsNoTracking()
+                .Where(c => c.UserId == coViewerId && pageRefs.Contains(c.ReferenceId))
+                .Select(c => c.ReferenceId)
+                .ToListAsync(cancellationToken);
+            viewerCoViewedRefs = coViewed.ToHashSet();
+        }
 
         var userIds = pagedGroups.Select(g => g.UserId).Distinct().ToList();
         var users = await context.Users
@@ -282,7 +341,24 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 IsCompleted = g.IsCompleted,
                 IsSkipped = !g.IsCompleted && g.IsFinished && g.TotalWatchedSeconds < PlaybackSkipRules.MaxWatchedSeconds,
                 UserName = userNames.GetValueOrDefault(g.UserId),
+                SharedProfileId = g.SharedProfileId,
                 SharedProfileName = g.SharedProfileName ?? g.CoWatchingWithSnapshot,
+                CanReassign = CanReassign(
+                    currentUser.Id,
+                    g.UserId,
+                    g.SharedProfileId,
+                    memberProfileIds,
+                    hostedProfileIds,
+                    canReassignHistory,
+                    isAdminHistoryView),
+                CanDelete = CanDelete(
+                    currentUser.Id,
+                    g.UserId,
+                    g.SharedProfileId,
+                    hostedProfileIds,
+                    viewerCoViewedRefs.Contains(g.ReferenceId),
+                    canDeleteHistory,
+                    isAdminHistoryView),
                 StreamQuality = quality
             };
         }).ToList();
@@ -315,6 +391,54 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             return MediaDisplayTitles.FormatTrack(trackNav.ArtistTitle, title);
 
         return title;
+    }
+
+    private static bool CanReassign(
+        Guid? viewerId,
+        Guid actorUserId,
+        Guid? sharedProfileId,
+        IReadOnlySet<Guid> memberProfileIds,
+        IReadOnlySet<Guid> hostedProfileIds,
+        bool hasReassignCapability,
+        bool isAdminHistoryView)
+    {
+        if (!hasReassignCapability)
+            return false;
+
+        if (isAdminHistoryView)
+            return true;
+
+        if (viewerId is null || memberProfileIds.Count == 0)
+            return false;
+
+        if (sharedProfileId is null)
+            return actorUserId == viewerId.Value;
+
+        if (hostedProfileIds.Contains(sharedProfileId.Value))
+            return true;
+
+        return actorUserId == viewerId.Value && memberProfileIds.Contains(sharedProfileId.Value);
+    }
+
+    private static bool CanDelete(
+        Guid? viewerId,
+        Guid actorUserId,
+        Guid? sharedProfileId,
+        IReadOnlySet<Guid> hostedProfileIds,
+        bool isCoViewer,
+        bool hasDeleteCapability,
+        bool isAdminHistoryView)
+    {
+        if (!hasDeleteCapability || viewerId is null)
+            return false;
+
+        if (isAdminHistoryView)
+            return true;
+
+        if (actorUserId == viewerId.Value || isCoViewer)
+            return true;
+
+        return sharedProfileId is { } profileId && hostedProfileIds.Contains(profileId);
     }
 
     private static DateTime? GetPeriodStart(string period) => period switch

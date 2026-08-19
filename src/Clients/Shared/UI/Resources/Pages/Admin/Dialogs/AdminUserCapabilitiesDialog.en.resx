@@ -12,6 +12,8 @@
   <data name="CapCanViewStats" xml:space="preserve"><value>View statistics</value></data>
   <data name="CapCanResumePlayback" xml:space="preserve"><value>Resume playback</value></data>
   <data name="CapCanViewHistory" xml:space="preserve"><value>View history</value></data>
+  <data name="CapCanDeleteHistory" xml:space="preserve"><value>Delete history</value></data>
+  <data name="CapCanReassignHistory" xml:space="preserve"><value>Reassign history</value></data>
   <data name="CapCanManageDevices" xml:space="preserve"><value>Manage devices</value></data>
   <data name="CapCanModifySettings" xml:space="preserve"><value>Modify settings</value></data>
   <data name="CapCanAccessAdmin" xml:space="preserve"><value>Access admin</value></data>

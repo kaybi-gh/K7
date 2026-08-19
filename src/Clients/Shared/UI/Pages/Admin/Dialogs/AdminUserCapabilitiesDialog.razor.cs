@@ -50,6 +50,8 @@ public partial class AdminUserCapabilitiesDialog
         Capability.CanViewStats => L["CapCanViewStats"],
         Capability.CanResumePlayback => L["CapCanResumePlayback"],
         Capability.CanViewHistory => L["CapCanViewHistory"],
+        Capability.CanDeleteHistory => L["CapCanDeleteHistory"],
+        Capability.CanReassignHistory => L["CapCanReassignHistory"],
         Capability.CanManageDevices => L["CapCanManageDevices"],
         Capability.CanModifySettings => L["CapCanModifySettings"],
         Capability.CanAccessAdmin => L["CapCanAccessAdmin"],

@@ -13,5 +13,7 @@ public enum Capability
     CanManageLibraries,
     CanManageUsers,
     CanReportPlaybackProgress,
-    CanTranscode
+    CanTranscode,
+    CanDeleteHistory,
+    CanReassignHistory
 }

@@ -44,4 +44,28 @@
   <data name="CustomShort" xml:space="preserve"><value>Perso.</value></data>
   <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
   <data name="SelectEndDate" xml:space="preserve"><value>Sélectionnez la date de fin</value></data>
+  <data name="Reassign" xml:space="preserve"><value>Réaffecter</value></data>
+  <data name="ReassignTitle" xml:space="preserve"><value>Réaffecter le visionnage</value></data>
+  <data name="ReassignAria" xml:space="preserve"><value>Réaffecter ce visionnage</value></data>
+  <data name="Reassigned" xml:space="preserve"><value>Visionnage réaffecté</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="DeleteTitle" xml:space="preserve"><value>Supprimer de l'historique</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer « {0} » de l'historique ? Les compteurs de lectures et de passages seront mis à jour.</value></data>
+  <data name="DeleteSharedConfirm" xml:space="preserve"><value>Retirer « {0} » de votre historique ? Les autres membres et l'historique du profil conservent ce visionnage.</value></data>
+  <data name="DeleteAria" xml:space="preserve"><value>Supprimer ce visionnage</value></data>
+  <data name="Deleted" xml:space="preserve"><value>Visionnage supprimé</value></data>
+  <data name="DeletedShared" xml:space="preserve"><value>Retiré de votre historique</value></data>
+  <data name="Select" xml:space="preserve"><value>Sélectionner</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Tout sélectionner</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Tout désélectionner</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} sélectionné(s)</value></data>
+  <data name="ReassignSelected" xml:space="preserve"><value>Réaffecter</value></data>
+  <data name="ReassignSelectedTitle" xml:space="preserve"><value>Réaffecter les visionnages</value></data>
+  <data name="ReassignSelectedSuccess" xml:space="preserve"><value>{0} visionnage(s) réaffecté(s)</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Retirer de l'historique</value></data>
+  <data name="DeleteSelectedConfirm" xml:space="preserve"><value>Retirer {0} visionnage(s) de votre historique ? Les lectures personnelles seront supprimées. Les lectures de profil partagé ne vous retireront que vous.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} visionnage(s) retiré(s)</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de retirer les visionnages sélectionnés</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} retiré(s), {1} en échec</value></data>
 </root>

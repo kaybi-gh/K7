@@ -73,4 +73,26 @@
   <data name="ClientExternal" xml:space="preserve"><value>External</value></data>
   <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
   <data name="ClientWeb" xml:space="preserve"><value>Browser</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="ReassignTitle" xml:space="preserve"><value>Reassign playback</value></data>
+  <data name="ReassignAria" xml:space="preserve"><value>Reassign this playback</value></data>
+  <data name="Reassigned" xml:space="preserve"><value>Playback reassigned</value></data>
+  <data name="ReassignSelected" xml:space="preserve"><value>Reassign</value></data>
+  <data name="ReassignSelectedTitle" xml:space="preserve"><value>Reassign playback</value></data>
+  <data name="ReassignSelectedSuccess" xml:space="preserve"><value>{0} playback(s) reassigned</value></data>
+  <data name="DeleteTitle" xml:space="preserve"><value>Delete from history</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Delete "{0}" from history? This user's play and skip counts will be updated.</value></data>
+  <data name="DeleteSharedConfirm" xml:space="preserve"><value>Delete "{0}" for everyone? The row leaves the group history. Members stay marked as having watched the title.</value></data>
+  <data name="DeleteAria" xml:space="preserve"><value>Delete this playback</value></data>
+  <data name="Deleted" xml:space="preserve"><value>Playback deleted</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete from history</value></data>
+  <data name="DeleteSelectedConfirm" xml:space="preserve"><value>Delete {0} playback(s) for everyone? Personal plays update that user's counts. Shared-profile plays remove the group row without un-watching members.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} playback(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected playbacks</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
 </root>

@@ -1928,6 +1928,30 @@
         }
       }
     },
+    "/api/stats/history/{referenceId}": {
+      "delete": {
+        "tags": [
+          "Stats"
+        ],
+        "operationId": "DeletePlaybackHistory",
+        "parameters": [
+          {
+            "name": "referenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/stats/history": {
       "get": {
         "tags": [
@@ -2056,6 +2080,40 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/stats/history/{referenceId}/assignment": {
+      "put": {
+        "tags": [
+          "Stats"
+        ],
+        "operationId": "ReassignPlaybackHistory",
+        "parameters": [
+          {
+            "name": "referenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignPlaybackHistoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -9481,6 +9539,30 @@
         }
       }
     },
+    "/api/admin/stats/history/{referenceId}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "DeleteAdminPlaybackHistory",
+        "parameters": [
+          {
+            "name": "referenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/server/preferences/audio-playback-policy": {
       "delete": {
         "tags": [
@@ -9925,6 +10007,29 @@
         }
       }
     },
+    "/api/admin/shared-profiles": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetAdminSharedProfiles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SharedProfileDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/stats": {
       "get": {
         "tags": [
@@ -10169,6 +10274,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TranscodeSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/stats/history/{referenceId}/assignment": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "ReassignAdminPlaybackHistory",
+        "parameters": [
+          {
+            "name": "referenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignPlaybackHistoryRequest"
               }
             }
           },
@@ -18402,11 +18541,24 @@
               "string"
             ]
           },
+          "sharedProfileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "sharedProfileName": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "canReassign": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean"
           },
           "streamQuality": {
             "oneOf": [
@@ -18900,6 +19052,18 @@
       },
       "RatingSource": {
         "type": "integer"
+      },
+      "ReassignPlaybackHistoryRequest": {
+        "type": "object",
+        "properties": {
+          "sharedProfileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
       },
       "ReceivePeerRequestCommand": {
         "required": [

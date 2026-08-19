@@ -25,6 +25,15 @@ public partial class K7DataColumn<TItem>
         DataTable.AddColumn(this);
     }
 
+    protected override void OnParametersSet()
+    {
+        if (IsVisible == Visible)
+            return;
+
+        IsVisible = Visible;
+        DataTable.InvalidateLayout();
+    }
+
     internal void SetVisible(bool visible)
     {
         IsVisible = visible;

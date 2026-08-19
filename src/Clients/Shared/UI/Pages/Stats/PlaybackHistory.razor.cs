@@ -2,19 +2,23 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
-using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Stats;
 
-public partial class PlaybackHistory
+public partial class PlaybackHistory : IAsyncDisposable
 {
     private const string FilterStorageKey = "my-space.history";
+    private const int SelectAllPageSize = 100;
 
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "period")]
     public string? QueryPeriod { get; set; }
@@ -39,9 +43,41 @@ public partial class PlaybackHistory
     private List<ButtonGroupOption<string>> _mediaTypeOptions = [];
     private List<ButtonGroupOption<string>> _periodOptions = [];
     private bool _pendingQuerySync;
+    private bool _selectionMode;
+    private bool _busy;
+    private readonly HashSet<Guid> _selectedIds = [];
+    private readonly Dictionary<Guid, PlaybackHistoryItemDto> _loadedItems = [];
+    private SelectionModeKeyboardBinder? _selectionKeys;
+
+    private int SelectedCount => _selectedIds.Count;
+
+    private IEnumerable<PlaybackHistoryItemDto> SelectableItems =>
+        _loadedItems.Values.Where(CanSelect);
+
+    private bool HasSelectableItems => SelectableItems.Any();
+
+    private bool AllSelected
+    {
+        get
+        {
+            var selectable = SelectableItems.ToList();
+            return selectable.Count > 0 && selectable.All(item => _selectedIds.Contains(item.ReferenceId));
+        }
+    }
+
+    private int SelectedReassignableCount =>
+        _selectedIds.Count(id => _loadedItems.TryGetValue(id, out var item) && item.CanReassign);
+
+    private int SelectedDeletableCount =>
+        _selectedIds.Count(id => _loadedItems.TryGetValue(id, out var item) && item.CanDelete);
 
     protected override async Task OnInitializedAsync()
     {
+        _selectionKeys = new SelectionModeKeyboardBinder(
+            SpatialNav,
+            onEscape: () => _ = InvokeAsync(OnSelectionEscape),
+            onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAllAsync));
+
         _periodOptions =
         [
             new("week", Label: L["WeekShort"]),
@@ -70,6 +106,12 @@ public partial class PlaybackHistory
             _tableKey++;
             _pendingQuerySync = true;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selectionKeys is not null)
+            await _selectionKeys.DisposeAsync();
     }
 
     protected override void OnAfterRender(bool firstRender) =>
@@ -186,6 +228,8 @@ public partial class PlaybackHistory
 
     private Task RefreshTableAsync()
     {
+        ExitSelectionMode();
+        _loadedItems.Clear();
         _tableKey++;
         return InvokeAsync(StateHasChanged);
     }
@@ -224,6 +268,8 @@ public partial class PlaybackHistory
                 if (result.Items is { Count: > 0 })
                 {
                     allItems.AddRange(result.Items);
+                    foreach (var item in result.Items)
+                        _loadedItems[item.ReferenceId] = item;
                 }
             }
 
@@ -241,6 +287,255 @@ public partial class PlaybackHistory
         catch
         {
             return new K7DataTableResult<PlaybackHistoryItemDto>([], 0);
+        }
+    }
+
+    private async Task ReassignAsync(PlaybackHistoryItemDto item)
+    {
+        await ShowReassignDialogAsync([item], item.SharedProfileId, item.MediaTitle ?? S["Untitled"]);
+    }
+
+    private async Task ReassignSelectedAsync()
+    {
+        var items = SelectedItems().Where(i => i.CanReassign).ToList();
+        if (items.Count == 0 || _busy)
+            return;
+
+        var currentProfileId = items.Select(i => i.SharedProfileId).Distinct().Count() == 1
+            ? items[0].SharedProfileId
+            : null;
+        await ShowReassignDialogAsync(items, currentProfileId, items[0].MediaTitle ?? S["Untitled"]);
+    }
+
+    private async Task ShowReassignDialogAsync(
+        IReadOnlyList<PlaybackHistoryItemDto> items,
+        Guid? currentSharedProfileId,
+        string title)
+    {
+        var referenceIds = items.Select(i => i.ReferenceId).ToList();
+        var parameters = new K7DialogParameters<ReassignPlaybackHistoryDialog>
+        {
+            { x => x.ReferenceId, referenceIds[0] },
+            { x => x.ReferenceIds, referenceIds },
+            { x => x.CurrentSharedProfileId, currentSharedProfileId },
+            { x => x.MediaTitle, title }
+        };
+        var options = new K7DialogOptions
+        {
+            MaxWidth = K7DialogMaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+        var dialogTitle = items.Count == 1 ? L["ReassignTitle"] : L["ReassignSelectedTitle"];
+        var dialog = await DialogService.ShowAsync<ReassignPlaybackHistoryDialog>(dialogTitle, parameters, options);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(
+                items.Count == 1 ? L["Reassigned"] : string.Format(L["ReassignSelectedSuccess"], items.Count),
+                K7Severity.Success);
+            await RefreshTableAsync();
+        }
+    }
+
+    private async Task DeleteAsync(PlaybackHistoryItemDto item)
+    {
+        var title = item.MediaTitle ?? S["Untitled"];
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["DeleteTitle"],
+            string.Format(item.SharedProfileId is null ? L["DeleteConfirm"] : L["DeleteSharedConfirm"], title),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await K7ServerService.DeletePlaybackHistoryAsync(item.ReferenceId);
+            Snackbar.Add(item.SharedProfileId is null ? L["Deleted"] : L["DeletedShared"], K7Severity.Success);
+            await RefreshTableAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
+    private async Task DeleteSelectedAsync()
+    {
+        var items = SelectedItems().Where(i => i.CanDelete).ToList();
+        if (items.Count == 0 || _busy)
+            return;
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["DeleteSelectedTitle"],
+            string.Format(L["DeleteSelectedConfirm"], items.Count),
+            yesText: S["Delete"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed != true)
+            return;
+
+        _busy = true;
+        var failed = 0;
+        try
+        {
+            foreach (var item in items)
+            {
+                try
+                {
+                    await K7ServerService.DeletePlaybackHistoryAsync(item.ReferenceId);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshTableAsync();
+
+        if (failed == 0)
+            Snackbar.Add(string.Format(L["DeleteSelectedSuccess"], items.Count), K7Severity.Success);
+        else if (failed == items.Count)
+            Snackbar.Add(L["DeleteSelectedError"], K7Severity.Error);
+        else
+            Snackbar.Add(string.Format(L["DeleteSelectedPartial"], items.Count - failed, failed), K7Severity.Warning);
+    }
+
+    private void EnterSelectionMode()
+    {
+        _selectionMode = true;
+        _selectedIds.Clear();
+        _tableRef?.InvalidateLayout();
+        _ = _selectionKeys?.SetEnabledAsync(true);
+    }
+
+    private void ExitSelectionMode()
+    {
+        if (!_selectionMode)
+            return;
+
+        _selectionMode = false;
+        _selectedIds.Clear();
+        _tableRef?.InvalidateLayout();
+        _ = _selectionKeys?.SetEnabledAsync(false);
+    }
+
+    private void ToggleSelection(PlaybackHistoryItemDto item)
+    {
+        if (!CanSelect(item) || _busy)
+            return;
+
+        if (!_selectedIds.Remove(item.ReferenceId))
+            _selectedIds.Add(item.ReferenceId);
+
+        _tableRef?.Rerender();
+    }
+
+    private async Task ToggleSelectAllAsync()
+    {
+        if (_busy)
+            return;
+
+        if (AllSelected)
+        {
+            _selectedIds.Clear();
+            _tableRef?.Rerender();
+            return;
+        }
+
+        await SelectAllLoadedAsync();
+    }
+
+    private async Task SelectAllLoadedAsync()
+    {
+        if (_loadedItems.Count < _totalCount)
+            await LoadAllForSelectionAsync();
+
+        _selectedIds.Clear();
+        foreach (var item in SelectableItems)
+            _selectedIds.Add(item.ReferenceId);
+
+        _tableRef?.Rerender();
+    }
+
+    private async Task LoadAllForSelectionAsync()
+    {
+        _busy = true;
+        try
+        {
+            var mediaTypeParam = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType;
+            DateTime? from = _selectedPeriod == "custom" ? _fromDate.ToDateTime(TimeOnly.MinValue) : null;
+            DateTime? to = _selectedPeriod == "custom" ? _toDate.ToDateTime(TimeOnly.MaxValue) : null;
+            var page = 1;
+            while (true)
+            {
+                var result = await K7ServerService.GetPlaybackHistoryAsync(
+                    page,
+                    SelectAllPageSize,
+                    mediaTypeParam,
+                    _selectedPeriod,
+                    from,
+                    to);
+                if (result?.Items is not { Count: > 0 })
+                    break;
+
+                foreach (var item in result.Items)
+                    _loadedItems[item.ReferenceId] = item;
+
+                if (_loadedItems.Count >= result.TotalCount || result.Items.Count < SelectAllPageSize)
+                    break;
+
+                page++;
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OnSelectionEscape()
+    {
+        if (_busy)
+            return;
+
+        ExitSelectionMode();
+    }
+
+    private Task OnSelectionSelectAllAsync()
+    {
+        if (!_selectionMode || _busy)
+            return Task.CompletedTask;
+
+        return SelectAllLoadedAsync();
+    }
+
+    private void OnRowClick(PlaybackHistoryItemDto item)
+    {
+        if (_selectionMode)
+            ToggleSelection(item);
+    }
+
+    private bool IsSelected(Guid id) => _selectedIds.Contains(id);
+
+    private static bool CanSelect(PlaybackHistoryItemDto item) => item.CanReassign || item.CanDelete;
+
+    private string? GetRowClass(PlaybackHistoryItemDto item) =>
+        _selectionMode && IsSelected(item.ReferenceId) ? "is-selected" : null;
+
+    private IEnumerable<PlaybackHistoryItemDto> SelectedItems()
+    {
+        foreach (var id in _selectedIds)
+        {
+            if (_loadedItems.TryGetValue(id, out var item))
+                yield return item;
         }
     }
 

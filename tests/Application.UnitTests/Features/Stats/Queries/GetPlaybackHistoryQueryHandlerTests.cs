@@ -1,5 +1,7 @@
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -42,7 +44,7 @@ public class GetPlaybackHistoryQueryHandlerTests
 
         _context.Users.AddRange(
             new User { Id = _userId, IdentityUserId = "ident", DisplayName = "viewer" },
-            new User { Id = _otherUserId, DisplayName = "other" });
+            new User { Id = _otherUserId, IdentityUserId = "other", DisplayName = "other" });
         _context.Medias.Add(new Movie { Id = _movieId, Title = "Film" });
         _context.SharedProfiles.Add(new SharedProfile
         {
@@ -58,6 +60,8 @@ public class GetPlaybackHistoryQueryHandlerTests
         _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
 
         _identityService = Substitute.For<IIdentityService>();
+        _identityService.GetRolesAsync("ident").Returns([Roles.User]);
+        _identityService.GetRolesAsync("other").Returns([Roles.User]);
 
         _handler = new GetPlaybackHistoryQueryHandler(_context, _currentUser, _identityService);
     }
@@ -107,11 +111,15 @@ public class GetPlaybackHistoryQueryHandlerTests
             });
         await _context.SaveChangesAsync();
 
+        EnableCapability(_userId, Capability.CanDeleteHistory);
+        EnableCapability(_userId, Capability.CanReassignHistory);
+        await _context.SaveChangesAsync();
+
         var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
 
         result.Items.Should().HaveCount(2);
-        result.Items.Should().Contain(i => i.ReferenceId == sharedReferenceId && i.SharedProfileName == "Couple");
-        result.Items.Should().Contain(i => i.ReferenceId == personalReferenceId && i.SharedProfileName == null);
+        result.Items.Should().Contain(i => i.ReferenceId == sharedReferenceId && i.SharedProfileName == "Couple" && i.CanReassign && i.CanDelete);
+        result.Items.Should().Contain(i => i.ReferenceId == personalReferenceId && i.SharedProfileName == null && i.CanReassign && i.CanDelete);
     }
 
     [Test]
@@ -142,11 +150,202 @@ public class GetPlaybackHistoryQueryHandlerTests
         });
         await _context.SaveChangesAsync();
 
+        EnableCapability(_userId, Capability.CanDeleteHistory);
+        EnableCapability(_userId, Capability.CanReassignHistory);
+        await _context.SaveChangesAsync();
+
         var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
 
         result.Items.Should().ContainSingle()
             .Which.ReferenceId.Should().Be(sharedReferenceId);
         result.Items[0].SharedProfileName.Should().Be("Couple");
+        result.Items[0].CanReassign.Should().BeTrue();
+        result.Items[0].CanDelete.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ShouldAllowGuestToRemoveThemselvesFromSharedPlay()
+    {
+        var sharedReferenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        _context.SharedProfileMembers.Add(new SharedProfileMember
+        {
+            SharedProfileId = _sharedProfileId,
+            UserId = _otherUserId
+        });
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = sharedReferenceId,
+            SharedProfileId = _sharedProfileId,
+            SharedProfileNameSnapshot = "Couple",
+            StartedAt = now.AddMinutes(-10),
+            StoppedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 6000,
+            State = PlaybackState.Ended
+        });
+        _context.MediaPlaybackSessionCoViewers.Add(new MediaPlaybackSessionCoViewer
+        {
+            ReferenceId = sharedReferenceId,
+            UserId = _otherUserId
+        });
+        await _context.SaveChangesAsync();
+
+        _currentUser.Id.Returns(_otherUserId);
+        EnableCapability(_otherUserId, Capability.CanDeleteHistory);
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle();
+        result.Items[0].CanReassign.Should().BeFalse();
+        result.Items[0].CanDelete.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ShouldHideActions_WhenCapabilitiesNotGranted()
+    {
+        var personalReferenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = personalReferenceId,
+            StartedAt = now.AddMinutes(-10),
+            StoppedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 4000,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.ReferenceId.Should().Be(personalReferenceId);
+        result.Items[0].CanReassign.Should().BeFalse();
+        result.Items[0].CanDelete.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Handle_ShouldHideDelete_WhenCapabilityDisabled()
+    {
+        EnableCapability(_userId, Capability.CanReassignHistory);
+        _context.UserCapabilityOverrides.Add(new UserCapabilityOverride
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Capability = Capability.CanDeleteHistory,
+            Enabled = false
+        });
+        var personalReferenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = personalReferenceId,
+            StartedAt = now.AddMinutes(-10),
+            StoppedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 4000,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.ReferenceId.Should().Be(personalReferenceId);
+        result.Items[0].CanReassign.Should().BeTrue();
+        result.Items[0].CanDelete.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Handle_ShouldHideReassign_WhenCapabilityDisabled()
+    {
+        EnableCapability(_userId, Capability.CanDeleteHistory);
+        _context.UserCapabilityOverrides.Add(new UserCapabilityOverride
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Capability = Capability.CanReassignHistory,
+            Enabled = false
+        });
+        var personalReferenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = personalReferenceId,
+            StartedAt = now.AddMinutes(-10),
+            StoppedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 4000,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetPlaybackHistoryQuery { Period = "all" }, CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.ReferenceId.Should().Be(personalReferenceId);
+        result.Items[0].CanReassign.Should().BeFalse();
+        result.Items[0].CanDelete.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ShouldForbidShowAllUsers_WhenNotAdministrator()
+    {
+        var act = () => _handler.Handle(
+            new GetPlaybackHistoryQuery { Period = "all", ShowAllUsers = true },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenAccessException>();
+    }
+
+    [Test]
+    public async Task Handle_ShouldAllowAdminToManageAnyRow_WhenShowAllUsers()
+    {
+        _identityService.GetRolesAsync("ident").Returns([Roles.Administrator]);
+        var otherReferenceId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        _context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = _otherUserId,
+            MediaId = _movieId,
+            SessionId = Guid.NewGuid(),
+            ReferenceId = otherReferenceId,
+            StartedAt = now.AddMinutes(-10),
+            StoppedAt = now.AddMinutes(-2),
+            DurationSeconds = 7200,
+            WatchedDurationSeconds = 4000,
+            State = PlaybackState.Ended
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(
+            new GetPlaybackHistoryQuery { Period = "all", ShowAllUsers = true },
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.ReferenceId.Should().Be(otherReferenceId);
+        result.Items[0].CanReassign.Should().BeTrue();
+        result.Items[0].CanDelete.Should().BeTrue();
     }
 
     [Test]
@@ -311,6 +510,17 @@ public class GetPlaybackHistoryQueryHandlerTests
         result.Items[0].IsCompleted.Should().BeTrue();
         result.Items[0].IsSkipped.Should().BeFalse();
         result.Items[0].TotalWatchedSeconds.Should().Be(200);
+    }
+
+    private void EnableCapability(Guid userId, Capability capability)
+    {
+        _context.UserCapabilityOverrides.Add(new UserCapabilityOverride
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Capability = capability,
+            Enabled = true
+        });
     }
 }
 

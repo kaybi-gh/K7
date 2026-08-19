@@ -253,6 +253,18 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         await Task.CompletedTask;
     }
 
+    public void InvalidateLayout()
+    {
+        UpdateColumnCaches();
+        Rerender();
+    }
+
+    public void Rerender()
+    {
+        _needsRender = true;
+        StateHasChanged();
+    }
+
     private async ValueTask<ItemsProviderResult<IndexedRow>> ProvideItemsAsync(
         ItemsProviderRequest request)
     {

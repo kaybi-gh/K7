@@ -200,6 +200,7 @@ public class GetWatchStatsQueryHandlerTests
         result.TotalPlays.Should().Be(1);
         result.UniqueItemsPlayed.Should().Be(1);
         result.TopItems.Should().ContainSingle(i => i.Id == _movieId && i.PlayCount == 1);
+        result.TotalWatchTimeHours.Should().Be(Math.Round(6000 / 3600.0, 1));
     }
 
     [Test]

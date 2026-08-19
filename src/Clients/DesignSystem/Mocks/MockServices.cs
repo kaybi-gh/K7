@@ -793,6 +793,12 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
+    public Task ReassignPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeletePlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ReassignAdminPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteAdminPlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<IReadOnlyList<SharedProfileDto>> GetAdminSharedProfilesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SharedProfileDto>>([]);
     public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;

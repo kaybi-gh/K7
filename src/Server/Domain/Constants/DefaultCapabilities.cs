@@ -22,7 +22,9 @@ public static class DefaultCapabilities
         ..UserCapabilities,
         Capability.CanAccessAdmin,
         Capability.CanManageLibraries,
-        Capability.CanManageUsers
+        Capability.CanManageUsers,
+        Capability.CanDeleteHistory,
+        Capability.CanReassignHistory
     ];
 
     // Guest sessions are recorded for admin playback history / active streams only.

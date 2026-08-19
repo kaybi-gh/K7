@@ -350,6 +350,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
         var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
         session.SharedProfileId.Should().Be(sharedProfileId);
         (await _context.UserMediaStates.CountAsync()).Should().Be(0);
+        (await _context.MediaPlaybackSessionCoViewers.SingleAsync()).UserId.Should().Be(coViewerId);
     }
 
     [Test]
@@ -400,5 +401,6 @@ public class UpdatePlaybackProgressCommandHandlerTests
 
         var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
         session.CompletedAt.Should().NotBeNull();
+        (await _context.MediaPlaybackSessionCoViewers.SingleAsync()).UserId.Should().Be(coViewerId);
     }
 }

@@ -274,6 +274,47 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
+    public async Task ReassignPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/stats/history/{referenceId}/assignment",
+            new ReassignPlaybackHistoryRequest { SharedProfileId = sharedProfileId },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeletePlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/stats/history/{referenceId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ReassignAdminPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/admin/stats/history/{referenceId}/assignment",
+            new ReassignPlaybackHistoryRequest { SharedProfileId = sharedProfileId },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteAdminPlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/admin/stats/history/{referenceId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<SharedProfileDto>> GetAdminSharedProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        var groups = await HttpClient.GetFromJsonAsync<List<SharedProfileDto>>(
+            "api/admin/shared-profiles",
+            _serializerOptions,
+            cancellationToken);
+        return groups ?? [];
+    }
+
     public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };

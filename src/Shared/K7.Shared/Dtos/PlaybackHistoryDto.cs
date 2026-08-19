@@ -18,7 +18,10 @@ public sealed record PlaybackHistoryItemDto
     public bool IsCompleted { get; init; }
     public bool IsSkipped { get; init; }
     public string? UserName { get; init; }
+    public Guid? SharedProfileId { get; init; }
     public string? SharedProfileName { get; init; }
+    public bool CanReassign { get; init; }
+    public bool CanDelete { get; init; }
     public StreamQualityDto? StreamQuality { get; init; }
 }
 

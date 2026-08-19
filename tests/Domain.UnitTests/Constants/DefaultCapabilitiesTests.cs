@@ -23,5 +23,16 @@ public class DefaultCapabilitiesTests
         caps.Should().Contain(Capability.CanResumePlayback);
         caps.Should().Contain(Capability.CanViewHistory);
         caps.Should().Contain(Capability.CanViewStats);
+        caps.Should().NotContain(Capability.CanDeleteHistory);
+        caps.Should().NotContain(Capability.CanReassignHistory);
+    }
+
+    [Test]
+    public void ForRole_ShouldAllowAdministratorToDeleteAndReassignHistory()
+    {
+        var caps = DefaultCapabilities.ForRole(Roles.Administrator);
+
+        caps.Should().Contain(Capability.CanDeleteHistory);
+        caps.Should().Contain(Capability.CanReassignHistory);
     }
 }
