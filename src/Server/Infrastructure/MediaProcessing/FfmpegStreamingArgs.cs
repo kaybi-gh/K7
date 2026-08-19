@@ -1,4 +1,5 @@
 using System.Globalization;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
@@ -166,7 +167,7 @@ internal static class FfmpegStreamingArgs
             "-muxdelay 0",
             "-max_muxing_queue_size 2048",
             "-f segment",
-            "-segment_time_delta 0.05",
+            SegmentTimeDeltaArgument,
             "-segment_format mp4",
             "-segment_header_filename init.m4s",
             $"-segment_format_options movflags=+{SegmentFmp4MovFlags}",
@@ -178,7 +179,9 @@ internal static class FfmpegStreamingArgs
     }
 
     /// <summary>
-    /// Audio bitstream-copy into demuxed fMP4. No -start_at_zero.
+    /// Audio bitstream-copy into demuxed fMP4. No -start_at_zero: keep source PTS so A/V
+    /// stay in the relationship from the file. Video windows still use -start_at_zero and
+    /// a 1s+ tfdt rebase. Micro-rebasing audio onto the playlist desyncs every client.
     /// Requires a second output-side -ss (in addition to input -ss) so -t / segment_times
     /// see a coherent timeline; without it mid-seek windows write init + empty N.m4s.
     /// </summary>
@@ -214,7 +217,7 @@ internal static class FfmpegStreamingArgs
         }
 
         args.Add("-f segment");
-        args.Add("-segment_time_delta 0.05");
+        args.Add(SegmentTimeDeltaArgument);
         args.Add("-segment_format mp4");
         args.Add("-segment_header_filename init.m4s");
         args.Add($"-segment_format_options movflags=+{SegmentFmp4MovFlags}");
@@ -223,6 +226,9 @@ internal static class FfmpegStreamingArgs
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
         return args;
     }
+
+    private static string SegmentTimeDeltaArgument =>
+        $"-segment_time_delta {Hls.SegmentTimeDeltaSeconds.ToString("F2", CultureInfo.InvariantCulture)}";
 
     private static void AppendSegmentTimesOrFallback(
         List<string> args,

@@ -510,7 +510,7 @@ public class MediaTranscoder : IMediaTranscoder
         IReadOnlyList<string>? aacEncodeArgs = null;
 
         // Match video's padded ffmpeg window for encode so deliver segments share keyframes.
-        // Bitstream-copy stays on the exact deliver range (no pad / no start_at_zero).
+        // Bitstream-copy stays on the exact deliver range (source PTS, no start_at_zero).
         var (ffmpegStartIndex, ffmpegEndIndex) = needsTranscode
             ? FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
                 startSegmentIndex,

@@ -308,7 +308,8 @@ public sealed class StreamPlaybackService(
         }
 
         // Lazy ffmpeg windows use -start_at_zero, which resets tfdt to ~0. Rebase
-        // media segments onto the absolute playlist timeline so ExoPlayer does not stall.
+        // onto the playlist start only for window resets (1s+), so A/V composition
+        // offsets of tens of ms stay in lockstep on Web and ExoPlayer.
         if (segmentNumber >= 0 && segmentNumber < allSegments.Count)
         {
             var initPath = Path.Combine(
@@ -320,9 +321,14 @@ public sealed class StreamPlaybackService(
                     initPath,
                     startMs,
                     out var rebasedBytes,
-                    out _))
+                    out var rebaseDetail))
             {
                 segmentBytes = rebasedBytes;
+                logger.LogDebug(
+                    "Rebased fMP4 tfdt for segment {SegmentNumber} job {JobId}: {Detail}",
+                    segmentNumber,
+                    job.JobId,
+                    rebaseDetail);
                 try
                 {
                     await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
@@ -331,6 +337,15 @@ public sealed class StreamPlaybackService(
                 {
                     // Best-effort persist; response still uses the rebased bytes in memory.
                 }
+            }
+            else if (!rebaseDetail.StartsWith("already-absolute", StringComparison.Ordinal)
+                     && rebaseDetail != "skipped")
+            {
+                logger.LogDebug(
+                    "Skipped fMP4 tfdt rebase for segment {SegmentNumber} job {JobId}: {Detail}",
+                    segmentNumber,
+                    job.JobId,
+                    rebaseDetail);
             }
         }
 

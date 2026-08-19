@@ -46,6 +46,30 @@ Shared branch flag: [`WindowsVideoPlayback.UsesWebVideoPlayer`](../../src/Client
 `PlaybackOptionsDialog` lists movie releases by resolution, audio languages, codec, size, and
 Local vs Federated when several files exist (not the media title).
 
+## Demuxed HLS timestamps (Web vs Android)
+
+K7 serves separate audio and video fMP4 playlists on one keyframe-aligned timeline (`#EXTINF`).
+Web (Video.js / hls.js) follows playlist timing, so small `tfdt` drift is invisible.
+
+Android ExoPlayer (Media3) uses fMP4 `tfdt` plus `#EXT-X-INDEPENDENT-SEGMENTS`. A lazy ffmpeg
+window that resets timestamps to ~0, or an audio-copy timeline that is not the same as video,
+looks like a discontinuity: audio drifts, then snaps back.
+
+The server keeps A/V in the source relationship, and only remaps `tfdt` when ffmpeg
+has clearly restarted a window (`tfdt` off by 1s or more from the playlist start):
+
+- audio bitstream-copy keeps source PTS (`-copyts`, `-output_ts_offset`, no `-start_at_zero`)
+- video lazy windows still use `-start_at_zero`. Those fragments are rebased on serve
+- keyframe HLS segments are at least 1s (collapsed at index / `ComputeHlsSegments` time)
+
+Do not micro-rebase each track onto `#EXTINF` independently: tens of ms of AAC vs
+keyframe composition error would become a constant lip-sync offset on Web and Android.
+
+Android also disables skip-silence and seeks with previous-sync so AAC gaps do not resync by
+dropping audio. Existing files keep their stored `HlsSegments` until HLS is recomputed.
+Cached `.m4s` that were rewritten by an older tight rebase must be deleted (transcode cache)
+or they keep the wrong `tfdt`.
+
 ## Related
 
 - Client hosts: [developing.md](developing.md#maui-blazor-hybrid)

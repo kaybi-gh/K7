@@ -152,7 +152,7 @@ public partial class BlazorPage
 
     partial void ConfigureNativeVideoPlayerAfterOpen()
     {
-        TryApplyPreviousSyncSeekParameters(UnwrapPlayer(GetPlayer(NativePlayer)));
+        ApplyAndroidHlsAvSyncSettings(GetPlayer(NativePlayer));
         SetVideoFocusOwnership(active: true);
     }
 
@@ -179,17 +179,14 @@ public partial class BlazorPage
             ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
-#pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in bindings but is the Media3 API
-            var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
-            var mediaSource = mediaSourceFactory.CreateMediaSource(mediaItem);
-#pragma warning restore CS0618
+            var mediaSource = CreateAndroidStreamingMediaSource(httpFactory, mediaItem, url);
             if (mediaSource is null)
                 return;
 
             exo.PlayWhenReady = true;
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
-            TryApplyPreviousSyncSeekParameters(exo);
+            ApplyAndroidHlsAvSyncSettings(exo);
             _androidHttpTimeoutRetryCount = 0;
 
             // Do not PostDelayed SetMediaSource again: a second Prepare resets HLS to
@@ -264,17 +261,14 @@ public partial class BlazorPage
             ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
-#pragma warning disable CS0618
-            var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
-            var mediaSource = mediaSourceFactory.CreateMediaSource(mediaItem);
-#pragma warning restore CS0618
+            var mediaSource = CreateAndroidStreamingMediaSource(httpFactory, mediaItem, url);
             if (mediaSource is null)
                 return;
 
             exo.PlayWhenReady = true;
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
-            TryApplyPreviousSyncSeekParameters(exo);
+            ApplyAndroidHlsAvSyncSettings(exo);
         }
         catch (Exception)
         {
@@ -348,7 +342,7 @@ public partial class BlazorPage
             }
 
             EnsureVideoSurfaceNotFocusable();
-            TryApplyPreviousSyncSeekParameters(player);
+            ApplyAndroidHlsAvSyncSettings(player);
 
             // Prefer MediaElement.SeekTo after SeekParameters are set on the real ExoPlayer.
             // Direct IExoPlayerInvoker.SeekTo can exact-seek and leave TextureView frozen until
@@ -376,7 +370,7 @@ public partial class BlazorPage
             }
 
             // Toolkit SeekTo can reset SeekParameters on some versions - re-apply before Play.
-            TryApplyPreviousSyncSeekParameters(player);
+            ApplyAndroidHlsAvSyncSettings(player);
 
             _playerService.CurrentTime = targetSeconds;
 
@@ -668,6 +662,42 @@ public partial class BlazorPage
             group.DescendantFocusability = Android.Views.DescendantFocusability.BlockDescendants;
             for (var i = 0; i < group.ChildCount; i++)
                 DisableFocusRecursive(group.GetChildAt(i));
+        }
+    }
+
+    private static IMediaSource? CreateAndroidStreamingMediaSource(
+        DefaultHttpDataSource.Factory httpFactory,
+        MediaItem mediaItem,
+        string url)
+    {
+#pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in bindings but is the Media3 API
+        if (url.Contains(".m3u8", StringComparison.OrdinalIgnoreCase))
+        {
+            var hlsFactory = new AndroidX.Media3.ExoPlayer.Hls.HlsMediaSource.Factory(httpFactory)!;
+            return hlsFactory.CreateMediaSource(mediaItem);
+        }
+
+        var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
+        return mediaSourceFactory.CreateMediaSource(mediaItem);
+#pragma warning restore CS0618
+    }
+
+    private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
+    {
+        TryApplyPreviousSyncSeekParameters(player);
+        TryDisableSkipSilence(player);
+    }
+
+    private static void TryDisableSkipSilence(IPlayer? player)
+    {
+        try
+        {
+            player = UnwrapPlayer(player);
+            if (player is IExoPlayer exo)
+                exo.SkipSilenceEnabled = false;
+        }
+        catch
+        {
         }
     }
 

@@ -29,6 +29,7 @@ public class FfmpegStreamingArgsTests
         args.Should().Contain("-start_at_zero");
         args.Should().Contain("-muxdelay 0");
         args.Should().Contain("-f segment");
+        args.Should().Contain("-segment_time_delta 0.05");
         args.Should().Contain("-segment_format mp4");
         args.Should().Contain("-segment_header_filename init.m4s");
         args.Should().Contain("-segment_start_number 1");

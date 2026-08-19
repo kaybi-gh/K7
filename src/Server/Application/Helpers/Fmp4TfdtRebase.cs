@@ -1,12 +1,14 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Helpers;
 
 /// <summary>
 /// Fixes fMP4 decode timelines after lazy ffmpeg windows.
-/// With -start_at_zero, each restart resets tfdt to ~0; players then stall on
-/// timeline discontinuities. Shift every tfdt base to the absolute playlist time.
+/// With -start_at_zero, each restart resets tfdt to ~0. Shift every tfdt base
+/// to the playlist start only when the gap is a window reset (not ~20-100ms A/V
+/// composition error). Independent micro-rebases desync audio and video.
 /// </summary>
 internal static class Fmp4TfdtRebase
 {
@@ -58,7 +60,9 @@ internal static class Fmp4TfdtRebase
         // were rebased onto a wrong (too high) absolute timeline - classic A/V desync
         // after an audio equal-length fallback.
         var delta = (long)expectedBase - (long)currentBase;
-        var tolerance = (long)Math.Max(timescale / 2, 1);
+        var tolerance = (long)Math.Max(
+            Math.Round(timescale * (Hls.TfdtWindowResetThresholdMs / 1000.0)),
+            1);
         if (Math.Abs(delta) <= tolerance)
         {
             detail = "already-absolute base="

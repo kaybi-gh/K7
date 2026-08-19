@@ -102,6 +102,53 @@ public class Fmp4TfdtRebaseTests
     }
 
     [Test]
+    public void TryRebaseMediaSegment_ShouldSkip_WhenDriftIsCompositionError()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        // 83ms at 24kHz = 1992 units. Independent rebase of this vs audio PTS
+        // would create a constant lip-sync offset on Web and ExoPlayer.
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 145992),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out _,
+            out var detail);
+
+        ok.Should().BeFalse();
+        detail.Should().Contain("already-absolute");
+    }
+
+    [Test]
+    public void TryRebaseMediaSegment_ShouldShiftTfdt_WhenWindowResetExceedsOneSecond()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        // 1500ms behind playlist at 24kHz = 36000 units.
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 108000),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out var rebased,
+            out var detail);
+
+        ok.Should().BeTrue(detail);
+        detail.Should().Contain("rebased");
+        var baseOffset = IndexOfTfdtBase(rebased);
+        BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000);
+    }
+
+    [Test]
     public void TryRebaseMediaSegment_ShouldPullDown_WhenStaleBaseTooHigh()
     {
         const uint timescale = 24000;

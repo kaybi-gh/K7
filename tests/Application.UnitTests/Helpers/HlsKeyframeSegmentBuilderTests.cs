@@ -44,6 +44,36 @@ public class HlsKeyframeSegmentBuilderTests
     }
 
     [Test]
+    public void BuildFromTimestamps_ShouldCollapseGopsShorterThanOneSecond()
+    {
+        long[] keyframes = [0, 600, 2000, 4000];
+
+        var segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+            keyframes,
+            totalVideoDurationMs: 5000,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+
+        segments.Select(s => s.StartTimestamp).Should().Equal(0L, 2000L, 4000L);
+        segments.Select(s => s.Duration).Should().Equal(2000L, 2000L, 1000L);
+    }
+
+    [Test]
+    public void BuildFromTimestamps_ShouldKeepOneSecondGops()
+    {
+        long[] keyframes = [0, 1000, 3000];
+
+        var segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+            keyframes,
+            totalVideoDurationMs: 4000,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+
+        segments.Select(s => s.StartTimestamp).Should().Equal(0L, 1000L, 3000L);
+        segments.Select(s => s.Duration).Should().Equal(1000L, 2000L, 1000L);
+    }
+
+    [Test]
     public void BuildFromTimestamps_ShouldMergeShortTrailingStub()
     {
         long[] keyframes = [0, 2000, 4000];
