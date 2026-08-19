@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
-using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
@@ -24,6 +24,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 {
     private readonly TMDbClient _tmdbClient;
     private readonly ILogger<TMDbSerieMetadataProvider> _logger;
+    private readonly Dictionary<(int TmdbId, int SeasonNumber, string Language), TvSeason> _catalogSeasonCache = new();
 
     public string ProviderName => "tmdb";
 
@@ -163,14 +164,27 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             cancellationToken: cancellationToken);
 
         var contentRating = ExtractContentRating(show.ContentRatings, language);
+        var (title, overview) = await ResolveLocalizedTextAsync(
+            show.Name,
+            show.Overview,
+            language,
+            fallbackLanguage,
+            async fallback =>
+            {
+                var fallbackShow = await _tmdbClient.GetTvShowAsync(
+                    tmdbId,
+                    language: fallback,
+                    cancellationToken: cancellationToken);
+                return (fallbackShow?.Name, fallbackShow?.Overview);
+            });
 
         var metadata = new ExternalSerieMetadata
         {
-            Title = show.Name,
-            SortTitle = MediaSortTitleHelper.Compute(show.Name),
+            Title = title ?? show.Name,
+            SortTitle = MediaSortTitleHelper.Compute(title ?? show.Name),
             OriginalTitle = show.OriginalName,
             ReleaseDate = show.FirstAirDate.HasValue ? DateOnly.FromDateTime(show.FirstAirDate.Value) : null,
-            Overview = show.Overview,
+            Overview = overview,
             Status = show.Status,
             OriginalLanguage = show.OriginalLanguage,
             ContentRating = contentRating,
@@ -234,12 +248,27 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             }
         }
 
+        var (title, overview) = await ResolveLocalizedTextAsync(
+            season.Name,
+            season.Overview,
+            language,
+            fallbackLanguage,
+            async fallback =>
+            {
+                var fallbackSeason = await _tmdbClient.GetTvSeasonAsync(
+                    tmdbId,
+                    seasonNumber,
+                    language: fallback,
+                    cancellationToken: cancellationToken);
+                return (fallbackSeason?.Name, fallbackSeason?.Overview);
+            });
+
         return new ExternalSeasonMetadata
         {
             SeasonNumber = season.SeasonNumber,
-            Title = season.Name,
-            SortTitle = MediaSortTitleHelper.Compute(season.Name),
-            Overview = season.Overview,
+            Title = title,
+            SortTitle = MediaSortTitleHelper.Compute(title),
+            Overview = overview,
             AirDate = season.AirDate.HasValue ? DateOnly.FromDateTime(season.AirDate.Value) : null,
             EpisodeCount = season.Episodes?.Count,
             ExternalIds = [],
@@ -280,13 +309,29 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         if (episode.ExternalIds?.TvdbId is { } tvdbId)
             externalIds.Add(new ExternalId { ProviderName = "tvdb", Value = tvdbId });
 
+        var (title, overview) = await ResolveLocalizedTextAsync(
+            episode.Name,
+            episode.Overview,
+            language,
+            fallbackLanguage,
+            async fallback =>
+            {
+                var fallbackEpisode = await _tmdbClient.GetTvEpisodeAsync(
+                    tmdbId,
+                    seasonNumber,
+                    episodeNumber,
+                    language: fallback,
+                    cancellationToken: cancellationToken);
+                return (fallbackEpisode?.Name, fallbackEpisode?.Overview);
+            });
+
         return new ExternalEpisodeMetadata
         {
             EpisodeNumber = episode.EpisodeNumber,
             SeasonNumber = episode.SeasonNumber,
-            Title = episode.Name,
-            SortTitle = MediaSortTitleHelper.Compute(episode.Name),
-            Overview = episode.Overview,
+            Title = title,
+            SortTitle = MediaSortTitleHelper.Compute(title),
+            Overview = overview,
             AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
             Runtime = episode.Runtime,
             StillImageUrl = stillUrl,
@@ -390,11 +435,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     {
         await TmdbClientConfiguration.EnsureConfiguredAsync(_tmdbClient, cancellationToken);
         var tmdbId = await ResolveTmdbIdAsync(providerId, cancellationToken);
-        var season = await _tmdbClient.GetTvSeasonAsync(
-            tmdbId,
-            seasonNumber,
-            language: language,
-            cancellationToken: cancellationToken);
+        var season = await GetCatalogSeasonAsync(tmdbId, seasonNumber, language, cancellationToken);
 
         var episode = season?.Episodes?.FirstOrDefault(e => e.EpisodeNumber == episodeNumber);
         if (episode is null)
@@ -404,13 +445,25 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         if (!string.IsNullOrEmpty(episode.StillPath))
             stillUrl = _tmdbClient.GetImageUrl("original", episode.StillPath, true)?.ToString();
 
+        var (title, overview) = await ResolveLocalizedTextAsync(
+            episode.Name,
+            episode.Overview,
+            language,
+            fallbackLanguage,
+            async fallback =>
+            {
+                var fallbackSeason = await GetCatalogSeasonAsync(tmdbId, seasonNumber, fallback, cancellationToken);
+                var fallbackEpisode = fallbackSeason?.Episodes?.FirstOrDefault(e => e.EpisodeNumber == episodeNumber);
+                return (fallbackEpisode?.Name, fallbackEpisode?.Overview);
+            });
+
         return new ExternalEpisodeMetadata
         {
             EpisodeNumber = episode.EpisodeNumber,
             SeasonNumber = episode.SeasonNumber,
-            Title = episode.Name,
-            SortTitle = MediaSortTitleHelper.Compute(episode.Name),
-            Overview = episode.Overview,
+            Title = title,
+            SortTitle = MediaSortTitleHelper.Compute(title),
+            Overview = overview,
             AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
             Runtime = episode.Runtime,
             StillImageUrl = stillUrl,
@@ -420,6 +473,43 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 ? [new MetadataProviderRating { MetadataProvider = Domain.Enums.MetadataProvider.TMDb, Value = episode.VoteAverage, MinimumValue = 0, MaximumValue = 10, RatingCount = episode.VoteCount }]
                 : []
         };
+    }
+
+    private async Task<(string? Title, string? Overview)> ResolveLocalizedTextAsync(
+        string? primaryTitle,
+        string? primaryOverview,
+        string language,
+        string? fallbackLanguage,
+        Func<string, Task<(string? Title, string? Overview)>> fetchFallbackAsync)
+    {
+        if (!MetadataLocalizedText.ShouldFetchFallback(primaryTitle, primaryOverview, language, fallbackLanguage))
+            return (primaryTitle, primaryOverview);
+
+        var (fallbackTitle, fallbackOverview) = await fetchFallbackAsync(fallbackLanguage!);
+        return (
+            MetadataLocalizedText.Prefer(primaryTitle, fallbackTitle, language),
+            MetadataLocalizedText.Prefer(primaryOverview, fallbackOverview, language));
+    }
+
+    private async Task<TvSeason?> GetCatalogSeasonAsync(
+        int tmdbId,
+        int seasonNumber,
+        string language,
+        CancellationToken cancellationToken)
+    {
+        var cacheKey = (tmdbId, seasonNumber, language);
+        if (_catalogSeasonCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        var season = await _tmdbClient.GetTvSeasonAsync(
+            tmdbId,
+            seasonNumber,
+            language: language,
+            cancellationToken: cancellationToken);
+        if (season is not null)
+            _catalogSeasonCache[cacheKey] = season;
+
+        return season;
     }
 
     private MetadataSearchResult MapToSearchResult(int id, string name, DateTime? firstAirDate, string? posterPath, string? overview, double? popularity = null)

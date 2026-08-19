@@ -119,6 +119,8 @@ When a directory already has episodes attached to a single series, new files in 
 
 **MusicBrainz display language.** MusicBrainz official names are often in the artist's native script. K7 uses the library metadata language (default `fr`, fallback `en`) to pick a localized alias when one exists, and otherwise unfolds a Latin sort name (`Last, First` -> `First Last`). The official name is stored as `OriginalTitle`. Refresh existing albums/artists after this change to rewrite titles already saved in a non-Latin script.
 
+**Series display language.** TMDb and TheTVDB often return the original-language title/overview (Japanese for anime) when the library language has no translation. K7 then uses the metadata fallback language (default `en`) when that text is still in a different script. Refresh existing series after this change.
+
 **Series libraries default to Auto.** Auto scores TVDB and TMDb search hits together (title, year, popularity), stores both external ids when known, then picks the **numbering canon** (which S/E grid matches your files best). The other provider still enriches gaps (stills, ratings, cast). Force **TMDb** or **TheTVDB** only when you need a fixed numbering scheme (for example Sonarr/TVDB-named packs).
 
 Optional folder tokens improve matching: `Series Name (2023) [tmdbid-123]` or `[tvdbid-456]` / `[imdbid-tt...]`.

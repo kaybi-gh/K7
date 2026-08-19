@@ -93,16 +93,20 @@ public sealed class TvdbApiClient
     public async Task<IReadOnlyList<TvdbEpisodeBase>> GetAllSeriesEpisodesAsync(
         int seriesId,
         string seasonType = "default",
+        string? language = null,
         CancellationToken cancellationToken = default)
     {
         var episodes = new List<TvdbEpisodeBase>();
         var page = 0;
         var normalizedSeasonType = string.IsNullOrWhiteSpace(seasonType) ? "default" : seasonType.Trim();
+        var languagePath = string.IsNullOrWhiteSpace(language)
+            ? string.Empty
+            : $"/{Uri.EscapeDataString(language.Trim())}";
 
         while (true)
         {
             var batch = await GetAsync<TvdbSeriesEpisodesPage>(
-                $"series/{seriesId}/episodes/{Uri.EscapeDataString(normalizedSeasonType)}?page={page}",
+                $"series/{seriesId}/episodes/{Uri.EscapeDataString(normalizedSeasonType)}{languagePath}?page={page}",
                 cancellationToken);
 
             var pageEpisodes = batch?.Episodes;

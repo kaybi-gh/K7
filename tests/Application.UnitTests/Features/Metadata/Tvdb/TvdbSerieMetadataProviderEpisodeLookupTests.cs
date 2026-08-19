@@ -83,6 +83,44 @@ public class TvdbSerieMetadataProviderEpisodeLookupTests
             .WithMessage("*S1E11*337018*");
     }
 
+    [Test]
+    public async Task TryBuildEpisodeMetadataFromCatalogAsync_ShouldPreferEnglish_WhenFrenchCatalogStaysJapanese()
+    {
+        var handler = new TvdbLocalizedCatalogHttpMessageHandler();
+        using var httpClient = new HttpClient(handler);
+
+        var rateLimiter = new OutboundRateLimiter();
+        var cooldownStore = new MetadataProviderCooldownStore();
+        var auth = new TvdbAuthenticationService(
+            httpClient,
+            rateLimiter,
+            cooldownStore,
+            Substitute.For<ILogger<TvdbAuthenticationService>>());
+        var apiClient = new TvdbApiClient(
+            httpClient,
+            auth,
+            rateLimiter,
+            cooldownStore,
+            Substitute.For<ILogger<TvdbApiClient>>());
+        var provider = new TvdbSerieMetadataProvider(
+            apiClient,
+            Substitute.For<ILogger<TvdbSerieMetadataProvider>>());
+
+        var metadata = await provider.TryBuildEpisodeMetadataFromCatalogAsync(
+            "79525",
+            seasonNumber: 1,
+            episodeNumber: 1,
+            language: "fr",
+            fallbackLanguage: "en",
+            cancellationToken: CancellationToken.None);
+
+        metadata.Should().NotBeNull();
+        metadata!.Title.Should().Be("The Day I Became a Shinigami");
+        metadata.Overview.Should().Be("Ichigo becomes a substitute shinigami.");
+        handler.RequestedPaths.Should().Contain(p => p.Contains("/episodes/default/fra", StringComparison.Ordinal));
+        handler.RequestedPaths.Should().Contain(p => p.Contains("/episodes/default/eng", StringComparison.Ordinal));
+    }
+
     private sealed class TvdbStubHttpMessageHandler(bool includeAbsoluteEpisode = true) : HttpMessageHandler
     {
         public List<string> RequestedPaths { get; } = [];
@@ -203,6 +241,73 @@ public class TvdbSerieMetadataProviderEpisodeLookupTests
                 Content = new StringContent($"Unhandled path: {path}", Encoding.UTF8, "text/plain")
             });
         }
+
+        private static HttpResponseMessage JsonResponse(string json) =>
+            new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+    }
+
+    private sealed class TvdbLocalizedCatalogHttpMessageHandler : HttpMessageHandler
+    {
+        public List<string> RequestedPaths { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.PathAndQuery ?? string.Empty;
+            RequestedPaths.Add(path);
+
+            if (request.Method == HttpMethod.Post && path.Contains("/login", StringComparison.OrdinalIgnoreCase))
+                return Task.FromResult(JsonResponse("""{"status":"success","data":{"token":"test-token"}}"""));
+
+            if (path.Contains("/series/79525/extended", StringComparison.Ordinal))
+            {
+                return Task.FromResult(JsonResponse(
+                    """{"status":"success","data":{"id":79525,"originalLanguage":"jpn","name":"ブリーチ"}}"""));
+            }
+
+            if (path.Contains("/series/79525/episodes/default", StringComparison.Ordinal))
+            {
+                if (!path.Contains("page=0", StringComparison.Ordinal))
+                    return Task.FromResult(JsonResponse("""{"status":"success","data":{"episodes":[]}}"""));
+
+                if (path.Contains("/episodes/default/eng", StringComparison.Ordinal))
+                    return Task.FromResult(LocalizedEpisodes("The Day I Became a Shinigami", "Ichigo becomes a substitute shinigami."));
+
+                return Task.FromResult(LocalizedEpisodes("死神になっちゃった日", "死神になった日"));
+            }
+
+            if (path.Contains("/translations/", StringComparison.Ordinal))
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                Content = new StringContent($"Unhandled path: {path}", Encoding.UTF8, "text/plain")
+            });
+        }
+
+        private static HttpResponseMessage LocalizedEpisodes(string name, string overview) =>
+            JsonResponse(
+                $$"""
+                {
+                  "status": "success",
+                  "data": {
+                    "episodes": [
+                      {
+                        "id": 1,
+                        "seriesId": 79525,
+                        "seasonNumber": 1,
+                        "number": 1,
+                        "absoluteNumber": 1,
+                        "name": "{{name}}",
+                        "overview": "{{overview}}",
+                        "aired": "2004-10-05"
+                      }
+                    ]
+                  }
+                }
+                """);
 
         private static HttpResponseMessage JsonResponse(string json) =>
             new(HttpStatusCode.OK)

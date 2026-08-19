@@ -9,8 +9,8 @@ using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
-using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Server.Infrastructure.MediaProcessing.MetadataProvider.Tvdb;
+using K7.Shared.Dtos.Entities.Metadatas;
 using Microsoft.Extensions.Logging;
 using MediaType = K7.Server.Domain.Enums.MediaType;
 
@@ -20,7 +20,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 {
     private readonly TvdbApiClient _apiClient;
     private readonly ILogger<TvdbSerieMetadataProvider> _logger;
-    private readonly Dictionary<(int SeriesId, string SeasonType), IReadOnlyList<TvdbEpisodeBase>> _episodeCache = new();
+    private readonly Dictionary<(int SeriesId, string SeasonType, string Language), IReadOnlyList<TvdbEpisodeBase>> _episodeCache = new();
     private readonly Dictionary<int, string?> _seriesOriginalLanguageCache = new();
 
     public TvdbSerieMetadataProvider(TvdbApiClient apiClient, ILogger<TvdbSerieMetadataProvider> logger)
@@ -354,8 +354,12 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             return null;
 
         // Prefer catalog fields to avoid per-episode extended HTTP during large refreshes.
-        var title = episodeRef.Name ?? $"Episode {episodeNumber}";
-        var overview = episodeRef.Overview;
+        var (title, overview) = await ResolveCatalogEpisodeTextAsync(
+            seriesId.Value,
+            episodeRef,
+            language,
+            fallbackLanguage,
+            cancellationToken);
         var stillUrl = TvdbImageUrlHelper.BuildImageUrl(episodeRef.Image);
 
         return new ExternalEpisodeMetadata
@@ -486,17 +490,80 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return absoluteEpisodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.Number == episodeNumber);
     }
 
+    private async Task<(string Title, string? Overview)> ResolveCatalogEpisodeTextAsync(
+        int seriesId,
+        TvdbEpisodeBase episodeRef,
+        string language,
+        string? fallbackLanguage,
+        CancellationToken cancellationToken)
+    {
+        var title = episodeRef.Name;
+        var overview = episodeRef.Overview;
+        if (!MetadataLocalizedText.ShouldFetchFallback(title, overview, language, fallbackLanguage)
+            && MetadataLocalizedText.IsUsable(title, language))
+        {
+            return (title ?? $"Episode {episodeRef.Number}", overview);
+        }
+
+        foreach (var tvdbLanguage in TvdbTranslationResolver.BuildLanguagePriority(language, fallbackLanguage))
+        {
+            var localizedEpisodes = await GetCachedEpisodesAsync(
+                seriesId,
+                cancellationToken,
+                "default",
+                tvdbLanguage);
+            var match = localizedEpisodes.FirstOrDefault(e => e.Id == episodeRef.Id)
+                ?? localizedEpisodes.FirstOrDefault(e =>
+                    e.SeasonNumber == episodeRef.SeasonNumber && e.Number == episodeRef.Number);
+            if (match is null)
+                continue;
+
+            title = MetadataLocalizedText.Prefer(title, match.Name, language);
+            overview = MetadataLocalizedText.Prefer(overview, match.Overview, language);
+            if (!MetadataLocalizedText.ShouldFetchFallback(title, overview, language, fallbackLanguage)
+                && MetadataLocalizedText.IsUsable(title, language))
+            {
+                return (title ?? $"Episode {episodeRef.Number}", overview);
+            }
+        }
+
+        if (!MetadataLocalizedText.IsUsable(title, language)
+            || MetadataLocalizedText.ShouldFetchFallback(title, overview, language, fallbackLanguage))
+        {
+            var originalLanguage = await GetSeriesOriginalLanguageAsync(seriesId, cancellationToken);
+            var (translatedTitle, translatedOverview) = await TvdbTranslationResolver.ResolveEpisodeTextAsync(
+                _apiClient,
+                episodeRef.Id,
+                episodeRef.Name,
+                episodeRef.Overview,
+                originalLanguage,
+                language,
+                fallbackLanguage,
+                cancellationToken);
+            title = MetadataLocalizedText.Prefer(title, translatedTitle, language);
+            overview = MetadataLocalizedText.Prefer(overview, translatedOverview, language);
+        }
+
+        return (title ?? episodeRef.Name ?? $"Episode {episodeRef.Number}", overview ?? episodeRef.Overview);
+    }
+
     private async Task<IReadOnlyList<TvdbEpisodeBase>> GetCachedEpisodesAsync(
         int seriesId,
         CancellationToken cancellationToken,
-        string seasonType = "default")
+        string seasonType = "default",
+        string? language = null)
     {
         var normalizedSeasonType = string.IsNullOrWhiteSpace(seasonType) ? "default" : seasonType.Trim();
-        var cacheKey = (seriesId, normalizedSeasonType);
+        var normalizedLanguage = language?.Trim() ?? string.Empty;
+        var cacheKey = (seriesId, normalizedSeasonType, normalizedLanguage);
         if (_episodeCache.TryGetValue(cacheKey, out var cached))
             return cached;
 
-        var episodes = await _apiClient.GetAllSeriesEpisodesAsync(seriesId, normalizedSeasonType, cancellationToken);
+        var episodes = await _apiClient.GetAllSeriesEpisodesAsync(
+            seriesId,
+            normalizedSeasonType,
+            string.IsNullOrWhiteSpace(normalizedLanguage) ? null : normalizedLanguage,
+            cancellationToken);
         _episodeCache[cacheKey] = episodes;
         return episodes;
     }

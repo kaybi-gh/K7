@@ -25,7 +25,7 @@ public static class MusicBrainzLocalizedName
         if (requested is not null)
             return FromAlias(requested, official);
 
-        if (official is not null && IsScriptCompatible(official, language))
+        if (official is not null && MetadataLanguageScript.IsCompatible(official, language))
             return new LocalizedName(official, OriginalName: null, sortName);
 
         foreach (var fallback in MetadataSearchLanguageHelper.ResolveSearchLanguages(language, "en"))
@@ -40,8 +40,8 @@ public static class MusicBrainzLocalizedName
 
         if (unfoldPersonSortName
             && official is not null
-            && !IsMostlyLatin(official)
-            && IsMostlyLatin(sortName))
+            && !MetadataLanguageScript.IsMostlyLatin(official)
+            && MetadataLanguageScript.IsMostlyLatin(sortName))
         {
             var unfolded = MediaIdentityKeys.UnfoldCommaSortName(sortName);
             if (!string.IsNullOrWhiteSpace(unfolded))
@@ -81,44 +81,8 @@ public static class MusicBrainzLocalizedName
             && string.Equals(leftKey, rightKey, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string? LanguageKey(string? language)
-    {
-        if (string.IsNullOrWhiteSpace(language))
-            return null;
-
-        var trimmed = language.Trim();
-        return trimmed.Length >= 2 ? trimmed[..2] : trimmed;
-    }
-
-    private static bool IsScriptCompatible(string name, string? language)
-        => UsesLatinMetadata(language) == IsMostlyLatin(name);
-
-    private static bool UsesLatinMetadata(string? language)
-    {
-        var key = LanguageKey(language);
-        return key is not ("ja" or "zh" or "ko" or "ru" or "uk" or "bg" or "ar" or "he" or "el" or "th");
-    }
-
-    private static bool IsMostlyLatin(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return false;
-
-        var letters = 0;
-        var nonLatin = 0;
-        foreach (var c in value)
-        {
-            if (!char.IsLetter(c))
-                continue;
-
-            letters++;
-            // Beyond Latin Extended-B: CJK, Cyrillic, Arabic, etc.
-            if (c > 0x024F)
-                nonLatin++;
-        }
-
-        return letters > 0 && nonLatin * 2 < letters;
-    }
+    private static string? LanguageKey(string? language) =>
+        MetadataLanguageScript.LanguageKey(language);
 
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
