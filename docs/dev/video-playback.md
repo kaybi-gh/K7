@@ -23,7 +23,8 @@ Offline / local files (`file://` or a filesystem path from the download store) u
 hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, with TV D-pad
 focus navigation; audio and subtitle labels are the normalized language plus the original
 track name in parentheses when it is not just the ISO code), cast + remote device picker, SyncPlay (members, chat, reactions, floating
-reaction overlay), skip segment (cooldown + auto-dismiss), next-episode countdown/autoplay, and
+reaction overlay), skip segment (cooldown + auto-dismiss. TV D-pad can focus the skip intro/outro button while
+chrome is visible), next-episode countdown/autoplay, and
 touch gestures (brightness/volume swipe with dim overlay, double-tap skip with ripple). Dedicated
 TV remote Rewind / Fast-forward keys are intercepted in `MainActivity.DispatchKeyEvent` (they are
 not D-pad events) and skip by the configured SkipBack / SkipForward durations even when chrome is

@@ -74,7 +74,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SeekBar,
         Settings,
         Cast,
-        SyncPlay
+        SyncPlay,
+        SkipSegment
     }
     private readonly Border _hudBanner = new();
     private readonly Label _hudIconLabel = new();
@@ -89,6 +90,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private readonly Button _syncPlayButton = new();
     private readonly Button _fullscreenButton = new();
     private readonly Button _skipSegmentButton = new();
+    private readonly Border _skipSegmentFocusRing = new()
+    {
+        Stroke = Colors.Transparent,
+        StrokeThickness = 3,
+        Padding = new Thickness(3),
+        BackgroundColor = Colors.Transparent,
+        HorizontalOptions = LayoutOptions.End,
+        VerticalOptions = LayoutOptions.End,
+        Margin = new Thickness(0, 0, 20, 116),
+        IsVisible = false,
+        ZIndex = 15
+    };
     private readonly Slider _volumeSlider = new();
     private readonly Border _volumePopover = new();
     private readonly NativeSeekBar _seekBar;
@@ -197,6 +210,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     public bool IsChromeVisible =>
         !_inputModalActive
         && (_showChrome || _settings.IsOpen || _volumeOpen || _seekScrubbing || _castPanelOpen || _syncPlayPanelOpen);
+
+    private bool IsSkipSegmentOffered => _skipSegmentFocusRing.IsVisible && _activeSegment is not null;
 
     public void Attach()
     {
@@ -505,7 +520,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
             if (!isKeyUp && select)
             {
-                if (_skipSegmentButton.IsVisible && _activeSegment is not null)
+                if (IsSkipSegmentOffered)
                     SkipActiveSegment();
                 else
                     ShowChromeWithTvFocus();
@@ -828,16 +843,16 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         Children.Add(_skipNotificationBanner);
 
         _skipSegmentButton.Text = NativeStrings.SkipIntro;
-        _skipSegmentButton.IsVisible = false;
-        _skipSegmentButton.HorizontalOptions = LayoutOptions.End;
-        _skipSegmentButton.VerticalOptions = LayoutOptions.End;
-        _skipSegmentButton.Margin = new Thickness(0, 0, 24, 120);
         _skipSegmentButton.BackgroundColor = Color.FromArgb("#CCFFFFFF");
         _skipSegmentButton.TextColor = Colors.Black;
         _skipSegmentButton.Padding = new Thickness(16, 10);
+        _skipSegmentButton.CornerRadius = 8;
+        _skipSegmentButton.HorizontalOptions = LayoutOptions.Center;
         _skipSegmentButton.Clicked += (_, _) => SkipActiveSegment();
         DisablePlatformFocus(_skipSegmentButton);
-        Children.Add(_skipSegmentButton);
+        _skipSegmentFocusRing.StrokeShape = new RoundRectangle { CornerRadius = 10 };
+        _skipSegmentFocusRing.Content = _skipSegmentButton;
+        Children.Add(_skipSegmentFocusRing);
 
         BuildDevicePanel();
         BuildSyncPlayPanel();
@@ -1212,6 +1227,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _showChrome = true;
         UpdateChromeVisibility();
         ResetHideTimer();
+        TryFocusSkipSegmentIfOffered();
     }
 
     private void ShowChromeWithTvFocus()
@@ -1220,8 +1236,10 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
 
         ShowChrome();
-        // Default TV focus on play/pause (Blazor SpatialNav.FocusFirstAsync(".play-pause-btn")).
-        SetTvChromeFocusSlot(TvFocusSlot.Play);
+        // Skip is the primary action while offered; otherwise play/pause
+        // (Blazor SpatialNav.FocusFirstAsync(".play-pause-btn")).
+        if (!IsSkipSegmentOffered)
+            SetTvChromeFocusSlot(TvFocusSlot.Play);
     }
 
     private void HideChrome(bool force = false)
@@ -1261,7 +1279,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _showChrome = false;
             _chrome.IsVisible = false;
             _chromeGradient.IsVisible = false;
-            _skipSegmentButton.IsVisible = false;
+            SetSkipSegmentVisible(false);
             _seekPreview.IsVisible = false;
             SetGestureCatchersInputTransparent(true);
             ClearTvChromeFocus();
@@ -1282,6 +1300,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             slots.Add(TvFocusSlot.Cast);
         if (_syncPlayButton.IsVisible)
             slots.Add(TvFocusSlot.SyncPlay);
+        if (IsSkipSegmentOffered)
+            slots.Add(TvFocusSlot.SkipSegment);
         return slots;
     }
 
@@ -1312,6 +1332,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         3 => TvFocusSlot.Settings,
         4 => TvFocusSlot.Cast,
         5 => TvFocusSlot.SyncPlay,
+        6 => TvFocusSlot.SkipSegment,
         _ => TvFocusSlot.Play
     };
 
@@ -1323,6 +1344,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         TvFocusSlot.Settings => 3,
         TvFocusSlot.Cast => 4,
         TvFocusSlot.SyncPlay => 5,
+        TvFocusSlot.SkipSegment => 6,
         _ => 1
     };
 
@@ -1343,6 +1365,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
         }
 
+        if (IndexToTvFocusSlot(_tvChromeFocusIndex) == TvFocusSlot.SkipSegment && IsSkipSegmentOffered)
+        {
+            _skipSegmentFocusRing.Stroke = Colors.White;
+            _skipSegmentFocusRing.BackgroundColor = TvFocusColor;
+            return;
+        }
+
         var button = GetFocusedChromeButton();
         if (button is null || !button.IsVisible)
             return;
@@ -1357,6 +1386,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         TvFocusSlot.Settings => _settingsButton,
         TvFocusSlot.Cast => _castButton,
         TvFocusSlot.SyncPlay => _syncPlayButton,
+        TvFocusSlot.SkipSegment => _skipSegmentButton,
         _ => null
     };
 
@@ -1370,6 +1400,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _syncPlayButton.BackgroundColor = Colors.Transparent;
         _seekBarFocusRing.Stroke = Colors.Transparent;
         _seekBarFocusRing.BackgroundColor = Colors.Transparent;
+        _skipSegmentFocusRing.Stroke = Colors.Transparent;
+        _skipSegmentFocusRing.BackgroundColor = Colors.Transparent;
     }
 
     private void ActivateTvChromeFocus()
@@ -1403,6 +1435,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             ToggleSyncPlayPanel();
         else if (ReferenceEquals(button, _backButton))
             ClosePlayer();
+        else if (ReferenceEquals(button, _skipSegmentButton))
+            SkipActiveSegment();
         else
             TogglePlayPause();
 
@@ -1679,7 +1713,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         if (_segments is null || _segments.Count == 0 || _videoSettings is null)
         {
-            _skipSegmentButton.IsVisible = false;
+            SetSkipSegmentVisible(false);
             _activeSegment = null;
             return;
         }
@@ -1699,7 +1733,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (_activeSegment is null)
         {
-            _skipSegmentButton.IsVisible = false;
+            SetSkipSegmentVisible(false);
             return;
         }
 
@@ -1709,7 +1743,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (behavior == IntroSkipBehavior.Disabled)
         {
-            _skipSegmentButton.IsVisible = false;
+            SetSkipSegmentVisible(false);
             return;
         }
 
@@ -1730,11 +1764,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         // once chrome is hidden (matches SkipSegmentOverlay's ControlsVisible gate).
         if (!_skipDismissed || IsChromeVisible)
         {
-            if (!_skipSegmentButton.IsVisible)
+            if (!IsSkipSegmentOffered)
                 _skipShowTimeUtc = DateTime.UtcNow;
             else if (!IsChromeVisible && DateTime.UtcNow - _skipShowTimeUtc >= SkipButtonDisplayDuration)
             {
-                _skipSegmentButton.IsVisible = false;
+                SetSkipSegmentVisible(false);
                 _skipDismissed = true;
                 return;
             }
@@ -1742,12 +1776,36 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _skipSegmentButton.Text = _activeSegment.Type == MediaSegmentType.Intro
                 ? NativeStrings.SkipIntro
                 : NativeStrings.SkipOutro;
-            _skipSegmentButton.IsVisible = true;
+            SetSkipSegmentVisible(true);
         }
         else
         {
-            _skipSegmentButton.IsVisible = false;
+            SetSkipSegmentVisible(false);
         }
+    }
+
+    private void SetSkipSegmentVisible(bool visible)
+    {
+        var wasVisible = _skipSegmentFocusRing.IsVisible;
+        _skipSegmentButton.IsVisible = visible;
+        _skipSegmentFocusRing.IsVisible = visible;
+        if (wasVisible == visible)
+            return;
+
+        if (visible)
+            TryFocusSkipSegmentIfOffered();
+        else if (IndexToTvFocusSlot(_tvChromeFocusIndex) == TvFocusSlot.SkipSegment)
+            SetTvChromeFocusSlot(TvFocusSlot.Play);
+    }
+
+    private void TryFocusSkipSegmentIfOffered()
+    {
+        if (!_showChrome || !IsSkipSegmentOffered || _seekScrubbing)
+            return;
+        if (_settings.IsOpen || _castPanelOpen || _syncPlayPanelOpen)
+            return;
+
+        SetTvChromeFocusSlot(TvFocusSlot.SkipSegment);
     }
 
     private void SkipActiveSegment()
@@ -1759,7 +1817,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         var endSeconds = _activeSegment.EndMs / 1000.0;
         _lastSkipUtc = DateTime.UtcNow;
         _player.Seek(endSeconds);
-        _skipSegmentButton.IsVisible = false;
+        SetSkipSegmentVisible(false);
         _activeSegment = null;
         ShowSkippedNotification(segmentType);
     }
