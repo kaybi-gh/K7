@@ -468,6 +468,60 @@ public partial class BlazorPage : ContentPage
         });
     }
 
+    /// <summary>
+    /// TV remote rewind / fast-forward. Uses video SkipBack/SkipForward settings (not D-pad focus).
+    /// </summary>
+    internal bool TryHandleMediaSkip(bool forward, bool isKeyUp, bool isRepeat)
+    {
+        var videoActive = _playerService.IsVisible;
+        var audioActive = _audioPlayerService.IsVisible || _audioPlayerService.IsFullScreenVisible;
+        if (!videoActive && !audioActive)
+            return false;
+
+        MainThread.BeginInvokeOnMainThread(() => HandleMediaSkip(forward, isKeyUp, isRepeat));
+        return true;
+    }
+
+    private void HandleMediaSkip(bool forward, bool isKeyUp, bool isRepeat)
+    {
+        if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible && _nativeOverlay is not null)
+        {
+            if (isRepeat)
+                return;
+
+            _ = TryHandleNativeVideoKey(VideoRemoteTransportKeys.OverlayKey(forward), isKeyUp);
+            return;
+        }
+
+        if (isKeyUp || isRepeat)
+            return;
+
+        if (_playerService.IsVisible)
+        {
+            var delta = forward
+                ? Math.Max(1, _playerService.SkipForwardSeconds)
+                : -Math.Max(1, _playerService.SkipBackSeconds);
+            var target = Math.Max(0, GetSeekAnchorSeconds() + delta);
+            if (_playerService.Duration > 0)
+                target = Math.Min(target, _playerService.Duration);
+            RememberSeekTarget(target);
+            _playerService.Seek(target);
+            return;
+        }
+
+        if (!_audioPlayerService.IsVisible && !_audioPlayerService.IsFullScreenVisible)
+            return;
+
+        var audioDelta = forward
+            ? Math.Max(1, _audioPlayerService.SkipForwardSeconds)
+            : -Math.Max(1, _audioPlayerService.SkipBackSeconds);
+        var audioTarget = Math.Clamp(
+            _audioPlayerService.CurrentTime + audioDelta,
+            0,
+            Math.Max(0, _audioPlayerService.Duration));
+        _audioPlayerService.Seek(audioTarget);
+    }
+
     private void InitializePlayer()
     {
         NativePlayer.Volume = _playerService.Volume;

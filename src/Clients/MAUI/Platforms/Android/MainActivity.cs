@@ -6,6 +6,7 @@ using Android.Views;
 using AndroidX.Core.View;
 using K7.Clients.MAUI.Platforms.Android;
 using K7.Clients.MAUI.Platforms.Android.Services;
+using K7.Clients.Shared.Helpers;
 
 namespace K7.Clients.MAUI;
 
@@ -90,6 +91,21 @@ public class MainActivity : MauiAppCompatActivity
                         return true;
                     }
                     break;
+            }
+        }
+
+        // Dedicated FF/RW (not D-pad). Must intercept here: native video chrome owns input
+        // and these keycodes never reach Blazor or D-pad skip handling.
+        if (e is not null && VideoRemoteTransportKeys.IsAndroidSkip((int)e.KeyCode))
+        {
+            var skipPage = GetBlazorPage();
+            if (skipPage is not null
+                && skipPage.TryHandleMediaSkip(
+                    VideoRemoteTransportKeys.IsAndroidSkipForward((int)e.KeyCode),
+                    isKeyUp: e.Action == KeyEventActions.Up,
+                    isRepeat: e.Action == KeyEventActions.Down && e.RepeatCount > 0))
+            {
+                return true;
             }
         }
 

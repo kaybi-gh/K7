@@ -120,6 +120,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private Timer? _dpadHoldTimer;
     private string? _dpadHoldKey;
     private bool _dpadHoldScrubArmed;
+    private double? _skipAnchorSeconds;
+    private DateTime _skipAnchorUtc;
     /// <summary>Dialog-style layer (next-episode) that owns all input and hides chrome.</summary>
     private bool _inputModalActive;
     private static readonly TimeSpan DpadHoldScrubDelay = TimeSpan.FromMilliseconds(320);
@@ -414,6 +416,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return true;
         }
 
+        if (VideoRemoteTransportKeys.IsOverlaySkip(key))
+            return HandleMediaSkipKey(key, VideoRemoteTransportKeys.IsOverlaySkipBack(key), isKeyUp);
+
         if (key is "m" && IsDesktopLike())
         {
             ToggleMute();
@@ -648,13 +653,44 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (_dpadHoldKey is null || !_dpadHoldScrubArmed || IsNextEpisodeVisible)
             return;
 
-        if (_dpadHoldKey is "dpad_left" or "dpad_right")
+        if (_dpadHoldKey is "dpad_left" or "dpad_right"
+            || VideoRemoteTransportKeys.IsOverlaySkip(_dpadHoldKey))
         {
-            if (!_showChrome || _seekScrubbing)
-                TvScrub(_dpadHoldKey == "dpad_left" ? -1 : 1);
+            var backward = _dpadHoldKey is "dpad_left"
+                || VideoRemoteTransportKeys.IsOverlaySkipBack(_dpadHoldKey);
+            if (VideoRemoteTransportKeys.IsOverlaySkip(_dpadHoldKey) || !_showChrome || _seekScrubbing)
+                TvScrub(backward ? -1 : 1);
             else
                 StopDpadHold();
         }
+    }
+
+    /// <summary>
+    /// Dedicated FF/RW: always skip by preference (even with chrome visible). Hold scrubs.
+    /// </summary>
+    private bool HandleMediaSkipKey(string key, bool backward, bool isKeyUp)
+    {
+        if (IsPhoneOrTablet())
+        {
+            if (isKeyUp)
+                CommitAccumulateSeek();
+            else
+                AccumulateSeek(backward ? -_player.SkipBackSeconds : _player.SkipForwardSeconds);
+            return true;
+        }
+
+        if (isKeyUp)
+        {
+            var wasArmed = _dpadHoldScrubArmed;
+            var pending = _dpadHoldKey;
+            StopDpadHold();
+            if (!wasArmed && pending == key)
+                SkipByPreference(backward);
+            return true;
+        }
+
+        StartChromeHiddenDpadHold(key, left: backward);
+        return true;
     }
 
     private void SkipByPreference(bool backward)
@@ -664,13 +700,30 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             delta = backward ? -10 : 10;
 
         var duration = Math.Max(_player.Duration, 0);
-        var target = Math.Clamp(_player.CurrentTime + delta, 0, duration > 0 ? duration : double.MaxValue);
+        var anchor = GetSkipAnchorSeconds();
+        var target = Math.Clamp(anchor + delta, 0, duration > 0 ? duration : double.MaxValue);
+        RememberSkipAnchor(target);
         _player.Seek(target);
         var seconds = (int)Math.Round(Math.Abs((double)delta));
         var label = (delta >= 0 ? "+" : "-") + seconds + " s";
         ShowHud(label, delta >= 0 ? NativePlayerGlyphs.Forward : NativePlayerGlyphs.Rewind);
         UpdateTimeLabel();
         NativeVideoDebug.Log("SkipByPreference delta=" + delta.ToString("F0") + "s target=" + target.ToString("F1") + "s");
+    }
+
+    private double GetSkipAnchorSeconds()
+    {
+        if (_skipAnchorSeconds is double chained
+            && (DateTime.UtcNow - _skipAnchorUtc).TotalMilliseconds < 900)
+            return chained;
+
+        return Math.Max(0, _player.CurrentTime);
+    }
+
+    private void RememberSkipAnchor(double seconds)
+    {
+        _skipAnchorSeconds = seconds;
+        _skipAnchorUtc = DateTime.UtcNow;
     }
 
     private void BuildLayout()

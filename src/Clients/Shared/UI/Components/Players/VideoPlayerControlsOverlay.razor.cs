@@ -239,6 +239,12 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             case "MediaStop":
                 OnCloseButtonClick();
                 return;
+            case "MediaFastForward" or "MediaSkipForward":
+                SkipByConfiguredDirection(1);
+                return;
+            case "MediaRewind" or "MediaSkipBackward":
+                SkipByConfiguredDirection(-1);
+                return;
             case "KeyM" or "m" or "M":
                 ToggleIsMuted();
                 ResetOverlayTimeout();
@@ -502,6 +508,18 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private int GetSkipForwardSeconds() =>
         Math.Max(1, PlayerService.SkipForwardSeconds);
+
+    private void SkipByConfiguredDirection(int direction)
+    {
+        var delta = direction < 0 ? -GetSkipBackSeconds() : GetSkipForwardSeconds();
+        var target = Math.Clamp(
+            PlayerService.CurrentTime + delta,
+            0,
+            Math.Max(0, PlayerService.Duration));
+        PlayerService.Seek(target);
+        OnRemoteSkipHud(delta);
+        ResetOverlayTimeout();
+    }
 
     private async Task SyncTvSkipSecondsToJsAsync()
     {

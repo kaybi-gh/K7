@@ -24,8 +24,11 @@ hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, 
 focus navigation; audio and subtitle labels are the normalized language plus the original
 track name in parentheses when it is not just the ISO code), cast + remote device picker, SyncPlay (members, chat, reactions, floating
 reaction overlay), skip segment (cooldown + auto-dismiss), next-episode countdown/autoplay, and
-touch gestures (brightness/volume swipe with dim overlay, double-tap skip with ripple). When
-playback reaches the end, a series episode with a successor shows the next-episode offer. A movie
+touch gestures (brightness/volume swipe with dim overlay, double-tap skip with ripple). Dedicated
+TV remote Rewind / Fast-forward keys are intercepted in `MainActivity.DispatchKeyEvent` (they are
+not D-pad events) and skip by the configured SkipBack / SkipForward durations even when chrome is
+visible. Hold scrubs. When playback reaches the end, a series episode with a successor shows
+the next-episode offer. A movie
 or last episode closes the player. Icons use
 a bundled Phosphor TTF (`Resources/Fonts/Phosphor.ttf`, registered as font family `"Phosphor"`);
 codepoints are kept in `NativePlayerGlyphs` and must stay in sync with `Phosphor.cs`'s CSS class
