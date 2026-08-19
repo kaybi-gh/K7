@@ -33,6 +33,12 @@ public record RefreshMediaMetadatasCommand : IRequest
     public required string MetadataProviderName { get; init; }
     public required string Language { get; init; }
     public required string FallbackLanguage { get; init; }
+
+    /// <summary>
+    /// When true, only unenriched episodes (and their seasons) are fetched. Series/season artwork
+    /// and cast already present are left in place. Used when a new episode is attached to an existing series.
+    /// </summary>
+    public bool Incremental { get; init; }
 }
 
 public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaMetadatasCommand>
@@ -436,11 +442,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
 
-        if (!serie.IsFieldLocked(nameof(Serie.PersonRoles)) && serieMetadata.PersonRoles?.Count > 0)
+        var applySeriePersonRoles = !request.Incremental || serie.PersonRoles.Count == 0;
+        if (applySeriePersonRoles
+            && !serie.IsFieldLocked(nameof(Serie.PersonRoles))
+            && serieMetadata.PersonRoles?.Count > 0)
         {
             await ResolvePersonReferencesAsync(serieMetadata.PersonRoles, cancellationToken);
             RemovePersonRolePortraits(serie.PersonRoles);
         }
+        else if (request.Incremental && serie.PersonRoles.Count > 0)
+        {
+            serieMetadata.PersonRoles?.Clear();
+        }
+
+        if (request.Incremental)
+            SerieEpisodeEnrichmentHelper.RemoveExistingPictureTypes(serie, serieMetadata.Pictures);
 
         serie.ApplyMetadata(serieMetadata);
         await _metadataTagSyncService.ApplyTagsAsync(
@@ -520,8 +536,24 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
+        var seasonsToRefresh = request.Incremental
+            ? serie.Seasons.Where(season =>
+                    SerieEpisodeEnrichmentHelper.IsSeasonUnenriched(season)
+                    || season.Episodes.Any(SerieEpisodeEnrichmentHelper.IsUnenriched))
+                .ToList()
+            : [.. serie.Seasons];
+
+        if (request.Incremental)
+        {
+            _logger.LogInformation(
+                "Incremental metadata refresh for serie {MediaId}: {SeasonCount} seasons, {EpisodeCount} new episodes",
+                serie.Id,
+                seasonsToRefresh.Count,
+                seasonsToRefresh.SelectMany(season => season.Episodes).Count(SerieEpisodeEnrichmentHelper.IsUnenriched));
+        }
+
         // Fetch and apply season metadata
-        foreach (var season in serie.Seasons)
+        foreach (var season in seasonsToRefresh)
         {
             ExternalSeasonMetadata seasonMetadata;
             try
@@ -540,6 +572,9 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 continue;
             }
 
+            if (request.Incremental)
+                SerieEpisodeEnrichmentHelper.RemoveExistingPictureTypes(season, seasonMetadata.Pictures);
+
             season.ApplyMetadata(seasonMetadata);
 
             if (request.MetadataProviderName == "federation")
@@ -556,10 +591,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         // Fetch and apply episode metadata (catalog-first, then inline enrichment fallback)
         var episodeRemoteIds = new Dictionary<(int Season, int Episode), Guid>();
-        foreach (var season in serie.Seasons)
+        foreach (var season in seasonsToRefresh)
         {
             foreach (var episode in season.Episodes)
             {
+                if (request.Incremental && !SerieEpisodeEnrichmentHelper.IsUnenriched(episode))
+                    continue;
+
                 ExternalEpisodeMetadata? episodeMetadata = null;
                 try
                 {
@@ -694,7 +732,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        if (string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
+        if (!request.Incremental
+            && string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
         {
             await QueueEnrichSerieTmdbSupplementalAsync(serie, request, cancellationToken);
         }

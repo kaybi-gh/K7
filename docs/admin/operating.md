@@ -98,6 +98,8 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 When a directory already has episodes attached to a single series, new files in that folder are attached to the same series (folder consensus). Close title variants parsed from filenames in the same folder are also unified before matching. A mis-matched episode file can be re-identified from the episode page (Indexed versions).
 
+Adding a new episode to an existing series refreshes series-level fields (status, overview) and enriches the new episode (and its season when that season is new). Existing episodes keep their metadata and artwork. A manual **Refresh metadata** or the scheduled library refresh still re-fetches the whole series.
+
 ```text
 /media/series/Show Name/
   Season 01/

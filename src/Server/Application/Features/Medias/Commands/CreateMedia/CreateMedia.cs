@@ -766,7 +766,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         Guard.Against.NullOrEmpty(firstIdentification.SeriesTitle);
 
         var folderSerie = await TryResolveSerieFromFolderSiblingsAsync(indexedFiles, library, cancellationToken);
-        var (serie, _, matchedProviderName, providerExternalId) = folderSerie
+        var (serie, isNewSerie, matchedProviderName, providerExternalId) = folderSerie
             ?? await FindOrCreateSerieAsync(
                 firstIdentification,
                 indexedFiles.Select(f => f.Identification).Where(i => i is not null).Cast<MediaIdentification>().ToList(),
@@ -916,7 +916,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     MetadataProviderExternalId = providerExternalId,
                     MetadataProviderName = matchedProviderName,
                     Language = library.MetadataLanguage,
-                    FallbackLanguage = library.MetadataFallbackLanguage
+                    FallbackLanguage = library.MetadataFallbackLanguage,
+                    Incremental = !isNewSerie
                 },
                 TargetEntityId = serie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),

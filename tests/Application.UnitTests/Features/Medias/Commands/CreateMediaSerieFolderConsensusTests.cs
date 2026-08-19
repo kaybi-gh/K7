@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
+using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
@@ -34,6 +35,7 @@ public class CreateMediaSerieFolderConsensusTests
     private ServiceProvider _serviceProviderRoot = null!;
     private CreateMediaCommandHandler _handler = null!;
     private ISerieMetadataProvider _serieProvider = null!;
+    private CreateBackgroundTaskCommand? _capturedTask;
 
     private Guid _libraryId;
     private Guid _groupId;
@@ -82,7 +84,8 @@ public class CreateMediaSerieFolderConsensusTests
         _serviceProviderRoot = services.BuildServiceProvider();
 
         _sender = Substitute.For<ISender>();
-        _sender.Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>())
+        _capturedTask = null;
+        _sender.Send(Arg.Do<CreateBackgroundTaskCommand>(c => _capturedTask = c), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Guid.NewGuid()));
 
         var availability = new MediaLibraryAvailabilityService(
@@ -153,6 +156,11 @@ public class CreateMediaSerieFolderConsensusTests
         episode.SerieId.Should().Be(existingSerie.Id);
         episode.Season.SeasonNumber.Should().Be(1);
         episode.EpisodeNumber.Should().Be(2);
+
+        var refresh = CaptureRefreshCommand();
+        refresh.Should().NotBeNull();
+        refresh!.Incremental.Should().BeTrue();
+        refresh.MediaId.Should().Be(existingSerie.Id);
     }
 
     [Test]
@@ -213,6 +221,11 @@ public class CreateMediaSerieFolderConsensusTests
 
         var serie = await _context.Medias.OfType<Serie>().SingleAsync(s => s.Id == mediaId);
         serie.ExternalIds.Should().ContainSingle(e => e.Value == "tmdb-wrong-show");
+
+        var refresh = CaptureRefreshCommand();
+        refresh.Should().NotBeNull();
+        refresh!.Incremental.Should().BeFalse();
+        refresh.MediaId.Should().Be(mediaId);
     }
 
     [Test]
@@ -247,6 +260,9 @@ public class CreateMediaSerieFolderConsensusTests
             .ToListAsync();
         episodes.Should().HaveCount(2);
     }
+
+    private RefreshMediaMetadatasCommand? CaptureRefreshCommand()
+        => _capturedTask?.Request as RefreshMediaMetadatasCommand;
 
     private async Task<Serie> SeedSerieWithEpisodeAsync(
         string title,
