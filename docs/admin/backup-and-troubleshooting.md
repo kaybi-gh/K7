@@ -110,6 +110,7 @@ Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the curre
 
 - Behind a proxy: ensure `X-Forwarded-Proto` is `https` (and that `TrustPrivateProxies` is true, or set `KnownProxies`)
 - Or temporarily set `Security__ForceHttps=false` on a trusted LAN while debugging
+- `Failed to determine the https port for redirect` is expected on the sample Docker stack (HTTP :7080 only). TLS belongs on the reverse proxy. K7 does not redirect to HTTPS in Production.
 
 ### OIDC login fails
 

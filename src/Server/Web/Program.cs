@@ -90,7 +90,10 @@ try
     app.UseSecurityHeaders();
     app.UseRateLimiter();
     app.UseHealthChecks("/health");
-    app.UseHttpsRedirection();
+    // Kestrel serves HTTP :7080 in Docker; TLS belongs on the reverse proxy.
+    // Redirect only when this process itself listens on HTTPS (local Development).
+    if (app.Environment.IsDevelopment())
+        app.UseHttpsRedirection();
     app.UseAuthLegacyRedirects();
 
     var supportedCultures = SupportedLanguages.Interface.Select(l => l.Code).ToArray();

@@ -260,7 +260,7 @@ See [operating.md](operating.md).
 
 ## Reverse proxy
 
-Run K7 behind a reverse proxy for TLS. The app listens on **7080** inside the container.
+Run K7 behind a reverse proxy for TLS. The app listens on **7080** inside the container. Kestrel does not redirect HTTP to HTTPS in Production. The proxy terminates TLS.
 
 | Setting | Guidance |
 |---|---|
