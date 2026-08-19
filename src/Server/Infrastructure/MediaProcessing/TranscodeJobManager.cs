@@ -3,6 +3,7 @@ using System.Diagnostics;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -349,36 +350,10 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
             }
 
             _activeJobs.TryRemove(job.JobId, out _);
-
-            if (Directory.Exists(job.OutputDirectory))
-            {
-                try
-                {
-                    Directory.Delete(job.OutputDirectory, recursive: true);
-                    logger.LogInformation("Deleted output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
-
-                    var parentDir = Path.GetDirectoryName(job.OutputDirectory);
-                    if (parentDir is not null)
-                    {
-                        try
-                        {
-                            Directory.Delete(parentDir);
-                            logger.LogInformation("Deleted empty parent directory for stale job {JobId}: {Dir}", job.JobId, parentDir);
-                        }
-                        catch (IOException)
-                        {
-                            // Parent still has other entries or raced with another job.
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Failed to delete output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
-                }
-            }
+            TryDeleteJobCache(job);
         }
 
-        await Task.CompletedTask;
+        await CleanupOrphanedTranscodeDirectoriesAsync(cancellationToken);
     }
 
     public int GetCurrentSegmentIndex(Guid jobId)
@@ -399,6 +374,83 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
         }
 
         return null;
+    }
+
+    private void TryDeleteJobCache(TranscodeJob job)
+    {
+        TryDeleteDirectory(job.OutputDirectory, recursive: true, job.JobId);
+
+        var parentDir = Path.GetDirectoryName(job.OutputDirectory);
+        if (parentDir is null)
+            return;
+
+        if (HasActiveJobsForIndexedFile(job.IndexedFileId))
+            return;
+
+        TryDeleteDirectory(
+            Path.Combine(parentDir, Hls.SubtitlesCacheDirectoryName),
+            recursive: true,
+            job.JobId);
+        TryDeleteDirectory(parentDir, recursive: false, job.JobId);
+    }
+
+    private bool HasActiveJobsForIndexedFile(Guid indexedFileId) =>
+        _activeJobs.Values.Any(j => j.IndexedFileId == indexedFileId);
+
+    private async Task CleanupOrphanedTranscodeDirectoriesAsync(CancellationToken cancellationToken)
+    {
+        var transcodingPath = _pathsConfig.Transcoding;
+        if (string.IsNullOrEmpty(transcodingPath) || !Directory.Exists(transcodingPath))
+            return;
+
+        await _jobLock.WaitAsync(cancellationToken);
+        try
+        {
+            foreach (var fileDir in Directory.EnumerateDirectories(transcodingPath))
+            {
+                if (!Guid.TryParseExact(Path.GetFileName(fileDir), "N", out var indexedFileId))
+                    continue;
+
+                if (HasActiveJobsForIndexedFile(indexedFileId))
+                    continue;
+
+                TryDeleteDirectory(fileDir, recursive: true, jobId: null);
+            }
+        }
+        finally
+        {
+            _jobLock.Release();
+        }
+    }
+
+    private void TryDeleteDirectory(string directory, bool recursive, Guid? jobId)
+    {
+        if (!Directory.Exists(directory))
+            return;
+
+        try
+        {
+            Directory.Delete(directory, recursive);
+            if (jobId.HasValue)
+            {
+                logger.LogInformation(
+                    "Deleted transcode directory for job {JobId}: {Dir}",
+                    jobId.Value,
+                    directory);
+            }
+            else
+            {
+                logger.LogInformation("Deleted orphaned transcode directory {Dir}", directory);
+            }
+        }
+        catch (IOException) when (!recursive)
+        {
+            // Parent still has other entries or raced with another job.
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to delete transcode directory {Dir}", directory);
+        }
     }
 
     private async Task RestartJobWithSeekAsync(

@@ -14,4 +14,9 @@ public static class Hls
     /// Collapse pathological sub-GOP keyframe bursts when building the every-keyframe timeline.
     /// </summary>
     public const int MinKeyframeSegmentDurationMs = 500;
+
+    /// <summary>
+    /// Directory name under each indexed-file transcode folder for extracted WebVTT sidecar files.
+    /// </summary>
+    public const string SubtitlesCacheDirectoryName = "subtitles";
 }

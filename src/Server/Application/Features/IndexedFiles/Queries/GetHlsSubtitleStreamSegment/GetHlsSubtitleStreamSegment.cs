@@ -3,6 +3,7 @@ using System.Text;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Interfaces;
@@ -75,7 +76,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
         var vttCachePath = Path.Combine(
             _transcodingPath,
             entity.Id.ToString("N"),
-            "subtitles",
+            Hls.SubtitlesCacheDirectoryName,
             $"{query.SubtitleTrackIndex}.vtt");
 
         await EnsureVttExtractedAsync(entity.Path, query.SubtitleTrackIndex, vttCachePath, cancellationToken);

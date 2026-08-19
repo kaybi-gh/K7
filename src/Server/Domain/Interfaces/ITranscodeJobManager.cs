@@ -45,6 +45,7 @@ public interface ITranscodeJobManager
 
     /// <summary>
     /// Cleans up stale jobs that have no attached sessions for more than the specified duration.
+    /// Also removes leftover sidecar subtitle cache under the same indexed-file folder.
     /// </summary>
     Task CleanupStaleJobsAsync(TimeSpan staleThreshold, CancellationToken cancellationToken = default);
 

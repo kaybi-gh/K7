@@ -143,7 +143,7 @@ K7 uses **ffmpeg** for on-the-fly transcoding and HLS when the client or network
 | `Paths:FFMpegBinaryFolder` | Optional directory override |
 | `Paths:Transcoding` | Working directory for segments / temp files |
 
-Size the transcoding volume for concurrent streams. Safe to wipe between runs (cache).
+Size the transcoding volume for concurrent streams. Safe to wipe between runs (cache). Idle jobs are removed after about 1 hour.
 
 ### Hardware acceleration
 
