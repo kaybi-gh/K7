@@ -1,10 +1,10 @@
-﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -113,14 +113,10 @@ public partial class K7DialogHost : IDisposable
         if (DialogService is K7DialogService svc)
             svc.OnShow -= HandleShow;
 
-        try
-        {
-            JS.InvokeVoidAsync("K7.setDialogOpen", false).AsTask().FireAndForget(Logger);
-        }
-        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
-        {
-            // Host disconnected during teardown
-        }
+        if (!RendererInfo.IsInteractive)
+            return;
+
+        JS.InvokeVoidAsync("K7.setDialogOpen", false).AsTask().FireAndForget(Logger);
     }
 
     private void UpdateOpenDialogs() =>

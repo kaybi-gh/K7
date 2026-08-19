@@ -41,6 +41,10 @@ public partial class HomeTvHero : IAsyncDisposable
             {
                 return;
             }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
             catch (JSException)
             {
                 // Still swap; better a hard cut than a stuck hero.

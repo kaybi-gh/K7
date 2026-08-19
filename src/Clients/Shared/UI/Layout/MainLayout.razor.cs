@@ -223,7 +223,14 @@ public partial class MainLayout : IDisposable
 
     private async Task OnThemeChangedAsync()
     {
-        await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+        try
+        {
+            await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 

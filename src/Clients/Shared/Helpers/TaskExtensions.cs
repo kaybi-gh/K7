@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.Helpers;
 
@@ -10,7 +11,19 @@ public static class TaskExtensions
         {
             if (t.Exception is null) return;
 
-            logger?.LogError(t.Exception.GetBaseException(), failureMessage ?? "Background task failed");
+            var ex = t.Exception.GetBaseException();
+            if (IsBenignJsInteropFailure(ex))
+            {
+                logger?.LogDebug(ex, failureMessage ?? "Background task skipped during static render");
+                return;
+            }
+
+            logger?.LogError(ex, failureMessage ?? "Background task failed");
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
+
+    private static bool IsBenignJsInteropFailure(Exception ex) =>
+        ex is JSDisconnectedException
+        || (ex is InvalidOperationException
+            && ex.Message.Contains("JavaScript interop", StringComparison.Ordinal));
 }

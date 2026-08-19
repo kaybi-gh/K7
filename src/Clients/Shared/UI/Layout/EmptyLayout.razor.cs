@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Layout;
 
@@ -15,7 +15,13 @@ public partial class EmptyLayout
         {
             AppReadySignal.Signal();
             PlaybackAssetLoader.Prefetch(JS);
-            await JS.InvokeVoidAsync("K7.dismissPreload");
+            try
+            {
+                await JS.InvokeVoidAsync("K7.dismissPreload");
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
         }
     }
 }
