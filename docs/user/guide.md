@@ -47,7 +47,7 @@ For password accounts, under **Settings -> Account**: enable 2FA, scan the QR co
 
 ### After sign-in
 
-1. Choose a profile on the **profile selection** screen if prompted (your user and any shared profiles pinned on this device).
+1. Choose a profile on the **profile selection** screen if prompted (your user and any shared profiles pinned on this device). On native apps, **I am the only user on this device** opens that profile on the next launch after you have unlocked it once (PIN still applies until then).
 2. Browse from Home, or open **My Space** for playlists, history, and more.
 3. Tune playback and privacy under **Settings**.
 

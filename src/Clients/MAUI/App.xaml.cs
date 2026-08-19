@@ -41,7 +41,7 @@ public partial class App : Application
 
         K7.Clients.Shared.Services.AppReadySignal.Reset();
         MauiStartupVisual.Reset();
-        StartSessionRestore();
+        PrepareServerConnectionAndRestore();
 #if ANDROID
         _startPageAssigned = false;
 #endif
@@ -122,6 +122,36 @@ public partial class App : Application
             MauiStartupVisual.NotifyStartPageSet);
     }
 
+    /// <summary>
+    /// Apply BackendUrl before solo restore. Restore used to start first, hit OpenIddict /
+    /// HttpClient with no base address, throw inside BlazorPage setup, then wipe the URL
+    /// and trap the user on native server setup until a full app reset.
+    /// </summary>
+    private void PrepareServerConnectionAndRestore()
+    {
+        var k7ServerUrl = Preferences.Get(PreferenceKeys.K7_SERVER_URL, null);
+        if (string.IsNullOrEmpty(k7ServerUrl))
+            return;
+
+        try
+        {
+            _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"K7 MAUI - UpdateBaseAddress failed: {ex}");
+        }
+
+        try
+        {
+            StartSessionRestore();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"K7 MAUI - Session restore start failed: {ex}");
+        }
+    }
+
     private static void StartSessionRestore()
     {
         var auth = IPlatformApplication.Current?.Services.GetService<AuthenticationStateProvider>();
@@ -141,6 +171,14 @@ public partial class App : Application
         try
         {
             _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"K7 MAUI - UpdateBaseAddress failed: {ex}");
+        }
+
+        try
+        {
             Debug.WriteLine("K7 MAUI - GetStartPage - creating BlazorPage");
             var page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService);
             Debug.WriteLine("K7 MAUI - GetStartPage - BlazorPage created");
@@ -148,9 +186,8 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"K7 MAUI - BlazorPage failed, clearing server URL: {ex}");
-            Preferences.Remove(PreferenceKeys.K7_SERVER_URL);
-            return new SetupPage(_k7ServerManagerService, _playerService, _audioPlayerService);
+            Debug.WriteLine($"K7 MAUI - BlazorPage failed: {ex}");
+            return CreateStartupErrorPage(ex);
         }
     }
 

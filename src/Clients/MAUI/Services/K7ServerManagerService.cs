@@ -1,4 +1,4 @@
-﻿using K7.Clients.MAUI.Constants;
+using K7.Clients.MAUI.Constants;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.Options;
@@ -38,7 +38,15 @@ public class K7ServerManagerService : IServerConnectionService
         if (_k7ServerService.HttpClient.BaseAddress?.OriginalString == newUri.OriginalString)
             return;
 
-        _k7ServerService.HttpClient.BaseAddress = newUri;
+        try
+        {
+            _k7ServerService.HttpClient.BaseAddress = newUri;
+        }
+        catch (InvalidOperationException)
+        {
+            // Requests already started (solo restore overlapping startup). Keep the existing address.
+            return;
+        }
 
         BaseAddressUpdated?.Invoke(this, baseAddress);
     }

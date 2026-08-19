@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using K7.Clients.MAUI.Data;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -312,6 +313,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         RestoreOnCallStack.Value = true;
         try
         {
+            // Yield so CreateWindow is not blocked on SecureStorage during the sync prefix.
+            await Task.Yield();
             await TryRestoreSessionCoreAsync();
         }
         finally
@@ -322,10 +325,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     private async Task TryRestoreSessionCoreAsync()
     {
-        if (!_localUserService.IsSingleUserMode)
+        var serverConfigured = _k7ServerService.HttpClient.BaseAddress is not null;
+        if (!MauiSessionRestore.ShouldRestore(_localUserService, serverConfigured))
             return;
 
-        var lastUser = ResolveSingleUserModeRestoreTarget();
+        var lastUser = _localUserService.GetLastActive();
         if (lastUser is null)
             return;
 
@@ -342,6 +346,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
+            await OpenIddictDbBootstrap.Ready;
             await RestoreUserInBackgroundAsync(lastUser);
         }
         catch (HttpRequestException)
@@ -370,22 +375,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         ClearStoredTokens();
         SignInOffline(lastUser);
-    }
-
-    /// <summary>
-    /// Solo restore only when the preference is on and a profile was successfully entered
-    /// while solo was enabled (LastActive + unlock). Checking the box alone is not enough.
-    /// </summary>
-    private LocalUser? ResolveSingleUserModeRestoreTarget()
-    {
-        var lastUser = _localUserService.GetLastActive();
-        if (lastUser is null)
-            return null;
-
-        if (!_localUserService.IsSingleUserUnlocked(lastUser.IdentityUserId))
-            return null;
-
-        return lastUser;
     }
 
     private async Task RestoreUserInBackgroundAsync(LocalUser localUser)

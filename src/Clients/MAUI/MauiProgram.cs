@@ -243,6 +243,7 @@ public static partial class MauiProgram
 
         var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();
         OfflineDbBootstrap.Start(offlineDbFactory);
+        OpenIddictDbBootstrap.Start(app.Services);
 
         // Event subscriptions only - do not block first frame on these graphs.
         _ = Task.Run(() =>
