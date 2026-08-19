@@ -84,14 +84,17 @@ public sealed class LibraryFolderWatcherService(
 
             foreach (var libraryId in _failedWatchLibraries.Keys.Except(desiredIds).ToList())
                 _failedWatchLibraries.Remove(libraryId);
+        }
 
-            foreach (var library in libraries)
+        foreach (var library in libraries)
+        {
+            lock (_sync)
             {
                 if (_watchedLibraries.ContainsKey(library.Id))
                     continue;
-
-                StartWatcher(library);
             }
+
+            StartWatcher(library);
         }
     }
 
@@ -100,110 +103,88 @@ public sealed class LibraryFolderWatcherService(
         if (library.RootPath is null || !Directory.Exists(library.RootPath))
         {
             logger.LogInformation("Skipping realtime monitor for library {LibraryId}: root path unavailable", library.Id);
-            _failedWatchLibraries.Remove(library.Id);
+            lock (_sync)
+                _failedWatchLibraries.Remove(library.Id);
             return;
         }
 
         var watched = new WatchedLibrary(library.Id, library.RootPath);
-        Exception? rootWatchError = null;
 
         try
         {
-            // Per-directory watches (no IncludeSubdirectories) so Synology @eaDir and other
-            // excluded NAS folders are never registered with inotify / ReadDirectoryChanges.
-            var stack = new Stack<string>();
-            stack.Push(library.RootPath);
-
-            while (stack.Count > 0)
-            {
-                var currentDir = stack.Pop();
-                if (!TryAddDirectoryWatch(watched, currentDir, out var watchError))
-                {
-                    if (string.Equals(currentDir, library.RootPath, StringComparison.OrdinalIgnoreCase))
-                        rootWatchError = watchError;
-                    continue;
-                }
-
-                IEnumerable<string> subDirs;
-                try
-                {
-                    subDirs = Directory.EnumerateDirectories(currentDir);
-                }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
-                {
-                    logger.LogDebug(ex, "Skipping inaccessible directory while building watches for library {LibraryId}: {Path}", library.Id, currentDir);
-                    continue;
-                }
-
-                foreach (var subDir in subDirs)
-                {
-                    var dirName = Path.GetFileName(subDir);
-                    if (FileInfoHelper.IsExcludedDirectoryName(dirName))
-                        continue;
-
-                    stack.Push(subDir);
-                }
-            }
-
-            if (watched.Watchers.Count == 0)
+            // One FileSystemWatcher per library (IncludeSubdirectories). Linux FileSystemWatcher
+            // uses one inotify instance each; a watcher per directory hits max_user_instances
+            // (default 128) after a single medium-sized tree. Excluded NAS folders (@eaDir, etc.)
+            // may still consume watches; events from those paths are ignored.
+            if (!TryStartRecursiveWatch(watched, out var watchError))
             {
                 watched.Dispose();
-
-                var previous = _failedWatchLibraries.GetValueOrDefault(library.Id);
-                var sameFailure = previous is not null
-                    && string.Equals(previous.RootPath, library.RootPath, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(previous.ErrorMessage, rootWatchError?.Message, StringComparison.Ordinal);
-
-                if (!sameFailure)
-                {
-                    logger.LogWarning(
-                        rootWatchError,
-                        "Realtime monitor for library {LibraryId} created no watches at {RootPath}. Common causes: filesystem without inotify (NFS/CIFS), permissions, or inotify limits. Disable realtime monitoring or rely on AutoScanIntervalHours",
-                        library.Id,
-                        library.RootPath);
-                }
-                else
-                {
-                    logger.LogDebug(
-                        rootWatchError,
-                        "Realtime monitor for library {LibraryId} still has no watches at {RootPath}",
-                        library.Id,
-                        library.RootPath);
-                }
-
-                _failedWatchLibraries[library.Id] = new FailedWatchState(library.RootPath, rootWatchError?.Message);
+                lock (_sync)
+                    RecordFailedWatch(library.Id, library.RootPath, watchError);
                 return;
             }
 
-            _failedWatchLibraries.Remove(library.Id);
-            _watchedLibraries[library.Id] = watched;
+            lock (_sync)
+            {
+                if (_watchedLibraries.ContainsKey(library.Id))
+                {
+                    watched.Dispose();
+                    return;
+                }
+
+                _failedWatchLibraries.Remove(library.Id);
+                _watchedLibraries[library.Id] = watched;
+            }
+
             logger.LogInformation(
-                "Started realtime monitor for library {LibraryId} at {RootPath} ({WatchCount} directory watches)",
-                library.Id, library.RootPath, watched.Watchers.Count);
+                "Started realtime monitor for library {LibraryId} at {RootPath}",
+                library.Id, library.RootPath);
         }
         catch (Exception ex)
         {
             watched.Dispose();
             logger.LogWarning(ex, "Failed to start realtime monitor for library {LibraryId}", library.Id);
-            _failedWatchLibraries[library.Id] = new FailedWatchState(library.RootPath, ex.Message);
+            lock (_sync)
+                _failedWatchLibraries[library.Id] = new FailedWatchState(library.RootPath, ex.Message);
         }
     }
 
-    private bool TryAddDirectoryWatch(WatchedLibrary watched, string directoryPath, out Exception? error)
+    private void RecordFailedWatch(Guid libraryId, string rootPath, Exception? error)
+    {
+        var previous = _failedWatchLibraries.GetValueOrDefault(libraryId);
+        var sameFailure = previous is not null
+            && string.Equals(previous.RootPath, rootPath, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(previous.ErrorMessage, error?.Message, StringComparison.Ordinal);
+
+        if (!sameFailure)
+        {
+            logger.LogWarning(
+                error,
+                "Realtime monitor for library {LibraryId} created no watches at {RootPath}. Common causes: filesystem without inotify (NFS/CIFS), permissions, or inotify limits. Disable realtime monitoring or rely on AutoScanIntervalHours",
+                libraryId,
+                rootPath);
+        }
+        else
+        {
+            logger.LogDebug(
+                error,
+                "Realtime monitor for library {LibraryId} still has no watches at {RootPath}",
+                libraryId,
+                rootPath);
+        }
+
+        _failedWatchLibraries[libraryId] = new FailedWatchState(rootPath, error?.Message);
+    }
+
+    private bool TryStartRecursiveWatch(WatchedLibrary watched, out Exception? error)
     {
         error = null;
 
-        if (FileInfoHelper.IsExcludedPath(directoryPath))
-            return false;
-
-        if (watched.Watchers.ContainsKey(directoryPath))
-            return true;
-
         try
         {
-            var watcher = new FileSystemWatcher(directoryPath)
+            var watcher = new FileSystemWatcher(watched.RootPath)
             {
-                IncludeSubdirectories = false,
+                IncludeSubdirectories = true,
                 InternalBufferSize = 65536,
                 NotifyFilter = NotifyFilters.FileName
                     | NotifyFilters.DirectoryName
@@ -212,81 +193,36 @@ public sealed class LibraryFolderWatcherService(
             };
 
             var libraryId = watched.LibraryId;
-            watcher.Created += (_, e) => OnCreated(libraryId, e.FullPath);
+            watcher.Created += (_, e) => OnFileSystemEvent(libraryId, e.FullPath);
             watcher.Changed += (_, e) => OnFileSystemEvent(libraryId, e.FullPath);
-            watcher.Deleted += (_, e) => OnDeleted(libraryId, e.FullPath);
-            watcher.Renamed += (_, e) => OnRenamed(libraryId, e.OldFullPath, e.FullPath);
+            watcher.Deleted += (_, e) => OnFileSystemEvent(libraryId, e.FullPath);
+            watcher.Renamed += (_, e) =>
+            {
+                OnFileSystemEvent(libraryId, e.OldFullPath);
+                OnFileSystemEvent(libraryId, e.FullPath);
+            };
             watcher.Error += (_, e) =>
             {
                 var ex = e.GetException();
                 if (ex is UnauthorizedAccessException)
                 {
-                    logger.LogDebug(ex, "FileSystemWatcher access denied for library {LibraryId} at {Path}", libraryId, directoryPath);
+                    logger.LogDebug(ex, "FileSystemWatcher access denied for library {LibraryId} at {Path}", libraryId, watched.RootPath);
                     return;
                 }
 
-                logger.LogWarning(ex, "FileSystemWatcher error for library {LibraryId} at {Path}", libraryId, directoryPath);
+                logger.LogWarning(ex, "FileSystemWatcher error for library {LibraryId} at {Path}", libraryId, watched.RootPath);
             };
             watcher.EnableRaisingEvents = true;
 
-            watched.Watchers[directoryPath] = watcher;
+            watched.Watcher = watcher;
             return true;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or ArgumentException)
         {
             error = ex;
-            logger.LogDebug(ex, "Could not watch directory for library {LibraryId}: {Path}", watched.LibraryId, directoryPath);
+            logger.LogDebug(ex, "Could not watch library {LibraryId} at {Path}", watched.LibraryId, watched.RootPath);
             return false;
         }
-    }
-
-    private void OnCreated(Guid libraryId, string path)
-    {
-        if (FileInfoHelper.IsExcludedPath(path))
-            return;
-
-        if (Directory.Exists(path))
-        {
-            lock (_sync)
-            {
-                if (_watchedLibraries.TryGetValue(libraryId, out var watched))
-                    TryAddDirectoryWatch(watched, path, out _);
-            }
-        }
-
-        OnFileSystemEvent(libraryId, path);
-    }
-
-    private void OnDeleted(Guid libraryId, string path)
-    {
-        lock (_sync)
-        {
-            if (_watchedLibraries.TryGetValue(libraryId, out var watched)
-                && watched.Watchers.Remove(path, out var watcher))
-            {
-                watcher.Dispose();
-            }
-        }
-
-        OnFileSystemEvent(libraryId, path);
-    }
-
-    private void OnRenamed(Guid libraryId, string oldPath, string newPath)
-    {
-        lock (_sync)
-        {
-            if (_watchedLibraries.TryGetValue(libraryId, out var watched)
-                && watched.Watchers.Remove(oldPath, out var watcher))
-            {
-                watcher.Dispose();
-            }
-
-            if (!FileInfoHelper.IsExcludedPath(newPath) && Directory.Exists(newPath) && watched is not null)
-                TryAddDirectoryWatch(watched, newPath, out _);
-        }
-
-        OnFileSystemEvent(libraryId, oldPath);
-        OnFileSystemEvent(libraryId, newPath);
     }
 
     private void OnFileSystemEvent(Guid libraryId, string path)
@@ -392,14 +328,12 @@ public sealed class LibraryFolderWatcherService(
     {
         public Guid LibraryId { get; } = libraryId;
         public string RootPath { get; } = rootPath;
-        public Dictionary<string, FileSystemWatcher> Watchers { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public FileSystemWatcher? Watcher { get; set; }
 
         public void Dispose()
         {
-            foreach (var watcher in Watchers.Values)
-                watcher.Dispose();
-
-            Watchers.Clear();
+            Watcher?.Dispose();
+            Watcher = null;
         }
     }
 

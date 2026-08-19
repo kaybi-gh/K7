@@ -142,8 +142,8 @@ Logs: `Realtime monitor for library ... created no watches at /media/...`.
 
 - Confirm the path exists inside the container and scans find files (if the root is missing you get a different "root path unavailable" message).
 - Check the filesystem type: `findmnt -T /media/Series -o TARGET,FSTYPE,OPTIONS` inside the container. NFS/CIFS often cannot use inotify; disable realtime monitoring on that library and rely on Auto scan interval.
-- Compare with a library that starts successfully (`Started realtime monitor ... (N directory watches)`): use the same mount style when possible.
-- For large **local** trees only: raise host `fs.inotify.max_user_watches` / `max_user_instances`. That does not fix zero watches on NFS.
+- Compare with a library that starts successfully (`Started realtime monitor ...`): use the same mount style when possible.
+- For huge **local** trees only: raise host `fs.inotify.max_user_watches` if the recursive watcher fails. That does not fix zero watches on NFS.
 
 ### Health endpoint
 
