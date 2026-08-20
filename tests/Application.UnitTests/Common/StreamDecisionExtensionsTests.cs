@@ -32,4 +32,28 @@ public class StreamDecisionExtensionsTests
         updated.StreamVideoCodec.Should().Be("h264");
         updated.StreamResolution.Should().Be("1280x720");
     }
+
+    [Test]
+    public void ApplyQualityDownscale_ShouldMarkVideoTranscode_WhenSameHeightAsSource()
+    {
+        var existing = new StreamDecisionDto
+        {
+            Mode = PlaybackMode.Transmux,
+            Reason = TranscodeReason.None,
+            SourceVideoCodec = "h264",
+            StreamVideoCodec = "h264",
+            SourceResolution = "1920x1080"
+        };
+
+        var updated = StreamDecisionExtensions.ApplyQualityDownscale(
+            existing,
+            Constants.VideoQualities[VideoResolutionIdentifier._1080p],
+            "h264",
+            "1920x1080");
+
+        updated.Mode.Should().Be(PlaybackMode.Transcode);
+        updated.Reason.Should().HaveFlag(TranscodeReason.QualityDownscale);
+        updated.StreamVideoCodec.Should().Be("h264");
+        updated.StreamResolution.Should().Be("1920x1080");
+    }
 }

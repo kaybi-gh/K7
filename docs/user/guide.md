@@ -73,7 +73,7 @@ Change server later: **Settings -> General** -> disconnect (trash), then enter a
 
 ### In the player
 
-- **Quality** for this session (Original or a lower ladder) - not saved as a lasting preference
+- **Quality** for this session (**Original** = remux / bitstream copy, or a ladder encode at the same or lower resolution) - not saved as a lasting preference
 - **Audio** and **subtitle** tracks. Same-language tracks stay distinct: the menu shows the normalized language, then the original track name in parentheses (VFF, VFQ, France, Canadien, ...)
 - **Release** when a movie has several files: the picker shows resolution, audio languages, codec, size, and Local vs Federated instead of repeating the title
 - **Intro / outro skip** when markers exist and your settings allow it

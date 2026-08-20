@@ -192,7 +192,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         var fileResolution = Constants.VideoQualities.Single(x => x.Key == videoMetadata.VideoResolution).Value;
         var requestedQuality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
-        if (requestedQuality.Value is null || requestedQuality.Value.Height >= fileResolution.Height)
+        // Same height as source is a ladder encode (bitrate-capped), not remux.
+        if (requestedQuality.Value is null || requestedQuality.Value.Height > fileResolution.Height)
             return;
 
         var effectiveVideoCodec = query.TranscodingVideoCodec ?? "h264";
@@ -413,11 +414,11 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         if (!string.IsNullOrEmpty(query.Quality) && query.Quality != "original")
         {
             var requestedQuality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
-            if (requestedQuality.Value is not null && requestedQuality.Value.Height < fileResolution.Height)
+            if (requestedQuality.Value is not null && requestedQuality.Value.Height <= fileResolution.Height)
             {
                 targetResolution = requestedQuality.Value;
                 playlistQuality = requestedQuality.Value.Name;
-                // Downscaling requires transcoding - force h264 if no codec was specified
+                // Ladder quality (same or lower height) requires transcoding - force h264 if unset
                 effectiveVideoCodec ??= "h264";
             }
         }
