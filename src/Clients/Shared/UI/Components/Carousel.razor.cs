@@ -94,6 +94,7 @@ public partial class Carousel : IAsyncDisposable
 
     public async Task ScrollToIndexAsync(int index)
     {
+        await EnsureInitializedAsync();
         if (_disposed || _module is null)
             return;
 

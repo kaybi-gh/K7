@@ -122,10 +122,30 @@ export function init(rootElement) {
         }
     }
 
-    embla.on('init', updateArrows);
+    function scrollToInitialFocus() {
+        var initial = rootElement.querySelector('[data-initial-focus]');
+        if (!initial) return;
+        var item = initial.hasAttribute('data-carousel-item')
+            ? initial
+            : initial.closest('[data-carousel-item]');
+        if (!item) return;
+        var slides = embla.slideNodes();
+        for (var i = 0; i < slides.length; i++) {
+            if (slides[i] === item || slides[i].contains(initial)) {
+                try { embla.scrollTo(i, true); } catch (e) { /* ignore */ }
+                return;
+            }
+        }
+    }
+
+    embla.on('init', function () {
+        updateArrows();
+        scrollToInitialFocus();
+    });
     embla.on('reInit', updateArrows);
     embla.on('select', updateArrows);
     embla.on('scroll', updateArrows);
+    scrollToInitialFocus();
 
     // Native video hides the WebView (0-width snaps). Remember the last real
     // selected slide so close can reInit without jumping to the last card.
@@ -187,7 +207,7 @@ export function init(rootElement) {
 
 export function scrollToIndex(rootElement, index) {
     if (rootElement && rootElement.__embla) {
-        rootElement.__embla.scrollTo(index);
+        rootElement.__embla.scrollTo(index, true);
     }
 }
 

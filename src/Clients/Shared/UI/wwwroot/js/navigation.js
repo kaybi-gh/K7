@@ -393,11 +393,19 @@ var SpatialNav = (function () {
 
     // Scroll
 
+    var _pendingCarouselScroll = new WeakMap();
+
     function scrollCarouselToElement(el) {
+        if (!el || !el.closest) return;
         var carouselRoot = el.closest('[data-carousel]');
-        if (!carouselRoot || !carouselRoot.__embla) return;
+        if (!carouselRoot) return;
         var item = el.closest('[data-carousel-item]');
         if (!item) return;
+
+        if (!carouselRoot.__embla) {
+            scheduleScrollCarouselWhenReady(el);
+            return;
+        }
 
         var container = carouselRoot.querySelector('.carousel-container');
         var allItems = container ? Array.from(container.querySelectorAll('[data-carousel-item]')) : [];
@@ -405,11 +413,43 @@ var SpatialNav = (function () {
         if (idx < 0) return;
 
         // One scrollNext/Prev is not enough when focus lands far off-screen (e.g. loop-back).
+        // Jump so initial TV focus (Keep Watching -> mid-season episode) is visible immediately.
         try {
-            carouselRoot.__embla.scrollTo(idx);
+            carouselRoot.__embla.scrollTo(idx, true);
         } catch (e) {
-            if (idx === 0) carouselRoot.__embla.scrollTo(0);
+            if (idx === 0) carouselRoot.__embla.scrollTo(0, true);
         }
+    }
+
+    function scheduleScrollCarouselWhenReady(el) {
+        if (_pendingCarouselScroll.has(el)) return;
+        var attempts = 0;
+        _pendingCarouselScroll.set(el, true);
+
+        function retry() {
+            _pendingCarouselScroll.delete(el);
+            if (!el.isConnected) return;
+
+            var item = el.closest('[data-carousel-item]');
+            var active = document.activeElement;
+            var stillFocused = !active
+                || active === el
+                || el.contains(active)
+                || (item && item.contains(active));
+            if (!stillFocused) return;
+
+            var carouselRoot = el.closest('[data-carousel]');
+            if (carouselRoot && carouselRoot.__embla) {
+                scrollCarouselToElement(el);
+                return;
+            }
+            if (++attempts < 40) {
+                _pendingCarouselScroll.set(el, true);
+                requestAnimationFrame(retry);
+            }
+        }
+
+        requestAnimationFrame(retry);
     }
 
     function isNearPageTop(el) {

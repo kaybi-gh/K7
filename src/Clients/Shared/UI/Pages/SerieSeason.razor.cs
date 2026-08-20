@@ -227,6 +227,11 @@ public partial class SerieSeason : IAsyncDisposable
 
         if (_focusEpisodeFragment is not null)
         {
+            // TV: wait until the episode carousel is in the tree. Clearing the fragment
+            // earlier would leave focus on the target episode while Embla stays at snap 0.
+            if (_isTv && _tvCarousel is null)
+                return;
+
             var elementId = _focusEpisodeFragment.TrimStart('#');
             _focusEpisodeFragment = null;
 
@@ -240,8 +245,9 @@ public partial class SerieSeason : IAsyncDisposable
                         var index = _episodes.FindIndex(e => e.EpisodeNumber == targetEpNumber);
                         if (index >= 0)
                         {
+                            await _tvCarousel.EnsureInitializedAsync();
                             await _tvCarousel.ScrollToIndexAsync(index);
-                            await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
+                            await JSRuntime.InvokeVoidAsync("K7.focusById", elementId, true);
                         }
                     }
                 }
