@@ -102,7 +102,9 @@ Android disables skip-silence and seeks with previous-sync so AAC gaps do not re
 dropping audio. The native loading veil, seek bar, skip, and resume capture must use
 ExoPlayer `CurrentPosition` (and `OnRenderedFirstFrame`), not toolkit
 `MediaElement.Position`, which can stay 0 or freeze after a mid-stream resume. A skip or
-seekbar tap on stale toolkit position then jumps minutes backward. Stale `.m4s` from an older rebase can be deleted
+seekbar tap on stale toolkit position then jumps minutes backward. `ExoPlaybackBridge`
+publishes ExoPlayer duration and position into `IPlayerService` for the native overlay
+when `MediaElement.Duration` stays 0 on demuxed HLS. Stale `.m4s` from an older rebase can be deleted
 from the transcode cache. Streaming HLS rebinds the MediaElement ExoPlayer with long HTTP
 timeouts and VTT load retries on HTTP 503 (`AndroidExoHlsTuning`).
 

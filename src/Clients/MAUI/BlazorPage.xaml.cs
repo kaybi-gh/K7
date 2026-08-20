@@ -330,6 +330,11 @@ public partial class BlazorPage : ContentPage
             && (DateTime.UtcNow - _chainedSeekUtc).TotalMilliseconds < 900)
             return chained;
 
+#if ANDROID
+        var exo = GetExoPlaybackPositionSeconds();
+        if (exo > 0)
+            return exo;
+#endif
 #if !WINDOWS
         try
         {
@@ -675,8 +680,13 @@ public partial class BlazorPage : ContentPage
                 if (mediaState is MediaElementState.Playing)
                 {
                     // Keep the veil through resume PendingSeek (first Playing is often at 0:00).
+                    // MediaElement.Position can stay 0 while ExoPlayer is already at resume
+                    // (~880s): that left a black veil over a live picture + captions.
                     var pending = _playerService.Source?.PendingSeekTime;
                     var pos = NativePlayer.Position.TotalSeconds;
+                    var exoPos = GetExoPlaybackPositionSeconds();
+                    if (exoPos > 0)
+                        pos = exoPos;
                     if (pending is double resumeAt && resumeAt > 1 && pos < resumeAt - 2)
                         _nativeOverlay?.SetLoadingVeil(true);
                     else
@@ -800,9 +810,17 @@ public partial class BlazorPage : ContentPage
             var duration = NativePlayer.Duration.TotalSeconds;
             var position = NativePlayer.Position.TotalSeconds;
             var playing = NativePlayer.CurrentState is MediaElementState.Playing;
+#if ANDROID
+            var exoPos = GetExoPlaybackPositionSeconds();
+            if (exoPos > 0)
+                position = exoPos;
+#endif
 
-            // startSeconds in the manifest often lands us near the target already.
-            if (duration > 0 && position > 0 && Math.Abs(position - pending) <= 4)
+            // EXT-X-START often lands within a GOP of the resume point. A tight window
+            // re-applies PendingSeek and rewinds several seconds into the episode.
+            // MediaElement.Position can stay 0 after ExoPlayer has already started - use the
+            // real player clock on Android so we do not SeekTo the resume point again.
+            if (duration > 0 && position > 0 && Math.Abs(position - pending) <= 30)
             {
                 source.PendingSeekTime = null;
                 if (_pendingSeekStateHandler is not null)
@@ -814,6 +832,9 @@ public partial class BlazorPage : ContentPage
                 NativeVideoDebug.Log(
                     "PendingSeek skip near target=" + pending.ToString("F1")
                     + "s pos=" + position.ToString("F1") + "s reason=" + reason);
+#if ANDROID
+                _nativeOverlay?.NotifyFirstFrameReady();
+#endif
                 return;
             }
 
@@ -861,7 +882,12 @@ public partial class BlazorPage : ContentPage
                         return;
 
                     var position = NativePlayer.Position.TotalSeconds;
-                    if (position > 0 && Math.Abs(position - stillPending) <= 4)
+#if ANDROID
+                    var exoPos = GetExoPlaybackPositionSeconds();
+                    if (exoPos > 0)
+                        position = exoPos;
+#endif
+                    if (position > 0 && Math.Abs(position - stillPending) <= 30)
                     {
                         source.PendingSeekTime = null;
                         if (_pendingSeekStateHandler is not null)
@@ -982,7 +1008,9 @@ public partial class BlazorPage : ContentPage
             _playerService.Duration = duration;
 
         // Do not force Idle here - PropertyChanged owns state (Opening/Buffering/Playing).
-        ConfigureNativeVideoPlayerAfterOpen();
+        // Do not re-enter ConfigureNativeVideoPlayerAfterOpen: MediaOpened fires after
+        // Prepare() while HLS is still loading. A second pass re-applies seek params and
+        // the pending-seek handler can rewind several seconds.
 #endif
     }
 
@@ -1155,6 +1183,9 @@ public partial class BlazorPage : ContentPage
     {
 #if WINDOWS
         return;
+#elif ANDROID
+        var exo = GetExoPlaybackPositionSeconds();
+        _playerService.CurrentTime = exo > 0 ? exo : e.Position.TotalSeconds;
 #else
         _playerService.CurrentTime = e.Position.TotalSeconds;
 #endif
@@ -1865,9 +1896,14 @@ public partial class BlazorPage : ContentPage
 
     private double CaptureNativeVideoResumePosition()
     {
+        var pending = _playerService.Source?.PendingSeekTime ?? 0;
+#if ANDROID
+        var exo = GetExoPlaybackPositionSeconds();
+        if (exo > 1)
+            return Math.Max(exo, pending);
+#endif
         var fromPlayer = NativePlayer.Position.TotalSeconds;
         var fromService = _playerService.CurrentTime;
-        var pending = _playerService.Source?.PendingSeekTime ?? 0;
         return Math.Max(Math.Max(fromPlayer, fromService), pending);
     }
 

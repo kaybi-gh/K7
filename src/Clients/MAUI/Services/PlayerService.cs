@@ -397,17 +397,9 @@ internal class PlayerService(
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
         _baseManifestUrl = newUrl;
 
-        Source = new PlayerSource
-        {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
-            ThumbnailsUrl = Source.ThumbnailsUrl,
-            PendingSeekTime = seekTime > 0 ? seekTime : null
-        };
+        ReplaceStreamingSource(
+            BuildManifestUrlWithStartPosition(newUrl, seekTime),
+            seekTime > 0 ? seekTime : null);
 
         if (seekTime > 0)
         {
@@ -442,16 +434,9 @@ internal class PlayerService(
             newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
         _baseManifestUrl = newUrl;
 
-        Source = new PlayerSource
-        {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
-            PendingSeekTime = seekTime > 0 ? seekTime : null
-        };
+        ReplaceStreamingSource(
+            BuildManifestUrlWithStartPosition(newUrl, seekTime),
+            seekTime > 0 ? seekTime : null);
 
         if (seekTime > 0)
         {
@@ -484,16 +469,9 @@ internal class PlayerService(
             newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
         _baseManifestUrl = newUrl;
 
-        Source = new PlayerSource
-        {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
-            PendingSeekTime = seekTime > 0 ? seekTime : null
-        };
+        ReplaceStreamingSource(
+            BuildManifestUrlWithStartPosition(newUrl, seekTime),
+            seekTime > 0 ? seekTime : null);
 
         // Restore time/duration so the overlay keeps showing the correct position
         // while the new quality loads
@@ -603,6 +581,22 @@ internal class PlayerService(
                 _selectedQuality),
             seekTime);
 
+        ReplaceStreamingSource(url, seekTime is > 0 ? seekTime : null);
+
+        if (seekTime is > 0)
+        {
+            CurrentTime = seekTime.Value;
+            if (previousDuration > 0)
+                Duration = previousDuration;
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the HLS source URL without dropping session metadata. Quality / audio /
+    /// subtitle reloads were dropping chapters and sprite thumbnails.
+    /// </summary>
+    private void ReplaceStreamingSource(string url, double? pendingSeekTime)
+    {
         Source = new PlayerSource
         {
             MediaId = Source.MediaId,
@@ -614,15 +608,8 @@ internal class PlayerService(
             Chapters = Source.Chapters,
             Title = Source.Title,
             CoverUrl = Source.CoverUrl,
-            PendingSeekTime = seekTime is > 0 ? seekTime : null
+            PendingSeekTime = pendingSeekTime
         };
-
-        if (seekTime is > 0)
-        {
-            CurrentTime = seekTime.Value;
-            if (previousDuration > 0)
-                Duration = previousDuration;
-        }
     }
 
     public Task ShowAsync()

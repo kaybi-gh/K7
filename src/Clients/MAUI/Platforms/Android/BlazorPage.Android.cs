@@ -5,6 +5,7 @@ using AndroidX.Media3.ExoPlayer.Source;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using K7.Clients.MAUI.Controls.Video;
+using K7.Clients.MAUI.Platforms.Android;
 using K7.Clients.Shared.Helpers;
 using Microsoft.JSInterop;
 
@@ -17,6 +18,7 @@ public partial class BlazorPage
     private int _androidHttpTimeoutRetryCount;
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
+    private ExoPlaybackBridge? _exoPlaybackBridge;
 
     partial void InitializePlayerPlatform()
     {
@@ -152,8 +154,24 @@ public partial class BlazorPage
 
     partial void ConfigureNativeVideoPlayerAfterOpen()
     {
-        ApplyAndroidHlsAvSyncSettings(GetPlayer(NativePlayer));
+        var player = GetPlayer(NativePlayer);
+        ApplyAndroidHlsAvSyncSettings(player);
+        AttachExoPlaybackBridge(player);
+        if (player is IExoPlayer exo)
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+            var playerView = platformView is null ? null : FindPlayerView(platformView);
+            AndroidExoHlsTuning.ApplyPlaybackSurfaceTuning(exo, playerView);
+            TryPublishExoTimelineFromPlayer(exo);
+        }
         SetVideoFocusOwnership(active: true);
+    }
+
+    partial void DetachPlayerPlatform()
+    {
+        if (_exoPlaybackBridge is not null)
+            _exoPlaybackBridge.FirstFrameRendered = null;
+        _exoPlaybackBridge?.Detach();
     }
 
     /// <summary>
@@ -179,7 +197,7 @@ public partial class BlazorPage
             ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
-            var mediaSource = CreateAndroidStreamingMediaSource(httpFactory, mediaItem, url);
+            var mediaSource = AndroidExoHlsTuning.CreateStreamingMediaSource(httpFactory, mediaItem, url);
             if (mediaSource is null)
                 return;
 
@@ -187,6 +205,8 @@ public partial class BlazorPage
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
             ApplyAndroidHlsAvSyncSettings(exo);
+            AttachExoPlaybackBridge(exo);
+            TryPublishExoTimelineFromPlayer(exo);
             _androidHttpTimeoutRetryCount = 0;
 
             // Do not PostDelayed SetMediaSource again: a second Prepare resets HLS to
@@ -261,7 +281,7 @@ public partial class BlazorPage
             ApplyExoPlayerHttpAuthHeaders();
 
             var mediaItem = MediaItem.FromUri(url)!;
-            var mediaSource = CreateAndroidStreamingMediaSource(httpFactory, mediaItem, url);
+            var mediaSource = AndroidExoHlsTuning.CreateStreamingMediaSource(httpFactory, mediaItem, url);
             if (mediaSource is null)
                 return;
 
@@ -269,6 +289,7 @@ public partial class BlazorPage
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
             ApplyAndroidHlsAvSyncSettings(exo);
+            AttachExoPlaybackBridge(exo);
         }
         catch (Exception)
         {
@@ -286,6 +307,23 @@ public partial class BlazorPage
 
         if (!HasWebViewWindowFocus())
             BounceWindowFocusToWebView();
+    }
+
+    private double GetExoPlaybackPositionSeconds()
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return 0;
+
+            var posMs = exo.CurrentPosition;
+            return posMs > 0 ? posMs / 1000.0 : 0;
+        }
+        catch (Exception)
+        {
+            return 0;
+        }
     }
 
     /// <summary>
@@ -308,7 +346,9 @@ public partial class BlazorPage
                 targetSeconds = Math.Min(targetSeconds, duration);
 
             // No-op seeks (auth rebind, soft-subtitle re-apply) still pause ExoPlayer.
-            var currentPos = NativePlayer.Position.TotalSeconds;
+            var currentPos = GetExoPlaybackPositionSeconds();
+            if (currentPos <= 0)
+                currentPos = NativePlayer.Position.TotalSeconds;
             if (currentPos > 0 && Math.Abs(currentPos - targetSeconds) < 0.75)
             {
                 if (_playerService.Source is { } nearSource)
@@ -344,18 +384,17 @@ public partial class BlazorPage
             EnsureVideoSurfaceNotFocusable();
             ApplyAndroidHlsAvSyncSettings(player);
 
-            // Prefer MediaElement.SeekTo after SeekParameters are set on the real ExoPlayer.
-            // Direct IExoPlayerInvoker.SeekTo can exact-seek and leave TextureView frozen until
-            // the next independent segment while audio advances.
+            // Seek the PlayerView Exo instance. MediaElement.SeekTo can target a stale toolkit
+            // reference when PlayerView.Player was replaced, and IExoPlayerInvoker exact-seeks.
             try
             {
-                NativePlayer.SeekTo(TimeSpan.FromSeconds(targetSeconds));
+                player.SeekTo((long)(targetSeconds * 1000.0));
             }
             catch (Exception)
             {
                 try
                 {
-                    player.SeekTo((long)(targetSeconds * 1000.0));
+                    NativePlayer.SeekTo(TimeSpan.FromSeconds(targetSeconds));
                 }
                 catch (Exception)
                 {
@@ -665,21 +704,59 @@ public partial class BlazorPage
         }
     }
 
-    private static IMediaSource? CreateAndroidStreamingMediaSource(
-        DefaultHttpDataSource.Factory httpFactory,
-        MediaItem mediaItem,
-        string url)
+    private void AttachExoPlaybackBridge(IPlayer? player)
     {
-#pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in bindings but is the Media3 API
-        if (url.Contains(".m3u8", StringComparison.OrdinalIgnoreCase))
+        player = UnwrapPlayer(player);
+        if (player is not IExoPlayer exo)
+            return;
+
+        _exoPlaybackBridge ??= new ExoPlaybackBridge();
+        _exoPlaybackBridge.FirstFrameRendered = () => _nativeOverlay?.NotifyFirstFrameReady();
+        _exoPlaybackBridge.PositionHeard = OnExoPositionHeard;
+        _exoPlaybackBridge.DurationHeard = OnExoDurationHeard;
+        _exoPlaybackBridge.Attach(exo);
+        TryPublishExoTimelineFromPlayer(exo);
+    }
+
+    private void OnExoDurationHeard(double seconds)
+    {
+        if (!_playerService.IsVisible || seconds <= 0)
+            return;
+
+        if (Math.Abs(seconds - _playerService.Duration) > 0.5)
+            _playerService.Duration = seconds;
+    }
+
+    private void TryPublishExoTimelineFromPlayer(IExoPlayer exo)
+    {
+        try
         {
-            var hlsFactory = new AndroidX.Media3.ExoPlayer.Hls.HlsMediaSource.Factory(httpFactory)!;
-            return hlsFactory.CreateMediaSource(mediaItem);
+            var durMs = exo.Duration;
+            if (durMs > 0 && durMs < 864_000_000_000L)
+                OnExoDurationHeard(durMs / 1000.0);
+
+            var posMs = exo.CurrentPosition;
+            if (posMs > 0)
+                OnExoPositionHeard(posMs / 1000.0);
+        }
+        catch
+        {
+        }
+    }
+
+    private void OnExoPositionHeard(double seconds)
+    {
+        if (!_playerService.IsVisible || seconds <= 0)
+            return;
+
+        if (_chainedSeekTargetSeconds is double chained
+            && (DateTime.UtcNow - _chainedSeekUtc).TotalMilliseconds < 900
+            && Math.Abs(seconds - chained) > 2)
+        {
+            return;
         }
 
-        var mediaSourceFactory = new DefaultMediaSourceFactory(httpFactory);
-        return mediaSourceFactory.CreateMediaSource(mediaItem);
-#pragma warning restore CS0618
+        _playerService.CurrentTime = seconds;
     }
 
     private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
