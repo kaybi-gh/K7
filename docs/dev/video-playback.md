@@ -30,7 +30,10 @@ TV remote Rewind / Fast-forward keys are intercepted in `MainActivity.DispatchKe
 not D-pad events) and skip by the configured SkipBack / SkipForward durations even when chrome is
 visible. Hold scrubs. When playback reaches the end, a series episode with a successor shows
 the next-episode offer. A movie
-or last episode closes the player. Icons use
+or last episode closes the player. Closing native chrome on Android/iOS restores the hero:
+Play when present (movie, serie, episode pages), otherwise the season episode card that
+had focus, and Embla carousels keep the snap from before the WebView was hidden (otherwise
+0-width reInit jumps the episode/season row to the last card). Icons use
 a bundled Phosphor TTF (`Resources/Fonts/Phosphor.ttf`, registered as font family `"Phosphor"`);
 codepoints are kept in `NativePlayerGlyphs` and must stay in sync with `Phosphor.cs`'s CSS class
 names. Labels not covered by `IStringLocalizer<SharedResource>` use hard-coded FR/EN fallbacks in

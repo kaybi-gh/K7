@@ -196,7 +196,7 @@ else if (_serie is not null)
                 <Carousel Title="@L["Seasons"]">
                     @foreach (var season in _seasons)
                     {
-                        <CarouselItem @key="season.Id">
+                        <CarouselItem @key="season.Id" ItemId="@($"serie-season-{season.Id}")">
                             <MediaCard Model="@(new MediaCardViewModel
                                        {
                                            Id = season.Id.ToString(),
@@ -232,7 +232,7 @@ else if (_serie is not null)
                     <Carousel Title="@L["Seasons"]">
                         @foreach (var season in _seasons)
                         {
-                            <CarouselItem @key="season.Id">
+                            <CarouselItem @key="season.Id" ItemId="@($"serie-season-{season.Id}")">
                                 <MediaCard Model="@(new MediaCardViewModel
                                            {
                                                Id = season.Id.ToString(),

@@ -95,6 +95,7 @@ else if (_season is not null && _isTv)
                         <div class="carousel-item"
                              data-carousel-item
                              @key="ep.Id"
+                             @attributes="GetEpisodeInitialFocusAttributes(ep)"
                              @onfocusin="() => OnTvEpisodeFocus(ep)"
                              @onclick="() => PlayEpisodeAsync(ep)"
                              @onclick:preventDefault="true"

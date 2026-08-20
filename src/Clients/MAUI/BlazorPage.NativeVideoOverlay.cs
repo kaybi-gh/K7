@@ -130,16 +130,18 @@ public partial class BlazorPage
             {
                 _ = TryEvaluateWebViewJs(
                     "try{"
+                    + "if(window.K7&&K7.reInitAndRestoreCarousels)K7.reInitAndRestoreCarousels();"
                     + "if(window.K7&&K7.restoreFocusAfterNativeVideo)K7.restoreFocusAfterNativeVideo();"
-                    + "var cs=document.querySelectorAll('[data-carousel]');"
-                    + "for(var i=0;i<cs.length;i++){if(cs[i].__embla)try{cs[i].__embla.reInit();}catch(e){}}"
                     + "}catch(e){}");
             });
             await Task.Delay(48);
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 _ = TryEvaluateWebViewJs(
-                    "try{if(window.K7&&K7.restoreFocusAfterNativeVideo)K7.restoreFocusAfterNativeVideo();}catch(e){}");
+                    "try{"
+                    + "if(window.K7&&K7.reInitAndRestoreCarousels)K7.reInitAndRestoreCarousels();"
+                    + "if(window.K7&&K7.restoreFocusAfterNativeVideo)K7.restoreFocusAfterNativeVideo();"
+                    + "}catch(e){}");
                 blazorWebView.Opacity = targetOpacity;
             });
             await Task.Delay(160);

@@ -17,6 +17,8 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SerieEpisode : IAsyncDisposable
 {
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+
     [Parameter] public string SerieId { get; set; } = "";
     [Parameter] public int SeasonNumber { get; set; }
     [Parameter] public int EpisodeNumber { get; set; }
@@ -41,6 +43,7 @@ public partial class SerieEpisode : IAsyncDisposable
     private MediaReviewsSection? _reviewsSection;
     private ElementReference _tvScrollRoot;
     private bool _tvScrollInitialized;
+    private bool _initialFocusApplied;
     private MediaMetadataRefreshWatcher? _metadataRefreshWatcher;
     private Guid? _watchedEpisodeId;
     private DebouncedActionRunner? _progressRefreshRunner;
@@ -109,6 +112,17 @@ public partial class SerieEpisode : IAsyncDisposable
                 await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
             }
         }
+
+        if (!_initialFocusApplied && !_loading && _episode is not null)
+        {
+            _initialFocusApplied = true;
+            try
+            {
+                await SpatialNav.FocusFirstAsync(
+                    ".episode-actions-play[data-initial-focus], [data-tv-scroll-zone='actions'] [data-initial-focus]");
+            }
+            catch (InvalidOperationException) { }
+        }
     }
 
     private async Task LoadEpisodeAsync(bool isBackgroundRefresh = false, bool isPicturesRefresh = false)
@@ -134,6 +148,7 @@ public partial class SerieEpisode : IAsyncDisposable
         }
 
         _tvScrollInitialized = false;
+        _initialFocusApplied = false;
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);

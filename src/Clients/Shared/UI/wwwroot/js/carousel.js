@@ -126,6 +126,63 @@ export function init(rootElement) {
     embla.on('reInit', updateArrows);
     embla.on('select', updateArrows);
     embla.on('scroll', updateArrows);
+
+    // Native video hides the WebView (0-width snaps). Remember the last real
+    // selected slide so close can reInit without jumping to the last card.
+    var restoringSnap = false;
+    function saveSnap() {
+        if (restoringSnap)
+            return;
+        var vp = rootElement.querySelector('[data-carousel-viewport]');
+        if (!vp || vp.offsetWidth < 8)
+            return;
+        if (document.documentElement.classList.contains('native-player-active'))
+            return;
+
+        var idx = 0;
+        try { idx = embla.selectedScrollSnap(); } catch (e) { return; }
+        var slides = embla.slideNodes();
+        var slide = slides[idx];
+        if (slide && slide.hasAttribute('data-carousel-loop-back')) {
+            if (rootElement.__k7Snap)
+                return;
+            idx = Math.max(0, idx - 1);
+            slide = slides[idx];
+        }
+        rootElement.__k7Snap = {
+            index: idx,
+            id: slide && slide.id ? slide.id : null
+        };
+    }
+
+    function restoreSnap() {
+        var snap = rootElement.__k7Snap;
+        restoringSnap = true;
+        try {
+            embla.reInit();
+
+            var target = snap && typeof snap.index === 'number' ? snap.index : 0;
+            if (snap && snap.id) {
+                var nextSlides = embla.slideNodes();
+                for (var i = 0; i < nextSlides.length; i++) {
+                    if (nextSlides[i].id === snap.id) {
+                        target = i;
+                        break;
+                    }
+                }
+            }
+
+            embla.scrollTo(target, true);
+        } catch (e) {
+        } finally {
+            restoringSnap = false;
+        }
+    }
+
+    rootElement.__k7RestoreCarousel = restoreSnap;
+    embla.on('select', saveSnap);
+    embla.on('settle', saveSnap);
+    saveSnap();
 }
 
 export function scrollToIndex(rootElement, index) {
@@ -177,5 +234,7 @@ export function destroy(rootElement) {
     if (rootElement && rootElement.__embla) {
         rootElement.__embla.destroy();
         delete rootElement.__embla;
+        delete rootElement.__k7RestoreCarousel;
+        delete rootElement.__k7Snap;
     }
 }

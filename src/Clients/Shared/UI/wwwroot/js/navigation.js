@@ -3059,15 +3059,12 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
             // Native video hides the WebView; Embla keeps stale 0-width snaps until reInit.
             // Delay past Android WebView IsVisible restore + layout.
             var settleAfterNativeVideo = function () {
-                // Focus Play first so SpatialNav.refresh cannot land on casting.
+                // Restore carousel snaps before focus so SpatialNav cannot land on loop-back.
+                if (window.K7 && window.K7.reInitAndRestoreCarousels) {
+                    window.K7.reInitAndRestoreCarousels();
+                }
                 if (window.K7 && window.K7.restoreFocusAfterNativeVideo) {
                     window.K7.restoreFocusAfterNativeVideo();
-                }
-                var carousels = document.querySelectorAll('[data-carousel]');
-                for (var c = 0; c < carousels.length; c++) {
-                    if (carousels[c].__embla) {
-                        try { carousels[c].__embla.reInit(); } catch (e) { /* ignore */ }
-                    }
                 }
                 if (window.SpatialNav && window.SpatialNav.refresh) window.SpatialNav.refresh();
                 if (window.K7 && window.K7.restoreFocusAfterNativeVideo) {
@@ -3084,25 +3081,71 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
     }
 };
 
-/** After Android/iOS native chrome closes, put TV focus back on the hero Play control. */
+/** ReInit Embla after the WebView is shown again, keeping the last real snap. */
+K7.reInitAndRestoreCarousels = function () {
+    var nodes = document.querySelectorAll('[data-carousel]');
+    for (var i = 0; i < nodes.length; i++) {
+        var restore = nodes[i].__k7RestoreCarousel;
+        if (typeof restore === 'function') {
+            try { restore(); } catch (e) { /* ignore */ }
+            continue;
+        }
+        if (nodes[i].__embla) {
+            try { nodes[i].__embla.reInit(); } catch (e2) { /* ignore */ }
+        }
+    }
+};
+
+function resolveHeroFocusable(target) {
+    if (!target) return null;
+    if (target.classList && target.classList.contains('focusable')) return target;
+    if (target.querySelector) {
+        var inner = target.querySelector('.focusable, button, a, [tabindex]:not([tabindex="-1"])');
+        if (inner) return inner;
+    }
+    return target;
+}
+
+function scrollCarouselToFocusedItem(el) {
+    if (!el || !el.closest) return;
+    var carousel = el.closest('[data-carousel]');
+    if (!carousel || !carousel.__embla) return;
+    var item = el.closest('[data-carousel-item]');
+    if (!item) return;
+    var slides = [];
+    try { slides = carousel.__embla.slideNodes(); } catch (e) { return; }
+    for (var i = 0; i < slides.length; i++) {
+        if (slides[i] === item) {
+            try { carousel.__embla.scrollTo(i, true); } catch (e2) { }
+            return;
+        }
+    }
+}
+
+/** After Android/iOS native chrome closes, put TV focus back on Play or the hero carousel card. */
 K7.restoreFocusAfterNativeVideo = function () {
     var root = document.querySelector('[data-tv-scroll]');
     if (root && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(root)) {
         try { window.K7.TvDetailScroll.scrollToMain(root, true); } catch (e) { /* ignore */ }
     }
 
+    var lastHero = null;
+    if (root && window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.getLastHeroFocus) {
+        try { lastHero = window.K7.TvDetailScroll.getLastHeroFocus(root); } catch (e2) { lastHero = null; }
+    }
+
     var target =
         document.querySelector('[data-tv-scroll-zone="actions"] [data-initial-focus]')
-        || document.querySelector('.movie-actions-play[data-initial-focus], .episode-actions-play[data-initial-focus]')
+        || document.querySelector('.movie-actions-play[data-initial-focus], .serie-actions-play[data-initial-focus], .episode-actions-play[data-initial-focus]')
         || document.querySelector('[data-tv-scroll-zone="actions"][data-initial-focus]')
+        || document.querySelector('[data-tv-scroll-zone="episodes"] [data-initial-focus]')
+        || document.querySelector('[data-tv-scroll-zone="seasons"] [data-initial-focus]')
+        || lastHero
         || document.querySelector('[data-initial-focus]');
     if (!target) return;
 
-    // Prefer the actual focusable control when the attribute is on a wrapper.
-    if (!target.classList.contains('focusable') && target.querySelector) {
-        var inner = target.querySelector('.focusable, button, a, [tabindex]:not([tabindex="-1"])');
-        if (inner) target = inner;
-    }
+    target = resolveHeroFocusable(target);
+    scrollCarouselToFocusedItem(target);
 
     if (window.SpatialNav && window.SpatialNav.focusElement) {
         window.SpatialNav.focusElement(target);
@@ -4153,6 +4196,11 @@ K7.TvDetailScroll = (function () {
         },
         hasInstance: function (root) {
             return !!(root && _instances.has(root));
+        },
+        getLastHeroFocus: function (root) {
+            var inst = root ? _instances.get(root) : null;
+            var el = inst && inst.lastHeroFocus;
+            return (el && el.isConnected && inst.root.contains(el)) ? el : null;
         },
         scrollToMain: function (root, instant) {
             var inst = root ? _instances.get(root) : null;

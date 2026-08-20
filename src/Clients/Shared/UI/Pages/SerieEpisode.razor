@@ -197,7 +197,7 @@ else if (_episode is not null)
             <Carousel Title="@L["MoreEpisodes"]">
                 @foreach (var episode in _moreEpisodes)
                 {
-                    <CarouselItem @key="episode.Id">
+                    <CarouselItem @key="episode.Id" ItemId="@($"more-episode-{episode.Id}")">
                         <MediaCard Model="@(new MediaCardViewModel
                                    {
                                        Id = episode.Id.ToString(),

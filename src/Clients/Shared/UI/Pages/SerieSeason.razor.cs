@@ -48,6 +48,7 @@ public partial class SerieSeason : IAsyncDisposable
     private ElementReference _seasonTvRoot;
     private bool _seasonTvScrollInitialized;
     private bool _isFederated;
+    private int? _pendingCarouselScrollIndex;
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
     private Guid? _castLoadEpisodeId;
@@ -210,6 +211,20 @@ public partial class SerieSeason : IAsyncDisposable
             }
         }
 
+        if (_pendingCarouselScrollIndex is int pendingIndex && _tvCarousel is not null)
+        {
+            var index = pendingIndex;
+            _pendingCarouselScrollIndex = null;
+            try
+            {
+                await _tvCarousel.EnsureInitializedAsync();
+                await _tvCarousel.ScrollToIndexAsync(index);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
         if (_focusEpisodeFragment is not null)
         {
             var elementId = _focusEpisodeFragment.TrimStart('#');
@@ -241,6 +256,11 @@ public partial class SerieSeason : IAsyncDisposable
             }
         }
     }
+
+    private Dictionary<string, object>? GetEpisodeInitialFocusAttributes(LiteSerieEpisodeDto episode) =>
+        _focusedEpisode?.Id == episode.Id
+            ? new Dictionary<string, object> { ["data-initial-focus"] = true }
+            : null;
 
     private static int? ParseEpisodeFragment(string? fragment)
     {
@@ -565,6 +585,19 @@ public partial class SerieSeason : IAsyncDisposable
             _episodes = (season.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
                 .ToList();
+
+            if (_focusedEpisode is not null)
+            {
+                var focusedId = _focusedEpisode.Id;
+                var index = _episodes.FindIndex(e => e.Id == focusedId);
+                if (index >= 0)
+                {
+                    _focusedEpisode = _episodes[index];
+                    if (_isTv)
+                        _pendingCarouselScrollIndex = index;
+                }
+            }
+
             StateHasChanged();
         }
     }
