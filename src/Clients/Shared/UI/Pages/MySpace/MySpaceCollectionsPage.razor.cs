@@ -139,6 +139,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     {
         _selectionMode = true;
         _selectedIds.Clear();
+        _dataTable?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
@@ -146,6 +147,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     {
         _selectionMode = false;
         _selectedIds.Clear();
+        _dataTable?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -153,17 +155,18 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     {
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
+
+        _dataTable?.Rerender();
     }
 
     private void ToggleSelectAll()
     {
         if (AllSelected)
-        {
             _selectedIds.Clear();
-            return;
-        }
+        else
+            SelectAll();
 
-        SelectAll();
+        _dataTable?.Rerender();
     }
 
     private void SelectAll()
@@ -187,6 +190,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
             return;
 
         SelectAll();
+        _dataTable?.Rerender();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);

@@ -14,6 +14,7 @@
 
 .my-space-select-item {
     position: relative;
+    isolation: isolate;
     cursor: pointer;
     border-radius: var(--radius-lg);
 }
@@ -57,12 +58,16 @@
     position: absolute;
     top: var(--space-2);
     left: var(--space-2);
-    z-index: 3;
+    z-index: 10;
     display: flex;
     color: var(--color-text);
     background: color-mix(in srgb, var(--color-surface) 78%, transparent);
     border-radius: 50%;
     pointer-events: none;
+}
+
+.my-space-select-item.is-selected .my-space-select-item__check {
+    color: var(--color-accent);
 }
 
 .my-space-select-list-item {

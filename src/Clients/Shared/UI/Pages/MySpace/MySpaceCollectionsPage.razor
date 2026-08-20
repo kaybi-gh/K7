@@ -117,9 +117,6 @@ else
                  @onclick="@(() => ToggleSelection(collection.Id))"
                  @onkeydown="@(e => OnSelectKeyDown(e, collection.Id))"
                  @onkeydown:preventDefault="true">
-                <span class="my-space-select-item__check" aria-hidden="true">
-                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
-                </span>
                 <MediaCard Model="vm"
                            Variant="MediaCardVariant.Cover"
                            FooterVisible="true"
@@ -136,6 +133,9 @@ else
                                        Class="media-card-mosaic" />
                     </CoverContent>
                 </MediaCard>
+                <span class="my-space-select-item__check" aria-hidden="true">
+                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
+                </span>
             </div>
         }
         else
@@ -171,11 +171,12 @@ else
                      @ref="_dataTable">
             <K7DataColumn TItem="LiteCollectionDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
                 <CellTemplate Context="collection">
-                    <input type="checkbox"
-                           checked="@IsSelected(collection.Id)"
-                           aria-label="@collection.Title"
-                           @onchange="@(() => ToggleSelection(collection.Id))"
-                           @onclick:stopPropagation="true" />
+                    @{
+                        var selected = IsSelected(collection.Id);
+                    }
+                    <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
+                        <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                    </span>
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="LiteCollectionDto" Title="@S["Title"]" SortKey="title" Hideable="false">

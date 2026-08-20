@@ -139,9 +139,6 @@ else
                  @onclick="@(() => ToggleSelection(playlist.Id))"
                  @onkeydown="@(e => OnSelectKeyDown(e, playlist.Id))"
                  @onkeydown:preventDefault="true">
-                <span class="my-space-select-item__check" aria-hidden="true">
-                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
-                </span>
                 <MediaCard Model="vm"
                            Variant="MediaCardVariant.Cover"
                            FooterVisible="true"
@@ -159,6 +156,9 @@ else
                                        Class="media-card-mosaic" />
                     </CoverContent>
                 </MediaCard>
+                <span class="my-space-select-item__check" aria-hidden="true">
+                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Lg" />
+                </span>
             </div>
         }
         else
@@ -195,11 +195,12 @@ else
                      @ref="_dataTable">
             <K7DataColumn TItem="LitePlaylistDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
                 <CellTemplate Context="playlist">
-                    <input type="checkbox"
-                           checked="@IsSelected(playlist.Id)"
-                           aria-label="@playlist.Title"
-                           @onchange="@(() => ToggleSelection(playlist.Id))"
-                           @onclick:stopPropagation="true" />
+                    @{
+                        var selected = IsSelected(playlist.Id);
+                    }
+                    <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
+                        <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                    </span>
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="LitePlaylistDto" Title="@S["Title"]" SortKey="title" Hideable="false">
