@@ -14,6 +14,14 @@ public interface INextEpisodeEnqueueService
         Guid episodeId,
         DateTime timeNow,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// After a new episode becomes available, place it in Keep Watching for viewers who
+    /// finished the previous episode (weekly releases, late-arriving files).
+    /// Inherits LastInteractedAt from that previous watch so the max-age window still applies.
+    /// Existing states are left untouched (real progress, dismiss, already-enqueued placeholders).
+    /// </summary>
+    Task EnqueueWatchersForNewEpisodeAsync(Guid episodeId, CancellationToken cancellationToken = default);
 }
 
 public class NextEpisodeEnqueueService(IApplicationDbContext context) : INextEpisodeEnqueueService
@@ -97,6 +105,114 @@ public class NextEpisodeEnqueueService(IApplicationDbContext context) : INextEpi
 
         nextState.LastInteractedAt = timeNow;
         nextState.ExcludedFromContinueWatching = false;
+    }
+
+    public async Task EnqueueWatchersForNewEpisodeAsync(Guid episodeId, CancellationToken cancellationToken = default)
+    {
+        var previousEpisodeId = await ResolvePreviousEpisodeIdAsync(episodeId, cancellationToken);
+        if (previousEpisodeId is null)
+            return;
+
+        var completedUsers = await context.UserMediaStates
+            .AsNoTracking()
+            .Where(s => s.MediaId == previousEpisodeId.Value && s.IsCompleted && s.LastInteractedAt != null)
+            .Select(s => new { s.UserId, LastInteractedAt = s.LastInteractedAt!.Value })
+            .ToListAsync(cancellationToken);
+
+        if (completedUsers.Count > 0)
+        {
+            var userIds = completedUsers.Select(u => u.UserId).ToList();
+            var existingUserIds = await context.UserMediaStates
+                .Where(s => s.MediaId == episodeId && userIds.Contains(s.UserId))
+                .Select(s => s.UserId)
+                .ToListAsync(cancellationToken);
+            var existingSet = existingUserIds.ToHashSet();
+
+            foreach (var user in completedUsers)
+            {
+                if (existingSet.Contains(user.UserId))
+                    continue;
+
+                context.UserMediaStates.Add(new UserMediaState
+                {
+                    UserId = user.UserId,
+                    MediaId = episodeId,
+                    PlayCount = 0,
+                    IsCompleted = false,
+                    LastPlaybackPosition = 0,
+                    ProgressPercentage = 0,
+                    LastInteractedAt = user.LastInteractedAt,
+                    ExcludedFromContinueWatching = false
+                });
+            }
+        }
+
+        var completedProfiles = await context.SharedProfileMediaStates
+            .AsNoTracking()
+            .Where(s => s.MediaId == previousEpisodeId.Value && s.IsCompleted && s.LastInteractedAt != null)
+            .Select(s => new { s.SharedProfileId, LastInteractedAt = s.LastInteractedAt!.Value })
+            .ToListAsync(cancellationToken);
+
+        if (completedProfiles.Count == 0)
+            return;
+
+        var profileIds = completedProfiles.Select(p => p.SharedProfileId).ToList();
+        var existingProfileIds = await context.SharedProfileMediaStates
+            .Where(s => s.MediaId == episodeId && profileIds.Contains(s.SharedProfileId))
+            .Select(s => s.SharedProfileId)
+            .ToListAsync(cancellationToken);
+        var existingProfileSet = existingProfileIds.ToHashSet();
+
+        foreach (var profile in completedProfiles)
+        {
+            if (existingProfileSet.Contains(profile.SharedProfileId))
+                continue;
+
+            context.SharedProfileMediaStates.Add(new SharedProfileMediaState
+            {
+                SharedProfileId = profile.SharedProfileId,
+                MediaId = episodeId,
+                PlayCount = 0,
+                IsCompleted = false,
+                LastPlaybackPosition = 0,
+                ProgressPercentage = 0,
+                LastInteractedAt = profile.LastInteractedAt,
+                ExcludedFromContinueWatching = false
+            });
+        }
+    }
+
+    private async Task<Guid?> ResolvePreviousEpisodeIdAsync(Guid episodeId, CancellationToken cancellationToken)
+    {
+        var episode = await context.Medias
+            .OfType<SerieEpisode>()
+            .AsNoTracking()
+            .Where(e => e.Id == episodeId)
+            .Select(e => new { e.SeasonId, e.SerieId, e.EpisodeNumber, e.Season.SeasonNumber })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (episode is null)
+            return null;
+
+        var previousInSeason = await context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => e.SeasonId == episode.SeasonId && e.EpisodeNumber < episode.EpisodeNumber)
+            .OrderByDescending(e => e.EpisodeNumber)
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (previousInSeason != default)
+            return previousInSeason;
+
+        var previousSeasonLast = await context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => e.SerieId == episode.SerieId && e.Season.SeasonNumber < episode.SeasonNumber)
+            .OrderByDescending(e => e.Season.SeasonNumber)
+            .ThenByDescending(e => e.EpisodeNumber)
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return previousSeasonLast == default ? null : previousSeasonLast;
     }
 
     private async Task<Guid?> ResolveNextUnwatchedEpisodeIdAsync(

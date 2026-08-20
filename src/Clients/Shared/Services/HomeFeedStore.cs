@@ -632,8 +632,8 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (!GetRowsSnapshot().Any(r => RowMightBeAffectedByBatch(r, items)))
             return;
 
-        // New catalog membership: debounce so rapid CreateMedia batches coalesce into one refresh.
-        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false, batchItems: items);
+        // New catalog membership can also promote a series into Keep Watching (weekly episode).
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: true, batchItems: items);
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -661,7 +661,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             return;
         }
 
-        ScheduleCatalogMembershipRefresh(refreshContinueWatching: false);
+        ScheduleCatalogMembershipRefresh(refreshContinueWatching: true);
     }
 
     private void ScheduleCatalogMembershipRefresh(bool refreshContinueWatching, List<MediaBatchItem>? batchItems = null)

@@ -349,6 +349,8 @@ public class ReidentifyIndexedFileCommandHandler(
             .Query()
             .Include(s => s.Episodes)
                 .ThenInclude(e => e.IndexedFiles)
+            .Include(s => s.Episodes)
+                .ThenInclude(e => e.RemoteIndexedFiles)
             .LoadAsync(cancellationToken);
 
         var (seasonNumber, episodeNumber) = ResolveSerieEpisodeNumbers(indexedFile, library);
@@ -374,8 +376,12 @@ public class ReidentifyIndexedFileCommandHandler(
             e.EpisodeNumber == episodeNumber && context.Entry(e).State != EntityState.Deleted);
         if (existingEpisode is not null)
         {
+            var becamePlayable = (existingEpisode.IndexedFiles is null || existingEpisode.IndexedFiles.Count == 0)
+                && (existingEpisode.RemoteIndexedFiles is null || existingEpisode.RemoteIndexedFiles.Count == 0);
             existingEpisode.IndexedFiles ??= [];
             existingEpisode.IndexedFiles.Add(indexedFile);
+            if (becamePlayable)
+                existingEpisode.AddDomainEvent(new SerieEpisodeBecamePlayableEvent(existingEpisode.Id));
             return;
         }
 

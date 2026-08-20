@@ -233,7 +233,7 @@ Stars in those clients use the same ratings as in K7. Listening history updates 
 | Playback will not start or buffers a lot | Lower quality in the player; check network; on native apps, confirm the saved server address; ask the admin if the file needs transcoding |
 | "This media is still being prepared" | The file is indexed but not analyzed yet, which is normal shortly after it was added or during a first library scan. Asking to play it moves it to the front of the queue, and the page unblocks on its own once analysis finishes |
 | No subtitles | Pick a track in the player; check track-selection settings; the file may have no subtitle streams |
-| Progress missing / Keep Watching empty | Guests have no personal continue watching or history (admins still see Guest sessions). Offline sync needs a later connection. Keep Watching only lists titles past your resume threshold (Settings -> Video playback, default 5%), except the next series episode after you finish one, which appears at 0% |
+| Progress missing / Keep Watching empty | Guests have no personal continue watching or history (admins still see Guest sessions). Offline sync needs a later connection. Keep Watching only lists titles past your resume threshold (Settings -> Video playback, default 5%), except the next series episode after you finish one, which appears at 0%. If you were caught up and a new episode is scanned later (weekly series), that episode appears the same way, using the date you finished the previous one so old watches still age out |
 | 2FA code rejected | Check the phone's clock; use a recovery code |
 
 Anything else: tell your admin roughly when it happened and which client you used.

@@ -785,6 +785,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .Query()
             .Include(s => s.Episodes)
                 .ThenInclude(e => e.IndexedFiles)
+            .Include(s => s.Episodes)
+                .ThenInclude(e => e.RemoteIndexedFiles)
             .LoadAsync(cancellationToken);
 
         var hasNewEpisodes = false;
@@ -842,6 +844,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             {
                 if (indexedFile.MediaId != existingEpisode.Id)
                 {
+                    var becamePlayable = (existingEpisode.IndexedFiles is null || existingEpisode.IndexedFiles.Count == 0)
+                        && (existingEpisode.RemoteIndexedFiles is null || existingEpisode.RemoteIndexedFiles.Count == 0);
                     var formerMediaId = await DetachIndexedFileFromPreviousEpisodeAsync(
                         indexedFile,
                         formerMediaIdsByIndexedFileId,
@@ -849,7 +853,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     if (formerMediaId is Guid formerId && formerId != existingEpisode.Id)
                         orphanTransfers.Add((formerId, existingEpisode.Id));
 
+                    existingEpisode.IndexedFiles ??= [];
                     existingEpisode.IndexedFiles.Add(indexedFile);
+                    if (becamePlayable)
+                        existingEpisode.AddDomainEvent(new SerieEpisodeBecamePlayableEvent(existingEpisode.Id));
                 }
 
                 continue;
