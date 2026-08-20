@@ -298,13 +298,18 @@ public partial class AdminUsersPanel : IAsyncDisposable
     {
         _selectionMode = true;
         _selectedIds.Clear();
+        _tableRef?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
     private void ExitSelectionMode()
     {
+        if (!_selectionMode)
+            return;
+
         _selectionMode = false;
         _selectedIds.Clear();
+        _tableRef?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -316,17 +321,18 @@ public partial class AdminUsersPanel : IAsyncDisposable
 
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
+
+        _tableRef?.Rerender();
     }
 
     private void ToggleSelectAll()
     {
         if (AllSelected)
-        {
             _selectedIds.Clear();
-            return;
-        }
+        else
+            SelectAll();
 
-        SelectAll();
+        _tableRef?.Rerender();
     }
 
     private void SelectAll()
@@ -350,6 +356,7 @@ public partial class AdminUsersPanel : IAsyncDisposable
             return;
 
         SelectAll();
+        _tableRef?.Rerender();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);

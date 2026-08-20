@@ -80,6 +80,15 @@
     vertical-align: middle;
 }
 
+.k7-data-table-el input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
 .k7-data-table-el th {
     font-weight: 600;
     font-size: var(--text-sm);

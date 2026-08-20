@@ -545,6 +545,19 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   flex-shrink: 0;
 }
 
+.k7-select-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.k7-select-check.is-selected {
+  color: var(--color-accent);
+}
+
 /* ── Dialog ──────────────────────────────────────────────────────────────────── */
 .k7-dialog-backdrop {
   position: fixed;

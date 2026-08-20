@@ -73,11 +73,10 @@
                         <CellTemplate>
                             @if (CanDeleteUser(context))
                             {
-                                <input type="checkbox"
-                                       checked="@IsSelected(context.Id)"
-                                       aria-label="@(context.UserName ?? context.Email)"
-                                       @onchange="@(() => ToggleSelection(context.Id))"
-                                       @onclick:stopPropagation="true" />
+                                var selected = IsSelected(context.Id);
+                                <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
+                                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                                </span>
                             }
                         </CellTemplate>
                     </K7DataColumn>
