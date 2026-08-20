@@ -19,6 +19,8 @@ public partial class AdminDevicesPanel : IAsyncDisposable
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    private const int PageSize = 100;
+
     private bool _isLoading = true;
     private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
     private string? _currentDeviceId;
@@ -65,8 +67,41 @@ public partial class AdminDevicesPanel : IAsyncDisposable
         _isLoading = true;
         try
         {
-            _devices = await K7ServerService.GetDevicesAsync();
-            _deviceItems = _devices?.Items?.ToList() ?? [];
+            var items = new List<DeviceDto>();
+            var page = 1;
+            int? totalCount = null;
+
+            while (true)
+            {
+                var latest = await K7ServerService.GetDevicesAsync(new GetDevicesQuery
+                {
+                    PageNumber = page,
+                    PageSize = PageSize
+                });
+
+                if (latest?.Items is not { Count: > 0 })
+                    break;
+
+                totalCount ??= latest.TotalCount;
+                items.AddRange(latest.Items);
+
+                if (latest.Items.Count < PageSize)
+                    break;
+
+                if (totalCount is int knownTotal && items.Count >= knownTotal)
+                    break;
+
+                page++;
+            }
+
+            _devices = new PaginatedListDto<DeviceDto>
+            {
+                Items = items,
+                PageNumber = 1,
+                TotalPages = 1,
+                TotalCount = totalCount ?? items.Count
+            };
+            _deviceItems = items;
         }
         catch
         {
