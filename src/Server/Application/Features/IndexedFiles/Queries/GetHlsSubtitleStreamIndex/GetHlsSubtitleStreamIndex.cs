@@ -1,10 +1,15 @@
 using System.Globalization;
 using System.Text;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
+using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
 
@@ -32,10 +37,21 @@ public record GetHlsSubtitleStreamIndexQuery(
 public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubtitleStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaTranscoder _mediaTranscoder;
+    private readonly ILogger<GetHlsSubtitleStreamIndexQueryHandler> _logger;
+    private readonly string _transcodingPath;
 
-    public GetHlsSubtitleStreamIndexQueryHandler(IApplicationDbContext context)
+    public GetHlsSubtitleStreamIndexQueryHandler(
+        IApplicationDbContext context,
+        IMediaTranscoder mediaTranscoder,
+        ILogger<GetHlsSubtitleStreamIndexQueryHandler> logger,
+        IOptions<PathsConfiguration> pathsOptions)
     {
         _context = context;
+        _mediaTranscoder = mediaTranscoder;
+        _logger = logger;
+        _transcodingPath = pathsOptions.Value.Transcoding
+            ?? throw new InvalidOperationException("Transcoding path not configured");
     }
 
     public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
@@ -53,6 +69,17 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
         {
             return new EmptyHttpContentResult(404);
         }
+
+        var vttCachePath = HlsSubtitleVttExtractor.GetCachePath(
+            _transcodingPath,
+            entity.Id,
+            query.SubtitleTrackIndex);
+        HlsSubtitleVttExtractor.StartBackgroundExtract(
+            _mediaTranscoder,
+            entity.Path,
+            query.SubtitleTrackIndex,
+            vttCachePath,
+            _logger);
 
         var hlsSegments = entity.FileMetadata.GetHlsSegments();
         var totalDurationMs = hlsSegments is { Count: > 0 } segments
