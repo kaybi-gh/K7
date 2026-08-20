@@ -27,6 +27,9 @@ public class FfmpegStreamingArgsTests
         args.Should().NotContain(a => a.StartsWith("-t ", StringComparison.Ordinal));
         args.Should().Contain("-copyts");
         args.Should().Contain("-start_at_zero");
+        args.Should().NotContain("-copytb 1");
+        args.Should().NotContain(a => a.StartsWith("-ss ", StringComparison.Ordinal));
+        args.Should().NotContain(a => a.StartsWith("-output_ts_offset ", StringComparison.Ordinal));
         args.Should().Contain("-muxdelay 0");
         args.Should().Contain("-f segment");
         args.Should().Contain("-segment_time_delta 0.05");
@@ -62,6 +65,28 @@ public class FfmpegStreamingArgsTests
 
         args.Should().Contain("-segment_times 2.000000,4.000000");
         args.Should().NotContain("-segment_times 1.000000,3.000000");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedSegmentArguments_ShouldSubtractEncoderDelayFromTsOffset()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var delay = TimeSpan.FromSeconds(1024 / 48000.0);
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 3,
+            timelineOrigin: TimeSpan.FromSeconds(2),
+            endTime: TimeSpan.FromSeconds(6),
+            encoderDelay: delay,
+            resetTimelineToZero: false);
+
+        var expectedOffset = (TimeSpan.FromSeconds(2) - delay).TotalSeconds
+            .ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        args.Should().Contain("-ss 2.000000");
+        args.Should().Contain("-output_ts_offset " + expectedOffset);
+        args.Should().NotContain("-output_ts_offset 2.000000");
+        args.Should().NotContain("-start_at_zero");
     }
 
     [Test]
@@ -197,17 +222,122 @@ public class FfmpegStreamingArgsTests
             encoderName: "libx264");
 
         args.Should().Contain("-forced-idr 1");
-        args.Should().Contain("-force_key_frames 0,2.000000,4.000000");
+        args.Should().Contain("-force_key_frames source");
+        args.Should().Contain("-sc_threshold 0");
         args.Should().Contain("-bf 0");
+        args.Should().Contain("-strict -2");
         args.Should().NotContain("-tag:v hvc1");
     }
 
     [Test]
-    public void ResolveTransmuxSeekTime_ShouldUseMidpoint_WhenMidFile()
+    public void ResolveVideoCutOrigin_ShouldUseKeyframe_WhenEncode()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var seek = TimeSpan.FromSeconds(3);
+        var origin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
+            segments,
+            startSegmentIndex: 1,
+            seek,
+            isEncode: true);
+
+        origin.Should().Be(TimeSpan.FromSeconds(2));
+    }
+
+    [Test]
+    public void ResolveVideoCutOrigin_ShouldUseKeyframe_WhenRemux()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var origin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
+            segments,
+            startSegmentIndex: 1,
+            seekTime: TimeSpan.FromSeconds(3),
+            isEncode: false);
+
+        origin.Should().Be(TimeSpan.FromSeconds(2));
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedEncodeArguments_ShouldForceSourceKeyframes()
+    {
+        var segments = BuildSegments(
+            (0, 2000),
+            (2000, 2000),
+            (4000, 2000),
+            (6000, 2000));
+
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 4,
+            timelineOrigin: TimeSpan.FromSeconds(2),
+            logicalCodec: "h264",
+            encoderName: "h264_nvenc");
+
+        args.Should().Contain("-force_key_frames source");
+        args.Should().NotContain(a => a.StartsWith("-force_key_frames 2.", StringComparison.Ordinal));
+        var segmentArgs = FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 4,
+            timelineOrigin: TimeSpan.FromSeconds(2),
+            endTime: TimeSpan.FromSeconds(8));
+        segmentArgs.Should().Contain("-segment_times 2.000000,4.000000");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedEncodeArguments_ShouldDisableBFrames_WhenHardwareEncoder()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+            segments,
+            startSegmentIndex: 0,
+            endSegmentIndex: 2,
+            timelineOrigin: TimeSpan.Zero,
+            logicalCodec: "h264",
+            encoderName: "h264_nvenc");
+
+        args.Should().Contain("-bf 0");
+        args.Should().Contain("-g 72");
+        args.Should().Contain("-forced-idr 1");
+        args.Should().NotContain("-sc_threshold 0");
+        args.Should().Contain("-no-scenecut 1");
+        args.Should().Contain("-force_key_frames source");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedEncodeArguments_ShouldSkipLibx264PrivateOptions_WhenAmf()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+            segments,
+            startSegmentIndex: 0,
+            endSegmentIndex: 2,
+            timelineOrigin: TimeSpan.Zero,
+            logicalCodec: "h264",
+            encoderName: "h264_amf");
+
+        args.Should().Contain("-bf 0");
+        args.Should().Contain("-g 72");
+        args.Should().Contain("-force_key_frames source");
+        args.Should().NotContain("-sc_threshold 0");
+        args.Should().NotContain("-forced-idr 1");
+        args.Should().NotContain("-no-scenecut 1");
+    }
+
+    [Test]
+    public void ResolveTransmuxSeekTime_ShouldUseMidpoint_WhenRemuxMidFile()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
         var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: false);
         seek.TotalMilliseconds.Should().Be(3000);
+    }
+
+    [Test]
+    public void ResolveTransmuxSeekTime_ShouldUseExactKeyframe_WhenEncodeMidFile()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: true);
+        seek.TotalMilliseconds.Should().Be(2000);
     }
 
     [Test]

@@ -147,24 +147,43 @@ public class MediaTranscoder : IMediaTranscoder
         // Burn-in forces a transcode (can't stream copy when overlaying subtitles)
         var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
-        var (ffmpegStartIndex, ffmpegEndIndex) = FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
-            startSegmentIndex,
-            endSegmentIndex,
-            allSegments.Count);
+        int ffmpegStartIndex;
+        int ffmpegEndIndex;
+        WindowPaddingSegmentGuard? paddingGuard = null;
+        if (needsTranscode)
+        {
+            // Encode seeks exactly to the deliver keyframe. Remux pads one segment
+            // before/after for midpoint -ss; pads leave ~6s window-relative PTS that
+            // serve rebase must fix and AMF still overruns segment duration.
+            ffmpegStartIndex = startSegmentIndex;
+            ffmpegEndIndex = endSegmentIndex;
+        }
+        else
+        {
+            (ffmpegStartIndex, ffmpegEndIndex) = FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
+                startSegmentIndex,
+                endSegmentIndex,
+                allSegments.Count);
+            paddingGuard = WindowPaddingSegmentGuard.Capture(
+                outputDirectory,
+                ffmpegStartIndex,
+                startSegmentIndex,
+                endSegmentIndex,
+                ffmpegEndIndex);
+        }
+
         var (_, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
 
         var seekTime = FfmpegStreamingArgs.ResolveTransmuxSeekTime(
             allSegments,
             ffmpegStartIndex,
             needsTranscode);
-        var timelineOrigin = FfmpegStreamingArgs.ResolveTimelineOrigin(allSegments, ffmpegStartIndex);
-
-        DiscardWindowPaddingSegments(
-            outputDirectory,
+        // Remux: midpoint + -noaccurate_seek. Encode: exact keyframe + accurate seek.
+        var cutOrigin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
+            allSegments,
             ffmpegStartIndex,
-            startSegmentIndex,
-            endSegmentIndex,
-            ffmpegEndIndex);
+            seekTime,
+            needsTranscode);
 
         _logger.LogDebug(
             "Starting video streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
@@ -272,21 +291,36 @@ public class MediaTranscoder : IMediaTranscoder
                     // Required for burn-in too when VideoFilter uploads frames after overlay.
                     options.WithCustomArgument(resolvedEncoder.GlobalArguments);
                 }
-                else if (needsTranscode && !hasBurnIn)
+
+                var useHwDecode = !hasBurnIn && string.IsNullOrWhiteSpace(hdrTonemapFilter);
+                if (useHwDecode && !string.IsNullOrWhiteSpace(resolvedEncoder?.DecodeArguments))
+                {
+                    // NVENC: explicit cuda decode so scale_cuda can keep PTS.
+                    options.WithCustomArgument(resolvedEncoder.DecodeArguments);
+                }
+                else if (needsTranscode
+                    && !hasBurnIn
+                    && string.IsNullOrWhiteSpace(hdrTonemapFilter)
+                    && string.IsNullOrWhiteSpace(resolvedEncoder?.GlobalArguments)
+                    && string.IsNullOrWhiteSpace(resolvedEncoder?.DecodeArguments)
+                    && resolvedEncoder?.UsesHardwareDecode == true)
                 {
                     // Do not use Auto hwaccel with burn-in: overlay/scale2ref need system frames.
                     // Do not use Auto hwaccel with bitstream copy: it can yield empty segment files.
+                    // Do not use Auto with explicit cuda decode: CPU scale then resets PTS.
+                    // Do not use Auto when the encoder rejects DXVA2-derived devices (AMF).
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
                 }
 
-                // Seek/duration before -i. Midpoint + noaccurate_seek snaps onto the window keyframe.
+                // Remux: midpoint + noaccurate_seek snaps onto the window keyframe.
+                // Encode: exact keyframe -ss with accurate seek (re-encode, no prior-GOP snap).
                 foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
                              allSegments,
                              ffmpegStartIndex,
                              ffmpegEndIndex,
                              seekTime,
                              copyAudio: false,
-                             noAccurateSeek: ffmpegStartIndex > 0))
+                             noAccurateSeek: !needsTranscode && ffmpegStartIndex > 0))
                 {
                     options.WithCustomArgument(arg);
                 }
@@ -330,19 +364,26 @@ public class MediaTranscoder : IMediaTranscoder
                             options.WithCustomArgument(resolvedEncoder.EncoderArguments);
                         }
 
+                        ApplyQualityBitrate(options, videoResolutionIdentifier);
+
                         ApplyKeyframeAlignedEncodeFlags(
                             options,
                             allSegments,
                             ffmpegStartIndex,
                             ffmpegEndIndex,
-                            timelineOrigin,
+                            cutOrigin,
                             effectiveCodec,
                             resolvedEncoder?.EncoderName);
                     }
 
                     if (!hasBurnIn)
                     {
-                        ApplyVideoFilterOrScale(options, resolvedEncoder, scaleHeight, hdrTonemapFilter);
+                        ApplyVideoFilterOrScale(
+                            options,
+                            resolvedEncoder,
+                            scaleHeight,
+                            ResolveQuality(videoResolutionIdentifier)?.Width,
+                            hdrTonemapFilter);
                     }
                 }
                 else
@@ -355,7 +396,7 @@ public class MediaTranscoder : IMediaTranscoder
                     allSegments,
                     ffmpegStartIndex,
                     ffmpegEndIndex,
-                    timelineOrigin,
+                    cutOrigin,
                     endTime);
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
@@ -363,13 +404,15 @@ public class MediaTranscoder : IMediaTranscoder
             .NotifyOnError(stderrLines.Add)
             .CancellableThrough(cancellationToken);
 
-        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-        DiscardWindowPaddingSegments(
-            outputDirectory,
-            ffmpegStartIndex,
-            startSegmentIndex,
-            endSegmentIndex,
-            ffmpegEndIndex);
+        var result = false;
+        try
+        {
+            result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        }
+        finally
+        {
+            paddingGuard?.RestoreOrDiscard();
+        }
         if (!result)
         {
             var stderr = string.Join(Environment.NewLine, stderrLines);
@@ -378,36 +421,6 @@ public class MediaTranscoder : IMediaTranscoder
                 inputFilePath,
                 subtitleBurnInStreamIndex?.ToString() ?? "none",
                 stderr);
-        }
-    }
-
-    private static void DiscardWindowPaddingSegments(
-        string outputDirectory,
-        int ffmpegStartIndex,
-        int deliverStartIndex,
-        int deliverEndIndexExclusive,
-        int ffmpegEndIndexExclusive)
-    {
-        if (ffmpegStartIndex < deliverStartIndex)
-            TryDeleteSegmentFile(outputDirectory, ffmpegStartIndex);
-
-        if (ffmpegEndIndexExclusive > deliverEndIndexExclusive)
-            TryDeleteSegmentFile(outputDirectory, deliverEndIndexExclusive);
-    }
-
-    private static void TryDeleteSegmentFile(string outputDirectory, int segmentIndex)
-    {
-        var path = Path.Combine(outputDirectory, $"{segmentIndex}.m4s");
-        try
-        {
-            if (File.Exists(path))
-                File.Delete(path);
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
         }
     }
 
@@ -508,15 +521,11 @@ public class MediaTranscoder : IMediaTranscoder
 
         var needsTranscode = !string.IsNullOrEmpty(audioCodec);
         IReadOnlyList<string>? aacEncodeArgs = null;
+        var aacEncoderDelay = TimeSpan.Zero;
 
-        // Match video's padded ffmpeg window for encode so deliver segments share keyframes.
-        // Bitstream-copy stays on the exact deliver range (source PTS, no start_at_zero).
-        var (ffmpegStartIndex, ffmpegEndIndex) = needsTranscode
-            ? FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
-                startSegmentIndex,
-                endSegmentIndex,
-                allSegments.Count)
-            : (startSegmentIndex, endSegmentIndex);
+        // Encode matches video: exact deliver window (no remux pad). Copy keeps deliver range.
+        var ffmpegStartIndex = startSegmentIndex;
+        var ffmpegEndIndex = endSegmentIndex;
         var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
 
         if (needsTranscode && string.Equals(audioCodec, "aac", StringComparison.OrdinalIgnoreCase))
@@ -527,6 +536,10 @@ public class MediaTranscoder : IMediaTranscoder
                 encoder,
                 forceChannels: FfmpegAudioEncoderResolver.HlsStereoChannels,
                 sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
+            aacEncoderDelay = TimeSpan.FromSeconds(
+                FfmpegAudioEncoderResolver.GetAacEncoderDelaySeconds(
+                    encoder,
+                    FfmpegAudioEncoderResolver.DefaultSampleRateHz));
 
             _logger.LogDebug(
                 "Starting audio streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, audioCodec={AudioCodec}, encoder={Encoder}, bitrate={Bitrate}, track={Track}",
@@ -548,9 +561,10 @@ public class MediaTranscoder : IMediaTranscoder
                 inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, audioCodec ?? "copy", audioTrackIndex);
         }
 
+        WindowPaddingSegmentGuard? paddingGuard = null;
         if (needsTranscode)
         {
-            DiscardWindowPaddingSegments(
+            paddingGuard = WindowPaddingSegmentGuard.Capture(
                 outputDirectory,
                 ffmpegStartIndex,
                 startSegmentIndex,
@@ -602,7 +616,9 @@ public class MediaTranscoder : IMediaTranscoder
                         ffmpegStartIndex,
                         ffmpegEndIndex,
                         startTime,
-                        endTime);
+                        endTime,
+                        aacEncoderDelay,
+                        resetTimelineToZero: false);
                 }
                 else
                 {
@@ -621,15 +637,14 @@ public class MediaTranscoder : IMediaTranscoder
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
             .CancellableThrough(cancellationToken);
 
-        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-        if (needsTranscode)
+        var result = false;
+        try
         {
-            DiscardWindowPaddingSegments(
-                outputDirectory,
-                ffmpegStartIndex,
-                startSegmentIndex,
-                endSegmentIndex,
-                ffmpegEndIndex);
+            result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        }
+        finally
+        {
+            paddingGuard?.RestoreOrDiscard();
         }
 
         if (!result)
@@ -669,21 +684,25 @@ public class MediaTranscoder : IMediaTranscoder
         int startSegmentIndex,
         int endSegmentIndex,
         TimeSpan timelineOrigin,
-        TimeSpan endTime)
+        TimeSpan endTime,
+        TimeSpan encoderDelay = default,
+        bool resetTimelineToZero = true)
     {
         foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
                      allSegments,
                      startSegmentIndex,
                      endSegmentIndex,
                      timelineOrigin,
-                     endTime))
+                     endTime,
+                     encoderDelay,
+                     resetTimelineToZero))
         {
             options.WithCustomArgument(arg);
         }
     }
 
     /// <summary>
-    /// Force IDR frames at the same relative boundaries used by -segment_times.
+    /// Force IDR frames at relative cut times (same as -segment_times).
     /// </summary>
     private static void ApplyKeyframeAlignedEncodeFlags(
         FFMpegArgumentOptions options,
@@ -823,25 +842,44 @@ public class MediaTranscoder : IMediaTranscoder
             outputFilePath, new FileInfo(outputFilePath).Length);
     }
 
-    private static int? ResolveScaleHeight(string? videoResolutionIdentifier)
+    private static int? ResolveScaleHeight(string? videoResolutionIdentifier) =>
+        ResolveQuality(videoResolutionIdentifier)?.Height;
+
+    private static VideoResolution? ResolveQuality(string? videoResolutionIdentifier)
     {
         if (string.IsNullOrEmpty(videoResolutionIdentifier) || videoResolutionIdentifier == "original")
             return null;
 
-        var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
-        return quality?.Height;
+        return Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
+    }
+
+    private static void ApplyQualityBitrate(FFMpegArgumentOptions options, string? videoResolutionIdentifier)
+    {
+        var quality = ResolveQuality(videoResolutionIdentifier);
+        if (quality is null)
+            return;
+
+        foreach (var arg in FfmpegVideoEncoderBuilder.BuildQualityBitrateArguments(
+                     quality.AverageBitrate,
+                     quality.MaxBitrate))
+        {
+            options.WithCustomArgument(arg);
+        }
     }
 
     private static void ApplyVideoFilterOrScale(
         FFMpegArgumentOptions options,
         VideoEncoderSelection? encoder,
         int? scaleHeight,
+        int? scaleWidth,
         string? hdrTonemapFilter = null)
     {
         var filter = FfmpegVideoEncoderBuilder.BuildVideoFilterChain(
             hdrTonemapFilter,
             scaleHeight,
-            encoder?.VideoFilter);
+            encoder?.VideoFilter,
+            encoder?.HardwareScaleFilterTemplate,
+            scaleWidth);
 
         if (filter is not null)
         {

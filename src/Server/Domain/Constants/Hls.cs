@@ -17,12 +17,26 @@ public static class Hls
     public const int MinKeyframeSegmentDurationMs = 1000;
 
     /// <summary>
-    /// Rebase fMP4 tfdt onto the playlist start only when the fragment is on a different
-    /// window (lazy ffmpeg -start_at_zero reset, or a stale equal-length grid). Smaller
-    /// deltas are AAC/keyframe composition error: shifting A and V independently to the
-    /// playlist would create a constant lip-sync offset on every client.
+    /// Rebase copy fMP4 tfdt onto the playlist start only when the fragment is on a
+    /// different window (lazy ffmpeg reset). Do not micro-rebase audio or video copy.
+    /// Source PTS (including the ~83ms video CTS) is the A/V reference for remux.
     /// </summary>
     public const int TfdtWindowResetThresholdMs = 1000;
+
+    /// <summary>
+    /// Encode creates a new timeline: snap video tfdt to the playlist. A 200-800ms
+    /// hardware-encoder delay is under <see cref="TfdtWindowResetThresholdMs"/> and
+    /// would otherwise stay as a constant late-video offset on ExoPlayer. Encode
+    /// serve also subtracts the first-sample CTS so presentation matches #EXTINF.
+    /// </summary>
+    public const int VideoTfdtAlignToleranceMs = 20;
+
+    /// <summary>
+    /// Video remux keeps source composition (1s window). Video encode aligns to
+    /// <see cref="VideoTfdtAlignToleranceMs"/>.
+    /// </summary>
+    public static int VideoTfdtRebaseToleranceMs(bool isEncode) =>
+        isEncode ? VideoTfdtAlignToleranceMs : TfdtWindowResetThresholdMs;
 
     /// <summary>
     /// ffmpeg -segment_time_delta for keyframe cuts.

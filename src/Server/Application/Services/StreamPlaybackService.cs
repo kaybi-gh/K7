@@ -218,7 +218,7 @@ public sealed class StreamPlaybackService(
             if (requestedQuality.Value is not null)
             {
                 var fileResolution = Constants.VideoQualities.Single(x => x.Key == videoMetadataForQuality.VideoResolution).Value;
-                if (requestedQuality.Value.Height < fileResolution.Height)
+                if (requestedQuality.Value.Height <= fileResolution.Height)
                 {
                     await context.Entry(videoMetadataForQuality).Collection(v => v.VideoTracks).LoadAsync(cancellationToken);
                     var videoTrack = videoMetadataForQuality.VideoTracks.OrderByDescending(t => t.IsDefault).ThenBy(t => t.Index).FirstOrDefault();
@@ -269,7 +269,11 @@ public sealed class StreamPlaybackService(
         // windows never produce 0.m4s. Soft-gate only - never wait for a video job that has
         // not been created yet (avoids deadlock if audio is first).
         if (job.IsAudioOnly)
+        {
             await WaitForExistingPairedVideoInitAsync(job, cancellationToken);
+            if (segmentNumber >= 0)
+                await WaitForPairedVideoSegmentAsync(job, segmentNumber, allSegments, cancellationToken);
+        }
 
         var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
             segmentPath,
@@ -307,21 +311,26 @@ public sealed class StreamPlaybackService(
                 503);
         }
 
-        // Lazy ffmpeg windows use -start_at_zero, which resets tfdt to ~0. Rebase
-        // onto the playlist start only for window resets (1s+), so A/V composition
-        // offsets of tens of ms stay in lockstep on Web and ExoPlayer.
+        // Video copy: rebase only a true window reset (>= 1s). Do not flatten the
+        // ~83ms source CTS onto the playlist. Video encode: tight align + subtract
+        // first-sample CTS so NVENC delay is not left as late video on ExoPlayer.
         if (segmentNumber >= 0 && segmentNumber < allSegments.Count)
         {
             var initPath = Path.Combine(
                 Path.GetDirectoryName(segmentPath) ?? job.OutputDirectory,
                 HlsSegmentFileWaiter.InitSegmentFileName);
             var startMs = allSegments[segmentNumber].StartTimestamp;
+            var rebaseToleranceMs = job.IsAudioOnly
+                ? Hls.TfdtWindowResetThresholdMs
+                : Hls.VideoTfdtRebaseToleranceMs(IsVideoEncodeJob(job));
             if (Fmp4TfdtRebase.TryRebaseMediaSegment(
                     segmentBytes,
                     initPath,
                     startMs,
                     out var rebasedBytes,
-                    out var rebaseDetail))
+                    out var rebaseDetail,
+                    rebaseToleranceMs,
+                    alignPresentationTime: !job.IsAudioOnly && IsVideoEncodeJob(job)))
             {
                 segmentBytes = rebasedBytes;
                 logger.LogDebug(
@@ -329,13 +338,16 @@ public sealed class StreamPlaybackService(
                     segmentNumber,
                     job.JobId,
                     rebaseDetail);
-                try
+                var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+                if (!ffmpegRunning)
                 {
-                    await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
-                }
-                catch (IOException)
-                {
-                    // Best-effort persist; response still uses the rebased bytes in memory.
+                    try
+                    {
+                        await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
+                    }
+                    catch (IOException)
+                    {
+                    }
                 }
             }
             else if (!rebaseDetail.StartsWith("already-absolute", StringComparison.Ordinal)
@@ -390,5 +402,59 @@ public sealed class StreamPlaybackService(
         logger.LogWarning(
             "Timed out waiting for paired video init ({VideoDir}); serving audio anyway",
             videoJob.OutputDirectory);
+    }
+
+    private async Task WaitForPairedVideoSegmentAsync(
+        TranscodeJob audioJob,
+        int segmentNumber,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        var videoJob = transcodeJobManager.FindVideoJobForIndexedFile(audioJob.IndexedFileId);
+        if (videoJob is null)
+            return;
+
+        if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, segmentNumber))
+            return;
+
+        await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+            videoJob.JobId,
+            segmentNumber,
+            allSegments,
+            cancellationToken);
+
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(videoJob.OutputDirectory, segmentNumber))
+                return;
+
+            if (videoJob.FfmpegTask is { IsFaulted: true })
+            {
+                logger.LogWarning(
+                    "Paired video job {VideoJobId} faulted while holding audio segment {SegmentNumber}",
+                    videoJob.JobId,
+                    segmentNumber);
+                return;
+            }
+
+            await Task.Delay(200, cancellationToken);
+        }
+
+        logger.LogWarning(
+            "Timed out waiting for paired video segment {SegmentNumber} ({VideoDir}); serving audio anyway",
+            segmentNumber,
+            videoJob.OutputDirectory);
+    }
+
+    private static bool IsVideoEncodeJob(TranscodeJob job)
+    {
+        if (job.SubtitleBurnInStreamIndex.HasValue)
+            return true;
+
+        return !string.IsNullOrEmpty(job.VideoCodec)
+            && !string.Equals(job.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
     }
 }

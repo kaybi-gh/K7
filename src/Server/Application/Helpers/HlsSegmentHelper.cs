@@ -38,8 +38,9 @@ public static class HlsSegmentHelper
     }
 
     /// <summary>
-    /// Video + demuxed audio streaming timeline. Prefer keyframe-aligned DB segments;
-    /// fall back to equal-length only when missing.
+    /// Video + demuxed audio streaming timeline. Prefer stored keyframe rows whenever
+    /// they exist (copy and transcode, including ABR). Equal-length 6s only when missing
+    /// so transcoded playback can start before keyframe analysis finishes.
     /// </summary>
     public static List<HlsSegment> ResolveVideoStreamingSegments(
         IReadOnlyList<HlsSegment> keyframeSegments,

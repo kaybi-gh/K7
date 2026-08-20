@@ -55,4 +55,14 @@ public class FfmpegAudioEncoderResolverTests
     {
         FfmpegAudioEncoderResolver.ResolveEncoderName("opus").Should().Be("libopus");
     }
+
+    [Test]
+    public void GetAacEncoderDelaySamples_ShouldMatchEncoderPriming()
+    {
+        FfmpegAudioEncoderResolver.GetAacEncoderDelaySamples("aac").Should().Be(1024);
+        FfmpegAudioEncoderResolver.GetAacEncoderDelaySamples("libfdk_aac").Should().Be(2048);
+        FfmpegAudioEncoderResolver.GetAacEncoderDelaySamples("aac_at").Should().Be(2112);
+        FfmpegAudioEncoderResolver.GetAacEncoderDelaySeconds("aac", 48000)
+            .Should().BeApproximately(1024 / 48000.0, 1e-9);
+    }
 }

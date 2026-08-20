@@ -6,9 +6,15 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 /// <summary>
 /// Pure ffmpeg argument contracts for keyframe-aligned streaming (no process launch).
-/// Video mid-file: midpoint -ss + -noaccurate_seek snaps onto the window keyframe;
-/// -segment_times / force_key_frames stay relative to that keyframe (not the midpoint).
+/// Remux mid-file: midpoint -ss + -noaccurate_seek snaps onto the window keyframe.
+/// Encode: exact keyframe -ss (accurate) - re-encode does not need the remux snap.
+/// -segment_times and force_key_frames are relative to that keyframe. -start_at_zero
+/// zeroes PTS from the landed IDR, so absolute source times never match the encoder.
 /// Pad one segment before/after so a previous-IDR snap lands in a discarded file.
+/// Video windows use -start_at_zero; audio copy keeps source PTS via output -ss +
+/// -output_ts_offset. Serve-side video tfdt rebase maps fragments onto the playlist.
+/// Window pads use playlist numbers: restore a previously-ready pad. Keep a new after
+/// pad (it is the next playlist index). Delete only a new before pad (seek snap).
 /// </summary>
 internal static class FfmpegStreamingArgs
 {
@@ -20,12 +26,15 @@ internal static class FfmpegStreamingArgs
         int startSegmentIndex,
         bool needsTranscode)
     {
-        _ = needsTranscode;
         var startTime = ResolveTimelineOrigin(allSegments, startSegmentIndex);
         if (startSegmentIndex <= 0)
             return startTime;
 
-        // Exact keyframe -ss often snaps to the PREVIOUS IDR (rewind into prior GOP).
+        // Encode: seek exactly to the keyframe. Accurate decode is fine when re-encoding.
+        if (needsTranscode)
+            return startTime;
+
+        // Remux: exact keyframe -ss often snaps to the PREVIOUS IDR (rewind into prior GOP).
         // Seek halfway into this segment's GOP with -noaccurate_seek so demux lands here.
         var startMs = allSegments[startSegmentIndex].StartTimestamp;
         long nextMs;
@@ -39,7 +48,8 @@ internal static class FfmpegStreamingArgs
 
     /// <summary>
     /// Pad one segment before/after the deliver window so midpoint -ss + segment_times
-    /// cut on the requested keyframes. Padding files are discarded after ffmpeg exits.
+    /// cut on the requested keyframes. Pad files use playlist numbers: restore if they
+    /// were already ready, otherwise delete them so they cannot fake a hole as "ready".
     /// </summary>
     public static (int FfmpegStartIndex, int FfmpegEndIndexExclusive) ResolveVideoFfmpegWindow(
         int deliverStartIndex,
@@ -65,6 +75,22 @@ internal static class FfmpegStreamingArgs
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex) =>
         TimeSpan.FromMilliseconds(allSegments[startSegmentIndex].StartTimestamp);
+
+    /// <summary>
+    /// Origin for -segment_times and relative force_key_frames. Always the segment
+    /// keyframe: remux lands there via midpoint + -noaccurate_seek, encode seeks
+    /// there accurately. -start_at_zero zeroes PTS from that frame.
+    /// </summary>
+    public static TimeSpan ResolveVideoCutOrigin(
+        IReadOnlyList<HlsSegment> allSegments,
+        int startSegmentIndex,
+        TimeSpan seekTime,
+        bool isEncode)
+    {
+        _ = seekTime;
+        _ = isEncode;
+        return ResolveTimelineOrigin(allSegments, startSegmentIndex);
+    }
 
     /// <summary>
     /// Absolute demux end time for input-side -to. When -ss seeks past the segment
@@ -100,8 +126,7 @@ internal static class FfmpegStreamingArgs
         int endSegmentIndex,
         TimeSpan timelineOrigin)
     {
-        // Cuts follow the post-seek output timeline. With -noaccurate_seek that origin
-        // is the keyframe (ResolveTimelineOrigin), NOT the midpoint -ss value.
+        // Cuts follow the post-seek output timeline at the landed IDR keyframe.
         var splits = new List<double>();
         var originSeconds = timelineOrigin.TotalSeconds;
         for (var i = startSegmentIndex + 1; i < endSegmentIndex && i < allSegments.Count; i++)
@@ -150,29 +175,38 @@ internal static class FfmpegStreamingArgs
     /// <summary>
     /// Output-side args for -f segment fMP4 on the shared keyframe timeline (video transmux/encode).
     /// Duration is limited by input -to; do not add output -t (breaks copyts + mid-seek).
+    /// Video uses -start_at_zero so landed IDR + relative -segment_times stay coherent;
+    /// serve-side tfdt rebase maps fragments onto the playlist. Audio encode keeps source
+    /// PTS and subtracts <paramref name="encoderDelay"/> from -output_ts_offset.
     /// </summary>
     public static IReadOnlyList<string> BuildKeyframeAlignedSegmentArguments(
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         int endSegmentIndex,
         TimeSpan timelineOrigin,
-        TimeSpan endTime)
+        TimeSpan endTime,
+        TimeSpan encoderDelay = default,
+        bool resetTimelineToZero = true)
     {
-        _ = endTime;
-
-        var args = new List<string>
+        var args = new List<string>();
+        if (resetTimelineToZero)
         {
-            "-copyts",
-            "-start_at_zero",
-            "-muxdelay 0",
-            "-max_muxing_queue_size 2048",
-            "-f segment",
-            SegmentTimeDeltaArgument,
-            "-segment_format mp4",
-            "-segment_header_filename init.m4s",
-            $"-segment_format_options movflags=+{SegmentFmp4MovFlags}",
-            $"-segment_start_number {startSegmentIndex}"
-        };
+            args.Add("-copyts");
+            args.Add("-start_at_zero");
+            args.Add("-muxdelay 0");
+            args.Add("-max_muxing_queue_size 2048");
+        }
+        else
+        {
+            AppendSourcePtsOutputTiming(args, timelineOrigin, encoderDelay);
+        }
+
+        args.Add("-f segment");
+        args.Add(SegmentTimeDeltaArgument);
+        args.Add("-segment_format mp4");
+        args.Add("-segment_header_filename init.m4s");
+        args.Add($"-segment_format_options movflags=+{SegmentFmp4MovFlags}");
+        args.Add($"-segment_start_number {startSegmentIndex}");
 
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
         return args;
@@ -180,8 +214,8 @@ internal static class FfmpegStreamingArgs
 
     /// <summary>
     /// Audio bitstream-copy into demuxed fMP4. No -start_at_zero: keep source PTS so A/V
-    /// stay in the relationship from the file. Video windows still use -start_at_zero and
-    /// a 1s+ tfdt rebase. Micro-rebasing audio onto the playlist desyncs every client.
+    /// stay in the relationship from the file. Micro-rebasing audio onto the playlist
+    /// desyncs every client.
     /// Requires a second output-side -ss (in addition to input -ss) so -t / segment_times
     /// see a coherent timeline; without it mid-seek windows write init + empty N.m4s.
     /// </summary>
@@ -205,16 +239,8 @@ internal static class FfmpegStreamingArgs
         }
 
         args.Add($"-t {duration.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
-        args.Add("-copyts");
-        args.Add("-copytb 1");
-        args.Add("-muxdelay 0");
-        args.Add("-max_muxing_queue_size 2048");
-
-        if (timelineOrigin > TimeSpan.Zero)
-        {
-            args.Add(
-                $"-output_ts_offset {timelineOrigin.TotalSeconds.ToString("F6", CultureInfo.InvariantCulture)}");
-        }
+        AppendCopytsMuxArgs(args);
+        AppendOutputTsOffset(args, timelineOrigin, encoderDelay: TimeSpan.Zero);
 
         args.Add("-f segment");
         args.Add(SegmentTimeDeltaArgument);
@@ -225,6 +251,42 @@ internal static class FfmpegStreamingArgs
 
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
         return args;
+    }
+
+    private static void AppendSourcePtsOutputTiming(
+        List<string> args,
+        TimeSpan timelineOrigin,
+        TimeSpan encoderDelay)
+    {
+        if (timelineOrigin > TimeSpan.Zero)
+        {
+            args.Add(
+                $"-ss {timelineOrigin.TotalSeconds.ToString("F6", CultureInfo.InvariantCulture)}");
+        }
+
+        AppendCopytsMuxArgs(args);
+        AppendOutputTsOffset(args, timelineOrigin, encoderDelay);
+    }
+
+    private static void AppendCopytsMuxArgs(List<string> args)
+    {
+        args.Add("-copyts");
+        args.Add("-copytb 1");
+        args.Add("-muxdelay 0");
+        args.Add("-max_muxing_queue_size 2048");
+    }
+
+    private static void AppendOutputTsOffset(
+        List<string> args,
+        TimeSpan timelineOrigin,
+        TimeSpan encoderDelay)
+    {
+        var offset = timelineOrigin - encoderDelay;
+        if (offset == TimeSpan.Zero)
+            return;
+
+        args.Add(
+            $"-output_ts_offset {offset.TotalSeconds.ToString("F6", CultureInfo.InvariantCulture)}");
     }
 
     private static string SegmentTimeDeltaArgument =>
@@ -254,7 +316,10 @@ internal static class FfmpegStreamingArgs
     }
 
     /// <summary>
-    /// Encode-side args so IDR frames match -segment_times boundaries.
+    /// Encode-side args so IDR frames match source keyframes (playlist grid).
+    /// force_key_frames source follows input keyframes; relative times miss on AMF/NVENC
+    /// and pack 2x GOP into one .m4s. Encode windows seek exactly to the deliver
+    /// keyframe (no remux pad), so source keyframes align with -segment_times.
     /// </summary>
     public static IReadOnlyList<string> BuildKeyframeAlignedEncodeArguments(
         IReadOnlyList<HlsSegment> allSegments,
@@ -264,32 +329,49 @@ internal static class FfmpegStreamingArgs
         string logicalCodec,
         string? encoderName)
     {
-        var keyframeTimes = new List<string> { "0" };
-        foreach (var split in BuildRelativeSplitTimes(
-                     allSegments,
-                     startSegmentIndex,
-                     endSegmentIndex,
-                     timelineOrigin))
-        {
-            keyframeTimes.Add(split.ToString("F6", CultureInfo.InvariantCulture));
-        }
+        _ = allSegments;
+        _ = startSegmentIndex;
+        _ = endSegmentIndex;
+        _ = timelineOrigin;
 
         var args = new List<string>
         {
-            "-forced-idr 1",
-            $"-force_key_frames {string.Join(",", keyframeTimes)}"
+            "-force_key_frames source",
+            // Software and hardware HLS encode: B-frames add CTS delay that rebase
+            // cannot see, so ExoPlayer treats frames as late and dumps them.
+            "-bf 0",
+            "-strict -2"
         };
 
-        var effectiveEncoder = encoderName
-            ?? (logicalCodec is "h264" or "hevc" or "h265"
-                ? (logicalCodec == "h264" ? "libx264" : "libx265")
-                : null);
-
-        if (effectiveEncoder is not null
-            && (effectiveEncoder.Contains("libx264", StringComparison.OrdinalIgnoreCase)
-                || effectiveEncoder.Contains("libx265", StringComparison.OrdinalIgnoreCase)))
+        // libx264 private options; AMF/NVENC/QSV ignore or warn on them.
+        if (string.IsNullOrEmpty(encoderName)
+            || encoderName.Contains("libx264", StringComparison.OrdinalIgnoreCase)
+            || encoderName.Contains("libx265", StringComparison.OrdinalIgnoreCase))
         {
-            args.Add("-bf 0");
+            args.Insert(0, "-forced-idr 1");
+            // Scene-cut IDRs land off the playlist. -f segment then cuts at the
+            // wrong frame (repeat / skip). Disable scene-cut detection for the same reason.
+            args.Insert(1, "-sc_threshold 0");
+        }
+
+        if (!string.IsNullOrEmpty(encoderName)
+            && encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+        {
+            args.Add("-no-scenecut 1");
+        }
+
+        // Hardware encoders default to ~250-frame GOP (~10s at 24fps). Without IDR at
+        // each -segment_times cut, -f segment waits for the GOP and packs 2x playlist
+        // duration into one .m4s (Web MSE overlap / backwards frames). Cap GOP and
+        // force IDR so cuts land on the shared keyframe grid like remux.
+        if (IsHardwareEncoder(encoderName))
+        {
+            args.Insert(0, "-g 72");
+            if (encoderName is not null
+                && encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+            {
+                args.Insert(1, "-forced-idr 1");
+            }
         }
 
         if (logicalCodec is "hevc" or "h265")
@@ -297,4 +379,11 @@ internal static class FfmpegStreamingArgs
 
         return args;
     }
+
+    private static bool IsHardwareEncoder(string? encoderName) =>
+        !string.IsNullOrEmpty(encoderName)
+        && (encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase)
+            || encoderName.Contains("amf", StringComparison.OrdinalIgnoreCase)
+            || encoderName.Contains("qsv", StringComparison.OrdinalIgnoreCase)
+            || encoderName.Contains("vaapi", StringComparison.OrdinalIgnoreCase));
 }

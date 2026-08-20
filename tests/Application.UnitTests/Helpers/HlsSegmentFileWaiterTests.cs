@@ -417,6 +417,18 @@ public class HlsSegmentFileWaiterTests
         HlsSegmentFileWaiter.IsSegmentReadyOnDisk(_tempDirectory, 2).Should().BeFalse();
     }
 
+    [Test]
+    public void HasReadyMediaSegmentAfter_ShouldDetectHoleWhenLaterSegmentExists()
+    {
+        File.WriteAllBytes(
+            Path.Combine(_tempDirectory, "651.m4s"),
+            Concat(BuildMinimalMoof(sampleSizes: [1]), BuildBox("mdat", [0x02])));
+
+        HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(_tempDirectory, 650).Should().BeTrue();
+        HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(_tempDirectory, 651).Should().BeFalse();
+        HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(_tempDirectory, 649).Should().BeTrue();
+    }
+
     private TranscodeJob CreateJob() =>
         new()
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
 
@@ -11,7 +12,14 @@ public sealed record VideoEncoderSelection(
     /// <summary>Optional -vf chain (without the -vf flag). Applied on the output side.</summary>
     string? VideoFilter,
     bool IsHardwareAccelerated,
-    bool UsesHardwareDecode);
+    bool UsesHardwareDecode,
+    /// <summary>Decode flags before -i (e.g. -hwaccel cuda). Not used by capability probes.</summary>
+    string? DecodeArguments = null,
+    /// <summary>
+    /// Hardware scale template with {0}=width and {1}=height. Used instead of CPU scale
+    /// so PTS survive GPU decode (scale_cuda / scale_vaapi).
+    /// </summary>
+    string? HardwareScaleFilterTemplate = null);
 
 public static class FfmpegVideoEncoderBuilder
 {
@@ -76,23 +84,62 @@ public static class FfmpegVideoEncoderBuilder
 
     /// <summary>
     /// Joins optional HDR tonemap, quality scale, and encoder upload filters into one -vf chain.
+    /// HDR tonemap is CPU-only: fall back to scale=-2:H then hwupload. Otherwise prefer
+    /// the hardware scale template so decode/scale/encode stay on the GPU.
     /// </summary>
     public static string? BuildVideoFilterChain(
         string? hdrTonemapFilter,
         int? scaleHeight,
-        string? encoderVideoFilter)
+        string? encoderVideoFilter,
+        string? hardwareScaleFilterTemplate = null,
+        int? scaleWidth = null)
     {
         var parts = new List<string>();
         if (!string.IsNullOrWhiteSpace(hdrTonemapFilter))
             parts.Add(hdrTonemapFilter);
 
-        if (scaleHeight is int height)
-            parts.Add($"scale=-2:{height}");
+        var useHardwareScale = string.IsNullOrWhiteSpace(hdrTonemapFilter)
+            && !string.IsNullOrWhiteSpace(hardwareScaleFilterTemplate)
+            && scaleHeight is int;
 
-        if (!string.IsNullOrWhiteSpace(encoderVideoFilter))
-            parts.Add(encoderVideoFilter);
+        if (useHardwareScale && scaleHeight is int hwHeight)
+        {
+            var width = scaleWidth ?? ClosestEven((int)Math.Round(hwHeight * 16.0 / 9.0));
+            parts.Add(string.Format(
+                CultureInfo.InvariantCulture,
+                hardwareScaleFilterTemplate!,
+                width,
+                hwHeight));
+        }
+        else
+        {
+            if (scaleHeight is int height)
+                parts.Add($"scale=-2:{height}");
+
+            if (!string.IsNullOrWhiteSpace(encoderVideoFilter))
+                parts.Add(encoderVideoFilter);
+        }
 
         return parts.Count == 0 ? null : string.Join(",", parts);
+    }
+
+    private static int ClosestEven(int value) =>
+        value < 2 ? 2 : value + (value & 1);
+
+    /// <summary>
+    /// Constrains HLS ladder encodes to the advertised quality bitrate (VBV).
+    /// Without this, 720p is scale-only and can stay near source bitrate.
+    /// </summary>
+    public static IReadOnlyList<string> BuildQualityBitrateArguments(int averageBitrate, int maxBitrate)
+    {
+        // 5x maxrate so VBV can absorb HLS GOP size swings.
+        var bufsize = Math.Max(maxBitrate, 1) * 5;
+        return
+        [
+            $"-b:v {averageBitrate}",
+            $"-maxrate {maxBitrate}",
+            $"-bufsize {bufsize}"
+        ];
     }
 
     public static string? FindVaapiRenderNode()
@@ -110,7 +157,7 @@ public static class FfmpegVideoEncoderBuilder
     {
         var args = map.LogicalCodec switch
         {
-            "h264" => "-c:v libx264 -profile:v main -level:v 4.0 -pix_fmt yuv420p",
+            "h264" => "-c:v libx264 -preset veryfast -profile:v main -level:v 4.0 -pix_fmt yuv420p -sc_threshold 0",
             "hevc" => "-c:v libx265 -pix_fmt yuv420p",
             _ => $"-c:v {map.SoftwareEncoder}"
         };
@@ -123,10 +170,14 @@ public static class FfmpegVideoEncoderBuilder
         if (encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
             return CreateVaapi(encoder);
 
+        if (encoder.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+            return CreateNvenc(encoder);
+
+        if (encoder.Contains("amf", StringComparison.OrdinalIgnoreCase))
+            return CreateAmf(encoder);
+
         var args = encoder switch
         {
-            var e when e.Contains("nvenc", StringComparison.OrdinalIgnoreCase) =>
-                $"-c:v {encoder} -preset p4 -pix_fmt yuv420p",
             var e when e.Contains("qsv", StringComparison.OrdinalIgnoreCase) =>
                 $"-c:v {encoder} -preset medium -pix_fmt yuv420p",
             var e when e.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase) =>
@@ -135,6 +186,38 @@ public static class FfmpegVideoEncoderBuilder
         };
 
         return new VideoEncoderSelection(encoder, null, args, null, true, true);
+    }
+
+    private static VideoEncoderSelection CreateAmf(string encoder)
+    {
+        // Do not pair Auto/DXVA2 decode with AMF. ffmpeg tries to derive an AMF context
+        // from the D3D9 device and often fails with "No such device" (probe still passes
+        // because lavfi verification has no DXVA2 decode). System frames + AMF encode.
+        var args = $"-c:v {encoder} -quality balanced -rc cbr -pix_fmt yuv420p -forced_idr 1";
+        return new VideoEncoderSelection(
+            encoder,
+            GlobalArguments: null,
+            EncoderArguments: args,
+            VideoFilter: null,
+            IsHardwareAccelerated: true,
+            UsesHardwareDecode: false);
+    }
+
+    private static VideoEncoderSelection CreateNvenc(string encoder)
+    {
+        // Stay on GPU for the whole dec/scale/enc path. CPU scale=-2:H between
+        // Auto hwaccel and NVENC resets PTS so force_key_frames never fire.
+        var args =
+            $"-c:v {encoder} -preset p4 -rc vbr -no-scenecut 1 -zerolatency 1 -rc-lookahead 0 -pix_fmt yuv420p";
+        return new VideoEncoderSelection(
+            encoder,
+            GlobalArguments: null,
+            EncoderArguments: args,
+            VideoFilter: "format=nv12|cuda,hwupload,scale_cuda=format=nv12",
+            IsHardwareAccelerated: true,
+            UsesHardwareDecode: true,
+            DecodeArguments: "-hwaccel cuda -hwaccel_output_format cuda",
+            HardwareScaleFilterTemplate: "format=nv12|cuda,hwupload,scale_cuda={0}:{1}:format=nv12");
     }
 
     private static VideoEncoderSelection CreateVaapi(string encoder)

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using FluentAssertions;
 using K7.Server.Application.Helpers;
+using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.UnitTests.Helpers;
 
@@ -125,6 +126,65 @@ public class Fmp4TfdtRebaseTests
     }
 
     [Test]
+    public void TryRebaseMediaSegment_ShouldShiftTfdt_WhenVideoToleranceIsTwentyMs()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 145992),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out var rebased,
+            out var detail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs);
+
+        ok.Should().BeTrue(detail);
+        detail.Should().Contain("rebased");
+        var baseOffset = IndexOfTfdtBase(rebased);
+        BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000);
+    }
+
+    [Test]
+    public void TryRebaseMediaSegment_ShouldSkipEncoderDelay_WhenCopyToleranceIsOneSecond()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        // 400ms hardware encode delay at 24kHz = 9600 units. Under the remux 1s
+        // window, so copy must not flatten it. Encode uses 20ms and must.
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 153600),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var skipped = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out _,
+            out var skipDetail);
+
+        skipped.Should().BeFalse();
+        skipDetail.Should().Contain("already-absolute");
+
+        var aligned = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out var rebased,
+            out var alignDetail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs);
+
+        aligned.Should().BeTrue(alignDetail);
+        var baseOffset = IndexOfTfdtBase(rebased);
+        BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000);
+    }
+
+    [Test]
     public void TryRebaseMediaSegment_ShouldShiftTfdt_WhenWindowResetExceedsOneSecond()
     {
         const uint timescale = 24000;
@@ -146,6 +206,91 @@ public class Fmp4TfdtRebaseTests
         detail.Should().Contain("rebased");
         var baseOffset = IndexOfTfdtBase(rebased);
         BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000);
+    }
+
+    [Test]
+    public void TryRebaseMediaSegment_ShouldSkipCompositionFlatten_WhenEncodeAlignRequested()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 145992),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out _,
+            out var detail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs,
+            alignPresentationTime: true);
+
+        ok.Should().BeFalse();
+        detail.Should().Contain("already-absolute");
+    }
+
+    [Test]
+    public void TryRebaseMediaSegment_ShouldSubtractFirstSampleCts_WhenAligningPresentation()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        // Playlist 6000ms = 144000. Encoder CTS +14160 (~590ms) must be removed
+        // from tfdt so the first frame presents at the playlist start.
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 0, compositionOffset: 14160),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out var rebased,
+            out var detail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs,
+            alignPresentationTime: true);
+
+        ok.Should().BeTrue(detail);
+        detail.Should().Contain("cts=14160");
+        var baseOffset = IndexOfTfdtBase(rebased);
+        BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000 - 14160);
+    }
+
+    [Test]
+    public void TryRebaseMediaSegment_ShouldShiftAlreadyAbsoluteTfdt_WhenEncodeCtsRemains()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 144000, compositionOffset: 14160),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+
+        var skipped = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out _,
+            out var skipDetail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs);
+
+        skipped.Should().BeFalse();
+        skipDetail.Should().Contain("already-absolute");
+
+        var ok = Fmp4TfdtRebase.TryRebaseMediaSegment(
+            segment,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            out var rebased,
+            out var detail,
+            toleranceMs: Hls.VideoTfdtAlignToleranceMs,
+            alignPresentationTime: true);
+
+        ok.Should().BeTrue(detail);
+        var baseOffset = IndexOfTfdtBase(rebased);
+        BinaryPrimitives.ReadUInt64BigEndian(rebased.AsSpan(baseOffset, 8)).Should().Be(144000 - 14160);
     }
 
     [Test]
@@ -219,7 +364,7 @@ public class Fmp4TfdtRebaseTests
         return box;
     }
 
-    private static byte[] BuildMinimalMoof(long tfdtBaseDecodeTime)
+    private static byte[] BuildMinimalMoof(long tfdtBaseDecodeTime, int? compositionOffset = null)
     {
         using var tfhdPayload = new MemoryStream();
         WriteUInt32(tfhdPayload, 0x020000u);
@@ -230,10 +375,15 @@ public class Fmp4TfdtRebaseTests
         WriteUInt64(tfdtPayload, unchecked((ulong)tfdtBaseDecodeTime));
 
         using var trunPayload = new MemoryStream();
-        WriteUInt32(trunPayload, 0x00000201u); // data_offset | sample_size
+        var trunFlags = compositionOffset is null
+            ? 0x00000201u
+            : 0x01000A01u; // v1 + data_offset | sample_size | composition
+        WriteUInt32(trunPayload, trunFlags);
         WriteUInt32(trunPayload, 1);
         WriteInt32(trunPayload, 8);
         WriteUInt32(trunPayload, 8);
+        if (compositionOffset is int cts)
+            WriteInt32(trunPayload, cts);
 
         var mfhd = BuildBox("mfhd", [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]);
         var traf = BuildBox(

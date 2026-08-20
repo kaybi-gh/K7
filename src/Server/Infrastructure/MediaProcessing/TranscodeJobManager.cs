@@ -198,6 +198,30 @@ public class TranscodeJobManager(
             currentIndex = job.GetCurrentSegmentIndex();
             gap = requestedSegmentIndex - currentIndex;
 
+            var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+            var missingWithLaterSegments = HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(
+                job.OutputDirectory,
+                requestedSegmentIndex);
+            if (HlsSegmentGenerationPolicy.ShouldRestartForHole(
+                    requestedSegmentIndex,
+                    ffmpegRunning,
+                    missingWithLaterSegments))
+            {
+                logger.LogInformation(
+                    "Job {JobId}: Filling hole at segment {RequestedIndex} after ffmpeg idle (generating from {From} until {Until})",
+                    job.JobId,
+                    requestedSegmentIndex,
+                    job.GeneratingFromSegmentIndex,
+                    job.GeneratingUntilSegmentIndex);
+                await RestartJobWithSeekAsync(
+                    job,
+                    requestedSegmentIndex,
+                    allSegments,
+                    cancellationToken,
+                    purgeExisting: false);
+                return;
+            }
+
             // Restart threshold: 30 segments or 60 seconds
             if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
@@ -207,7 +231,7 @@ public class TranscodeJobManager(
             else if (gap < 0)
             {
                 // Backward seek: segment should exist but doesn't, restart with seek
-var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+                var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
             }
             else if (requestedSegmentIndex >= job.TargetSegmentIndex
@@ -457,13 +481,17 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
         TranscodeJob job,
         int startSegmentIndex,
         List<HlsSegment> allSegments,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool purgeExisting = true)
     {
         await StopFfmpegAsync(job);
 
-        PurgeGeneratedSegments(job.OutputDirectory);
+        if (purgeExisting)
+            PurgeGeneratedSegments(job.OutputDirectory);
 
-        job.TargetSegmentIndex = startSegmentIndex + job.BufferSize;
+        job.TargetSegmentIndex = purgeExisting
+            ? startSegmentIndex + job.BufferSize
+            : Math.Max(job.TargetSegmentIndex, startSegmentIndex + job.BufferSize);
 
         await StartFfmpegAsync(job, startSegmentIndex, allSegments, cancellationToken);
     }
@@ -611,7 +639,7 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
         var audioCodec = job.AudioCodec != "copy" ? job.AudioCodec : null;
         var endSegmentIndex = Math.Min(job.TargetSegmentIndex + 1, allSegments.Count);
 
-// Drop empty placeholders from a previous failed window so GetCurrentSegmentIndex
+        // Drop empty placeholders from a previous failed window so GetCurrentSegmentIndex
         // and WaitUntilAvailable do not keep seeing stale unready files.
         PurgeUnreadySegmentsInRange(job.OutputDirectory, startSegmentIndex, endSegmentIndex);
 
@@ -620,6 +648,7 @@ var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Cou
             job.FfmpegCancellation?.Dispose();
             job.FfmpegCancellation = new CancellationTokenSource();
             var ffmpegToken = job.FfmpegCancellation.Token;
+            job.GeneratingFromSegmentIndex = startSegmentIndex;
             job.GeneratingUntilSegmentIndex = endSegmentIndex - 1;
 
             // Start ffmpeg in background, owned only by the job lifetime

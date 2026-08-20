@@ -193,6 +193,31 @@ internal static class HlsSegmentFileWaiter
     }
 
     /// <summary>
+    /// True when a later playlist index is already a ready media segment (a hole at
+    /// <paramref name="segmentIndex"/>).
+    /// </summary>
+    public static bool HasReadyMediaSegmentAfter(string outputDirectory, int segmentIndex)
+    {
+        if (!Directory.Exists(outputDirectory) || segmentIndex < 0)
+            return false;
+
+        foreach (var file in Directory.EnumerateFiles(outputDirectory, "*.m4s"))
+        {
+            var name = Path.GetFileNameWithoutExtension(file);
+            if (string.Equals(name, "init", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!int.TryParse(name, out var index) || index <= segmentIndex)
+                continue;
+
+            if (IsSegmentReadyOnDisk(outputDirectory, index))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// True when a valid fMP4 init.m4s is present (mid-seek windows never produce 0.m4s).
     /// </summary>
     public static bool IsInitReadyOnDisk(string outputDirectory) =>

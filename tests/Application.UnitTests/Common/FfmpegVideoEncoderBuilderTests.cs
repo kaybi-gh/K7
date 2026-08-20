@@ -107,4 +107,74 @@ public class FfmpegVideoEncoderBuilderTests
 
         filter.Should().Be("zscale=transfer=linear,scale=-2:720,format=nv12,hwupload");
     }
+
+    [Test]
+    public void CreateHardwareSelection_ShouldDisableNvencLookahead()
+    {
+        var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection("h264_nvenc");
+
+        selection.Should().NotBeNull();
+        selection!.EncoderArguments.Should().Contain("-zerolatency 1");
+        selection.EncoderArguments.Should().Contain("-rc-lookahead 0");
+        selection.EncoderArguments.Should().Contain("-no-scenecut 1");
+        selection.EncoderArguments.Should().Contain("-rc vbr");
+        selection.DecodeArguments.Should().Be("-hwaccel cuda -hwaccel_output_format cuda");
+        selection.VideoFilter.Should().Be("format=nv12|cuda,hwupload,scale_cuda=format=nv12");
+        selection.HardwareScaleFilterTemplate.Should().Be(
+            "format=nv12|cuda,hwupload,scale_cuda={0}:{1}:format=nv12");
+    }
+
+    [Test]
+    public void BuildVideoFilterChain_ShouldUseCudaScale_WhenNvencAndNoHdr()
+    {
+        var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection("h264_nvenc");
+
+        var filter = FfmpegVideoEncoderBuilder.BuildVideoFilterChain(
+            hdrTonemapFilter: null,
+            scaleHeight: 720,
+            encoderVideoFilter: selection!.VideoFilter,
+            hardwareScaleFilterTemplate: selection.HardwareScaleFilterTemplate,
+            scaleWidth: 1280);
+
+        filter.Should().Be("format=nv12|cuda,hwupload,scale_cuda=1280:720:format=nv12");
+        filter.Should().NotContain("scale=-2:");
+    }
+
+    [Test]
+    public void BuildVideoFilterChain_ShouldKeepCpuScale_WhenHdrTonemap()
+    {
+        var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection("h264_nvenc");
+
+        var filter = FfmpegVideoEncoderBuilder.BuildVideoFilterChain(
+            "zscale=transfer=linear",
+            720,
+            selection!.VideoFilter,
+            selection.HardwareScaleFilterTemplate,
+            1280);
+
+        filter.Should().Be(
+            "zscale=transfer=linear,scale=-2:720,format=nv12|cuda,hwupload,scale_cuda=format=nv12");
+    }
+
+    [Test]
+    public void CreateHardwareSelection_ShouldNotUseDxva2Decode_ForAmf()
+    {
+        var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection("h264_amf");
+
+        selection.Should().NotBeNull();
+        selection!.EncoderName.Should().Be("h264_amf");
+        selection.IsHardwareAccelerated.Should().BeTrue();
+        selection.UsesHardwareDecode.Should().BeFalse();
+        selection.DecodeArguments.Should().BeNull();
+        selection.EncoderArguments.Should().Contain("-c:v h264_amf");
+        selection.EncoderArguments.Should().Contain("-forced_idr 1");
+    }
+
+    [Test]
+    public void BuildQualityBitrateArguments_ShouldConstrainVbvToLadder()
+    {
+        var args = FfmpegVideoEncoderBuilder.BuildQualityBitrateArguments(2_800_000, 3_500_000);
+
+        args.Should().Equal("-b:v 2800000", "-maxrate 3500000", "-bufsize 17500000");
+    }
 }

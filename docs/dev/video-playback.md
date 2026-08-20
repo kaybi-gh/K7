@@ -21,7 +21,7 @@ Offline / local files (`file://` or a filesystem path from the download store) u
 `NativeVideoPlayerOverlay` (`src/Clients/MAUI/Controls/Video/`) targets 1:1 parity with the Blazor
 `VideoPlayerControlsOverlay`: transport, seek bar with chapter ticks/sprite thumbnail preview and
 hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, with TV D-pad
-focus navigation; audio and subtitle labels are the normalized language plus the original
+focus navigation. Audio and subtitle labels are the normalized language plus the original
 track name in parentheses when it is not just the ISO code), cast + remote device picker, SyncPlay (members, chat, reactions, floating
 reaction overlay), skip segment (cooldown + auto-dismiss. TV D-pad can focus the skip intro/outro button while
 chrome is visible), next-episode countdown/autoplay, and
@@ -34,11 +34,15 @@ or last episode closes the player. Closing native chrome on Android/iOS restores
 Play when present (movie, serie, episode pages), otherwise the season episode card that
 had focus, and Embla carousels keep the snap from before the WebView was hidden (otherwise
 0-width reInit jumps the episode/season row to the last card). Icons use
-a bundled Phosphor TTF (`Resources/Fonts/Phosphor.ttf`, registered as font family `"Phosphor"`);
+a bundled Phosphor TTF (`Resources/Fonts/Phosphor.ttf`, registered as font family `"Phosphor"`).
 codepoints are kept in `NativePlayerGlyphs` and must stay in sync with `Phosphor.cs`'s CSS class
 names. Labels not covered by `IStringLocalizer<SharedResource>` use hard-coded FR/EN fallbacks in
 `NativeStrings` (ASCII only). Windows intentionally has **no** XAML overlay - it stays full Blazor
 + Video.js, per the table above.
+
+Player quality options: **Original (Np)** is remux / bitstream copy. The ladder also offers the
+same height as a bitrate-capped encode (e.g. `1080p` next to `Original (1080p)`), then lower
+rungs (`720p`, `480p`, ...).
 
 ## Windows: why not MediaElement
 
@@ -62,20 +66,45 @@ Android ExoPlayer (Media3) uses fMP4 `tfdt` plus `#EXT-X-INDEPENDENT-SEGMENTS`. 
 window that resets timestamps to ~0, or an audio-copy timeline that is not the same as video,
 looks like a discontinuity: audio drifts, then snaps back.
 
-The server keeps A/V in the source relationship, and only remaps `tfdt` when ffmpeg
-has clearly restarted a window (`tfdt` off by 1s or more from the playlist start):
+Video copy windows use `-copyts -start_at_zero` so IDR cuts stay coherent. Audio copy keeps
+source PTS (input+output `-ss`, `-copyts -copytb 1`, `-output_ts_offset`, no `-start_at_zero`).
+Video still seeks at GOP midpoint with `-noaccurate_seek`. AAC encode subtracts encoder
+priming from `-output_ts_offset`.
 
-- audio bitstream-copy keeps source PTS (`-copyts`, `-output_ts_offset`, no `-start_at_zero`)
-- video lazy windows still use `-start_at_zero`. Those fragments are rebased on serve
-- keyframe HLS segments are at least 1s (collapsed at index / `ComputeHlsSegments` time)
+On serve, rebase video **copy** `tfdt` only for a true ffmpeg window reset (1s or more). Do
+**not** flatten the source ~83ms video CTS/composition onto the playlist (that 20ms align
+caused a constant A/V offset on remux). Video **encode** (720p and below) uses the 20ms
+align and subtracts the first-sample CTS: NVENC delay (~500-600ms) sits under 1s and
+otherwise stays as late video that ExoPlayer drops (lipsync + sporadic rewind). HLS
+encode forces `-bf 0`, disables scene-cut (`-sc_threshold 0`, nvenc `-no-scenecut 1
+-zerolatency 1`), and applies the ladder `b:v` / `maxrate` / `bufsize` 5x (720p is
+2.8 / 3.5 Mbps, not scale-only). Extra scene-cut IDRs make `-f segment` cut off the
+shared keyframe timeline.
 
-Do not micro-rebase each track onto `#EXTINF` independently: tens of ms of AAC vs
-keyframe composition error would become a constant lip-sync offset on Web and Android.
+Encode cuts use exact keyframe `-ss` (accurate seek) on the **deliver** segment (no
+remux pad). `-segment_times` and `force_key_frames source` follow source keyframes
+(playlist grid). Hardware encoders also need `-g` capped and IDR forcing
+(`-forced_idr` on AMF, `-forced-idr` on NVENC). Do not add output `-t` on encode
+(`-copyts` + `-f segment` yields zero frames). Remux still uses midpoint `-ss`
++ `-noaccurate_seek` with one-segment pads. Do not micro-rebase **audio copy** onto `#EXTINF`.
 
-Android also disables skip-silence and seeks with previous-sync so AAC gaps do not resync by
-dropping audio. Existing files keep their stored `HlsSegments` until HLS is recomputed.
-Cached `.m4s` that were rewritten by an older tight rebase must be deleted (transcode cache)
-or they keep the wrong `tfdt`.
+- ffmpeg window padding must not punch holes in playlist indices. A missing `N.m4s` with
+  later segments on disk restarts ffmpeg at `N` only when that process is not already running
+- when `HlsSegments` rows exist they drive copy and transcode (shared audio group / ABR).
+  Without them, playback starts immediately on a 6s equal-length transcode grid
+- new keyframe HLS rows collapse bursts shorter than 1s (ExoPlayer). Existing rows stay
+  until HLS is recomputed
+- sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503 and ffmpeg
+  fills the cache in the background. Do not return empty WEBVTT 200: ExoPlayer caches that
+  and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.
+
+Android disables skip-silence and seeks with previous-sync so AAC gaps do not resync by
+dropping audio. The native loading veil, seek bar, skip, and resume capture must use
+ExoPlayer `CurrentPosition` (and `OnRenderedFirstFrame`), not toolkit
+`MediaElement.Position`, which can stay 0 or freeze after a mid-stream resume. A skip or
+seekbar tap on stale toolkit position then jumps minutes backward. Stale `.m4s` from an older rebase can be deleted
+from the transcode cache. Streaming HLS rebinds the MediaElement ExoPlayer with long HTTP
+timeouts and VTT load retries on HTTP 503 (`AndroidExoHlsTuning`).
 
 ## Related
 

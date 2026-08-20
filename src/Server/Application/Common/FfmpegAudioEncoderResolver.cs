@@ -11,6 +11,27 @@ public static class FfmpegAudioEncoderResolver
     public const int DefaultSampleRateHz = 48_000;
     public const int HlsStereoChannels = 2;
 
+    /// <summary>
+    /// Encoder priming in samples (ISO AAC-LC). Native ffmpeg aac is one frame;
+    /// libfdk_aac and AudioToolbox need two frames / 2112.
+    /// </summary>
+    public static int GetAacEncoderDelaySamples(string encoderName)
+    {
+        if (string.Equals(encoderName, "libfdk_aac", StringComparison.OrdinalIgnoreCase))
+            return 2048;
+
+        if (string.Equals(encoderName, "aac_at", StringComparison.OrdinalIgnoreCase))
+            return 2112;
+
+        return 1024;
+    }
+
+    public static double GetAacEncoderDelaySeconds(string encoderName, int sampleRateHz)
+    {
+        var rate = sampleRateHz > 0 ? sampleRateHz : DefaultSampleRateHz;
+        return GetAacEncoderDelaySamples(encoderName) / (double)rate;
+    }
+
     public static string? ResolveEncoderName(
         string logicalCodec,
         IReadOnlyList<string>? availableEncoders = null)

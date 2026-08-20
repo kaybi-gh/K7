@@ -73,12 +73,16 @@ public class TranscodeJob
     public int? SubtitleBurnInStreamIndex { get; init; }
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
-    
+
     public CancellationTokenSource? FfmpegCancellation { get; set; }
     public Task? FfmpegTask { get; set; }
     public ConcurrentDictionary<Guid, byte> AttachedStreamSessions { get; } = new();
     public DateTime LastPingTime { get; set; } = DateTime.UtcNow;
     public int TargetSegmentIndex { get; set; }
+    /// <summary>
+    /// First deliver segment index the currently running ffmpeg process will produce.
+    /// </summary>
+    public int GeneratingFromSegmentIndex { get; set; } = -1;
     /// <summary>
     /// Highest segment index the currently running ffmpeg process will produce (inclusive).
     /// </summary>
@@ -89,7 +93,7 @@ public class TranscodeJob
     /// Per-job lock to prevent concurrent FFmpeg process starts from parallel segment requests.
     /// </summary>
     public SemaphoreSlim FfmpegStartLock { get; } = new(1, 1);
-    
+
     /// <summary>
     /// Highest contiguous ready media segment index in the output directory.
     /// Mid-seek windows start at N (not 0); never report N-1 when N is present but unready
