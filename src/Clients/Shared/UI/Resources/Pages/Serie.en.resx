@@ -32,4 +32,5 @@
   <data name="Trailer" xml:space="preserve"><value>Trailer</value></data>
   <data name="MarkSerieWatched" xml:space="preserve"><value>Mark series as watched</value></data>
   <data name="MarkSerieUnwatched" xml:space="preserve"><value>Mark series as unwatched</value></data>
+  <data name="NotFound" xml:space="preserve"><value>Series not found</value></data>
 </root>

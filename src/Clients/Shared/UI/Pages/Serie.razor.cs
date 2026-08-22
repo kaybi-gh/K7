@@ -158,8 +158,18 @@ public partial class Serie : IAsyncDisposable
             _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         }
 
+        if (!Guid.TryParse(Id, out var mediaId))
+        {
+            _serie = null;
+            if (!isBackgroundRefresh && !isPicturesRefresh)
+                _loading = false;
+
+            StateHasChanged();
+            return;
+        }
+
         var media = await k7ServerService.GetMediaAsync(
-            Guid.Parse(Id),
+            mediaId,
             bypassCache: isBackgroundRefresh || isPicturesRefresh);
         if (media is SerieDto serie)
         {
@@ -204,6 +214,7 @@ public partial class Serie : IAsyncDisposable
         }
         else
         {
+            _serie = null;
             _libraryGroupId = null;
             _studioNetworkChips = [];
             await ThemeSongPlaybackHelper.StopAsync(AmbientThemeService);
