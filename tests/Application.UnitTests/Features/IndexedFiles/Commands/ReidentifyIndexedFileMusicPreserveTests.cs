@@ -74,6 +74,7 @@ public class ReidentifyIndexedFileMusicPreserveTests
             _sender,
             availability,
             _reconciler,
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<ReidentifyIndexedFileCommandHandler>>());
     }
 

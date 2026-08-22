@@ -112,6 +112,7 @@ public class CreateMediaCommandHandlerTests
             serieIdentity,
             new MusicMetadataIdentityService(_serviceProvider, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
             Substitute.For<IMusicIntelligenceCatalogReconciler>(),
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
@@ -299,7 +300,6 @@ public class CreateMediaCommandHandlerTests
             UserId = userId,
             MediaId = wrongMovie.Id,
             PlayCount = 4,
-            ProgressPercentage = 70
         });
 
         var rating = new UserRating
@@ -380,7 +380,6 @@ public class CreateMediaCommandHandlerTests
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(mediaId);
         state.PlayCount.Should().Be(4);
-        state.ProgressPercentage.Should().Be(70);
 
         (await _context.Ratings.OfType<UserRating>().SingleAsync()).MediaId.Should().Be(mediaId);
         (await _context.MediaReviews.SingleAsync()).MediaId.Should().Be(mediaId);
@@ -407,7 +406,6 @@ public class CreateMediaCommandHandlerTests
             UserId = userId,
             MediaId = wrongMovie.Id,
             PlayCount = 2,
-            ProgressPercentage = 40
         });
         await _context.SaveChangesAsync();
 

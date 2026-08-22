@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -27,6 +28,7 @@ public class ReidentifyIndexedFileCommandHandler(
     ISender sender,
     IMediaLibraryAvailabilityService mediaLibraryAvailabilityService,
     IMusicIntelligenceCatalogReconciler musicIntelligenceCatalogReconciler,
+    IPlaybackBookmarkService bookmarkService,
     ILogger<ReidentifyIndexedFileCommandHandler> logger)
     : IRequestHandler<ReidentifyIndexedFileCommand>
 {
@@ -381,7 +383,7 @@ public class ReidentifyIndexedFileCommandHandler(
             existingEpisode.IndexedFiles ??= [];
             existingEpisode.IndexedFiles.Add(indexedFile);
             if (becamePlayable)
-                existingEpisode.AddDomainEvent(new SerieEpisodeBecamePlayableEvent(existingEpisode.Id));
+                await bookmarkService.RefreshSeriesBookmarksForSerieAsync(serie.Id, DateTime.UtcNow, cancellationToken);
             return;
         }
 

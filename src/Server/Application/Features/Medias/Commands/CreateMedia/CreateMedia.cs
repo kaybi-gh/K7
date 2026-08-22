@@ -7,6 +7,7 @@ using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -52,6 +53,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly MusicMetadataIdentityService _musicIdentityService;
     private readonly IMusicIntelligenceCatalogReconciler _musicIntelligenceCatalogReconciler;
     private readonly ILogger<CreateMediaCommandHandler> _logger;
+    private readonly IPlaybackBookmarkService _bookmarkService;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
@@ -66,6 +68,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         SerieMetadataIdentityService serieIdentityService,
         MusicMetadataIdentityService musicIdentityService,
         IMusicIntelligenceCatalogReconciler musicIntelligenceCatalogReconciler,
+        IPlaybackBookmarkService bookmarkService,
         ILogger<CreateMediaCommandHandler> logger)
     {
         _context = context;
@@ -80,6 +83,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         _serieIdentityService = serieIdentityService;
         _musicIdentityService = musicIdentityService;
         _musicIntelligenceCatalogReconciler = musicIntelligenceCatalogReconciler;
+        _bookmarkService = bookmarkService;
         _logger = logger;
     }
 
@@ -790,6 +794,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .LoadAsync(cancellationToken);
 
         var hasNewEpisodes = false;
+        var refreshSeriesBookmarks = false;
         var orphanTransfers = new List<(Guid FromEpisodeId, Guid ToEpisodeId)>();
 
         foreach (var indexedFile in indexedFiles)
@@ -856,7 +861,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     existingEpisode.IndexedFiles ??= [];
                     existingEpisode.IndexedFiles.Add(indexedFile);
                     if (becamePlayable)
-                        existingEpisode.AddDomainEvent(new SerieEpisodeBecamePlayableEvent(existingEpisode.Id));
+                        refreshSeriesBookmarks = true;
                 }
 
                 continue;
@@ -912,6 +917,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (refreshSeriesBookmarks)
+            await _bookmarkService.RefreshSeriesBookmarksForSerieAsync(serie.Id, DateTime.UtcNow, cancellationToken);
 
         if (hasNewEpisodes && !string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {

@@ -110,6 +110,7 @@ public class CreateMediaSerieRelinkTests
             serieIdentity,
             new MusicMetadataIdentityService(_serviceProviderRoot, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
             Substitute.For<IMusicIntelligenceCatalogReconciler>(),
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
@@ -166,8 +167,6 @@ public class CreateMediaSerieRelinkTests
             UserId = userId,
             MediaId = oldEpisode.Id,
             PlayCount = 1,
-            ProgressPercentage = 55,
-            LastPlaybackPosition = 120,
             LastInteractedAt = DateTime.UtcNow.AddHours(-1)
         });
 
@@ -201,7 +200,6 @@ public class CreateMediaSerieRelinkTests
 
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(newEpisode.Id);
-        state.ProgressPercentage.Should().Be(55);
         state.PlayCount.Should().Be(1);
     }
 
@@ -217,8 +215,6 @@ public class CreateMediaSerieRelinkTests
             UserId = userId,
             MediaId = oldEpisode.Id,
             PlayCount = 1,
-            ProgressPercentage = 55,
-            LastPlaybackPosition = 120,
             LastInteractedAt = DateTime.UtcNow.AddHours(-1)
         });
 
@@ -252,7 +248,6 @@ public class CreateMediaSerieRelinkTests
 
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(newEpisode.Id);
-        state.ProgressPercentage.Should().Be(55);
     }
 
     [Test]
@@ -267,7 +262,6 @@ public class CreateMediaSerieRelinkTests
             UserId = userId,
             MediaId = oldEpisode.Id,
             PlayCount = 1,
-            ProgressPercentage = 55
         });
 
         file.Name = "Black Clover - S00E026.mkv";

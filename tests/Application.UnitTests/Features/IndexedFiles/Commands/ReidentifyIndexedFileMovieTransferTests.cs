@@ -71,6 +71,7 @@ public class ReidentifyIndexedFileMovieTransferTests
             sender,
             availability,
             Substitute.For<IMusicIntelligenceCatalogReconciler>(),
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<ReidentifyIndexedFileCommandHandler>>());
     }
 
@@ -111,8 +112,6 @@ public class ReidentifyIndexedFileMovieTransferTests
             UserId = userId,
             MediaId = wrongMovie.Id,
             PlayCount = 1,
-            ProgressPercentage = 70,
-            LastPlaybackPosition = 1800,
             LastInteractedAt = DateTime.UtcNow.AddHours(-2)
         });
         await _context.SaveChangesAsync();
@@ -131,7 +130,6 @@ public class ReidentifyIndexedFileMovieTransferTests
 
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(correctMovie.Id);
-        state.ProgressPercentage.Should().Be(70);
         state.PlayCount.Should().Be(1);
     }
 }

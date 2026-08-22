@@ -113,6 +113,7 @@ public class CreateMediaMusicIdentityTests
                 _serviceProviderRoot,
                 Substitute.For<ILogger<MusicMetadataIdentityService>>()),
             Substitute.For<IMusicIntelligenceCatalogReconciler>(),
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 

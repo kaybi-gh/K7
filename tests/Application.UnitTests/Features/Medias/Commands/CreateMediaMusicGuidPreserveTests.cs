@@ -113,6 +113,7 @@ public class CreateMediaMusicGuidPreserveTests
             serieIdentity,
             new MusicMetadataIdentityService(_serviceProvider, Substitute.For<ILogger<MusicMetadataIdentityService>>()),
             _reconciler,
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance),
             Substitute.For<ILogger<CreateMediaCommandHandler>>());
     }
 
