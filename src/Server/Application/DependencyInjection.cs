@@ -108,7 +108,7 @@ public static class DependencyInjection
         services.AddScoped<IUserMediaStateUpdater, UserMediaStateUpdater>();
         services.AddScoped<ISharedProfileMediaStateUpdater, SharedProfileMediaStateUpdater>();
         services.AddScoped<IPlaybackPolicySettingsProvider, PlaybackPolicySettingsProvider>();
-        services.AddScoped<IContinueWatchingExclusionService, ContinueWatchingExclusionService>();
+        services.AddScoped<IPlaybackBookmarkService, PlaybackBookmarkService>();
         services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();
         services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
         services.AddScoped<IStreamPlaybackService, StreamPlaybackService>();
@@ -126,7 +126,6 @@ public static class DependencyInjection
         services.AddScoped<OrphanIndexedFileFixBuilder>();
         services.AddScoped<DiagnosticFixBatchBuilder>();
         services.AddScoped<IHomeLayoutMaintenanceService, HomeLayoutMaintenanceService>();
-        services.AddScoped<INextEpisodeEnqueueService, NextEpisodeEnqueueService>();
         services.AddSingleton<ITranscodeSettingsProvider, TranscodeSettingsProvider>();
         services.AddScoped<IHomeRecommendationService, HomeRecommendationService>();
         services.AddScoped<IOpenSubsonicService, OpenSubsonicService>();

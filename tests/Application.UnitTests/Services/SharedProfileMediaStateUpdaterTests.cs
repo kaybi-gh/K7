@@ -71,7 +71,7 @@ public class SharedProfileMediaStateUpdaterTests
                 CompletedMinDurationSeconds = 240
             });
 
-        _updater = new SharedProfileMediaStateUpdater(_context, _policies);
+        _updater = new SharedProfileMediaStateUpdater(_context, _policies, Substitute.For<IPlaybackBookmarkService>());
     }
 
     [TearDown]
@@ -95,7 +95,6 @@ public class SharedProfileMediaStateUpdaterTests
         states.Should().HaveCount(1);
         states[0].SharedProfileId.Should().Be(_sharedProfileId);
         states[0].MediaId.Should().Be(_movieId);
-        result.ProgressPercentage.Should().BeApproximately(50, 0.01);
         result.IsCompleted.Should().BeFalse();
     }
 

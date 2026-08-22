@@ -9,60 +9,86 @@ public class ContinueWatchingEligibilityTests
     private static readonly VideoPlaybackPolicySettingsDto DefaultPolicy = new();
 
     [Test]
-    public void MeetsResumeThreshold_ShouldReturnTrue_WhenExcludedButAboveThreshold()
+    public void MeetsItemResumeThreshold_ShouldReturnTrue_WhenAboveThreshold()
     {
-        var state = CreateState(excluded: true, progress: 10);
+        var bookmark = CreateItemBookmark(progressPercent: 10);
 
-        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeTrue();
+        ContinueWatchingEligibility.MeetsItemResumeThreshold(bookmark, DefaultPolicy).Should().BeTrue();
     }
 
     [Test]
-    public void MeetsThreshold_ShouldReturnFalse_WhenExcludedEvenIfAboveThreshold()
+    public void IsItemBookmarkEligible_ShouldReturnFalse_WhenOutsideWindow()
     {
-        var state = CreateState(excluded: true, progress: 10);
-        var utcNow = DateTime.UtcNow;
+        var bookmark = CreateItemBookmark(
+            progressPercent: 10,
+            updatedAt: DateTime.UtcNow.AddDays(-DefaultPolicy.ContinueWatchingMaxAgeDays - 1));
 
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, utcNow).Should().BeFalse();
+        ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow)
+            .Should().BeFalse();
     }
 
     [Test]
-    public void MeetsThreshold_ShouldReturnFalse_WhenOutsideWindow()
+    public void IsItemBookmarkEligible_ShouldReturnTrue_WhenInsideWindowAndAboveThreshold()
     {
-        var state = CreateState(
-            progress: 10,
-            lastInteractedAt: DateTime.UtcNow.AddDays(-DefaultPolicy.ContinueWatchingMaxAgeDays - 1));
+        var bookmark = CreateItemBookmark(progressPercent: 10, updatedAt: DateTime.UtcNow.AddDays(-3));
 
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeFalse();
+        ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow)
+            .Should().BeTrue();
     }
 
     [Test]
-    public void MeetsThreshold_ShouldReturnTrue_WhenInsideWindowAndAboveThreshold()
+    public void IsItemBookmarkEligible_ShouldReturnTrue_WhenEarlySerieEpisodeWatch()
     {
-        var state = CreateState(progress: 10, lastInteractedAt: DateTime.UtcNow.AddDays(-3));
+        var bookmark = new ItemPlaybackBookmark
+        {
+            PositionSeconds = 48,
+            DurationSeconds = 3600,
+            UpdatedAt = DateTime.UtcNow
+        };
 
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeTrue();
+        ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow, isSerieEpisode: true)
+            .Should().BeTrue();
     }
 
     [Test]
-    public void MeetsThreshold_ShouldReturnTrue_WhenNextEpisodePlaceholderAtZeroProgress()
+    public void IsSeriesBookmarkEligible_ShouldReturnTrue_WhenNextPlayableAndWithinWindow()
     {
-        var state = CreateState(progress: 0, lastInteractedAt: DateTime.UtcNow);
-        state.LastPlaybackPosition = 0;
-        state.PlayCount = 0;
+        var bookmark = new SeriesPlaybackBookmark
+        {
+            NextEpisodeId = Guid.NewGuid(),
+            NextEpisodeAvailableAt = DateTime.UtcNow.AddDays(-3)
+        };
 
-        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeTrue();
-        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeTrue();
+        ContinueWatchingEligibility.IsSeriesBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow, isNextPlayable: true)
+            .Should().BeTrue();
     }
 
     [Test]
-    public void MeetsThreshold_ShouldReturnFalse_WhenZeroProgressButExcluded()
+    public void IsSeriesBookmarkEligible_ShouldReturnTrue_WhenNextPlayableEvenIfActivityIsOld()
     {
-        var state = CreateState(excluded: true, progress: 0, lastInteractedAt: DateTime.UtcNow);
-        state.LastPlaybackPosition = 0;
-        state.PlayCount = 0;
+        var bookmark = new SeriesPlaybackBookmark
+        {
+            NextEpisodeId = Guid.NewGuid(),
+            ActivityAt = DateTime.UtcNow.AddDays(-400),
+            NextEpisodeAvailableAt = DateTime.UtcNow.AddDays(-3)
+        };
 
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeFalse();
+        ContinueWatchingEligibility.IsSeriesBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow, isNextPlayable: true)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void IsSeriesBookmarkEligible_ShouldReturnFalse_WhenNextAvailableOutsideWindow()
+    {
+        var bookmark = new SeriesPlaybackBookmark
+        {
+            NextEpisodeId = Guid.NewGuid(),
+            ActivityAt = DateTime.UtcNow.AddDays(-3),
+            NextEpisodeAvailableAt = DateTime.UtcNow.AddDays(-DefaultPolicy.ContinueWatchingMaxAgeDays - 1)
+        };
+
+        ContinueWatchingEligibility.IsSeriesBookmarkEligible(bookmark, DefaultPolicy, DateTime.UtcNow, isNextPlayable: true)
+            .Should().BeFalse();
     }
 
     [Test]
@@ -74,81 +100,25 @@ public class ContinueWatchingEligibilityTests
     }
 
     [Test]
-    public void MeetsResumeThreshold_ShouldReturnFalse_WhenDurationBelowMinResumeDuration()
+    public void MeetsItemResumeThreshold_ShouldReturnFalse_WhenDurationBelowMinResumeDuration()
     {
-        var state = CreateState(progress: 35, lastKnownDurationSeconds: 60);
+        var bookmark = CreateItemBookmark(progressPercent: 35, durationSeconds: 60);
 
-        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
+        ContinueWatchingEligibility.MeetsItemResumeThreshold(bookmark, DefaultPolicy).Should().BeFalse();
     }
 
-    [Test]
-    public void MeetsResumeThreshold_ShouldReturnTrue_WhenDurationUnknownEvenIfBelowMinWouldApply()
+
+    private static ItemPlaybackBookmark CreateItemBookmark(
+        double progressPercent = 0,
+        double durationSeconds = 3600,
+        DateTime? updatedAt = null)
     {
-        // Unknown runtime (0) must not exclude a title that clears MinResumePercent.
-        var state = CreateState(progress: 35, lastKnownDurationSeconds: 0);
-
-        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeTrue();
-    }
-
-    [Test]
-    public void MeetsThreshold_ShouldReturnTrue_WhenPlaceholderHasSubSecondPlayerTick()
-    {
-        var state = CreateState(progress: 0.02, lastInteractedAt: DateTime.UtcNow);
-        state.LastPlaybackPosition = 0.4;
-        state.PlayCount = 0;
-
-        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeTrue();
-        ContinueWatchingEligibility.MeetsThreshold(state, DefaultPolicy, DateTime.UtcNow).Should().BeTrue();
-    }
-
-    [Test]
-    public void IsEligibleForContinueWatching_ShouldReturnTrue_WhenSerieEpisodeIsUnderResumePercent()
-    {
-        var state = CreateState(progress: 2, lastInteractedAt: DateTime.UtcNow);
-        state.LastPlaybackPosition = 48;
-        state.PlayCount = 0;
-
-        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeFalse();
-        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy).Should().BeFalse();
-        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy, isSerieEpisode: true)
-            .Should().BeTrue();
-    }
-
-    [Test]
-    public void IsEligibleForContinueWatching_ShouldReturnTrue_WhenSerieEpisodeHasPlayCountButUnderResumePercent()
-    {
-        var state = CreateState(progress: 0.5, lastInteractedAt: DateTime.UtcNow);
-        state.LastPlaybackPosition = 0.4;
-        state.PlayCount = 1;
-
-        ContinueWatchingEligibility.IsContinueWatchingPlaceholder(state).Should().BeFalse();
-        ContinueWatchingEligibility.IsEligibleForContinueWatching(state, DefaultPolicy, isSerieEpisode: true)
-            .Should().BeTrue();
-    }
-
-    [Test]
-    public void MeetsResumeThreshold_ShouldReturnFalse_WhenProgressBelowPercent()
-    {
-        var state = CreateState(progress: 2, lastKnownDurationSeconds: 3600);
-
-        ContinueWatchingEligibility.MeetsResumeThreshold(state, DefaultPolicy).Should().BeFalse();
-    }
-
-    private static UserMediaState CreateState(
-        bool excluded = false,
-        double progress = 0,
-        DateTime? lastInteractedAt = null,
-        double lastKnownDurationSeconds = 3600)
-    {
-        return new UserMediaState
+        var position = durationSeconds * progressPercent / 100.0;
+        return new ItemPlaybackBookmark
         {
-            UserId = Guid.NewGuid(),
-            MediaId = Guid.NewGuid(),
-            ExcludedFromContinueWatching = excluded,
-            ProgressPercentage = progress,
-            LastKnownDurationSeconds = lastKnownDurationSeconds,
-            LastInteractedAt = lastInteractedAt ?? DateTime.UtcNow,
-            IsCompleted = false
+            PositionSeconds = position,
+            DurationSeconds = durationSeconds,
+            UpdatedAt = updatedAt ?? DateTime.UtcNow
         };
     }
 }

@@ -30,6 +30,7 @@ public static class MediaUserStateTransferHelper
         var transferredCollections = await TransferCollectionItemsAsync(context, fromMediaId, toMediaId, cancellationToken);
         var transferredSessions = await TransferPlaybackSessionsAsync(context, fromMediaId, toMediaId, cancellationToken);
         var transferredExclusions = await TransferMediaExclusionsAsync(context, fromMediaId, toMediaId, cancellationToken);
+        var transferredBookmarks = await TransferPlaybackBookmarksAsync(context, fromMediaId, toMediaId, cancellationToken);
 
         if (transferredStates
             + transferredShared
@@ -38,13 +39,14 @@ public static class MediaUserStateTransferHelper
             + transferredRatings
             + transferredCollections
             + transferredSessions
-            + transferredExclusions == 0)
+            + transferredExclusions
+            + transferredBookmarks == 0)
         {
             return;
         }
 
         logger.LogInformation(
-            "Transferred user state from media {FromMediaId} to {ToMediaId} (states={States}, shared={Shared}, reviews={Reviews}, playlists={Playlists}, ratings={Ratings}, collections={Collections}, sessions={Sessions}, exclusions={Exclusions})",
+            "Transferred user state from media {FromMediaId} to {ToMediaId} (states={States}, shared={Shared}, reviews={Reviews}, playlists={Playlists}, ratings={Ratings}, collections={Collections}, sessions={Sessions}, exclusions={Exclusions}, bookmarks={Bookmarks})",
             fromMediaId,
             toMediaId,
             transferredStates,
@@ -54,7 +56,8 @@ public static class MediaUserStateTransferHelper
             transferredRatings,
             transferredCollections,
             transferredSessions,
-            transferredExclusions);
+            transferredExclusions,
+            transferredBookmarks);
     }
 
     private static async Task<int> TransferUserMediaStatesAsync(
@@ -314,12 +317,8 @@ public static class MediaUserStateTransferHelper
 
         if (sourceIsNewer)
         {
-            target.LastPlaybackPosition = source.LastPlaybackPosition;
-            target.ProgressPercentage = source.ProgressPercentage;
             target.IsCompleted = source.IsCompleted;
             target.LastInteractedAt = source.LastInteractedAt;
-            target.LastKnownDurationSeconds = source.LastKnownDurationSeconds;
-            target.ExcludedFromContinueWatching = source.ExcludedFromContinueWatching;
         }
         else
         {
@@ -330,6 +329,23 @@ public static class MediaUserStateTransferHelper
         target.SkipCount += source.SkipCount;
     }
 
+    private static async Task<int> TransferPlaybackBookmarksAsync(
+        IApplicationDbContext context,
+        Guid fromMediaId,
+        Guid toMediaId,
+        CancellationToken cancellationToken)
+    {
+        var itemBookmarks = await context.PlaybackBookmarks
+            .OfType<ItemPlaybackBookmark>()
+            .Where(b => b.MediaId == fromMediaId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var bookmark in itemBookmarks)
+            bookmark.MediaId = toMediaId;
+
+        return itemBookmarks.Count;
+    }
+
     private static void MergeSharedWatchState(SharedProfileMediaState target, SharedProfileMediaState source)
     {
         var sourceIsNewer = source.LastInteractedAt.HasValue
@@ -338,12 +354,8 @@ public static class MediaUserStateTransferHelper
 
         if (sourceIsNewer)
         {
-            target.LastPlaybackPosition = source.LastPlaybackPosition;
-            target.ProgressPercentage = source.ProgressPercentage;
             target.IsCompleted = source.IsCompleted;
             target.LastInteractedAt = source.LastInteractedAt;
-            target.LastKnownDurationSeconds = source.LastKnownDurationSeconds;
-            target.ExcludedFromContinueWatching = source.ExcludedFromContinueWatching;
         }
         else
         {

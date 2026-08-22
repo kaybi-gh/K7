@@ -16,7 +16,7 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Data type | Description |
 |---|---|
-| **history** | Play count, last played position, completion status, last played date. Completed series episodes also enqueue the next unwatched episode for Keep Watching. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Direct Plex/Jellyfin APIs import aggregated watch states only. Re-importing skips duplicate playback sessions. |
+| **history** | Play count, last played position, completion status, last played date. In-progress titles become item playback bookmarks. Completed series episodes update series playback bookmarks (next playable episode for Keep Watching). Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Direct Plex/Jellyfin APIs import aggregated watch states only. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
 | **playlists** | Playlist titles (prefixed with source, e.g. `Jellyfin - Liked Songs`) and their items (matched by provider IDs, file path, then title/artist identity). Unmatched items become virtual file-less medias unless `--only-match-existing` (show them via "Afficher les titres indisponibles"). Re-import merges into existing playlists by title. Plex smart/dynamic playlists are skipped by default (see below). |
 

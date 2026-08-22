@@ -3,14 +3,14 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos;
+using K7.Tests.Helpers.Samples;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.UnitTests.Services;
 
 /// <summary>
-/// Verifies the continue-watching query filter branches on <see cref="SharedProfileMediaState"/>
-/// when a shared profile is active, so member personal states are not consulted.
+/// Verifies the continue-watching query filter branches on shared-profile playback bookmarks.
 /// </summary>
 [TestFixture]
 public class SharedProfileContinueWatchingTests
@@ -68,29 +68,25 @@ public class SharedProfileContinueWatchingTests
         _context.Medias.AddRange(
             new Movie { Id = eligibleMediaId, Title = "Ongoing" },
             new Movie { Id = otherMediaId, Title = "Not started" });
+        var (libraryId, peerServerId) = RemoteIndexedFilesSamples.EnsureLibraryAndPeer(_context);
+        _context.RemoteIndexedFiles.Add(RemoteIndexedFilesSamples.Create(eligibleMediaId, libraryId, peerServerId));
 
         var utcNow = DateTime.UtcNow;
-        _context.SharedProfileMediaStates.Add(new SharedProfileMediaState
+        _context.PlaybackBookmarks.Add(new ItemPlaybackBookmark
         {
             SharedProfileId = _sharedProfileId,
             MediaId = eligibleMediaId,
-            ProgressPercentage = 25,
-            LastKnownDurationSeconds = 3600,
-            LastInteractedAt = utcNow.AddHours(-1),
-            IsCompleted = false,
-            ExcludedFromContinueWatching = false
+            PositionSeconds = 600,
+            DurationSeconds = 3600,
+            UpdatedAt = utcNow.AddHours(-1)
         });
 
-        // Personal state for the member should NOT surface the media when in a shared profile context.
         _context.UserMediaStates.Add(new UserMediaState
         {
             UserId = _memberUserId,
             MediaId = otherMediaId,
-            ProgressPercentage = 40,
-            LastKnownDurationSeconds = 3600,
             LastInteractedAt = utcNow.AddHours(-1),
-            IsCompleted = false,
-            ExcludedFromContinueWatching = false
+            IsCompleted = false
         });
         _context.SaveChanges();
 
@@ -112,7 +108,7 @@ public class SharedProfileContinueWatchingTests
     }
 
     [Test]
-    public void WhereEligibleForSharedProfileContinueWatching_ShouldExcludeCompletedItems()
+    public void WhereEligibleForSharedProfileContinueWatching_ShouldExcludeItemsWithoutBookmarks()
     {
         var completedMediaId = Guid.NewGuid();
         _context.Medias.Add(new Movie { Id = completedMediaId, Title = "Watched" });
@@ -120,8 +116,6 @@ public class SharedProfileContinueWatchingTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = completedMediaId,
-            ProgressPercentage = 100,
-            LastKnownDurationSeconds = 3600,
             LastInteractedAt = DateTime.UtcNow,
             IsCompleted = true
         });

@@ -7,171 +7,67 @@ namespace K7.Server.Application.Common.Services;
 
 public static class ContinueWatchingEligibility
 {
-    /// <summary>
-    /// Sub-second player ticks are not a real resume point. Treat them as still-zero
-    /// so a next-episode placeholder is not ejected from Keep Watching.
-    /// </summary>
-    public const double PlaceholderNoisePositionSeconds = 1;
+    /// <summary>Ignore sub-second ticks when treating an early serie episode as in-progress.</summary>
+    public const double EarlyResumeMinPositionSeconds = 1;
 
-    /// <summary>
-    /// Progress below 1% is noise from the first player ticks, not a started watch.
-    /// </summary>
-    public const double PlaceholderNoiseProgressPercent = 1;
+    /// <summary>Progress below this percent is still "early" for serie episodes under MinResumePercent.</summary>
+    public const double EarlyResumeMaxProgressPercent = 1;
 
     public static DateTime? GetWindowCutoff(VideoPlaybackPolicySettingsDto policy, DateTime utcNow) =>
         policy.ContinueWatchingMaxAgeDays > 0
             ? utcNow.AddDays(-policy.ContinueWatchingMaxAgeDays)
             : null;
 
-    public static bool MeetsResumeThreshold(UserMediaState state, VideoPlaybackPolicySettingsDto policy) =>
-        MeetsResumeThreshold(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.LastKnownDurationSeconds,
-            state.ProgressPercentage,
-            policy);
-
-    public static bool MeetsResumeThreshold(SharedProfileMediaState state, VideoPlaybackPolicySettingsDto policy) =>
-        MeetsResumeThreshold(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.LastKnownDurationSeconds,
-            state.ProgressPercentage,
-            policy);
-
-    /// <summary>
-    /// Next-episode Keep Watching placeholders: touched after finishing the previous episode,
-    /// with no real resume point yet (progress and position stay at 0 so playback starts at the beginning).
-    /// </summary>
-    public static bool IsContinueWatchingPlaceholder(UserMediaState state) =>
-        IsContinueWatchingPlaceholder(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.PlayCount,
-            state.LastPlaybackPosition,
-            state.ProgressPercentage);
-
-    public static bool IsContinueWatchingPlaceholder(SharedProfileMediaState state) =>
-        IsContinueWatchingPlaceholder(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.PlayCount,
-            state.LastPlaybackPosition,
-            state.ProgressPercentage);
-
-    public static bool IsEligibleForContinueWatching(
-        UserMediaState state,
-        VideoPlaybackPolicySettingsDto policy,
-        bool isSerieEpisode = false) =>
-        MeetsResumeThreshold(state, policy)
-        || IsContinueWatchingPlaceholder(state)
-        || IsEarlySerieEpisodeWatch(state, policy, isSerieEpisode);
-
-    public static bool IsEligibleForContinueWatching(
-        SharedProfileMediaState state,
-        VideoPlaybackPolicySettingsDto policy,
-        bool isSerieEpisode = false) =>
-        MeetsResumeThreshold(state, policy)
-        || IsContinueWatchingPlaceholder(state)
-        || IsEarlySerieEpisodeWatch(state, policy, isSerieEpisode);
-
-    private static bool IsContinueWatchingPlaceholder(
-        bool isCompleted,
-        DateTime? lastInteractedAt,
-        int playCount,
-        double lastPlaybackPosition,
-        double progressPercentage) =>
-        !isCompleted
-        && lastInteractedAt is not null
-        && playCount == 0
-        && lastPlaybackPosition < PlaceholderNoisePositionSeconds
-        && progressPercentage < PlaceholderNoiseProgressPercent;
-
-    private static bool IsEarlySerieEpisodeWatch(
-        bool isCompleted,
-        DateTime? lastInteractedAt,
-        double progressPercentage,
-        VideoPlaybackPolicySettingsDto policy,
-        bool isSerieEpisode) =>
-        isSerieEpisode
-        && !isCompleted
-        && lastInteractedAt is not null
-        && progressPercentage < policy.MinResumePercent;
-
-    private static bool IsEarlySerieEpisodeWatch(
-        UserMediaState state,
-        VideoPlaybackPolicySettingsDto policy,
-        bool isSerieEpisode) =>
-        IsEarlySerieEpisodeWatch(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.ProgressPercentage,
-            policy,
-            isSerieEpisode);
-
-    private static bool IsEarlySerieEpisodeWatch(
-        SharedProfileMediaState state,
-        VideoPlaybackPolicySettingsDto policy,
-        bool isSerieEpisode) =>
-        IsEarlySerieEpisodeWatch(
-            state.IsCompleted,
-            state.LastInteractedAt,
-            state.ProgressPercentage,
-            policy,
-            isSerieEpisode);
-
-    private static bool MeetsResumeThreshold(
-        bool isCompleted,
-        DateTime? lastInteractedAt,
-        double lastKnownDurationSeconds,
-        double progressPercentage,
+    public static bool MeetsItemResumeThreshold(
+        ItemPlaybackBookmark bookmark,
         VideoPlaybackPolicySettingsDto policy)
     {
-        if (isCompleted)
-            return false;
-
-        if (lastInteractedAt is null)
-            return false;
-
-        // MinResumeDurationSeconds filters by total media runtime (player Duration), not time watched.
         if (policy.MinResumeDurationSeconds > 0
-            && lastKnownDurationSeconds > 0
-            && lastKnownDurationSeconds < policy.MinResumeDurationSeconds)
+            && bookmark.DurationSeconds > 0
+            && bookmark.DurationSeconds < policy.MinResumeDurationSeconds)
         {
             return false;
         }
 
-        return progressPercentage >= policy.MinResumePercent;
+        return bookmark.ProgressPercentage >= policy.MinResumePercent;
     }
 
-    public static bool IsWithinWindow(
-        UserMediaState state,
+    public static bool IsEarlySerieEpisodeBookmark(
+        ItemPlaybackBookmark bookmark,
+        VideoPlaybackPolicySettingsDto policy) =>
+        bookmark.ProgressPercentage < policy.MinResumePercent
+        && bookmark.PositionSeconds >= EarlyResumeMinPositionSeconds;
+
+    public static bool IsItemBookmarkEligible(
+        ItemPlaybackBookmark bookmark,
         VideoPlaybackPolicySettingsDto policy,
-        DateTime utcNow)
+        DateTime utcNow,
+        bool isSerieEpisode = false)
     {
-        if (state.LastInteractedAt is null)
+        var cutoff = GetWindowCutoff(policy, utcNow);
+        if (cutoff is not null && bookmark.UpdatedAt < cutoff)
+            return false;
+
+        return MeetsItemResumeThreshold(bookmark, policy)
+            || (isSerieEpisode && IsEarlySerieEpisodeBookmark(bookmark, policy));
+    }
+
+    public static bool IsSeriesBookmarkEligible(
+        SeriesPlaybackBookmark bookmark,
+        VideoPlaybackPolicySettingsDto policy,
+        DateTime utcNow,
+        bool isNextPlayable)
+    {
+        if (!isNextPlayable || bookmark.NextEpisodeId is null)
             return false;
 
         var cutoff = GetWindowCutoff(policy, utcNow);
-        return cutoff is null || state.LastInteractedAt >= cutoff;
-    }
-
-    public static bool MeetsThreshold(
-        UserMediaState state,
-        VideoPlaybackPolicySettingsDto policy,
-        DateTime utcNow)
-    {
-        if (state.ExcludedFromContinueWatching)
-            return false;
-
-        if (!IsEligibleForContinueWatching(state, policy))
-            return false;
-
-        return IsWithinWindow(state, policy, utcNow);
+        return cutoff is null || bookmark.NextEpisodeAvailableAt >= cutoff;
     }
 
     public static IQueryable<BaseMedia> WhereEligibleForContinueWatching(
         this IQueryable<BaseMedia> query,
+        IApplicationDbContext context,
         Guid userId,
         VideoPlaybackPolicySettingsDto policy,
         DateTime utcNow)
@@ -182,28 +78,24 @@ public static class ContinueWatchingEligibility
 
         query = query
             .Where(x => !(x is MusicAlbum) && !(x is MusicTrack))
-            .Where(x => x.UserMediaStates.Any(s =>
-                s.UserId == userId
-                && !s.IsCompleted
-                && !s.ExcludedFromContinueWatching
-                && s.LastInteractedAt != null
-                && (minResumeDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
-                && (s.ProgressPercentage >= minResumePercent
-                    || (s.PlayCount == 0
-                        && s.LastPlaybackPosition < PlaceholderNoisePositionSeconds
-                        && s.ProgressPercentage < PlaceholderNoiseProgressPercent)
-                    || (x is SerieEpisode
-                        && s.ProgressPercentage < minResumePercent))));
+            .Where(x =>
+                context.PlaybackBookmarks.OfType<ItemPlaybackBookmark>().Any(b =>
+                    b.UserId == userId
+                    && b.MediaId == x.Id
+                    && (cutoff == null || b.UpdatedAt >= cutoff)
+                    && (minResumeDurationSeconds <= 0
+                        || b.DurationSeconds <= 0
+                        || b.DurationSeconds >= minResumeDurationSeconds)
+                    && (b.PositionSeconds / (b.DurationSeconds > 0 ? b.DurationSeconds : 1) * 100 >= minResumePercent
+                        || (x is SerieEpisode
+                            && b.PositionSeconds >= EarlyResumeMinPositionSeconds
+                            && b.PositionSeconds / (b.DurationSeconds > 0 ? b.DurationSeconds : 1) * 100 < minResumePercent)))
+                || context.PlaybackBookmarks.OfType<SeriesPlaybackBookmark>().Any(b =>
+                    b.UserId == userId
+                    && b.NextEpisodeId == x.Id
+                    && (cutoff == null || b.NextEpisodeAvailableAt >= cutoff)));
 
-        if (cutoff is not null)
-        {
-            query = query.Where(x => x.UserMediaStates.Any(s =>
-                s.UserId == userId && s.LastInteractedAt >= cutoff));
-        }
-
-        return query;
+        return query.Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
     }
 
     public static IQueryable<BaseMedia> WhereEligibleForSharedProfileContinueWatching(
@@ -219,30 +111,23 @@ public static class ContinueWatchingEligibility
 
         query = query
             .Where(x => !(x is MusicAlbum) && !(x is MusicTrack))
-            .Where(x => context.SharedProfileMediaStates.Any(s =>
-                s.SharedProfileId == sharedProfileId
-                && s.MediaId == x.Id
-                && !s.IsCompleted
-                && !s.ExcludedFromContinueWatching
-                && s.LastInteractedAt != null
-                && (minResumeDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds <= 0
-                    || s.LastKnownDurationSeconds >= minResumeDurationSeconds)
-                && (s.ProgressPercentage >= minResumePercent
-                    || (s.PlayCount == 0
-                        && s.LastPlaybackPosition < PlaceholderNoisePositionSeconds
-                        && s.ProgressPercentage < PlaceholderNoiseProgressPercent)
-                    || (x is SerieEpisode
-                        && s.ProgressPercentage < minResumePercent))));
+            .Where(x =>
+                context.PlaybackBookmarks.OfType<ItemPlaybackBookmark>().Any(b =>
+                    b.SharedProfileId == sharedProfileId
+                    && b.MediaId == x.Id
+                    && (cutoff == null || b.UpdatedAt >= cutoff)
+                    && (minResumeDurationSeconds <= 0
+                        || b.DurationSeconds <= 0
+                        || b.DurationSeconds >= minResumeDurationSeconds)
+                    && (b.PositionSeconds / (b.DurationSeconds > 0 ? b.DurationSeconds : 1) * 100 >= minResumePercent
+                        || (x is SerieEpisode
+                            && b.PositionSeconds >= EarlyResumeMinPositionSeconds
+                            && b.PositionSeconds / (b.DurationSeconds > 0 ? b.DurationSeconds : 1) * 100 < minResumePercent)))
+                || context.PlaybackBookmarks.OfType<SeriesPlaybackBookmark>().Any(b =>
+                    b.SharedProfileId == sharedProfileId
+                    && b.NextEpisodeId == x.Id
+                    && (cutoff == null || b.NextEpisodeAvailableAt >= cutoff)));
 
-        if (cutoff is not null)
-        {
-            query = query.Where(x => context.SharedProfileMediaStates.Any(s =>
-                s.SharedProfileId == sharedProfileId
-                && s.MediaId == x.Id
-                && s.LastInteractedAt >= cutoff));
-        }
-
-        return query;
+        return query.Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
     }
 }

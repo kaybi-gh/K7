@@ -20,7 +20,7 @@ public record BulkUpsertMediaStatesCommand : IRequest<int>
 public class BulkUpsertMediaStatesCommandHandler(
     IApplicationDbContext context,
     IMediaQueryCacheInvalidator cacheInvalidator,
-    INextEpisodeEnqueueService nextEpisodeEnqueueService)
+    IPlaybackBookmarkService bookmarkService)
     : IRequestHandler<BulkUpsertMediaStatesCommand, int>
 {
     public async Task<int> Handle(BulkUpsertMediaStatesCommand request, CancellationToken cancellationToken)
@@ -38,6 +38,7 @@ public class BulkUpsertMediaStatesCommandHandler(
 
         var upsertedCount = 0;
         var strategy = request.Strategy ?? new MergeStrategy();
+        var timeNow = DateTime.UtcNow;
 
         foreach (var item in request.Items)
         {
@@ -55,12 +56,9 @@ public class BulkUpsertMediaStatesCommandHandler(
                     existing.PlayCount = item.PlayCount;
                     updated = true;
                 }
-                // Ignore: keep existing play count as-is
 
                 if (strategy.Progress is ProgressConflictMode.AlwaysOverwrite)
                 {
-                    existing.LastPlaybackPosition = item.LastPlaybackPosition;
-                    existing.ProgressPercentage = item.ProgressPercentage;
                     existing.IsCompleted = item.IsCompleted;
                     existing.LastInteractedAt = item.LastInteractedAt;
                     updated = true;
@@ -68,14 +66,21 @@ public class BulkUpsertMediaStatesCommandHandler(
                 else if (item.LastInteractedAt.HasValue &&
                     (existing.LastInteractedAt is null || item.LastInteractedAt.Value > existing.LastInteractedAt.Value))
                 {
-                    existing.LastPlaybackPosition = item.LastPlaybackPosition;
-                    existing.ProgressPercentage = item.ProgressPercentage;
                     existing.IsCompleted = item.IsCompleted;
                     existing.LastInteractedAt = item.LastInteractedAt;
                     updated = true;
                 }
 
-                if (updated) upsertedCount++;
+                if (updated)
+                {
+                    await ApplyBookmarkFromImportAsync(
+                        request.UserId,
+                        item,
+                        existing.IsCompleted,
+                        timeNow,
+                        cancellationToken);
+                    upsertedCount++;
+                }
             }
             else
             {
@@ -84,13 +89,17 @@ public class BulkUpsertMediaStatesCommandHandler(
                     UserId = request.UserId,
                     MediaId = item.MediaId,
                     PlayCount = item.PlayCount,
-                    LastPlaybackPosition = item.LastPlaybackPosition,
-                    ProgressPercentage = item.ProgressPercentage,
                     IsCompleted = item.IsCompleted,
                     LastInteractedAt = item.LastInteractedAt
                 };
                 context.UserMediaStates.Add(state);
                 existingStates[item.MediaId] = state;
+                await ApplyBookmarkFromImportAsync(
+                    request.UserId,
+                    item,
+                    item.IsCompleted,
+                    timeNow,
+                    cancellationToken);
                 upsertedCount++;
             }
         }
@@ -99,16 +108,60 @@ public class BulkUpsertMediaStatesCommandHandler(
 
         if (upsertedCount > 0)
         {
-            await EnqueueNextEpisodesAsync(request.UserId, existingStates, cancellationToken);
+            await EnqueueSeriesBookmarksAsync(request.UserId, existingStates, timeNow, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
             cacheInvalidator.InvalidateAll();
         }
 
         return upsertedCount;
     }
 
-    private async Task EnqueueNextEpisodesAsync(
+    private async Task ApplyBookmarkFromImportAsync(
+        Guid userId,
+        BulkUpsertMediaStatesRequest.MediaStateItem item,
+        bool isCompleted,
+        DateTime timeNow,
+        CancellationToken cancellationToken)
+    {
+        if (isCompleted)
+        {
+            await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, item.MediaId, cancellationToken);
+            var isEpisode = await context.Medias
+                .OfType<SerieEpisode>()
+                .AnyAsync(e => e.Id == item.MediaId, cancellationToken);
+            if (isEpisode)
+            {
+                await bookmarkService.OnEpisodeCompletedAsync(
+                    userId,
+                    sharedProfileId: null,
+                    item.MediaId,
+                    item.LastInteractedAt ?? timeNow,
+                    cancellationToken);
+            }
+
+            return;
+        }
+
+        if (item.LastPlaybackPosition > 0 || item.ProgressPercentage > 0)
+        {
+            var duration = item.ProgressPercentage > 0
+                ? item.LastPlaybackPosition / (item.ProgressPercentage / 100.0)
+                : 0;
+            await bookmarkService.UpsertItemBookmarkAsync(
+                userId,
+                sharedProfileId: null,
+                item.MediaId,
+                item.LastPlaybackPosition,
+                duration,
+                item.LastInteractedAt ?? timeNow,
+                cancellationToken);
+        }
+    }
+
+    private async Task EnqueueSeriesBookmarksAsync(
         Guid userId,
         Dictionary<Guid, UserMediaState> states,
+        DateTime timeNow,
         CancellationToken cancellationToken)
     {
         var completedIds = states
@@ -135,10 +188,13 @@ public class BulkUpsertMediaStatesCommandHandler(
 
         foreach (var episode in latestBySerie)
         {
-            var interactedAt = states[episode.Id].LastInteractedAt ?? DateTime.UtcNow;
-            await nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, episode.Id, interactedAt, cancellationToken);
+            var interactedAt = states[episode.Id].LastInteractedAt ?? timeNow;
+            await bookmarkService.OnEpisodeCompletedAsync(
+                userId,
+                sharedProfileId: null,
+                episode.Id,
+                interactedAt,
+                cancellationToken);
         }
-
-        await context.SaveChangesAsync(cancellationToken);
     }
 }

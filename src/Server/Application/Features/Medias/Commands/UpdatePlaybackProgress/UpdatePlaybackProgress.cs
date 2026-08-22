@@ -38,7 +38,6 @@ public class UpdatePlaybackProgressCommandHandler(
     IActiveStreamTracker activeStreamTracker,
     IIdentityService identityService,
     IMediaQueryCacheInvalidator cacheInvalidator,
-    INextEpisodeEnqueueService nextEpisodeEnqueueService,
     IUserMediaStateUpdater userMediaStateUpdater,
     ISharedProfileMediaStateUpdater sharedProfileMediaStateUpdater,
     IPlaybackPolicySettingsProvider playbackPolicySettingsProvider,
@@ -54,7 +53,6 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly IActiveStreamTracker _activeStreamTracker = activeStreamTracker;
     private readonly IIdentityService _identityService = identityService;
     private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
-    private readonly INextEpisodeEnqueueService _nextEpisodeEnqueueService = nextEpisodeEnqueueService;
     private readonly IUserMediaStateUpdater _userMediaStateUpdater = userMediaStateUpdater;
     private readonly ISharedProfileMediaStateUpdater _sharedProfileMediaStateUpdater = sharedProfileMediaStateUpdater;
     private readonly IPlaybackPolicySettingsProvider _playbackPolicySettingsProvider = playbackPolicySettingsProvider;
@@ -258,18 +256,6 @@ public class UpdatePlaybackProgressCommandHandler(
                 cancellationToken);
         }
 
-        if (hostResult?.EpisodeIdForEnqueue is { } hostEpisodeId)
-            await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
-
-        if (viewingGroup is not null && sharedResult?.EpisodeIdForEnqueue is { } sharedEpisodeId)
-        {
-            await _nextEpisodeEnqueueService.EnqueueNextEpisodeForSharedProfileAsync(
-                viewingGroup.SharedProfileId,
-                sharedEpisodeId,
-                timeNow,
-                cancellationToken);
-        }
-
         // Shared-profile mid-progress stays on SharedProfileMediaState only (personal CW stays clean).
         // On completion, mark the media watched for every member so personal "Vu" badges match the group watch.
         if (!isGuest && viewingGroup is not null && newlyCompletedSession)
@@ -290,7 +276,7 @@ public class UpdatePlaybackProgressCommandHandler(
                 sharedResult.ProgressPercentage,
                 sharedResult.IsCompleted,
                 sharedResult.WasNewlyCompleted,
-                sharedResult.EpisodeIdForEnqueue)));
+                sharedResult.CompletedEpisodeId)));
         }
 
         if (request.State != previousState)
@@ -622,10 +608,7 @@ public class UpdatePlaybackProgressCommandHandler(
                     state.PlayCount++;
 
                 state.IsCompleted = true;
-                state.ProgressPercentage = 100;
-                state.LastPlaybackPosition = 0;
                 state.LastInteractedAt = timeNow;
-                state.ExcludedFromContinueWatching = false;
                 continue;
             }
 
@@ -635,8 +618,6 @@ public class UpdatePlaybackProgressCommandHandler(
                 MediaId = mediaId,
                 PlayCount = 1,
                 IsCompleted = true,
-                ProgressPercentage = 100,
-                LastPlaybackPosition = 0,
                 LastInteractedAt = timeNow
             });
         }

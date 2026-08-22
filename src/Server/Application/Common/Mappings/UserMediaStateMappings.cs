@@ -7,10 +7,10 @@ public static class UserMediaStateMappings
 {
     extension(UserMediaState domain)
     {
-        public UserMediaStateDto ToUserMediaStateDto() => new()
+        public UserMediaStateDto ToUserMediaStateDto(ItemPlaybackBookmark? bookmark = null) => new()
         {
-            LastPlaybackPosition = domain.LastPlaybackPosition,
-            ProgressPercentage = domain.ProgressPercentage,
+            LastPlaybackPosition = bookmark?.PositionSeconds ?? 0,
+            ProgressPercentage = bookmark?.ProgressPercentage ?? (domain.IsCompleted ? 100 : 0),
             IsCompleted = domain.IsCompleted,
             PlayCount = domain.PlayCount,
             SkipCount = domain.SkipCount,
@@ -20,10 +20,10 @@ public static class UserMediaStateMappings
 
     extension(SharedProfileMediaState domain)
     {
-        public UserMediaStateDto ToUserMediaStateDto() => new()
+        public UserMediaStateDto ToUserMediaStateDto(ItemPlaybackBookmark? bookmark = null) => new()
         {
-            LastPlaybackPosition = domain.LastPlaybackPosition,
-            ProgressPercentage = domain.ProgressPercentage,
+            LastPlaybackPosition = bookmark?.PositionSeconds ?? 0,
+            ProgressPercentage = bookmark?.ProgressPercentage ?? (domain.IsCompleted ? 100 : 0),
             IsCompleted = domain.IsCompleted,
             PlayCount = domain.PlayCount,
             SkipCount = domain.SkipCount,
@@ -34,14 +34,10 @@ public static class UserMediaStateMappings
         {
             UserId = userId,
             MediaId = domain.MediaId,
-            LastPlaybackPosition = domain.LastPlaybackPosition,
-            ProgressPercentage = domain.ProgressPercentage,
             IsCompleted = domain.IsCompleted,
             PlayCount = domain.PlayCount,
             SkipCount = domain.SkipCount,
-            LastInteractedAt = domain.LastInteractedAt,
-            LastKnownDurationSeconds = domain.LastKnownDurationSeconds,
-            ExcludedFromContinueWatching = domain.ExcludedFromContinueWatching
+            LastInteractedAt = domain.LastInteractedAt
         };
     }
 }

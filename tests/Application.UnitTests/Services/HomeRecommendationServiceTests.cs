@@ -132,7 +132,6 @@ public class HomeRecommendationServiceTests
             MediaId = _seedMovieId,
             LastInteractedAt = DateTime.UtcNow,
             IsCompleted = false,
-            ProgressPercentage = 1
         });
         AddRecommendationAndCandidateExternalId();
         await _context.SaveChangesAsync();

@@ -64,13 +64,9 @@ public class SharedProfileMediaStateMigrationTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = _mediaId,
-            ProgressPercentage = 35,
-            LastPlaybackPosition = 700,
-            LastKnownDurationSeconds = 2000,
             LastInteractedAt = interactedAt,
             IsCompleted = false,
             PlayCount = 1,
-            ExcludedFromContinueWatching = false
         });
         await _context.SaveChangesAsync();
 
@@ -85,8 +81,6 @@ public class SharedProfileMediaStateMigrationTests
         states.Should().HaveCount(2);
         states.Should().OnlyContain(s =>
             s.MediaId == _mediaId
-            && s.ProgressPercentage == 35
-            && s.LastPlaybackPosition == 700
             && s.LastInteractedAt == interactedAt
             && s.PlayCount == 1);
         states.Select(s => s.UserId).Should().BeEquivalentTo([_hostUserId, _memberUserId]);
@@ -102,8 +96,6 @@ public class SharedProfileMediaStateMigrationTests
         {
             UserId = _memberUserId,
             MediaId = _mediaId,
-            ProgressPercentage = 10,
-            LastPlaybackPosition = 100,
             LastInteractedAt = olderPersonalAt,
             PlayCount = 1,
             IsCompleted = false
@@ -112,8 +104,6 @@ public class SharedProfileMediaStateMigrationTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = _mediaId,
-            ProgressPercentage = 55,
-            LastPlaybackPosition = 1100,
             LastInteractedAt = newerSharedAt,
             PlayCount = 3,
             IsCompleted = false
@@ -128,8 +118,6 @@ public class SharedProfileMediaStateMigrationTests
         await _context.SaveChangesAsync();
 
         var personal = await _context.UserMediaStates.SingleAsync(s => s.UserId == _memberUserId);
-        personal.ProgressPercentage.Should().Be(55);
-        personal.LastPlaybackPosition.Should().Be(1100);
         personal.LastInteractedAt.Should().Be(newerSharedAt);
         personal.PlayCount.Should().Be(3);
     }
@@ -144,8 +132,6 @@ public class SharedProfileMediaStateMigrationTests
         {
             UserId = _memberUserId,
             MediaId = _mediaId,
-            ProgressPercentage = 80,
-            LastPlaybackPosition = 1600,
             LastInteractedAt = newerPersonalAt,
             PlayCount = 2,
             IsCompleted = false
@@ -154,8 +140,6 @@ public class SharedProfileMediaStateMigrationTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = _mediaId,
-            ProgressPercentage = 20,
-            LastPlaybackPosition = 400,
             LastInteractedAt = olderSharedAt,
             PlayCount = 5,
             IsCompleted = false
@@ -170,8 +154,6 @@ public class SharedProfileMediaStateMigrationTests
         await _context.SaveChangesAsync();
 
         var personal = await _context.UserMediaStates.SingleAsync(s => s.UserId == _memberUserId);
-        personal.ProgressPercentage.Should().Be(80);
-        personal.LastPlaybackPosition.Should().Be(1600);
         personal.LastInteractedAt.Should().Be(newerPersonalAt);
         personal.PlayCount.Should().Be(5);
     }

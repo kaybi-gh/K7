@@ -70,8 +70,6 @@ public class MediaUserStateTransferHelperTests
             UserId = userId,
             MediaId = fromId,
             PlayCount = 2,
-            ProgressPercentage = 40,
-            LastPlaybackPosition = 90,
             LastInteractedAt = DateTime.UtcNow.AddDays(-1)
         });
         await _context.SaveChangesAsync();
@@ -82,7 +80,6 @@ public class MediaUserStateTransferHelperTests
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(toId);
         state.PlayCount.Should().Be(2);
-        state.ProgressPercentage.Should().Be(40);
     }
 
     [Test]
@@ -95,8 +92,6 @@ public class MediaUserStateTransferHelperTests
             MediaId = fromId,
             PlayCount = 3,
             SkipCount = 2,
-            ProgressPercentage = 80,
-            LastPlaybackPosition = 200,
             IsCompleted = true,
             LastInteractedAt = DateTime.UtcNow
         });
@@ -106,8 +101,6 @@ public class MediaUserStateTransferHelperTests
             MediaId = toId,
             PlayCount = 1,
             SkipCount = 4,
-            ProgressPercentage = 10,
-            LastPlaybackPosition = 20,
             LastInteractedAt = DateTime.UtcNow.AddDays(-2)
         });
         await _context.SaveChangesAsync();
@@ -119,7 +112,6 @@ public class MediaUserStateTransferHelperTests
         state.MediaId.Should().Be(toId);
         state.PlayCount.Should().Be(4);
         state.SkipCount.Should().Be(6);
-        state.ProgressPercentage.Should().Be(80);
         state.IsCompleted.Should().BeTrue();
     }
 

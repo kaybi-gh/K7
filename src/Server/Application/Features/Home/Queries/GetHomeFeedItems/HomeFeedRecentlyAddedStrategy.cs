@@ -298,7 +298,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
                 GroupCount = 1,
                 ReleaseDate = serie.ReleaseDate,
                 Watched = epState?.IsCompleted ?? false,
-                Progress = epState?.IsCompleted == true ? 100 : epState?.ProgressPercentage ?? 0,
+                Progress = epState?.IsCompleted == true ? 100 : epState?.ToUserMediaStateDto().ProgressPercentage ?? 0,
                 Overview = detailed ? (serie.Overview ?? ep.Overview) : null,
                 Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
                 ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,

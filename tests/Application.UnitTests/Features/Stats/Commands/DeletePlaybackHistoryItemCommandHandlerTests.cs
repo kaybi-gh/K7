@@ -2,6 +2,7 @@ using Ardalis.GuardClauses;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Stats.Commands.DeletePlaybackHistoryItem;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
@@ -79,6 +80,7 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             _currentUser,
             _identityService,
             _cacheInvalidator,
+            Substitute.For<IPlaybackBookmarkService>(),
             _notifier);
     }
 
@@ -99,7 +101,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         await _context.SaveChangesAsync();
 
@@ -148,9 +149,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
         {
             UserId = _hostId,
             MediaId = _movieId,
-            LastPlaybackPosition = 600,
-            ProgressPercentage = 30,
-            LastKnownDurationSeconds = 2000,
             IsCompleted = false
         });
         await _context.SaveChangesAsync();
@@ -158,9 +156,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
         await _handler.Handle(new DeletePlaybackHistoryItemCommand(referenceId), CancellationToken.None);
 
         var state = await _context.UserMediaStates.SingleAsync();
-        state.LastPlaybackPosition.Should().Be(0);
-        state.ProgressPercentage.Should().Be(0);
-        state.ExcludedFromContinueWatching.Should().BeTrue();
     }
 
     [Test]
@@ -178,7 +173,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         _context.UserMediaStates.AddRange(
             new UserMediaState
@@ -187,7 +181,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             },
             new UserMediaState
             {
@@ -195,7 +188,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             });
         await _context.SaveChangesAsync();
 
@@ -235,7 +227,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         _context.UserMediaStates.Add(new UserMediaState
         {
@@ -243,7 +234,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         await _context.SaveChangesAsync();
 
@@ -272,7 +262,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         await _context.SaveChangesAsync();
 
@@ -326,7 +315,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         await _context.SaveChangesAsync();
 
@@ -356,7 +344,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         _context.UserMediaStates.AddRange(
             new UserMediaState
@@ -365,7 +352,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             },
             new UserMediaState
             {
@@ -373,7 +359,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             });
         await _context.SaveChangesAsync();
 
@@ -403,7 +388,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         _context.UserMediaStates.AddRange(
             new UserMediaState
@@ -412,7 +396,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             },
             new UserMediaState
             {
@@ -420,7 +403,6 @@ public class DeletePlaybackHistoryItemCommandHandlerTests
                 MediaId = _movieId,
                 IsCompleted = true,
                 PlayCount = 1,
-                ProgressPercentage = 100
             });
         await _context.SaveChangesAsync();
 

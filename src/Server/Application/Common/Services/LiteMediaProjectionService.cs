@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
@@ -272,9 +273,18 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
                 .Where(s => s.UserId == userId.Value && idSet.Contains(s.MediaId))
                 .ToListAsync(cancellationToken)
             : [];
+        var itemBookmarks = userId.HasValue
+            ? await context.PlaybackBookmarks
+                .OfType<ItemPlaybackBookmark>()
+                .AsNoTracking()
+                .Where(b => b.UserId == userId.Value && idSet.Contains(b.MediaId))
+                .ToDictionaryAsync(b => b.MediaId, cancellationToken)
+            : new Dictionary<Guid, ItemPlaybackBookmark>();
         var statesByMediaId = states
             .GroupBy(s => s.MediaId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.LastInteractedAt).First().ToUserMediaStateDto());
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(s => s.LastInteractedAt).First().ToUserMediaStateDto(itemBookmarks.GetValueOrDefault(g.Key)));
         var ratings = userId.HasValue
             ? await context.Ratings
                 .OfType<UserRating>()

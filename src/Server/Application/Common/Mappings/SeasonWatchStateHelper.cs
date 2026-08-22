@@ -33,7 +33,7 @@ internal static class SeasonWatchStateHelper
             }
             else
             {
-                totalProgress += state?.ProgressPercentage ?? 0;
+                totalProgress += 0;
             }
 
             if (state?.LastInteractedAt is not null

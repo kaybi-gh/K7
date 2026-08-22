@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Stats.Commands.ReassignPlaybackHistoryItem;
@@ -16,6 +17,7 @@ public class ReassignPlaybackHistoryItemCommandHandler(
     IUser currentUser,
     IIdentityService identityService,
     IMediaQueryCacheInvalidator cacheInvalidator,
+    IPlaybackBookmarkService bookmarkService,
     IPlaybackProgressNotifier progressNotifier) : IRequestHandler<ReassignPlaybackHistoryItemCommand>
 {
     public async Task Handle(ReassignPlaybackHistoryItemCommand request, CancellationToken cancellationToken)
@@ -307,10 +309,7 @@ public class ReassignPlaybackHistoryItemCommandHandler(
                     state.PlayCount++;
 
                 state.IsCompleted = true;
-                state.ProgressPercentage = 100;
-                state.LastPlaybackPosition = 0;
                 state.LastInteractedAt = timeNow;
-                state.ExcludedFromContinueWatching = false;
                 continue;
             }
 
@@ -320,8 +319,6 @@ public class ReassignPlaybackHistoryItemCommandHandler(
                 MediaId = mediaId,
                 PlayCount = 1,
                 IsCompleted = true,
-                ProgressPercentage = 100,
-                LastPlaybackPosition = 0,
                 LastInteractedAt = timeNow
             });
         }
@@ -330,18 +327,8 @@ public class ReassignPlaybackHistoryItemCommandHandler(
     private async Task ClearPersonalContinueWatchingAsync(
         Guid userId,
         Guid mediaId,
-        CancellationToken cancellationToken)
-    {
-        var state = await context.UserMediaStates
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == mediaId, cancellationToken);
-
-        if (state is null || state.IsCompleted)
-            return;
-
-        state.LastPlaybackPosition = 0;
-        state.ProgressPercentage = 0;
-        state.ExcludedFromContinueWatching = true;
-    }
+        CancellationToken cancellationToken) =>
+        await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
 
     private async Task RestorePersonalContinueWatchingAsync(
         Guid userId,
@@ -357,7 +344,6 @@ public class ReassignPlaybackHistoryItemCommandHandler(
 
         var duration = latest.DurationSeconds;
         var position = latest.PositionSeconds > 0 ? latest.PositionSeconds : latest.WatchedDurationSeconds;
-        var progress = duration > 0 ? Math.Clamp(position / duration * 100, 0, 100) : 0;
         var interactedAt = latest.LastUpdateAt ?? latest.StartedAt;
 
         if (state is null)
@@ -366,20 +352,22 @@ public class ReassignPlaybackHistoryItemCommandHandler(
             {
                 UserId = userId,
                 MediaId = mediaId,
-                LastPlaybackPosition = position,
-                ProgressPercentage = progress,
-                LastKnownDurationSeconds = duration,
-                LastInteractedAt = interactedAt,
-                ExcludedFromContinueWatching = false
+                LastInteractedAt = interactedAt
             });
-            return;
+        }
+        else
+        {
+            state.LastInteractedAt = interactedAt;
         }
 
-        state.LastPlaybackPosition = position;
-        state.ProgressPercentage = progress;
-        state.LastKnownDurationSeconds = duration;
-        state.LastInteractedAt = interactedAt;
-        state.ExcludedFromContinueWatching = false;
+        await bookmarkService.UpsertItemBookmarkAsync(
+            userId,
+            sharedProfileId: null,
+            mediaId,
+            position,
+            duration,
+            interactedAt,
+            cancellationToken);
     }
 
     private async Task NotifyActorAsync(Guid actorUserId, Guid mediaId, CancellationToken cancellationToken)
@@ -402,11 +390,15 @@ public class ReassignPlaybackHistoryItemCommandHandler(
         var personal = await context.UserMediaStates
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == actorUserId && s.MediaId == mediaId, cancellationToken);
+        var bookmark = await context.PlaybackBookmarks
+            .OfType<ItemPlaybackBookmark>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.UserId == actorUserId && b.MediaId == mediaId, cancellationToken);
 
         await progressNotifier.NotifyProgressUpdatedAsync(
             identityUserId,
             mediaId,
-            personal?.ProgressPercentage ?? 0,
+            bookmark?.ProgressPercentage ?? (personal?.IsCompleted == true ? 100 : 0),
             personal?.IsCompleted ?? false,
             mediaType,
             cancellationToken);
@@ -422,8 +414,6 @@ public class ReassignPlaybackHistoryItemCommandHandler(
         var interactedAt = latest.LastUpdateAt ?? latest.StartedAt;
 
         state.LastInteractedAt = interactedAt;
-        state.LastKnownDurationSeconds = duration;
-        state.ExcludedFromContinueWatching = false;
 
         if (completed)
         {
@@ -431,16 +421,10 @@ public class ReassignPlaybackHistoryItemCommandHandler(
                 state.PlayCount++;
 
             state.IsCompleted = true;
-            state.ProgressPercentage = 100;
-            state.LastPlaybackPosition = 0;
             return;
         }
 
         state.IsCompleted = false;
-        state.LastPlaybackPosition = position;
-        state.ProgressPercentage = duration > 0
-            ? Math.Clamp(position / duration * 100, 0, 100)
-            : 0;
     }
 
     private static List<Guid> ResolveCoViewerIds(SharedProfile group, Guid actorUserId)

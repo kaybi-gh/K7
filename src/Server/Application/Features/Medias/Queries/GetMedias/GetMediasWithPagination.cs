@@ -206,7 +206,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (request.ContinueWatching == true && userId.HasValue)
         {
             var policy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(userId.Value, cancellationToken);
-            query = query.WhereEligibleForContinueWatching(userId.Value, policy, DateTime.UtcNow);
+            query = query.WhereEligibleForContinueWatching(context, userId.Value, policy, DateTime.UtcNow);
         }
 
         return query;

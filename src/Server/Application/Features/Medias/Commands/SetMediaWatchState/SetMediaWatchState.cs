@@ -30,7 +30,7 @@ public class SetMediaWatchStateCommandHandler(
     IApplicationDbContext context,
     IUser currentUser,
     IMediaAccessGuard accessGuard,
-    INextEpisodeEnqueueService nextEpisodeEnqueueService,
+    IPlaybackBookmarkService bookmarkService,
     IPlaybackProgressNotifier progressNotifier,
     IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<SetMediaWatchStateCommand, SetMediaWatchStateResult>
@@ -59,7 +59,7 @@ public class SetMediaWatchStateCommandHandler(
             .ToDictionaryAsync(s => s.MediaId, cancellationToken);
 
         var notifications = new List<(Guid MediaId, double Progress, bool IsCompleted, MediaType MediaType)>();
-        Guid? episodeToEnqueue = null;
+        Guid? episodeToComplete = null;
 
         foreach (var mediaId in targetMediaIds)
         {
@@ -70,8 +70,7 @@ public class SetMediaWatchStateCommandHandler(
                     UserId = userId,
                     MediaId = mediaId,
                     PlayCount = 0,
-                    IsCompleted = false,
-                    LastPlaybackPosition = 0
+                    IsCompleted = false
                 };
                 context.UserMediaStates.Add(state);
                 existingStates[mediaId] = state;
@@ -85,33 +84,29 @@ public class SetMediaWatchStateCommandHandler(
                 if (!wasCompleted)
                 {
                     state.IsCompleted = true;
-                    state.ProgressPercentage = 100;
-                    state.LastPlaybackPosition = 0;
                     state.LastInteractedAt = timeNow;
+                    await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
                     notifications.Add((mediaId, 100, true, notifyType));
 
                     if (request.Scope == WatchStateScope.Item
                         && mediaId == request.MediaId
                         && media.Type == MediaType.SerieEpisode)
                     {
-                        episodeToEnqueue = mediaId;
+                        episodeToComplete = mediaId;
                     }
                 }
             }
-            else if (wasCompleted || state.ProgressPercentage > 0 || state.LastPlaybackPosition > 0)
+            else if (wasCompleted)
             {
                 state.IsCompleted = false;
-                state.ProgressPercentage = 0;
-                state.LastPlaybackPosition = 0;
                 state.LastInteractedAt = timeNow;
-                // Avoid looking like a next-episode Keep Watching placeholder after a manual unwatch.
-                state.ExcludedFromContinueWatching = true;
+                await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
                 notifications.Add((mediaId, 0, false, notifyType));
             }
         }
 
-        if (request.Watched && episodeToEnqueue is { } episodeId)
-            await nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, episodeId, timeNow, cancellationToken);
+        if (request.Watched && episodeToComplete is { } episodeId)
+            await bookmarkService.OnEpisodeCompletedAsync(userId, sharedProfileId: null, episodeId, timeNow, cancellationToken);
         else if (request.Watched && request.Scope == WatchStateScope.Season)
         {
             var lastEpisodeId = await context.Medias
@@ -122,7 +117,33 @@ public class SetMediaWatchStateCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (lastEpisodeId != default)
-                await nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, lastEpisodeId, timeNow, cancellationToken);
+                await bookmarkService.OnEpisodeCompletedAsync(userId, sharedProfileId: null, lastEpisodeId, timeNow, cancellationToken);
+        }
+        else if (request.Watched && request.Scope == WatchStateScope.Serie)
+        {
+            var lastEpisodeId = await context.Medias
+                .OfType<SerieEpisode>()
+                .Where(e => e.SerieId == request.MediaId)
+                .OrderByDescending(e => e.Season.SeasonNumber)
+                .ThenByDescending(e => e.EpisodeNumber)
+                .Select(e => e.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (lastEpisodeId != default)
+                await bookmarkService.OnEpisodeCompletedAsync(userId, sharedProfileId: null, lastEpisodeId, timeNow, cancellationToken);
+        }
+        else if (!request.Watched && request.Scope is WatchStateScope.Serie or WatchStateScope.Season)
+        {
+            var serieId = request.Scope == WatchStateScope.Serie
+                ? request.MediaId
+                : await context.Medias
+                    .OfType<SerieSeason>()
+                    .Where(s => s.Id == request.MediaId)
+                    .Select(s => s.SerieId)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+            if (serieId != default)
+                await bookmarkService.DismissAsync(serieId, userId, cancellationToken);
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -143,7 +164,6 @@ public class SetMediaWatchStateCommandHandler(
                     cancellationToken);
             }
 
-            // Home top-level cards use serie/season ids; also notify the scoped root so badges update.
             if (notifications.Count > 0
                 && request.Scope is WatchStateScope.Serie or WatchStateScope.Season)
             {

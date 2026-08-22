@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos.Requests;
+using K7.Tests.Helpers.Samples;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -75,13 +76,15 @@ public class BulkUpsertMediaStatesCommandHandlerTests
         };
 
         _context.Medias.AddRange(serie, season, episode1, episode2);
+        var (libraryId, peerServerId) = RemoteIndexedFilesSamples.EnsureLibraryAndPeer(_context);
+        _context.RemoteIndexedFiles.Add(RemoteIndexedFilesSamples.Create(_episode2Id, libraryId, peerServerId));
         _context.SaveChanges();
 
         var cacheInvalidator = Substitute.For<IMediaQueryCacheInvalidator>();
         _handler = new BulkUpsertMediaStatesCommandHandler(
             _context,
             cacheInvalidator,
-            new NextEpisodeEnqueueService(_context));
+            new PlaybackBookmarkService(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackBookmarkService>.Instance));
     }
 
     [TearDown]
@@ -92,7 +95,7 @@ public class BulkUpsertMediaStatesCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ShouldEnqueueNextEpisodePlaceholder_WhenImportedEpisodeIsCompleted()
+    public async Task Handle_ShouldCreateSeriesBookmark_WhenImportedEpisodeIsCompleted()
     {
         var interactedAt = DateTime.UtcNow.AddDays(-2);
         var count = await _handler.Handle(new BulkUpsertMediaStatesCommand
@@ -104,8 +107,6 @@ public class BulkUpsertMediaStatesCommandHandlerTests
                 {
                     MediaId = _episode1Id,
                     PlayCount = 1,
-                    LastPlaybackPosition = 0,
-                    ProgressPercentage = 100,
                     IsCompleted = true,
                     LastInteractedAt = interactedAt
                 }
@@ -114,11 +115,11 @@ public class BulkUpsertMediaStatesCommandHandlerTests
 
         count.Should().Be(1);
 
-        var next = await _context.UserMediaStates
-            .SingleAsync(s => s.UserId == _userId && s.MediaId == _episode2Id);
-        next.ProgressPercentage.Should().Be(0);
-        next.LastPlaybackPosition.Should().Be(0);
-        next.PlayCount.Should().Be(0);
-        next.LastInteractedAt.Should().Be(interactedAt);
+        var seriesBookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId);
+        seriesBookmark.LastCompletedEpisodeId.Should().Be(_episode1Id);
+        seriesBookmark.NextEpisodeId.Should().Be(_episode2Id);
+        seriesBookmark.ActivityAt.Should().Be(interactedAt);
     }
 }

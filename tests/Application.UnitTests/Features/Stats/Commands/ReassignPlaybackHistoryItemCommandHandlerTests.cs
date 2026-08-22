@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Stats.Commands.ReassignPlaybackHistoryItem;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
@@ -78,6 +79,7 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
             _currentUser,
             _identityService,
             _cacheInvalidator,
+            Substitute.For<IPlaybackBookmarkService>(),
             _notifier);
     }
 
@@ -127,7 +129,6 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
             MediaId = _movieId,
             IsCompleted = true,
             PlayCount = 1,
-            ProgressPercentage = 100
         });
         await _context.SaveChangesAsync();
 
@@ -150,9 +151,6 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
         {
             UserId = _hostId,
             MediaId = _movieId,
-            LastPlaybackPosition = 600,
-            ProgressPercentage = 30,
-            LastKnownDurationSeconds = 2000,
             IsCompleted = false
         });
         await _context.SaveChangesAsync();
@@ -162,12 +160,9 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
             CancellationToken.None);
 
         var personal = await _context.UserMediaStates.SingleAsync(s => s.UserId == _hostId);
-        personal.LastPlaybackPosition.Should().Be(0);
-        personal.ExcludedFromContinueWatching.Should().BeTrue();
 
         var shared = await _context.SharedProfileMediaStates.SingleAsync();
         shared.IsCompleted.Should().BeFalse();
-        shared.LastPlaybackPosition.Should().Be(600);
         (await _context.UserMediaStates.CountAsync(s => s.UserId == _partnerId)).Should().Be(0);
     }
 
@@ -179,9 +174,6 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = _movieId,
-            LastPlaybackPosition = 800,
-            ProgressPercentage = 40,
-            LastKnownDurationSeconds = 2000,
             IsCompleted = false
         });
         await _context.SaveChangesAsync();
@@ -192,8 +184,6 @@ public class ReassignPlaybackHistoryItemCommandHandlerTests
 
         (await _context.SharedProfileMediaStates.CountAsync()).Should().Be(0);
         var personal = await _context.UserMediaStates.SingleAsync(s => s.UserId == _hostId);
-        personal.LastPlaybackPosition.Should().Be(800);
-        personal.ExcludedFromContinueWatching.Should().BeFalse();
     }
 
     [Test]

@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Stats.Commands.DeletePlaybackHistoryItem;
@@ -16,6 +17,7 @@ public class DeletePlaybackHistoryItemCommandHandler(
     IUser currentUser,
     IIdentityService identityService,
     IMediaQueryCacheInvalidator cacheInvalidator,
+    IPlaybackBookmarkService bookmarkService,
     IPlaybackProgressNotifier progressNotifier) : IRequestHandler<DeletePlaybackHistoryItemCommand>
 {
     public async Task Handle(DeletePlaybackHistoryItemCommand request, CancellationToken cancellationToken)
@@ -284,12 +286,7 @@ public class DeletePlaybackHistoryItemCommandHandler(
             state.IsCompleted = state.PlayCount > 0;
 
         if (!remainingCompleted && !await HasRemainingInProgressAsync(userId, mediaId, excludedReferenceId, sharedProfileId: null, cancellationToken))
-        {
-            state.LastPlaybackPosition = 0;
-            state.ProgressPercentage = state.IsCompleted ? 100 : 0;
-            if (!state.IsCompleted)
-                state.ExcludedFromContinueWatching = true;
-        }
+            await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
     }
 
     private async Task AdjustPersonalCountsAfterSharedOptOutAsync(
@@ -318,11 +315,7 @@ public class DeletePlaybackHistoryItemCommandHandler(
         state.PlayCount = Math.Max(0, state.PlayCount - 1);
         state.IsCompleted = state.PlayCount > 0;
         if (!state.IsCompleted)
-        {
-            state.LastPlaybackPosition = 0;
-            state.ProgressPercentage = 0;
-            state.ExcludedFromContinueWatching = true;
-        }
+            await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
     }
 
     private async Task AdjustSharedProfileStateAsync(
@@ -369,10 +362,12 @@ public class DeletePlaybackHistoryItemCommandHandler(
             }
             else
             {
-                state.LastPlaybackPosition = 0;
-                state.ProgressPercentage = state.IsCompleted ? 100 : 0;
                 if (!state.IsCompleted)
-                    state.ExcludedFromContinueWatching = true;
+                    await bookmarkService.RemoveItemBookmarkAsync(
+                        userId: null,
+                        sharedProfileId,
+                        mediaId,
+                        cancellationToken);
             }
         }
     }
@@ -450,11 +445,15 @@ public class DeletePlaybackHistoryItemCommandHandler(
         var personal = await context.UserMediaStates
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == mediaId, cancellationToken);
+        var bookmark = await context.PlaybackBookmarks
+            .OfType<ItemPlaybackBookmark>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.UserId == userId && b.MediaId == mediaId, cancellationToken);
 
         await progressNotifier.NotifyProgressUpdatedAsync(
             identityUserId,
             mediaId,
-            personal?.ProgressPercentage ?? 0,
+            bookmark?.ProgressPercentage ?? (personal?.IsCompleted == true ? 100 : 0),
             personal?.IsCompleted ?? false,
             mediaType,
             cancellationToken);

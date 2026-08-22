@@ -46,8 +46,6 @@ public class SharedProfileUserStateOverlayTests
         {
             UserId = _userId,
             MediaId = _movieId,
-            ProgressPercentage = 10,
-            LastPlaybackPosition = 100,
             LastInteractedAt = DateTime.UtcNow.AddDays(-2),
             IsCompleted = false
         });
@@ -55,9 +53,6 @@ public class SharedProfileUserStateOverlayTests
         {
             SharedProfileId = _sharedProfileId,
             MediaId = _movieId,
-            ProgressPercentage = 35,
-            LastPlaybackPosition = 1200,
-            LastKnownDurationSeconds = 3600,
             LastInteractedAt = DateTime.UtcNow,
             IsCompleted = false
         });
@@ -86,7 +81,5 @@ public class SharedProfileUserStateOverlayTests
 
         movie.UserMediaStates.Should().ContainSingle();
         var state = movie.UserMediaStates.Single();
-        state.ProgressPercentage.Should().Be(35);
-        state.LastPlaybackPosition.Should().Be(1200);
     }
 }

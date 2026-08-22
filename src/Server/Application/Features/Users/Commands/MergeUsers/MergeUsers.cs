@@ -43,6 +43,7 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
         }
 
         await MergeMediaStatesAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
+        await MergePlaybackBookmarksAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
         await MergeRatingsAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
         await MergePlaylistsAsync(request.SourceUserId, request.TargetUserId, request.Strategy, cancellationToken);
         await TransferPlaybackSessionsAsync(request.SourceUserId, request.TargetUserId, cancellationToken);
@@ -87,16 +88,12 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
 
                 if (strategy.Progress is ProgressConflictMode.AlwaysOverwrite)
                 {
-                    targetState.LastPlaybackPosition = sourceState.LastPlaybackPosition;
-                    targetState.ProgressPercentage = sourceState.ProgressPercentage;
                     targetState.IsCompleted = sourceState.IsCompleted;
                     targetState.LastInteractedAt = sourceState.LastInteractedAt;
                 }
                 else if (sourceState.LastInteractedAt.HasValue &&
                     (targetState.LastInteractedAt is null || sourceState.LastInteractedAt.Value > targetState.LastInteractedAt.Value))
                 {
-                    targetState.LastPlaybackPosition = sourceState.LastPlaybackPosition;
-                    targetState.ProgressPercentage = sourceState.ProgressPercentage;
                     targetState.IsCompleted = sourceState.IsCompleted;
                     targetState.LastInteractedAt = sourceState.LastInteractedAt;
                 }
@@ -108,14 +105,24 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
                     UserId = targetUserId,
                     MediaId = sourceState.MediaId,
                     PlayCount = sourceState.PlayCount,
-                    LastPlaybackPosition = sourceState.LastPlaybackPosition,
-                    ProgressPercentage = sourceState.ProgressPercentage,
                     IsCompleted = sourceState.IsCompleted,
                     LastInteractedAt = sourceState.LastInteractedAt
                 });
             }
 
             context.UserMediaStates.Remove(sourceState);
+        }
+    }
+
+    private async Task MergePlaybackBookmarksAsync(Guid sourceUserId, Guid targetUserId, CancellationToken cancellationToken)
+    {
+        var sourceBookmarks = await context.PlaybackBookmarks
+            .Where(b => b.UserId == sourceUserId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var bookmark in sourceBookmarks)
+        {
+            bookmark.UserId = targetUserId;
         }
     }
 

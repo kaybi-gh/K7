@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Services;
+using K7.Server.Application.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -22,14 +23,14 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, IHomeRecommendationService homeRecommendationService)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, IPlaybackBookmarkService bookmarkService, IHomeRecommendationService homeRecommendationService)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
     private static readonly TimeSpan RecommendedCacheDuration = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan ContinueWatchingCacheDuration = TimeSpan.FromMinutes(5);
 
-    private readonly HomeFeedContinueWatchingStrategy _continueWatchingStrategy = new(context, playbackPolicySettingsProvider, mediaAccessFilter);
+    private readonly HomeFeedContinueWatchingStrategy _continueWatchingStrategy = new(context, playbackPolicySettingsProvider, bookmarkService, mediaAccessFilter);
     private readonly HomeFeedRecentlyAddedStrategy _recentlyAddedStrategy = new(context, mediaAccessFilter);
     private readonly HomeFeedTopLevelStrategy _topLevelStrategy = new(context, mediaAccessFilter);
     private readonly HomeFeedRecommendedStrategy _recommendedStrategy = new(context, homeRecommendationService);

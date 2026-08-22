@@ -103,7 +103,6 @@ public class UpdatePlaybackProgressCommandHandlerTests
             _tracker,
             _identityService,
             Substitute.For<IMediaQueryCacheInvalidator>(),
-            Substitute.For<INextEpisodeEnqueueService>(),
             _stateUpdater,
             _sharedProfileStateUpdater,
             _policies,
@@ -193,7 +192,6 @@ public class UpdatePlaybackProgressCommandHandlerTests
             MediaId = trackId,
             PlayCount = 1,
             IsCompleted = true,
-            ProgressPercentage = 100,
             LastInteractedAt = DateTime.UtcNow.AddDays(-1)
         });
         await _context.SaveChangesAsync();
@@ -395,7 +393,6 @@ public class UpdatePlaybackProgressCommandHandlerTests
         states.Should().OnlyContain(s =>
             s.MediaId == _movieId
             && s.IsCompleted
-            && s.ProgressPercentage == 100
             && s.PlayCount == 1);
         states.Select(s => s.UserId).Should().BeEquivalentTo([_userId, coViewerId]);
 

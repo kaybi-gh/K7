@@ -1,7 +1,12 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Services;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Home;
 
 namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
@@ -9,6 +14,7 @@ namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
 internal sealed class HomeFeedContinueWatchingStrategy(
     IApplicationDbContext context,
     IPlaybackPolicySettingsProvider playbackPolicySettingsProvider,
+    IPlaybackBookmarkService bookmarkService,
     MediaAccessFilter mediaAccessFilter)
 {
     public async Task<PaginatedList<HomeFeedItemDto>> HandleAsync(
@@ -23,221 +29,188 @@ internal sealed class HomeFeedContinueWatchingStrategy(
         var videoPolicy = await playbackPolicySettingsProvider.GetEffectiveVideoPolicyAsync(
             userId.Value, sharedProfileId, cancellationToken);
         var utcNow = DateTime.UtcNow;
+        var cutoff = ContinueWatchingEligibility.GetWindowCutoff(videoPolicy, utcNow);
 
-        IQueryable<BaseMedia> query;
-        if (sharedProfileId is { } profileId)
-        {
-            query = context.Medias
-                .AsNoTracking()
-                .WhereEligibleForSharedProfileContinueWatching(context, profileId, videoPolicy, utcNow)
-                .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
-        }
-        else
-        {
-            query = context.Medias
-                .AsNoTracking()
-                .WhereEligibleForContinueWatching(userId.Value, videoPolicy, utcNow)
-                .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
-        }
+        await bookmarkService.BackfillMissingNextEpisodesAsync(
+            userId, sharedProfileId, utcNow, cancellationToken);
+        await bookmarkService.ExpireStaleSeriesBookmarksAsync(
+            userId, sharedProfileId, videoPolicy, utcNow, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        var candidates = sharedProfileId is { } profileId
+            ? await BuildSharedProfileCandidatesAsync(profileId, videoPolicy, cutoff, utcNow, cancellationToken)
+            : await BuildPersonalCandidatesAsync(userId.Value, videoPolicy, cutoff, utcNow, cancellationToken);
+
+        if (candidates.Count == 0)
+            return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
+
+        var mediaIds = candidates.Select(c => c.MediaId).ToHashSet();
+        var query = context.Medias
+            .AsNoTracking()
+            .Where(m => mediaIds.Contains(m.Id))
+            .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
 
         query = HomeFeedQueryFilters.ApplyFamilyFilter(query, request.MediaTypes);
         query = HomeFeedQueryFilters.ApplyLibraryFilter(context, query, request.LibraryIds);
         query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);
 
-        return sharedProfileId is { } sharedId
-            ? await HandleSharedProfileAsync(request, sharedId, query, cancellationToken)
-            : await HandlePersonalAsync(request, userId.Value, query, cancellationToken);
-    }
-
-    private async Task<PaginatedList<HomeFeedItemDto>> HandlePersonalAsync(
-        GetHomeFeedItemsQuery request,
-        Guid userId,
-        IQueryable<BaseMedia> query,
-        CancellationToken cancellationToken)
-    {
-        var groupedCandidates = query
-            .Select(x => new
-            {
-                x.Id,
-                GroupId = x is SerieEpisode ? ((SerieEpisode)x).SerieId : x.Id,
-                SeasonNumber = x is SerieEpisode ? ((SerieEpisode)x).Season.SeasonNumber : 0,
-                EpisodeNumber = x is SerieEpisode ? ((SerieEpisode)x).EpisodeNumber : 0,
-                IsCompleted = x.UserMediaStates
-                    .Where(s => s.UserId == userId)
-                    .Select(s => (bool?)s.IsCompleted)
-                    .FirstOrDefault() ?? false,
-                LastPlaybackPosition = x.UserMediaStates
-                    .Where(s => s.UserId == userId)
-                    .Select(s => (double?)s.LastPlaybackPosition)
-                    .FirstOrDefault() ?? 0,
-                ProgressPercentage = x.UserMediaStates
-                    .Where(s => s.UserId == userId)
-                    .Select(s => (double?)s.ProgressPercentage)
-                    .FirstOrDefault() ?? 0,
-                LastInteractedAt = x.UserMediaStates
-                    .Where(s => s.UserId == userId)
-                    .Select(s => s.LastInteractedAt)
-                    .FirstOrDefault()
-            })
-            .GroupBy(x => x.GroupId)
-            .Select(g => new
-            {
-                GroupId = g.Key,
-                LastInteractedAt = g.Max(x => x.LastInteractedAt),
-                MediaId = g
-                    .OrderByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
-                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
-                                && x.ProgressPercentage < 100)))
-                    .ThenByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
-                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
-                                && x.ProgressPercentage < 100))
-                        ? x.LastInteractedAt
-                        : DateTime.MinValue)
-                    .ThenBy(x => x.SeasonNumber == 0 ? int.MaxValue : x.SeasonNumber)
-                    .ThenBy(x => x.EpisodeNumber)
-                    .Select(x => x.Id)
-                    .First()
-            });
-
-        var totalCount = await groupedCandidates.CountAsync(cancellationToken);
-        var pageIds = await groupedCandidates
-            .OrderByDescending(x => x.LastInteractedAt)
-            .ThenByDescending(x => x.GroupId)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(x => x.MediaId)
-            .ToListAsync(cancellationToken);
-
-        if (pageIds.Count == 0)
-            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
-
-        var pageItems = await context.Medias
-            .Where(m => pageIds.Contains(m.Id))
-            .Include(x => x.Pictures)
-            .Include(x => x.Ratings)
-            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId))
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
-
-        var pageItemsById = pageItems.ToDictionary(m => m.Id);
-        var page = pageIds.Select(id => pageItemsById[id]).ToList();
-
-        var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, page, cancellationToken);
-        var feedItems = page.Select(i => HomeFeedItemMapper.MapContinueWatchingItem(i, request.Detailed == true, pictureSizes)).ToList();
-        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
-    }
-
-    private async Task<PaginatedList<HomeFeedItemDto>> HandleSharedProfileAsync(
-        GetHomeFeedItemsQuery request,
-        Guid sharedProfileId,
-        IQueryable<BaseMedia> query,
-        CancellationToken cancellationToken)
-    {
-        var groupedCandidates = query
-            .Select(x => new
-            {
-                x.Id,
-                GroupId = x is SerieEpisode ? ((SerieEpisode)x).SerieId : x.Id,
-                SeasonNumber = x is SerieEpisode ? ((SerieEpisode)x).Season.SeasonNumber : 0,
-                EpisodeNumber = x is SerieEpisode ? ((SerieEpisode)x).EpisodeNumber : 0,
-                IsCompleted = context.SharedProfileMediaStates
-                    .Where(s => s.SharedProfileId == sharedProfileId && s.MediaId == x.Id)
-                    .Select(s => (bool?)s.IsCompleted)
-                    .FirstOrDefault() ?? false,
-                LastPlaybackPosition = context.SharedProfileMediaStates
-                    .Where(s => s.SharedProfileId == sharedProfileId && s.MediaId == x.Id)
-                    .Select(s => (double?)s.LastPlaybackPosition)
-                    .FirstOrDefault() ?? 0,
-                ProgressPercentage = context.SharedProfileMediaStates
-                    .Where(s => s.SharedProfileId == sharedProfileId && s.MediaId == x.Id)
-                    .Select(s => (double?)s.ProgressPercentage)
-                    .FirstOrDefault() ?? 0,
-                LastInteractedAt = context.SharedProfileMediaStates
-                    .Where(s => s.SharedProfileId == sharedProfileId && s.MediaId == x.Id)
-                    .Select(s => s.LastInteractedAt)
-                    .FirstOrDefault()
-            })
-            .GroupBy(x => x.GroupId)
-            .Select(g => new
-            {
-                GroupId = g.Key,
-                LastInteractedAt = g.Max(x => x.LastInteractedAt),
-                MediaId = g
-                    .OrderByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
-                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
-                                && x.ProgressPercentage < 100)))
-                    .ThenByDescending(x => !x.IsCompleted
-                        && (x.LastPlaybackPosition >= ContinueWatchingEligibility.PlaceholderNoisePositionSeconds
-                            || (x.ProgressPercentage >= ContinueWatchingEligibility.PlaceholderNoiseProgressPercent
-                                && x.ProgressPercentage < 100))
-                        ? x.LastInteractedAt
-                        : DateTime.MinValue)
-                    .ThenBy(x => x.SeasonNumber == 0 ? int.MaxValue : x.SeasonNumber)
-                    .ThenBy(x => x.EpisodeNumber)
-                    .Select(x => x.Id)
-                    .First()
-            });
-
-        var totalCount = await groupedCandidates.CountAsync(cancellationToken);
-        var pageIds = await groupedCandidates
-            .OrderByDescending(x => x.LastInteractedAt)
-            .ThenByDescending(x => x.GroupId)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(x => x.MediaId)
-            .ToListAsync(cancellationToken);
-
-        if (pageIds.Count == 0)
-            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
-
-        var pageItems = await context.Medias
-            .Where(m => pageIds.Contains(m.Id))
-            .Include(x => x.Pictures)
-            .Include(x => x.Ratings)
-            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
-
-        var sharedStates = await context.SharedProfileMediaStates
-            .AsNoTracking()
-            .Where(s => s.SharedProfileId == sharedProfileId && pageIds.Contains(s.MediaId))
-            .Select(s => new { s.MediaId, s.ProgressPercentage, s.IsCompleted })
-            .ToDictionaryAsync(s => s.MediaId, cancellationToken);
-
-        var pageItemsById = pageItems.ToDictionary(m => m.Id);
-        var page = pageIds.Select(id => pageItemsById[id]).ToList();
-
-        var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, page, cancellationToken);
-        var feedItems = page
-            .Select(i =>
-            {
-                var dto = HomeFeedItemMapper.MapContinueWatchingItem(i, request.Detailed == true, pictureSizes);
-                if (sharedStates.TryGetValue(i.Id, out var state))
-                {
-                    dto = dto with
-                    {
-                        Progress = state.ProgressPercentage,
-                        Watched = state.IsCompleted
-                    };
-                }
-                return dto;
-            })
+        var allowedIds = await query.Select(m => m.Id).ToListAsync(cancellationToken);
+        var allowedSet = allowedIds.ToHashSet();
+        var filtered = candidates
+            .Where(c => allowedSet.Contains(c.MediaId))
             .ToList();
 
+        var totalCount = filtered.Count;
+        var pageIds = filtered
+            .OrderByDescending(c => c.SortAt)
+            .ThenByDescending(c => c.MediaId)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(c => c.MediaId)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var pageItems = await context.Medias
+            .Where(m => pageIds.Contains(m.Id))
+            .Include(x => x.Pictures)
+            .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
+            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        var itemBookmarks = await bookmarkService.GetItemBookmarksAsync(
+            sharedProfileId is null ? userId : null,
+            sharedProfileId,
+            pageIds,
+            cancellationToken);
+
+        var pageItemsById = pageItems.ToDictionary(m => m.Id);
+        var page = pageIds.Select(id => pageItemsById[id]).ToList();
+
+        var pictureSizes = await HomeFeedQueryFilters.GetPictureSizesAsync(context, page, cancellationToken);
+        var feedItems = page.Select(i =>
+        {
+            var dto = HomeFeedItemMapper.MapContinueWatchingItem(i, request.Detailed == true, pictureSizes);
+            itemBookmarks.TryGetValue(i.Id, out var bookmark);
+            var state = i.UserMediaStates.FirstOrDefault();
+            if (state is not null || bookmark is not null)
+            {
+                var overlay = state?.ToUserMediaStateDto(bookmark) ?? bookmark!.ToUserMediaStateDto();
+                dto = dto with
+                {
+                    Progress = overlay.ProgressPercentage,
+                    Watched = overlay.IsCompleted
+                };
+            }
+
+            return dto;
+        }).ToList();
+
         return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<List<ContinueWatchingCandidate>> BuildPersonalCandidatesAsync(
+        Guid userId,
+        VideoPlaybackPolicySettingsDto policy,
+        DateTime? cutoff,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var itemBookmarks = await context.PlaybackBookmarks
+            .OfType<ItemPlaybackBookmark>()
+            .AsNoTracking()
+            .Where(b => b.UserId == userId)
+            .Where(b => cutoff == null || b.UpdatedAt >= cutoff)
+            .ToListAsync(cancellationToken);
+
+        var seriesBookmarks = await context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .AsNoTracking()
+            .Where(b => b.UserId == userId && b.NextEpisodeId != null)
+            .ToListAsync(cancellationToken);
+
+        return BuildCandidates(itemBookmarks, seriesBookmarks, policy, utcNow);
+    }
+
+    private async Task<List<ContinueWatchingCandidate>> BuildSharedProfileCandidatesAsync(
+        Guid sharedProfileId,
+        VideoPlaybackPolicySettingsDto policy,
+        DateTime? cutoff,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var itemBookmarks = await context.PlaybackBookmarks
+            .OfType<ItemPlaybackBookmark>()
+            .AsNoTracking()
+            .Where(b => b.SharedProfileId == sharedProfileId)
+            .Where(b => cutoff == null || b.UpdatedAt >= cutoff)
+            .ToListAsync(cancellationToken);
+
+        var seriesBookmarks = await context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .AsNoTracking()
+            .Where(b => b.SharedProfileId == sharedProfileId && b.NextEpisodeId != null)
+            .ToListAsync(cancellationToken);
+
+        return BuildCandidates(itemBookmarks, seriesBookmarks, policy, utcNow);
+    }
+
+    private List<ContinueWatchingCandidate> BuildCandidates(
+        IReadOnlyList<ItemPlaybackBookmark> itemBookmarks,
+        IReadOnlyList<SeriesPlaybackBookmark> seriesBookmarks,
+        VideoPlaybackPolicySettingsDto policy,
+        DateTime utcNow)
+    {
+        var candidates = new List<ContinueWatchingCandidate>();
+
+        foreach (var bookmark in itemBookmarks)
+        {
+            if (!ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, policy, utcNow))
+                continue;
+
+            candidates.Add(new ContinueWatchingCandidate(bookmark.MediaId, bookmark.UpdatedAt, bookmark.MediaId));
+        }
+
+        foreach (var bookmark in seriesBookmarks)
+        {
+            if (!bookmarkService.IsSeriesBookmarkEligible(bookmark, policy, utcNow, isNextPlayable: true))
+                continue;
+
+            candidates.Add(new ContinueWatchingCandidate(
+                bookmark.NextEpisodeId!.Value,
+                bookmark.NextEpisodeAvailableAt,
+                bookmark.SerieId));
+        }
+
+        return candidates
+            .GroupBy(c => c.GroupId)
+            .Select(g => g.OrderByDescending(c => c.SortAt).First())
+            .ToList();
+    }
+
+    private sealed record ContinueWatchingCandidate(Guid MediaId, DateTime SortAt, Guid GroupId);
+}
+
+internal static class ItemPlaybackBookmarkMappings
+{
+    extension(ItemPlaybackBookmark bookmark)
+    {
+        public K7.Shared.Dtos.Entities.UserMediaStateDto ToUserMediaStateDto() => new()
+        {
+            LastPlaybackPosition = bookmark.PositionSeconds,
+            ProgressPercentage = bookmark.ProgressPercentage,
+            IsCompleted = false,
+            PlayCount = 0,
+            SkipCount = 0,
+            LastInteractedAt = bookmark.UpdatedAt
+        };
     }
 }

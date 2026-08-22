@@ -94,7 +94,6 @@ public class SerieEpisodeOrphanCleanupHelperTests
             UserId = userId,
             MediaId = episodeId,
             PlayCount = 1,
-            ProgressPercentage = 40
         });
         await _context.SaveChangesAsync();
 

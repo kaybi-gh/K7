@@ -1,6 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
-using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 
@@ -13,7 +12,7 @@ public class DismissFromContinueWatchingCommandHandler(
     IApplicationDbContext context,
     IUser currentUser,
     IMediaAccessGuard accessGuard,
-    IContinueWatchingExclusionService exclusionService,
+    IPlaybackBookmarkService bookmarkService,
     IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<DismissFromContinueWatchingCommand>
 {
@@ -23,7 +22,7 @@ public class DismissFromContinueWatchingCommandHandler(
             return;
 
         await accessGuard.EnsureAccessAsync(request.MediaId, cancellationToken);
-        await exclusionService.DismissAsync(userId, request.MediaId, cancellationToken);
+        await bookmarkService.DismissAsync(request.MediaId, userId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateAll();
     }

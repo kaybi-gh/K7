@@ -10,7 +10,7 @@ public sealed record SharedProfileMediaStateUpdateResult(
     double ProgressPercentage,
     bool IsCompleted,
     bool WasNewlyCompleted,
-    Guid? EpisodeIdForEnqueue);
+    Guid? CompletedEpisodeId);
 
 public interface ISharedProfileMediaStateUpdater
 {
@@ -26,7 +26,8 @@ public interface ISharedProfileMediaStateUpdater
 
 public class SharedProfileMediaStateUpdater(
     IApplicationDbContext context,
-    IPlaybackPolicySettingsProvider policyProvider) : ISharedProfileMediaStateUpdater
+    IPlaybackPolicySettingsProvider policyProvider,
+    IPlaybackBookmarkService bookmarkService) : ISharedProfileMediaStateUpdater
 {
     public async Task<SharedProfileMediaStateUpdateResult> ApplyAsync(
         Guid sharedProfileId,
@@ -47,8 +48,7 @@ public class SharedProfileMediaStateUpdater(
                 SharedProfileId = sharedProfileId,
                 MediaId = mediaId,
                 PlayCount = 0,
-                IsCompleted = false,
-                LastPlaybackPosition = 0
+                IsCompleted = false
             };
             context.SharedProfileMediaStates.Add(state);
         }
@@ -65,16 +65,25 @@ public class SharedProfileMediaStateUpdater(
 
         var result = state.RecordProgress(position, duration, policy, media, timeNow);
 
-        if (!result.IsCompleted && !isMusic
-            && ContinueWatchingEligibility.MeetsResumeThreshold(state, videoPolicy))
+        if (!isMusic)
         {
-            state.ExcludedFromContinueWatching = false;
+            if (result.IsCompleted)
+            {
+                await bookmarkService.RemoveItemBookmarkAsync(userId: null, sharedProfileId, mediaId, cancellationToken);
+                if (result.CompletedEpisodeId is { } episodeId)
+                    await bookmarkService.OnEpisodeCompletedAsync(userId: null, sharedProfileId, episodeId, timeNow, cancellationToken);
+            }
+            else
+            {
+                await bookmarkService.UpsertItemBookmarkAsync(
+                    userId: null, sharedProfileId, mediaId, position, duration, timeNow, cancellationToken);
+            }
         }
 
         return new SharedProfileMediaStateUpdateResult(
             result.ProgressPercentage,
             result.IsCompleted,
             result.WasNewlyCompleted,
-            result.EpisodeIdForEnqueue);
+            result.CompletedEpisodeId);
     }
 }
