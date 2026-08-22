@@ -2338,6 +2338,55 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("MediaPlaybackSessionCoViewers");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackBookmark", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SharedProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SharedProfileId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SharedProfileId", "Kind", "UpdatedAt");
+
+                    b.HasIndex("UserId", "Kind", "UpdatedAt");
+
+                    b.ToTable("PlaybackBookmarks", (string)null);
+
+                    b.HasDiscriminator<int>("Kind");
+
+                    b.UseTphMappingStrategy();
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2475,17 +2524,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("ExcludedFromContinueWatching")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastInteractedAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<double>("LastKnownDurationSeconds")
-                        .HasColumnType("REAL");
 
                     b.Property<string>("LastModified")
                         .IsRequired()
@@ -2494,17 +2537,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<double>("LastPlaybackPosition")
-                        .HasColumnType("REAL");
-
                     b.Property<Guid>("MediaId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PlayCount")
                         .HasColumnType("INTEGER");
-
-                    b.Property<double>("ProgressPercentage")
-                        .HasColumnType("REAL");
 
                     b.Property<Guid>("SharedProfileId")
                         .HasColumnType("TEXT");
@@ -2707,17 +2744,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("ExcludedFromContinueWatching")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastInteractedAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<double>("LastKnownDurationSeconds")
-                        .HasColumnType("REAL");
 
                     b.Property<string>("LastModified")
                         .IsRequired()
@@ -2726,17 +2757,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<double>("LastPlaybackPosition")
-                        .HasColumnType("REAL");
-
                     b.Property<Guid>("MediaId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PlayCount")
                         .HasColumnType("INTEGER");
-
-                    b.Property<double>("ProgressPercentage")
-                        .HasColumnType("REAL");
 
                     b.Property<int>("SkipCount")
                         .HasColumnType("INTEGER");
@@ -3669,6 +3694,79 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasDiscriminator().HasValue(2);
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ItemPlaybackBookmark", b =>
+                {
+                    b.HasBaseType("K7.Server.Domain.Entities.Users.PlaybackBookmark");
+
+                    b.Property<double>("DurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("PositionSeconds")
+                        .HasColumnType("REAL");
+
+                    b.HasIndex("MediaId")
+                        .HasDatabaseName("IX_PlaybackBookmarks_MediaId_Item");
+
+                    b.HasIndex("SharedProfileId", "MediaId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PlaybackBookmarks_SharedProfileId_MediaId_Item");
+
+                    b.HasIndex("UserId", "MediaId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PlaybackBookmarks_UserId_MediaId_Item");
+
+                    b.HasDiscriminator().HasValue(0);
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SeriesPlaybackBookmark", b =>
+                {
+                    b.HasBaseType("K7.Server.Domain.Entities.Users.PlaybackBookmark");
+
+                    b.Property<DateTime>("ActivityAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LastCompletedEpisodeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NextEpisodeAvailableAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("NextEpisodeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SerieId")
+                        .HasColumnType("TEXT");
+
+                    b.HasIndex("LastCompletedEpisodeId");
+
+                    b.HasIndex("NextEpisodeId")
+                        .HasDatabaseName("IX_PlaybackBookmarks_NextEpisodeId_Series");
+
+                    b.HasIndex("SerieId")
+                        .HasDatabaseName("IX_PlaybackBookmarks_SerieId_Series");
+
+                    b.HasIndex("SharedProfileId", "ActivityAt");
+
+                    b.HasIndex("SharedProfileId", "NextEpisodeAvailableAt");
+
+                    b.HasIndex("SharedProfileId", "SerieId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PlaybackBookmarks_SharedProfileId_SerieId_Series");
+
+                    b.HasIndex("UserId", "ActivityAt");
+
+                    b.HasIndex("UserId", "NextEpisodeAvailableAt");
+
+                    b.HasIndex("UserId", "SerieId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PlaybackBookmarks_UserId_SerieId_Series");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
             modelBuilder.Entity("DeviceUser", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", null)
@@ -4510,6 +4608,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackBookmark", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
+                        .WithMany()
+                        .HasForeignKey("SharedProfileId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("SharedProfile");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Users.MediaPlaybackSession", "MediaPlaybackSession")
@@ -4837,6 +4952,43 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ItemPlaybackBookmark", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany()
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SeriesPlaybackBookmark", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.SerieEpisode", "LastCompletedEpisode")
+                        .WithMany()
+                        .HasForeignKey("LastCompletedEpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.SerieEpisode", "NextEpisode")
+                        .WithMany()
+                        .HasForeignKey("NextEpisodeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.Serie", "Serie")
+                        .WithMany()
+                        .HasForeignKey("SerieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LastCompletedEpisode");
+
+                    b.Navigation("NextEpisode");
+
+                    b.Navigation("Serie");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>

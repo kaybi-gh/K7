@@ -57,6 +57,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Device> Devices => Set<Device>();
     public new DbSet<User> Users => Set<User>();
     public DbSet<UserMediaState> UserMediaStates => Set<UserMediaState>();
+    public DbSet<PlaybackBookmark> PlaybackBookmarks => Set<PlaybackBookmark>();
     public DbSet<UserPlaylistState> UserPlaylistStates => Set<UserPlaylistState>();
     public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
     public DbSet<PlaybackSessionDetails> PlaybackSessionDetails => Set<PlaybackSessionDetails>();
