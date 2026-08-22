@@ -165,6 +165,6 @@ public static partial class ReIdentifySearchDefaultsHelper
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
 
     // Keep in sync with K7.Server.Application.Helpers.Regexes.SeasonFolder
-    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<season>\d{1,2})$|^S(?<season2>\d{1,2})$|^(?<specials>Specials?|Extras?)$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<season>\d{1,2})$|^S(?<season2>\d{1,2})$|^(?<specials>Specials?|Extras?)$|(?:Season|Saison|Series|S)(?<season3>\d{1,2})$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
     private static partial Regex SeasonFolder();
 }

@@ -76,9 +76,35 @@ public static partial class Regexes
     [GeneratedRegex(@"(?:^|[\s\-._])(?<episode>\d{2,4})(?:\s*v\d)?(?:[\s\-._]|$)", RegexOptions.Compiled)]
     public static partial Regex EpisodeAbsolute();
 
-    // Season from folder name: "Season 1", "Saison 2", "S01", "Season 01", "Specials"
-    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<season>\d{1,2})$|^S(?<season2>\d{1,2})$|^(?<specials>Specials?|Extras?)$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    // Season from folder name: "Season 1", "Saison 2", "S01", "Show Name S04", "Specials"
+    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<season>\d{1,2})$|^S(?<season2>\d{1,2})$|^(?<specials>Specials?|Extras?)$|(?:Season|Saison|Series|S)(?<season3>\d{1,2})$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
     public static partial Regex SeasonFolder();
+
+    public static bool IsSeasonFolder(string folderName) =>
+        !string.IsNullOrEmpty(folderName) && SeasonFolder().IsMatch(folderName);
+
+    public static bool TryParseSeasonFolder(string folderName, out int seasonNumber)
+    {
+        seasonNumber = 0;
+        if (string.IsNullOrEmpty(folderName))
+            return false;
+
+        var match = SeasonFolder().Match(folderName);
+        if (!match.Success)
+            return false;
+
+        if (match.Groups["specials"].Success)
+            return true;
+
+        foreach (var groupName in new[] { "season", "season2", "season3" })
+        {
+            var group = match.Groups[groupName];
+            if (group.Success && int.TryParse(group.Value, out seasonNumber))
+                return true;
+        }
+
+        return false;
+    }
 
     // Clean anime fansub tags: [SubGroup], [1080p], [AABBCCDD] (CRC32), v2/v3
     [GeneratedRegex(@"\[[^\]]+\]|(?<=\s)v\d(?:\s|$)", RegexOptions.Compiled)]

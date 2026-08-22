@@ -274,7 +274,7 @@ public static class IndexedFileExtensions
         if (string.IsNullOrEmpty(directory)) return string.Empty;
 
         var dirName = Path.GetFileName(directory);
-        if (!string.IsNullOrEmpty(dirName) && Regexes.SeasonFolder().IsMatch(dirName))
+        if (!string.IsNullOrEmpty(dirName) && Regexes.IsSeasonFolder(dirName))
         {
             // Current parent is a season folder, use grandparent as series title
             var grandparent = Path.GetDirectoryName(directory);
@@ -313,17 +313,7 @@ public static class IndexedFileExtensions
         var dirName = Path.GetFileName(directory);
         if (string.IsNullOrEmpty(dirName)) return null;
 
-        var match = Regexes.SeasonFolder().Match(dirName);
-        if (!match.Success) return null;
-
-        if (match.Groups["specials"].Success)
-            return 0;
-
-        var seasonGroup = match.Groups["season"].Success ? match.Groups["season"] : match.Groups["season2"];
-        if (seasonGroup.Success && int.TryParse(seasonGroup.Value, out var season))
-            return season;
-
-        return null;
+        return Regexes.TryParseSeasonFolder(dirName, out var season) ? season : null;
     }
 
     private static DateOnly? ExtractReleaseYear(string title, IndexedFile indexedFile, Library library, out string cleanedTitle)
@@ -348,27 +338,20 @@ public static class IndexedFileExtensions
             if (!string.IsNullOrEmpty(directory))
             {
                 var dirName = Path.GetFileName(directory);
-                // Check if parent is a season folder -> check grandparent
-                if (!string.IsNullOrEmpty(dirName) && Regexes.SeasonFolder().IsMatch(dirName))
+                if (!string.IsNullOrEmpty(dirName))
                 {
-                    var grandparent = Path.GetDirectoryName(directory);
-                    if (!string.IsNullOrEmpty(grandparent))
+                    if (Regexes.IsSeasonFolder(dirName))
                     {
-                        var gpName = Path.GetFileName(grandparent);
-                        if (!string.IsNullOrEmpty(gpName)
-                            && StringParsingHelper.TryApplyRegexes(gpName, Regexes.YearExtractionRegexes, false, out var gpYearResult)
-                            && int.TryParse(gpYearResult?.Output, out int gpYear))
-                        {
-                            releaseYear = new DateOnly(gpYear, 1, 1);
-                        }
+                        releaseYear = TryExtractYearFromDirectory(Path.GetDirectoryName(directory));
+                    }
+                    else
+                    {
+                        releaseYear = TryExtractYearFromDirectoryName(dirName);
                     }
                 }
-                else if (!string.IsNullOrEmpty(dirName)
-                    && StringParsingHelper.TryApplyRegexes(dirName, Regexes.YearExtractionRegexes, false, out var dirYearResult)
-                    && int.TryParse(dirYearResult?.Output, out int dirYear))
-                {
-                    releaseYear = new DateOnly(dirYear, 1, 1);
-                }
+
+                if (!releaseYear.HasValue)
+                    releaseYear = TryExtractYearFromDirectory(Path.GetDirectoryName(directory));
             }
         }
 
@@ -379,6 +362,29 @@ public static class IndexedFileExtensions
         }
 
         return releaseYear;
+    }
+
+    private static DateOnly? TryExtractYearFromDirectory(string? directoryPath)
+    {
+        if (string.IsNullOrEmpty(directoryPath))
+            return null;
+
+        var directoryName = Path.GetFileName(directoryPath);
+        return TryExtractYearFromDirectoryName(directoryName);
+    }
+
+    private static DateOnly? TryExtractYearFromDirectoryName(string? directoryName)
+    {
+        if (string.IsNullOrEmpty(directoryName))
+            return null;
+
+        if (StringParsingHelper.TryApplyRegexes(directoryName, Regexes.YearExtractionRegexes, false, out var yearResult)
+            && int.TryParse(yearResult?.Output, out var year))
+        {
+            return new DateOnly(year, 1, 1);
+        }
+
+        return null;
     }
 }
 

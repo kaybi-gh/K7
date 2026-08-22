@@ -133,6 +133,8 @@ public class IndexedFileExtensionsTests : FileFixture
 
     [TestCase("Show", "Season 1", "1x01.mkv", "Show", 1, 1, null, null)]
     [TestCase("Show", null, "Show.Name.2x05.mkv", "Show Name", 2, 5, null, null)]
+    [TestCase("Sur le front (2019)", "Sur le front S04", "Sur le front - 4x01 - Alerte rouge sur le vin.mkv", "Sur le front", 4, 1, null, 2019)]
+    [TestCase("Taratata (1993)", "Taratata S25", "Taratata - 25x01 - Taratata N600.mkv", "Taratata", 25, 1, null, 1993)]
     public void ShouldParseEpisodeNxNN(string? grandparent, string? parent, string fileName,
         string expectedTitle, int expectedSeason, int expectedEpisode, int? expectedAbsolute, int? expectedYear)
     {
@@ -183,6 +185,8 @@ public class IndexedFileExtensionsTests : FileFixture
     [TestCase("Show", "Season 0", "Show.S00E01.mkv", "Show", 0, 1, null, null)]
     [TestCase("Show", "Specials", "Show.S00E01.mkv", "Show", 0, 1, null, null)]
     [TestCase("Show (2020)", "Season 2", "S02E01.mkv", "Show", 2, 1, null, 2020)]
+    [TestCase("Sur le front (2019)", "Sur le front S04", "Sur le front - 4x01 - Episode.mkv", "Sur le front", 4, 1, null, 2019)]
+    [TestCase("Taratata (1993)", "Taratata S25", "Taratata - 25x01 - Episode.mkv", "Taratata", 25, 1, null, 1993)]
     public void ShouldParseEpisodeWithSeasonFolder(string? grandparent, string? parent, string fileName,
         string expectedTitle, int expectedSeason, int expectedEpisode, int? expectedAbsolute, int? expectedYear)
     {

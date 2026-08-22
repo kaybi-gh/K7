@@ -94,7 +94,7 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 **Movies:** `Movie Name (2019).mkv` or `Movie Name (2019)/Movie Name (2019).mkv`. Year helps matching; rip/quality tags are stripped when parsing.
 
-**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Specials`. Prefer standard episode naming when possible. Include the year in the series folder when there are homonyms, and optionally a provider id: `Show Name (2023) [tmdbid-123]`.
+**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Show Name S04`, `Specials`. Prefer standard episode naming when possible. Include the year in the series folder when there are homonyms, and optionally a provider id: `Show Name (2023) [tmdbid-123]`.
 
 When a directory already has episodes attached to a single series, new files in that folder are attached to the same series (folder consensus). Close title variants parsed from filenames in the same folder are also unified before matching. A mis-matched episode file can be re-identified from the episode page (Indexed versions).
 

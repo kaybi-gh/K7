@@ -141,6 +141,6 @@ internal static partial class EpisodeIdentityParser
         return true;
     }
 
-    [GeneratedRegex(@"^(Season|Saison|S)\s*(?<n>\d{1,2})$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<n>\d{1,2})$|^S(?<n>\d{1,2})$|(?:Season|Saison|Series|S)(?<n>\d{1,2})$", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonFolderRegex();
 }
