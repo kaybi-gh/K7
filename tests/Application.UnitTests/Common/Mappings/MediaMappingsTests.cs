@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Shared.Dtos.Entities.Medias;
 
@@ -56,5 +57,92 @@ public class MediaMappingsTests
         dto.Id.Should().Be(movie.Id);
         dto.Title.Should().Be("Lite");
         dto.Should().BeOfType<LiteMovieDto>();
+    }
+
+    [Test]
+    public void ToMediaDto_ShouldCountOnlyPlayableEpisodes_OnSerieSeasons()
+    {
+        var serie = new Serie { Id = Guid.NewGuid(), Title = "Show", SortTitle = "Show" };
+        var season = new SerieSeason
+        {
+            Id = Guid.NewGuid(),
+            SerieId = serie.Id,
+            Serie = serie,
+            SeasonNumber = 1,
+            Title = "Season 1",
+            SortTitle = "Season 1"
+        };
+        serie.Seasons.Add(season);
+
+        var playable = new SerieEpisode
+        {
+            Id = Guid.NewGuid(),
+            SerieId = serie.Id,
+            SeasonId = season.Id,
+            Season = season,
+            EpisodeNumber = 1,
+            Title = "E1",
+            SortTitle = "E1",
+            IndexedFiles =
+            [
+                new IndexedFile
+                {
+                    Id = Guid.NewGuid(),
+                    LibraryId = Guid.NewGuid(),
+                    Name = "e1.mkv",
+                    Extension = ".mkv",
+                    Path = "/e1.mkv",
+                    Hash = 1,
+                    Size = 1
+                }
+            ]
+        };
+        var orphan = new SerieEpisode
+        {
+            Id = Guid.NewGuid(),
+            SerieId = serie.Id,
+            SeasonId = season.Id,
+            Season = season,
+            EpisodeNumber = 2,
+            Title = "E2",
+            SortTitle = "E2",
+            IndexedFiles = [],
+            RemoteIndexedFiles = []
+        };
+        season.Episodes.Add(playable);
+        season.Episodes.Add(orphan);
+
+        var dto = (SerieDto)serie.ToMediaDto();
+
+        dto.Seasons.Should().ContainSingle()
+            .Which.EpisodeCount.Should().Be(1);
+    }
+
+    [Test]
+    public void ToLiteMediaDto_ShouldCountOnlyPlayableEpisodes_OnSerieSeason()
+    {
+        var season = new SerieSeason
+        {
+            Id = Guid.NewGuid(),
+            SerieId = Guid.NewGuid(),
+            SeasonNumber = 1,
+            Title = "Season 1",
+            SortTitle = "Season 1",
+            Episodes =
+            [
+                new SerieEpisode
+                {
+                    Id = Guid.NewGuid(),
+                    EpisodeNumber = 1,
+                    Title = "E1",
+                    IndexedFiles = [],
+                    RemoteIndexedFiles = []
+                }
+            ]
+        };
+
+        var dto = (LiteSerieSeasonDto)season.ToLiteMediaDto();
+
+        dto.EpisodeCount.Should().Be(0);
     }
 }

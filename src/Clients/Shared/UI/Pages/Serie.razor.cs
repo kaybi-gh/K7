@@ -194,6 +194,7 @@ public partial class Serie : IAsyncDisposable
             _logoUrl = MediaPictureUrlHelper.WithCacheBuster(logoUri, cacheVersion);
 
             _seasons = (serie.Seasons ?? [])
+                .Where(s => s.EpisodeCount > 0)
                 .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber)
                 .ToList();
 

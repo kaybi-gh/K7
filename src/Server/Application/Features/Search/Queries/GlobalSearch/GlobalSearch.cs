@@ -171,7 +171,10 @@ public class GlobalSearchQueryHandler(
     private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string rawQuery, string? studio)
     {
         var mediaQuery = context.Medias
-            .Where(m => m.Title != null && EfLikeQueryExtensions.ILike(m.Title, term));
+            .Where(m => m.Title != null && EfLikeQueryExtensions.ILike(m.Title, term))
+            .Where(m =>
+                m is MusicAlbum || m is MusicArtist || m is MusicTrack
+                || context.MediaLibraryAvailabilities.Any(a => a.MediaId == m.Id));
 
         if (!string.IsNullOrWhiteSpace(studio))
         {

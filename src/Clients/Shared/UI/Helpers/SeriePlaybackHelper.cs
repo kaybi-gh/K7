@@ -177,7 +177,7 @@ internal static class SeriePlaybackHelper
         return allEpisodes;
     }
 
-    private static bool IsPlayable(LiteSerieEpisodeDto episode) =>
+    public static bool IsPlayable(LiteSerieEpisodeDto episode) =>
         episode.IndexedFileId.HasValue || episode.RemoteIndexedFileId.HasValue;
 
     private static string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode, IK7ServerService apiClient)

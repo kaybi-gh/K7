@@ -72,6 +72,10 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
                     .ThenInclude(p => p.Variants)
             .Include(x => (x as Serie)!.Seasons)
                 .ThenInclude(s => s.Episodes)
+                    .ThenInclude(e => e.IndexedFiles)
+            .Include(x => (x as Serie)!.Seasons)
+                .ThenInclude(s => s.Episodes)
+                    .ThenInclude(e => e.RemoteIndexedFiles)
             // SerieSeason: include episodes with their pictures, indexed files, and user states
             .Include(x => (x as SerieSeason)!.Episodes)
                 .ThenInclude(e => e.Pictures)

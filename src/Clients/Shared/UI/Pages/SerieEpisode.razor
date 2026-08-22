@@ -101,9 +101,10 @@ else if (_episode is not null)
                         <div class="@(CanResumePlayback ? "episode-actions-primary episode-actions-primary--split" : "episode-actions-primary")">
                             <K7Button Variant="filled"
                                        Color="primary"
-                                       StartIcon="@Phosphor.Play"
+                                       StartIcon="@(HasPlayableFile ? Phosphor.Play : Phosphor.WarningCircle)"
                                        OnClick="() => PlayAsync(fromBeginning: false)"
                                        Size="lg"
+                                       Disabled="@(!HasPlayableFile)"
                                        Class="episode-actions-play" data-initial-focus>
                                 @PrimaryPlayLabel
                             </K7Button>

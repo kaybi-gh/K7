@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -347,7 +348,7 @@ public static class MediaMappings
                     SerieId = season.SerieId,
                     SerieTitle = season.Serie?.Title,
                     SeasonNumber = season.SeasonNumber,
-                    EpisodeCount = season.Episodes.Count,
+                    EpisodeCount = SeriePlayableHelper.CountPlayableEpisodes(season.Episodes),
                     Poster = domain.Pictures
                         .Where(p => p.Type == MetadataPictureType.Poster)
                         .Select(MapPicture)
@@ -441,7 +442,7 @@ public static class MediaMappings
                     SerieId = s.SerieId,
                     SerieTitle = serie.Title,
                     SeasonNumber = s.SeasonNumber,
-                    EpisodeCount = s.Episodes.Count,
+                    EpisodeCount = SeriePlayableHelper.CountPlayableEpisodes(s.Episodes),
                     Poster = s.Pictures
                         .Where(p => p.Type == MetadataPictureType.Poster)
                         .Select(p => p.ToMetadataPictureDto())

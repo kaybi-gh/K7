@@ -145,9 +145,18 @@ public partial class SerieSeason : IAsyncDisposable
             return;
         }
 
-        _previousSeasonNumber = currentIndex > 0 ? seasonSummary[currentIndex - 1].SeasonNumber : null;
-        _nextSeasonNumber = currentIndex < seasonSummary.Count - 1 ? seasonSummary[currentIndex + 1].SeasonNumber : null;
-        _allSeasonNumbers = seasonSummary.Select(s => s.SeasonNumber).ToList();
+        // Prev/next skip seasons with no playable episodes, but keep the current season
+        // resolvable for history deep links even when all its files were removed.
+        var navigableSeasons = seasonSummary
+            .Where(s => s.EpisodeCount > 0 || s.SeasonNumber == SeasonNumber)
+            .ToList();
+        var navigableIndex = navigableSeasons.FindIndex(s => s.SeasonNumber == SeasonNumber);
+
+        _previousSeasonNumber = navigableIndex > 0 ? navigableSeasons[navigableIndex - 1].SeasonNumber : null;
+        _nextSeasonNumber = navigableIndex >= 0 && navigableIndex < navigableSeasons.Count - 1
+            ? navigableSeasons[navigableIndex + 1].SeasonNumber
+            : null;
+        _allSeasonNumbers = navigableSeasons.Select(s => s.SeasonNumber).ToList();
 
         var seasonMedia = await k7ServerService.GetMediaAsync(seasonSummary[currentIndex].Id);
         if (seasonMedia is SerieSeasonDto seasonDto)
@@ -155,8 +164,18 @@ public partial class SerieSeason : IAsyncDisposable
             _season = seasonDto;
             _seasonUserRating = GetUserRating(seasonDto.Ratings);
 
-            _episodes = (seasonDto.Episodes ?? [])
+            var allEpisodes = (seasonDto.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
+                .ToList();
+
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            if (!string.IsNullOrEmpty(uri.Fragment))
+                _focusEpisodeFragment = uri.Fragment;
+
+            var focusEpisodeNumber = ParseEpisodeFragment(_focusEpisodeFragment);
+            _episodes = allEpisodes
+                .Where(e => SeriePlaybackHelper.IsPlayable(e)
+                    || (focusEpisodeNumber is int n && e.EpisodeNumber == n))
                 .ToList();
 
             _isFederated = _episodes.Count > 0
@@ -165,12 +184,6 @@ public partial class SerieSeason : IAsyncDisposable
             _pageTitle = SeasonNumber == 0
                 ? $"{serie.Title} - {L["Specials"]}"
                 : $"{serie.Title} - {string.Format(L["SeasonNumber"], SeasonNumber)}";
-        }
-
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        if (!string.IsNullOrEmpty(uri.Fragment))
-        {
-            _focusEpisodeFragment = uri.Fragment;
         }
 
         // Set initial focused episode for TV
@@ -374,6 +387,12 @@ public partial class SerieSeason : IAsyncDisposable
 
     private async Task PlayEpisodeAsync(LiteSerieEpisodeDto episode)
     {
+        if (!SeriePlaybackHelper.IsPlayable(episode))
+        {
+            Snackbar.Add(S["MediaUnavailableDetail"], K7Severity.Info);
+            return;
+        }
+
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id, bypassCache: true);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
@@ -432,7 +451,11 @@ public partial class SerieSeason : IAsyncDisposable
 
         // Federated episode - use remote file
         var remoteFile = episodeDto.RemoteIndexedFiles?.FirstOrDefault();
-        if (remoteFile is null) return;
+        if (remoteFile is null)
+        {
+            Snackbar.Add(S["MediaUnavailableDetail"], K7Severity.Info);
+            return;
+        }
 
         PlaybackProgressTracker.StartTracking(episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),

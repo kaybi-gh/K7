@@ -224,18 +224,20 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         Guid? userId,
         string? searchPattern = null)
     {
-        var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
-        var includeEpisodes = request.MediaTypes?.Contains(MediaType.SerieEpisode) == true;
-        query = query.Where(x => x is MusicAlbum || x is MusicArtist || x is MusicTrack || x is Serie || (includeSeasons && x is SerieSeason)
-            || (includeEpisodes && x is SerieEpisode)
+        // Video/series media require library availability (backed by indexed files).
+        // Music stays type-based. Explicit Ids bypass availability so history/stats deep fetches still resolve.
+        var idFilter = request.Ids is { Length: > 0 } ? request.Ids : null;
+        query = query.Where(x =>
+            x is MusicAlbum || x is MusicArtist || x is MusicTrack
+            || (idFilter != null && idFilter.Contains(x.Id))
             || context.MediaLibraryAvailabilities.Any(a => a.MediaId == x.Id));
 
         if (request.LibraryIds?.Length > 0)
             query = query.WhereAvailableInLibraries(context, request.LibraryIds);
 
-        if (request.Ids?.Length > 0)
+        if (idFilter is not null)
         {
-            query = query.Where(x => request.Ids.Contains(x.Id));
+            query = query.Where(x => idFilter.Contains(x.Id));
         }
 
         if (request.MediaTypes?.Count > 0)

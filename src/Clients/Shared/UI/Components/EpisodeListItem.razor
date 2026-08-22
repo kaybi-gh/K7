@@ -60,7 +60,11 @@
                     <span class="episode-card-duration">@FormatDuration(Episode.Duration.Value)</span>
                 }
             </div>
-            <p class="episode-card-title">@(Episode.Title ?? S["Untitled"])</p>
+            <p class="episode-card-title @(IsUnavailable ? "episode-card-title--unavailable" : null)">@(Episode.Title ?? S["Untitled"])</p>
+            @if (IsUnavailable)
+            {
+                <span class="episode-card-unavailable text-muted text-xs">@S["MediaUnavailable"]</span>
+            }
             @if (Episode.ReleaseDate.HasValue)
             {
                 <span class="episode-card-date">@Episode.ReleaseDate.Value.ToString("d MMMM yyyy")</span>

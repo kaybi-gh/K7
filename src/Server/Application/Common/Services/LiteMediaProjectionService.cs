@@ -130,7 +130,12 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             .OfType<SerieSeason>()
             .AsNoTracking()
             .Where(s => idSet.Contains(s.Id))
-            .Select(s => new SeasonRow(s.Id, s.SerieId, s.SeasonNumber, s.Serie.Title, s.Episodes.Count))
+            .Select(s => new SeasonRow(
+                s.Id,
+                s.SerieId,
+                s.SeasonNumber,
+                s.Serie.Title,
+                s.Episodes.Count(e => e.IndexedFiles.Any() || e.RemoteIndexedFiles.Any())))
             .ToListAsync(cancellationToken);
         var seasonById = seasonRows.ToDictionary(s => s.Id);
 

@@ -58,6 +58,9 @@ public partial class EpisodeListItem : IDisposable
     private double _touchStartX;
     private double _touchStartY;
 
+    private bool IsUnavailable =>
+        !Episode.IndexedFileId.HasValue && !Episode.RemoteIndexedFileId.HasValue;
+
     private bool ShouldPreventLinkActivation =>
         _preventNextClick || _keyHeldDown || _longPressTriggered || _menuOpen;
 
@@ -83,9 +86,18 @@ public partial class EpisodeListItem : IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private Task PlayAsync() => OnPlay.HasDelegate
-        ? OnPlay.InvokeAsync(Episode)
-        : Task.CompletedTask;
+    private Task PlayAsync()
+    {
+        if (IsUnavailable)
+        {
+            Snackbar.Add(SharedStrings["MediaUnavailableDetail"], K7Severity.Info);
+            return Task.CompletedTask;
+        }
+
+        return OnPlay.HasDelegate
+            ? OnPlay.InvokeAsync(Episode)
+            : Task.CompletedTask;
+    }
 
     private Task NavigateToDetailAsync()
     {
@@ -152,11 +164,14 @@ public partial class EpisodeListItem : IDisposable
     private void BuildMenuContent(RenderTreeBuilder builder)
     {
         var seq = 0;
-        builder.OpenComponent<K7MenuItem>(seq++);
-        builder.AddAttribute(seq++, "Icon", "play");
-        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, PlayAsync));
-        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, SharedStrings["Play"])));
-        builder.CloseComponent();
+        if (!IsUnavailable)
+        {
+            builder.OpenComponent<K7MenuItem>(seq++);
+            builder.AddAttribute(seq++, "Icon", "play");
+            builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, PlayAsync));
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, SharedStrings["Play"])));
+            builder.CloseComponent();
+        }
 
         if (Episode.IndexedFileId.HasValue && Href is not null)
         {

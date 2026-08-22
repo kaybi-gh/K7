@@ -212,10 +212,18 @@ public partial class SerieEpisode : IAsyncDisposable
         UpdateStillFromEpisode(_episode.LastMetadataRefreshedAt);
         SetupMetadataRefreshWatcher(_episode.Id);
 
-        var episodeIndex = episodes.FindIndex(e => e.EpisodeNumber == EpisodeNumber);
-        _previousEpisode = episodeIndex > 0 ? episodes[episodeIndex - 1] : null;
-        _nextEpisode = episodeIndex < episodes.Count - 1 ? episodes[episodeIndex + 1] : null;
-        _moreEpisodes = episodes.Where(e => e.EpisodeNumber != EpisodeNumber).ToList();
+        var navigableEpisodes = episodes
+            .Where(e => SeriePlaybackHelper.IsPlayable(e) || e.EpisodeNumber == EpisodeNumber)
+            .ToList();
+        var episodeIndex = navigableEpisodes.FindIndex(e => e.EpisodeNumber == EpisodeNumber);
+        _previousEpisode = episodeIndex > 0 ? navigableEpisodes[episodeIndex - 1] : null;
+        _nextEpisode = episodeIndex >= 0 && episodeIndex < navigableEpisodes.Count - 1
+            ? navigableEpisodes[episodeIndex + 1]
+            : null;
+        _moreEpisodes = navigableEpisodes
+            .Where(e => e.EpisodeNumber != EpisodeNumber)
+            .Where(SeriePlaybackHelper.IsPlayable)
+            .ToList();
 
         _loading = false;
     }
@@ -250,7 +258,17 @@ public partial class SerieEpisode : IAsyncDisposable
 
     private async Task PlayAsync(bool fromBeginning = false)
     {
-        if (_episode is null || _indexedFile is null) return;
+        if (_episode is null)
+            return;
+
+        if (_indexedFile is null && (_episode.RemoteIndexedFiles is null || _episode.RemoteIndexedFiles.Count == 0))
+        {
+            Snackbar.Add(S["MediaUnavailableDetail"], K7Severity.Info);
+            return;
+        }
+
+        if (_indexedFile is null)
+            return;
 
         var videoMetadata = _indexedFile.FileMetadata as VideoFileMetadataDto;
         if (videoMetadata is null) return;
@@ -293,12 +311,19 @@ public partial class SerieEpisode : IAsyncDisposable
     }
 
     private bool CanResumePlayback =>
-        _episode?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false };
+        HasPlayableFile
+        && _episode?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false };
+
+    private bool HasPlayableFile =>
+        _indexedFile is not null
+        || (_episode?.RemoteIndexedFiles?.Count > 0 == true);
 
     private string PrimaryPlayLabel
     {
         get
         {
+            if (!HasPlayableFile)
+                return S["MediaUnavailable"];
             if (!CanResumePlayback)
                 return S["Play"];
 
@@ -559,6 +584,7 @@ public partial class SerieEpisode : IAsyncDisposable
         _moreEpisodes = (seasonDto.Episodes ?? [])
             .OrderBy(e => e.EpisodeNumber)
             .Where(e => e.EpisodeNumber != EpisodeNumber)
+            .Where(SeriePlaybackHelper.IsPlayable)
             .ToList();
         StateHasChanged();
     }

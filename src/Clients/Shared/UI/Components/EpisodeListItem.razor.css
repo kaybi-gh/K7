@@ -153,3 +153,12 @@
         overflow: hidden;
     }
 }
+
+.episode-card-title--unavailable {
+    opacity: 0.55;
+}
+
+.episode-card-unavailable {
+    display: block;
+    margin-top: 2px;
+}
