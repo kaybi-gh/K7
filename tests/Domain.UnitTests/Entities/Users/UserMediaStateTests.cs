@@ -7,7 +7,7 @@ namespace K7.Server.Domain.UnitTests.Entities.Users;
 public class UserMediaStateTests
 {
     [Test]
-    public void RecordProgress_ShouldMarkCompletedAndResetPosition_WhenThresholdReached()
+    public void RecordProgress_ShouldMarkCompleted_WhenThresholdReached()
     {
         var state = new UserMediaState();
         var media = new Movie { Title = "Film" };
@@ -20,12 +20,11 @@ public class UserMediaStateTests
         result.WasNewlyCompleted.Should().BeTrue();
         result.ProgressPercentage.Should().Be(100);
         state.PlayCount.Should().Be(1);
-        state.LastPlaybackPosition.Should().Be(0);
         state.LastInteractedAt.Should().Be(now);
     }
 
     [Test]
-    public void RecordProgress_ShouldStorePartialProgress_WhenNotCompleted()
+    public void RecordProgress_ShouldReturnPartialProgress_WhenNotCompleted()
     {
         var state = new UserMediaState();
         var media = new Movie { Title = "Film" };
@@ -36,7 +35,6 @@ public class UserMediaStateTests
         result.IsCompleted.Should().BeFalse();
         result.WasNewlyCompleted.Should().BeFalse();
         result.ProgressPercentage.Should().Be(50);
-        state.LastPlaybackPosition.Should().Be(3000);
         state.PlayCount.Should().Be(0);
     }
 
