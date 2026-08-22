@@ -20,23 +20,38 @@ public class IndexedFileDeletedEventHandler(
         if (notification.FormerMediaId is not Guid formerMediaId)
             return;
 
-        var isMusicTrack = await context.Medias
+        if (await context.Medias
             .OfType<MusicTrack>()
-            .AnyAsync(t => t.Id == formerMediaId, cancellationToken);
+            .AnyAsync(t => t.Id == formerMediaId, cancellationToken))
+        {
+            var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(
+                context,
+                formerMediaId,
+                logger,
+                cancellationToken);
 
-        if (!isMusicTrack)
+            if (!deleted)
+                return;
+
+            await context.SaveChangesAsync(cancellationToken);
+            musicIntelligenceCatalogReconciler.RequestReconcile();
+            return;
+        }
+
+        if (!await context.Medias
+            .OfType<SerieEpisode>()
+            .AnyAsync(e => e.Id == formerMediaId, cancellationToken))
             return;
 
-        var deleted = await MusicOrphanCleanupHelper.TryDeleteTrackIfOrphanAsync(
+        var episodeDeleted = await SerieEpisodeOrphanCleanupHelper.TryDeleteIfOrphanAsync(
             context,
             formerMediaId,
             logger,
             cancellationToken);
 
-        if (!deleted)
+        if (!episodeDeleted)
             return;
 
         await context.SaveChangesAsync(cancellationToken);
-        musicIntelligenceCatalogReconciler.RequestReconcile();
     }
 }
