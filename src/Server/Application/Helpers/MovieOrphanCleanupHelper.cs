@@ -28,7 +28,9 @@ public static class MovieOrphanCleanupHelper
         if (movie is null)
             return false;
 
-        if (movie.IndexedFiles.Count > 0 || movie.RemoteIndexedFiles.Count > 0)
+        if (movie.IndexedFiles.Count > 0
+            || movie.RemoteIndexedFiles.Count > 0
+            || await MediaOrphanDependentCleanupHelper.HasRemainingFilesAsync(context, movieId, cancellationToken))
             return false;
 
         if (await MediaHasUserDataHelper.HasUserDataAsync(context, movieId, cancellationToken))
@@ -39,6 +41,8 @@ public static class MovieOrphanCleanupHelper
                 movie.Title);
             return false;
         }
+
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, movieId, cancellationToken);
 
         context.Medias.Remove(movie);
         logger.LogInformation(

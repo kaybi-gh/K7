@@ -107,6 +107,18 @@ public class ReidentifyIndexedFileMovieTransferTests
         _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
         _context.Medias.AddRange(wrongMovie, correctMovie);
         _context.IndexedFiles.Add(file);
+        wrongMovie.ExternalIds.Add(new ExternalId { ProviderName = "filename", Value = "Wrong Movie" });
+        _context.MetadataPictures.Add(new MetadataPicture
+        {
+            Type = MetadataPictureType.Poster,
+            MediaId = wrongMovie.Id,
+            LocalPath = "/meta/wrong.jpg"
+        });
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = _libraryId,
+            MediaId = wrongMovie.Id
+        });
         _context.UserMediaStates.Add(new UserMediaState
         {
             UserId = userId,
@@ -127,6 +139,9 @@ public class ReidentifyIndexedFileMovieTransferTests
         attached.MediaId.Should().Be(correctMovie.Id);
 
         (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == wrongMovie.Id)).Should().BeFalse();
+        (await _context.ExternalIds.AnyAsync(e => e.MediaId == wrongMovie.Id)).Should().BeFalse();
+        (await _context.MetadataPictures.AnyAsync(p => p.MediaId == wrongMovie.Id)).Should().BeFalse();
+        (await _context.MediaLibraryAvailabilities.AnyAsync(a => a.MediaId == wrongMovie.Id)).Should().BeFalse();
 
         var state = await _context.UserMediaStates.SingleAsync(s => s.UserId == userId);
         state.MediaId.Should().Be(correctMovie.Id);

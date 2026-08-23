@@ -25,7 +25,9 @@ public static class MusicOrphanCleanupHelper
         if (track is null)
             return false;
 
-        if (track.IndexedFiles.Count > 0 || track.RemoteIndexedFiles.Count > 0)
+        if (track.IndexedFiles.Count > 0
+            || track.RemoteIndexedFiles.Count > 0
+            || await MediaOrphanDependentCleanupHelper.HasRemainingFilesAsync(context, trackId, cancellationToken))
             return false;
 
         if (await MediaHasUserDataHelper.HasUserDataAsync(context, trackId, cancellationToken))
@@ -39,6 +41,7 @@ public static class MusicOrphanCleanupHelper
 
         var albumId = track.AlbumId;
         var trackArtistId = track.ArtistId;
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, trackId, cancellationToken);
         context.Medias.Remove(track);
 
         if (await CountRemainingTracksAsync(context, albumId, trackId, cancellationToken) == 0)
@@ -94,6 +97,7 @@ public static class MusicOrphanCleanupHelper
         }
 
         var artistId = album.ArtistId;
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, albumId, cancellationToken);
         context.Medias.Remove(album);
         logger.LogInformation(
             "Deleted orphan music album {AlbumId} with no tracks and no user data",
@@ -148,6 +152,7 @@ public static class MusicOrphanCleanupHelper
             return false;
         }
 
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, artistId, cancellationToken);
         context.Medias.Remove(artist);
         logger.LogInformation(
             "Deleted orphan music artist {ArtistId} with no albums, tracks, or credits and no user data",

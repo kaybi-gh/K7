@@ -33,7 +33,9 @@ public static class SerieEpisodeOrphanCleanupHelper
         if (episode is null)
             return false;
 
-        if (episode.IndexedFiles.Count > 0 || episode.RemoteIndexedFiles.Count > 0)
+        if (episode.IndexedFiles.Count > 0
+            || episode.RemoteIndexedFiles.Count > 0
+            || await MediaOrphanDependentCleanupHelper.HasRemainingFilesAsync(context, episodeId, cancellationToken))
             return false;
 
         if (await MediaHasUserDataHelper.HasUserDataAsync(context, episodeId, cancellationToken))
@@ -48,6 +50,7 @@ public static class SerieEpisodeOrphanCleanupHelper
 
         var seasonId = episode.SeasonId;
         var serieId = episode.SerieId;
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, episodeId, cancellationToken);
         context.Medias.Remove(episode);
 
         if (await CountRemainingEpisodesAsync(context, seasonId, episodeId, cancellationToken) == 0)
@@ -107,6 +110,7 @@ public static class SerieEpisodeOrphanCleanupHelper
             return false;
         }
 
+        await MediaOrphanDependentCleanupHelper.ClearNonUserDependentsAsync(context, serieId, cancellationToken);
         context.Medias.Remove(serie);
         logger.LogInformation(
             "Deleted orphan serie {SerieId} with no seasons and no user data",

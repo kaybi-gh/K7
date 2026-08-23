@@ -147,6 +147,81 @@ public class MovieOrphanCleanupHelperTests
         deleted.Should().BeFalse();
     }
 
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldDeleteMovie_WhenLibraryAvailabilityRemains()
+    {
+        var movieId = await SeedOrphanMovieAsync();
+        var libraryId = await _context.Libraries.Select(l => l.Id).SingleAsync();
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = libraryId,
+            MediaId = movieId
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        var deleted = await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(_context, movieId, _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == movieId)).Should().BeFalse();
+        (await _context.MediaLibraryAvailabilities.AnyAsync(a => a.MediaId == movieId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldDeleteMovie_WhenExternalIdsAndPicturesRemain()
+    {
+        var movieId = await SeedOrphanMovieAsync();
+        _context.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = "tmdb",
+            Value = "42",
+            MediaId = movieId
+        });
+        _context.MetadataPictures.Add(new MetadataPicture
+        {
+            Type = MetadataPictureType.Poster,
+            MediaId = movieId,
+            LocalPath = "/meta/poster.jpg"
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        var deleted = await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(_context, movieId, _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == movieId)).Should().BeFalse();
+        (await _context.ExternalIds.AnyAsync(e => e.MediaId == movieId)).Should().BeFalse();
+        (await _context.MetadataPictures.AnyAsync(p => p.MediaId == movieId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task TryDeleteIfOrphanAsync_ShouldDeleteMovie_WhenPlaybackBookmarkRemainsWithoutOtherUserData()
+    {
+        var movieId = await SeedOrphanMovieAsync();
+        var userId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = userId, IdentityUserId = "u1", DisplayName = "u1" });
+        _context.PlaybackBookmarks.Add(new ItemPlaybackBookmark
+        {
+            UserId = userId,
+            MediaId = movieId,
+            PositionSeconds = 12,
+            DurationSeconds = 100,
+            UpdatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        var deleted = await MovieOrphanCleanupHelper.TryDeleteIfOrphanAsync(_context, movieId, _logger);
+        await _context.SaveChangesAsync();
+
+        deleted.Should().BeTrue();
+        (await _context.Medias.OfType<Movie>().AnyAsync(m => m.Id == movieId)).Should().BeFalse();
+        (await _context.PlaybackBookmarks.OfType<ItemPlaybackBookmark>().AnyAsync(b => b.MediaId == movieId))
+            .Should().BeFalse();
+    }
+
     private async Task<Guid> SeedOrphanMovieAsync(bool withFile = false)
     {
         var groupId = Guid.NewGuid();
