@@ -409,11 +409,15 @@ public class MediaTranscoder : IMediaTranscoder
         {
             result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
         finally
         {
             paddingGuard?.RestoreOrDiscard();
         }
-        if (!result)
+        if (!result && !cancellationToken.IsCancellationRequested)
         {
             var stderr = string.Join(Environment.NewLine, stderrLines);
             _logger.LogError(
@@ -642,12 +646,16 @@ public class MediaTranscoder : IMediaTranscoder
         {
             result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
         finally
         {
             paddingGuard?.RestoreOrDiscard();
         }
 
-        if (!result)
+        if (!result && !cancellationToken.IsCancellationRequested)
         {
             _logger.LogError(
                 "FFmpeg audio transcode failed for {Input}, track={Track}. Success={Success}",

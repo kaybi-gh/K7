@@ -24,6 +24,15 @@ public class HlsSegmentGenerationPolicyTests
     }
 
     [Test]
+    public void ShouldRestartForHole_ShouldBeFalse_WhenRequestedSegmentIsPlaylistStart()
+    {
+        HlsSegmentGenerationPolicy.ShouldRestartForHole(
+            requestedIndex: 0,
+            ffmpegRunning: false,
+            missingWithLaterSegments: true).Should().BeFalse();
+    }
+
+    [Test]
     public void ShouldRestartForHole_ShouldBeFalse_WhenIdleWithoutLaterSegments()
     {
         HlsSegmentGenerationPolicy.ShouldRestartForHole(

@@ -45,7 +45,7 @@ public class TranscodeJobManager(
         {
             existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             existingJob.LastPingTime = DateTime.UtcNow;
-            logger.LogInformation(
+            logger.LogDebug(
                 "Reusing existing transcode job {JobId} for session {SessionId}",
                 existingJob.JobId,
                 streamSessionId);
