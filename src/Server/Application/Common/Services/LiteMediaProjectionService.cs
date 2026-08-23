@@ -2,9 +2,9 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -419,7 +419,7 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             };
         }
 
-        return mediaIds.Where(resultById.ContainsKey).Select(id => resultById[id]).ToList();
+        return mediaIds.Distinct().Where(resultById.ContainsKey).Select(id => resultById[id]).ToList();
     }
 
     public async Task<List<BaseMedia>> GetLiteMediasAsync(
@@ -439,7 +439,7 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
 
         var itemsById = items.ToDictionary(m => m.Id);
-        return mediaIds.Where(itemsById.ContainsKey).Select(id => itemsById[id]).ToList();
+        return mediaIds.Distinct().Where(itemsById.ContainsKey).Select(id => itemsById[id]).ToList();
     }
 
     private static MetadataPictureDto MapPicture(

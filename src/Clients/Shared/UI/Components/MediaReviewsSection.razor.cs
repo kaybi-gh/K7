@@ -39,8 +39,9 @@ public partial class MediaReviewsSection : ComponentBase
             }
 
             _reviews.Clear();
-            _reviews.AddRange(localReviews.Select(MediaReviewCardModel.FromLocal));
-            _reviews.AddRange(federatedReviews.Select(MediaReviewCardModel.FromFederated));
+            _reviews.AddRange(localReviews.Select(MediaReviewCardModel.FromLocal)
+                .Concat(federatedReviews.Select(MediaReviewCardModel.FromFederated))
+                .DistinctBy(r => r.Id));
             _reviews.Sort((a, b) => b.Created.CompareTo(a.Created));
 
             await UpdateSpoilerStateAsync();

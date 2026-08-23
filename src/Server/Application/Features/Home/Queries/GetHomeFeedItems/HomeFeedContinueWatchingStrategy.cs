@@ -1,7 +1,8 @@
-using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Services;
+using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
@@ -137,7 +138,7 @@ internal sealed class HomeFeedContinueWatchingStrategy(
             .Where(b => b.UserId == userId && b.NextEpisodeId != null)
             .ToListAsync(cancellationToken);
 
-        return BuildCandidates(itemBookmarks, seriesBookmarks, policy, utcNow);
+        return await BuildCandidatesAsync(itemBookmarks, seriesBookmarks, policy, utcNow, cancellationToken);
     }
 
     private async Task<List<ContinueWatchingCandidate>> BuildSharedProfileCandidatesAsync(
@@ -160,23 +161,27 @@ internal sealed class HomeFeedContinueWatchingStrategy(
             .Where(b => b.SharedProfileId == sharedProfileId && b.NextEpisodeId != null)
             .ToListAsync(cancellationToken);
 
-        return BuildCandidates(itemBookmarks, seriesBookmarks, policy, utcNow);
+        return await BuildCandidatesAsync(itemBookmarks, seriesBookmarks, policy, utcNow, cancellationToken);
     }
 
-    private List<ContinueWatchingCandidate> BuildCandidates(
+    private async Task<List<ContinueWatchingCandidate>> BuildCandidatesAsync(
         IReadOnlyList<ItemPlaybackBookmark> itemBookmarks,
         IReadOnlyList<SeriesPlaybackBookmark> seriesBookmarks,
         VideoPlaybackPolicySettingsDto policy,
-        DateTime utcNow)
+        DateTime utcNow,
+        CancellationToken cancellationToken)
     {
-        var candidates = new List<ContinueWatchingCandidate>();
+        var episodeSerieIds = await GetEpisodeSerieIdsAsync(itemBookmarks, cancellationToken);
+        var candidates = new List<ContinueWatchingFeedCandidate>();
 
         foreach (var bookmark in itemBookmarks)
         {
-            if (!ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, policy, utcNow))
+            var isSerieEpisode = episodeSerieIds.ContainsKey(bookmark.MediaId);
+            if (!ContinueWatchingEligibility.IsItemBookmarkEligible(bookmark, policy, utcNow, isSerieEpisode))
                 continue;
 
-            candidates.Add(new ContinueWatchingCandidate(bookmark.MediaId, bookmark.UpdatedAt, bookmark.MediaId));
+            var groupId = episodeSerieIds.GetValueOrDefault(bookmark.MediaId, bookmark.MediaId);
+            candidates.Add(new ContinueWatchingFeedCandidate(bookmark.MediaId, bookmark.UpdatedAt, groupId));
         }
 
         foreach (var bookmark in seriesBookmarks)
@@ -184,16 +189,30 @@ internal sealed class HomeFeedContinueWatchingStrategy(
             if (!bookmarkService.IsSeriesBookmarkEligible(bookmark, policy, utcNow, isNextPlayable: true))
                 continue;
 
-            candidates.Add(new ContinueWatchingCandidate(
+            candidates.Add(new ContinueWatchingFeedCandidate(
                 bookmark.NextEpisodeId!.Value,
                 bookmark.NextEpisodeAvailableAt,
                 bookmark.SerieId));
         }
 
-        return candidates
-            .GroupBy(c => c.GroupId)
-            .Select(g => g.OrderByDescending(c => c.SortAt).First())
+        return ContinueWatchingFeedDeduper.Deduplicate(candidates)
+            .Select(c => new ContinueWatchingCandidate(c.MediaId, c.SortAt, c.GroupId))
             .ToList();
+    }
+
+    private async Task<Dictionary<Guid, Guid>> GetEpisodeSerieIdsAsync(
+        IReadOnlyList<ItemPlaybackBookmark> itemBookmarks,
+        CancellationToken cancellationToken)
+    {
+        var mediaIds = itemBookmarks.Select(b => b.MediaId).Distinct().ToList();
+        if (mediaIds.Count == 0)
+            return [];
+
+        return await context.Medias
+            .OfType<SerieEpisode>()
+            .AsNoTracking()
+            .Where(e => mediaIds.Contains(e.Id))
+            .ToDictionaryAsync(e => e.Id, e => e.SerieId, cancellationToken);
     }
 
     private sealed record ContinueWatchingCandidate(Guid MediaId, DateTime SortAt, Guid GroupId);

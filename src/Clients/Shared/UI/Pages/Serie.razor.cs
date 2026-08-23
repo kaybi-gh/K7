@@ -559,9 +559,10 @@ public partial class Serie : IAsyncDisposable
         {
             var similar = await k7ServerService.GetSimilarMediaAsync(_serie.Id);
             _similarMedia = [];
+            var seenIds = new HashSet<string>();
             foreach (var media in similar)
             {
-                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm)
+                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm && seenIds.Add(vm.Id))
                     _similarMedia.Add(vm);
             }
             await InvokeAsync(StateHasChanged);

@@ -78,6 +78,25 @@ public class HomeFeedStoreTests
         await prefs.Received(1).GetHomeLayoutAsync(Arg.Any<CancellationToken>());
     }
 
+    [Test]
+    public async Task EnsureLoadedAsync_ShouldDedupeCarouselItems_WhenFeedReturnsDuplicateIds()
+    {
+        var id = Guid.Parse("2b663634-6bb9-4ebd-924d-c8a18d29181e");
+        var first = CreateItem("Heroes") with { Id = id };
+        var duplicate = CreateItem("Heroes") with { Id = id };
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(first, duplicate));
+
+        using var sut = CreateStore(media);
+
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+
+        sut.Rows.Should().ContainSingle()
+            .Which.Items.Should().ContainSingle()
+            .Which.Id.Should().Be(id.ToString());
+    }
+
     private static HomeFeedStore CreateStore(
         IMediaService media,
         IUserPreferencesService? prefs = null)
@@ -140,8 +159,8 @@ public class HomeFeedStoreTests
         NavigationTarget = "/movies/1"
     };
 
-    private static PaginatedListDto<HomeFeedItemDto> FeedPage(HomeFeedItemDto item) => new()
+    private static PaginatedListDto<HomeFeedItemDto> FeedPage(params HomeFeedItemDto[] items) => new()
     {
-        Items = [item]
+        Items = [.. items]
     };
 }

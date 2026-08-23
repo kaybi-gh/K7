@@ -47,7 +47,6 @@ public partial class Movie : IAsyncDisposable
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
     private List<MediaCardViewModel> _similarMedia = [];
     private string? _previousId;
-    private bool _canTrackProgress;
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _canRate;
@@ -111,7 +110,7 @@ public partial class Movie : IAsyncDisposable
     {
         if (_previousId is null)
         {
-            _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+            CanResumePlayback = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
             (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
             _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
             _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
@@ -306,9 +305,10 @@ public partial class Movie : IAsyncDisposable
         }
     }
 
-    private bool CanResumePlayback =>
-        _canTrackProgress
-        && _movie?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false };
+    private bool CanResumePlayback { get =>
+        field
+        && _movie?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false }; set;
+    }
 
     private string PrimaryPlayLabel
     {
@@ -540,9 +540,10 @@ public partial class Movie : IAsyncDisposable
         {
             var similar = await k7ServerService.GetSimilarMediaAsync(_movie.Id);
             _similarMedia = [];
+            var seenIds = new HashSet<string>();
             foreach (var media in similar)
             {
-                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm)
+                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm && seenIds.Add(vm.Id))
                     _similarMedia.Add(vm);
             }
             await InvokeAsync(StateHasChanged);

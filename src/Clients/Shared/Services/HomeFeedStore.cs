@@ -32,7 +32,6 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
     private int _loadGeneration;
-    private bool _isLoaded;
     private bool _isTv;
     private bool _hubHandlersRegistered;
     private bool _pendingRefresh;
@@ -47,7 +46,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     public bool IsLoading { get; private set; }
 
-    public bool IsLoaded => _isLoaded;
+    public bool IsLoaded { get; private set; }
 
     public bool IsOffline { get; private set; }
 
@@ -110,7 +109,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
             BindFeedContext(identityUserId, currentProfileId);
 
-            if (_isLoaded && _loadTask is { IsCompletedSuccessfully: true })
+            if (IsLoaded && _loadTask is { IsCompletedSuccessfully: true })
             {
                 // Capability flipped on after a previous load that skipped CW rows.
                 if (capabilityEnabled)
@@ -157,7 +156,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
             return;
 
         Interlocked.Increment(ref _catalogRefreshGeneration);
@@ -167,7 +166,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     public async Task RefreshContinueWatchingAsync(CancellationToken cancellationToken = default)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
         {
             _pendingRefresh = true;
             return;
@@ -218,7 +217,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         lock (_sync)
         {
-            _isLoaded = false;
+            IsLoaded = false;
             _loadTask = null;
             IsOffline = false;
         }
@@ -231,7 +230,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         IsLoading = false;
         lock (_sync)
         {
-            _isLoaded = false;
+            IsLoaded = false;
             _loadTask = null;
         }
 
@@ -365,7 +364,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
         IsOffline = offline;
         IsLoading = false;
-        _isLoaded = true;
+        IsLoaded = true;
         NotifyChanged();
     }
 
@@ -385,7 +384,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         Interlocked.Increment(ref _loadGeneration);
         Interlocked.Increment(ref _catalogRefreshGeneration);
         CancelBackgroundRefreshes();
-        _isLoaded = false;
+        IsLoaded = false;
         _loadTask = null;
         _rows.Clear();
         IsLoading = false;
@@ -449,7 +448,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted, MediaType mediaType)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
         {
             _pendingRefresh = true;
             return;
@@ -575,7 +574,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void ScheduleCatalogRefreshIfAffected(Guid mediaId)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
             return;
 
         if (!GetRowsSnapshot().Any(r => IsCardAffected(r.Items, mediaId)))
@@ -609,7 +608,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnHomeFeedInvalidated()
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
         {
             _pendingRefresh = true;
             return;
@@ -626,7 +625,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
     {
-        if (!_isLoaded || IsLoading || IsOffline || items.Count == 0)
+        if (!IsLoaded || IsLoading || IsOffline || items.Count == 0)
             return;
 
         if (!GetRowsSnapshot().Any(r => RowMightBeAffectedByBatch(r, items)))
@@ -638,7 +637,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
     {
-        if (!_isLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
+        if (!IsLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
             return;
 
         ScheduleCatalogMembershipRefresh(refreshContinueWatching: true);
@@ -646,7 +645,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     private void OnLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount)
     {
-        if (!_isLoaded || IsLoading || IsOffline)
+        if (!IsLoaded || IsLoading || IsOffline)
         {
             _pendingRefresh = true;
             return;
@@ -794,7 +793,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         {
             lock (_sync)
             {
-                target.AddRange(cached);
+                target.AddRange(cached.DistinctBy(x => x.Id));
             }
 
             _ = Task.Run(async () => await RefreshRowInBackground(query, cacheKey, target), cancellationToken);
@@ -849,9 +848,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             return;
         }
 
-        var existingById = target.ToDictionary(x => x.Id);
-        var merged = new List<MediaCardViewModel>(items.Count);
-        foreach (var item in items)
+        var existingById = target.DistinctBy(x => x.Id).ToDictionary(x => x.Id);
+        var uniqueItems = items.DistinctBy(x => x.Id).ToList();
+        var merged = new List<MediaCardViewModel>(uniqueItems.Count);
+        foreach (var item in uniqueItems)
         {
             if (existingById.TryGetValue(item.Id, out var existing))
                 merged.Add(MergeCard(existing, item));
@@ -928,7 +928,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 if (feedPage?.Items is null)
                     return null;
 
-                return feedPage.Items.Select(item => item.ToCardViewModel(apiClient)).ToList();
+                return feedPage.Items
+                    .Select(item => item.ToCardViewModel(apiClient))
+                    .DistinctBy(item => item.Id)
+                    .ToList();
             });
         }
         catch (Exception ex)

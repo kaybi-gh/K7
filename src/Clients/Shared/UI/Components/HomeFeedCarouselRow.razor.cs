@@ -164,7 +164,10 @@ public partial class HomeFeedCarouselRow : IDisposable
             var feedPage = await MediaService.GetHomeFeedAsync(query);
             if (feedPage?.Items is not null)
             {
-                var nextItems = feedPage.Items.Select(item => item.ToCardViewModel(ApiClient)).ToList();
+                var nextItems = feedPage.Items
+                    .Select(item => item.ToCardViewModel(ApiClient))
+                    .DistinctBy(item => item.Id)
+                    .ToList();
                 ApplyItems(nextItems);
                 if (_items.Count > 0)
                     TvFocus?.TrySetInitialItem(_items[0]);
@@ -186,7 +189,7 @@ public partial class HomeFeedCarouselRow : IDisposable
             return;
         }
 
-        var existingById = _items.ToDictionary(x => x.Id);
+        var existingById = _items.DistinctBy(x => x.Id).ToDictionary(x => x.Id);
         var merged = new List<MediaCardViewModel>(nextItems.Count);
         foreach (var item in nextItems)
         {

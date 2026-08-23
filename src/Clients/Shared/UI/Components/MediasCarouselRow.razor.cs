@@ -171,7 +171,7 @@ public partial class MediasCarouselRow : IDisposable
             var page = await MediaService.GetLiteMediasAsync(query);
             if (page?.Items is not null)
             {
-                ApplyItems(page.Items.ToList());
+                ApplyItems(page.Items.DistinctBy(item => item.Id).ToList());
                 if (_cardItems.Count > 0)
                     TvFocus?.TrySetInitialItem(_cardItems[0].Model);
             }
@@ -187,7 +187,7 @@ public partial class MediasCarouselRow : IDisposable
 
     private void ApplyItems(List<LiteMediaDto> nextItems)
     {
-        var existingById = _cardItems.ToDictionary(x => x.Id, x => x.Model);
+        var existingById = _cardItems.DistinctBy(x => x.Id).ToDictionary(x => x.Id, x => x.Model);
         _items = nextItems;
         _cardItems = nextItems
             .Select(item =>

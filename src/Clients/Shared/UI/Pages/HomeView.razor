@@ -106,10 +106,11 @@ else
 
 RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {
-    return @<Carousel Title="@GetRowTitle(row.Title)" ContentKey="@GetCarouselContentKey(items)">
-        @for (var cardIndex = 0; cardIndex < items.Count; cardIndex++)
+    var carouselItems = items.DistinctBy(i => i.Id).ToList();
+    return @<Carousel Title="@GetRowTitle(row.Title)" ContentKey="@GetCarouselContentKey(carouselItems)">
+        @for (var cardIndex = 0; cardIndex < carouselItems.Count; cardIndex++)
         {
-            var item = items[cardIndex];
+            var item = carouselItems[cardIndex];
             <CarouselItem @key="item.Id" ItemId="@GetHomeCardId(item.Id)">
                 <MediaCard Model="@item"
                            Variant="GetVariant(item)"
