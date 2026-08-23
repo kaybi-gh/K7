@@ -437,7 +437,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     .ThenInclude(p => p.Variants)
             .LoadAsync(cancellationToken);
 
-        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
+        var providerKey = SerieMetadataProviderCascade.ResolveKeyedProviderName(
+            request.MetadataProviderName,
+            serie.NumberingProviderName,
+            serie.ExternalIds,
+            request.MetadataProviderExternalId);
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(providerKey);
 
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken, request.FallbackLanguage);
@@ -506,7 +511,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         if (string.IsNullOrWhiteSpace(serie.NumberingProviderName))
-            serie.NumberingProviderName = MetadataProviderHostMapper.NormalizeProviderName(request.MetadataProviderName);
+            serie.NumberingProviderName = MetadataProviderHostMapper.NormalizeProviderName(providerKey);
 
         var enrichmentProviderName = SerieMetadataProviderCascade.ResolveEnrichmentProvider(
             serie.NumberingProviderName ?? request.MetadataProviderName);
@@ -733,7 +738,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         if (!request.Incremental
-            && string.Equals(request.MetadataProviderName, "tvdb", StringComparison.OrdinalIgnoreCase))
+            && string.Equals(providerKey, "tvdb", StringComparison.OrdinalIgnoreCase))
         {
             await QueueEnrichSerieTmdbSupplementalAsync(serie, request, cancellationToken);
         }

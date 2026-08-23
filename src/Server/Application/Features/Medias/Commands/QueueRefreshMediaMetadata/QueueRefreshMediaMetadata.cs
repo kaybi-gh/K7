@@ -66,20 +66,30 @@ public class QueueRefreshMediaMetadataCommandHandler(
             ]);
         }
 
+        // Library mode "auto" is not a keyed ISerieMetadataProvider. Use the concrete provider
+        // that owns the resolved external id (tmdb/tvdb/...), not the library setting.
+        var refreshProviderName = media is Serie serie
+            ? SerieMetadataProviderCascade.ResolveKeyedProviderName(
+                externalId.ProviderName,
+                serie.NumberingProviderName,
+                media.ExternalIds,
+                externalId.Value)
+            : MetadataProviderHostMapper.NormalizeProviderName(externalId.ProviderName);
+
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new RefreshMediaMetadatasCommand
             {
                 MediaId = media.Id,
                 MetadataProviderExternalId = externalId.Value,
-                MetadataProviderName = library.MetadataProviderName,
+                MetadataProviderName = refreshProviderName,
                 Language = library.MetadataLanguage,
                 FallbackLanguage = library.MetadataFallbackLanguage
             },
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             Lane = BackgroundTaskLane.Metadata,
-            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(library.MetadataProviderName),
+            MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName(refreshProviderName),
             WorkClass = BackgroundTaskWorkClass.CriticalEnrich,
             TriggeredBy = BackgroundTaskTriggeredBy.User,
             MaxAttempts = 3

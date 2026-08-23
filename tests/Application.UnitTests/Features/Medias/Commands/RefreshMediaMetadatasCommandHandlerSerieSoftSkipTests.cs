@@ -1,6 +1,7 @@
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
@@ -152,5 +153,47 @@ public class RefreshMediaMetadatasCommandHandlerSerieSoftSkipTests
         episodes.Should().HaveCount(2);
         episodes[0].Title.Should().Be("Refreshed Episode 1");
         episodes[1].Title.Should().Be("Local Missing Episode");
+    }
+
+    [Test]
+    public async Task Handle_ShouldResolveTvdbProvider_WhenRequestedProviderIsAuto()
+    {
+        var serie = new Serie
+        {
+            Title = "Cool Show",
+            NumberingProviderName = "tvdb"
+        };
+        serie.ExternalIds.Add(new ExternalId { ProviderName = "tvdb", Value = "337018" });
+        _context.Medias.Add(serie);
+        await _context.SaveChangesAsync();
+
+        _serieProvider.FetchSerieMetadataAsync(
+                "337018",
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>(),
+                Arg.Any<string?>())
+            .Returns(new ExternalSerieMetadata { Title = "Cool Show", Status = "Ended" });
+
+        await _handler.Handle(new RefreshMediaMetadatasCommand
+        {
+            MediaId = serie.Id,
+            MetadataProviderExternalId = "337018",
+            MetadataProviderName = "auto",
+            Language = "fr",
+            FallbackLanguage = "en"
+        }, CancellationToken.None);
+
+        var refreshed = await _context.Medias.OfType<Serie>()
+            .SingleAsync(s => s.Id == serie.Id);
+
+        refreshed.Status.Should().Be("Ended");
+        refreshed.LastMetadataRefreshedAt.Should().NotBeNull();
+        refreshed.NumberingProviderName.Should().Be("tvdb");
+
+        await _serieProvider.Received(1).FetchSerieMetadataAsync(
+            "337018",
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>(),
+            Arg.Any<string?>());
     }
 }
