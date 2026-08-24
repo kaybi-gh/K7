@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -14,9 +15,10 @@ namespace K7.Server.Application.Helpers;
 /// <remarks>
 /// Detection needs both the probed file metadata and the episode media to exist, and those two are
 /// produced by tasks that run in different lanes. It is therefore triggered from both sides: when a
-/// file is probed and when an episode media is created. Whichever happens last wins; the earlier
-/// attempt is a no-op because <see cref="CreateBackgroundTaskCommand"/> deduplicates pending tasks
-/// on name plus target entity.
+/// file is probed and when an episode media is created or first becomes playable. Whichever happens
+/// last wins. The earlier attempt is a no-op because <see cref="CreateBackgroundTaskCommand"/>
+/// deduplicates pending tasks on name plus target entity. If the season already has segments,
+/// <c>DetectMediaSegments</c> runs incremental matching for episodes that still have none.
 /// </remarks>
 public static class IntroDetectionQueueHelper
 {
@@ -24,13 +26,9 @@ public static class IntroDetectionQueueHelper
 
     /// <summary>
     /// Queues detection for the season of <paramref name="mediaId"/> when it is an episode of a
-    /// season holding at least two episodes.
+    /// season holding at least two episodes, the library has intro detection enabled, and a probed
+    /// video file is linked.
     /// </summary>
-    /// <param name="context">Database context.</param>
-    /// <param name="sender">Mediator used to create the background task.</param>
-    /// <param name="mediaId">Identifier of the media expected to be a <see cref="SerieEpisode"/>.</param>
-    /// <param name="logger">Logger used to trace skipped cases.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
     public static async Task TryQueueForEpisodeAsync(
         IApplicationDbContext context,
         ISender sender,
@@ -46,6 +44,30 @@ public static class IntroDetectionQueueHelper
         if (episode is null)
         {
             logger.LogDebug("Intro detection skipped: media {MediaId} is not a SerieEpisode", mediaId);
+            return;
+        }
+
+        var probedLibraryId = await context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.MediaId == mediaId && f.FileMetadata is VideoFileMetadata)
+            .Select(f => (Guid?)f.LibraryId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (probedLibraryId is null)
+        {
+            logger.LogDebug("Intro detection skipped: episode {MediaId} has no probed video file yet", mediaId);
+            return;
+        }
+
+        var introDetectionEnabled = await context.Libraries
+            .AsNoTracking()
+            .Where(l => l.Id == probedLibraryId.Value)
+            .Select(l => l.IntroDetectionEnabled)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!introDetectionEnabled)
+        {
+            logger.LogDebug("Intro detection skipped: library {LibraryId} has intro detection disabled", probedLibraryId.Value);
             return;
         }
 

@@ -1,7 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Events;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +13,8 @@ namespace K7.Server.Application.Features.Medias.EventHandlers;
 /// A first library scan enqueues probes while files are being persisted and media creation only once
 /// identification has grouped files, so an episode is usually probed before its media exists. In that
 /// order <see cref="IndexedFiles.EventHandlers.FileMetadataCreatedEventHandler"/> cannot queue
-/// detection because the file has no MediaId yet.
+/// detection because the file has no MediaId yet. Attaching a probed file to an existing episode
+/// stub (metadata refresh created the episode first) is handled from CreateMedia / reidentify.
 /// </remarks>
 public class MediaCreatedIntroDetectionEventHandler(
     ILogger<MediaCreatedIntroDetectionEventHandler> logger,
@@ -24,27 +24,6 @@ public class MediaCreatedIntroDetectionEventHandler(
     public async Task Handle(MediaCreatedEvent notification, CancellationToken cancellationToken)
     {
         if (notification.Media is not SerieEpisode episode)
-            return;
-
-        var probedFileLibraryId = await context.IndexedFiles
-            .AsNoTracking()
-            .Where(f => f.MediaId == episode.Id && f.FileMetadata is VideoFileMetadata)
-            .Select(f => (Guid?)f.LibraryId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (probedFileLibraryId is null)
-        {
-            logger.LogDebug("Intro detection skipped: episode {MediaId} has no probed video file yet", episode.Id);
-            return;
-        }
-
-        var introDetectionEnabled = await context.Libraries
-            .AsNoTracking()
-            .Where(l => l.Id == probedFileLibraryId.Value)
-            .Select(l => l.IntroDetectionEnabled)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (!introDetectionEnabled)
             return;
 
         await IntroDetectionQueueHelper.TryQueueForEpisodeAsync(context, sender, episode.Id, logger, cancellationToken);

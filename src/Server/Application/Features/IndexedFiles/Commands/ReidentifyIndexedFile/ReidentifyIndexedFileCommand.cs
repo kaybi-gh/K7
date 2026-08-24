@@ -98,6 +98,11 @@ public class ReidentifyIndexedFileCommandHandler(
 
             await context.SaveChangesAsync(cancellationToken);
             await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
+            if (indexedFile.MediaId is Guid attachedEpisodeId)
+            {
+                await IntroDetectionQueueHelper.TryQueueForEpisodeAsync(
+                    context, sender, attachedEpisodeId, logger, cancellationToken);
+            }
             return;
         }
 
@@ -135,6 +140,11 @@ public class ReidentifyIndexedFileCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
         await mediaLibraryAvailabilityService.RebuildForLibraryAsync(library.Id, cancellationToken);
+        if (indexedFile.MediaId is Guid createdEpisodeId)
+        {
+            await IntroDetectionQueueHelper.TryQueueForEpisodeAsync(
+                context, sender, createdEpisodeId, logger, cancellationToken);
+        }
 
         await QueueRefreshAsync(newMedia.Id, request.SelectedExternalId, providerName, library, cancellationToken);
     }

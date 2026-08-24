@@ -795,6 +795,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         var hasNewEpisodes = false;
         var refreshSeriesBookmarks = false;
+        var becamePlayableEpisodeIds = new List<Guid>();
         var orphanTransfers = new List<(Guid FromEpisodeId, Guid ToEpisodeId)>();
 
         foreach (var indexedFile in indexedFiles)
@@ -861,7 +862,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     existingEpisode.IndexedFiles ??= [];
                     existingEpisode.IndexedFiles.Add(indexedFile);
                     if (becamePlayable)
+                    {
                         refreshSeriesBookmarks = true;
+                        becamePlayableEpisodeIds.Add(existingEpisode.Id);
+                    }
                 }
 
                 continue;
@@ -917,6 +921,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var episodeId in becamePlayableEpisodeIds.Distinct())
+        {
+            await IntroDetectionQueueHelper.TryQueueForEpisodeAsync(
+                _context, _sender, episodeId, _logger, cancellationToken);
+        }
 
         if (refreshSeriesBookmarks)
             await _bookmarkService.RefreshSeriesBookmarksForSerieAsync(serie.Id, DateTime.UtcNow, cancellationToken);
