@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -12,7 +13,7 @@ namespace K7.Clients.Shared.Services;
 /// Singleton service that manages a persistent SignalR connection to the K7 hub.
 /// Survives page navigation.
 /// </summary>
-public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
+public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable, IVideoPlayerSettingsHubEvents
 {
     private static class HubGroups
     {
@@ -33,6 +34,7 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
     public event Action? UserContextChanged;
     public event Action<Guid, double, bool, MediaType>? ProgressUpdated;
     public event Action<Guid, int>? UserRatingUpdated;
+    public event Action<VideoPlayerSettingsDto>? VideoPlayerSettingsUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid>? MediaMetadataRefreshed;
@@ -147,6 +149,11 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable
             _hubConnection.On<Guid, int>("ReceiveUserRatingUpdated", (mediaId, value) =>
             {
                 UserRatingUpdated?.Invoke(mediaId, value);
+            });
+
+            _hubConnection.On<VideoPlayerSettingsDto>("ReceiveVideoPlayerSettingsUpdated", settings =>
+            {
+                VideoPlayerSettingsUpdated?.Invoke(settings);
             });
 
             _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>

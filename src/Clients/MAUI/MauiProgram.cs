@@ -177,7 +177,9 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevicePinService>();
         builder.Services.AddSingleton<ILocalUserService, LocalUserService>();
         builder.Services.AddSingleton<K7HubClient>();
+        builder.Services.AddSingleton<IVideoPlayerSettingsHubEvents>(sp => sp.GetRequiredService<K7HubClient>());
         builder.Services.AddSingleton<IUserRatingSync, UserRatingSync>();
+        builder.Services.AddSingleton<IVideoPlayerUxSettingsSync, VideoPlayerUxSettingsSync>();
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));
         builder.Services.AddSingleton<IHomeNavigationState, HomeNavigationState>();
         builder.Services.AddSingleton<IHubFocusNavigationState, HubFocusNavigationState>();

@@ -124,6 +124,11 @@ by `SubtitleStyleHelper` (same values as the settings preview). Font size scales
 them via `AndroidSubtitleStyle` (`CaptionStyleCompat` on `PlayerView.SubtitleView`). Image-based
 burn-in (PGS) cannot be restyled client-side.
 
+After save or reset, the server pushes `ReceiveVideoPlayerSettingsUpdated` on the K7 hub
+(user identity group). `VideoPlayerUxSettingsSync` applies the payload to `IPlayerService`
+and subtitle CSS/ExoPlayer styling on every connected client (other browser tabs, phone, TV)
+without restarting playback.
+
 ## Related
 
 - Client hosts: [developing.md](developing.md#maui-blazor-hybrid)
