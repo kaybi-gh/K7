@@ -66,6 +66,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
                     _isInitialized = true;
                     _lastPlayerId = _player.Id;
+                    await ApplySubtitleStyleAsync();
 
                     if (pendingSeek is double seekTime && !string.IsNullOrEmpty(SourceUri))
                     {
@@ -140,8 +141,11 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested += OnAspectRatioModeChange;
+            PlayerService.PlayerUxSettingsChanged += OnVideoPlayerUxSettingsChanged;
         }
     }
+
+    private void OnVideoPlayerUxSettingsChanged() => ApplySubtitleStyleAsync().FireAndForget();
 
     private void OnRemoteSessionChanged() => InvokeAsync(StateHasChanged);
 
@@ -264,6 +268,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
+            PlayerService.PlayerUxSettingsChanged -= OnVideoPlayerUxSettingsChanged;
 
             if (!string.IsNullOrEmpty(_lastPlayerId))
             {
@@ -515,6 +520,20 @@ public partial class VideoPlayer : IAsyncDisposable
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
             await JSRuntime.InvokeVoidAsync("switchSubtitleTrack", _player.Id, slug);
+        }
+    }
+
+    private async Task ApplySubtitleStyleAsync()
+    {
+        try
+        {
+            var settings = PlayerService.VideoPlayerUxSettings
+                ?? await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            var deviceType = DeviceService.CachedDeviceType ?? await DeviceService.GetDeviceTypeAsync();
+            await SubtitleStyleApplicator.ApplyAsync(JSRuntime, settings, deviceType);
+        }
+        catch
+        {
         }
     }
 

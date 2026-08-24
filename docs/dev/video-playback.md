@@ -115,6 +115,15 @@ when `MediaElement.Duration` stays 0 on demuxed HLS. Stale `.m4s` from an older 
 from the transcode cache. Streaming HLS rebinds the MediaElement ExoPlayer with long HTTP
 timeouts and VTT load retries on HTTP 503 (`AndroidExoHlsTuning`).
 
+## Subtitle appearance
+
+`VideoPlayerSettingsDto` font / size / color / background opacity / shadow settings are mapped
+by `SubtitleStyleHelper` (same values as the settings preview). Font size scales by
+`DeviceType` (phone/watch, tablet, desktop, TV). Web and Windows Video.js apply them via
+`applySubtitleStyle` (CSS on `.vjs-text-track-cue` / `::cue`). Android ExoPlayer applies
+them via `AndroidSubtitleStyle` (`CaptionStyleCompat` on `PlayerView.SubtitleView`). Image-based
+burn-in (PGS) cannot be restyled client-side.
+
 ## Related
 
 - Client hosts: [developing.md](developing.md#maui-blazor-hybrid)

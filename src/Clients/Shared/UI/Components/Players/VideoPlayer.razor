@@ -8,6 +8,7 @@
 @inject ISyncPlayService SyncPlay
 @inject IK7Snackbar Snackbar
 @inject IClientErrorReporter ClientErrorReporter
+@inject IUserPreferencesService UserPreferencesService
 @inject IStringLocalizer<SharedResource> S
 
 @if (RemoteControl.IsControlling && !RemoteControl.IsAudio)

@@ -174,6 +174,7 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     });
 
     players[id] = player;
+    k7AttachSubtitleStyleHooks(player);
     return player;
 }
 
@@ -316,6 +317,130 @@ window.switchSubtitleTrack = function (id, slug) {
         }
     }
     return found;
+}
+
+function k7SafeCssValue(value, fallback) {
+    if (typeof value !== 'string' || !value)
+        return fallback;
+    // Allow only CSS-safe characters for injected values.
+    if (/[;{}\\]/.test(value))
+        return fallback;
+    return value;
+}
+
+function k7ClearSubtitleCueInlineStyles(root) {
+    if (!root || !root.querySelectorAll)
+        return;
+
+    root.querySelectorAll('.vjs-text-track-cue').forEach(function (cue) {
+        cue.style.removeProperty('background-color');
+        cue.style.removeProperty('background');
+        cue.style.removeProperty('font-size');
+        cue.style.removeProperty('font-family');
+        cue.style.removeProperty('color');
+        cue.style.removeProperty('text-shadow');
+
+        cue.querySelectorAll('*').forEach(function (node) {
+            node.style.removeProperty('color');
+            node.style.removeProperty('background-color');
+            node.style.removeProperty('background');
+            node.style.removeProperty('font-family');
+            node.style.removeProperty('font-size');
+            node.style.removeProperty('text-shadow');
+            node.style.removeProperty('font-variant');
+        });
+    });
+}
+
+function k7ApplySubtitleStyleSheet(style) {
+    var id = 'k7-subtitle-style';
+    var el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('style');
+        el.id = id;
+        document.head.appendChild(el);
+    }
+
+    if (!style) {
+        el.textContent = '';
+        return;
+    }
+
+    var fontFamily = k7SafeCssValue(style.fontFamily, 'inherit');
+    var fontSize = k7SafeCssValue(style.fontSize, '18px');
+    var color = k7SafeCssValue(style.color, '#FFFFFF');
+    var backgroundColor = k7SafeCssValue(style.backgroundColor, 'rgba(0, 0, 0, 0.5)');
+    var textShadow = k7SafeCssValue(style.textShadow, 'none');
+
+    // Video.js textTrackSettings writes inline styles on active cues; use !important
+    // on the cue box and direct children, then strip inline overrides after each refresh.
+    el.textContent =
+        '.video-js .vjs-text-track-display .vjs-text-track-cue {' +
+        'background:transparent !important;' +
+        'background-color:transparent !important;' +
+        'text-align:center !important;' +
+        'width:100% !important;' +
+        'left:0 !important;' +
+        'right:0 !important;' +
+        'font-family:' + fontFamily + ' !important;' +
+        'font-size:' + fontSize + ' !important;' +
+        'color:' + color + ' !important;' +
+        'text-shadow:' + textShadow + ' !important;' +
+        '}' +
+        '.video-js .vjs-text-track-display .vjs-text-track-cue > * {' +
+        'display:inline-block !important;' +
+        'width:fit-content !important;' +
+        'max-width:90% !important;' +
+        'padding:4px 8px !important;' +
+        'border-radius:4px !important;' +
+        'line-height:1.4 !important;' +
+        'white-space:pre-wrap !important;' +
+        'text-align:center !important;' +
+        'font-family:' + fontFamily + ' !important;' +
+        'font-size:' + fontSize + ' !important;' +
+        'color:' + color + ' !important;' +
+        'background-color:' + backgroundColor + ' !important;' +
+        'text-shadow:' + textShadow + ' !important;' +
+        '}' +
+        '.video-js ::cue {' +
+        'font-family:' + fontFamily + ';' +
+        'font-size:' + fontSize + ';' +
+        'color:' + color + ';' +
+        'background-color:transparent;' +
+        '}';
+}
+
+function k7RefreshSubtitleStylesForAllPlayers() {
+    Object.keys(players).forEach(function (playerId) {
+        var player = players[playerId];
+        if (!player || typeof player.el !== 'function')
+            return;
+
+        k7ClearSubtitleCueInlineStyles(player.el());
+    });
+}
+
+function k7AttachSubtitleStyleHooks(player) {
+    if (!player || player.k7SubtitleStyleHooksAttached)
+        return;
+
+    player.k7SubtitleStyleHooksAttached = true;
+
+    var tracks = player.textTracks();
+    if (!tracks)
+        return;
+
+    var onCueChange = function () {
+        k7RefreshSubtitleStylesForAllPlayers();
+    };
+
+    tracks.addEventListener('cuechange', onCueChange);
+    player.on('texttrackchange', onCueChange);
+}
+
+window.applySubtitleStyle = function (style) {
+    k7ApplySubtitleStyleSheet(style);
+    k7RefreshSubtitleStylesForAllPlayers();
 }
 
 window.getAudioTracks = function (id) {

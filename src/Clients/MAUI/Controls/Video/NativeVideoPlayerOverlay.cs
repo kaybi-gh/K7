@@ -1086,6 +1086,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (_settings.IsOpen)
                 MainThread.BeginInvokeOnMainThread(_settings.Rebuild);
         };
+        _player.PlayerUxSettingsChanged += OnPlayerUxSettingsChanged;
     }
 
     private void UnsubscribePlayer()
@@ -1098,6 +1099,26 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _player.IsFullScreenChanged -= OnMutedChanged;
         _player.SourceChanged -= OnSourceChanged;
         _player.BackPressed -= OnBackPressed;
+        _player.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
+    }
+
+    private void OnPlayerUxSettingsChanged() =>
+        MainThread.BeginInvokeOnMainThread(ApplyVideoPlayerUxSettingsFromPlayer);
+
+    private void ApplyVideoPlayerUxSettingsFromPlayer()
+    {
+        var settings = _player.VideoPlayerUxSettings;
+        if (settings is null)
+            return;
+
+        _videoSettings = settings;
+        _showChapterTicks = settings.ShowChapterTicks;
+#if ANDROID
+        K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
+        TryApplyAndroidSubtitleStyle();
+#endif
+        RefreshSeekChapters();
+        ApplySkipSegmentOnMainThread();
     }
 
     private void OnBackPressed() => MainThread.BeginInvokeOnMainThread(() => HandleBack());
@@ -1688,9 +1709,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         try
         {
             _videoSettings = await _prefs.GetEffectiveVideoPlayerSettingsAsync();
+            _player.ApplyVideoPlayerUxSettings(_videoSettings);
             _showChapterTicks = _videoSettings.ShowChapterTicks;
-            _player.SetSkipBackSeconds(_videoSettings.SkipBackSeconds);
-            _player.SetSkipForwardSeconds(_videoSettings.SkipForwardSeconds);
+#if ANDROID
+            K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
+            TryApplyAndroidSubtitleStyle();
+#endif
 
             RefreshSeekChapters();
         }
@@ -1713,6 +1737,26 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             }
         }
     }
+
+#if ANDROID
+    private void TryApplyAndroidSubtitleStyle()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            Element? current = this;
+            while (current is not null)
+            {
+                if (current is BlazorPage page)
+                {
+                    page.ApplyPendingAndroidSubtitleStyle();
+                    return;
+                }
+
+                current = current.Parent;
+            }
+        });
+    }
+#endif
 
     private async Task RefreshSegmentsAsync()
     {

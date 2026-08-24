@@ -55,6 +55,13 @@ public partial class SkipSegmentOverlay : IDisposable
     protected override void OnInitialized()
     {
         PlayerService.CurrentTimeChanged += OnTimeChanged;
+        PlayerService.PlayerUxSettingsChanged += OnPlayerUxSettingsChanged;
+    }
+
+    private void OnPlayerUxSettingsChanged()
+    {
+        if (PlayerService.VideoPlayerUxSettings is { } settings)
+            _settings = settings;
     }
 
     protected override void OnParametersSet()
@@ -112,6 +119,7 @@ public partial class SkipSegmentOverlay : IDisposable
         _notificationCts?.Cancel();
         _notificationCts?.Dispose();
         PlayerService.CurrentTimeChanged -= OnTimeChanged;
+        PlayerService.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
     }
 
     private void ShowSkippedNotification(K7.Shared.Enums.MediaSegmentType type)

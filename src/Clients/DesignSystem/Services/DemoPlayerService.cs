@@ -2,6 +2,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
@@ -146,8 +147,17 @@ public sealed class DemoPlayerService : IPlayerService
     }
 
     public event Action? PlayerUxSettingsChanged;
+    public VideoPlayerSettingsDto? VideoPlayerUxSettings { get; private set; }
     public int SkipBackSeconds { get; private set; } = 10;
     public int SkipForwardSeconds { get; private set; } = 10;
+
+    public void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings)
+    {
+        VideoPlayerUxSettings = settings;
+        SkipBackSeconds = Math.Max(1, settings.SkipBackSeconds);
+        SkipForwardSeconds = Math.Max(1, settings.SkipForwardSeconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
 
     public void SetSkipBackSeconds(int seconds)
     {

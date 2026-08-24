@@ -1,10 +1,12 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -22,6 +24,8 @@ public partial class SettingsVideoPlaybackPage
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
 
     private VideoPlayerSettingsDto? _settings;
     private VideoPlaybackPolicySettingsDto? _videoPolicy;
@@ -49,7 +53,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync();
-            ApplyLocalVideoSkip(_settings);
+            ApplyLocalVideoPlayerSettings(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -58,7 +62,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = new VideoPlayerSettingsDto();
             _videoPolicy = new VideoPlaybackPolicySettingsDto();
             _preferences = new TrackSelectionPreferencesDto();
-            ApplyLocalVideoSkip(_settings);
+            ApplyLocalVideoPlayerSettings(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -137,10 +141,19 @@ public partial class SettingsVideoPlaybackPage
         StateHasChanged();
     }
 
-    private void ApplyLocalVideoSkip(VideoPlayerSettingsDto settings)
+    private async Task ApplyLocalVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings)
     {
-        PlayerService.SetSkipBackSeconds(Math.Max(1, settings.SkipBackSeconds));
-        PlayerService.SetSkipForwardSeconds(Math.Max(1, settings.SkipForwardSeconds));
+        PlayerService.ApplyVideoPlayerUxSettings(settings);
+        await ApplySubtitleStyleAsync(settings);
+    }
+
+    private void ApplyLocalVideoPlayerSettings(VideoPlayerSettingsDto settings) =>
+        ApplyLocalVideoPlayerSettingsAsync(settings).FireAndForget();
+
+    private async Task ApplySubtitleStyleAsync(VideoPlayerSettingsDto settings)
+    {
+        var deviceType = DeviceService.CachedDeviceType ?? await DeviceService.GetDeviceTypeAsync();
+        await SubtitleStyleApplicator.ApplyAsync(JSRuntime, settings, deviceType);
     }
 
     private async Task OnLibraryScopeChanged(Guid? libraryId)
@@ -192,7 +205,7 @@ public partial class SettingsVideoPlaybackPage
                 UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
                 UserPreferencesService.UpdateUserVideoPlaybackPolicySettingsAsync(_videoPolicy),
                 UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
-            ApplyLocalVideoSkip(_settings);
+            await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
@@ -222,7 +235,7 @@ public partial class SettingsVideoPlaybackPage
             _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(_selectedLibraryId);
-            ApplyLocalVideoSkip(_settings);
+            await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
             Snackbar.Add(L["ResetSuccess"], K7Severity.Success);

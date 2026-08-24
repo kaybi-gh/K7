@@ -1,4 +1,6 @@
-using System.Globalization;
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Enums;
 using K7.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 
@@ -6,6 +8,8 @@ namespace K7.Clients.Shared.UI.Components;
 
 public partial class SubtitlePreview
 {
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
+
     [Parameter] public SubtitleFontFamily Family { get; set; }
     [Parameter] public SubtitleFontSize Size { get; set; }
     [Parameter] public string FontColor { get; set; } = "#FFFFFF";
@@ -14,24 +18,27 @@ public partial class SubtitlePreview
     [Parameter] public string ShadowColor { get; set; } = "#000000";
     [Parameter] public double ShadowBlur { get; set; } = 3;
 
-    private string FontFamilyCss => Family switch
-    {
-        SubtitleFontFamily.Manrope => "'Manrope', sans-serif",
-        SubtitleFontFamily.Epilogue => "'Epilogue', sans-serif",
-        SubtitleFontFamily.SansSerif => "sans-serif",
-        SubtitleFontFamily.Serif => "serif",
-        SubtitleFontFamily.Monospace => "monospace",
-        _ => "inherit"
-    };
+    private DeviceType _deviceType = DeviceType.Desktop;
 
-    private string FontSizePx => Size switch
+    protected override async Task OnInitializedAsync()
     {
-        SubtitleFontSize.Small => "14px",
-        SubtitleFontSize.Large => "22px",
-        _ => "18px"
-    };
+        _deviceType = DeviceService.CachedDeviceType ?? await DeviceService.GetDeviceTypeAsync();
+    }
 
-    private string TextShadowStyle => ShadowEnabled
-        ? $"text-shadow: 0 0 {ShadowBlur.ToString(CultureInfo.InvariantCulture)}px {ShadowColor}, 1px 1px {ShadowBlur.ToString(CultureInfo.InvariantCulture)}px {ShadowColor};"
-        : "";
+    private string FontFamilyCss => SubtitleStyleHelper.ToFontFamilyCss(Family);
+
+    private string FontSizePx => SubtitleStyleHelper.ToFontSizeCss(Size, _deviceType);
+
+    private string FontColorCss => SubtitleStyleHelper.NormalizeColor(FontColor);
+
+    private string BackgroundCss => SubtitleStyleHelper.ToBackgroundCss(BackgroundOpacity);
+
+    private string TextShadowStyle
+    {
+        get
+        {
+            var shadow = SubtitleStyleHelper.ToTextShadowCss(ShadowEnabled, ShadowColor, ShadowBlur);
+            return shadow == "none" ? "" : $"text-shadow: {shadow};";
+        }
+    }
 }

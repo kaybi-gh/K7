@@ -22,6 +22,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Clients\Shared\UI\K7.Clients.Shared.UI.csproj" />
         <ProjectReference Include="..\..\src\Clients\Shared\K7.Clients.Shared.csproj" />
+        <ProjectReference Include="..\..\src\Clients\Web\K7.Clients.Web.csproj" />
     </ItemGroup>
 
 </Project>

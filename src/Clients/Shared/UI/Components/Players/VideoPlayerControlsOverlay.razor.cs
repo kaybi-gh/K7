@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Timers;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Helpers;
@@ -129,9 +130,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         try
         {
             var settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            PlayerService.ApplyVideoPlayerUxSettings(settings);
             _showChapterTicks = settings.ShowChapterTicks;
-            PlayerService.SetSkipBackSeconds(Math.Max(1, settings.SkipBackSeconds));
-            PlayerService.SetSkipForwardSeconds(Math.Max(1, settings.SkipForwardSeconds));
+            await SubtitleStyleApplicator.ApplyAsync(JSRuntime, settings, _deviceType);
         }
         catch
         {
@@ -536,7 +537,24 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private void OnVideoPlayerUxSettingsChanged()
     {
         if (_disposed) return;
-        _ = InvokeAsync(SyncTvSkipSecondsToJsAsync);
+        _ = InvokeAsync(async () =>
+        {
+            await SyncTvSkipSecondsToJsAsync();
+            await RefreshSubtitleStyleAsync();
+        });
+    }
+
+    private async Task RefreshSubtitleStyleAsync()
+    {
+        try
+        {
+            var settings = PlayerService.VideoPlayerUxSettings
+                ?? await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            await SubtitleStyleApplicator.ApplyAsync(JSRuntime, settings, _deviceType);
+        }
+        catch
+        {
+        }
     }
 
     /// <summary>

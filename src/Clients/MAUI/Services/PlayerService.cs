@@ -4,6 +4,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
@@ -157,11 +158,25 @@ internal class PlayerService(
 
     public event Action? PlayerUxSettingsChanged;
 
+    private VideoPlayerSettingsDto? _videoPlayerUxSettings;
+    public VideoPlayerSettingsDto? VideoPlayerUxSettings => _videoPlayerUxSettings;
+
     private int _skipBackSeconds = deviceStorageService.Get(PreferenceKeys.VIDEO_SKIP_BACK_SECONDS, 10);
     public int SkipBackSeconds => _skipBackSeconds;
 
     private int _skipForwardSeconds = deviceStorageService.Get(PreferenceKeys.VIDEO_SKIP_FORWARD_SECONDS, 10);
     public int SkipForwardSeconds => _skipForwardSeconds;
+
+    public void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        _videoPlayerUxSettings = settings;
+        _skipBackSeconds = Math.Max(1, settings.SkipBackSeconds);
+        _skipForwardSeconds = Math.Max(1, settings.SkipForwardSeconds);
+        deviceStorageService.Set(PreferenceKeys.VIDEO_SKIP_BACK_SECONDS, _skipBackSeconds);
+        deviceStorageService.Set(PreferenceKeys.VIDEO_SKIP_FORWARD_SECONDS, _skipForwardSeconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
 
     public void SetSkipBackSeconds(int seconds)
     {

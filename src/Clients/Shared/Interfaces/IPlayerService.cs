@@ -4,6 +4,8 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
+using K7.Shared.Dtos;
+
 namespace K7.Clients.Shared.Interfaces;
 
 public interface IPlayerService
@@ -120,6 +122,12 @@ public interface IPlayerService
 
     void SetSkipBackSeconds(int seconds);
     void SetSkipForwardSeconds(int seconds);
+
+    /// <summary>Last effective video UX settings pushed from preferences (skip, subtitle style, etc.).</summary>
+    VideoPlayerSettingsDto? VideoPlayerUxSettings { get; }
+
+    /// <summary>Apply video UX settings to the in-memory player and notify listeners once.</summary>
+    void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings);
 
     event Action? PlayerUxSettingsChanged;
 }

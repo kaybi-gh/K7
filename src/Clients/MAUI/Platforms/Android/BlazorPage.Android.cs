@@ -7,6 +7,9 @@ using CommunityToolkit.Maui.Views;
 using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.MAUI.Platforms.Android;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
+using DeviceType = K7.Server.Domain.Enums.DeviceType;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.MAUI;
@@ -162,9 +165,30 @@ public partial class BlazorPage
             var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
             var playerView = platformView is null ? null : FindPlayerView(platformView);
             AndroidExoHlsTuning.ApplyPlaybackSurfaceTuning(exo, playerView);
+            AndroidSubtitleStyle.ApplyTo(playerView, deviceType: ResolveSubtitleDeviceType());
             TryPublishExoTimelineFromPlayer(exo);
         }
         SetVideoFocusOwnership(active: true);
+    }
+
+    internal void ApplyPendingAndroidSubtitleStyle()
+    {
+        try
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as global::Android.Views.View;
+            var playerView = platformView is null ? null : FindPlayerView(platformView);
+            AndroidSubtitleStyle.ApplyTo(playerView, deviceType: ResolveSubtitleDeviceType());
+        }
+        catch
+        {
+        }
+    }
+
+    private static DeviceType ResolveSubtitleDeviceType()
+    {
+        var deviceService = IPlatformApplication.Current?.Services?.GetService<IDeviceService>();
+        return SubtitleStyleHelper.NormalizeDeviceType(
+            deviceService?.CachedDeviceType ?? DeviceType.Desktop);
     }
 
     partial void DetachPlayerPlatform()
