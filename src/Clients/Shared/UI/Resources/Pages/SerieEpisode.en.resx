@@ -30,4 +30,5 @@
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
   <data name="ReIdentifyFileDialogTitle" xml:space="preserve"><value>Re-identify file</value></data>
   <data name="ReIdentifyFileSent" xml:space="preserve"><value>File re-identification sent and being processed by the server in the background.</value></data>
+  <data name="NotFound" xml:space="preserve"><value>Episode not found</value></data>
 </root>

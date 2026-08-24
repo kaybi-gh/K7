@@ -10898,7 +10898,6 @@
       },
       "AudioFileTrackDto": {
         "required": [
-          "codec",
           "channels"
         ],
         "type": "object",
@@ -10916,7 +10915,10 @@
             ]
           },
           "codec": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "channels": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -19917,9 +19919,6 @@
         }
       },
       "SubtitleFileTrackDto": {
-        "required": [
-          "codec"
-        ],
         "type": "object",
         "properties": {
           "name": {
@@ -19935,7 +19934,10 @@
             ]
           },
           "codec": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "isTextBased": {
             "type": "boolean"
@@ -21235,8 +21237,6 @@
         "required": [
           "width",
           "height",
-          "codec",
-          "profile",
           "level"
         ],
         "type": "object",
@@ -21258,10 +21258,16 @@
             "format": "int32"
           },
           "codec": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "profile": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "level": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",

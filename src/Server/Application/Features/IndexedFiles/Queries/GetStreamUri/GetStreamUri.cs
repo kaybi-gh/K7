@@ -146,7 +146,8 @@ public class GetStreamUriQueryHandler(
 
         foreach (var audioTrack in videoFileMetadata.AudioTracks)
         {
-            if (!hlsCompatibleAudioCodecSet.Contains(audioTrack.Codec))
+            if (string.IsNullOrWhiteSpace(audioTrack.Codec)
+                || !hlsCompatibleAudioCodecSet.Contains(audioTrack.Codec))
             {
                 audioTrackTranscodings ??= [];
                 var fallback = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);

@@ -127,6 +127,9 @@ public class PrepareDownloadCommandHandler : IRequestHandler<PrepareDownloadComm
         if (audioTrack is null)
             return false;
 
+        if (string.IsNullOrWhiteSpace(audioTrack.Codec))
+            return true;
+
         return !DirectPlayAudioCodecs.Contains(audioTrack.Codec);
     }
 

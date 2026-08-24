@@ -41,7 +41,7 @@ public class MediaAnalysisService : IMediaAnalysisService
             Name = AudioTrackDisplayHelper.ResolveStoredName(
                 primaryAudio.Tags?.FirstOrDefault(t => t.Key == "title").Value,
                 primaryAudio.Language),
-            Codec = primaryAudio.CodecName,
+            Codec = primaryAudio.CodecName ?? string.Empty,
             Channels = primaryAudio.Channels,
             ChannelLayout = primaryAudio.ChannelLayout,
             Profile = primaryAudio.Profile,
@@ -233,7 +233,7 @@ public class MediaAnalysisService : IMediaAnalysisService
             Name = AudioTrackDisplayHelper.ResolveStoredName(
                 x.Tags?.FirstOrDefault(t => t.Key == "title").Value,
                 x.Language),
-            Codec = x.CodecName,
+            Codec = x.CodecName ?? string.Empty,
             Channels = x.Channels,
             ChannelLayout = x.ChannelLayout,
             Profile = x.Profile,
@@ -251,10 +251,10 @@ public class MediaAnalysisService : IMediaAnalysisService
         
         return [.. realVideoStreams.Select(x => new VideoFileTrack
         {
-            Codec = x.CodecName,
+            Codec = x.CodecName ?? string.Empty,
             Width = x.Width,
             Height = x.Height,
-            Profile = x.Profile,
+            Profile = x.Profile ?? string.Empty,
             Index = x.Index,
             BitDepth = x.BitDepth,
             Level = x.Level,
@@ -288,8 +288,8 @@ public class MediaAnalysisService : IMediaAnalysisService
                 IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
                 Language = LanguageNormalizer.ResolveSubtitleLanguage(x.Language, title ?? x.Language),
                 Name = name,
-                Codec = x.CodecName,
-                IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
+                Codec = x.CodecName ?? string.Empty,
+                IsTextBased = x.CodecName is not null && TextBasedSubtitleCodecs.Contains(x.CodecName),
                 IsForced = IsForcedSubtitle(x.Disposition, title ?? name),
                 IsHearingImpaired = IsHearingImpairedSubtitle(x.Disposition, title ?? name)
             };

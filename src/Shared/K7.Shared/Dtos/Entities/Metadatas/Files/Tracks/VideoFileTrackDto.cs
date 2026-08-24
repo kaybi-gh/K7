@@ -4,8 +4,8 @@ public sealed record VideoFileTrackDto : FileTrackDto
 {
     public required int Width { get; init; }
     public required int Height { get; init; }
-    public required string Codec { get; init; }
-    public required string Profile { get; init; }
+    public string? Codec { get; init; }
+    public string? Profile { get; init; }
     public required int Level { get; init; }
     public string? PixelFormat { get; init; }
     public int? BitDepth { get; init; }

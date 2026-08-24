@@ -40,18 +40,21 @@ public static class AudioTrackDisplayHelper
 
         var language = FormatLanguageName(track.Language ?? "und");
         var channels = track.ChannelLayout?.Split('(')[0].Trim();
+        var codec = string.IsNullOrWhiteSpace(track.Codec) ? null : track.Codec;
         var details = !string.IsNullOrEmpty(channels)
-            ? $"{track.Codec} {channels}"
-            : track.Codec;
+            ? (codec is null ? channels : $"{codec} {channels}")
+            : codec;
 
         var original = GetDistinctiveName(track.Name, track.Language, track.Codec);
         if (original is null)
-            return $"{language} ({details})";
+            return details is null ? language : $"{language} ({details})";
 
         if (original.StartsWith(language, StringComparison.OrdinalIgnoreCase))
-            return $"{original} ({details})";
+            return details is null ? original : $"{original} ({details})";
 
-        return $"{language} ({original}) ({details})";
+        return details is null
+            ? $"{language} ({original})"
+            : $"{language} ({original}) ({details})";
     }
 
     /// <summary>
@@ -71,7 +74,9 @@ public static class AudioTrackDisplayHelper
                 ? original
                 : $"{language} ({original})";
 
-        return $"{head} - {typeLabel} ({track.Codec})";
+        return string.IsNullOrWhiteSpace(track.Codec)
+            ? $"{head} - {typeLabel}"
+            : $"{head} - {typeLabel} ({track.Codec})";
     }
 
     /// <summary>

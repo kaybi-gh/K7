@@ -154,9 +154,16 @@ public partial class SerieEpisode : IAsyncDisposable
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
 
         _loading = true;
+        _episode = null;
         StateHasChanged();
 
-        var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
+        if (!Guid.TryParse(SerieId, out var serieId))
+        {
+            _loading = false;
+            return;
+        }
+
+        var serieMedia = await k7ServerService.GetMediaAsync(serieId);
         if (serieMedia is not SerieDto serie)
         {
             _loading = false;

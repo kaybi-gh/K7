@@ -62,7 +62,7 @@ public static class FileMetadataMappings
             IsDefault = domain.IsDefault,
             Name = domain.Name,
             Language = domain.Language,
-            Codec = domain.Codec,
+            Codec = string.IsNullOrWhiteSpace(domain.Codec) ? null : domain.Codec,
             Channels = domain.Channels,
             ChannelLayout = domain.ChannelLayout,
             SampleRateHz = domain.SampleRateHz,
@@ -77,11 +77,11 @@ public static class FileMetadataMappings
             Index = domain.Index,
             IsDefault = domain.IsDefault,
             BitDepth = domain.BitDepth,
-            Codec = domain.Codec,
+            Codec = string.IsNullOrWhiteSpace(domain.Codec) ? null : domain.Codec,
             Height = domain.Height,
             Level = domain.Level,
             PixelFormat = domain.PixelFormat,
-            Profile = domain.Profile,
+            Profile = string.IsNullOrWhiteSpace(domain.Profile) ? null : domain.Profile,
             Width = domain.Width
         };
     }
@@ -94,7 +94,7 @@ public static class FileMetadataMappings
             IsDefault = domain.IsDefault,
             Name = domain.Name,
             Language = domain.Language,
-            Codec = domain.Codec,
+            Codec = string.IsNullOrWhiteSpace(domain.Codec) ? null : domain.Codec,
             IsTextBased = domain.IsTextBased,
             IsForced = domain.IsForced,
             IsHearingImpaired = domain.IsHearingImpaired
