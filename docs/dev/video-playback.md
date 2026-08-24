@@ -86,7 +86,11 @@ remux pad). `-segment_times` and `force_key_frames source` follow source keyfram
 (playlist grid). Hardware encoders also need `-g` capped and IDR forcing
 (`-forced_idr` on AMF, `-forced-idr` on NVENC). Do not add output `-t` on encode
 (`-copyts` + `-f segment` yields zero frames). Remux still uses midpoint `-ss`
-+ `-noaccurate_seek` with one-segment pads. Do not micro-rebase **audio copy** onto `#EXTINF`.
++ `-noaccurate_seek` with one-segment pads. Remux `-segment_times` also cuts at the
+exclusive window end so the last `.m4s` closes on its playlist boundary (otherwise
+the next GOP is packed in and ExoPlayer jumps). That closer file is deleted after
+ffmpeg exits. Do not extend input `-to` by the midpoint seek pad: remux lands on
+the keyframe, not the midpoint. Do not micro-rebase **audio copy** onto `#EXTINF`.
 
 - ffmpeg window padding must not punch holes in playlist indices. A missing `N.m4s` with
   later segments on disk restarts ffmpeg at `N` only when that process is not already running

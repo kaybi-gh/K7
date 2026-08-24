@@ -169,7 +169,8 @@ public class MediaTranscoder : IMediaTranscoder
                 ffmpegStartIndex,
                 startSegmentIndex,
                 endSegmentIndex,
-                ffmpegEndIndex);
+                ffmpegEndIndex,
+                allSegments.Count);
         }
 
         var (_, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
@@ -416,6 +417,13 @@ public class MediaTranscoder : IMediaTranscoder
         finally
         {
             paddingGuard?.RestoreOrDiscard();
+            if (paddingGuard is null)
+            {
+                WindowPaddingSegmentGuard.DeleteCloserSegment(
+                    outputDirectory,
+                    ffmpegEndIndex,
+                    allSegments.Count);
+            }
         }
         if (!result && !cancellationToken.IsCancellationRequested)
         {
@@ -573,7 +581,8 @@ public class MediaTranscoder : IMediaTranscoder
                 ffmpegStartIndex,
                 startSegmentIndex,
                 endSegmentIndex,
-                ffmpegEndIndex);
+                ffmpegEndIndex,
+                allSegments.Count);
         }
 
         var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
@@ -653,6 +662,13 @@ public class MediaTranscoder : IMediaTranscoder
         finally
         {
             paddingGuard?.RestoreOrDiscard();
+            if (paddingGuard is null)
+            {
+                WindowPaddingSegmentGuard.DeleteCloserSegment(
+                    outputDirectory,
+                    ffmpegEndIndex,
+                    allSegments.Count);
+            }
         }
 
         if (!result && !cancellationToken.IsCancellationRequested)

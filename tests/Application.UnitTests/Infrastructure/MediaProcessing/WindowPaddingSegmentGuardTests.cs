@@ -82,4 +82,34 @@ public class WindowPaddingSegmentGuardTests
 
         File.ReadAllBytes(Path.Combine(_tempDirectory, "10.m4s")).Should().Equal(original);
     }
+
+    [Test]
+    public void RestoreOrDiscard_ShouldDeleteCloserSegment()
+    {
+        var guard = WindowPaddingSegmentGuard.Capture(
+            _tempDirectory,
+            ffmpegStartIndex: 4,
+            deliverStartIndex: 5,
+            deliverEndIndexExclusive: 10,
+            ffmpegEndIndexExclusive: 11,
+            segmentCount: 20);
+
+        File.WriteAllBytes(Path.Combine(_tempDirectory, "10.m4s"), Enumerable.Repeat((byte)0x22, 64).ToArray());
+        File.WriteAllBytes(Path.Combine(_tempDirectory, "11.m4s"), Enumerable.Repeat((byte)0x33, 64).ToArray());
+
+        guard.RestoreOrDiscard();
+
+        File.Exists(Path.Combine(_tempDirectory, "10.m4s")).Should().BeTrue();
+        File.Exists(Path.Combine(_tempDirectory, "11.m4s")).Should().BeFalse();
+    }
+
+    [Test]
+    public void DeleteCloserSegment_ShouldRemoveExclusiveEndFile()
+    {
+        File.WriteAllBytes(Path.Combine(_tempDirectory, "8.m4s"), Enumerable.Repeat((byte)0x44, 64).ToArray());
+
+        WindowPaddingSegmentGuard.DeleteCloserSegment(_tempDirectory, ffmpegEndIndexExclusive: 8, segmentCount: 20);
+
+        File.Exists(Path.Combine(_tempDirectory, "8.m4s")).Should().BeFalse();
+    }
 }

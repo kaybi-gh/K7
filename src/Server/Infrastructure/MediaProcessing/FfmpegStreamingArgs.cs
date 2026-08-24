@@ -11,6 +11,8 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 /// -segment_times and force_key_frames are relative to that keyframe. -start_at_zero
 /// zeroes PTS from the landed IDR, so absolute source times never match the encoder.
 /// Pad one segment before/after so a previous-IDR snap lands in a discarded file.
+/// Include a closer -segment_times cut at the exclusive window end so the last file
+/// does not absorb the next GOP; delete that throwaway .m4s after ffmpeg exits.
 /// Video windows use -start_at_zero; audio copy keeps source PTS via output -ss +
 /// -output_ts_offset. Serve-side video tfdt rebase maps fragments onto the playlist.
 /// Window pads use playlist numbers: restore a previously-ready pad. Keep a new after
@@ -93,8 +95,11 @@ internal static class FfmpegStreamingArgs
     }
 
     /// <summary>
-    /// Absolute demux end time for input-side -to. When -ss seeks past the segment
-    /// keyframe (midpoint), extend -to by the same pad so the window duration stays correct.
+    /// Absolute demux end time for input-side -to.
+    /// Remux lands on the window keyframe via -noaccurate_seek (not midpoint -ss), so do
+    /// not extend -to by the seek pad: that packs the next GOP into the last .m4s.
+    /// When the window ends before EOF, demux past the exclusive-end keyframe so
+    /// -segment_times can close the last playlist file (closer cut).
     /// </summary>
     public static TimeSpan ResolveInputEndTime(
         IReadOnlyList<HlsSegment> allSegments,
@@ -102,22 +107,24 @@ internal static class FfmpegStreamingArgs
         int endSegmentIndex,
         TimeSpan seekTime)
     {
-        TimeSpan endRef;
+        _ = startSegmentIndex;
+        _ = seekTime;
+
         if (endSegmentIndex < allSegments.Count)
         {
-            endRef = TimeSpan.FromMilliseconds(allSegments[endSegmentIndex].StartTimestamp);
-        }
-        else
-        {
-            var last = allSegments[endSegmentIndex - 1];
-            endRef = TimeSpan.FromMilliseconds(last.StartTimestamp + last.Duration);
+            // Past the closer keyframe at endSegmentIndex so -f segment can split there.
+            if (endSegmentIndex + 1 < allSegments.Count)
+            {
+                return TimeSpan.FromMilliseconds(
+                    allSegments[endSegmentIndex + 1].StartTimestamp);
+            }
+
+            var closer = allSegments[endSegmentIndex];
+            return TimeSpan.FromMilliseconds(closer.StartTimestamp + closer.Duration);
         }
 
-        var segmentStart = ResolveTimelineOrigin(allSegments, startSegmentIndex);
-        if (seekTime > TimeSpan.Zero && seekTime > segmentStart)
-            endRef += seekTime - segmentStart;
-
-        return endRef;
+        var last = allSegments[endSegmentIndex - 1];
+        return TimeSpan.FromMilliseconds(last.StartTimestamp + last.Duration);
     }
 
     public static List<double> BuildRelativeSplitTimes(
@@ -127,9 +134,14 @@ internal static class FfmpegStreamingArgs
         TimeSpan timelineOrigin)
     {
         // Cuts follow the post-seek output timeline at the landed IDR keyframe.
+        // Include a cut at endSegmentIndex (when before EOF) so the last window file
+        // closes on its playlist boundary instead of absorbing the next GOP.
         var splits = new List<double>();
         var originSeconds = timelineOrigin.TotalSeconds;
-        for (var i = startSegmentIndex + 1; i < endSegmentIndex && i < allSegments.Count; i++)
+        var lastCutExclusive = endSegmentIndex < allSegments.Count
+            ? endSegmentIndex + 1
+            : endSegmentIndex;
+        for (var i = startSegmentIndex + 1; i < lastCutExclusive && i < allSegments.Count; i++)
         {
             var absoluteSeconds = allSegments[i].StartTimestamp / 1000.0;
             var relative = absoluteSeconds - originSeconds;
@@ -139,6 +151,14 @@ internal static class FfmpegStreamingArgs
 
         return splits;
     }
+
+    /// <summary>
+    /// Playlist index of the throwaway .m4s opened by the exclusive-end closer cut.
+    /// </summary>
+    public static int? ResolveCloserSegmentIndex(int endSegmentIndexExclusive, int segmentCount) =>
+        endSegmentIndexExclusive >= 0 && endSegmentIndexExclusive < segmentCount
+            ? endSegmentIndexExclusive
+            : null;
 
     /// <summary>
     /// Input-side args that must appear before -i (seek + demux end).

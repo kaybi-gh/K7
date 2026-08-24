@@ -109,8 +109,8 @@ public class FfmpegStreamingArgsTests
 
         args.Should().Contain("-ss 3.000000");
         args.Should().Contain("-noaccurate_seek");
-        // end at 8s + pad (3-2) = 9s
-        args.Should().Contain("-to 9.000000");
+        // Window reaches EOF (end == count): -to at media end. No midpoint seek pad.
+        args.Should().Contain("-to 8.000000");
         args.Should().Contain("-fflags +genpts");
     }
 
@@ -148,7 +148,23 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
-    public void ResolveInputEndTime_ShouldExtendBySeekPad()
+    public void ResolveInputEndTime_ShouldDemuxPastCloserKeyframe_WithoutSeekPad()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000), (6000, 2000));
+        var end = FfmpegStreamingArgs.ResolveInputEndTime(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 3,
+            seekTime: TimeSpan.FromSeconds(3));
+
+        // Exclusive end is segment 3 (6s). Demux through it to segment 4 start (8s) so
+        // -segment_times can close the last window file. Midpoint seek pad is not added:
+        // remux lands on the keyframe via -noaccurate_seek.
+        end.TotalSeconds.Should().Be(8);
+    }
+
+    [Test]
+    public void ResolveInputEndTime_ShouldUseMediaEnd_WhenWindowReachesEof()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000), (6000, 2000));
         var end = FfmpegStreamingArgs.ResolveInputEndTime(
@@ -157,7 +173,35 @@ public class FfmpegStreamingArgsTests
             endSegmentIndex: 4,
             seekTime: TimeSpan.FromSeconds(3));
 
-        end.TotalSeconds.Should().Be(9);
+        end.TotalSeconds.Should().Be(8);
+    }
+
+    [Test]
+    public void BuildRelativeSplitTimes_ShouldIncludeCloserCut_WhenWindowEndsBeforeEof()
+    {
+        var segments = BuildSegments(
+            (0, 2000),
+            (2000, 2000),
+            (4000, 2000),
+            (6000, 2000),
+            (8000, 2000));
+
+        var splits = FfmpegStreamingArgs.BuildRelativeSplitTimes(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 4,
+            timelineOrigin: TimeSpan.FromSeconds(2));
+
+        // Interior cuts at 2s/4s relative, plus closer at exclusive end (6s relative).
+        splits.Should().Equal(2.0, 4.0, 6.0);
+    }
+
+    [Test]
+    public void ResolveCloserSegmentIndex_ShouldReturnExclusiveEnd_WhenBeforeEof()
+    {
+        FfmpegStreamingArgs.ResolveCloserSegmentIndex(4, 10).Should().Be(4);
+        FfmpegStreamingArgs.ResolveCloserSegmentIndex(10, 10).Should().BeNull();
+        FfmpegStreamingArgs.ResolveCloserSegmentIndex(-1, 10).Should().BeNull();
     }
 
     [Test]
