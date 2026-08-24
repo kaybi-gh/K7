@@ -38,7 +38,11 @@ public static class HlsKeyframeSegmentBuilder
         for (var i = 1; i < keyframeTimestampsMs.Count; i++)
         {
             var segmentEnd = keyframeTimestampsMs[i];
-            if (segmentEnd - segmentStart < minSegmentDurationMs)
+            var gapMs = segmentEnd - segmentStart;
+            // Collapse short GOPs for ExoPlayer, but keep any keyframe inside the remux
+            // seek clearance as a boundary. Otherwise midpoint/-noaccurate_seek lands on
+            // that hidden IDR, -start_at_zero zeros the wrong frame, and cuts drift.
+            if (gapMs < minSegmentDurationMs && gapMs >= Hls.RemuxSeekClearanceMs)
                 continue;
 
             segments.Add(new HlsSegment
@@ -47,7 +51,7 @@ public static class HlsKeyframeSegmentBuilder
                 IndexedFileId = indexedFileId,
                 Number = segments.Count,
                 StartTimestamp = segmentStart,
-                Duration = segmentEnd - segmentStart
+                Duration = gapMs
             });
             segmentStart = segmentEnd;
         }

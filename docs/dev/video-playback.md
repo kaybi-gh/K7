@@ -71,7 +71,11 @@ looks like a discontinuity: audio drifts, then snaps back.
 
 Video copy windows use `-copyts -start_at_zero` so IDR cuts stay coherent. Audio copy keeps
 source PTS (input+output `-ss`, `-copyts -copytb 1`, `-output_ts_offset`, no `-start_at_zero`).
-Video still seeks at GOP midpoint with `-noaccurate_seek`. AAC encode subtracts encoder
+Video remux seeks a short pad (~200ms) past the playlist IDR with `-noaccurate_seek` (not the
+GOP midpoint: collapsed interior IDRs still exist in the bitstream and a midpoint land makes
+`-segment_times` cut on the wrong frames - jumps / rewind). The HLS keyframe builder keeps any
+source keyframe inside `RemuxSeekClearanceMs` (250ms) as a playlist boundary so that pad cannot
+hit a hidden IDR. AAC encode subtracts encoder
 priming from `-output_ts_offset`.
 
 On serve, rebase video **copy** `tfdt` only for a true ffmpeg window reset (1s or more). Do
@@ -88,19 +92,20 @@ Encode cuts use exact keyframe `-ss` (accurate seek) on the **deliver** segment 
 remux pad). `-segment_times` and `force_key_frames source` follow source keyframes
 (playlist grid). Hardware encoders also need `-g` capped and IDR forcing
 (`-forced_idr` on AMF, `-forced-idr` on NVENC). Do not add output `-t` on encode
-(`-copyts` + `-f segment` yields zero frames). Remux still uses midpoint `-ss`
+(`-copyts` + `-f segment` yields zero frames). Remux still uses a short past-IDR `-ss`
 + `-noaccurate_seek` with one-segment pads. Remux `-segment_times` also cuts at the
 exclusive window end so the last `.m4s` closes on its playlist boundary (otherwise
 the next GOP is packed in and ExoPlayer jumps). That closer file is deleted after
-ffmpeg exits. Do not extend input `-to` by the midpoint seek pad: remux lands on
-the keyframe, not the midpoint. Do not micro-rebase **audio copy** onto `#EXTINF`.
+ffmpeg exits. Do not extend input `-to` by a seek pad: remux lands on the keyframe,
+not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 
 - ffmpeg window padding must not punch holes in playlist indices. A missing `N.m4s` with
   later segments on disk restarts ffmpeg at `N` only when that process is not already running
 - when `HlsSegments` rows exist they drive copy and transcode (shared audio group / ABR).
   Without them, playback starts immediately on a 6s equal-length transcode grid
-- new keyframe HLS rows collapse bursts shorter than 1s (ExoPlayer). Existing rows stay
-  until HLS is recomputed
+- new keyframe HLS rows collapse bursts from `RemuxSeekClearanceMs` (250ms) up to 1s
+  (ExoPlayer). Keyframes closer than 250ms stay as boundaries so remux seek cannot land
+  on a hidden IDR. Existing rows stay until HLS is recomputed
 - sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503 and ffmpeg
   fills the cache in the background. Do not return empty WEBVTT 200: ExoPlayer caches that
   and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.

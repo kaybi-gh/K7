@@ -1,7 +1,7 @@
 namespace K7.Server.Infrastructure.MediaProcessing;
 
 /// <summary>
-/// ffmpeg windows pad one playlist index before/after the deliver range so midpoint
+/// ffmpeg windows pad one playlist index before/after the deliver range so past-IDR
 /// seek + -segment_times cut on the requested keyframes. Those pad files use real
 /// playlist numbers. Restore a previously-ready pad. Keep a new after-pad (next
 /// playlist index). Delete only a new before-pad (IDR snap garbage).

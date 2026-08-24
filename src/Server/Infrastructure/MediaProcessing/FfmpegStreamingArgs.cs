@@ -6,7 +6,8 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 
 /// <summary>
 /// Pure ffmpeg argument contracts for keyframe-aligned streaming (no process launch).
-/// Remux mid-file: midpoint -ss + -noaccurate_seek snaps onto the window keyframe.
+/// Remux mid-file: short pad past the playlist IDR + -noaccurate_seek lands on that IDR
+/// (not a collapsed interior keyframe, and not the previous GOP).
 /// Encode: exact keyframe -ss (accurate) - re-encode does not need the remux snap.
 /// -segment_times and force_key_frames are relative to that keyframe. -start_at_zero
 /// zeroes PTS from the landed IDR, so absolute source times never match the encoder.
@@ -37,19 +38,30 @@ internal static class FfmpegStreamingArgs
             return startTime;
 
         // Remux: exact keyframe -ss often snaps to the PREVIOUS IDR (rewind into prior GOP).
-        // Seek halfway into this segment's GOP with -noaccurate_seek so demux lands here.
-        var startMs = allSegments[startSegmentIndex].StartTimestamp;
-        long nextMs;
-        if (startSegmentIndex + 1 < allSegments.Count)
-            nextMs = allSegments[startSegmentIndex + 1].StartTimestamp;
-        else
-            nextMs = allSegments[startSegmentIndex].StartTimestamp + allSegments[startSegmentIndex].Duration;
+        // Seek a short pad past the playlist IDR with -noaccurate_seek so demux lands here.
+        // Do NOT use the playlist GOP midpoint: collapsed interior IDRs between playlist
+        // starts are still in the bitstream. Landing on one desyncs relative -segment_times.
+        // HlsKeyframeSegmentBuilder keeps keyframes inside RemuxSeekClearanceMs as boundaries.
+        var segment = allSegments[startSegmentIndex];
+        var startMs = segment.StartTimestamp;
+        var durationMs = segment.Duration;
+        if (durationMs <= 0)
+            return startTime;
 
-        return TimeSpan.FromMilliseconds((startMs + nextMs) / 2.0);
+        long padMs;
+        if (durationMs >= Hls.RemuxSeekClearanceMs)
+            padMs = Hls.RemuxSeekClearanceMs - 50;
+        else
+            padMs = Math.Max(1, (durationMs * 3) / 4);
+
+        if (padMs >= durationMs)
+            padMs = Math.Max(1, durationMs - 1);
+
+        return TimeSpan.FromMilliseconds(startMs + padMs);
     }
 
     /// <summary>
-    /// Pad one segment before/after the deliver window so midpoint -ss + segment_times
+    /// Pad one segment before/after the deliver window so past-IDR -ss + segment_times
     /// cut on the requested keyframes. Pad files use playlist numbers: restore if they
     /// were already ready, otherwise delete them so they cannot fake a hole as "ready".
     /// </summary>
@@ -80,7 +92,7 @@ internal static class FfmpegStreamingArgs
 
     /// <summary>
     /// Origin for -segment_times and relative force_key_frames. Always the segment
-    /// keyframe: remux lands there via midpoint + -noaccurate_seek, encode seeks
+    /// keyframe: remux lands there via past-IDR -ss + -noaccurate_seek, encode seeks
     /// there accurately. -start_at_zero zeroes PTS from that frame.
     /// </summary>
     public static TimeSpan ResolveVideoCutOrigin(

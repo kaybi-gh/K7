@@ -17,6 +17,14 @@ public static class Hls
     public const int MinKeyframeSegmentDurationMs = 1000;
 
     /// <summary>
+    /// Remux input -ss with -noaccurate_seek must sit past the playlist IDR (else demux
+    /// snaps to the previous keyframe) but before any collapsed interior IDR. Keyframes
+    /// closer than this to a segment start stay as playlist boundaries so the seek pad
+    /// cannot land on a hidden IDR and desync -segment_times (image jumps / rewind).
+    /// </summary>
+    public const int RemuxSeekClearanceMs = 250;
+
+    /// <summary>
     /// Rebase copy fMP4 tfdt onto the playlist start only when the fragment is on a
     /// different window (lazy ffmpeg reset). Do not micro-rebase audio or video copy.
     /// Source PTS (including the ~83ms video CTS) is the A/V reference for remux.

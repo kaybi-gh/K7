@@ -29,7 +29,7 @@ public class HlsKeyframeSegmentBuilderTests
     [Test]
     public void BuildFromTimestamps_ShouldCollapseMicroGops()
     {
-        // 100ms bursts should merge until MinKeyframeSegmentDurationMs.
+        // Gaps >= RemuxSeekClearanceMs and < MinKeyframeSegmentDurationMs collapse.
         long[] keyframes = [0, 100, 200, 300, 2000, 2200, 4000];
 
         var segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
@@ -39,8 +39,10 @@ public class HlsKeyframeSegmentBuilderTests
             Guid.NewGuid(),
             minSegmentDurationMs: Hls.MinKeyframeSegmentDurationMs);
 
-        segments.Select(s => s.StartTimestamp).Should().Equal(0L, 2000L, 4000L);
-        segments.Select(s => s.Duration).Should().Equal(2000L, 2000L, 1000L);
+        // 100/200/300 stay (inside clearance of prior start). From 2000, 2200 is also
+        // inside clearance so it stays. Only gaps in [250ms, 1000ms) collapse.
+        segments.Select(s => s.StartTimestamp).Should().Equal(0L, 100L, 200L, 300L, 2000L, 2200L, 4000L);
+        segments.Select(s => s.Duration).Should().Equal(100L, 100L, 100L, 1700L, 200L, 1800L, 1000L);
     }
 
     [Test]
@@ -54,8 +56,24 @@ public class HlsKeyframeSegmentBuilderTests
             Guid.NewGuid(),
             Guid.NewGuid());
 
+        // 600ms >= clearance and < 1s: collapsed into the first playlist GOP.
         segments.Select(s => s.StartTimestamp).Should().Equal(0L, 2000L, 4000L);
         segments.Select(s => s.Duration).Should().Equal(2000L, 2000L, 1000L);
+    }
+
+    [Test]
+    public void BuildFromTimestamps_ShouldKeepEarlyKeyframesInsideRemuxSeekClearance()
+    {
+        long[] keyframes = [0, 200, 2000, 4000];
+
+        var segments = HlsKeyframeSegmentBuilder.BuildFromTimestamps(
+            keyframes,
+            totalVideoDurationMs: 5000,
+            Guid.NewGuid(),
+            Guid.NewGuid());
+
+        segments.Select(s => s.StartTimestamp).Should().Equal(0L, 200L, 2000L, 4000L);
+        segments.Select(s => s.Duration).Should().Equal(200L, 1800L, 2000L, 1000L);
     }
 
     [Test]

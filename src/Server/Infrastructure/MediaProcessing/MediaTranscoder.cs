@@ -153,7 +153,7 @@ public class MediaTranscoder : IMediaTranscoder
         if (needsTranscode)
         {
             // Encode seeks exactly to the deliver keyframe. Remux pads one segment
-            // before/after for midpoint -ss; pads leave ~6s window-relative PTS that
+            // before/after for past-IDR -ss. Pads leave ~6s window-relative PTS that
             // serve rebase must fix and AMF still overruns segment duration.
             ffmpegStartIndex = startSegmentIndex;
             ffmpegEndIndex = endSegmentIndex;
@@ -179,7 +179,7 @@ public class MediaTranscoder : IMediaTranscoder
             allSegments,
             ffmpegStartIndex,
             needsTranscode);
-        // Remux: midpoint + -noaccurate_seek. Encode: exact keyframe + accurate seek.
+        // Remux: past-IDR pad + -noaccurate_seek. Encode: exact keyframe + accurate seek.
         var cutOrigin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
             allSegments,
             ffmpegStartIndex,
@@ -313,7 +313,7 @@ public class MediaTranscoder : IMediaTranscoder
                     options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
                 }
 
-                // Remux: midpoint + noaccurate_seek snaps onto the window keyframe.
+                // Remux: past-IDR + noaccurate_seek snaps onto the window keyframe.
                 // Encode: exact keyframe -ss with accurate seek (re-encode, no prior-GOP snap).
                 foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
                              allSegments,

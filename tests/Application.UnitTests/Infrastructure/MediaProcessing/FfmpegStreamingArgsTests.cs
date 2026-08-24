@@ -369,11 +369,20 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
-    public void ResolveTransmuxSeekTime_ShouldUseMidpoint_WhenRemuxMidFile()
+    public void ResolveTransmuxSeekTime_ShouldSeekPastKeyframe_WhenRemuxMidFile()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
         var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: false);
-        seek.TotalMilliseconds.Should().Be(3000);
+        // RemuxSeekClearanceMs (250) - 50ms pad past the playlist IDR.
+        seek.TotalMilliseconds.Should().Be(2200);
+    }
+
+    [Test]
+    public void ResolveTransmuxSeekTime_ShouldKeepPadInsideShortSegment_WhenRemux()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 100), (2100, 2000));
+        var seek = FfmpegStreamingArgs.ResolveTransmuxSeekTime(segments, startSegmentIndex: 1, needsTranscode: false);
+        seek.TotalMilliseconds.Should().Be(2075);
     }
 
     [Test]
