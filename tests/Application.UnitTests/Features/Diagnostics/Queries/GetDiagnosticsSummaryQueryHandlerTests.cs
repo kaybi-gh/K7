@@ -91,6 +91,7 @@ public class GetDiagnosticsSummaryQueryHandlerTests
         var linkedMediaId = Guid.NewGuid();
 
         _context.Medias.Add(new Movie { Id = linkedMediaId, Title = "Linked Unidentified" });
+        // Linked files without filename identification are catalogued; they must not stay as orphans.
         _context.IndexedFiles.AddRange(
             new IndexedFile
             {
@@ -137,8 +138,8 @@ public class GetDiagnosticsSummaryQueryHandlerTests
         var summary = summaries.Should().ContainSingle(s => s.LibraryId == libraryId).Subject;
 
         summary.IdentifiedOrphanIndexedFileCount.Should().Be(1);
-        summary.UnidentifiedIndexedFileCount.Should().Be(2);
-        summary.OrphanIndexedFileCount.Should().Be(3);
+        summary.UnidentifiedIndexedFileCount.Should().Be(1);
+        summary.OrphanIndexedFileCount.Should().Be(2);
     }
 
     [Test]

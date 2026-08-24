@@ -34,7 +34,7 @@
   <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
   <data name="SeverityOrphanDynamic" xml:space="preserve"><value>Erreur (identifie ou non)</value></data>
 
-  <data name="Def_OrphanFile" xml:space="preserve"><value>Fichier indexe present sur le disque mais non rattache a un media navigable. Couvre aussi les fichiers non identifies (anciennement UnidentifiedFile).</value></data>
+  <data name="Def_OrphanFile" xml:space="preserve"><value>Fichier indexe present sur le disque mais non rattache a un media navigable, y compris les fichiers dont le nom n'a pas pu etre parse. Apres une re-identification reussie, le fichier disparait meme sans identification par nom de fichier.</value></data>
   <data name="Def_MissingFileMetadata" xml:space="preserve"><value>Le fichier n'a pas encore ete analyse (ffprobe) : codecs, duree et chapitres embarques manquent pour la lecture.</value></data>
   <data name="Def_InaccessiblePath" xml:space="preserve"><value>Le chemin configure de la bibliotheque est inaccessible (montage, permissions, volume deconnecte).</value></data>
   <data name="Def_DuplicateExternalId" xml:space="preserve"><value>Deux medias locaux du meme pair partagent le meme identifiant fournisseur. Signal fiable, pas de fusion automatique.</value></data>

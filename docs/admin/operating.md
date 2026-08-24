@@ -281,9 +281,11 @@ succeed. Work class is the nature of the work:
 - **Warning:** duplicate external id
 - **Info:** missing metadata / pictures / members, stale metadata, polish issues, suspected duplicates
 
-**Unlinked file** (`OrphanFile`): one surfaced issue for files with no media link and/or no identification.
-Always **Error**. Re-identify when identification is missing; Retry create media / Fix all when identification
-exists. `UnidentifiedFile` is kept for API compat but is not shown separately.
+**Unlinked file** (`OrphanFile`): one surfaced issue for files with no media link (`MediaId` is null).
+Always **Error**. Includes unidentified files (filename parse failed) while they remain unlinked.
+Re-identify when identification is missing, Retry create media / Fix all when identification exists.
+After a successful re-identify the file is linked and drops off even if filename identification is
+still missing. `UnidentifiedFile` is kept for API compat but is not shown separately.
 
 **Missing members** is music artists with no person credits (`PersonRoles`), not missing episodes or tracks.
 

@@ -18,13 +18,17 @@ public sealed record LibraryHealthSummaryDto
 
     public required int TotalIndexedFileCount { get; init; }
     /// <summary>
-    /// Merged unique count of files with MediaId == null or Identification == null.
+    /// Unique count of files with MediaId == null (unlinked). Linked files are excluded
+    /// even when filename Identification is missing.
     /// </summary>
     public required int OrphanIndexedFileCount { get; init; }
     /// <summary>
     /// Files with MediaId == null and Identification != null (Error band contribution).
     /// </summary>
     public required int IdentifiedOrphanIndexedFileCount { get; init; }
+    /// <summary>
+    /// Files with MediaId == null and Identification == null.
+    /// </summary>
     public required int UnidentifiedIndexedFileCount { get; init; }
     public required int MissingFileMetadataCount { get; init; }
     public required int MissingHlsSegmentsCount { get; init; }

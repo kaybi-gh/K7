@@ -219,6 +219,7 @@ public class GetDiagnosticItemsPagingTests
         var identifiedOrphanId = Guid.NewGuid();
         var unidentifiedOrphanId = Guid.NewGuid();
         var linkedIdentifiedId = Guid.NewGuid();
+        var linkedUnidentifiedId = Guid.NewGuid();
 
         _context.IndexedFiles.AddRange(
             new IndexedFile
@@ -256,6 +257,18 @@ public class GetDiagnosticItemsPagingTests
                 Size = 100,
                 MediaId = AddMovie("Linked Movie", 2020),
                 Identification = new MediaIdentification("Linked Movie") { ReleaseYear = new DateOnly(2020, 1, 1) }
+            },
+            new IndexedFile
+            {
+                Id = linkedUnidentifiedId,
+                LibraryId = _libraryId,
+                Name = "linked-unidentified",
+                Extension = ".mkv",
+                Path = "/media/linked-unidentified.mkv",
+                Hash = 4u,
+                Size = 100,
+                MediaId = AddMovie("Linked Unidentified", 2021),
+                Identification = null
             });
         await _context.SaveChangesAsync();
 
@@ -272,6 +285,7 @@ public class GetDiagnosticItemsPagingTests
         byOrphan.TotalCount.Should().Be(2);
         byOrphan.Items.Should().HaveCount(2);
         byOrphan.Items.Select(i => i.EntityId).Should().BeEquivalentTo([identifiedOrphanId, unidentifiedOrphanId]);
+        byOrphan.Items.Select(i => i.EntityId).Should().NotContain(linkedUnidentifiedId);
         byOrphan.Items.Should().OnlyContain(i =>
             i.Issues.Count == 1 && i.Issues[0] == DiagnosticIssue.OrphanFile);
         byOrphan.Items.Should().NotContain(i => i.Issues.Contains(DiagnosticIssue.UnidentifiedFile));

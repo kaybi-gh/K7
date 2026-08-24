@@ -912,7 +912,7 @@ public partial class AdminDiagnosticsDetailsPanel : IDisposable
         if (result is { Canceled: false })
         {
             Snackbar.Add(L["ReIdentifyIndexedFileSent"], K7Severity.Success);
-            await LoadItemsAsync();
+            await LoadAsync();
         }
     }
 

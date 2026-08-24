@@ -34,7 +34,7 @@
   <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
   <data name="SeverityOrphanDynamic" xml:space="preserve"><value>Error (identified or not)</value></data>
 
-  <data name="Def_OrphanFile" xml:space="preserve"><value>Indexed file on disk that is not attached to a navigable media. Also covers unidentified files (formerly UnidentifiedFile).</value></data>
+  <data name="Def_OrphanFile" xml:space="preserve"><value>Indexed file on disk that is not attached to a navigable media, including files whose filename could not be parsed. After a successful re-identify the file drops off even if filename identification is still missing.</value></data>
   <data name="Def_MissingFileMetadata" xml:space="preserve"><value>The file has not been probed yet (ffprobe): codecs, duration, and embedded chapters are missing for playback.</value></data>
   <data name="Def_InaccessiblePath" xml:space="preserve"><value>The configured library path is unreachable (mount, permissions, disconnected volume).</value></data>
   <data name="Def_DuplicateExternalId" xml:space="preserve"><value>Two local medias with the same peer share the same provider id. Reliable signal, no automatic merge.</value></data>

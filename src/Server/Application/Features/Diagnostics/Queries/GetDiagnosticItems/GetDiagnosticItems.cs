@@ -153,8 +153,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             f.Path,
             f.LibraryId,
             LibraryTitle = _context.Libraries.Where(l => l.Id == f.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
-            IsMergedOrphan = f.MediaId == null || f.Identification == null,
-            HasIdentification = f.Identification != null,
+            IsMergedOrphan = f.MediaId == null,
             HasNoFileMetadata = f.FileMetadata == null,
             HasNoHlsSegments = f.FileMetadata != null
                 && f.FileMetadata.Type == FileType.Video
@@ -384,8 +383,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 f.Path,
                 f.LibraryId,
                 LibraryTitle = _context.Libraries.Where(l => l.Id == f.LibraryId).Select(l => l.Title).FirstOrDefault() ?? "",
-                IsMergedOrphan = f.MediaId == null || f.Identification == null,
-                HasIdentification = f.Identification != null,
+                IsMergedOrphan = f.MediaId == null,
                 HasNoFileMetadata = f.FileMetadata == null,
                 HasNoHlsSegments = f.FileMetadata != null
                     && f.FileMetadata.Type == FileType.Video

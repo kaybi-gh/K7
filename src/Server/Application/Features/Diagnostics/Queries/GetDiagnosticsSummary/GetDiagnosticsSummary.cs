@@ -150,14 +150,16 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
 
         var unidentifiedCounts = await _context.IndexedFiles
             .AsNoTracking()
-            .Where(f => f.Identification == null)
+            .Where(f => f.MediaId == null && f.Identification == null)
             .GroupBy(f => f.LibraryId)
             .Select(g => new { LibraryId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
 
+        // Linked files stay in the catalog even when filename identification is missing
+        // (manual re-identify never writes Identification).
         var mergedUnlinkedCounts = await _context.IndexedFiles
             .AsNoTracking()
-            .Where(f => f.MediaId == null || f.Identification == null)
+            .Where(f => f.MediaId == null)
             .GroupBy(f => f.LibraryId)
             .Select(g => new { LibraryId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.LibraryId, x => x.Count, cancellationToken);
