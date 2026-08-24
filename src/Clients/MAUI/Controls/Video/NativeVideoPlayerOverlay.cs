@@ -13,7 +13,6 @@ using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 using DeviceType = K7.Server.Domain.Enums.DeviceType;
-using IntroSkipBehavior = K7.Shared.Enums.IntroSkipBehavior;
 using MediaSegmentType = K7.Shared.Enums.MediaSegmentType;
 using Timer = System.Timers.Timer;
 
@@ -140,11 +139,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private static readonly TimeSpan DpadHoldScrubDelay = TimeSpan.FromMilliseconds(320);
     private static readonly TimeSpan DpadHoldInterval = TimeSpan.FromMilliseconds(110);
     private IReadOnlyList<MediaSegmentDto>? _segments;
-    private MediaSegmentDto? _activeSegment;
-    private bool _autoSkippedActiveSegment;
-    private bool _skipDismissed;
-    private DateTime _skipShowTimeUtc;
-    private DateTime _lastSkipUtc = DateTime.MinValue;
+    private SkipSegmentPresenter.State _skipState;
     private VideoPlayerSettingsDto? _videoSettings;
     private bool _showChapterTicks = true;
     private Guid? _segmentsMediaId;
@@ -152,8 +147,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private static readonly TimeSpan OverlayTimeoutDesktop = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan OverlayTimeoutTv = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan SkipCooldown = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan SkipButtonDisplayDuration = TimeSpan.FromSeconds(5);
 
     public NativeVideoPlayerOverlay(
         IPlayerService player,
@@ -211,7 +204,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         !_inputModalActive
         && (_showChrome || _settings.IsOpen || _volumeOpen || _seekScrubbing || _castPanelOpen || _syncPlayPanelOpen);
 
-    private bool IsSkipSegmentOffered => _skipSegmentFocusRing.IsVisible && _activeSegment is not null;
+    private bool IsSkipSegmentOffered =>
+        _skipSegmentFocusRing.IsVisible && _skipState.ActiveSegment is not null;
 
     public void Attach()
     {
@@ -265,6 +259,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                     HideChrome();
                 else
                     ShowChrome();
+                ResetSkipSession();
                 _ = RefreshSegmentsAsync();
                 RefreshSeekChapters();
                 UpdateTransport();
@@ -512,9 +507,17 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             }
 
             // System volume on TV/phone; in-app volume only on desktop.
-            if (!isKeyUp && (up || down) && IsDesktopLike())
+            if (!isKeyUp && (up || down))
             {
-                AdjustVolume(up ? 0.1 : -0.1);
+                if (IsDesktopLike())
+                {
+                    AdjustVolume(up ? 0.1 : -0.1);
+                    return true;
+                }
+
+                // TV: reveal chrome and land on skip when it is offered (D-pad Up/Down).
+                if (IsSkipSegmentOffered)
+                    ShowChromeWithTvFocus();
                 return true;
             }
 
@@ -564,6 +567,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             StopDpadHold();
             if (_seekScrubbing)
                 CancelTvScrub();
+
+            if (TryMoveTvFocusToSkipSegment(up))
+            {
+                ResetHideTimer();
+                return true;
+            }
 
             MoveTvChromeFocus(up ? -1 : 1);
             return true;
@@ -1226,6 +1235,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         _showChrome = true;
         UpdateChromeVisibility();
+        ApplySkipSegmentAtCurrentTime();
         ResetHideTimer();
         TryFocusSkipSegmentIfOffered();
     }
@@ -1296,12 +1306,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private List<TvFocusSlot> GetVisibleTvFocusSlots()
     {
         var slots = new List<TvFocusSlot> { TvFocusSlot.Back, TvFocusSlot.Play, TvFocusSlot.SeekBar, TvFocusSlot.Settings };
+        if (IsSkipSegmentOffered)
+            slots.Add(TvFocusSlot.SkipSegment);
         if (_castButton.IsVisible)
             slots.Add(TvFocusSlot.Cast);
         if (_syncPlayButton.IsVisible)
             slots.Add(TvFocusSlot.SyncPlay);
-        if (IsSkipSegmentOffered)
-            slots.Add(TvFocusSlot.SkipSegment);
         return slots;
     }
 
@@ -1322,6 +1332,31 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SetTvChromeFocusSlot(visible[visibleIndex]);
         ResetHideTimer();
         NativeVideoDebug.Log("TvFocus slot=" + visible[visibleIndex] + " scrub=" + _seekScrubbing);
+    }
+
+    private bool TryMoveTvFocusToSkipSegment(bool up)
+    {
+        if (!IsSkipSegmentOffered)
+            return false;
+
+        var slot = IndexToTvFocusSlot(_tvChromeFocusIndex);
+        if (up)
+        {
+            if (slot is TvFocusSlot.Play or TvFocusSlot.SeekBar or TvFocusSlot.Settings
+                or TvFocusSlot.Cast or TvFocusSlot.SyncPlay)
+            {
+                SetTvChromeFocusSlot(TvFocusSlot.SkipSegment);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (slot != TvFocusSlot.SkipSegment)
+            return false;
+
+        SetTvChromeFocusSlot(TvFocusSlot.Settings);
+        return true;
     }
 
     private static TvFocusSlot IndexToTvFocusSlot(int index) => index switch
@@ -1664,6 +1699,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             // Best-effort prefs.
         }
 
+        ApplySkipSegmentOnMainThread();
+
         if (_deviceStorage is not null)
         {
             try
@@ -1680,20 +1717,57 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private async Task RefreshSegmentsAsync()
     {
         var mediaId = _player.Source?.MediaId;
-        if (_mediaService is null || mediaId is null || mediaId == _segmentsMediaId)
-            return;
-
-        try
+        if (_mediaService is null || mediaId is null)
         {
-            _segments = await _mediaService.GetMediaSegmentsAsync(mediaId.Value);
-            _segmentsMediaId = mediaId;
-            RefreshSeekChapters();
-        }
-        catch
-        {
+            ResetSkipSession();
             _segments = null;
+            _segmentsMediaId = null;
+            ApplySkipSegmentOnMainThread();
+            return;
         }
+
+        var mediaChanged = mediaId != _segmentsMediaId;
+        if (mediaChanged)
+        {
+            ResetSkipSession();
+            // Drop the previous episode's windows immediately so AutoSkip cannot seek
+            // to a stale intro/outro end while the new list is in flight.
+            _segments = null;
+            _segmentsMediaId = null;
+        }
+
+        if (mediaChanged || _segments is null)
+        {
+            try
+            {
+                _segments = await _mediaService.GetMediaSegmentsAsync(mediaId.Value);
+                _segmentsMediaId = mediaId;
+                RefreshSeekChapters();
+            }
+            catch
+            {
+                _segments = null;
+            }
+        }
+
+        ApplySkipSegmentOnMainThread();
     }
+
+    private void ResetSkipSession()
+    {
+        _skipState = default;
+        SetSkipSegmentVisible(false);
+    }
+
+    private void ApplySkipSegmentOnMainThread()
+    {
+        if (MainThread.IsMainThread)
+            ApplySkipSegmentAtCurrentTime();
+        else
+            MainThread.BeginInvokeOnMainThread(ApplySkipSegmentAtCurrentTime);
+    }
+
+    private void ApplySkipSegmentAtCurrentTime() => UpdateSkipSegment(_player.CurrentTime);
 
     private void RefreshSeekChapters()
     {
@@ -1707,73 +1781,29 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _seekBar.Refresh();
     }
 
-    /// <summary>Mirrors SkipSegmentOverlay.OnTimeChanged: 3s post-skip cooldown, and the
-    /// show-button variant dismisses after 5s once chrome is hidden (persists while visible).</summary>
+    /// <summary>Mirrors SkipSegmentOverlay via <see cref="SkipSegmentPresenter"/>.</summary>
     private void UpdateSkipSegment(double time)
     {
-        if (_segments is null || _segments.Count == 0 || _videoSettings is null)
+        var result = SkipSegmentPresenter.Tick(
+            _skipState,
+            _segments,
+            _videoSettings,
+            time,
+            IsChromeVisible,
+            DateTime.UtcNow);
+        _skipState = result.State;
+
+        if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
+            && result.State.ActiveSegment is { } autoSegment)
         {
-            SetSkipSegmentVisible(false);
-            _activeSegment = null;
+            NativeVideoDebug.Log("SkipSegment auto type=" + autoSegment.Type + " endMs=" + autoSegment.EndMs);
+            SkipActiveSegment(autoSegment);
             return;
         }
 
-        var timeMs = time * 1000.0;
-        var next = _segments.FirstOrDefault(s =>
-            s.Type is MediaSegmentType.Intro or MediaSegmentType.Outro
-            && timeMs >= s.StartMs
-            && timeMs < s.EndMs);
-
-        if (!ReferenceEquals(next, _activeSegment))
+        if (result.State.Visible && result.State.ActiveSegment is { } active)
         {
-            _activeSegment = next;
-            _autoSkippedActiveSegment = false;
-            _skipDismissed = false;
-        }
-
-        if (_activeSegment is null)
-        {
-            SetSkipSegmentVisible(false);
-            return;
-        }
-
-        var behavior = _activeSegment.Type == MediaSegmentType.Intro
-            ? _videoSettings.IntroSkipBehavior
-            : _videoSettings.OutroSkipBehavior;
-
-        if (behavior == IntroSkipBehavior.Disabled)
-        {
-            SetSkipSegmentVisible(false);
-            return;
-        }
-
-        var inCooldown = DateTime.UtcNow - _lastSkipUtc < SkipCooldown;
-
-        if (behavior == IntroSkipBehavior.AutoSkip)
-        {
-            if (!_autoSkippedActiveSegment && !inCooldown)
-            {
-                _autoSkippedActiveSegment = true;
-                SkipActiveSegment();
-            }
-
-            return;
-        }
-
-        // ShowButton: persists while chrome is visible; auto-dismisses 5s after first shown
-        // once chrome is hidden (matches SkipSegmentOverlay's ControlsVisible gate).
-        if (!_skipDismissed || IsChromeVisible)
-        {
-            if (!IsSkipSegmentOffered)
-                _skipShowTimeUtc = DateTime.UtcNow;
-            else if (!IsChromeVisible && DateTime.UtcNow - _skipShowTimeUtc >= SkipButtonDisplayDuration)
-            {
-                SetSkipSegmentVisible(false);
-                _skipDismissed = true;
-                return;
-            }
-
-            _skipSegmentButton.Text = _activeSegment.Type == MediaSegmentType.Intro
+            _skipSegmentButton.Text = active.Type == MediaSegmentType.Intro
                 ? NativeStrings.SkipIntro
                 : NativeStrings.SkipOutro;
             SetSkipSegmentVisible(true);
@@ -1808,18 +1838,24 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SetTvChromeFocusSlot(TvFocusSlot.SkipSegment);
     }
 
-    private void SkipActiveSegment()
+    private void SkipActiveSegment(MediaSegmentDto? segment = null)
     {
-        if (_activeSegment is null)
+        segment ??= _skipState.ActiveSegment;
+        if (segment is null)
             return;
 
-        var segmentType = _activeSegment.Type;
-        var endSeconds = _activeSegment.EndMs / 1000.0;
-        _lastSkipUtc = DateTime.UtcNow;
+        var segmentType = segment.Type;
+        var endSeconds = segment.EndMs / 1000.0;
+        _skipState = _skipState with
+        {
+            Visible = false,
+            ActiveSegment = null,
+            LastSkipUtc = DateTime.UtcNow
+        };
         _player.Seek(endSeconds);
         SetSkipSegmentVisible(false);
-        _activeSegment = null;
         ShowSkippedNotification(segmentType);
+        NativeVideoDebug.Log("SkipSegment seek type=" + segmentType + " to=" + endSeconds.ToString("F1") + "s");
     }
 
     private void ShowSkippedNotification(MediaSegmentType type)

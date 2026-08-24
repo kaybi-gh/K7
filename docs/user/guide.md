@@ -111,11 +111,16 @@ Single tap shows or hides controls when you are not mid-gesture.
 |---|---|
 | Left / Right | Short skip (Settings -> Video playback; default 10 s). Hold to scrub on the seek bar |
 | Rewind / Fast forward | Short skip using the same rewind / fast-forward durations. Hold to scrub |
-| Up / Down | Volume |
-| Enter / Select | Show controls, or skip intro when offered |
+| Up / Down | Volume (desktop). On TV, show controls and focus skip intro/outro when it is offered |
+| Enter / Select | Skip intro/outro when the skip button is on screen, otherwise show controls |
+
+When **Settings -> Video playback** is set to show the skip button, it appears on its own (controls stay
+hidden). Enter / Select skips. After a few seconds the floating button hides, but opening controls
+keeps skip available and focusable until the intro/outro chapter ends. Auto-skip jumps to the end
+of the chapter with no button. Disabled does nothing.
 
 When controls are visible, arrows / D-pad also reach the skip intro/outro button (it is focused
-first if it is on screen). Enter / Select then skips.
+first if it is on screen. Up from play/seek/settings also jumps to it). Enter / Select then skips.
 
 The rest of the app is spatially navigable (arrows / D-pad). Android TV also handles media Play/Pause/Stop, Rewind/Fast-forward, and long-press Select where relevant. When a PIN dialog opens, the number pad is focused immediately so the remote's number keys type digits without an extra Down press.
 

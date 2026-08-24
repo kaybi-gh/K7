@@ -1,7 +1,7 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -9,8 +9,6 @@ namespace K7.Clients.Shared.UI.Components.Players;
 
 public partial class SkipSegmentOverlay : IDisposable
 {
-    private static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(5);
-
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
@@ -23,14 +21,11 @@ public partial class SkipSegmentOverlay : IDisposable
     private IReadOnlyList<MediaSegmentDto>? _segments;
     private MediaSegmentDto? _activeSegment;
     private VideoPlayerSettingsDto? _settings;
+    private SkipSegmentPresenter.State _skipState;
     private bool _visible;
-    private bool _autoSkipped;
-    private bool _dismissed;
     private bool _showSkippedNotification;
     private K7.Shared.Enums.MediaSegmentType _skippedSegmentType;
     private CancellationTokenSource? _notificationCts;
-    private DateTime _lastSkipTime;
-    private DateTime _showTime;
     private Guid? _loadedMediaId;
 
     protected override async Task OnParametersSetAsync()
@@ -38,8 +33,7 @@ public partial class SkipSegmentOverlay : IDisposable
         if (MediaId is not null && MediaId != _loadedMediaId)
         {
             _loadedMediaId = MediaId;
-            _autoSkipped = false;
-            _dismissed = false;
+            _skipState = default;
             _activeSegment = null;
             _visible = false;
 
@@ -53,6 +47,8 @@ public partial class SkipSegmentOverlay : IDisposable
                 _segments = null;
                 _settings = null;
             }
+
+            ApplyCurrentTime(render: true);
         }
     }
 
@@ -61,79 +57,53 @@ public partial class SkipSegmentOverlay : IDisposable
         PlayerService.CurrentTimeChanged += OnTimeChanged;
     }
 
-    private void OnTimeChanged(double currentTimeSeconds)
+    protected override void OnParametersSet()
     {
-        if (_segments is null || _segments.Count == 0 || _settings is null)
-            return;
+        ApplyCurrentTime(render: false);
+    }
 
-        var currentMs = (long)(currentTimeSeconds * 1000);
-        MediaSegmentDto? active = null;
+    private void OnTimeChanged(double currentTimeSeconds) => ApplyTime(currentTimeSeconds, render: true);
 
-        foreach (var segment in _segments)
+    private void ApplyCurrentTime(bool render) => ApplyTime(PlayerService.CurrentTime, render);
+
+    private void ApplyTime(double currentTimeSeconds, bool render)
+    {
+        var result = SkipSegmentPresenter.Tick(
+            _skipState,
+            _segments,
+            _settings,
+            currentTimeSeconds,
+            ControlsVisible,
+            DateTime.UtcNow);
+
+        if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
+            && result.State.ActiveSegment is { } segment)
         {
-            if (currentMs >= segment.StartMs && currentMs <= segment.EndMs)
-            {
-                active = segment;
-                break;
-            }
+            PlayerService.Seek(segment.EndMs / 1000.0);
+            ShowSkippedNotification(segment.Type);
         }
 
-        if (active != _activeSegment)
-        {
-            _activeSegment = active;
-            _autoSkipped = false;
-            _dismissed = false;
-        }
-
-        if (active is not null)
-        {
-            var behavior = active.Type == K7.Shared.Enums.MediaSegmentType.Intro
-                ? _settings.IntroSkipBehavior
-                : _settings.OutroSkipBehavior;
-
-            var inCooldown = (DateTime.UtcNow - _lastSkipTime).TotalSeconds < 3;
-
-            if (behavior == IntroSkipBehavior.AutoSkip && !_autoSkipped && !inCooldown)
-            {
-                _autoSkipped = true;
-                _lastSkipTime = DateTime.UtcNow;
-                PlayerService.Seek(active.EndMs / 1000.0);
-                _visible = false;
-                ShowSkippedNotification(active.Type);
-            }
-            else if (behavior == IntroSkipBehavior.ShowButton && (!_dismissed || ControlsVisible))
-            {
-                if (!_visible)
-                {
-                    _showTime = DateTime.UtcNow;
-                    _visible = true;
-                }
-                else if (!ControlsVisible && (DateTime.UtcNow - _showTime) >= DisplayDuration)
-                {
-                    _visible = false;
-                    _dismissed = true;
-                }
-            }
-            else
-            {
-                _visible = false;
-            }
-        }
-        else
-        {
-            _visible = false;
-        }
-
-        InvokeAsync(StateHasChanged);
+        _skipState = result.State;
+        _activeSegment = result.State.ActiveSegment;
+        _visible = result.State.Visible;
+        if (render)
+            _ = InvokeAsync(StateHasChanged);
     }
 
     public void SkipSegment()
     {
-        if (_activeSegment is null)
+        if (_skipState.ActiveSegment is null)
             return;
 
-        _lastSkipTime = DateTime.UtcNow;
-        PlayerService.Seek(_activeSegment.EndMs / 1000.0);
+        var endSeconds = _skipState.ActiveSegment.EndMs / 1000.0;
+        PlayerService.Seek(endSeconds);
+        _skipState = _skipState with
+        {
+            Visible = false,
+            ActiveSegment = null,
+            LastSkipUtc = DateTime.UtcNow
+        };
+        _activeSegment = null;
         _visible = false;
     }
 
