@@ -281,6 +281,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async Task ClosePlayerAfterEndAsync()
     {
+        PlaybackProgressTracker.StopTracking();
         PlayerService.Stop();
         await PlayerService.HideAsync();
     }

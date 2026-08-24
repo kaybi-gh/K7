@@ -497,6 +497,7 @@ public sealed partial class NativeVideoPlayerOverlay
     {
         PauseNextEpisodeCountdown();
         ResetNextEpisodeState();
+        _progressTracker?.StopTracking();
         _player.Stop();
         await _player.HideAsync();
     }

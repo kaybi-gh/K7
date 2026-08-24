@@ -53,6 +53,7 @@ public partial class SerieSeason : IAsyncDisposable
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
     private Guid? _castLoadEpisodeId;
     private DebouncedActionRunner? _progressRefreshRunner;
+    private bool _refreshSeasonOnPlayerHide;
 
     private bool HasDisplayableCast => _focusedEpisodeDisplayableCast.Count > 0;
 
@@ -64,6 +65,7 @@ public partial class SerieSeason : IAsyncDisposable
             delayMs: 800);
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.ProgressUpdated += OnProgressUpdated;
+        PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -87,11 +89,21 @@ public partial class SerieSeason : IAsyncDisposable
         if (mediaId != _season.Id && !_episodes.Any(e => e.Id == mediaId))
             return;
 
-        // Ignore self-echo while this client is playing any episode on this season page.
-        if (PlaybackProgressTracker.CurrentMediaId is { } playingId
-            && _episodes.Any(e => e.Id == playingId))
+        // Ignore self-echo while this client is reporting progress (avoids a brief "watched"
+        // flash when the player emits a bogus short duration on start). Season badges catch
+        // up via OnPlayerVisibilityChanged after the player closes.
+        if (PlaybackProgressTracker.CurrentMediaId == mediaId)
             return;
 
+        _progressRefreshRunner?.Schedule();
+    }
+
+    private void OnPlayerVisibilityChanged()
+    {
+        if (PlayerService.IsVisible || !_refreshSeasonOnPlayerHide)
+            return;
+
+        _refreshSeasonOnPlayerHide = false;
         _progressRefreshRunner?.Schedule();
     }
 
@@ -421,6 +433,7 @@ public partial class SerieSeason : IAsyncDisposable
                 await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
                 Guid.Parse(SerieId),
                 indexedFile.Id);
+            _refreshSeasonOnPlayerHide = true;
 
             var episodeTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
             var coverUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Small);
@@ -460,6 +473,7 @@ public partial class SerieSeason : IAsyncDisposable
         PlaybackProgressTracker.StartTracking(episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
             Guid.Parse(SerieId));
+        _refreshSeasonOnPlayerHide = true;
 
         var epTitle = VideoPlayerTitleHelper.FormatEpisode(episodeDto);
         var cover = GetEpisodeStillUrl(episode, MetadataPictureSize.Small);
@@ -611,8 +625,13 @@ public partial class SerieSeason : IAsyncDisposable
         {
             _season = season;
             _seasonUserRating = GetUserRating(season.Ratings);
+
+            var focusEpisodeNumber = _focusedEpisode?.EpisodeNumber
+                ?? ParseEpisodeFragment(_focusEpisodeFragment);
             _episodes = (season.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
+                .Where(e => SeriePlaybackHelper.IsPlayable(e)
+                    || (focusEpisodeNumber is int n && e.EpisodeNumber == n))
                 .ToList();
 
             if (_focusedEpisode is not null)
@@ -640,6 +659,7 @@ public partial class SerieSeason : IAsyncDisposable
     {
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        PlayerService.IsVisibleChanged -= OnPlayerVisibilityChanged;
         _progressRefreshRunner?.Dispose();
 
         if (!_seasonTvScrollInitialized)

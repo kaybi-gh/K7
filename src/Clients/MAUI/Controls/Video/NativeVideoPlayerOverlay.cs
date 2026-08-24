@@ -1661,6 +1661,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         HideChrome();
         RestoreBrightness();
+        _progressTracker?.StopTracking();
         _player.Stop();
         _ = _player.HideAsync();
     }
