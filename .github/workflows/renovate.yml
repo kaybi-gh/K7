@@ -46,7 +46,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          # Renovate 44+ requires Node ^24.11 (uses RegExp.escape).
+          node-version: '24'
 
       - name: Require RENOVATE_TOKEN
         env:
@@ -64,5 +65,12 @@ jobs:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_BINARY_SOURCE: global
           LOG_LEVEL: info
+          EVENT_NAME: ${{ github.event_name }}
         # Pin Renovate CLI; bump intentionally when upgrading the bot itself.
-        run: npx --yes renovate@44.46.4
+        # Manual runs ignore the Monday window in renovate.json.
+        run: |
+          set -euo pipefail
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            export RENOVATE_SCHEDULE="at any time"
+          fi
+          npx --yes renovate@44.46.4
