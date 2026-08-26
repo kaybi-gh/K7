@@ -55,7 +55,7 @@ jobs:
           RENOVATE_PLATFORM: github
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_BINARY_SOURCE: global
-          LOG_LEVEL: debug
+          LOG_LEVEL: info
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
@@ -66,8 +66,8 @@ jobs:
             export RENOVATE_SCHEDULE='["at any time"]'
           fi
           npx --yes renovate@44.46.4 2>&1 | tee renovate.log
-          if grep -qE "^(ERROR| WARN: Error updating branch)" renovate.log; then
-            echo "::error::Renovate reported branch update errors"
-            grep -E "^(ERROR| WARN: Error updating branch)" renovate.log || true
+          if grep -qE "^(ERROR| WARN: Error updating branch)|Pull request creation error" renovate.log; then
+            echo "::error::Renovate reported branch or PR creation errors"
+            grep -E "^(ERROR| WARN: Error updating branch)|Pull request creation error" renovate.log || true
             exit 1
           fi
