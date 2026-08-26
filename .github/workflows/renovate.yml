@@ -2,7 +2,7 @@
 # Runs on the host runner (not the Mend cloud app) so maui-android workloads are available
 # and android-arm / Fire Stick RIDs restore correctly.
 #
-# Uses the workflow GITHUB_TOKEN (contents + pull-requests + issues + workflows write).
+# Uses the workflow GITHUB_TOKEN (contents + pull-requests + issues write).
 # See docs/dev/developing.md#dependency-updates
 
 name: Renovate
@@ -21,7 +21,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  workflows: write
 
 jobs:
   renovate:
