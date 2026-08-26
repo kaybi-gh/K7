@@ -159,6 +159,8 @@ K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Ac
 
 The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no extra secret).
 
+Repo **Settings -> Actions -> General** must allow Actions to create pull requests (`can_approve_pull_request_reviews` / write permissions). Without this, Renovate pushes branches but cannot open PRs.
+
 Run **Actions -> Renovate -> Run workflow** once to verify after changing Renovate config.
 
 You can still enable **Dependabot alerts** (security advisories) in GitHub Settings without Dependabot version-update PRs.
