@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'renovate[bot]'
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'github-actions[bot]'
     steps:
       - name: Require a changelog label
         uses: mheap/github-action-required-labels@23e10fde7e062233401931a0eece796cd9bf3177 # v5

@@ -157,33 +157,9 @@ Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respaw
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
 
-The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit).
+The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no extra secret).
 
-### Required secret
-
-| Secret | Purpose |
-|---|---|
-| `RENOVATE_TOKEN` | Classic PAT with `repo` + `workflow` (Actions bumps need `workflow`), or a fine-grained / GitHub App token with contents, pull requests, workflows, and issues |
-
-Create the secret under repo **Settings -> Secrets and variables -> Actions**. Then run **Actions -> Renovate -> Run workflow** once to verify.
-
-You can still enable **Dependabot alerts** (security advisories) in GitHub Settings without Dependabot version-update PRs.
-
-Close or merge any leftover open Dependabot PRs so they do not compete with Renovate.
-
-## Dependency updates
-
-K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
-
-The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit).
-
-### Required secret
-
-| Secret | Purpose |
-|---|---|
-| `RENOVATE_TOKEN` | Classic PAT with `repo` + `workflow` (Actions bumps need `workflow`), or a fine-grained / GitHub App token with contents, pull requests, workflows, and issues |
-
-Create the secret under repo **Settings -> Secrets and variables -> Actions**. Then run **Actions -> Renovate -> Run workflow** once to verify.
+Run **Actions -> Renovate -> Run workflow** once to verify after changing Renovate config.
 
 You can still enable **Dependabot alerts** (security advisories) in GitHub Settings without Dependabot version-update PRs.
 
