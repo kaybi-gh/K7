@@ -157,9 +157,15 @@ Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respaw
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
 
-The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no extra secret).
+The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit).
 
-Repo **Settings -> Actions -> General** must allow Actions to create pull requests (`can_approve_pull_request_reviews` / write permissions). Without this, Renovate pushes branches but cannot open PRs.
+### Required secret
+
+| Secret | Purpose |
+|---|---|
+| `RENOVATE_TOKEN` | Classic PAT with `repo` + `workflow`. Opens PRs under your account so `pull_request` CI runs automatically (PRs from `GITHUB_TOKEN` / `github-actions[bot]` do not). |
+
+Create the secret under repo **Settings -> Secrets and variables -> Actions**. Scopes: **`repo`** (full control of private repositories) and **`workflow`** (update GitHub Actions workflows in PRs).
 
 Run **Actions -> Renovate -> Run workflow** once to verify after changing Renovate config.
 
