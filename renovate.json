@@ -10,7 +10,8 @@
   "timezone": "Europe/Paris",
   "labels": ["dependencies", "chore"],
   "prConcurrentLimit": 15,
-  "prHourlyLimit": 5,
+  "prHourlyLimit": 0,
+  "prCreation": "immediate",
   "rangeStrategy": "bump",
   "osvVulnerabilityAlerts": true,
   "packageRules": [
