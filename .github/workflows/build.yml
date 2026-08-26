@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'renovate/**' ]
     paths-ignore:
       - '**.md'
       - branding/**
@@ -20,6 +20,8 @@ on:
       - .github/FUNDING.yml
 
   # pull_request is skipped for PRs opened by github-actions[bot] (Renovate with GITHUB_TOKEN).
+  # pull_request_target runs on opened/reopened but not reliably on synchronize; push to renovate/**
+  # triggers CI when Renovate updates dependency branches.
   pull_request_target:
     branches: [ main ]
     paths-ignore:
@@ -33,7 +35,7 @@ on:
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' || startsWith(github.ref, 'refs/heads/renovate/') }}
 
 permissions:
   contents: read
