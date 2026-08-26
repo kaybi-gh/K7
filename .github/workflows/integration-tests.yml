@@ -17,6 +17,14 @@ on:
       - screenshots/**
       - LICENSE
       - .github/FUNDING.yml
+  pull_request_target:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - branding/**
+      - screenshots/**
+      - LICENSE
+      - .github/FUNDING.yml
   workflow_dispatch:
 
 permissions:
@@ -24,11 +32,16 @@ permissions:
 
 jobs:
   integration:
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         name: Checkout code
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4

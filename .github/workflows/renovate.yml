@@ -2,8 +2,9 @@
 # Runs on the host runner (not the Mend cloud app) so maui-android workloads are available
 # and android-arm / Fire Stick RIDs restore correctly.
 #
-# Required secret: RENOVATE_TOKEN (classic PAT, scopes repo + workflow).
-# A user-owned PAT is required so pull_request CI runs on Renovate PRs (GITHUB_TOKEN PRs do not).
+# Uses the workflow GITHUB_TOKEN for git push and PR creation.
+# CI on Renovate PRs is handled via pull_request_target in build/integration-tests workflows
+# (pull_request does not run for PRs opened by github-actions[bot]).
 # See docs/dev/developing.md#dependency-updates
 
 name: Renovate
@@ -19,7 +20,9 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   renovate:
@@ -27,8 +30,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
@@ -50,41 +51,16 @@ jobs:
           # Renovate 44+ requires Node ^24.11 (uses RegExp.escape).
           node-version: '24'
 
-      - name: Require RENOVATE_TOKEN
-        env:
-          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
-        run: |
-          if [ -z "${RENOVATE_TOKEN}" ]; then
-            echo "::error::Missing repository secret RENOVATE_TOKEN (classic PAT with repo + workflow). See docs/dev/developing.md#dependency-updates"
-            exit 1
-          fi
-
-      - name: Configure git for Renovate
-        env:
-          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
-        run: |
-          RENOVATE_TOKEN="$(printf '%s' "${RENOVATE_TOKEN}" | tr -d '\n\r')"
-          git config --global user.name "Kaybi"
-          git config --global user.email "13943086+kaybi-gh@users.noreply.github.com"
-          git config --global credential.helper store
-          printf 'https://oauth2:%s@github.com\n' "${RENOVATE_TOKEN}" > "${HOME}/.git-credentials"
-          chmod 600 "${HOME}/.git-credentials"
-          git config --global url."https://oauth2:${RENOVATE_TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global url."https://oauth2:${RENOVATE_TOKEN}@github.com/".insteadOf "git@github.com:"
-
       - name: Run Renovate
         env:
-          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_TOKEN: ${{ github.token }}
           RENOVATE_PLATFORM: github
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_BINARY_SOURCE: global
-          RENOVATE_GIT_AUTHOR: 'Kaybi <13943086+kaybi-gh@users.noreply.github.com>'
           LOG_LEVEL: info
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          export RENOVATE_TOKEN="$(printf '%s' "${RENOVATE_TOKEN}" | tr -d '\n\r')"
-          export GIT_TERMINAL_PROMPT=0
           if [ "${EVENT_NAME}" = "schedule" ]; then
             export RENOVATE_SCHEDULE='["* 5-9 * * 1"]'
             export RENOVATE_TIMEZONE="Europe/Paris"

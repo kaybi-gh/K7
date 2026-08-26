@@ -19,11 +19,21 @@ on:
       - LICENSE
       - .github/FUNDING.yml
 
+  # pull_request is skipped for PRs opened by github-actions[bot] (Renovate with GITHUB_TOKEN).
+  pull_request_target:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - branding/**
+      - screenshots/**
+      - LICENSE
+      - .github/FUNDING.yml
+
   workflow_dispatch:
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
 
 permissions:
   contents: read
@@ -34,11 +44,16 @@ env:
 
 jobs:
   build-and-test:
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         name: Checkout code
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
@@ -88,11 +103,16 @@ jobs:
           dotnet test tests/Clients.DesignSystem.SmokeTests/Clients.DesignSystem.SmokeTests.csproj --configuration Release --no-build --verbosity normal
 
   maui-smoke:
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
     runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         name: Checkout code
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
@@ -135,6 +155,9 @@ jobs:
 
   publish-image:
     needs: build-and-test
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -149,6 +172,8 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         name: Checkout code
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
