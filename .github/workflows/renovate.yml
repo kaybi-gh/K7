@@ -20,7 +20,9 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   renovate:
@@ -54,7 +56,7 @@ jobs:
           RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
         run: |
           if [ -z "${RENOVATE_TOKEN}" ]; then
-            echo "::error::Missing repository secret RENOVATE_TOKEN (classic PAT with repo + workflow, or equivalent App token). See docs/dev/developing.md#dependency-updates"
+            echo "::error::Missing repository secret RENOVATE_TOKEN (classic PAT with repo + workflow). See docs/dev/developing.md#dependency-updates"
             exit 1
           fi
 
@@ -69,18 +71,13 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          git config --global user.name "Kaybi"
-          git config --global user.email "13943086+kaybi-gh@users.noreply.github.com"
-          git config --global url."https://x-access-token:${RENOVATE_TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global url."https://x-access-token:${RENOVATE_TOKEN}@github.com/".insteadOf "git@github.com:"
-          export GIT_TERMINAL_PROMPT=0
           if [ "${EVENT_NAME}" = "schedule" ]; then
             export RENOVATE_SCHEDULE='["* 5-9 * * 1"]'
             export RENOVATE_TIMEZONE="Europe/Paris"
           fi
           npx --yes renovate@44.46.4 2>&1 | tee renovate.log
-          if grep -q "Error updating branch" renovate.log; then
-            echo "::error::Renovate failed to push one or more branches"
-            grep -E "Error updating branch|Error:" renovate.log || true
+          if grep -qE "^(ERROR| WARN: Error updating branch)" renovate.log; then
+            echo "::error::Renovate reported branch update errors"
+            grep -E "^(ERROR| WARN: Error updating branch)" renovate.log || true
             exit 1
           fi
