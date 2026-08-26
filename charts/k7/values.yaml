@@ -28,7 +28,7 @@ database:
   # Bundled single-replica Postgres Deployment. Simple, no operator - fine for trials/homelab,
   # not HA. For production prefer cnpg or an external managed database.
   deployment:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     user: postgres
     # Chart-managed secret, or reference an existing one (key: database-password) via existingSecret.
     password: ""
