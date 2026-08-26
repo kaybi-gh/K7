@@ -163,7 +163,7 @@ The job installs the `maui-android` workload on the runner so NuGet restore work
 
 | Secret | Purpose |
 |---|---|
-| `RENOVATE_TOKEN` | Classic PAT with `repo` + `workflow`. Opens PRs under your account so `pull_request` CI runs automatically (PRs from `GITHUB_TOKEN` / `github-actions[bot]` do not). |
+| `RENOVATE_TOKEN` | Classic PAT with `repo` + `workflow`. Opens PRs under your account so `pull_request` CI runs automatically. Commits use the GitHub API (`platformCommit`), not git push on the runner. |
 
 Create the secret under repo **Settings -> Secrets and variables -> Actions**. Scopes: **`repo`** (full control of private repositories) and **`workflow`** (update GitHub Actions workflows in PRs).
 
