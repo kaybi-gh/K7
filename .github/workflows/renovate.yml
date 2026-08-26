@@ -59,6 +59,19 @@ jobs:
             exit 1
           fi
 
+      - name: Configure git for Renovate
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          RENOVATE_TOKEN="$(printf '%s' "${RENOVATE_TOKEN}" | tr -d '\n\r')"
+          git config --global user.name "Kaybi"
+          git config --global user.email "13943086+kaybi-gh@users.noreply.github.com"
+          git config --global credential.helper store
+          printf 'https://oauth2:%s@github.com\n' "${RENOVATE_TOKEN}" > "${HOME}/.git-credentials"
+          chmod 600 "${HOME}/.git-credentials"
+          git config --global url."https://oauth2:${RENOVATE_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://oauth2:${RENOVATE_TOKEN}@github.com/".insteadOf "git@github.com:"
+
       - name: Run Renovate
         env:
           RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
@@ -71,6 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           export RENOVATE_TOKEN="$(printf '%s' "${RENOVATE_TOKEN}" | tr -d '\n\r')"
+          export GIT_TERMINAL_PROMPT=0
           if [ "${EVENT_NAME}" = "schedule" ]; then
             export RENOVATE_SCHEDULE='["* 5-9 * * 1"]'
             export RENOVATE_TIMEZONE="Europe/Paris"
