@@ -5,14 +5,23 @@ using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Users;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedia;
 
-public record GetMediaResult(BaseMedia Media, int TotalPlayCount, Guid? LibraryId);
+public record GetMediaResult(
+    BaseMedia Media,
+    int TotalPlayCount,
+    Guid? LibraryId,
+    IReadOnlyDictionary<Guid, ItemPlaybackBookmark> ItemBookmarks);
 
 public record GetMediaQuery(Guid Id) : IRequest<GetMediaResult>;
 
-public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUser, IMediaAccessGuard accessGuard)
+public class GetMediaQueryHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IMediaAccessGuard accessGuard,
+    IPlaybackBookmarkService bookmarkService)
     : IRequestHandler<GetMediaQuery, GetMediaResult>
 {
     public async Task<GetMediaResult> Handle(GetMediaQuery request, CancellationToken cancellationToken)
@@ -140,6 +149,16 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
 
         var libraryId = await MediaLibraryLinkageHelper.FindLibraryIdAsync(context, entity, cancellationToken);
 
-        return new GetMediaResult(entity, totalPlayCount, libraryId);
+        var mediaIds = SharedProfileUserStateOverlay.CollectGraphMediaIds(entity);
+        var bookmarkUserId = sharedProfileId is null ? userId : null;
+        var itemBookmarks = userId.HasValue
+            ? await bookmarkService.GetItemBookmarksAsync(
+                bookmarkUserId,
+                sharedProfileId,
+                mediaIds,
+                cancellationToken)
+            : [];
+
+        return new GetMediaResult(entity, totalPlayCount, libraryId, itemBookmarks);
     }
 }

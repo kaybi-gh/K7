@@ -40,4 +40,17 @@ public static class UserMediaStateMappings
             LastInteractedAt = domain.LastInteractedAt
         };
     }
+
+    extension(ItemPlaybackBookmark bookmark)
+    {
+        public UserMediaStateDto ToUserMediaStateDto() => new()
+        {
+            LastPlaybackPosition = bookmark.PositionSeconds,
+            ProgressPercentage = bookmark.ProgressPercentage,
+            IsCompleted = false,
+            PlayCount = 0,
+            SkipCount = 0,
+            LastInteractedAt = bookmark.UpdatedAt
+        };
+    }
 }

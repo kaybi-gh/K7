@@ -19,7 +19,7 @@ public static class SharedProfileUserStateOverlay
         Guid actingUserId,
         CancellationToken cancellationToken = default)
     {
-        var mediaIds = CollectMediaIds(entity);
+        var mediaIds = CollectGraphMediaIds(entity);
         if (mediaIds.Count == 0)
             return;
 
@@ -31,7 +31,7 @@ public static class SharedProfileUserStateOverlay
         ApplyToGraph(entity, sharedStates, actingUserId);
     }
 
-    private static HashSet<Guid> CollectMediaIds(BaseMedia entity)
+    internal static HashSet<Guid> CollectGraphMediaIds(BaseMedia entity)
     {
         var ids = new HashSet<Guid> { entity.Id };
 

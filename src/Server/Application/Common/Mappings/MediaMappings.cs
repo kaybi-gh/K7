@@ -6,6 +6,7 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -16,7 +17,8 @@ public static class MediaMappings
 {
     extension(BaseMedia domain)
     {
-        public MediaDto ToMediaDto() => domain switch
+        public MediaDto ToMediaDto(
+            IReadOnlyDictionary<Guid, ItemPlaybackBookmark>? itemBookmarks = null) => domain switch
         {
             Movie movie => new MovieDto()
             {
@@ -41,9 +43,7 @@ public static class MediaMappings
                 Revenue = movie.Revenue,
                 Studios = movie.GetStudioDisplayNames(),
                 Trailers = domain.Trailers?.Select(t => t.ToTrailerDto()).ToList() ?? [],
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             MusicAlbum album => new MusicAlbumDto()
@@ -64,10 +64,8 @@ public static class MediaMappings
                 Overview = album.Overview,
                 ArtistId = album.ArtistId,
                 ArtistName = album.Artist?.Title,
-                Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)t.ToLiteMediaDto()).ToList(),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)t.ToLiteMediaDto(itemBookmarks: itemBookmarks)).ToList(),
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             MusicTrack track => new MusicTrackDto()
@@ -98,9 +96,7 @@ public static class MediaMappings
                 FadeInDuration = track.AudioAnalysis?.FadeInDuration,
                 FadeOutDuration = track.AudioAnalysis?.FadeOutDuration,
                 ReplayGainTrackGain = track.AudioAnalysis?.ReplayGainTrackGain,
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             MusicArtist artist => new MusicArtistDto()
@@ -121,13 +117,11 @@ public static class MediaMappings
                 ArtistType = artist.ArtistType,
                 Biography = artist.Biography,
                 Country = artist.Country,
-                Albums = artist.Albums.Select(a => (MusicAlbumDto)a.ToMediaDto()).ToList(),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                Albums = artist.Albums.Select(a => (MusicAlbumDto)a.ToMediaDto(itemBookmarks)).ToList(),
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
-            Serie serie => MapSerieDto(domain, serie),
+            Serie serie => MapSerieDto(domain, serie, itemBookmarks),
             SerieSeason season => new SerieSeasonDto()
             {
                 Id = domain.Id,
@@ -149,11 +143,9 @@ public static class MediaMappings
                 SerieTitle = season.Serie?.Title,
                 Episodes = season.Episodes
                     .OrderBy(e => e.EpisodeNumber)
-                    .Select(e => (LiteSerieEpisodeDto)e.ToLiteMediaDto())
+                    .Select(e => (LiteSerieEpisodeDto)e.ToLiteMediaDto(itemBookmarks: itemBookmarks))
                     .ToList(),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             SerieEpisode episode => new SerieEpisodeDto()
@@ -180,9 +172,7 @@ public static class MediaMappings
                 SeasonId = episode.SeasonId,
                 SerieTitle = episode.Serie?.Title,
                 SeasonTitle = episode.Season?.Title,
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                UserState = MapUserState(domain, itemBookmarks),
                 LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
@@ -190,7 +180,8 @@ public static class MediaMappings
 
         public LiteMediaDto ToLiteMediaDto(
             IReadOnlyDictionary<Guid, int>? serieSeasonCounts = null,
-            IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
+            IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null,
+            IReadOnlyDictionary<Guid, ItemPlaybackBookmark>? itemBookmarks = null)
         {
             MetadataPictureDto MapPicture(MetadataPicture picture) => picture.ToMetadataPictureDto(pictureSizes);
             List<MetadataPictureDto> MapPictures(IEnumerable<MetadataPicture> pictures) =>
@@ -226,9 +217,7 @@ public static class MediaMappings
                     RemoteIndexedFileId = remoteIndexedFile?.Id,
                     SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
                     SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 };
             }
@@ -243,9 +232,7 @@ public static class MediaMappings
                     ReleaseDate = domain.ReleaseDate,
                     Created = domain.Created,
                     Pictures = MapPictures(domain.Pictures),
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 MusicAlbum album => new LiteMusicAlbumDto()
@@ -258,9 +245,7 @@ public static class MediaMappings
                     Pictures = MapPictures(domain.Pictures),
                     ArtistId = album.ArtistId,
                     ArtistName = album.Artist?.Title,
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 MusicTrack track => new LiteMusicTrackDto()
@@ -293,9 +278,7 @@ public static class MediaMappings
                             IsGuest = c.IsGuest
                         }).ToList()
                         : null,
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 MusicArtist artist => new LiteMusicArtistDto()
@@ -319,9 +302,7 @@ public static class MediaMappings
                             .Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto())
                             .ToList() is { Count: > 0 } guestAlbums ? guestAlbums : null
                         : null,
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 Serie => new LiteSerieDto()
@@ -332,9 +313,7 @@ public static class MediaMappings
                     ReleaseDate = domain.ReleaseDate,
                     Created = domain.Created,
                     Pictures = MapPictures(domain.Pictures),
-                    UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                        ? state.ToUserMediaStateDto()
-                        : null,
+                    UserState = MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 SerieSeason season => new LiteSerieSeasonDto()
@@ -355,9 +334,7 @@ public static class MediaMappings
                         .FirstOrDefault(),
                     SeriePictures = season.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
                     UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
-                        ?? (domain.UserMediaStates.FirstOrDefault() is { } state
-                            ? state.ToUserMediaStateDto()
-                            : null),
+                        ?? MapUserState(domain, itemBookmarks),
                     UserRating = GetUserRating(domain)
                 },
                 SerieEpisode episode => MapSerieEpisode(episode),
@@ -405,7 +382,10 @@ public static class MediaMappings
         };
     }
 
-    private static SerieDto MapSerieDto(BaseMedia domain, Serie serie)
+    private static SerieDto MapSerieDto(
+        BaseMedia domain,
+        Serie serie,
+        IReadOnlyDictionary<Guid, ItemPlaybackBookmark>? itemBookmarks)
     {
         var seriePictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList();
 
@@ -451,11 +431,23 @@ public static class MediaMappings
                     UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
                 })
                 .ToList(),
-            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                ? state.ToUserMediaStateDto()
-                : null,
+            UserState = MapUserState(domain, itemBookmarks),
             LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
         };
+    }
+
+    private static UserMediaStateDto? MapUserState(
+        BaseMedia media,
+        IReadOnlyDictionary<Guid, ItemPlaybackBookmark>? itemBookmarks)
+    {
+        ItemPlaybackBookmark? bookmark = null;
+        if (itemBookmarks is not null)
+            itemBookmarks.TryGetValue(media.Id, out bookmark);
+
+        if (media.UserMediaStates.FirstOrDefault() is { } state)
+            return state.ToUserMediaStateDto(bookmark);
+
+        return bookmark?.ToUserMediaStateDto();
     }
 
     private static int? GetUserRating(BaseMedia domain) =>

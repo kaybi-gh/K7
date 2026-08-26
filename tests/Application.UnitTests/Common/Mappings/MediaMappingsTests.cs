@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Users;
 using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Server.Application.UnitTests.Common.Mappings;
@@ -144,5 +145,114 @@ public class MediaMappingsTests
         var dto = (LiteSerieSeasonDto)season.ToLiteMediaDto();
 
         dto.EpisodeCount.Should().Be(0);
+    }
+
+    [Test]
+    public void ToMediaDto_ShouldOverlayItemBookmarkResumePosition()
+    {
+        var episodeId = Guid.NewGuid();
+        var episode = new SerieEpisode
+        {
+            Id = episodeId,
+            Title = "E1",
+            SortTitle = "E1",
+            EpisodeNumber = 1
+        };
+        episode.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = Guid.NewGuid(),
+            MediaId = episodeId,
+            IsCompleted = false,
+            LastInteractedAt = DateTime.UtcNow
+        });
+
+        var bookmarks = new Dictionary<Guid, ItemPlaybackBookmark>
+        {
+            [episodeId] = new ItemPlaybackBookmark
+            {
+                MediaId = episodeId,
+                PositionSeconds = 420,
+                DurationSeconds = 2100,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        var dto = (SerieEpisodeDto)episode.ToMediaDto(bookmarks);
+
+        dto.UserState.Should().NotBeNull();
+        dto.UserState!.LastPlaybackPosition.Should().Be(420);
+        dto.UserState.ProgressPercentage.Should().BeApproximately(20, 0.01);
+        dto.UserState.IsCompleted.Should().BeFalse();
+    }
+
+    [Test]
+    public void ToMediaDto_ShouldOverlayNestedEpisodeBookmark_OnSeason()
+    {
+        var episodeId = Guid.NewGuid();
+        var season = new SerieSeason
+        {
+            Id = Guid.NewGuid(),
+            SerieId = Guid.NewGuid(),
+            SeasonNumber = 1,
+            Title = "Season 1",
+            SortTitle = "Season 1"
+        };
+        var episode = new SerieEpisode
+        {
+            Id = episodeId,
+            SerieId = season.SerieId,
+            SeasonId = season.Id,
+            Season = season,
+            EpisodeNumber = 2,
+            Title = "E2",
+            SortTitle = "E2"
+        };
+        episode.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = Guid.NewGuid(),
+            MediaId = episodeId,
+            IsCompleted = false
+        });
+        season.Episodes.Add(episode);
+
+        var bookmarks = new Dictionary<Guid, ItemPlaybackBookmark>
+        {
+            [episodeId] = new ItemPlaybackBookmark
+            {
+                MediaId = episodeId,
+                PositionSeconds = 90,
+                DurationSeconds = 1800,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        var dto = (SerieSeasonDto)season.ToMediaDto(bookmarks);
+
+        dto.Episodes.Should().ContainSingle();
+        dto.Episodes![0].UserState!.LastPlaybackPosition.Should().Be(90);
+    }
+
+    [Test]
+    public void ToMediaDto_ShouldReturnZeroResumePosition_WhenBookmarkMissing()
+    {
+        var episode = new SerieEpisode
+        {
+            Id = Guid.NewGuid(),
+            Title = "E1",
+            SortTitle = "E1",
+            EpisodeNumber = 1
+        };
+        episode.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = Guid.NewGuid(),
+            MediaId = episode.Id,
+            IsCompleted = false
+        });
+
+        var dto = (SerieEpisodeDto)episode.ToMediaDto();
+
+        dto.UserState.Should().NotBeNull();
+        dto.UserState!.LastPlaybackPosition.Should().Be(0);
+        dto.UserState.ProgressPercentage.Should().Be(0);
     }
 }

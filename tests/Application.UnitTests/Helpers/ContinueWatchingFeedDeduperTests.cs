@@ -25,6 +25,29 @@ public class ContinueWatchingFeedDeduperTests
     }
 
     [Test]
+    public void Deduplicate_ShouldPreferInProgressEpisode_WhenSeriesNextUpIsNewer()
+    {
+        var serieId = Guid.NewGuid();
+        var inProgressEpisodeId = Guid.NewGuid();
+        var nextEpisodeId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        var result = ContinueWatchingFeedDeduper.Deduplicate(
+        [
+            new ContinueWatchingFeedCandidate(
+                inProgressEpisodeId,
+                now.AddHours(-2),
+                serieId,
+                IsItemBookmark: true),
+            new ContinueWatchingFeedCandidate(nextEpisodeId, now, serieId)
+        ]);
+
+        result.Should().ContainSingle();
+        result[0].MediaId.Should().Be(inProgressEpisodeId);
+        result[0].IsItemBookmark.Should().BeTrue();
+    }
+
+    [Test]
     public void Deduplicate_ShouldKeepOneCardPerSeries_WhenTwoEpisodesShareGroupId()
     {
         var serieId = Guid.NewGuid();

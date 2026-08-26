@@ -181,7 +181,11 @@ internal sealed class HomeFeedContinueWatchingStrategy(
                 continue;
 
             var groupId = episodeSerieIds.GetValueOrDefault(bookmark.MediaId, bookmark.MediaId);
-            candidates.Add(new ContinueWatchingFeedCandidate(bookmark.MediaId, bookmark.UpdatedAt, groupId));
+            candidates.Add(new ContinueWatchingFeedCandidate(
+                bookmark.MediaId,
+                bookmark.UpdatedAt,
+                groupId,
+                IsItemBookmark: true));
         }
 
         foreach (var bookmark in seriesBookmarks)
@@ -216,20 +220,4 @@ internal sealed class HomeFeedContinueWatchingStrategy(
     }
 
     private sealed record ContinueWatchingCandidate(Guid MediaId, DateTime SortAt, Guid GroupId);
-}
-
-internal static class ItemPlaybackBookmarkMappings
-{
-    extension(ItemPlaybackBookmark bookmark)
-    {
-        public K7.Shared.Dtos.Entities.UserMediaStateDto ToUserMediaStateDto() => new()
-        {
-            LastPlaybackPosition = bookmark.PositionSeconds,
-            ProgressPercentage = bookmark.ProgressPercentage,
-            IsCompleted = false,
-            PlayCount = 0,
-            SkipCount = 0,
-            LastInteractedAt = bookmark.UpdatedAt
-        };
-    }
 }

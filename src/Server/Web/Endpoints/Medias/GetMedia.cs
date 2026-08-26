@@ -21,7 +21,7 @@ public class GetMedia : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var result = await sender.Send(new GetMediaQuery(id), cancellationToken);
-            var dto = result.Media.ToMediaDto();
+            var dto = result.Media.ToMediaDto(result.ItemBookmarks);
             dto.TotalPlayCount = result.TotalPlayCount;
             dto.LibraryId = result.LibraryId;
 
