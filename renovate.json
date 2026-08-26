@@ -14,12 +14,11 @@
   "prHourlyLimit": 5,
   "rangeStrategy": "bump",
   "osvVulnerabilityAlerts": true,
-  "binarySource": "global",
   "packageRules": [
     {
       "description": "Group all other NuGet packages (CPM)",
       "matchManagers": ["nuget"],
-      "matchPackageNames": ["*", "!/^Microsoft\\./", "!/^System\\./", "!/^Aspire\\./"],
+      "matchPackageNames": ["!/^Microsoft\\./", "!/^System\\./", "!/^Aspire\\./"],
       "groupName": "nuget other"
     },
     {

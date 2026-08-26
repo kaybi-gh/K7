@@ -64,6 +64,7 @@ jobs:
           RENOVATE_PLATFORM: github
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_BINARY_SOURCE: global
+          RENOVATE_GIT_AUTHOR: 'Kaybi <13943086+kaybi-gh@users.noreply.github.com>'
           LOG_LEVEL: info
           EVENT_NAME: ${{ github.event_name }}
         # Pin Renovate CLI; bump intentionally when upgrading the bot itself.
