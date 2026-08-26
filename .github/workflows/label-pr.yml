@@ -12,7 +12,9 @@ permissions:
 jobs:
   autolabel:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    if: >
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'renovate[bot]'
     steps:
       # Do not checkout PR head under pull_request_target (privileged token).
       # release-drafter and actions/labeler read config from the default branch.

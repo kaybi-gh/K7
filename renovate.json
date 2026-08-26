@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScope(deps)"
+  ],
+  "timezone": "Europe/Paris",
+  "schedule": ["* 5-9 * * 1"],
+  "labels": ["dependencies", "chore"],
+  "prConcurrentLimit": 15,
+  "prHourlyLimit": 5,
+  "rangeStrategy": "bump",
+  "osvVulnerabilityAlerts": true,
+  "binarySource": "global",
+  "packageRules": [
+    {
+      "description": "Group all other NuGet packages (CPM)",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["*", "!/^Microsoft\\./", "!/^System\\./", "!/^Aspire\\./"],
+      "groupName": "nuget other"
+    },
+    {
+      "description": "Group Microsoft / System / Aspire NuGet packages (CPM)",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["/^Microsoft\\./", "/^System\\./", "/^Aspire\\./"],
+      "groupName": "nuget microsoft"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "description": "Group Dockerfile base image updates",
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker"
+    },
+    {
+      "description": "Group devcontainer feature updates",
+      "matchManagers": ["devcontainer"],
+      "groupName": "devcontainers"
+    }
+  ]
+}

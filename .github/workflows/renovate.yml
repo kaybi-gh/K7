@@ -1,0 +1,68 @@
+# Renovate dependency updates (NuGet including MAUI, Docker, GitHub Actions, devcontainers).
+# Runs on the host runner (not the Mend cloud app) so maui-android workloads are available
+# and android-arm / Fire Stick RIDs restore correctly.
+#
+# Required secret: RENOVATE_TOKEN
+#   Classic PAT: scopes `repo` + `workflow` (needed to bump Actions in .github/workflows).
+#   Or a fine-grained PAT / GitHub App installation token with contents, PRs, workflows, issues.
+# See docs/dev/developing.md#dependency-updates
+
+name: Renovate
+
+on:
+  schedule:
+    # Mondays 05:00 UTC (~07:00 Europe/Paris in winter)
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --skip-manifest-update
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Require RENOVATE_TOKEN
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [ -z "${RENOVATE_TOKEN}" ]; then
+            echo "::error::Missing repository secret RENOVATE_TOKEN (classic PAT with repo + workflow, or equivalent App token). See docs/dev/developing.md#dependency-updates"
+            exit 1
+          fi
+
+      - name: Run Renovate
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_PLATFORM: github
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_BINARY_SOURCE: global
+          LOG_LEVEL: info
+        # Pin Renovate CLI; bump intentionally when upgrading the bot itself.
+        run: npx --yes renovate@44.46.4

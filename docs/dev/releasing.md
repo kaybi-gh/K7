@@ -58,6 +58,7 @@ Prefer repository secrets so APK updates keep a stable signature:
 | `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
 | `ANDROID_KEY_ALIAS` | Key alias |
 | `ANDROID_KEY_PASSWORD` | Key password (defaults to store password if unset) |
+| `RENOVATE_TOKEN` | Dependency update bot (see [Developing - Dependency updates](developing.md#dependency-updates)) |
 
 If secrets are missing, CI generates an ephemeral keystore (sideload only; signature changes each run).
 

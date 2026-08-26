@@ -28,6 +28,6 @@ Start with **[Contributing](../CONTRIBUTING.md)** (setup, style, PRs). Then:
 | [Video playback](dev/video-playback.md) | MAUI native overlay, Windows Video.js / `#EXT-X-MAP` |
 | [Playback bookmarks](dev/playback-bookmarks.md) | Keep Watching, resume position, series next-up |
 | [Design](dev/design.md) | UI constraints, tokens, anti-patterns |
-| [Developing](dev/developing.md) | Clients, DesignSystem, localization, API, testing |
+| [Developing](dev/developing.md) | Clients, DesignSystem, localization, API, testing, Renovate |
 | [Releasing](dev/releasing.md) | Tags, Docker image, demo media, screenshots |
 | [AGENTS.md](../AGENTS.md) | Agent / Copilot instructions |
