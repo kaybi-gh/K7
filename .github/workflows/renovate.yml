@@ -68,10 +68,11 @@ jobs:
           LOG_LEVEL: info
           EVENT_NAME: ${{ github.event_name }}
         # Pin Renovate CLI; bump intentionally when upgrading the bot itself.
-        # Manual runs ignore the Monday window in renovate.json.
+        # Weekly cron uses a Monday window; workflow_dispatch runs immediately.
         run: |
           set -euo pipefail
-          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
-            export RENOVATE_SCHEDULE="at any time"
+          if [ "${EVENT_NAME}" = "schedule" ]; then
+            export RENOVATE_SCHEDULE='["* 5-9 * * 1"]'
+            export RENOVATE_TIMEZONE="Europe/Paris"
           fi
           npx --yes renovate@44.46.4

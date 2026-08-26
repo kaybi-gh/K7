@@ -8,7 +8,6 @@
     ":semanticCommitScope(deps)"
   ],
   "timezone": "Europe/Paris",
-  "schedule": ["* 5-9 * * 1"],
   "labels": ["dependencies", "chore"],
   "prConcurrentLimit": 15,
   "prHourlyLimit": 5,
