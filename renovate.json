@@ -13,7 +13,6 @@
   "prHourlyLimit": 5,
   "rangeStrategy": "bump",
   "osvVulnerabilityAlerts": true,
-  "platformCommit": "enabled",
   "packageRules": [
     {
       "description": "Group all other NuGet packages (CPM)",
