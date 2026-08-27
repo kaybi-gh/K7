@@ -31,6 +31,11 @@ public class GetMusicRadioQueryHandler(
     LiteMediaProjectionService liteMediaProjection)
     : IRequestHandler<GetMusicRadioQuery, List<BaseMedia>>
 {
+    private const int DiscoveryAiSeedCount = 5;
+    private const int DiscoveryAiMinSimilarPerSeed = 40;
+    private const int DiscoveryAiFingerprintMinCount = 80;
+    private const double FavoriteRatingThreshold = 5;
+
     public async Task<List<BaseMedia>> Handle(GetMusicRadioQuery request, CancellationToken cancellationToken)
     {
         var userId = currentUser.Id;
@@ -214,15 +219,119 @@ public class GetMusicRadioQueryHandler(
         Guid[]? excludeIds,
         CancellationToken ct)
     {
-        if (!await musicIntelligenceService.IsAvailableAsync(ct))
+        // User-triggered: do not block on a stale unreachable cache (same as sonic search).
+        if (!await musicIntelligenceService.IsEnabledAsync(ct))
             return [];
 
-        var excludeCount = excludeIds?.Length ?? 0;
-        var candidateCount = Math.Clamp((limit + excludeCount) * 5, limit + excludeCount, 250);
-        var trackIds = await musicIntelligenceService.GetDiscoveryTracksAsync(candidateCount, ct);
-        var filteredIds = FilterExcluded(trackIds, excludeIds, candidateCount);
-        var tracks = await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
-        return FilterUnexploredTracks(tracks, filteredIds, userId, limit);
+        var exclude = new HashSet<Guid>(excludeIds ?? []);
+        var seedIds = await PickTasteSeedTrackIdsAsync(userId, libraryIds, DiscoveryAiSeedCount, ct);
+        var seen = new HashSet<Guid>(exclude);
+        var candidateIds = new List<Guid>();
+
+        if (seedIds.Count > 0)
+        {
+            foreach (var seedId in seedIds)
+                seen.Add(seedId);
+
+            var perSeed = Math.Max(limit * 8, DiscoveryAiMinSimilarPerSeed);
+            var seedMeta = await context.Medias
+                .OfType<MusicTrack>()
+                .AsNoTracking()
+                .Where(t => seedIds.Contains(t.Id))
+                .Select(t => new
+                {
+                    t.Id,
+                    t.Title,
+                    Artist = t.Artist != null
+                        ? t.Artist.Title
+                        : t.Album.Artist != null ? t.Album.Artist.Title : null
+                })
+                .ToListAsync(ct);
+
+            var similarBatches = await Task.WhenAll(seedMeta.Select(seed =>
+                musicIntelligenceService.GetSimilarTracksAsync(
+                    seed.Id,
+                    perSeed,
+                    seed.Title,
+                    seed.Artist,
+                    ct)));
+
+            candidateIds.AddRange(InterleaveUnique(
+                similarBatches.Select(batch => (batch ?? []).Select(m => m.ItemId).ToList()).ToList(),
+                seen));
+        }
+
+        if (candidateIds.Count == 0)
+        {
+            // Enough neighbors that AudioMuse seed tracks (already played) do not fill the whole list.
+            var fingerprintCount = Math.Max(limit * 5, DiscoveryAiFingerprintMinCount);
+            var fingerprintIds = await musicIntelligenceService.GetDiscoveryTracksAsync(fingerprintCount, ct);
+            candidateIds.AddRange(fingerprintIds.Where(seen.Add));
+        }
+
+        if (candidateIds.Count == 0)
+            return [];
+
+        var tracks = await LoadTracksByIdsAsync(candidateIds, userId, libraryIds, ct);
+        var unexplored = FilterUnexploredTracks(tracks, candidateIds, userId, limit);
+        if (unexplored.Count > 0)
+            return unexplored;
+
+        return tracks.Take(limit).ToList();
+    }
+
+    private async Task<List<Guid>> PickTasteSeedTrackIdsAsync(
+        Guid? userId,
+        Guid[]? libraryIds,
+        int seedCount,
+        CancellationToken ct)
+    {
+        var query = BuildLightTrackIdQuery(userId, libraryIds);
+
+        if (userId is { } uid)
+        {
+            var favoriteMediaIds = await context.Ratings
+                .OfType<UserRating>()
+                .AsNoTracking()
+                .Where(r => r.UserId == uid && r.Value > FavoriteRatingThreshold)
+                .OrderByDescending(r => r.Value)
+                .ThenByDescending(r => r.LastModified)
+                .Select(r => r.MediaId)
+                .ToListAsync(ct);
+
+            if (favoriteMediaIds.Count > 0)
+            {
+                var favoriteSet = favoriteMediaIds.ToHashSet();
+                var favoriteTrackIds = await query
+                    .Where(t => favoriteSet.Contains(t.Id) || favoriteSet.Contains(t.AlbumId))
+                    .Select(t => t.Id)
+                    .Take(seedCount)
+                    .ToListAsync(ct);
+
+                if (favoriteTrackIds.Count > 0)
+                    return favoriteTrackIds;
+            }
+
+            var playedIds = await query
+                .Where(t => t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
+                .OrderByDescending(t => t.UserMediaStates
+                    .Where(s => s.UserId == uid)
+                    .Select(s => s.PlayCount)
+                    .FirstOrDefault())
+                .Select(t => t.Id)
+                .Take(seedCount)
+                .ToListAsync(ct);
+
+            if (playedIds.Count > 0)
+                return playedIds;
+        }
+
+        var randomId = await query
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync(ct);
+
+        return randomId == Guid.Empty ? [] : [randomId];
     }
 
     private async Task<List<BaseMedia>> GetTimeCapsule(
@@ -445,6 +554,27 @@ public class GetMusicRadioQueryHandler(
             .Take(limit)
             .Cast<BaseMedia>()
             .ToList();
+    }
+
+    private static List<Guid> InterleaveUnique(IReadOnlyList<List<Guid>> batches, HashSet<Guid> seen)
+    {
+        var result = new List<Guid>();
+        var max = 0;
+        foreach (var batch in batches)
+            max = Math.Max(max, batch.Count);
+
+        for (var i = 0; i < max; i++)
+        {
+            foreach (var batch in batches)
+            {
+                if (i >= batch.Count)
+                    continue;
+                if (seen.Add(batch[i]))
+                    result.Add(batch[i]);
+            }
+        }
+
+        return result;
     }
 
     private static List<T> Shuffle<T>(List<T> list)

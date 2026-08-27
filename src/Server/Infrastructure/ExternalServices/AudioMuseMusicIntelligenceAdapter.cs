@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
-using K7.Shared.Dtos;
 using K7.Server.Domain.Settings;
+using K7.Shared.Dtos;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.ExternalServices;
@@ -167,7 +167,14 @@ public class AudioMuseMusicIntelligenceAdapter(
     {
         await ConfigureClientAsync(cancellationToken);
         var response = await httpClient.GetAsync($"api/sonic_fingerprint/generate?n={count}", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "Discovery tracks request failed with {StatusCode}",
+                (int)response.StatusCode);
+            return [];
+        }
+
         return ParseItemIds(await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken));
     }
 
