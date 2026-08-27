@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160" viewBox="0 0 160 80" role="img" aria-label="K7 logo on light">
+  <rect width="160" height="80" fill="#e4e3d9"/>
+  <g transform="translate(16,5)">
+    <g fill="#262420">
+      <path d="m 0,0 v 65 c 0,4.802 6.115,6.839 9,3 l 1,-1.334 V 0 Z"/>
+      <path d="m 11,48.667 v 16.667 L 60,0 H 47.5 Z"/>
+      <path d="m 34.367,35.851 -6.236,8.316 19.37,25.834 h 12.5 z"/>
+      <path d="m 96.751,10 -7.5,-10 h -21.25 l -7.5,10 z"/>
+      <path d="m 111.134,29.156 -6.253,-8.325 -36.88,49.17 h 12.5 z"/>
+    </g>
+    <g fill="#c49a48">
+      <path d="m 90.501,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+      <path d="m 124.751,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+    </g>
+  </g>
+</svg>
