@@ -1089,8 +1089,21 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnSourceChanged(PlayerSource source)
     {
+        _isSeekBarScrubbing = false;
+        _pendingLayerSync = true;
         RequestRender();
+        _ = SoftCancelSeekBarEditingAsync();
         _ = EnsureMediaSegmentsLoadedAsync(source.MediaId);
+        _ = FocusOverlayRootAsync();
+    }
+
+    private async Task FocusOverlayRootAsync()
+    {
+        try
+        {
+            await _overlayRef.FocusAsync();
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
     }
 
     private async Task EnsureMediaSegmentsLoadedAsync(Guid? mediaId)

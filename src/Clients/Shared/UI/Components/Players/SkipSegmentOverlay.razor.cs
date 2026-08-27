@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Interfaces;
@@ -27,35 +28,18 @@ public partial class SkipSegmentOverlay : IDisposable
     private K7.Shared.Enums.MediaSegmentType _skippedSegmentType;
     private CancellationTokenSource? _notificationCts;
     private Guid? _loadedMediaId;
+    private int _loadGeneration;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (MediaId is not null && MediaId != _loadedMediaId)
-        {
-            _loadedMediaId = MediaId;
-            _skipState = default;
-            _activeSegment = null;
-            _visible = false;
-
-            try
-            {
-                _segments = await MediaService.GetMediaSegmentsAsync(MediaId.Value);
-                _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
-            }
-            catch
-            {
-                _segments = null;
-                _settings = null;
-            }
-
-            ApplyCurrentTime(render: true);
-        }
+        await LoadSegmentsAsync(PlayerService.Source?.MediaId ?? MediaId);
     }
 
     protected override void OnInitialized()
     {
         PlayerService.CurrentTimeChanged += OnTimeChanged;
         PlayerService.PlayerUxSettingsChanged += OnPlayerUxSettingsChanged;
+        PlayerService.SourceChanged += OnSourceChanged;
     }
 
     private void OnPlayerUxSettingsChanged()
@@ -69,12 +53,77 @@ public partial class SkipSegmentOverlay : IDisposable
         ApplyCurrentTime(render: false);
     }
 
+    private void OnSourceChanged(PlayerSource source) =>
+        _ = InvokeAsync(() => LoadSegmentsAsync(source.MediaId));
+
+    private async Task LoadSegmentsAsync(Guid? mediaId)
+    {
+        if (mediaId is null)
+        {
+            _loadGeneration++;
+            _loadedMediaId = null;
+            _segments = null;
+            ResetSkipSession();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (mediaId == _loadedMediaId)
+            return;
+
+        _loadGeneration++;
+        var generation = _loadGeneration;
+        _loadedMediaId = mediaId;
+        _segments = null;
+        ResetSkipSession();
+
+        try
+        {
+            var segments = await MediaService.GetMediaSegmentsAsync(mediaId.Value);
+            var settings = _settings ?? await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+            if (generation != _loadGeneration)
+                return;
+
+            _segments = segments;
+            _settings = settings;
+        }
+        catch
+        {
+            if (generation != _loadGeneration)
+                return;
+
+            _segments = null;
+        }
+
+        ApplyCurrentTime(render: true);
+    }
+
+    private void ResetSkipSession()
+    {
+        _skipState = default;
+        _activeSegment = null;
+        _visible = false;
+        _showSkippedNotification = false;
+    }
+
     private void OnTimeChanged(double currentTimeSeconds) => ApplyTime(currentTimeSeconds, render: true);
 
     private void ApplyCurrentTime(bool render) => ApplyTime(PlayerService.CurrentTime, render);
 
     private void ApplyTime(double currentTimeSeconds, bool render)
     {
+        if (_segments is null)
+        {
+            if (_visible || _activeSegment is not null)
+            {
+                ResetSkipSession();
+                if (render)
+                    _ = InvokeAsync(StateHasChanged);
+            }
+
+            return;
+        }
+
         var result = SkipSegmentPresenter.Tick(
             _skipState,
             _segments,
@@ -120,6 +169,7 @@ public partial class SkipSegmentOverlay : IDisposable
         _notificationCts?.Dispose();
         PlayerService.CurrentTimeChanged -= OnTimeChanged;
         PlayerService.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
+        PlayerService.SourceChanged -= OnSourceChanged;
     }
 
     private void ShowSkippedNotification(K7.Shared.Enums.MediaSegmentType type)

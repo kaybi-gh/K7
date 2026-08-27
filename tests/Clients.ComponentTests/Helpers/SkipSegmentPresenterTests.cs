@@ -193,4 +193,23 @@ public class SkipSegmentPresenterTests
         reentered.State.Visible.Should().BeTrue();
         reentered.State.Dismissed.Should().BeFalse();
     }
+
+    [Test]
+    public void Tick_ShouldShowIntro_WhenStateResetAfterPreviousEpisodeOutro()
+    {
+        var outroShown = SkipSegmentPresenter.Tick(
+            default, [Intro, Outro], Settings(), 1205, chromeVisible: false, T0);
+        var outroDismissed = SkipSegmentPresenter.Tick(
+            outroShown.State, [Intro, Outro], Settings(), 1208, chromeVisible: false,
+            T0 + SkipSegmentPresenter.DisplayDuration);
+
+        outroDismissed.State.Dismissed.Should().BeTrue();
+
+        var nextEpisode = SkipSegmentPresenter.Tick(
+            default, [Intro, Outro], Settings(), 5, chromeVisible: false, T0.AddMinutes(1));
+
+        nextEpisode.State.Visible.Should().BeTrue();
+        nextEpisode.State.Dismissed.Should().BeFalse();
+        nextEpisode.State.ActiveSegment.Should().Be(Intro);
+    }
 }

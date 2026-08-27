@@ -1249,6 +1249,12 @@ var SpatialNav = (function () {
         return false;
     }
 
+    function nativeTvHoldOwnsHiddenArrows() {
+        // Android TV Activity already called tvDpadHoldStart via EvaluateJavascript.
+        // Swallow the duplicate keydown so we do not reset the 400ms long-press timer.
+        return !!(window.K7TvVideo || window.__k7TvNativeRemote);
+    }
+
     function handleHiddenVideoPlayerArrow(key, code, e) {
         if (!_videoPlayerRemoteRef) return false;
 
@@ -1256,18 +1262,24 @@ var SpatialNav = (function () {
         e.stopImmediatePropagation();
 
         var keyCode = e.keyCode || 0;
-        // L/R while chrome is hidden: short-skip is owned by K7.tvDpadHold* on Android TV.
-        // Keep a non-hold fallback for hosts that still deliver keydown here.
+        // L/R while chrome is hidden: short-skip vs long-scrub via tvDpadHold*.
+        // Web keyboard never gets the native EvaluateJavascript call - start the hold here.
         if (key === 'ArrowLeft' || code === 'ArrowLeft' || keyCode === 37 || keyCode === 21) {
-            if (window.K7 && K7.tvDpadHoldStart)
+            if (nativeTvHoldOwnsHiddenArrows())
                 return true;
-            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', -1);
+            if (window.K7 && K7.tvDpadHoldStart)
+                K7.tvDpadHoldStart('ArrowLeft', keyCode);
+            else
+                invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', -1);
             return true;
         }
         if (key === 'ArrowRight' || code === 'ArrowRight' || keyCode === 39 || keyCode === 22) {
-            if (window.K7 && K7.tvDpadHoldStart)
+            if (nativeTvHoldOwnsHiddenArrows())
                 return true;
-            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', 1);
+            if (window.K7 && K7.tvDpadHoldStart)
+                K7.tvDpadHoldStart('ArrowRight', keyCode);
+            else
+                invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteSkipDirection', 1);
             return true;
         }
         if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -1432,6 +1444,10 @@ var SpatialNav = (function () {
 
         if (key === 'ArrowLeft' || key === 'ArrowRight' || code === 'ArrowLeft' || code === 'ArrowRight'
             || e.keyCode === 37 || e.keyCode === 39 || e.keyCode === 21 || e.keyCode === 22) {
+            // Web keyboard starts the hold from handleHiddenVideoPlayerArrow; always stop it
+            // on keyup even if long-press already revealed chrome (interval would keep scrubbing).
+            if (window.K7 && K7.tvDpadHoldStop && window.K7._tvDpadHold)
+                K7.tvDpadHoldStop(true);
             var overlay = getVideoControlsOverlay(document.activeElement);
             if (overlay && isVideoControlsHidden(overlay)) {
                 // Phone/Tablet keyboard accumulate-seek commits on keyup. TV/Desktop already
@@ -2927,6 +2943,11 @@ var SpatialNav = (function () {
             }
 
             // Chrome hidden: arm short-skip vs long-scrub.
+            // Ignore key-repeat while pending/scrubbing so OS auto-repeat cannot reset the
+            // 400ms long-press timer (web keyboard) or stack a second hold.
+            if (window.K7._tvDpadHold && window.K7._tvDpadHold.dir === dir
+                && (window.K7._tvDpadHold.mode === 'pending' || window.K7._tvDpadHold.mode === 'scrub'))
+                return;
             window.K7.tvDpadHoldStop(false);
             window.K7._tvDpadHold = {
                 dir: dir,

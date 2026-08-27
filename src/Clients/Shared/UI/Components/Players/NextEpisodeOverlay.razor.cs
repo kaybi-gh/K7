@@ -240,6 +240,8 @@ public partial class NextEpisodeOverlay : IDisposable
         var serieId = PlaybackProgressTracker.CurrentSerieId;
 
         Reset();
+        await PopLayerAsync();
+        await InvokeAsync(StateHasChanged);
 
         PlaybackProgressTracker.StopTracking();
 
