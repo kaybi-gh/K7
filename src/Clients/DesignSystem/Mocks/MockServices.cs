@@ -339,7 +339,14 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         return Task.CompletedTask;
     }
 
-    public void AddToQueue(AudioQueueItem track) { _queue.Add(track); QueueChanged?.Invoke(); }
+    public void AddToQueue(AudioQueueItem track) => AddToQueue([track]);
+    public void AddToQueue(IReadOnlyList<AudioQueueItem> tracks)
+    {
+        if (tracks.Count == 0)
+            return;
+        _queue.AddRange(tracks);
+        QueueChanged?.Invoke();
+    }
     public void AddToQueueNext(AudioQueueItem track) { _queue.Insert(CurrentIndex + 1, track); QueueChanged?.Invoke(); }
     public void RemoveFromQueue(int index) { if (index >= 0 && index < _queue.Count) { _queue.RemoveAt(index); QueueChanged?.Invoke(); } }
     public void ClearQueue() { _queue.Clear(); QueueChanged?.Invoke(); }

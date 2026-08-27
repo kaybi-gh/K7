@@ -383,11 +383,20 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         ActivePlaylistChanged?.Invoke();
     }
 
-    public void AddToQueue(AudioQueueItem track)
+    public void AddToQueue(AudioQueueItem track) => AddToQueue([track]);
+
+    public void AddToQueue(IReadOnlyList<AudioQueueItem> tracks)
     {
-        _queue.Add(track);
-        if (_shuffle)
-            _shuffleOrder.Add(_queue.Count - 1);
+        if (tracks.Count == 0)
+            return;
+
+        foreach (var track in tracks)
+        {
+            _queue.Add(track);
+            if (_shuffle)
+                _shuffleOrder.Add(_queue.Count - 1);
+        }
+
         QueueChanged?.Invoke();
     }
 

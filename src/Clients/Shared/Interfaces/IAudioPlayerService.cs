@@ -69,6 +69,7 @@ public interface IAudioPlayerService
     Task PlayShuffledAsync(IEnumerable<AudioQueueItem> tracks, Guid? playlistId = null, CancellationToken cancellationToken = default);
     Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default);
     void AddToQueue(AudioQueueItem track);
+    void AddToQueue(IReadOnlyList<AudioQueueItem> tracks);
     void AddToQueueNext(AudioQueueItem track);
     void RemoveFromQueue(int index);
     void ClearQueue();

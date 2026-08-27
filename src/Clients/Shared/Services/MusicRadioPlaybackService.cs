@@ -120,8 +120,7 @@ public sealed class MusicRadioPlaybackService : IMusicRadioPlaybackService, IDis
 
                     var excludeIds = _audio.Queue.Select(t => t.MediaId).ToArray();
                     var moreTracks = await FetchTracksAsync(request, RefillBatchSize, excludeIds, cancellationToken);
-                    foreach (var track in moreTracks)
-                        _audio.AddToQueue(track);
+                    _audio.AddToQueue(moreTracks);
 
                     if (moreTracks.Count == 0)
                         await Task.Delay(EmptyPoolRetryInterval, cancellationToken);

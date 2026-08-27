@@ -63,6 +63,11 @@ public class K7MediaLibraryService : MediaLibraryService,
     private bool _videoSessionAdded;
     private bool _syncingFromExoPlayer;
     private IList<MediaItem>? _resolvedQueueMediaItems;
+    private readonly HashSet<Guid> _radioMediaIdsOnPlayer = [];
+    private readonly SemaphoreSlim _radioPlaylistSync = new(1, 1);
+    private bool _radioAwaitingMedia3Playlist;
+    private CancellationTokenSource? _radioSyncDebounceCts;
+    private static readonly TimeSpan RadioPlaylistSyncDebounce = TimeSpan.FromMilliseconds(400);
 
     public override void OnCreate()
     {
@@ -179,10 +184,12 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         UnsubscribeFromAudioPlayerEvents();
         UnsubscribeFromVideoPlayerEvents();
+        CancelRadioPlaylistSyncDebounce();
         _fadeCts?.Cancel();
         _fadeCts?.Dispose();
         _fadeCts = null;
         _audioEqualizer.Dispose();
+        _radioPlaylistSync.Dispose();
         _videoSession?.Release();
         _session?.Release();
         _player?.RemoveListener(this);
@@ -230,6 +237,9 @@ public class K7MediaLibraryService : MediaLibraryService,
             // must drive queue advance (same as iOS DidPlayToEndTime -> OnTrackEndedAsync).
             // Multi-item Android Auto playlists auto-advance via OnMediaItemTransition instead;
             // STATE_ENDED only fires after the last playlist item.
+            if (playbackState == 3)
+                TryCompleteRadioPlaylistHandoff();
+
             if (playbackState == 4)
             {
                 if (_crossfadeInProgress)
@@ -336,6 +346,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (reason == 1 && !_crossfadeInProgress
             && _resolvedQueueMediaItems is not null && _resolvedQueueMediaItems.Count > 1)
         {
+            TryCompleteRadioPlaylistHandoff();
             _ = Task.Run(async () =>
             {
                 _syncingFromExoPlayer = true;
@@ -374,6 +385,8 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.StopRequested += OnStopRequested;
         _audioPlayerService.SeekRequested += OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
+        _audioPlayerService.QueueChanged += OnQueueChanged;
+        _audioPlayerService.ActiveRadioChanged += OnActiveRadioChanged;
         _audioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
         _audioPlayerService.FadeOutRequested += OnFadeOutRequested;
         _audioPlayerService.FadeResetRequested += OnFadeResetRequested;
@@ -393,6 +406,8 @@ public class K7MediaLibraryService : MediaLibraryService,
         _audioPlayerService.StopRequested -= OnStopRequested;
         _audioPlayerService.SeekRequested -= OnSeekRequested;
         _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
+        _audioPlayerService.QueueChanged -= OnQueueChanged;
+        _audioPlayerService.ActiveRadioChanged -= OnActiveRadioChanged;
         _audioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
         _audioPlayerService.FadeOutRequested -= OnFadeOutRequested;
         _audioPlayerService.FadeResetRequested -= OnFadeResetRequested;
@@ -856,6 +871,144 @@ public class K7MediaLibraryService : MediaLibraryService,
         _forwardingPlayer?.NotifyQueueChanged();
     }
 
+    private void OnActiveRadioChanged()
+    {
+        if (_audioPlayerService?.ActiveRadioTitle is not null)
+            return;
+
+        _radioAwaitingMedia3Playlist = false;
+        _radioMediaIdsOnPlayer.Clear();
+        CancelRadioPlaylistSyncDebounce();
+    }
+
+    private void OnQueueChanged()
+    {
+        if (_radioAwaitingMedia3Playlist)
+            return;
+        if (string.IsNullOrEmpty(_audioPlayerService?.ActiveRadioTitle))
+            return;
+
+        ScheduleRadioPlaylistSync();
+    }
+
+    private void TryCompleteRadioPlaylistHandoff()
+    {
+        if (!_radioAwaitingMedia3Playlist)
+            return;
+        if (_player is null || _player.MediaItemCount == 0)
+            return;
+
+        _radioAwaitingMedia3Playlist = false;
+        ScheduleRadioPlaylistSync();
+    }
+
+    private void ScheduleRadioPlaylistSync()
+    {
+        CancelRadioPlaylistSyncDebounce();
+        var cts = new CancellationTokenSource();
+        _radioSyncDebounceCts = cts;
+        _ = DebouncedRadioPlaylistSyncAsync(cts.Token);
+    }
+
+    private void CancelRadioPlaylistSyncDebounce()
+    {
+        _radioSyncDebounceCts?.Cancel();
+        _radioSyncDebounceCts?.Dispose();
+        _radioSyncDebounceCts = null;
+    }
+
+    private async Task DebouncedRadioPlaylistSyncAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(RadioPlaylistSyncDebounce, cancellationToken);
+        }
+        catch (System.OperationCanceledException)
+        {
+            return;
+        }
+
+        await SyncRadioPlaylistToPlayerAsync();
+    }
+
+    private async Task SyncRadioPlaylistToPlayerAsync()
+    {
+        if (_audioPlayerService is null || _player is null)
+            return;
+        if (string.IsNullOrEmpty(_audioPlayerService.ActiveRadioTitle))
+            return;
+        if (_radioAwaitingMedia3Playlist)
+            return;
+
+        try
+        {
+            await _radioPlaylistSync.WaitAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+
+        try
+        {
+            while (true)
+            {
+                if (string.IsNullOrEmpty(_audioPlayerService.ActiveRadioTitle))
+                    return;
+
+                var missing = _audioPlayerService.Queue
+                    .Where(t => !_radioMediaIdsOnPlayer.Contains(t.MediaId))
+                    .ToList();
+                if (missing.Count == 0)
+                    return;
+
+                var toAdd = new List<MediaItem>();
+                foreach (var track in missing)
+                {
+                    var item = await TryCreatePlayerMediaItemAsync(track);
+                    if (item is null)
+                        continue;
+
+                    toAdd.Add(item);
+                    _radioMediaIdsOnPlayer.Add(track.MediaId);
+                }
+
+                if (toAdd.Count == 0)
+                    return;
+
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    if (_player is null)
+                        return;
+
+                    _player.AddMediaItems(toAdd);
+                    if (_resolvedQueueMediaItems is List<MediaItem> resolved)
+                        resolved.AddRange(toAdd);
+                    else
+                        _resolvedQueueMediaItems = [.. toAdd];
+
+                    _forwardingPlayer?.NotifyQueueChanged();
+                    Log.Info(Tag, $"Radio playlist appended {toAdd.Count} track(s), player now has {_player.MediaItemCount}");
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Radio playlist sync failed: {ex.Message}");
+        }
+        finally
+        {
+            try
+            {
+                _radioPlaylistSync.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Service is tearing down.
+            }
+        }
+    }
+
     private bool _acceptEncodingConfigured;
 
     private void EnsureServerBaseAddress()
@@ -1261,56 +1414,61 @@ public class K7MediaLibraryService : MediaLibraryService,
 
                     // Block OnSourceChanged while resolving so Media3 owns the first SetMediaItem.
                     _syncingFromExoPlayer = true;
-                    IReadOnlyList<AudioQueueItem> queueItems;
-                    try
-                    {
-                        queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
-                    }
-                    finally
-                    {
-                        if (isRadio)
-                            _syncingFromExoPlayer = false;
-                    }
+                    var queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
+                    if (isRadio && _audioPlayerService is { Queue.Count: > 0 })
+                        queueItems = _audioPlayerService.Queue.ToArray();
 
                     Log.Info(Tag, $"OnAddMediaItems: GetPlayableItemsAsync({mediaId}) returned {queueItems.Count} tracks");
 
                     if (queueItems.Count > 0)
                     {
                         var failCount = 0;
-                        var tracksToResolve = isRadio ? queueItems.Take(1) : queueItems;
-                        foreach (var track in tracksToResolve)
+                        var resolvedList = new List<MediaItem>();
+                        var resolvedIds = new HashSet<Guid>();
+
+                        async Task ResolveTracksAsync(IReadOnlyList<AudioQueueItem> tracks)
                         {
-                            var streamUrl = await GetStreamUrl(track);
-                            if (streamUrl is null)
+                            foreach (var track in tracks)
                             {
-                                failCount++;
-                                continue;
+                                if (!resolvedIds.Add(track.MediaId))
+                                    continue;
+
+                                var resolved = await TryCreatePlayerMediaItemAsync(track);
+                                if (resolved is null)
+                                {
+                                    resolvedIds.Remove(track.MediaId);
+                                    failCount++;
+                                    continue;
+                                }
+
+                                resolvedList.Add(resolved);
+                                resolvedItems.Add(resolved);
                             }
-
-                            var resolved = new MediaItem.Builder()
-                                .SetMediaId(track.MediaId.ToString())!
-                                .SetUri(streamUrl)!
-                                .SetMediaMetadata(BuildTrackMetadata(track))!
-                                .Build()!;
-
-                            resolvedItems.Add(resolved);
                         }
+
+                        await ResolveTracksAsync(queueItems);
+                        if (isRadio && _audioPlayerService is not null
+                            && _audioPlayerService.Queue.Count > resolvedList.Count)
+                            await ResolveTracksAsync(_audioPlayerService.Queue.ToArray());
 
                         if (failCount > 0)
                             Log.Warn(Tag, $"OnAddMediaItems: {failCount} tracks failed to get stream URL");
 
+                        _resolvedQueueMediaItems = resolvedList;
+
                         if (isRadio)
                         {
-                            // Radio keeps single-item + refill via MusicRadioPlaybackService.
-                            _resolvedQueueMediaItems = null;
+                            _radioMediaIdsOnPlayer.Clear();
+                            foreach (var id in resolvedIds)
+                                _radioMediaIdsOnPlayer.Add(id);
+                            _radioAwaitingMedia3Playlist = true;
                             _pendingTrack = _audioPlayerService?.CurrentTrack ?? queueItems[0];
+                            _syncingFromExoPlayer = false;
                         }
                         else
                         {
-                            var resolvedList = new List<MediaItem>();
-                            for (var i = 0; i < resolvedItems.Size(); i++)
-                                resolvedList.Add((MediaItem)resolvedItems.Get(i)!);
-                            _resolvedQueueMediaItems = resolvedList;
+                            _radioAwaitingMedia3Playlist = false;
+                            _radioMediaIdsOnPlayer.Clear();
 
                             try
                             {
@@ -1345,6 +1503,19 @@ public class K7MediaLibraryService : MediaLibraryService,
             Log.Info(Tag, $"OnAddMediaItems: returning {resolvedItems.Size()} resolved items to Media3");
             return (Java.Lang.Object)resolvedItems;
         });
+    }
+
+    private async Task<MediaItem?> TryCreatePlayerMediaItemAsync(AudioQueueItem track)
+    {
+        var streamUrl = await GetStreamUrl(track);
+        if (streamUrl is null)
+            return null;
+
+        return new MediaItem.Builder()
+            .SetMediaId(track.MediaId.ToString())!
+            .SetUri(streamUrl)!
+            .SetMediaMetadata(BuildTrackMetadata(track))!
+            .Build()!;
     }
 
     private async Task<string?> GetStreamUrl(AudioQueueItem track)
