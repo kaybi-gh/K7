@@ -101,6 +101,10 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 
 - ffmpeg window padding must not punch holes in playlist indices. A missing `N.m4s` with
   later segments on disk restarts ffmpeg at `N` only when that process is not already running
+- when an ffmpeg window finishes (or a GET hits an already-ready segment) and the request-driven
+  Target still sits past the highest ready index, the job continues the next window. Target stays
+  `requested + BufferSize` only - no whole-file remux while a session is open. That closes the
+  demuxed ExoPlayer underrun between windows without preparing segments the client has not asked for
 - when `HlsSegments` rows exist they drive copy and transcode (shared audio group / ABR).
   Without them, playback starts immediately on a 6s equal-length transcode grid
 - new keyframe HLS rows collapse bursts from `RemuxSeekClearanceMs` (250ms) up to 1s

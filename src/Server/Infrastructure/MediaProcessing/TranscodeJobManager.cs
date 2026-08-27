@@ -5,8 +5,10 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -178,9 +180,20 @@ public class TranscodeJobManager(
             gapDuration.TotalSeconds,
             segmentExists);
 
-        // If segment exists, nothing to do
+        // Segment ready: still continue if Target was bumped past the last ready index while
+        // ffmpeg was idle (GETs for existing .m4s used to return without starting the next window).
         if (segmentExists)
         {
+            await job.FfmpegStartLock.WaitAsync(cancellationToken);
+            try
+            {
+                await ContinueTowardClientTargetIfNeededAsync(job, allSegments, cancellationToken);
+            }
+            finally
+            {
+                job.FfmpegStartLock.Release();
+            }
+
             return;
         }
 
@@ -192,6 +205,7 @@ public class TranscodeJobManager(
             segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
             if (segmentExists)
             {
+                await ContinueTowardClientTargetIfNeededAsync(job, allSegments, cancellationToken);
                 return;
             }
 
@@ -683,15 +697,27 @@ public class TranscodeJobManager(
 
             _ = ffmpegTask.ContinueWith(t =>
             {
-                var fault = t.Exception?.GetBaseException();
-                if (fault is null or OperationCanceledException)
+                if (t.IsFaulted)
+                {
+                    var fault = t.Exception?.GetBaseException();
+                    if (fault is not null and not OperationCanceledException)
+                    {
+                        _ = PublishTranscodeFailedAsync(
+                            job.IndexedFileId,
+                            Path.GetFileName(job.InputFilePath),
+                            fault.Message);
+                    }
+
+                    return;
+                }
+
+                if (t.IsCanceled)
                     return;
 
-                _ = PublishTranscodeFailedAsync(
-                    job.IndexedFileId,
-                    Path.GetFileName(job.InputFilePath),
-                    fault.Message);
-            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                // Close the window-boundary gap when Target already sits past ready segments
+                // (client sliding window). Do not raise Target here - that stays request-driven.
+                _ = TryContinueAfterFfmpegWindowAsync(job, t);
+            }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
             job.FfmpegTask = ffmpegTask;
         }
@@ -704,6 +730,107 @@ public class TranscodeJobManager(
                 ex.Message);
             throw;
         }
+    }
+
+    private async Task TryContinueAfterFfmpegWindowAsync(TranscodeJob job, Task completedFfmpegTask)
+    {
+        if (!_activeJobs.ContainsKey(job.JobId))
+            return;
+
+        if (job.AttachedStreamSessions.IsEmpty)
+            return;
+
+        // Serialize with EnsureSegment / Restart so we never start a second ffmpeg.
+        await job.FfmpegStartLock.WaitAsync();
+        try
+        {
+            if (!_activeJobs.ContainsKey(job.JobId) || job.AttachedStreamSessions.IsEmpty)
+                return;
+
+            // A newer window already started, or StopFfmpeg cleared the task.
+            if (!ReferenceEquals(job.FfmpegTask, completedFfmpegTask))
+                return;
+
+            var allSegments = await LoadStreamingSegmentsForJobAsync(job.IndexedFileId);
+            if (allSegments.Count == 0)
+                return;
+
+            await ContinueTowardClientTargetIfNeededAsync(job, allSegments, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Job {JobId}: Failed to auto-continue after ffmpeg window", job.JobId);
+        }
+        finally
+        {
+            job.FfmpegStartLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Caller must hold <see cref="TranscodeJob.FfmpegStartLock"/>. Starts the next window only
+    /// when the request-driven Target is past the highest ready segment.
+    /// </summary>
+    private async Task ContinueTowardClientTargetIfNeededAsync(
+        TranscodeJob job,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        if (job.FfmpegTask is { IsCompleted: false })
+            return;
+
+        if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
+        {
+            var fault = job.FfmpegTask.Exception?.GetBaseException();
+            logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", job.JobId);
+            job.FfmpegTask = null;
+        }
+
+        var currentIndex = job.GetCurrentSegmentIndex();
+        if (!FfmpegWindowAutoContinue.ShouldContinueTowardClientTarget(
+                currentIndex,
+                job.TargetSegmentIndex,
+                allSegments.Count))
+        {
+            return;
+        }
+
+        logger.LogDebug(
+            "Job {JobId}: Continuing toward client target (current={Current}, target={Target})",
+            job.JobId,
+            currentIndex,
+            job.TargetSegmentIndex);
+
+        await ContinueJobAsync(job, allSegments, cancellationToken);
+    }
+
+    private async Task<List<HlsSegment>> LoadStreamingSegmentsForJobAsync(Guid indexedFileId)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var keyframeSegments = await HlsSegmentHelper.LoadSegmentsAsync(db, indexedFileId);
+        long totalDurationMs;
+        if (keyframeSegments.Count > 0)
+        {
+            totalDurationMs = keyframeSegments.Sum(s => s.Duration);
+        }
+        else
+        {
+            var entity = await db.IndexedFiles
+                .AsNoTracking()
+                .Include(f => f.FileMetadata)
+                .FirstOrDefaultAsync(f => f.Id == indexedFileId);
+            totalDurationMs = entity?.FileMetadata switch
+            {
+                VideoFileMetadata video => (long)video.Duration.TotalMilliseconds,
+                AudioFileMetadata audio => (long)audio.Duration.TotalMilliseconds,
+                _ => 0
+            };
+            if (totalDurationMs <= 0)
+                return [];
+        }
+
+        return HlsSegmentHelper.ResolveStreamingSegments(keyframeSegments, totalDurationMs);
     }
 
     private async Task PublishTranscodeFailedAsync(Guid indexedFileId, string? mediaTitle, string errorMessage)
