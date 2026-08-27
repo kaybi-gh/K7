@@ -1,14 +1,130 @@
 let players = {};
 
+// Match AndroidExoHlsTuning: VHS disables subtitle tracks on the first segment error.
+// Server returns 503 while ffmpeg extracts the sidecar VTT; retry before VHS sees it.
+const K7_VTT_503_MAX_ATTEMPTS = 12;
+const K7_VTT_503_MAX_BACKOFF_MS = 15_000;
+
+function isVttSubtitleUrl(uri) {
+    if (!uri || typeof uri !== 'string')
+        return false;
+
+    return /\.vtt(\?|#|$)/i.test(uri);
+}
+
+function getXhrStatusCode(response) {
+    if (!response)
+        return 0;
+
+    if (typeof response.statusCode === 'number')
+        return response.statusCode;
+
+    if (typeof response.status === 'number')
+        return response.status;
+
+    return 0;
+}
+
+function wrapXhrForVtt503Retry(originalXhr) {
+    const wrappedXhr = function (options, callback) {
+        const uri = options && (options.uri || options.url);
+        if (!isVttSubtitleUrl(uri) || typeof callback !== 'function')
+            return originalXhr(options, callback);
+
+        let attempt = 0;
+        let aborted = false;
+        let pendingTimer = null;
+        let activeRequest = null;
+
+        const request = {
+            abort: function () {
+                aborted = true;
+                if (pendingTimer !== null) {
+                    clearTimeout(pendingTimer);
+                    pendingTimer = null;
+                }
+                if (activeRequest && typeof activeRequest.abort === 'function')
+                    activeRequest.abort();
+            }
+        };
+
+        const tryRequest = function () {
+            if (aborted)
+                return;
+
+            attempt += 1;
+            activeRequest = originalXhr(options, function (err, response) {
+                activeRequest = null;
+                if (aborted)
+                    return;
+
+                const status = getXhrStatusCode(response);
+                if (status === 503 && attempt < K7_VTT_503_MAX_ATTEMPTS) {
+                    const exponent = Math.min(attempt - 1, 4);
+                    const delay = Math.min(500 * (1 << exponent), K7_VTT_503_MAX_BACKOFF_MS);
+                    pendingTimer = setTimeout(function () {
+                        pendingTimer = null;
+                        tryRequest();
+                    }, delay);
+                    return;
+                }
+
+                callback(err, response);
+            });
+        };
+
+        tryRequest();
+        return request;
+    };
+
+    Object.keys(originalXhr).forEach(function (key) {
+        if (key === 'original')
+            return;
+
+        const value = originalXhr[key];
+        wrappedXhr[key] = typeof value === 'function' ? value.bind(originalXhr) : value;
+    });
+
+    // Keep VHS on this xhr (same as the Windows stream bridge).
+    wrappedXhr.original = false;
+    wrappedXhr.__k7Vtt503Retry = true;
+    return wrappedXhr;
+}
+
+function ensureVtt503RetryXhr() {
+    if (!window.videojs)
+        return false;
+
+    const wrapHolder = function (holder) {
+        if (!holder || !holder.xhr || holder.xhr.__k7Vtt503Retry)
+            return;
+
+        holder.xhr = wrapXhrForVtt503Retry(holder.xhr);
+    };
+
+    wrapHolder(videojs);
+    wrapHolder(videojs.Vhs || videojs.VHS);
+    return true;
+}
+
+window.K7 = window.K7 || {};
+K7.ensureVtt503RetryXhr = ensureVtt503RetryXhr;
+
+// Install as soon as video.js is present (DesignSystem loads scripts sequentially).
+ensureVtt503RetryXhr();
+
 // Optional Windows MAUI stream bridge hooks (defined by MAUI wwwroot/js/windowsStreamFetch.js).
+// VTT 503 retry must stay outermost so bridge 503 responses are retried.
 function ensurePlatformStreamBridge() {
     if (window.K7 && typeof K7.ensureWindowsStreamBridge === 'function')
         K7.ensureWindowsStreamBridge();
+    ensureVtt503RetryXhr();
 }
 
 function notifyPlatformVideoJsPlayerCreated(player, id) {
     if (window.K7 && typeof K7.onVideoJsPlayerCreated === 'function')
         K7.onVideoJsPlayerCreated(player, id);
+    ensureVtt503RetryXhr();
 }
 
 function normalizeHlsMimeType(type) {

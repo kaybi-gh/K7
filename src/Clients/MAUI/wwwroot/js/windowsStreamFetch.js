@@ -304,6 +304,10 @@
             videojs.xhr = wrapXhrForBridge(videojs.xhr, dotNetRef);
         }
 
+        // Shared videoplayer.js must wrap again so VTT 503 retries stay outermost.
+        if (typeof K7.ensureVtt503RetryXhr === 'function')
+            K7.ensureVtt503RetryXhr();
+
         window.__k7WindowsStreamXhrInstalled = true;
         return true;
     }

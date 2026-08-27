@@ -118,7 +118,9 @@ seekbar tap on stale toolkit position then jumps minutes backward. `ExoPlaybackB
 publishes ExoPlayer duration and position into `IPlayerService` for the native overlay
 when `MediaElement.Duration` stays 0 on demuxed HLS. Stale `.m4s` from an older rebase can be deleted
 from the transcode cache. Streaming HLS rebinds the MediaElement ExoPlayer with long HTTP
-timeouts and VTT load retries on HTTP 503 (`AndroidExoHlsTuning`).
+timeouts and VTT load retries on HTTP 503 (`AndroidExoHlsTuning`). Web and Windows Video.js
+wrap VHS xhr the same way (`ensureVtt503RetryXhr` in `videoplayer.js`): exponential backoff on
+`.vtt` 503 so VHS does not disable the subtitle track on the first cold-cache miss.
 
 ## Subtitle appearance
 
