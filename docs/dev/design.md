@@ -14,7 +14,7 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 - Accent is copper (`#CC7A3E`) via CSS tokens only - never hard-coded hex in components. Hex values in this doc are token references only.
 - Fonts: Epilogue for headings, Manrope for body (`--font-heading` / `--font-body`). Do not use Inter/Roboto/Arial or monospace as a style gimmick.
 
-Component catalog: [developing.md - DesignSystem](developing.md#designsystem).
+Component catalog: [developing.md - DesignSystem](developing.md#designsystem). Brand SVGs: [`branding/`](../../branding/).
 
 ## Rules
 

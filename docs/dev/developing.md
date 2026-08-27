@@ -78,6 +78,8 @@ On Android the Lottie is attached to the activity DecorView so it stays above We
 
 `src/Clients/DesignSystem` is a **Blazor Server catalog** of the shared UI library (branding, tokens, components, players, dialogs, layout). It uses mock services - no K7 server required.
 
+Pre-colored logo and symbol SVGs (the Branding page variants) live in [`branding/`](../../branding/).
+
 ```bash
 dotnet run --project src/Clients/DesignSystem
 # or via Aspire (service k7-design-system)

@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="branding/logo.svg" alt="K7" width="160">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="branding/logo.svg">
+    <img src="branding/logo-on-light.svg" alt="K7" width="160">
+  </picture>
 </p>
 
 <p align="center">

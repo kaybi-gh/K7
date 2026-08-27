@@ -14909,9 +14909,7 @@
             ],
             "format": "date-time"
           },
-          "pictures": {
-            "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfCollectionItemDto/properties/items/items/properties/media/anyOf/1/properties/pictures"
-          },
+          "pictures": { },
           "userState": {
             "oneOf": [
               {
@@ -17528,9 +17526,7 @@
               "string"
             ]
           },
-          "tracks": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/tracks"
-          },
+          "tracks": { },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -17560,30 +17556,14 @@
             ],
             "format": "date"
           },
-          "pictures": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/pictures"
-          },
-          "personRoles": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/personRoles"
-          },
-          "ratings": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/ratings"
-          },
-          "indexedFiles": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/indexedFiles"
-          },
-          "remoteIndexedFiles": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/remoteIndexedFiles"
-          },
-          "genres": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/genres"
-          },
-          "lockedFields": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/lockedFields"
-          },
-          "externalIds": {
-            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/externalIds"
-          },
+          "pictures": { },
+          "personRoles": { },
+          "ratings": { },
+          "indexedFiles": { },
+          "remoteIndexedFiles": { },
+          "genres": { },
+          "lockedFields": { },
+          "externalIds": { },
           "userState": {
             "oneOf": [
               {
