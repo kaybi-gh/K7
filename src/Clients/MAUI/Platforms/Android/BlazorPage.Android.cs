@@ -8,6 +8,7 @@ using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.MAUI.Platforms.Android;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using DeviceType = K7.Server.Domain.Enums.DeviceType;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
@@ -735,7 +736,11 @@ public partial class BlazorPage
             return;
 
         _exoPlaybackBridge ??= new ExoPlaybackBridge();
-        _exoPlaybackBridge.FirstFrameRendered = () => _nativeOverlay?.NotifyFirstFrameReady();
+        _exoPlaybackBridge.FirstFrameRendered = () =>
+        {
+            _nativeOverlay?.NotifyFirstFrameReady();
+            ApplyDirectPlayTrackOverrides();
+        };
         _exoPlaybackBridge.PositionHeard = OnExoPositionHeard;
         _exoPlaybackBridge.DurationHeard = OnExoDurationHeard;
         _exoPlaybackBridge.Attach(exo);
@@ -783,9 +788,13 @@ public partial class BlazorPage
         _playerService.CurrentTime = seconds;
     }
 
-    private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
+    private void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
     {
-        TryApplyPreviousSyncSeekParameters(player);
+        // Remux Original is open-GOP HEVC (CRA, not IDR). PREVIOUS_SYNC would snap
+        // to the only real IDR at t=0 after we demote CRA sync flags. Exact lands
+        // on the playlist CRA; linear play no longer flushes at each .m4s.
+        var exactForOpenGopRemux = _playerService.SelectedQuality?.IsOriginal == true;
+        TryApplySeekParameters(player, exactForOpenGopRemux);
         TryDisableSkipSilence(player);
     }
 
@@ -802,7 +811,7 @@ public partial class BlazorPage
         }
     }
 
-    private static bool TryApplyPreviousSyncSeekParameters(IPlayer? player)
+    private static bool TryApplySeekParameters(IPlayer? player, bool useExact)
     {
         try
         {
@@ -813,14 +822,17 @@ public partial class BlazorPage
             // Prefer JNI setSeekParameters on the concrete Java type. Assigning
             // IExoPlayer.SeekParameters on IExoPlayerInvoker can report success without
             // updating ExoPlayerImpl (exact mid-GOP seek -> frozen TextureView + live audio).
+            // Encode still uses PREVIOUS_SYNC (real IDRs). Remux Original uses EXACT so
+            // we do not snap to the sole IDR at t=0 after CRA sync flags are demoted.
             if (player is Java.Lang.Object javaObj)
             {
                 var seekParamsClass = Java.Lang.Class.ForName("androidx.media3.exoplayer.SeekParameters");
                 if (seekParamsClass is not null)
                 {
-                    var previous = seekParamsClass.GetField("PREVIOUS_SYNC")?.Get(null)
-                        ?? seekParamsClass.GetDeclaredField("PREVIOUS_SYNC")?.Get(null);
-                    if (previous is not null)
+                    var fieldName = useExact ? "EXACT" : "PREVIOUS_SYNC";
+                    var seekParam = seekParamsClass.GetField(fieldName)?.Get(null)
+                        ?? seekParamsClass.GetDeclaredField(fieldName)?.Get(null);
+                    if (seekParam is not null)
                     {
                         for (var cls = javaObj.Class; cls is not null; cls = cls.Superclass)
                         {
@@ -848,7 +860,7 @@ public partial class BlazorPage
                                 continue;
 
                             method.Accessible = true;
-                            method.Invoke(javaObj, previous);
+                            method.Invoke(javaObj, seekParam);
                             return true;
                         }
                     }
@@ -857,7 +869,7 @@ public partial class BlazorPage
 
             if (player is IExoPlayer exo)
             {
-                exo.SeekParameters = SeekParameters.PreviousSync;
+                exo.SeekParameters = useExact ? SeekParameters.Exact : SeekParameters.PreviousSync;
                 return true;
             }
         }
@@ -1219,39 +1231,86 @@ public partial class BlazorPage
         return null;
     }
 
+    private void ApplyDirectPlayTrackOverrides()
+    {
+        if (StreamingSourceKind.IsHls(_playerService.Source?.MimeType, _playerService.Source?.Url))
+            return;
+
+        if (_playerService.SelectedAudioTrack is { } audio)
+            OnSwitchAudioTrack($"audio-{audio.Index}");
+
+        if (_playerService.SelectedSubtitleTrack is { IsTextBased: true } sub)
+            OnSwitchSubtitleTrack($"sub-{sub.Index}");
+    }
+
     private void OnSwitchAudioTrack(string trackName)
     {
-        MainThread.BeginInvokeOnMainThread(() =>
+        MainThread.BeginInvokeOnMainThread(() => TrySwitchAudioTrack(trackName, attempt: 0));
+    }
+
+    private void TrySwitchAudioTrack(string trackName, int attempt)
+    {
+        var player = GetPlayer(NativePlayer);
+        if (player is null)
+            return;
+
+        var tracks = player.CurrentTracks;
+        if (tracks?.Groups is null || tracks.Groups.Size() == 0)
         {
-            var player = GetPlayer(NativePlayer);
-            if (player is null) return;
+            if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View waitView)
+                waitView.PostDelayed(() => TrySwitchAudioTrack(trackName, attempt + 1), 250);
+            return;
+        }
 
-            var tracks = player.CurrentTracks;
-            if (tracks?.Groups is null) return;
-
-            for (var i = 0; i < tracks.Groups.Size(); i++)
+        int? targetOrdinal = null;
+        AudioFileTrackDto? catalogTrack = null;
+        if (trackName.StartsWith("audio-", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(trackName.AsSpan(6), out var fileStreamIndex))
+        {
+            var ordered = _playerService.AudioTracks.OrderBy(t => t.Index).ToList();
+            var ordinal = ordered.FindIndex(t => t.Index == fileStreamIndex);
+            if (ordinal >= 0)
             {
-                var group = (Tracks.Group)tracks.Groups.Get(i)!;
-                if (group.Type != C.TrackTypeAudio)
-                    continue;
-
-                for (var j = 0; j < group.Length; j++)
-                {
-                    var format = group.GetTrackFormat(j);
-                    if (string.Equals(format?.Label, trackName, StringComparison.OrdinalIgnoreCase)
-                        || format?.Language == trackName)
-                    {
-                        var newParams = player.TrackSelectionParameters!
-                            .BuildUpon()!
-                            .SetOverrideForType(new TrackSelectionOverride(group.MediaTrackGroup, j))!
-                            .Build();
-
-                        player.TrackSelectionParameters = newParams;
-                        return;
-                    }
-                }
+                targetOrdinal = ordinal;
+                catalogTrack = ordered[ordinal];
             }
-        });
+        }
+
+        var audioOrdinal = 0;
+        for (var i = 0; i < tracks.Groups.Size(); i++)
+        {
+            var group = (Tracks.Group)tracks.Groups.Get(i)!;
+            if (group.Type != C.TrackTypeAudio)
+                continue;
+
+            for (var j = 0; j < group.Length; j++)
+            {
+                var format = group.GetTrackFormat(j);
+                var labelMatch = string.Equals(format?.Label, trackName, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(format?.Language, trackName, StringComparison.OrdinalIgnoreCase);
+                var catalogMatch = targetOrdinal is null
+                    && catalogTrack is not null
+                    && (string.Equals(format?.Language, catalogTrack.Language, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(format?.Label, catalogTrack.Name, StringComparison.OrdinalIgnoreCase));
+                var ordinalMatch = targetOrdinal == audioOrdinal;
+
+                if (labelMatch || catalogMatch || ordinalMatch)
+                {
+                    var newParams = player.TrackSelectionParameters!
+                        .BuildUpon()!
+                        .ClearOverridesOfType(C.TrackTypeAudio)!
+                        .SetOverrideForType(new TrackSelectionOverride(group.MediaTrackGroup, j))!
+                        .Build();
+                    player.TrackSelectionParameters = newParams;
+                    return;
+                }
+
+                audioOrdinal++;
+            }
+        }
+
+        if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View retryView)
+            retryView.PostDelayed(() => TrySwitchAudioTrack(trackName, attempt + 1), 250);
     }
 
     private void OnSwitchSubtitleTrack(string? slug)

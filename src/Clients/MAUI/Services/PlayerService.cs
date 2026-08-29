@@ -24,9 +24,7 @@ internal class PlayerService(
     public event Func<Task>? UnmuteRequest;
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
-#pragma warning disable CS0067 // Reserved for muxed/container audio track switching; demuxed HLS reloads the manifest instead.
     public event Action<string>? SwitchAudioTrackRequested;
-#pragma warning restore CS0067
     public event Action<string?>? SwitchSubtitleTrackRequested;
     public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
@@ -405,6 +403,12 @@ internal class PlayerService(
         _selectedAudioTrack = matched;
         AudioTrackChanged?.Invoke(matched);
 
+        if (!StreamingSourceKind.IsHls(Source.MimeType, _baseManifestUrl))
+        {
+            SwitchAudioTrackRequested?.Invoke(BuildAudioTrackSlug(matched));
+            return Task.CompletedTask;
+        }
+
         var seekTime = CurrentTime;
         var previousDuration = Duration;
         var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
@@ -440,6 +444,12 @@ internal class PlayerService(
         if (_baseManifestUrl is null)
             return Task.CompletedTask;
 
+        if (!StreamingSourceKind.IsHls(Source?.MimeType, _baseManifestUrl)
+            && !TryPromoteDirectToHls())
+        {
+            return Task.CompletedTask;
+        }
+
         var seekTime = CurrentTime;
         var previousDuration = Duration;
 
@@ -474,6 +484,13 @@ internal class PlayerService(
         _playbackStartRecoveryAttempts = 0;
         _selectedQuality = quality;
         QualityChanged?.Invoke(quality);
+
+        if (quality is { IsOriginal: false }
+            && !StreamingSourceKind.IsHls(Source?.MimeType, _baseManifestUrl)
+            && !TryPromoteDirectToHls())
+        {
+            return Task.CompletedTask;
+        }
 
         var seekTime = CurrentTime;
         var previousDuration = Duration;
@@ -668,7 +685,25 @@ internal class PlayerService(
         AspectRatioModeChangeRequested?.Invoke(mode);
     }
 
+    private static string BuildAudioTrackSlug(AudioFileTrackDto track) => $"audio-{track.Index}";
+
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
+
+    private bool TryPromoteDirectToHls()
+    {
+        if (!StreamingSourceKind.TryBuildHlsManifestUrl(
+                _baseManifestUrl,
+                Source?.StreamSessionId,
+                out var hlsUrl))
+        {
+            return false;
+        }
+
+        _baseManifestUrl = hlsUrl;
+        if (Source is not null)
+            Source.MimeType = "application/vnd.apple.mpegurl";
+        return true;
+    }
 
     private bool RequiresManifestReloadForSubtitleChange(SubtitleFileTrackDto? track)
     {

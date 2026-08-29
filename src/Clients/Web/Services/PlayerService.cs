@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -382,6 +383,12 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         SelectedAudioTrack = matched;
         AudioTrackChanged?.Invoke(matched);
+
+        if (!StreamingSourceKind.IsHls(Source.MimeType, _baseManifestUrl))
+        {
+            SwitchAudioTrackRequested?.Invoke($"audio-{matched.Index}");
+            return Task.CompletedTask;
+        }
 
         // Demuxed HLS: reload master with DefaultAudioTrackIndex. Do not also call
         // switchAudioTrack (VHS label match is unreliable, especially over federation).
