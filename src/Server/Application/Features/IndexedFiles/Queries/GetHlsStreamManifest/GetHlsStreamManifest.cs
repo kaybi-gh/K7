@@ -305,9 +305,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         var videoCodecString = hasVideoTranscoding
             ? HlsCodecStringHelpers.GetHlsCodecs(query.TranscodingVideoCodec, audioCodec: null)
-            : (originalVideoTrack != null
-                ? HlsCodecStringHelpers.GetHlsCodecs(originalVideoTrack.Codec, audioCodec: null)
-                : string.Empty);
+            : HlsCodecStringHelpers.GetHlsVideoCodecString(originalVideoTrack);
 
         var defaultAudioTrack = videoFileMetadata.AudioTracks
             .OrderByDescending(t => t.IsDefault)

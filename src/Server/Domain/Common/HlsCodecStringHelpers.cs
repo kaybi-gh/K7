@@ -49,18 +49,34 @@ public static class HlsCodecStringHelpers
 
     public static string GetH265String(string? profile, int level)
     {
+        var levelIdc = NormalizeHevcLevelIdc(level);
         StringBuilder result = new("hvc1", 16);
-        string profileString = profile?.ToLower() switch
+        string profileString = profile?.ToLowerInvariant() switch
         {
-            "main10" => ".2.4",
+            "main10" or "main 10" or "main-10" => ".2.4",
             _ => ".1.4"
         };
 
         return result.Append(profileString)
             .Append(".L")
-            .Append(level)
+            .Append(levelIdc)
             .Append(".B0")
             .ToString();
+    }
+
+    /// <summary>
+    /// HEVC CODECS level is general_level_idc (level * 30), e.g. 4.0 -> 120.
+    /// A literal L4 makes MediaSource.isTypeSupported reject the HLS variant.
+    /// </summary>
+    internal static int NormalizeHevcLevelIdc(int level)
+    {
+        if (level <= 0)
+            return 120;
+
+        if (level < 30)
+            return level * 30;
+
+        return level;
     }
 
     public static string GetVp9String(int width, int height, string pixelFormat, float framerate, int bitDepth)
@@ -166,6 +182,9 @@ public static class HlsCodecStringHelpers
         };
     }
 
+    public static string GetHlsVideoCodecString(VideoFileTrack? track) =>
+        GetVideoCodecString(track) ?? string.Empty;
+
     private static string? GetVideoCodecString(VideoFileTrack? track)
     {
         if (track == null || string.IsNullOrWhiteSpace(track.Codec))
@@ -188,7 +207,7 @@ public static class HlsCodecStringHelpers
         return normalized switch
         {
             "h264" or "avc" or "avc1" => GetH264String(null, 40),
-            "hevc" or "h265" or "hev1" or "hvc1" => GetH265String(null, 4),
+            "hevc" or "h265" or "hev1" or "hvc1" => GetH265String(null, 0),
             "vp9" => GetVp9String(1920, 1080, "yuv420p", 30, 8),
             "av1" => GetAv1String(null, 19, false, 8),
             _ => codec

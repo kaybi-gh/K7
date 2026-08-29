@@ -62,7 +62,8 @@ or DASH instead:
 - [Audio Tracks](https://docs.videojs.com/tutorial-audio-tracks.html) (switch is not handled by Video.js, VHS/HLS only)
 
 Those clients always take demuxed HLS (remux copy, or encode if the codec is not
-HLS-compatible). Audio-only Direct Play is unchanged.
+HLS-compatible). HEVC `CODECS` uses general_level_idc (`L120` for 4.0, not `L4`) so
+Video.js MSE does not drop the only variant. Audio-only Direct Play is unchanged.
 
 Direct Play audio formats must exist for the file container (`audio-matroska-aac` and the
 other container/codec pairs next to each `video-*` format). Missing those forced HLS remux
