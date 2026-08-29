@@ -3,6 +3,7 @@ using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -70,6 +71,8 @@ public class PlaybackProgressTracker : IDisposable
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
         _playerService.SourceChanged += OnSourceChanged;
+        _playerService.AudioTrackChanged += OnSelectedTrackChanged;
+        _playerService.SubtitleTrackChanged += OnSelectedSubtitleChanged;
     }
 
     /// <summary>
@@ -105,7 +108,7 @@ public class PlaybackProgressTracker : IDisposable
         _currentSerieId = null;
         if (mediaId is not null)
         {
-            await ReportProgressAsync(mediaId.Value);
+            await ReportProgressAsync(mediaId.Value, force: true);
             _cacheStore.InvalidateHomeFeed();
         }
     }
@@ -168,9 +171,19 @@ public class PlaybackProgressTracker : IDisposable
         _reportTimer = null;
     }
 
-    private async Task ReportProgressAsync() => await ReportProgressAsync(_currentMediaId);
+    private void OnSelectedTrackChanged(AudioFileTrackDto? _) => ReportSelectedTracks();
 
-    private async Task ReportProgressAsync(Guid? mediaId)
+    private void OnSelectedSubtitleChanged(SubtitleFileTrackDto? _) => ReportSelectedTracks();
+
+    private void ReportSelectedTracks()
+    {
+        if (_lastState is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
+            _ = ReportProgressAsync(force: true);
+    }
+
+    private async Task ReportProgressAsync(bool force = false) => await ReportProgressAsync(_currentMediaId, force);
+
+    private async Task ReportProgressAsync(Guid? mediaId, bool force = false)
     {
         if (mediaId is null) return;
         if (!_isAuthenticated) return;
@@ -184,7 +197,7 @@ public class PlaybackProgressTracker : IDisposable
         {
             if (duration <= 0) return;
             if (ShouldIgnoreTransientPosition(position)) return;
-            if (!isTerminal && Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
+            if (!force && !isTerminal && Math.Abs(position - _lastReportedPosition) < MinPositionDeltaToReport) return;
 
             // Never overwrite a solid resume point with a near-zero tick after reopen/rebind.
             if (!isTerminal
@@ -228,7 +241,9 @@ public class PlaybackProgressTracker : IDisposable
                     (int)_lastState,
                     deviceId,
                     sharedProfileId: _viewingGroupSession?.ActiveGroupId,
-                    syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
+                    syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null,
+                    audioTrackIndex: _playerService.SelectedAudioTrack?.Index,
+                    subtitleTrackIndex: _playerService.SelectedSubtitleTrack?.Index);
             }
             catch (Exception ex)
             {
@@ -289,6 +304,8 @@ public class PlaybackProgressTracker : IDisposable
         _playerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         _playerService.SourceChanged -= OnSourceChanged;
+        _playerService.AudioTrackChanged -= OnSelectedTrackChanged;
+        _playerService.SubtitleTrackChanged -= OnSelectedSubtitleChanged;
         StopTimer();
         GC.SuppressFinalize(this);
     }

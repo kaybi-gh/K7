@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.ComponentTests.Services;
@@ -181,5 +182,68 @@ public class PlaybackProgressTrackerTests
 
         await _journal.DidNotReceiveWithAnyArgs()
             .RecordProgressAsync(default, default, default, default, default!);
+    }
+
+    [Test]
+    public async Task Report_ShouldSendSelectedTracks_WhenAudioTrackChanges()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _player.CurrentTime.Returns(40d);
+        _player.SelectedAudioTrack.Returns(new AudioFileTrackDto { Index = 2, Codec = "eac3", Channels = 6 });
+        _player.SelectedSubtitleTrack.Returns(new SubtitleFileTrackDto { Index = 5, Codec = "subrip", IsTextBased = true });
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        _player.AudioTrackChanged += Raise.Event<Action<AudioFileTrackDto?>>(
+            _player.SelectedAudioTrack);
+
+        await Task.Delay(50);
+
+        await _streaming.Received().ReportPlaybackProgressAsync(
+            mediaId,
+            Arg.Any<Guid>(),
+            Arg.Any<Guid>(),
+            40d,
+            7200d,
+            Arg.Any<int>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            2,
+            5);
+    }
+
+    [Test]
+    public async Task Report_ShouldSendSelectedTracks_WhenSubtitleTrackChanges()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _player.CurrentTime.Returns(40d);
+        _player.SelectedAudioTrack.Returns(new AudioFileTrackDto { Index = 1, Codec = "aac", Channels = 2 });
+        _player.SelectedSubtitleTrack.Returns((SubtitleFileTrackDto?)null);
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        _player.SubtitleTrackChanged += Raise.Event<Action<SubtitleFileTrackDto?>>((SubtitleFileTrackDto?)null);
+
+        await Task.Delay(50);
+
+        await _streaming.Received().ReportPlaybackProgressAsync(
+            mediaId,
+            Arg.Any<Guid>(),
+            Arg.Any<Guid>(),
+            40d,
+            7200d,
+            Arg.Any<int>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            1,
+            Arg.Any<int?>());
     }
 }

@@ -6,6 +6,7 @@ using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -28,7 +29,9 @@ public record UpdatePlaybackProgressCommand(
     Guid? DeviceId = null,
     Guid? PlaylistId = null,
     Guid? SharedProfileId = null,
-    Guid? SyncPlayGroupId = null) : IRequest;
+    Guid? SyncPlayGroupId = null,
+    int? AudioTrackIndex = null,
+    int? SubtitleTrackIndex = null) : IRequest;
 
 public class UpdatePlaybackProgressCommandHandler(
     IApplicationDbContext context,
@@ -80,6 +83,9 @@ public class UpdatePlaybackProgressCommandHandler(
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused or PlaybackState.Ended)
             await TryHydrateStreamDecisionAsync(request.SessionId, cancellationToken);
 
+        if (request.AudioTrackIndex is not null || request.SubtitleTrackIndex is not null)
+            await ApplyReportedTrackSelectionAsync(request, cancellationToken);
+
         var existingSession = await _context.MediaPlaybackSessions
             .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
 
@@ -112,7 +118,11 @@ public class UpdatePlaybackProgressCommandHandler(
                 ApplyExistingSessionProgress(session, request, timeNow);
             }
 
-            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
+            await SyncSessionDetailsFromStreamDecisionAsync(
+                session,
+                request.SessionId,
+                updateTracks: session.CompletedAt is null,
+                cancellationToken);
         }
         else
         {
@@ -331,7 +341,11 @@ public class UpdatePlaybackProgressCommandHandler(
                     $"Playback session {request.SessionId} was not found after duplicate insert conflict.");
 
             ApplyExistingSessionProgress(session, request, timeNow);
-            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
+            await SyncSessionDetailsFromStreamDecisionAsync(
+                session,
+                request.SessionId,
+                updateTracks: session.CompletedAt is null,
+                cancellationToken);
 
             session.PositionSeconds = request.State is PlaybackState.Ended or PlaybackState.Idle
                 ? Math.Max(session.PositionSeconds, request.Position)
@@ -639,6 +653,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private async Task SyncSessionDetailsFromStreamDecisionAsync(
         MediaPlaybackSession session,
         Guid streamSessionId,
+        bool updateTracks,
         CancellationToken cancellationToken)
     {
         var streamInfo = _activeStreamTracker.GetStreamInfo(streamSessionId);
@@ -658,17 +673,20 @@ public class UpdatePlaybackProgressCommandHandler(
             return;
         }
 
-        ApplyStreamDecisionToDetails(details, sd);
+        ApplyStreamDecisionToDetails(details, sd, updateTracks);
     }
 
     private static PlaybackSessionDetails CreateDetailsFromStreamDecision(StreamDecisionDto sd)
     {
         var details = new PlaybackSessionDetails();
-        ApplyStreamDecisionToDetails(details, sd);
+        ApplyStreamDecisionToDetails(details, sd, updateTracks: true);
         return details;
     }
 
-    private static void ApplyStreamDecisionToDetails(PlaybackSessionDetails details, StreamDecisionDto sd)
+    private static void ApplyStreamDecisionToDetails(
+        PlaybackSessionDetails details,
+        StreamDecisionDto sd,
+        bool updateTracks)
     {
         var videoIsTranscoded = IsVideoTranscoded(sd);
         var audioIsTranscoded = sd.SourceAudioCodec is not null
@@ -687,14 +705,68 @@ public class UpdatePlaybackProgressCommandHandler(
         details.SourceVideoHeight = ParseResolutionHeight(sd.SourceResolution);
         details.StreamVideoCodec = sd.StreamVideoCodec;
         details.StreamAudioCodec = sd.StreamAudioCodec;
+
+        if (!updateTracks)
+            return;
+
         details.AudioTrackLanguage = sd.AudioTrackLanguage;
         details.AudioTrackTitle = sd.AudioTrackTitle;
         details.AudioChannelLayout = sd.AudioChannelLayout;
+        details.SubtitleTrackLanguage = sd.SubtitleTrackLanguage;
+        details.SubtitleTrackTitle = sd.SubtitleTrackTitle;
+    }
 
-        if (sd.SubtitleTrackLanguage is not null || sd.SubtitleTrackTitle is not null)
+    private async Task ApplyReportedTrackSelectionAsync(
+        UpdatePlaybackProgressCommand request,
+        CancellationToken cancellationToken)
+    {
+        var existing = _activeStreamTracker.GetStreamInfo(request.SessionId)?.StreamDecision;
+        if (existing is null)
+            return;
+
+        var streamSession = await _context.StreamSessions
+            .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
+        if (streamSession?.IndexedFileId is not { } indexedFileId)
+            return;
+
+        var indexedFile = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+            .FirstOrDefaultAsync(x => x.Id == indexedFileId, cancellationToken);
+
+        if (indexedFile?.FileMetadata is not VideoFileMetadata videoMeta)
+            return;
+
+        await _context.Entry(videoMeta).Collection(v => v.AudioTracks).LoadAsync(cancellationToken);
+        await _context.Entry(videoMeta).Collection(v => v.SubtitleTracks).LoadAsync(cancellationToken);
+
+        var audio = videoMeta.AudioTracks.FirstOrDefault(t => t.Index == request.AudioTrackIndex);
+        var subtitle = request.SubtitleTrackIndex is int subIdx
+            ? videoMeta.SubtitleTracks.FirstOrDefault(t => t.Index == subIdx)
+            : null;
+
+        var updated = StreamDecisionTrackSelection.Apply(
+            existing,
+            audio,
+            subtitle,
+            subtitleSpecified: true);
+        _activeStreamTracker.UpdateStreamDecision(request.SessionId, updated);
+
+        var settings = DeserializePlaybackSettings(streamSession.PlaybackSettingsJson);
+        if (request.AudioTrackIndex is int audioIndex)
+            settings.AudioTrackIndex = audioIndex;
+        settings.SubtitleTrackIndex = request.SubtitleTrackIndex;
+        streamSession.PlaybackSettingsJson = System.Text.Json.JsonSerializer.Serialize(settings);
+    }
+
+    private static PlaybackSettingsDto DeserializePlaybackSettings(string json)
+    {
+        try
         {
-            details.SubtitleTrackLanguage = sd.SubtitleTrackLanguage ?? details.SubtitleTrackLanguage;
-            details.SubtitleTrackTitle = sd.SubtitleTrackTitle ?? details.SubtitleTrackTitle;
+            return System.Text.Json.JsonSerializer.Deserialize<PlaybackSettingsDto>(json) ?? new PlaybackSettingsDto();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new PlaybackSettingsDto();
         }
     }
 

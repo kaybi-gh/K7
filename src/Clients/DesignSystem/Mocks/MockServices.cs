@@ -616,7 +616,7 @@ public sealed class MockStreamingService : IStreamingService
     public Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default) => Task.FromResult<IndexedFileStreamUri?>(null);
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(CreateStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
     public Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(CreateRemoteStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
-    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

@@ -150,6 +150,8 @@ public class PlaybackSyncServiceTests
             Arg.Any<Guid?>(),
             Arg.Any<Guid?>(),
             Arg.Any<Guid?>(),
+            Arg.Any<int?>(),
+            Arg.Any<int?>(),
             Arg.Any<CancellationToken>());
         await _ratings.Received(1).RateMediaAsync(mediaId, 8, Arg.Any<CancellationToken>());
         await _journal.Received(1).MarkSyncedAsync(
