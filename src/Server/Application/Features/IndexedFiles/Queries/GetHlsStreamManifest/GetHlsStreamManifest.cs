@@ -437,13 +437,11 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             ? HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodec, audioCodec: null)
             : videoCodecString;
 
-        var effectiveCodecsAttribute = (effectiveVideoCodecString, audioCodecString) switch
-        {
-            (not "", not "") => $"{effectiveVideoCodecString},{audioCodecString}",
-            (not "", _) => effectiveVideoCodecString,
-            (_, not "") => audioCodecString,
-            _ => string.Empty
-        };
+        // Demuxed HLS: AUDIO is a separate group. Packing mp4a into CODECS makes Video.js
+        // call isTypeSupported("hvc1...,mp4a.40.2") which fails even when hvc1 alone works.
+        var effectiveCodecsAttribute = !string.IsNullOrEmpty(effectiveVideoCodecString)
+            ? effectiveVideoCodecString
+            : audioCodecString;
 
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
             $"BANDWIDTH={targetResolution.MaxBitrate}," +

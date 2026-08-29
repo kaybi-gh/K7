@@ -63,9 +63,11 @@ or DASH instead:
 
 Those clients always take demuxed HLS (remux copy, or encode if the codec is not
 HLS-compatible). Web and Windows advertise video codecs from `MediaSource.isTypeSupported`
-on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC
-`CODECS` uses general_level_idc (`L120` for 4.0, not `L4`). Audio-only Direct Play is
-unchanged.
+on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC Main 10
+is encoded to H.264: MSE often accepts 8-bit `hvc1` (so About lists hevc) then Video.js
+rejects the real Main 10 tag. Demuxed `CODECS` is video-only (`hvc1` without `mp4a`) so
+VHS does not call `isTypeSupported` on a combined type. HEVC `CODECS` uses general_level_idc
+(`L120` for 4.0, not `L4`). Audio-only Direct Play is unchanged.
 
 Direct Play audio formats must exist for the file container (`audio-matroska-aac` and the
 other container/codec pairs next to each `video-*` format). Missing those forced HLS remux

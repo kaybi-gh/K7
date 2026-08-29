@@ -123,9 +123,12 @@ public class GetStreamUriQueryHandler(
             }, decision);
         }
 
-        // Otherwise we go through HLS
+        // Otherwise we go through HLS. Video.js MSE often accepts 8-bit hvc1 but rejects
+        // Main 10 (Heroes) and rejects video+audio packed into one CODECS type check.
         var videoCodecSupported = supportedVideoFormats.Any(x =>
             MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
+        if (!allowsVideoDirectPlay && !IsVideoJsHlsCopyTrack(selectedVideoTrack))
+            videoCodecSupported = false;
 
         var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
 
@@ -225,6 +228,32 @@ public class GetStreamUriQueryHandler(
     internal static bool AllowsVideoDirectPlay(Device device) =>
         device.ClientType == ClientType.Native
         && device.OperatingSystem != OperatingSystem.Windows;
+
+    /// <summary>
+    /// Video.js VHS calls MediaSource.isTypeSupported on the master CODECS tag.
+    /// 10-bit HEVC/AV1 (Main 10) is advertised as hevc from 8-bit probes, then the
+    /// playlist is excluded (MEDIA_ERR_DECODE, no supported playlists).
+    /// </summary>
+    internal static bool IsVideoJsHlsCopyTrack(VideoFileTrack track)
+    {
+        var codec = MediaCodecNames.Canonical(track.Codec);
+        if (codec is not ("hevc" or "av1"))
+            return true;
+
+        return !IsTenBitVideo(track);
+    }
+
+    internal static bool IsTenBitVideo(VideoFileTrack track)
+    {
+        if (track.BitDepth is >= 10)
+            return true;
+
+        var profile = track.Profile;
+        if (string.IsNullOrWhiteSpace(profile))
+            return false;
+
+        return profile.Contains("10", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static TranscodeReason BuildVideoTranscodeReason(
         bool requiresVideoTranscoding,

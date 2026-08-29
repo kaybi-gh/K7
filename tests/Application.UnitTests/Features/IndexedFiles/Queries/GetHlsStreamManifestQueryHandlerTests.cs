@@ -170,6 +170,8 @@ public class GetHlsStreamManifestQueryHandlerTests
         playlist.Should().Contain("#EXT-X-MEDIA:TYPE=AUDIO");
         playlist.Should().Contain("#EXT-X-STREAM-INF");
         playlist.Should().Contain($"streamSessionId={sessionId}");
+        playlist.Should().Contain("CODECS=\"avc1.");
+        playlist.Should().NotContain("mp4a.40.2");
     }
 
     [Test]
