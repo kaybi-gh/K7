@@ -76,7 +76,8 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
             segmentDurations,
             queryString,
             GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath,
-            query.StartSeconds);
+            query.StartSeconds,
+            independentSegments: !string.IsNullOrEmpty(query.TranscodingAudioCodec));
 
         return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }

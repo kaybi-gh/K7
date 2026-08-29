@@ -52,6 +52,41 @@ public class Fmp4TfdtRebaseTests
     }
 
     [Test]
+    public void IsSafeToFinalize_ShouldWaitForSuccessor_WhenFfmpegStillRunning()
+    {
+        Fmp4TfdtRebase.IsSafeToFinalize(_tempDirectory, 3, ffmpegExited: false).Should().BeFalse();
+        File.WriteAllBytes(Path.Combine(_tempDirectory, "4.m4s"), [1, 2, 3]);
+        Fmp4TfdtRebase.IsSafeToFinalize(_tempDirectory, 3, ffmpegExited: false).Should().BeTrue();
+        Fmp4TfdtRebase.IsSafeToFinalize(_tempDirectory, 9, ffmpegExited: true).Should().BeTrue();
+    }
+
+    [Test]
+    public void TryFinalizeClosedSegment_ShouldPersistShiftedTfdt_WhenWindowRelative()
+    {
+        const uint timescale = 24000;
+        WriteInit(timescale);
+
+        var segment = Concat(
+            BuildMinimalMoof(tfdtBaseDecodeTime: 0),
+            BuildBox("mdat", [1, 2, 3, 4, 5, 6, 7, 8]));
+        var path = Path.Combine(_tempDirectory, "1.m4s");
+        File.WriteAllBytes(path, segment);
+
+        var ok = Fmp4TfdtRebase.TryFinalizeClosedSegment(
+            path,
+            Path.Combine(_tempDirectory, "init.m4s"),
+            segmentStartTimestampMs: 6000,
+            Hls.TfdtWindowResetThresholdMs,
+            alignPresentationTime: false,
+            out var detail);
+
+        ok.Should().BeTrue(detail);
+        var onDisk = File.ReadAllBytes(path);
+        var baseOffset = IndexOfTfdtBase(onDisk);
+        BinaryPrimitives.ReadUInt64BigEndian(onDisk.AsSpan(baseOffset, 8)).Should().Be(144000);
+    }
+
+    [Test]
     public void TryRebaseMediaSegment_ShouldPreserveRelativeGaps_WhenPatchingMultipleMoof()
     {
         const uint timescale = 24000;

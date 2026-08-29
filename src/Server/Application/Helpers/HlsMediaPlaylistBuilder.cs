@@ -12,7 +12,8 @@ public static class HlsMediaPlaylistBuilder
         IReadOnlyList<double> segmentDurationsSeconds,
         string queryString,
         Func<int, string> segmentRelativePathFactory,
-        double? startSeconds = null)
+        double? startSeconds = null,
+        bool independentSegments = true)
     {
         if (segmentDurationsSeconds.Count == 0)
             throw new ArgumentException("At least one segment duration is required.", nameof(segmentDurationsSeconds));
@@ -23,7 +24,10 @@ public static class HlsMediaPlaylistBuilder
         content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(segmentDurationsSeconds.Max())}");
         content.AppendLine("#EXT-X-VERSION:7");
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
-        content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
+        // Remux HEVC often starts a "keyframe" segment on CRA, not IDR. Advertising
+        // independent segments makes ExoPlayer reset the decoder at each .m4s (cuts).
+        if (independentSegments)
+            content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
 
         if (startSeconds is > 0)
         {

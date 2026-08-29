@@ -110,7 +110,8 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             segmentDurations,
             queryString,
             GetHlsVideoStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath,
-            query.StartSeconds);
+            query.StartSeconds,
+            independentSegments: !isTransmuxing);
 
         return new TextHttpContentResult(indexPlaylist, "application/vnd.apple.mpegurl");
     }

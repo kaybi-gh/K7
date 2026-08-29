@@ -22,6 +22,19 @@ public class HlsMediaPlaylistBuilderTests
         audio.Should().Contain("#EXT-X-TARGETDURATION:3");
         video.Should().Contain("#EXT-X-MAP:URI=\"segments/init.m4s?streamSessionId=");
         audio.Should().Contain("audio/segments/1.m4s?streamSessionId=");
+        video.Should().Contain("#EXT-X-INDEPENDENT-SEGMENTS");
+    }
+
+    [Test]
+    public void Build_ShouldOmitIndependentSegments_WhenRemux()
+    {
+        var playlist = HlsMediaPlaylistBuilder.Build(
+            [2.0, 2.0],
+            "?streamSessionId=1",
+            i => $"{i}.m4s",
+            independentSegments: false);
+
+        playlist.Should().NotContain("#EXT-X-INDEPENDENT-SEGMENTS");
     }
 
     [Test]

@@ -13,7 +13,8 @@ namespace K7.Server.Application.Helpers;
 internal static class Fmp4TfdtRebase
 {
     /// <summary>
-    /// Source composition (~83ms) stays under this. NVENC-style encoder delay is above.
+    /// Source composition (~83ms) stays under this. Hardware encoder delay
+    /// (VAAPI / NVENC / AMF) is above.
     /// </summary>
     private const int EncoderPresentationAlignThresholdMs = 250;
 
@@ -75,7 +76,7 @@ internal static class Fmp4TfdtRebase
         var deltaBeforeAlign = (long)expectedBase - (long)currentBase;
         var driftMs = Math.Abs(deltaBeforeAlign) * 1000.0 / timescale;
 
-        // Encode-only serve path: flatten NVENC delay, not the ~83ms source composition
+        // Encode-only serve path: flatten hardware-encoder delay, not the ~83ms source composition
         // that audio copy keeps. Rebasing composition onto the playlist desyncs Web MSE.
         if (alignPresentationTime
             && driftMs < EncoderPresentationAlignThresholdMs
@@ -152,6 +153,81 @@ internal static class Fmp4TfdtRebase
             + compositionNote
             + ")";
         return true;
+    }
+
+    /// <summary>
+    /// Persist a playlist tfdt onto a segment only after ffmpeg has exited.
+    /// Do not call this while the muxer still holds the file. Retries a late flush.
+    /// </summary>
+    public static bool TryFinalizeClosedSegment(
+        string segmentPath,
+        string initSegmentPath,
+        long segmentStartTimestampMs,
+        int toleranceMs,
+        bool alignPresentationTime,
+        out string detail)
+    {
+        detail = "skipped";
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            if (attempt > 0)
+                Thread.Sleep(20);
+
+            byte[] bytes;
+            try
+            {
+                if (!File.Exists(segmentPath))
+                {
+                    detail = "missing";
+                    continue;
+                }
+
+                bytes = File.ReadAllBytes(segmentPath);
+            }
+            catch (IOException)
+            {
+                detail = "read-failed";
+                continue;
+            }
+
+            if (!TryRebaseMediaSegment(
+                    bytes,
+                    initSegmentPath,
+                    segmentStartTimestampMs,
+                    out var rebasedBytes,
+                    out detail,
+                    toleranceMs,
+                    alignPresentationTime))
+            {
+                if (detail.StartsWith("already-absolute", StringComparison.Ordinal)
+                    || detail == "skipped")
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            try
+            {
+                File.WriteAllBytes(segmentPath, rebasedBytes);
+                return true;
+            }
+            catch (IOException)
+            {
+                detail = "write-failed";
+            }
+        }
+
+        return false;
+    }
+
+    public static bool IsSafeToFinalize(string outputDirectory, int segmentIndex, bool ffmpegExited)
+    {
+        if (ffmpegExited)
+            return true;
+
+        return File.Exists(Path.Combine(outputDirectory, $"{segmentIndex + 1}.m4s"));
     }
 
     private static bool TryReadFirstCompositionOffset(

@@ -408,6 +408,7 @@ public class FfmpegStreamingArgsTests
         FfmpegStreamingArgs.ResolveVideoFfmpegWindow(0, 5, 10).Should().Be((0, 6));
         FfmpegStreamingArgs.ResolveVideoFfmpegWindow(5, 10, 10).Should().Be((4, 10));
         FfmpegStreamingArgs.ResolveVideoFfmpegWindow(0, 10, 10).Should().Be((0, 10));
+        FfmpegStreamingArgs.ResolveVideoFfmpegWindow(5, 10, 20, padBefore: false).Should().Be((5, 11));
     }
 
     [Test]

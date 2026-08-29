@@ -6,6 +6,7 @@ using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Interfaces;
@@ -150,6 +151,9 @@ public class MediaTranscoder : IMediaTranscoder
         int ffmpegStartIndex;
         int ffmpegEndIndex;
         WindowPaddingSegmentGuard? paddingGuard = null;
+        var sequentialRemuxContinue = !needsTranscode
+            && startSegmentIndex > 0
+            && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(outputDirectory, startSegmentIndex - 1);
         if (needsTranscode)
         {
             // Encode seeks exactly to the deliver keyframe. Remux pads one segment
@@ -163,7 +167,8 @@ public class MediaTranscoder : IMediaTranscoder
             (ffmpegStartIndex, ffmpegEndIndex) = FfmpegStreamingArgs.ResolveVideoFfmpegWindow(
                 startSegmentIndex,
                 endSegmentIndex,
-                allSegments.Count);
+                allSegments.Count,
+                padBefore: !sequentialRemuxContinue);
             paddingGuard = WindowPaddingSegmentGuard.Capture(
                 outputDirectory,
                 ffmpegStartIndex,
@@ -175,16 +180,19 @@ public class MediaTranscoder : IMediaTranscoder
 
         var (_, endTime) = ValidateAndComputeTimeRange(allSegments, ffmpegStartIndex, ffmpegEndIndex);
 
+        var accurateSeek = needsTranscode;
         var seekTime = FfmpegStreamingArgs.ResolveTransmuxSeekTime(
             allSegments,
             ffmpegStartIndex,
-            needsTranscode);
-        // Remux: past-IDR pad + -noaccurate_seek. Encode: exact keyframe + accurate seek.
+            accurateSeek);
+        // Remux (seek and sequential continue): past-IDR + -noaccurate_seek.
+        // Accurate remux -ss snaps to the previous IDR (rewind + same GOP twice).
+        // Encode: exact keyframe (re-encode, no prior-GOP snap).
         var cutOrigin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
             allSegments,
             ffmpegStartIndex,
             seekTime,
-            needsTranscode);
+            accurateSeek);
 
         _logger.LogDebug(
             "Starting video streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
@@ -405,26 +413,19 @@ public class MediaTranscoder : IMediaTranscoder
             .NotifyOnError(stderrLines.Add)
             .CancellableThrough(cancellationToken);
 
-        var result = false;
-        try
-        {
-            result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return;
-        }
-        finally
-        {
-            paddingGuard?.RestoreOrDiscard();
-            if (paddingGuard is null)
-            {
-                WindowPaddingSegmentGuard.DeleteCloserSegment(
-                    outputDirectory,
-                    ffmpegEndIndex,
-                    allSegments.Count);
-            }
-        }
+        var result = await RunStreamingFfmpegWithTfdtFinalizeAsync(
+            ffmpegTask,
+            outputDirectory,
+            allSegments,
+            startSegmentIndex,
+            endSegmentIndex,
+            Hls.VideoTfdtRebaseToleranceMs(needsTranscode),
+            alignPresentationTime: needsTranscode,
+            paddingGuard,
+            ffmpegEndIndex,
+            demoteOpenGopSync: !needsTranscode,
+            cancellationToken);
+
         if (!result && !cancellationToken.IsCancellationRequested)
         {
             var stderr = string.Join(Environment.NewLine, stderrLines);
@@ -650,26 +651,18 @@ public class MediaTranscoder : IMediaTranscoder
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
             .CancellableThrough(cancellationToken);
 
-        var result = false;
-        try
-        {
-            result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return;
-        }
-        finally
-        {
-            paddingGuard?.RestoreOrDiscard();
-            if (paddingGuard is null)
-            {
-                WindowPaddingSegmentGuard.DeleteCloserSegment(
-                    outputDirectory,
-                    ffmpegEndIndex,
-                    allSegments.Count);
-            }
-        }
+        var result = await RunStreamingFfmpegWithTfdtFinalizeAsync(
+            ffmpegTask,
+            outputDirectory,
+            allSegments,
+            startSegmentIndex,
+            endSegmentIndex,
+            Hls.TfdtWindowResetThresholdMs,
+            alignPresentationTime: false,
+            paddingGuard,
+            ffmpegEndIndex,
+            demoteOpenGopSync: false,
+            cancellationToken);
 
         if (!result && !cancellationToken.IsCancellationRequested)
         {
@@ -678,6 +671,86 @@ public class MediaTranscoder : IMediaTranscoder
                 inputFilePath,
                 audioTrackIndex,
                 result);
+        }
+    }
+
+    private async Task<bool> RunStreamingFfmpegWithTfdtFinalizeAsync(
+        FFMpegArgumentProcessor ffmpegTask,
+        string outputDirectory,
+        List<HlsSegment> allSegments,
+        int deliverStartIndex,
+        int deliverEndIndexExclusive,
+        int rebaseToleranceMs,
+        bool alignPresentationTime,
+        WindowPaddingSegmentGuard? paddingGuard,
+        int ffmpegEndIndex,
+        bool demoteOpenGopSync,
+        CancellationToken cancellationToken)
+    {
+        var result = false;
+        try
+        {
+            result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            // Restore pads / drop the closer before persist: a live writeback mixed
+            // absolute and window-relative tfdt (rewind + cuts). Files are closed now.
+            paddingGuard?.RestoreOrDiscard();
+            if (paddingGuard is null)
+            {
+                WindowPaddingSegmentGuard.DeleteCloserSegment(
+                    outputDirectory,
+                    ffmpegEndIndex,
+                    allSegments.Count);
+            }
+
+            // Include the kept after-pad (deliverEnd) so the next continue does not
+            // inherit a window-relative first file. Exclude the deleted closer.
+            var finalizeEndExclusive = Math.Min(
+                Math.Min(deliverEndIndexExclusive + 1, ffmpegEndIndex),
+                allSegments.Count);
+            FinalizeClosedDeliverSegments(
+                outputDirectory,
+                allSegments,
+                deliverStartIndex,
+                finalizeEndExclusive,
+                rebaseToleranceMs,
+                alignPresentationTime,
+                demoteOpenGopSync);
+        }
+
+        return result;
+    }
+
+    private static void FinalizeClosedDeliverSegments(
+        string outputDirectory,
+        List<HlsSegment> allSegments,
+        int deliverStartIndex,
+        int finalizeEndExclusive,
+        int rebaseToleranceMs,
+        bool alignPresentationTime,
+        bool demoteOpenGopSync)
+    {
+        var initPath = Path.Combine(outputDirectory, HlsSegmentFileWaiter.InitSegmentFileName);
+        var last = Math.Min(finalizeEndExclusive, allSegments.Count);
+        for (var i = deliverStartIndex; i < last; i++)
+        {
+            var path = Path.Combine(outputDirectory, $"{i}.m4s");
+            Fmp4TfdtRebase.TryFinalizeClosedSegment(
+                path,
+                initPath,
+                allSegments[i].StartTimestamp,
+                rebaseToleranceMs,
+                alignPresentationTime,
+                out _);
+            // Keep sync on the first deliver file of this ffmpeg window. A new remux
+            // bitstream has no prior refs; demoting that CRA makes ExoPlayer freeze.
+            if (demoteOpenGopSync && i != deliverStartIndex)
+                Fmp4OpenGopSync.TryPersistDemotedCra(path);
         }
     }
 

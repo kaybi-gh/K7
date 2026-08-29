@@ -313,7 +313,7 @@ public sealed class StreamPlaybackService(
 
         // Video copy: rebase only a true window reset (>= 1s). Do not flatten the
         // ~83ms source CTS onto the playlist. Video encode: tight align + subtract
-        // first-sample CTS so NVENC delay is not left as late video on ExoPlayer.
+        // first-sample CTS so hardware-encoder delay is not left as late video on ExoPlayer.
         if (segmentNumber >= 0 && segmentNumber < allSegments.Count)
         {
             var initPath = Path.Combine(
@@ -358,6 +358,33 @@ public sealed class StreamPlaybackService(
                     segmentNumber,
                     job.JobId,
                     rebaseDetail);
+            }
+
+            if (!job.IsAudioOnly
+                && !IsVideoEncodeJob(job)
+                && segmentNumber != job.GeneratingFromSegmentIndex
+                && Fmp4OpenGopSync.TryDemoteCraFirstSample(
+                    segmentBytes,
+                    out var demotedBytes,
+                    out var demoteDetail))
+            {
+                segmentBytes = demotedBytes;
+                logger.LogDebug(
+                    "Demoted open-GOP CRA sync flag for segment {SegmentNumber} job {JobId}: {Detail}",
+                    segmentNumber,
+                    job.JobId,
+                    demoteDetail);
+                var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+                if (!ffmpegRunning)
+                {
+                    try
+                    {
+                        await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
+                    }
+                    catch (IOException)
+                    {
+                    }
+                }
             }
         }
 

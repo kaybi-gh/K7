@@ -34,6 +34,8 @@ internal static class FfmpegStreamingArgs
             return startTime;
 
         // Encode: seek exactly to the keyframe. Accurate decode is fine when re-encoding.
+        // Remux sequential continue also uses the past-IDR path below: accurate remux
+        // -ss snaps to the previous IDR and writes that GOP as the first new .m4s.
         if (needsTranscode)
             return startTime;
 
@@ -62,13 +64,16 @@ internal static class FfmpegStreamingArgs
 
     /// <summary>
     /// Pad one segment before/after the deliver window so past-IDR -ss + segment_times
-    /// cut on the requested keyframes. Pad files use playlist numbers: restore if they
-    /// were already ready, otherwise delete them so they cannot fake a hole as "ready".
+    /// cut on the requested keyframes. Skip the before-pad on sequential continue
+    /// (previous playlist index already ready): overwriting it restarts ffmpeg every
+    /// 1-2 segments. Pad files use playlist numbers: restore if they were already ready,
+    /// otherwise delete the new before-pad so it cannot fake a hole as "ready".
     /// </summary>
     public static (int FfmpegStartIndex, int FfmpegEndIndexExclusive) ResolveVideoFfmpegWindow(
         int deliverStartIndex,
         int deliverEndIndexExclusive,
-        int segmentCount)
+        int segmentCount,
+        bool padBefore = true)
     {
         if (segmentCount <= 0)
             throw new ArgumentOutOfRangeException(nameof(segmentCount));
@@ -78,7 +83,7 @@ internal static class FfmpegStreamingArgs
             throw new ArgumentException("Invalid deliver segment range");
         }
 
-        var ffmpegStart = deliverStartIndex > 0 ? deliverStartIndex - 1 : 0;
+        var ffmpegStart = padBefore && deliverStartIndex > 0 ? deliverStartIndex - 1 : deliverStartIndex;
         var ffmpegEnd = deliverEndIndexExclusive < segmentCount
             ? deliverEndIndexExclusive + 1
             : deliverEndIndexExclusive;
