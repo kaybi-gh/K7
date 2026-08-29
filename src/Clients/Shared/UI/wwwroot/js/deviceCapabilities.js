@@ -1,5 +1,31 @@
-// Chromium / MSE playback capability probes (canPlayType + mediaCapabilities).
+// Chromium / MSE playback capability probes.
 // Used by the web client and Windows MAUI (WebView2 + Video.js HLS).
+// Video codecs must match MediaSource.isTypeSupported on fMP4 CODECS strings
+// (what Video.js VHS checks). <video>.canPlayType is progressive-file decode
+// (hev1 Direct Play). Reporting HEVC from canPlayType makes the server remux
+// hvc1 HLS, then VHS drops the only variant (MEDIA_ERR_DECODE).
+
+function mseTypeSupported(mimeType) {
+    try {
+        if (window.ManagedMediaSource && typeof ManagedMediaSource.isTypeSupported === 'function'
+            && ManagedMediaSource.isTypeSupported(mimeType)) {
+            return true;
+        }
+
+        if (window.MediaSource && typeof MediaSource.isTypeSupported === 'function'
+            && MediaSource.isTypeSupported(mimeType)) {
+            return true;
+        }
+    } catch (e) {
+        // Some engines throw on unknown codec strings.
+    }
+
+    return false;
+}
+
+function anyMseTypeSupported(mimeTypes) {
+    return mimeTypes.some(mseTypeSupported);
+}
 
 window.getSupportedAudioCodecsAsync = async function () {
     const audioElement = document.createElement('audio');
@@ -61,19 +87,35 @@ window.getSupportedContainersAsync = async function () {
 };
 
 window.getSupportedVideoCodecsAsync = async function () {
-    const videoElement = document.createElement('video');
-
+    // HLS fMP4 CODECS values Video.js passes to MediaSource.isTypeSupported.
     const codecsToTest = {
-        h264: 'video/mp4; codecs="avc1.42E01E"',
-        vp8: 'video/webm; codecs="vp8"',
-        vp9: 'video/webm; codecs="vp9"',
-        av1: 'video/mp4; codecs="av01.0.05M.08"',
-        hevc: 'video/mp4; codecs="hev1.1.6.L93.B0"',
-        theora: 'video/ogg; codecs="theora"'
+        h264: [
+            'video/mp4; codecs="avc1.42E01E"',
+            'video/mp4; codecs="avc1.640028"'
+        ],
+        vp8: [
+            'video/webm; codecs="vp8"'
+        ],
+        vp9: [
+            'video/mp4; codecs="vp09.00.10.08"',
+            'video/webm; codecs="vp9"'
+        ],
+        av1: [
+            'video/mp4; codecs="av01.0.05M.08"'
+        ],
+        hevc: [
+            'video/mp4; codecs="hvc1.1.4.L120.B0"',
+            'video/mp4; codecs="hvc1.1.6.L93.B0"',
+            'video/mp4; codecs="hvc1.2.4.L150.B0"',
+            'video/mp4; codecs="hvc1.1.4.L120.B0,mp4a.40.2"'
+        ],
+        theora: [
+            'video/ogg; codecs="theora"'
+        ]
     };
 
     return Object.entries(codecsToTest)
-        .filter(([_, mimeType]) => videoElement.canPlayType(mimeType) !== '')
+        .filter(([_, mimeTypes]) => anyMseTypeSupported(mimeTypes))
         .map(([codec]) => codec);
 };
 

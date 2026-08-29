@@ -62,8 +62,10 @@ or DASH instead:
 - [Audio Tracks](https://docs.videojs.com/tutorial-audio-tracks.html) (switch is not handled by Video.js, VHS/HLS only)
 
 Those clients always take demuxed HLS (remux copy, or encode if the codec is not
-HLS-compatible). HEVC `CODECS` uses general_level_idc (`L120` for 4.0, not `L4`) so
-Video.js MSE does not drop the only variant. Audio-only Direct Play is unchanged.
+HLS-compatible). Web and Windows advertise video codecs from `MediaSource.isTypeSupported`
+on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC
+`CODECS` uses general_level_idc (`L120` for 4.0, not `L4`). Audio-only Direct Play is
+unchanged.
 
 Direct Play audio formats must exist for the file container (`audio-matroska-aac` and the
 other container/codec pairs next to each `video-*` format). Missing those forced HLS remux
@@ -85,7 +87,7 @@ K7 HLS playlists are **fMP4** and emit `#EXT-X-MAP` (init segment). WinUI / Medi
 
 - [HTTP Live Streaming (HLS) tag support - Windows apps | Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/hls-tag-support) (`EXT-X-MAP` = Not Supported)
 
-Until Microsoft adds support (or K7 offers a Windows-specific playlist without `#EXT-X-MAP`), Windows MAUI must decode via **Chromium MSE** (Video.js in WebView2). Because the surface is already Blazor/WebView2, Windows also keeps the Blazor control overlay - no separate XAML chrome. Codec capability reporting on Windows therefore reflects WebView2, not MediaElement - see `CodecService` under `src/Clients/MAUI/Platforms/Windows/`.
+Until Microsoft adds support (or K7 offers a Windows-specific playlist without `#EXT-X-MAP`), Windows MAUI must decode via **Chromium MSE** (Video.js in WebView2). Because the surface is already Blazor/WebView2, Windows also keeps the Blazor control overlay - no separate XAML chrome. Codec capability reporting on Windows therefore reflects WebView2 **MSE** (same `deviceCapabilities.js` as web), not MediaElement - see `CodecService` under `src/Clients/MAUI/Platforms/Windows/`.
 
 Shared branch flag: [`WindowsVideoPlayback.UsesWebVideoPlayer`](../../src/Clients/Shared/Helpers/WindowsVideoPlayback.cs).
 

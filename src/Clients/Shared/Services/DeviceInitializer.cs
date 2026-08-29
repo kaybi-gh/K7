@@ -60,8 +60,8 @@ public static class DeviceInitializer
                     }
                 }
 
-                // Refresh codec capabilities each login so Windows MAUI (WebView2) stays aligned
-                // with Chromium direct-play instead of stale MediaElement / empty format lists.
+                // Refresh codec capabilities each login so WebView2 / web stay aligned
+                // with MediaSource HLS probes instead of stale canPlayType format lists.
                 await RefreshDeviceCapabilitiesAsync(services, parsedId);
             }
         }
