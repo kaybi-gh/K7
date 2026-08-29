@@ -74,6 +74,15 @@ Raise levels via Serilog env vars - see [configuration.md](configuration.md#logg
 - On Compose, `Database__Server` must be the service name (`postgres`), not `localhost`
 - Wait for the Postgres healthcheck (`depends_on: service_healthy`)
 
+### Postgres 18: unused mount at `/var/lib/postgresql/data`
+
+Postgres logs mention an unused mount at `/var/lib/postgresql/data` and `pg_upgrade --link`, and the `k7-postgres` container never becomes healthy.
+
+The official Postgres 18 image requires the volume at `/var/lib/postgresql` (not `.../data`). The sample compose ships that path. If you still mount the old destination, **both** upgrades and first-time installs fail.
+
+- New/empty volume: point the volume at `/var/lib/postgresql` and recreate.
+- Existing cluster files in the volume: dump, delete the volume, restore - [Install - Postgres 18 volume mount](install.md#postgres-18-volume-mount).
+
 ### Media files not visible / permission denied
 
 - Confirm the bind mount matches the library `RootPath`

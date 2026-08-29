@@ -18,7 +18,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-K7}
     volumes:
-      - k7-postgres-data:/var/lib/postgresql/data
+      - k7-postgres-data:/var/lib/postgresql
     # Bind to loopback only - peers on the Docker network still reach postgres:5432.
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"

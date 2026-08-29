@@ -40,7 +40,7 @@ Sqlite is supported for small trials but is less performant than Postgres and no
 
 | Volume / mount | Purpose |
 |---|---|
-| `k7-postgres-data` | Postgres database |
+| `k7-postgres-data` -> `/var/lib/postgresql` | Postgres database (PG 18+ parent path, not `.../data`) |
 | `k7-data` -> `/data` | Server state: config, metadatas, logs, transcoding cache |
 | `movies` -> `/media/movies:ro` | Example media library (Compose-managed named volume; swap for a bind mount in real use) |
 
@@ -113,7 +113,61 @@ docker compose up -d
 docker compose logs -f k7-server
 ```
 
+If `k7-postgres` exits with a message about `/var/lib/postgresql/data` or `pg_upgrade --link`, see [Postgres 18 volume mount](#postgres-18-volume-mount).
+
 Downgrading after newer migrations have been applied is **not supported** - restore from a pre-upgrade backup.
+
+### Postgres 18 volume mount
+
+The official Postgres 18 image stores the cluster under a versioned path (`/var/lib/postgresql/18/docker`) and expects a **single** volume at `/var/lib/postgresql`. Mounting the historical `/var/lib/postgresql/data` makes the container exit on start - including a **fresh** empty volume - with a journal message about an unused mount and `pg_upgrade --link`.
+
+The sample [`docker-compose.yaml`](../../docker-compose.yaml) and the Helm bundled Postgres (`database.mode=deployment`) use the new path. CloudNativePG (`database.mode=cnpg`) and an external database are unchanged.
+
+**Empty volume / first install that never started:** pull this compose (or chart) and recreate. You do not need a dump.
+
+**Volume that already has a cluster** (Postgres 17 or earlier, or a 18 container that never started because of the old mount): changing the mount alone is not enough. Dump with the previous major, recreate an empty volume, then restore:
+
+1. Stop the app. Keep the existing named volume.
+
+```bash
+docker compose stop k7-server postgres
+```
+
+2. Dump with a Postgres 17 container against the **old** mount layout. Compose names the volume `{project}_k7-postgres-data` (`docker volume ls`). Load `.env` so `POSTGRES_PASSWORD` is set.
+
+```bash
+docker run --rm -d --name k7-pg17-dump \
+  -v PROJECT_k7-postgres-data:/var/lib/postgresql/data \
+  -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+  -e POSTGRES_USER="${POSTGRES_USER:-postgres}" \
+  -e POSTGRES_DB="${POSTGRES_DB:-K7}" \
+  postgres:17-alpine
+
+until docker exec k7-pg17-dump pg_isready -U "${POSTGRES_USER:-postgres}"; do sleep 1; done
+
+docker exec -T k7-pg17-dump \
+  pg_dump -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-K7}" -Fc > k7-before-pg18.dump
+docker stop k7-pg17-dump
+```
+
+3. Confirm the dump file is non-empty. Then remove **only** the Postgres volume so 18 can `initdb` (the same volume remounted at `/var/lib/postgresql` still contains `PG_VERSION` at the root and will fail the same check). Do not use `docker compose down -v` - that also drops `k7-data`.
+
+```bash
+docker compose down
+docker volume rm PROJECT_k7-postgres-data
+```
+
+4. Start Postgres 18 from the updated compose, restore, then start K7:
+
+```bash
+docker compose up -d postgres
+# Wait until healthy, then:
+docker compose exec -T postgres \
+  pg_restore -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-K7}" --clean --if-exists < k7-before-pg18.dump
+docker compose up -d
+```
+
+Keep `k7-before-pg18.dump` until you have signed in and confirmed libraries. Same idea for Helm bundled Postgres: dump, delete the PVC (or restore into a new one), upgrade the chart, restore. See [Backup and troubleshooting](backup-and-troubleshooting.md).
 
 ### Image tags
 

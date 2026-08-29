@@ -75,11 +75,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "k7.database.secretName" . }}
                   key: database-password
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", {{ $pg.user | quote }}]
