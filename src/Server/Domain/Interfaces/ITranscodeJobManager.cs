@@ -80,6 +80,11 @@ public class TranscodeJob
     public DateTime LastPingTime { get; set; } = DateTime.UtcNow;
     public int TargetSegmentIndex { get; set; }
     /// <summary>
+    /// Highest media segment index requested by a client GET for this job.
+    /// Used to stop lookahead remux after the player pauses.
+    /// </summary>
+    public int LastRequestedSegmentIndex { get; set; } = -1;
+    /// <summary>
     /// First deliver segment index the currently running ffmpeg process will produce.
     /// </summary>
     public int GeneratingFromSegmentIndex { get; set; } = -1;
@@ -88,6 +93,16 @@ public class TranscodeJob
     /// </summary>
     public int GeneratingUntilSegmentIndex { get; set; } = -1;
     public int BufferSize { get; init; } = 10;
+
+    /// <summary>
+    /// Video or audio bitstream copy. Remux jobs run to EOF; encode jobs stay windowed.
+    /// </summary>
+    public bool IsCopyRemux =>
+        IsAudioOnly
+            ? string.IsNullOrEmpty(AudioCodec)
+              || string.Equals(AudioCodec, "copy", StringComparison.OrdinalIgnoreCase)
+            : string.IsNullOrEmpty(VideoCodec)
+              || string.Equals(VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Per-job lock to prevent concurrent FFmpeg process starts from parallel segment requests.

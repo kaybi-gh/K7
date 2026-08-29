@@ -156,10 +156,15 @@ public class TranscodeJobManager(
             return;
         }
 
+        job.LastRequestedSegmentIndex = Math.Max(job.LastRequestedSegmentIndex, requestedSegmentIndex);
+
         // Advertise the real target early so a racing init request does not assume cold start at 0.
-        job.TargetSegmentIndex = Math.Max(
+        job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+            requestedSegmentIndex,
             job.TargetSegmentIndex,
-            requestedSegmentIndex + job.BufferSize);
+            job.BufferSize,
+            allSegments.Count,
+            job.IsCopyRemux);
 
         var currentIndex = job.GetCurrentSegmentIndex();
         var gap = requestedSegmentIndex - currentIndex;
@@ -213,6 +218,23 @@ public class TranscodeJobManager(
             gap = requestedSegmentIndex - currentIndex;
 
             var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+            if (FfmpegRemuxSeekPolicy.ShouldKeepRunningProcess(
+                    job.IsCopyRemux,
+                    segmentReady: false,
+                    ffmpegRunning,
+                    requestedSegmentIndex,
+                    job.GeneratingFromSegmentIndex,
+                    job.GeneratingUntilSegmentIndex))
+            {
+                logger.LogDebug(
+                    "Job {JobId}: Remux still covering segment {RequestedIndex} (from {From} until {Until}), keeping ffmpeg",
+                    job.JobId,
+                    requestedSegmentIndex,
+                    job.GeneratingFromSegmentIndex,
+                    job.GeneratingUntilSegmentIndex);
+                return;
+            }
+
             var missingWithLaterSegments = HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(
                 job.OutputDirectory,
                 requestedSegmentIndex);
@@ -261,7 +283,12 @@ public class TranscodeJobManager(
                 }
 
                 // Extend the target or start/restart ffmpeg
-                var newTarget = Math.Max(job.TargetSegmentIndex, requestedSegmentIndex + job.BufferSize);
+                var newTarget = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                    requestedSegmentIndex,
+                    job.TargetSegmentIndex,
+                    job.BufferSize,
+                    allSegments.Count,
+                    job.IsCopyRemux);
 
                 if (newTarget != job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
                 {
@@ -503,9 +530,12 @@ public class TranscodeJobManager(
         if (purgeExisting)
             PurgeGeneratedSegments(job.OutputDirectory);
 
-        job.TargetSegmentIndex = purgeExisting
-            ? startSegmentIndex + job.BufferSize
-            : Math.Max(job.TargetSegmentIndex, startSegmentIndex + job.BufferSize);
+        job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+            startSegmentIndex,
+            purgeExisting ? 0 : job.TargetSegmentIndex,
+            job.BufferSize,
+            allSegments.Count,
+            job.IsCopyRemux);
 
         await StartFfmpegAsync(job, startSegmentIndex, allSegments, cancellationToken);
     }
@@ -585,6 +615,19 @@ public class TranscodeJobManager(
 
         if (startIndex >= allSegments.Count)
             return;
+
+        job.TargetSegmentIndex = job.IsCopyRemux
+            ? FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                startIndex,
+                job.TargetSegmentIndex,
+                job.BufferSize,
+                allSegments.Count,
+                remuxToEnd: true)
+            : FfmpegWindowAutoContinue.ResolveContinueTarget(
+                startIndex,
+                job.TargetSegmentIndex,
+                job.BufferSize,
+                allSegments.Count);
 
         await StartFfmpegAsync(job, startIndex, allSegments, cancellationToken);
     }
@@ -787,6 +830,20 @@ public class TranscodeJobManager(
         }
 
         var currentIndex = job.GetCurrentSegmentIndex();
+        if (FfmpegWindowAutoContinue.ShouldKeepLookahead(
+                currentIndex,
+                job.TargetSegmentIndex,
+                job.LastRequestedSegmentIndex,
+                job.BufferSize,
+                allSegments.Count))
+        {
+            job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveContinueTarget(
+                currentIndex + 1,
+                job.TargetSegmentIndex,
+                job.BufferSize,
+                allSegments.Count);
+        }
+
         if (!FfmpegWindowAutoContinue.ShouldContinueTowardClientTarget(
                 currentIndex,
                 job.TargetSegmentIndex,
