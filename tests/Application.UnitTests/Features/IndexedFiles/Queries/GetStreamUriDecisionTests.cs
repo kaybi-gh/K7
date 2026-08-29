@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Enums;
+using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Server.Application.UnitTests.Features.IndexedFiles.Queries;
 
@@ -56,6 +57,83 @@ public class GetStreamUriDecisionTests
 
         decision.Mode.Should().Be(PlaybackMode.Direct);
         uri.MimeType.Should().Be("video/mp4");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldReturnDirect_WhenMatroskaHevcAacSupported()
+    {
+        var device = CreateDevice(["audio-matroska-aac", "video-matroska-aac-hevc"]);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+        uri.MimeType.Should().Be("video/x-matroska");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldReturnDirect_WhenFfprobeCodecAliasesMatchCatalog()
+    {
+        var device = CreateDevice(["audio-matroska-pcm", "video-matroska-mpeg2"]);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "mpeg2video", "pcm_s16le");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+        uri.MimeType.Should().Be("video/x-matroska");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldReturnDirect_WhenM4vHevcAacSupported()
+    {
+        var device = CreateDevice(["audio-m4v-aac", "video-m4v-hevc"]);
+        var (indexedFile, metadata) = CreateVideoFile("m4v", "hevc", "aac");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldReturnDirect_WhenIosNativeAv1()
+    {
+        var device = CreateDevice(
+            ["audio-matroska-opus", "video-matroska-av1"],
+            ClientType.Native,
+            OperatingSystem.iOS);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "av01", "opus");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
     }
 
     [Test]
@@ -116,9 +194,13 @@ public class GetStreamUriDecisionTests
         best.Codec.Should().Be("aac");
     }
 
-    private static Device CreateDevice(IEnumerable<string> formatIds) => new()
+    private static Device CreateDevice(
+        IEnumerable<string> formatIds,
+        ClientType clientType = ClientType.Web,
+        OperatingSystem operatingSystem = OperatingSystem.Unknown) => new()
     {
-        ClientType = ClientType.Web,
+        ClientType = clientType,
+        OperatingSystem = operatingSystem,
         PlaybackCapabilities = new DevicePlaybackCapabilities
         {
             SupportedMediaFormatIds = formatIds.ToList()

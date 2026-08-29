@@ -8,7 +8,7 @@ public class CodecService : ICodecService
     private static readonly Dictionary<string, string[]> ContainerToRequiredCodecs = new(StringComparer.OrdinalIgnoreCase)
     {
         ["mp4"] = ["h264", "aac"],
-        ["matroska"] = ["h264", "aac"],
+        // AVPlayer does not play MKV. Keep remux HLS instead of Direct Play.
         ["webm"] = ["vp9", "opus"],
         ["mpegts"] = ["h264"],
         ["mp3"] = ["mp3"],
@@ -17,6 +17,8 @@ public class CodecService : ICodecService
         ["wav"] = ["pcm"],
         ["avi"] = ["h264", "mp3"],
         ["mov"] = ["h264", "aac"],
+        ["m4v"] = ["h264", "aac"],
+        ["3gp"] = ["h264", "aac"],
         ["aac"] = ["aac"],
         ["flv"] = ["h264", "aac"],
     };

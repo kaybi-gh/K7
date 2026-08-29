@@ -15,6 +15,7 @@ public class CodecService : ICodecService
         ["video/x-vnd.on2.vp8"] = "vp8",
         ["video/x-vnd.on2.vp9"] = "vp9",
         ["video/av01"] = "av1",
+        ["video/av02"] = "av2",
         ["video/mp4v-es"] = "mpeg4",
         ["video/mpeg2"] = "mpeg2",
     };
@@ -28,8 +29,15 @@ public class CodecService : ICodecService
         ["audio/flac"] = "flac",
         ["audio/ac3"] = "ac3",
         ["audio/eac3"] = "eac3",
+        ["audio/eac3-joc"] = "eac3",
+        ["audio/vnd.dts"] = "dts",
+        ["audio/vnd.dts.hd"] = "dts",
+        ["audio/true-hd"] = "truehd",
         ["audio/raw"] = "pcm",
         ["audio/x-ms-wma"] = "wma",
+        ["audio/alac"] = "alac",
+        ["audio/x-alac"] = "alac",
+        ["audio/mpeg-L2"] = "mp2",
     };
 
     private static readonly Dictionary<string, string[]> ContainerToRequiredCodecs = new(StringComparer.OrdinalIgnoreCase)
@@ -44,6 +52,9 @@ public class CodecService : ICodecService
         ["wav"] = ["pcm"],
         ["avi"] = ["h264", "mp3"],
         ["mov"] = ["h264", "aac"],
+        ["m4v"] = ["h264", "aac"],
+        ["3gp"] = ["h264", "aac"],
+        ["mpeg"] = ["mpeg2"],
         ["aac"] = ["aac"],
         ["asf"] = ["wma"],
         ["flv"] = ["h264", "aac"],

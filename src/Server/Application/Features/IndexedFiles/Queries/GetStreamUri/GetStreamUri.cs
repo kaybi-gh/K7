@@ -6,6 +6,7 @@ using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using K7.Server.Application.Features.TrackSelectionPreferences.Queries.GetEffectiveTrackSelectionPreferences;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
@@ -59,9 +60,13 @@ public class GetStreamUriQueryHandler(
         var supportedAudioFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().ToList();
         var supportedVideoFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<VideoMediaFormat>().ToList();
 
-        var audioDirectSupported = supportedAudioFormats.Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec);
+        var audioDirectSupported = supportedAudioFormats.Any(x =>
+            x.Container == videoFileMetadata.Container
+            && MediaCodecNames.EqualsCodec(x.Codec, selectedAudioTrack.Codec));
 
-        var videoDirectSupported = supportedVideoFormats.Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec);
+        var videoDirectSupported = supportedVideoFormats.Any(x =>
+            x.Container == videoFileMetadata.Container
+            && MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
 
         var sourceResolution = selectedVideoTrack.Width > 0 && selectedVideoTrack.Height > 0
             ? $"{selectedVideoTrack.Width}x{selectedVideoTrack.Height}"
@@ -112,7 +117,8 @@ public class GetStreamUriQueryHandler(
         }
 
         // Otherwise we go through HLS
-        var videoCodecSupported = supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
+        var videoCodecSupported = supportedVideoFormats.Any(x =>
+            MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
 
         var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
 
@@ -141,13 +147,13 @@ public class GetStreamUriQueryHandler(
         // that the device supports inside mp4 can be stream-copied without transcoding.
         var hlsCompatibleAudioCodecSet = supportedAudioFormats
             .Where(x => x.Container == "mp4")
-            .Select(x => x.Codec)
+            .Select(x => MediaCodecNames.Canonical(x.Codec))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var audioTrack in videoFileMetadata.AudioTracks)
         {
             if (string.IsNullOrWhiteSpace(audioTrack.Codec)
-                || !hlsCompatibleAudioCodecSet.Contains(audioTrack.Codec))
+                || !hlsCompatibleAudioCodecSet.Contains(MediaCodecNames.Canonical(audioTrack.Codec)))
             {
                 audioTrackTranscodings ??= [];
                 var fallback = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
@@ -286,7 +292,8 @@ public class GetStreamUriQueryHandler(
         var supportedAudioFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().ToList();
 
         var directSupported = supportedAudioFormats.Any(x =>
-            x.Container == audioFileMetadata.Container && x.Codec == audioTrack.Codec);
+            x.Container == audioFileMetadata.Container
+            && MediaCodecNames.EqualsCodec(x.Codec, audioTrack.Codec));
 
         if (directSupported)
         {
