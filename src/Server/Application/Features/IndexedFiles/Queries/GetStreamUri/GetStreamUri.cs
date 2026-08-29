@@ -16,6 +16,7 @@ using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
+using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 using K7.Shared.QueryBuilders;
 using Microsoft.Extensions.Logging;
 
@@ -83,8 +84,14 @@ public class GetStreamUriQueryHandler(
             && selectedVideoTrack.Height > 0
             && selectedVideoTrack.Height > device.DisplayHeight;
 
+        // Video.js (web + Windows WebView2) cannot switch in-container audio/subs.
+        // Always remux/encode so the HLS master keeps track choice.
+        // https://github.com/videojs/video.js/issues/6442
+        // https://docs.videojs.com/tutorial-audio-tracks.html
+        var allowsVideoDirectPlay = AllowsVideoDirectPlay(device);
+
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
-        if (audioDirectSupported && videoDirectSupported && !resolutionExceedsDevice)
+        if (allowsVideoDirectPlay && audioDirectSupported && videoDirectSupported && !resolutionExceedsDevice)
         {
             var mimeType = Constants.ContainerMimeTypeMapping.TryGetValue(videoFileMetadata.Container, out var directMime)
                 ? directMime
@@ -211,6 +218,13 @@ public class GetStreamUriQueryHandler(
             MimeType = "application/vnd.apple.mpegurl"
         }, hlsDecision);
     }
+
+    /// <summary>
+    /// Native Android/iOS/Mac can switch muxed tracks. Web and Windows Video.js cannot.
+    /// </summary>
+    internal static bool AllowsVideoDirectPlay(Device device) =>
+        device.ClientType == ClientType.Native
+        && device.OperatingSystem != OperatingSystem.Windows;
 
     private static TranscodeReason BuildVideoTranscodeReason(
         bool requiresVideoTranscoding,

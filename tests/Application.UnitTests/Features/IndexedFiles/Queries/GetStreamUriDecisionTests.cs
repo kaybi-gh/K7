@@ -26,6 +26,18 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetAudioFileStreamUri_ShouldReturnDirect_WhenWebClient()
+    {
+        var device = CreateDevice(["audio-mp3-mp3"], ClientType.Web, OperatingSystem.Unknown);
+        var (indexedFile, metadata) = CreateAudioFile("mp3", "mp3");
+        var request = new GetStreamUriQuery { Id = indexedFile.Id, StreamSessionId = Guid.NewGuid() };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetAudioFileStreamUri(device, indexedFile, metadata, request);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+    }
+
+    [Test]
     public void GetAudioFileStreamUri_ShouldReturnHlsTranscode_WhenCodecUnsupported()
     {
         var device = CreateDevice(["audio-mp4-aac"]);
@@ -137,6 +149,63 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetVideoFileStreamUri_ShouldReturnHlsRemux_WhenWebClientEvenIfCodecsSupported()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        uri.MimeType.Should().Be("application/vnd.apple.mpegurl");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldReturnHlsRemux_WhenWindowsVideoJs()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+    }
+
+    [TestCase(ClientType.Native, OperatingSystem.Android, true)]
+    [TestCase(ClientType.Native, OperatingSystem.iOS, true)]
+    [TestCase(ClientType.Native, OperatingSystem.MacCatalyst, true)]
+    [TestCase(ClientType.Native, OperatingSystem.Windows, false)]
+    [TestCase(ClientType.Web, OperatingSystem.Unknown, false)]
+    public void AllowsVideoDirectPlay_ShouldMatchVideoJsLimitation(
+        ClientType clientType,
+        OperatingSystem operatingSystem,
+        bool expected)
+    {
+        var device = CreateDevice(["video-mp4-aac-h264"], clientType, operatingSystem);
+        GetStreamUriQueryHandler.AllowsVideoDirectPlay(device).Should().Be(expected);
+    }
+
+    [Test]
     public void GetVideoFileStreamUri_ShouldForceTranscode_WhenHlsSegmentsMissing()
     {
         var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"]);
@@ -196,8 +265,8 @@ public class GetStreamUriDecisionTests
 
     private static Device CreateDevice(
         IEnumerable<string> formatIds,
-        ClientType clientType = ClientType.Web,
-        OperatingSystem operatingSystem = OperatingSystem.Unknown) => new()
+        ClientType clientType = ClientType.Native,
+        OperatingSystem operatingSystem = OperatingSystem.Android) => new()
     {
         ClientType = clientType,
         OperatingSystem = operatingSystem,
