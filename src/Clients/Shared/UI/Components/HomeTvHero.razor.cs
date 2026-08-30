@@ -15,6 +15,7 @@ public partial class HomeTvHero : IAsyncDisposable
     private bool _disposed;
 
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     [Parameter] public MediaCardViewModel? Model { get; set; }
 
@@ -97,11 +98,16 @@ public partial class HomeTvHero : IAsyncDisposable
         return $"url('{escaped}')";
     }
 
-    private static string FormatRuntime(int minutes)
+    private static bool ShouldShowRuntime(MediaCardViewModel model) =>
+        model.RuntimeMinutes is > 0
+        && model.MediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
+
+    private string FormatRuntime(int minutes)
     {
         if (minutes >= 60)
-            return $"{minutes / 60}h {minutes % 60}min";
-        return $"{minutes}min";
+            return S["DurationHoursMinutes", minutes / 60, minutes % 60];
+
+        return S["DurationMinutes", minutes];
     }
 
     private static string TruncateOverview(string text, int maxLength = 200)

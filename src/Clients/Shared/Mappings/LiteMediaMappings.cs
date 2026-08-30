@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Interfaces;
 
@@ -229,9 +230,30 @@ public static class LiteMediaMappings
 
     private static int? GetRuntimeMinutes(MediaDto media) => media switch
     {
-        SerieEpisodeDto episode => episode.Runtime,
+        SerieEpisodeDto episode => PositiveMinutes(episode.Runtime) ?? GetVideoDurationMinutes(media),
+        SerieDto serie => PositiveMinutes(serie.Runtime),
+        MovieDto => GetVideoDurationMinutes(media),
         _ => null
     };
+
+    private static int? PositiveMinutes(int? minutes) => minutes is > 0 ? minutes : null;
+
+    private static int? GetVideoDurationMinutes(MediaDto media)
+    {
+        foreach (var file in media.IndexedFiles ?? [])
+        {
+            if (file.FileMetadata is VideoFileMetadataDto video && video.Duration.TotalMinutes >= 1)
+                return (int)video.Duration.TotalMinutes;
+        }
+
+        foreach (var file in media.RemoteIndexedFiles ?? [])
+        {
+            if (file.Duration is { } duration && duration.TotalMinutes >= 1)
+                return (int)duration.TotalMinutes;
+        }
+
+        return null;
+    }
 
     private static double? GetBestRating(IReadOnlyList<RatingDto>? ratings)
     {

@@ -431,6 +431,10 @@ public static class MediaMappings
                     UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
                 })
                 .ToList(),
+            Runtime = serie.Seasons
+                .SelectMany(s => s.Episodes)
+                .Select(e => e.Runtime)
+                .FirstOrDefault(r => r is > 0),
             UserState = MapUserState(domain, itemBookmarks),
             LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
         };

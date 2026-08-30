@@ -10,5 +10,7 @@ public sealed record SerieDto : MediaDto
     public IReadOnlyList<string>? Studios { get; init; }
     public IReadOnlyList<TrailerDto>? Trailers { get; init; }
     public IReadOnlyList<LiteSerieSeasonDto>? Seasons { get; init; }
+    /// <summary>Typical episode runtime in minutes, when known.</summary>
+    public int? Runtime { get; init; }
     public bool HasThemeSong { get; set; }
 }

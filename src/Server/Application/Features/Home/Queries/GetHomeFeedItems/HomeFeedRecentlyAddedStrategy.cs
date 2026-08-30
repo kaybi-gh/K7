@@ -302,7 +302,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
                 Overview = detailed ? (serie.Overview ?? ep.Overview) : null,
                 Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
                 ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,
-                RuntimeMinutes = detailed ? ep.Runtime : null,
+                RuntimeMinutes = detailed ? HomeFeedItemMapper.PositiveMinutes(ep.Runtime) : null,
                 Rating = detailed ? HomeFeedItemMapper.GetBestRating(serie) : null
             };
         }
@@ -327,6 +327,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
                 Overview = detailed ? serie.Overview : null,
                 Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
                 ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,
+                RuntimeMinutes = detailed ? HomeFeedItemMapper.FirstPositiveRuntime(episodes.Select(e => e.Runtime)) : null,
                 Rating = detailed ? HomeFeedItemMapper.GetBestRating(serie) : null
             };
         }
@@ -347,6 +348,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             Overview = detailed ? serie.Overview : null,
             Genres = detailed && HomeFeedItemMapper.GetGenres(serie).Count > 0 ? HomeFeedItemMapper.GetGenres(serie) : null,
             ContentRating = detailed ? HomeFeedItemMapper.GetContentRating(serie) : null,
+            RuntimeMinutes = detailed ? HomeFeedItemMapper.FirstPositiveRuntime(episodes.Select(e => e.Runtime)) : null,
             Rating = detailed ? HomeFeedItemMapper.GetBestRating(serie) : null
         };
     }

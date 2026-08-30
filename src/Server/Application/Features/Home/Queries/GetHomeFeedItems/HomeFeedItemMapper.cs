@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
@@ -118,9 +119,33 @@ internal static class HomeFeedItemMapper
 
     public static int? GetRuntimeMinutes(BaseMedia item) => item switch
     {
-        SerieEpisode e => e.Runtime,
+        SerieEpisode e => PositiveMinutes(e.Runtime) ?? GetVideoDurationMinutes(e),
+        Movie m => GetVideoDurationMinutes(m),
+        Serie s => FirstPositiveRuntime(s.Seasons.SelectMany(season => season.Episodes).Select(e => e.Runtime)),
         _ => null
     };
+
+    public static int? FirstPositiveRuntime(IEnumerable<int?> runtimes) =>
+        runtimes.FirstOrDefault(r => r is > 0);
+
+    public static int? PositiveMinutes(int? minutes) => minutes is > 0 ? minutes : null;
+
+    private static int? GetVideoDurationMinutes(BaseMedia item)
+    {
+        foreach (var file in item.IndexedFiles)
+        {
+            if (file.FileMetadata is VideoFileMetadata video && video.Duration.TotalMinutes >= 1)
+                return (int)video.Duration.TotalMinutes;
+        }
+
+        foreach (var file in item.RemoteIndexedFiles)
+        {
+            if (file.Duration is { } duration && duration.TotalMinutes >= 1)
+                return (int)duration.TotalMinutes;
+        }
+
+        return null;
+    }
 
     public static double? GetBestRating(BaseMedia item)
     {

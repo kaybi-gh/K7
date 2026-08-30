@@ -1,7 +1,9 @@
 using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Interfaces;
 
@@ -343,4 +345,76 @@ public class LiteMediaMappingsTests
         result.ResolveHeroBackdropUrl().Should().Be(result.BackdropUrl);
         result.SoftHeroBackdrop.Should().BeTrue();
     }
+
+    [Test]
+    public void WithHeroDetailsFromMedia_ShouldUseVideoFileDuration_ForMovie()
+    {
+        var source = CreateHeroSource(MediaType.Movie);
+        var media = new MovieDto
+        {
+            Title = "Dune",
+            IndexedFiles =
+            [
+                new IndexedFileDto
+                {
+                    Id = Guid.NewGuid(),
+                    LibraryId = Guid.NewGuid(),
+                    Name = "dune",
+                    Extension = ".mkv",
+                    Path = "dune.mkv",
+                    Hash = 1,
+                    Size = 1,
+                    FileMetadata = new VideoFileMetadataDto
+                    {
+                        Container = "mkv",
+                        VideoBitrate = 1,
+                        VideoResolution = VideoResolutionIdentifier._1080p,
+                        Duration = TimeSpan.FromMinutes(125)
+                    }
+                }
+            ]
+        };
+
+        var result = source.WithHeroDetailsFromMedia(media, Substitute.For<IK7ServerService>());
+
+        result.RuntimeMinutes.Should().Be(125);
+    }
+
+    [Test]
+    public void WithHeroDetailsFromMedia_ShouldUseTypicalEpisodeRuntime_ForSerie()
+    {
+        var source = CreateHeroSource(MediaType.Serie);
+        var media = new SerieDto
+        {
+            Title = "Breaking Bad",
+            Runtime = 47
+        };
+
+        var result = source.WithHeroDetailsFromMedia(media, Substitute.For<IK7ServerService>());
+
+        result.RuntimeMinutes.Should().Be(47);
+    }
+
+    [Test]
+    public void WithHeroDetailsFromMedia_ShouldUseEpisodeRuntime_ForSerieEpisode()
+    {
+        var source = CreateHeroSource(MediaType.SerieEpisode);
+        var media = new SerieEpisodeDto
+        {
+            Title = "Pilot",
+            Runtime = 58
+        };
+
+        var result = source.WithHeroDetailsFromMedia(media, Substitute.For<IK7ServerService>());
+
+        result.RuntimeMinutes.Should().Be(58);
+    }
+
+    private static MediaCardViewModel CreateHeroSource(MediaType mediaType) => new()
+    {
+        Id = Guid.NewGuid().ToString(),
+        Title = "Title",
+        Kind = MediaCardKind.Poster,
+        MediaType = mediaType
+    };
 }

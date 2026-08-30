@@ -74,6 +74,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             _ => await _topLevelStrategy.HandleAsync(request, userId, sharedProfileId, cancellationToken)
         };
 
+        if (request.Detailed == true && result.Items.Count > 0)
+        {
+            var withRuntime = await HomeFeedRuntimeResolver.ApplyAsync(context, result.Items, cancellationToken);
+            result = new PaginatedList<HomeFeedItemDto>(withRuntime, result.TotalCount, result.PageNumber, request.PageSize);
+        }
+
         var ttl = strategy switch
         {
             FeedStrategy.ContinueWatching => ContinueWatchingCacheDuration,

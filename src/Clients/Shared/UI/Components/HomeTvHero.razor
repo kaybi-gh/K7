@@ -23,16 +23,16 @@
                 {
                     <span class="home-tv-hero__meta-item home-tv-hero__badge">@Model.ContentRating</span>
                 }
-                @if (Model.RuntimeMinutes.HasValue)
-                {
-                    <span class="home-tv-hero__meta-item">@FormatRuntime(Model.RuntimeMinutes.Value)</span>
-                }
                 @if (Model.Rating.HasValue)
                 {
                     <span class="home-tv-hero__meta-item home-tv-hero__rating">
                         <K7Icon Icon="@Phosphor.Star"  IconSize="@K7IconSize.Sm" />
                         @Model.Rating.Value.ToString("0.#")/10
                     </span>
+                }
+                @if (ShouldShowRuntime(Model))
+                {
+                    <span class="home-tv-hero__meta-item">@FormatRuntime(Model.RuntimeMinutes!.Value)</span>
                 }
             </div>
             @if (Model.Genres is { Count: > 0 })
