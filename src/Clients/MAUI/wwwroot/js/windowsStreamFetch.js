@@ -11,7 +11,8 @@
 
         return url.indexOf('/hls-stream/') !== -1
             || url.indexOf('/direct-stream') !== -1
-            || url.indexOf('/remote-stream-sessions/') !== -1;
+            || url.indexOf('/remote-stream-sessions/') !== -1
+            || (url.indexOf('/subtitles/') !== -1 && url.indexOf('.vtt') !== -1);
     }
 
     function getVhsModule() {

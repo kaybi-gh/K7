@@ -33,6 +33,12 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService) :
             return null;
         }
 
+        // Video.js on Windows must not remux EAC3 into fMP4 - force AAC when the playlist
+        // omitted TranscodingAudioCodec (older server decisions / dropped query params).
+        var fetchUrl = HlsStreamUrlHelper.EnsureWindowsHlsAudioTranscodeQuery(requestUri.AbsoluteUri);
+        if (!Uri.TryCreate(fetchUrl, UriKind.Absolute, out requestUri))
+            return null;
+
         if (!requestUri.AbsoluteUri.StartsWith(serverBaseUri.AbsoluteUri, StringComparison.OrdinalIgnoreCase)
             || !HlsStreamUrlHelper.IsK7StreamResource(requestUri.AbsoluteUri))
         {

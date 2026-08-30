@@ -33,6 +33,16 @@ internal static class WindowGeometryPersistence
     private static bool _restoring;
     private static CancellationTokenSource? _saveCts;
 
+    public static void SetFullscreen(bool fullscreen)
+    {
+        var appWindow = GetAppWindow(_hwnd);
+        if (appWindow is null)
+            return;
+
+        appWindow.SetPresenter(
+            fullscreen ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Default);
+    }
+
     public static void Attach(WinUIWindow nativeWindow)
     {
         var hwnd = WindowNative.GetWindowHandle(nativeWindow);
@@ -116,6 +126,9 @@ internal static class WindowGeometryPersistence
     private static void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
         if (_restoring || !_restored)
+            return;
+
+        if (sender.Presenter.Kind == AppWindowPresenterKind.FullScreen)
             return;
 
         if (!args.DidPositionChange && !args.DidSizeChange && !args.DidPresenterChange)
