@@ -118,8 +118,11 @@ public sealed partial class NativeVideoPlayerOverlay
                 Text = emoji,
                 FontSize = 20,
                 BackgroundColor = Colors.Transparent,
-                Padding = new Thickness(6)
+                Padding = new Thickness(6),
+                CornerRadius = 8
             };
+            NativeOverlayHover.Attach(emojiButton, hovered =>
+                emojiButton.BackgroundColor = hovered ? NativeOverlayHover.Highlight : Colors.Transparent);
             emojiButton.Clicked += (_, _) => _ = SendSyncPlayReactionAsync(emoji);
             _reactionPickerGrid.Children.Add(emojiButton);
         }
@@ -172,15 +175,22 @@ public sealed partial class NativeVideoPlayerOverlay
         Children.Add(_reactionLayer);
     }
 
-    private static Button CreateSyncPlayIconButton(string glyph) => new()
+    private static Button CreateSyncPlayIconButton(string glyph)
     {
-        Text = glyph,
-        FontFamily = NativePlayerGlyphs.FontFamily,
-        TextColor = Colors.White,
-        BackgroundColor = Colors.Transparent,
-        FontSize = 18,
-        Padding = new Thickness(8, 4)
-    };
+        var button = new Button
+        {
+            Text = glyph,
+            FontFamily = NativePlayerGlyphs.FontFamily,
+            TextColor = Colors.White,
+            BackgroundColor = Colors.Transparent,
+            FontSize = 18,
+            Padding = new Thickness(8, 4),
+            CornerRadius = 8
+        };
+        NativeOverlayHover.Attach(button, hovered =>
+            button.BackgroundColor = hovered ? NativeOverlayHover.Highlight : Colors.Transparent);
+        return button;
+    }
 
     private void ToggleSyncPlayPanel() => SetSyncPlayPanelOpen(!_syncPlayPanelOpen);
 

@@ -29,8 +29,12 @@ public sealed class NativeSeekBar : GraphicsView
 
     public event EventHandler<bool>? DragChanged;
     public event EventHandler<double>? SeekCommitted;
+    public event EventHandler<double>? HoverChanged;
+    public event EventHandler? HoverEnded;
+    public event EventHandler<double>? PreviewMoved;
 
     private bool _dragging;
+    private bool _hovering;
     private double? _dragTime;
     private readonly SeekBarDrawable _drawable;
 
@@ -42,6 +46,11 @@ public sealed class NativeSeekBar : GraphicsView
         StartInteraction += OnStartInteraction;
         DragInteraction += OnDragInteraction;
         EndInteraction += OnEndInteraction;
+
+        var pointer = new PointerGestureRecognizer();
+        pointer.PointerMoved += OnPointerMoved;
+        pointer.PointerExited += OnPointerExited;
+        GestureRecognizers.Add(pointer);
     }
 
     public IPlayerService? Player
@@ -97,6 +106,31 @@ public sealed class NativeSeekBar : GraphicsView
         var next = Math.Clamp((_dragTime ?? Player?.CurrentTime ?? 0) + deltaSeconds, 0, duration);
         _dragTime = next;
         Refresh();
+        PreviewMoved?.Invoke(this, next);
+    }
+
+    public void HoverAt(double x)
+    {
+        if (_dragging || Player is null || Player.Duration <= 0)
+            return;
+
+        _hovering = true;
+        var time = TimeFromX((float)x);
+        PreviewTime = time;
+        Refresh();
+        HoverChanged?.Invoke(this, time);
+        PreviewMoved?.Invoke(this, time);
+    }
+
+    public void EndHover()
+    {
+        if (_dragging)
+            return;
+
+        _hovering = false;
+        PreviewTime = null;
+        Refresh();
+        HoverEnded?.Invoke(this, EventArgs.Empty);
     }
 
     public void CommitEdit()
@@ -124,6 +158,20 @@ public sealed class NativeSeekBar : GraphicsView
         Refresh();
     }
 
+    private void OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_dragging || Player is null || Player.Duration <= 0)
+            return;
+
+        var point = e.GetPosition(this);
+        if (point is null)
+            return;
+
+        HoverAt(point.Value.X);
+    }
+
+    private void OnPointerExited(object? sender, PointerEventArgs e) => EndHover();
+
     private void OnStartInteraction(object? sender, TouchEventArgs e)
     {
         if (e.Touches.Length == 0 || Player is null || Player.Duration <= 0)
@@ -133,6 +181,7 @@ public sealed class NativeSeekBar : GraphicsView
         _dragTime = TimeFromX(e.Touches[0].X);
         DragChanged?.Invoke(this, true);
         Refresh();
+        PreviewMoved?.Invoke(this, _dragTime.Value);
     }
 
     private void OnDragInteraction(object? sender, TouchEventArgs e)
@@ -142,6 +191,7 @@ public sealed class NativeSeekBar : GraphicsView
 
         _dragTime = TimeFromX(e.Touches[0].X);
         Refresh();
+        PreviewMoved?.Invoke(this, _dragTime.Value);
     }
 
     private void OnEndInteraction(object? sender, TouchEventArgs e)
@@ -173,7 +223,7 @@ public sealed class NativeSeekBar : GraphicsView
                 return;
 
             var trackY = dirtyRect.Height / 2f;
-            var trackHeight = owner._dragging ? TrackHeightFocused : TrackHeight;
+            var trackHeight = owner._dragging || owner._hovering ? TrackHeightFocused : TrackHeight;
             var currentTime = owner.DisplayTime;
             var bufferedTime = player?.BufferedTime ?? 0;
             var chapters = owner.Chapters;
@@ -191,7 +241,7 @@ public sealed class NativeSeekBar : GraphicsView
             var current = Math.Clamp(currentTime / duration, 0, 1);
             var thumbX = dirtyRect.Width * (float)current;
             canvas.FillColor = Colors.White;
-            canvas.FillCircle(thumbX, trackY, owner._dragging ? 8 : 6);
+            canvas.FillCircle(thumbX, trackY, owner._dragging || owner._hovering ? 8 : 6);
         }
 
         private static void DrawSolidTrack(

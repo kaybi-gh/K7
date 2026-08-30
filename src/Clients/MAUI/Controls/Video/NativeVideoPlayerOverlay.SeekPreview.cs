@@ -71,8 +71,7 @@ public sealed partial class NativeVideoPlayerOverlay
         {
             if (!_seekPreview.IsVisible || _seekPreview.Width <= 1 || _seekPreview.Height <= 1)
                 return;
-            var time = _seekBar.IsDragging || _seekScrubbing ? _seekBar.DisplayTime : _player.CurrentTime;
-            PositionSeekPreview(time);
+            PositionSeekPreview(_seekBar.DisplayTime);
             _seekPreview.Opacity = 1;
         };
         Children.Add(_seekPreview);
@@ -88,9 +87,7 @@ public sealed partial class NativeVideoPlayerOverlay
             return;
         }
 
-        var time = _seekBar.IsDragging || _seekScrubbing
-            ? _seekBar.DisplayTime
-            : _player.CurrentTime;
+        var time = _seekBar.DisplayTime;
         _seekPreviewTime.Text = NativeTimeFormatting.Format(time);
 
         var chapterTitle = GetHoveredChapterTitle(time);

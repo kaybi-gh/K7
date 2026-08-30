@@ -10,10 +10,10 @@
              Padding="0">
 
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
-        <!-- Native MediaElement (video) - Android/iOS decode on TextureView (Android).
-             NativeVideoPlayerOverlay (ZIndex 5+) owns transport chrome when MauiNativeVideoChrome
-             is enabled (Android/iOS only). Windows stays full Blazor + Video.js in WebView2.
-             Black at launch avoids a white flash before first frame. -->
+        <!-- Native MediaElement (video): Android ExoPlayer / iOS AVPlayer. SurfaceView on
+             Android TV (Amlogic) avoids TextureView composition freezes. Android text cues
+             sit on RootGrid (ZIndex 3). Windows Direct uses LibVLC; HLS uses Video.js.
+             Overlay (ZIndex 5+) owns chrome. -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
                               IsVisible="False"
@@ -22,7 +22,7 @@
                               HorizontalOptions="Fill"
                               VerticalOptions="Fill"
                               ShouldShowPlaybackControls="False"
-                              AndroidViewType="TextureView"
+                              AndroidViewType="SurfaceView"
                               InputTransparent="True" ZIndex="1"/>
 
         <!-- Native MediaElement (audio - Android/iOS/MacCatalyst). Windows uses WebView audioplayer.js. -->

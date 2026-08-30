@@ -1,4 +1,5 @@
 using System.Timers;
+using K7.Clients.MAUI.Playback;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -10,6 +11,7 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
 using Microsoft.Maui.Controls.Shapes;
 using DeviceType = K7.Server.Domain.Enums.DeviceType;
@@ -19,8 +21,8 @@ using Timer = System.Timers.Timer;
 namespace K7.Clients.MAUI.Controls.Video;
 
 /// <summary>
-/// Full native video chrome for MAUI play sessions (Android/iOS only - Windows stays Blazor +
-/// Video.js). Mirrors <c>VideoPlayerControlsOverlay.razor(.cs)</c> 1:1: transport, seek bar with
+/// Full native video chrome for MAUI play sessions (Android/iOS/Windows). Mirrors
+/// <c>VideoPlayerControlsOverlay.razor(.cs)</c> 1:1: transport, seek bar with
 /// chapter ticks/sprite preview, playback settings, cast/remote device picker, SyncPlay, skip
 /// segment, next episode, and touch/pan gestures. Binds to <see cref="IPlayerService"/>.
 /// </summary>
@@ -50,13 +52,28 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         InputTransparent = true,
         IsVisible = false
     };
+    private readonly ActivityIndicator _loadingSpinner = new()
+    {
+        Color = Colors.White,
+        InputTransparent = true,
+        IsVisible = false,
+        IsRunning = false,
+        HorizontalOptions = LayoutOptions.Center,
+        VerticalOptions = LayoutOptions.Center,
+        WidthRequest = 48,
+        HeightRequest = 48,
+        // Above veil, below chrome - visible in the open middle without blocking back.
+        ZIndex = 1
+    };
     private readonly Grid _topBar = new();
     private readonly Grid _bottomBar = new();
     private readonly Label _titleLabel = new();
     private readonly Label _timeLabel = new();
     private int _tvChromeFocusIndex;
     private bool _tvFocusOnSeekBar;
-    private static readonly Color TvFocusColor = Color.FromArgb("#66FFFFFF");
+    private static readonly Color TvFocusColor = NativeOverlayHover.Highlight;
+    private Button? _hoveredChromeButton;
+    private bool _skipSegmentHovered;
     private Button? _backButton;
     private readonly Border _seekBarFocusRing = new()
     {
@@ -70,10 +87,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         Back,
         Play,
+        Volume,
         SeekBar,
         Settings,
         Cast,
         SyncPlay,
+        Fullscreen,
         SkipSegment
     }
     private readonly Border _hudBanner = new();
@@ -101,8 +120,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         IsVisible = false,
         ZIndex = 15
     };
-    private readonly Slider _volumeSlider = new();
+    private readonly NativeVolumeSlider _volumeSlider = new();
     private readonly Border _volumePopover = new();
+    private System.Timers.Timer? _cursorIdleTimer;
     private readonly NativeSeekBar _seekBar;
     private readonly NativePlaybackSettingsPanel _settings;
     // Split left/right catchers so vertical pan side does not depend on PointerPressed
@@ -121,6 +141,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private DateTime _suppressShowUntil = DateTime.MinValue;
     private DateTime _suppressCloseUntil = DateTime.MinValue;
     private Timer? _hideTimer;
+    private Timer? _volumeHoverHideTimer;
     private Timer? _hudTimer;
     private Timer? _skipNotificationTimer;
     private Timer? _seekDebounceTimer;
@@ -198,6 +219,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         BuildLayout();
         WireEvents();
         SizeChanged += (_, _) => UpdateSettingsAvailableHeight();
+        var pointerMove = new PointerGestureRecognizer();
+        pointerMove.PointerMoved += OnDesktopPointerMoved;
+        GestureRecognizers.Add(pointerMove);
     }
 
     public bool IsChromeVisible =>
@@ -224,6 +248,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         UnsubscribePlayer();
         UnsubscribeSyncPlay();
         StopHideTimer();
+        CancelVolumeHoverHide();
         StopSkipNotificationTimer();
         _settings.Close();
         _volumeOpen = false;
@@ -232,6 +257,10 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SetSyncPlayPanelOpen(false);
         DismissNextEpisode();
         RestoreBrightness();
+        StopCursorIdle();
+#if WINDOWS
+        Platforms.Windows.WindowsIdleCursor.Show();
+#endif
     }
 
     private void RestoreBrightness()
@@ -248,10 +277,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             NativeVideoDebug.Log("SetActive active=" + active + " device=" + _deviceType);
             if (active)
             {
+                AttachSidecarLayer();
                 Attach();
                 _awaitingFirstFrame = true;
                 SetLoadingVeil(true);
-                // Warm settings UI while the veil is up so the first Open does not hitch ExoPlayer.
+                // Warm settings UI while the veil is up so the first Open does not hitch playback.
                 try { _settings.Rebuild(); } catch { /* ignore */ }
                 // TV: start with chrome hidden so the first OK reveals it with focus,
                 // matching Blazor auto-hide behavior after play begins.
@@ -264,9 +294,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 RefreshSeekChapters();
                 UpdateTransport();
                 WarmSeekThumbnails();
+                RefreshSidecarSubtitles();
             }
             else
             {
+                if (_player.IsFullScreen)
+                {
+                    _player.IsFullScreen = false;
+                    _player.ExitFullScreen();
+                }
+
+                ClearSidecarSubtitles();
+                DetachSidecarLayer();
                 SetLoadingVeil(false);
                 Detach();
             }
@@ -285,9 +324,39 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
 
             _loadingVeil.IsVisible = loading;
+            _loadingSpinner.IsVisible = loading;
+            _loadingSpinner.IsRunning = loading;
             NativeVideoDebug.Log("SetLoadingVeil loading=" + loading);
-            if (!loading && _deviceType == DeviceType.TV && !_showChrome)
+            // Keep transport/back visible while the surface is covered.
+            if (loading)
+            {
+                StopHideTimer();
+                if (_deviceType != DeviceType.TV)
+                    ShowChrome();
+            }
+            else if (_deviceType == DeviceType.TV && !_showChrome)
+            {
                 ResetHideTimer();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Cover the decode surface again (VLC audio reopen / mid-GOP seek) until
+    /// <see cref="NotifyFirstFrameReady"/> runs.
+    /// </summary>
+    public void ShowTransientVeil()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _awaitingFirstFrame = true;
+            _loadingVeil.IsVisible = true;
+            _loadingSpinner.IsVisible = true;
+            _loadingSpinner.IsRunning = true;
+            StopHideTimer();
+            if (_deviceType != DeviceType.TV)
+                ShowChrome();
+            NativeVideoDebug.Log("SetLoadingVeil loading=True transient");
         });
     }
 
@@ -298,9 +367,10 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             _awaitingFirstFrame = false;
             _loadingVeil.IsVisible = false;
+            _loadingSpinner.IsVisible = false;
+            _loadingSpinner.IsRunning = false;
             NativeVideoDebug.Log("SetLoadingVeil loading=False firstFrame");
-            if (_deviceType == DeviceType.TV && !_showChrome)
-                ResetHideTimer();
+            ResetHideTimer();
         });
     }
 
@@ -399,6 +469,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             if (key is "escape" or "browserback" or "goback" or "back")
             {
+                if (isKeyUp)
+                    return true;
+
                 StopDpadHold();
                 return HandleBack();
             }
@@ -406,9 +479,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return HandleNextEpisodeKey(key, isKeyUp);
         }
 
-        // Back always goes through HandleBack.
+        // Back always goes through HandleBack. KeyUp must not run it again
+        // (Windows PreviewKeyUp would hide chrome then immediately close the player).
         if (key is "escape" or "browserback" or "goback" or "back")
         {
+            if (isKeyUp)
+                return true;
+
             StopDpadHold();
             NativeVideoDebug.Log("HandleKey back chrome=" + _showChrome + " scrub=" + _seekScrubbing + " settings=" + _settings.IsOpen);
             return HandleBack();
@@ -422,7 +499,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (key is "space" or "mediaplaypause" or "mediaplay" or "mediapause")
         {
-            TogglePlayPause();
+            if (!isKeyUp)
+                TogglePlayPause();
             return true;
         }
 
@@ -431,13 +509,15 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (key is "m" && IsDesktopLike())
         {
-            ToggleMute();
+            if (!isKeyUp)
+                ToggleMute();
             return true;
         }
 
         if (key is "f" && IsDesktopLike())
         {
-            ToggleFullscreen();
+            if (!isKeyUp)
+                ToggleFullscreen();
             return true;
         }
 
@@ -784,9 +864,17 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _chromeGradient.InputTransparent = true;
         Children.Add(_chromeGradient);
 
+        BuildSidecarSubtitleLabel();
+
+        // Veil + spinner under chrome: cover the video surface, keep back/controls usable.
         _loadingVeil.Color = Colors.Black;
         _loadingVeil.InputTransparent = true;
+        _loadingVeil.ZIndex = 0;
         Children.Add(_loadingVeil);
+        DisableHitTesting(_loadingVeil);
+        _loadingSpinner.ZIndex = 1;
+        Children.Add(_loadingSpinner);
+        DisableHitTesting(_loadingSpinner);
 
         _chrome.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _chrome.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
@@ -798,6 +886,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _chrome.CascadeInputTransparent = false;
         // Keep transport clear of notches/system bars while the scrim sibling stays full-bleed.
         _chrome.SafeAreaEdges = new SafeAreaEdges(SafeAreaRegions.Container);
+        _chrome.ZIndex = 10;
 
         BuildTopBar();
         BuildBottomBar();
@@ -859,6 +948,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _skipSegmentButton.HorizontalOptions = LayoutOptions.Center;
         _skipSegmentButton.Clicked += (_, _) => SkipActiveSegment();
         DisablePlatformFocus(_skipSegmentButton);
+        NativeOverlayHover.ApplyHandCursor(_skipSegmentButton);
+        NativeOverlayHover.Attach(_skipSegmentFocusRing, hovered =>
+        {
+            _skipSegmentHovered = hovered;
+            ApplyTvChromeFocusHighlight();
+        });
         _skipSegmentFocusRing.StrokeShape = new RoundRectangle { CornerRadius = 10 };
         _skipSegmentFocusRing.Content = _skipSegmentButton;
         Children.Add(_skipSegmentFocusRing);
@@ -910,40 +1005,64 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         _volumeButton.Text = NativePlayerGlyphs.SpeakerHigh;
         StyleTransportButton(_volumeButton);
-        _volumeButton.Clicked += (_, _) =>
-        {
-            if (IsDesktopLike())
-                SetVolumeOpen(!_volumeOpen);
-            else
-                ToggleMute();
-        };
+        _volumeButton.Clicked += (_, _) => ToggleMute();
+        AttachVolumeHover();
         left.Children.Add(_volumeButton);
 
-        _volumeSlider.Minimum = 0;
-        _volumeSlider.Maximum = 1;
-        _volumeSlider.Value = _player.Volume;
-        _volumeSlider.WidthRequest = 36;
-        _volumeSlider.HeightRequest = 140;
-        _volumeSlider.ValueChanged += (_, e) =>
+        _volumeSlider.Value = DisplayedVolume;
+        _volumeSlider.ValueChanged += (_, value) =>
         {
-            _player.SetVolume(e.NewValue);
-            if (e.NewValue <= 0.001 && !_player.IsMuted)
-                _player.Mute();
-            else if (e.NewValue > 0.001 && _player.IsMuted)
-                _player.Unmute();
+            CancelVolumeHoverHide();
+            ApplyUserVolume(value);
             UpdateTransport();
             ResetHideTimer();
         };
 
-        _volumePopover.Content = _volumeSlider;
-        _volumePopover.BackgroundColor = Color.FromArgb("#EE121212");
-        _volumePopover.Padding = new Thickness(8);
-        _volumePopover.StrokeShape = new RoundRectangle { CornerRadius = 10 };
+        var plus = new Label
+        {
+            Text = "+",
+            TextColor = Colors.White,
+            FontSize = 22,
+            HorizontalTextAlignment = TextAlignment.Center,
+            HorizontalOptions = LayoutOptions.Center,
+            FontAutoScalingEnabled = false
+        };
+        var minus = new Label
+        {
+            Text = "\u2212",
+            TextColor = Colors.White,
+            FontSize = 22,
+            HorizontalTextAlignment = TextAlignment.Center,
+            HorizontalOptions = LayoutOptions.Center,
+            FontAutoScalingEnabled = false
+        };
+        var volumeStack = new VerticalStackLayout
+        {
+            Spacing = 4,
+            Padding = new Thickness(4, 8),
+            Children = { plus, _volumeSlider, minus }
+        };
+        _volumePopover.Content = volumeStack;
+        _volumePopover.BackgroundColor = Color.FromArgb("#EB1E1E1E");
+        _volumePopover.Padding = 0;
+        _volumePopover.Stroke = Color.FromArgb("#1AFFFFFF");
+        _volumePopover.StrokeThickness = 1;
+        _volumePopover.StrokeShape = new RoundRectangle { CornerRadius = 16 };
         _volumePopover.IsVisible = false;
         _volumePopover.HorizontalOptions = LayoutOptions.Start;
         _volumePopover.VerticalOptions = LayoutOptions.End;
-        _volumePopover.Margin = new Thickness(56, 0, 0, 72);
+        _volumePopover.Margin = new Thickness(52, 0, 0, 72);
         Children.Add(_volumePopover);
+        AttachVolumePopoverHover();
+
+        _seekBar.HoverChanged += OnSeekHover;
+        _seekBar.HoverEnded += OnSeekHoverEnded;
+        _seekBar.PreviewMoved += OnSeekPreviewMoved;
+
+        var seekPointer = new PointerGestureRecognizer();
+        seekPointer.PointerMoved += OnSeekRingPointerMoved;
+        seekPointer.PointerExited += OnSeekRingPointerExited;
+        _seekBarFocusRing.GestureRecognizers.Add(seekPointer);
 
         _timeLabel.TextColor = Colors.White;
         _timeLabel.FontSize = 13;
@@ -993,19 +1112,27 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _bottomBar.Children.Add(right);
     }
 
-    private static void StyleTransportButton(Button button)
+    private void StyleTransportButton(Button button)
     {
         button.BackgroundColor = Colors.Transparent;
+        button.BorderColor = Colors.Transparent;
+        button.BorderWidth = 0;
         button.TextColor = Colors.White;
         button.FontFamily = NativePlayerGlyphs.FontFamily;
         button.FontSize = 20;
         button.Padding = new Thickness(10, 6);
+        button.CornerRadius = 8;
         button.FontAutoScalingEnabled = false;
         // TV uses software focus rings; native Button focus steals DPAD from next-episode.
         DisablePlatformFocus(button);
+        NativeOverlayHover.Attach(button, hovered =>
+        {
+            _hoveredChromeButton = hovered ? button : (ReferenceEquals(_hoveredChromeButton, button) ? null : _hoveredChromeButton);
+            ApplyTvChromeFocusHighlight();
+        });
     }
 
-    private static Button CreateIconButton(string glyph)
+    private Button CreateIconButton(string glyph)
     {
         var button = new Button { Text = glyph };
         StyleTransportButton(button);
@@ -1024,6 +1151,35 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 view.FocusableInTouchMode = false;
             }
 #endif
+#if WINDOWS
+            if (element.Handler?.PlatformView is Microsoft.UI.Xaml.Controls.Control control)
+            {
+                control.BorderThickness = new Microsoft.UI.Xaml.Thickness(0);
+                control.UseSystemFocusVisuals = false;
+            }
+#endif
+        }
+
+        Apply();
+        element.HandlerChanged += (_, _) => Apply();
+    }
+
+    /// <summary>
+    /// InputTransparent alone is not enough for WinUI ActivityIndicator/BoxView - they can
+    /// still eat pointer hits and block the back button above the loading veil.
+    /// </summary>
+    private static void DisableHitTesting(VisualElement element)
+    {
+        void Apply()
+        {
+#if WINDOWS
+            if (element.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement ui)
+                ui.IsHitTestVisible = false;
+#endif
+#if ANDROID
+            if (element.Handler?.PlatformView is Android.Views.View view)
+                view.Clickable = false;
+#endif
         }
 
         Apply();
@@ -1034,6 +1190,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         _settings.OpenedChanged += (_, _) =>
         {
+            if (_settings.IsOpen)
+            {
+                // Only one side panel at a time (settings vs cast/remote vs SyncPlay).
+                SetCastPanelOpen(false);
+                SetSyncPlayPanelOpen(false);
+            }
+
             UpdateSettingsAvailableHeight();
             UpdateChromeVisibility();
             ResetHideTimer(TimeSpan.FromSeconds(5));
@@ -1066,11 +1229,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (_settings.IsOpen)
                 MainThread.BeginInvokeOnMainThread(_settings.Rebuild);
         };
-        _player.SubtitleTrackChanged += _ =>
-        {
-            if (_settings.IsOpen)
-                MainThread.BeginInvokeOnMainThread(_settings.Rebuild);
-        };
+        _player.SubtitleTrackChanged += OnSubtitleTrackChanged;
         _player.QualityChanged += _ =>
         {
             if (_settings.IsOpen)
@@ -1099,6 +1258,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _player.IsFullScreenChanged -= OnMutedChanged;
         _player.SourceChanged -= OnSourceChanged;
         _player.BackPressed -= OnBackPressed;
+        _player.SubtitleTrackChanged -= OnSubtitleTrackChanged;
         _player.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
     }
 
@@ -1116,16 +1276,32 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
         K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
         TryApplyAndroidSubtitleStyle();
+#elif WINDOWS
+        VlcSubtitleStyle.SetSettings(_videoSettings);
+        TryApplyWindowsSubtitleStyle();
 #endif
+        ApplySidecarSubtitleStyle();
         RefreshSeekChapters();
         ApplySkipSegmentOnMainThread();
     }
+
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) =>
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_settings.IsOpen)
+                _settings.Rebuild();
+            RefreshSidecarSubtitles();
+        });
 
     private void OnBackPressed() => MainThread.BeginInvokeOnMainThread(() => HandleBack());
 
     private void OnPlayerChanged(PlaybackState state) =>
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            // Windows HLS (Video.js): no LibVLC FirstFrame - lift the veil once Playing.
+            if (state == PlaybackState.Playing && _awaitingFirstFrame)
+                NotifyFirstFrameReady();
+
             UpdateTransport();
             if (state == PlaybackState.Ended)
                 OnPlaybackEnded();
@@ -1136,15 +1312,40 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void OnMutedChanged(bool _) => MainThread.BeginInvokeOnMainThread(UpdateTransport);
     private void OnVolumeChanged(double _) => MainThread.BeginInvokeOnMainThread(UpdateTransport);
 
-    private void OnTimeChanged(double time) =>
-        MainThread.BeginInvokeOnMainThread(() =>
+    private void OnTimeChanged(double time)
+    {
+        void Apply()
         {
-            UpdateTimeLabel();
-            _seekBar.Refresh();
-            UpdateSkipSegment(time);
-        });
+            // Chrome-hidden TV: avoid GraphicsView.Invalidate + label churn every Exo tick
+            // (500ms). Amlogic HDMI composition hitches when the overlay layer keeps redrawing.
+            if (IsChromeVisible || _seekScrubbing || _accumulateSeeking)
+            {
+                UpdateTimeLabel();
+                _seekBar.Refresh();
+            }
 
-    private void OnBufferedChanged(double _) => MainThread.BeginInvokeOnMainThread(_seekBar.Refresh);
+            UpdateSkipSegment(time);
+            // Sidecar VTT follows the held resume clock; do not paint cues over the veil.
+            // Android: Exo SubtitleView owns text - no XAML sidecar.
+#if !ANDROID
+            if (!_awaitingFirstFrame)
+                UpdateSidecarCue(time);
+#endif
+        }
+
+        if (MainThread.IsMainThread)
+            Apply();
+        else
+            MainThread.BeginInvokeOnMainThread(Apply);
+    }
+
+    private void OnBufferedChanged(double _)
+    {
+        if (!IsChromeVisible)
+            return;
+
+        MainThread.BeginInvokeOnMainThread(_seekBar.Refresh);
+    }
 
     private void OnSourceChanged(PlayerSource source) =>
         MainThread.BeginInvokeOnMainThread(() =>
@@ -1154,6 +1355,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _ = RefreshSegmentsAsync();
             RefreshSeekChapters();
             UpdateTransport();
+            RefreshSidecarSubtitles();
         });
 
     private void OnSeekDragChanged(object? sender, bool dragging)
@@ -1165,6 +1367,50 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         else
             ResetHideTimer();
         UpdateChromeVisibility();
+    }
+
+    private void OnSeekPreviewMoved(object? sender, double time)
+    {
+        _ = time;
+        UpdateSeekPreview(true);
+    }
+
+    private void OnSeekRingPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_seekBar.IsDragging || _seekScrubbing)
+            return;
+
+        var point = e.GetPosition(_seekBar);
+        if (point is null)
+            return;
+
+        _seekBar.HoverAt(point.Value.X);
+    }
+
+    private void OnSeekRingPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (_seekBar.IsDragging || _seekScrubbing)
+            return;
+
+        _seekBar.EndHover();
+    }
+
+    private void OnSeekHover(object? sender, double time)
+    {
+        if (_seekBar.IsDragging || _seekScrubbing)
+            return;
+
+        _seekBar.PreviewTime = time;
+        UpdateSeekPreview(true);
+    }
+
+    private void OnSeekHoverEnded(object? sender, EventArgs e)
+    {
+        if (_seekBar.IsDragging || _seekScrubbing)
+            return;
+
+        _seekBar.PreviewTime = null;
+        UpdateSeekPreview(false);
     }
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
@@ -1197,16 +1443,23 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _fullscreenButton.IsVisible = IsDesktopLike();
         _castButton.IsVisible = HasAnyCastOrRemoteDevice();
         _syncPlayButton.IsVisible = _syncPlay?.IsInGroup == true;
+        // TV uses the remote, not touch catchers. Two full-screen BoxViews over
+        // SurfaceView force a GPU compose on Amlogic and drop HEVC frames.
+        if (_deviceType == DeviceType.TV)
+            _gestureLayer.IsVisible = false;
+
+        SyncTvSurfaceComposition();
     }
 
     private void UpdateTransport()
     {
         var playing = _player.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering;
         _playPauseButton.Text = playing ? NativePlayerGlyphs.Pause : NativePlayerGlyphs.Play;
-        _volumeButton.Text = _player.IsMuted || _player.Volume <= 0.001
+        var volume = DisplayedVolume;
+        _volumeButton.Text = _player.IsMuted || volume <= 0.001
             ? NativePlayerGlyphs.SpeakerMuted
-            : _player.Volume < 0.4 ? NativePlayerGlyphs.SpeakerLow : NativePlayerGlyphs.SpeakerHigh;
-        _volumeSlider.Value = _player.IsMuted ? 0 : _player.Volume;
+            : volume < 0.4 ? NativePlayerGlyphs.SpeakerLow : NativePlayerGlyphs.SpeakerHigh;
+        _volumeSlider.Value = _player.IsMuted ? 0 : volume;
         _fullscreenButton.Text = _player.IsFullScreen
             ? NativePlayerGlyphs.FullscreenExit
             : NativePlayerGlyphs.FullscreenEnter;
@@ -1247,6 +1500,24 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _bottomBar.Opacity = visible ? 1 : 0;
         if (!visible)
             ClearTvChromeFocus();
+
+        SyncTvSurfaceComposition();
+    }
+
+    private void SyncTvSurfaceComposition()
+    {
+        if (_deviceType != DeviceType.TV)
+            return;
+
+        var draw = IsChromeVisible
+            || IsSkipSegmentOffered
+            || IsNextEpisodeVisible
+            || _hudBanner.IsVisible
+            || _loadingVeil.IsVisible
+            || _skipNotificationBanner.IsVisible;
+#if ANDROID
+        Platforms.Android.AndroidOverlayComposition.SetDraws(this, draw);
+#endif
     }
 
     private void ShowChrome()
@@ -1276,6 +1547,10 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void HideChrome(bool force = false)
     {
         if (!force && (_settings.IsOpen || _seekScrubbing))
+            return;
+
+        // Veil covers the video surface - never hide back/controls until first frame.
+        if (!force && _awaitingFirstFrame)
             return;
 
         if (force && _seekScrubbing)
@@ -1326,13 +1601,19 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private List<TvFocusSlot> GetVisibleTvFocusSlots()
     {
-        var slots = new List<TvFocusSlot> { TvFocusSlot.Back, TvFocusSlot.Play, TvFocusSlot.SeekBar, TvFocusSlot.Settings };
-        if (IsSkipSegmentOffered)
-            slots.Add(TvFocusSlot.SkipSegment);
+        var slots = new List<TvFocusSlot> { TvFocusSlot.Back, TvFocusSlot.Play };
+        if (_volumeButton.IsVisible)
+            slots.Add(TvFocusSlot.Volume);
+        slots.Add(TvFocusSlot.SeekBar);
+        slots.Add(TvFocusSlot.Settings);
         if (_castButton.IsVisible)
             slots.Add(TvFocusSlot.Cast);
         if (_syncPlayButton.IsVisible)
             slots.Add(TvFocusSlot.SyncPlay);
+        if (_fullscreenButton.IsVisible)
+            slots.Add(TvFocusSlot.Fullscreen);
+        if (IsSkipSegmentOffered)
+            slots.Add(TvFocusSlot.SkipSegment);
         return slots;
     }
 
@@ -1363,8 +1644,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         var slot = IndexToTvFocusSlot(_tvChromeFocusIndex);
         if (up)
         {
-            if (slot is TvFocusSlot.Play or TvFocusSlot.SeekBar or TvFocusSlot.Settings
-                or TvFocusSlot.Cast or TvFocusSlot.SyncPlay)
+            if (slot is TvFocusSlot.Play or TvFocusSlot.Volume or TvFocusSlot.SeekBar
+                or TvFocusSlot.Settings or TvFocusSlot.Cast or TvFocusSlot.SyncPlay
+                or TvFocusSlot.Fullscreen)
             {
                 SetTvChromeFocusSlot(TvFocusSlot.SkipSegment);
                 return true;
@@ -1384,11 +1666,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         0 => TvFocusSlot.Back,
         1 => TvFocusSlot.Play,
-        2 => TvFocusSlot.SeekBar,
-        3 => TvFocusSlot.Settings,
-        4 => TvFocusSlot.Cast,
-        5 => TvFocusSlot.SyncPlay,
-        6 => TvFocusSlot.SkipSegment,
+        2 => TvFocusSlot.Volume,
+        3 => TvFocusSlot.SeekBar,
+        4 => TvFocusSlot.Settings,
+        5 => TvFocusSlot.Cast,
+        6 => TvFocusSlot.SyncPlay,
+        7 => TvFocusSlot.Fullscreen,
+        8 => TvFocusSlot.SkipSegment,
         _ => TvFocusSlot.Play
     };
 
@@ -1396,11 +1680,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         TvFocusSlot.Back => 0,
         TvFocusSlot.Play => 1,
-        TvFocusSlot.SeekBar => 2,
-        TvFocusSlot.Settings => 3,
-        TvFocusSlot.Cast => 4,
-        TvFocusSlot.SyncPlay => 5,
-        TvFocusSlot.SkipSegment => 6,
+        TvFocusSlot.Volume => 2,
+        TvFocusSlot.SeekBar => 3,
+        TvFocusSlot.Settings => 4,
+        TvFocusSlot.Cast => 5,
+        TvFocusSlot.SyncPlay => 6,
+        TvFocusSlot.Fullscreen => 7,
+        TvFocusSlot.SkipSegment => 8,
         _ => 1
     };
 
@@ -1418,30 +1704,42 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             _seekBarFocusRing.Stroke = Colors.White;
             _seekBarFocusRing.BackgroundColor = TvFocusColor;
-            return;
+        }
+        else
+        {
+            var slot = IndexToTvFocusSlot(_tvChromeFocusIndex);
+            if (slot == TvFocusSlot.SkipSegment && IsSkipSegmentOffered)
+            {
+                _skipSegmentFocusRing.Stroke = Colors.White;
+                _skipSegmentFocusRing.BackgroundColor = TvFocusColor;
+            }
+            else
+            {
+                var button = GetFocusedChromeButton();
+                if (button is not null && button.IsVisible)
+                    button.BackgroundColor = TvFocusColor;
+            }
         }
 
-        if (IndexToTvFocusSlot(_tvChromeFocusIndex) == TvFocusSlot.SkipSegment && IsSkipSegmentOffered)
+        if (_skipSegmentHovered)
         {
             _skipSegmentFocusRing.Stroke = Colors.White;
             _skipSegmentFocusRing.BackgroundColor = TvFocusColor;
-            return;
         }
 
-        var button = GetFocusedChromeButton();
-        if (button is null || !button.IsVisible)
-            return;
-
-        button.BackgroundColor = TvFocusColor;
+        if (_hoveredChromeButton is not null && _hoveredChromeButton.IsVisible)
+            _hoveredChromeButton.BackgroundColor = TvFocusColor;
     }
 
     private Button? GetFocusedChromeButton() => IndexToTvFocusSlot(_tvChromeFocusIndex) switch
     {
         TvFocusSlot.Back => _backButton,
         TvFocusSlot.Play => _playPauseButton,
+        TvFocusSlot.Volume => _volumeButton,
         TvFocusSlot.Settings => _settingsButton,
         TvFocusSlot.Cast => _castButton,
         TvFocusSlot.SyncPlay => _syncPlayButton,
+        TvFocusSlot.Fullscreen => _fullscreenButton,
         TvFocusSlot.SkipSegment => _skipSegmentButton,
         _ => null
     };
@@ -1451,7 +1749,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (_backButton is not null)
             _backButton.BackgroundColor = Colors.Transparent;
         _playPauseButton.BackgroundColor = Colors.Transparent;
+        _volumeButton.BackgroundColor = Colors.Transparent;
         _settingsButton.BackgroundColor = Colors.Transparent;
+        _fullscreenButton.BackgroundColor = Colors.Transparent;
         _castButton.BackgroundColor = Colors.Transparent;
         _syncPlayButton.BackgroundColor = Colors.Transparent;
         _seekBarFocusRing.Stroke = Colors.Transparent;
@@ -1477,6 +1777,10 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         if (ReferenceEquals(button, _playPauseButton))
             TogglePlayPause();
+        else if (ReferenceEquals(button, _volumeButton))
+            SetVolumeOpen(!_volumeOpen);
+        else if (ReferenceEquals(button, _fullscreenButton))
+            ToggleFullscreen();
         else if (ReferenceEquals(button, _settingsButton))
         {
             if (_settings.IsOpen)
@@ -1505,6 +1809,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (IsPhoneOrTablet())
             return;
         if (_settings.IsOpen || _volumeOpen || _seekScrubbing)
+            return;
+        if (_awaitingFirstFrame)
             return;
 
         var timeout = overrideTimeout
@@ -1543,26 +1849,108 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void ToggleFullscreen()
     {
         if (_player.IsFullScreen)
+        {
+            _player.IsFullScreen = false;
             _player.ExitFullScreen();
+        }
         else
+        {
+            _player.IsFullScreen = true;
             _player.EnterFullScreen();
+        }
+
+        UpdateTransport();
         ResetHideTimer();
+        if (_player.IsFullScreen)
+            ResetCursorIdle();
+        else
+        {
+            StopCursorIdle();
+#if WINDOWS
+            Platforms.Windows.WindowsIdleCursor.Show();
+#endif
+        }
+    }
+
+    private double DisplayedVolume =>
+        _player.IsMuted ? 0 : _player.Volume;
+
+    private void ApplyUserVolume(double volume01)
+    {
+        var next = Math.Clamp(volume01, 0, 1);
+        // PlayerService is the shared source of truth across Direct (LibVLC) and HLS (Video.js).
+        // On Windows, SupportsNativeVolume is false - never also write WASAPI (that made Direct quiet).
+        _player.SetVolume(next);
+        if (_volumeService?.SupportsNativeVolume == true)
+            _volumeService.SetVolume(next);
+
+        if (next <= 0.001)
+            _player.Mute();
+        else if (_player.IsMuted)
+            _player.Unmute();
     }
 
     private void AdjustVolume(double delta)
     {
-        var next = Math.Clamp((_player.IsMuted ? 0 : _player.Volume) + delta, 0, 1);
-        _player.SetVolume(next);
-        if (next <= 0)
-            _player.Mute();
-        else if (_player.IsMuted)
-            _player.Unmute();
+        var next = Math.Clamp(DisplayedVolume + delta, 0, 1);
+        ApplyUserVolume(next);
         ShowHud($"{(int)(next * 100)}%", NativePlayerGlyphs.SpeakerHigh);
         UpdateTransport();
     }
 
+    private void AttachVolumeHover()
+    {
+        var pointer = new PointerGestureRecognizer();
+        pointer.PointerEntered += (_, _) =>
+        {
+            if (!IsDesktopLike())
+                return;
+
+            CancelVolumeHoverHide();
+            SetVolumeOpen(true);
+        };
+        pointer.PointerExited += (_, _) => ScheduleVolumeHoverHide();
+        _volumeButton.GestureRecognizers.Add(pointer);
+    }
+
+    private void AttachVolumePopoverHover()
+    {
+        var pointer = new PointerGestureRecognizer();
+        pointer.PointerEntered += (_, _) =>
+        {
+            if (!IsDesktopLike())
+                return;
+
+            CancelVolumeHoverHide();
+        };
+        pointer.PointerExited += (_, _) => ScheduleVolumeHoverHide();
+        _volumePopover.GestureRecognizers.Add(pointer);
+    }
+
+    private void ScheduleVolumeHoverHide()
+    {
+        if (!IsDesktopLike() || _volumeSlider.IsDragging)
+            return;
+
+        CancelVolumeHoverHide();
+        _volumeHoverHideTimer = new Timer(220) { AutoReset = false };
+        _volumeHoverHideTimer.Elapsed += (_, _) =>
+            MainThread.BeginInvokeOnMainThread(() => SetVolumeOpen(false));
+        _volumeHoverHideTimer.Start();
+    }
+
+    private void CancelVolumeHoverHide()
+    {
+        _volumeHoverHideTimer?.Stop();
+        _volumeHoverHideTimer?.Dispose();
+        _volumeHoverHideTimer = null;
+    }
+
     private void SetVolumeOpen(bool open)
     {
+        if (!open)
+            CancelVolumeHoverHide();
+
         _volumeOpen = open;
         _volumePopover.IsVisible = open && IsDesktopLike();
         if (open)
@@ -1657,8 +2045,54 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _hudTimer.Start();
     }
 
+    private void OnDesktopPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!IsVisible || !IsDesktopLike() || _inputModalActive || IsNextEpisodeVisible)
+            return;
+
+#if WINDOWS
+        Platforms.Windows.WindowsIdleCursor.Show();
+        ResetCursorIdle();
+#endif
+        if (_showChrome)
+            ResetHideTimer();
+        else
+            ShowChrome();
+    }
+
+    private void ResetCursorIdle()
+    {
+        StopCursorIdle();
+        if (!_player.IsFullScreen)
+            return;
+
+        _cursorIdleTimer = new Timer(2000) { AutoReset = false };
+        _cursorIdleTimer.Elapsed += (_, _) => MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!IsVisible || !_player.IsFullScreen)
+                return;
+#if WINDOWS
+            Platforms.Windows.WindowsIdleCursor.Hide();
+#endif
+        });
+        _cursorIdleTimer.Start();
+    }
+
+    private void StopCursorIdle()
+    {
+        _cursorIdleTimer?.Stop();
+        _cursorIdleTimer?.Dispose();
+        _cursorIdleTimer = null;
+    }
+
     private void ClosePlayer()
     {
+        if (_player.IsFullScreen)
+        {
+            _player.IsFullScreen = false;
+            _player.ExitFullScreen();
+        }
+
         HideChrome();
         RestoreBrightness();
         _progressTracker?.StopTracking();
@@ -1715,7 +2149,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
             K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
             TryApplyAndroidSubtitleStyle();
+#elif WINDOWS
+            VlcSubtitleStyle.SetSettings(_videoSettings);
+            TryApplyWindowsSubtitleStyle();
 #endif
+            ApplySidecarSubtitleStyle();
 
             RefreshSeekChapters();
         }
@@ -1739,23 +2177,34 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         }
     }
 
+#if ANDROID || WINDOWS
 #if ANDROID
     private void TryApplyAndroidSubtitleStyle()
     {
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            Element? current = this;
-            while (current is not null)
-            {
-                if (current is BlazorPage page)
-                {
-                    page.ApplyPendingAndroidSubtitleStyle();
-                    return;
-                }
+        MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingAndroidSubtitleStyle());
+    }
+#endif
+#if WINDOWS
+    private void TryApplyWindowsSubtitleStyle()
+    {
+        MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingWindowsSubtitleStyle());
+    }
+#endif
 
-                current = current.Parent;
-            }
-        });
+    private void NotifySidecarTextReady(bool ready) =>
+        FindBlazorPage()?.NotifySidecarTextSubtitles(ready);
+
+    private BlazorPage? FindBlazorPage()
+    {
+        Element? current = this;
+        while (current is not null)
+        {
+            if (current is BlazorPage page)
+                return page;
+            current = current.Parent;
+        }
+
+        return null;
     }
 #endif
 
@@ -1867,6 +2316,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (wasVisible == visible)
             return;
 
+        SyncTvSurfaceComposition();
+
         if (visible)
             TryFocusSkipSegmentIfOffered();
         else if (IndexToTvFocusSlot(_tvChromeFocusIndex) == TvFocusSlot.SkipSegment)
@@ -1930,7 +2381,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void ConfigureGestureCatcher(BoxView catcher, bool panSideLeft)
     {
-        catcher.Color = Color.FromArgb("#01000000");
+        // Fully transparent: #01000000 blocks TextureView/SurfaceView on Amlogic TV GPUs
+        // (decoded frames keep counting, picture stays on the first composite).
+        catcher.Color = Colors.Transparent;
         catcher.InputTransparent = false;
 
         var tap = new TapGestureRecognizer { NumberOfTapsRequired = 1 };

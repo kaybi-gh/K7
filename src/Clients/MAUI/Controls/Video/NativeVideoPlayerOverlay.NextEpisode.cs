@@ -464,13 +464,14 @@ public sealed partial class NativeVideoPlayerOverlay
             indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
             videoMetadata.SubtitleTracks,
-            videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            PlaybackTrackContinuity.MatchAudioIndex(videoMetadata.AudioTracks, _player.SelectedAudioTrack),
+            PlaybackTrackContinuity.MatchSubtitleIndex(videoMetadata.SubtitleTracks, _player.SelectedSubtitleTrack),
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString(),
             nextEpisodeId,
             VideoPlayerTitleHelper.FormatEpisode(episodeDto),
-            chapters: videoMetadata.Chapters);
+            chapters: videoMetadata.Chapters,
+            durationSeconds: videoMetadata.Duration.TotalSeconds);
     }
 
     /// <summary>Internal reset (playback resumed elsewhere) - hides the overlay without closing

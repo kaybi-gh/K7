@@ -47,14 +47,15 @@ public partial class BlazorPage : ContentPage
     private MediaElement IdleAudioPlayer =>
         _audioRolesSwapped ? NativeAudioPlayer : NativeAudioCrossfadePlayer;
 #endif
-#if !WINDOWS
     // MediaFailed can flap on Source swaps; report once per distinct failure within the window.
     private DateTime _lastMediaFailedReportUtc = DateTime.MinValue;
     private string? _lastMediaFailedReportKey;
     private static readonly TimeSpan MediaFailedReportDedupeWindow = TimeSpan.FromSeconds(30);
     private int _nativeAuthRecoveryCount;
     private DateTime _lastNativeAuthRecoveryUtc = DateTime.MinValue;
+#if !WINDOWS
     private bool _openingNativeSource;
+#endif
     private double? _authRebindResumeOverride;
     private ICustomAuthenticationStateProvider? _authStateProvider;
     private bool _accessTokenChangedSubscribed;
@@ -72,7 +73,6 @@ public partial class BlazorPage : ContentPage
         "sig",
         "signature"
     };
-#endif
 
     public BlazorPage(
         IPlayerService playerService,
@@ -124,9 +124,7 @@ public partial class BlazorPage : ContentPage
     {
         Loaded -= OnBlazorPageLoaded;
         InitializeNativeVideoOverlay();
-#if !WINDOWS
         TrySubscribeAccessTokenChanged();
-#endif
     }
 
     private void OnWebResourceRequested(object? sender, Microsoft.Maui.Controls.WebViewWebResourceRequestedEventArgs e)
@@ -335,6 +333,11 @@ public partial class BlazorPage : ContentPage
         if (exo > 0)
             return exo;
 #endif
+#if WINDOWS
+        var vlc = GetWindowsVlcPositionSeconds();
+        if (vlc > 0)
+            return vlc;
+#endif
 #if !WINDOWS
         try
         {
@@ -539,7 +542,6 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged += OnSourceChanged;
         _playerService.IsVisibleChanged += OnIsVisibleChanged;
-#if !WINDOWS
         _playerService.PlayRequested += HandleVideoPlayRequested;
         _playerService.PauseRequested += HandleVideoPauseRequested;
         _playerService.MuteRequested += HandleVideoMuteRequested;
@@ -549,15 +551,19 @@ public partial class BlazorPage : ContentPage
         _playerService.StopRequested += HandleVideoStopRequested;
         _playerService.SeekRequested += HandleVideoSeekRequested;
         _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
-#endif
         InitializePlayerPlatform();
     }
 
-#if !WINDOWS
     private Task HandleVideoPlayRequested()
     {
         return MainThread.InvokeOnMainThreadAsync(async () =>
         {
+#if WINDOWS
+            if (TryHandleWindowsVlcPlay())
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
             // Stopped/Ended after a backward seek (especially to zero) may ignore Play()
             // until the timeline position is re-established.
             if (NativePlayer.CurrentState is MediaElementState.Stopped)
@@ -575,37 +581,91 @@ public partial class BlazorPage : ContentPage
 
     private Task HandleVideoPauseRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativePlayer.Pause);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcPause())
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.Pause();
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleVideoMuteRequested()
     {
-        MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = true);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcMute(true))
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.ShouldMute = true;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleVideoUnmuteRequested()
     {
-        MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = false);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcMute(false))
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.ShouldMute = false;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleVideoVolumeChangeRequested(double volume)
     {
-        MainThread.BeginInvokeOnMainThread(() => NativePlayer.Volume = volume);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcVolume(volume))
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.Volume = volume;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleVideoPlaybackRateChangeRequested(double rate)
     {
-        MainThread.BeginInvokeOnMainThread(() => NativePlayer.Speed = rate);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcRate(rate))
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.Speed = rate;
+        });
         return Task.CompletedTask;
     }
 
     private Task HandleVideoStopRequested()
     {
-        MainThread.BeginInvokeOnMainThread(NativePlayer.Stop);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+#if WINDOWS
+            if (TryHandleWindowsVlcStop())
+                return;
+            if (IsWindowsWebVideoActive)
+                return;
+#endif
+            NativePlayer.Stop();
+        });
         return Task.CompletedTask;
     }
 
@@ -616,6 +676,8 @@ public partial class BlazorPage : ContentPage
     {
 #if ANDROID
         return SeekAndroidVideoAsync(positionSeconds);
+#elif WINDOWS
+        return SeekWindowsVideoAsync(positionSeconds);
 #else
         return SeekMediaElementAsync(
             NativePlayer,
@@ -625,7 +687,6 @@ public partial class BlazorPage : ContentPage
             () => OnAfterNativeVideoSeek());
 #endif
     }
-#endif
 
     private void NativePlayer_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -689,8 +750,8 @@ public partial class BlazorPage : ContentPage
                         pos = exoPos;
                     if (pending is double resumeAt && resumeAt > 1 && pos < resumeAt - 2)
                         _nativeOverlay?.SetLoadingVeil(true);
-                    else
-                        _nativeOverlay?.NotifyFirstFrameReady();
+                    // First frame / veil lift: ExoPlaybackBridge.OnRenderedFirstFrame owns this.
+                    // Lifting on Playing alone drops the quality-switch veil over a kept Direct frame.
                 }
                 else if (mediaState is MediaElementState.Opening
                     || (mediaState is MediaElementState.Buffering
@@ -717,10 +778,7 @@ public partial class BlazorPage : ContentPage
     {
 #if WINDOWS
         SyncWindowsStreamAuthContext();
-
-        // All Windows video uses Video.js in WebView2, not native MediaElement.
-        return;
-#else
+#endif
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (!string.IsNullOrEmpty(source.Url))
@@ -731,14 +789,32 @@ public partial class BlazorPage : ContentPage
             // Do not Stop/Source=null here - that races the subsequent open and can fire
             // MediaFailed after init/seg0 (playback dead, UI stuck at 0:00/0:00).
         });
-#endif
     }
 
-#if !WINDOWS
     private void OpenNativePlayerSource(PlayerSource source)
     {
+#if WINDOWS
+        if (TryOpenWindowsVlc(source))
+        {
+            _nativeAuthRecoveryCount = 0;
+            if (MauiNativeVideoChrome.IsEnabled)
+            {
+                OnNativeVideoVisibilityChanged(_playerService.IsVisible);
+                _nativeOverlay?.ShowTransientVeil();
+            }
+
+            return;
+        }
+
+        StopWindowsVlc();
+        if (MauiNativeVideoChrome.IsEnabled)
+            OnNativeVideoVisibilityChanged(_playerService.IsVisible);
+        return;
+#endif
+#if !WINDOWS
+        // Android ExoPlayer / iOS AVPlayer via MediaElement.
         // ShowAsync and SourceChanged both marshal to the main thread; if visibility is still
-        // pending, force the MediaElement visible before Play or ExoPlayer may not bind a surface.
+        // pending, force the surface visible before Play.
         if (_playerService.IsVisible && !NativePlayer.IsVisible)
             NativePlayer.IsVisible = true;
 
@@ -747,18 +823,12 @@ public partial class BlazorPage : ContentPage
         _openingNativeSource = true;
         try
         {
-            // Baseline open path: Stop() then assign Source. Never Source=null first -
-            // nulling the surface fires MediaFailed on Android and kills the next open mid-HLS.
             NativePlayer.Stop();
             NativePlayer.ShouldAutoPlay = true;
-            // CommunityToolkit.Maui.MediaElement 9.0+ (PR #3169) applies UriMediaSource.HttpHeaders via
-            // DefaultHttpDataSource.Factory.SetDefaultRequestProperties for every HLS request.
-            // Do not rebind ExoPlayer after MediaOpened - that fights the toolkit and is unnecessary.
             NativePlayer.Source = CreateMediaSourceWithAuth(source.Url!);
             NativeVideoDebug.Log(
                 "OpenNativePlayerSource local=" + LocalPlaybackUrl.IsLocalFile(source.Url)
                 + " url=" + (LocalPlaybackUrl.IsLocalFile(source.Url) ? "file" : "http"));
-            // Apply sync-point seek params before Play so #EXT-X-START / PendingSeek do not exact-seek.
             ConfigureNativeVideoPlayerAfterOpen();
 #if ANDROID
             // Android uses system volume; clear any stuck MediaElement mute from earlier volume swipes
@@ -766,14 +836,7 @@ public partial class BlazorPage : ContentPage
             if (_playerService.IsMuted || NativePlayer.ShouldMute)
                 _playerService.Unmute();
 
-            if (source.PendingSeekTime is double pendingSeek && pendingSeek > 1)
-                RememberSeekTarget(pendingSeek);
-
-            // Toolkit DefaultHttpDataSource uses 8s connect/read timeouts. Server can hold init.m4s
-            // up to ~90s while ffmpeg seeks (mid-stream resume). Rebind with longer timeouts.
-            // Skip local/offline files: HTTP factory cannot open filesystem or file:// URLs.
-            if (!LocalPlaybackUrl.IsLocalFile(source.Url))
-                BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
+            BindAndroidExoPlayerWithLongHttpTimeouts(source.Url!);
 #endif
             NativePlayer.Play();
         }
@@ -784,9 +847,18 @@ public partial class BlazorPage : ContentPage
 
         AttachPendingSeekHandler(source);
         if (MauiNativeVideoChrome.IsEnabled)
+        {
+#if ANDROID
+            // Mid-play quality/audio reopen ignores SetLoadingVeil after first frame.
+            _nativeOverlay?.ShowTransientVeil();
+#else
             _nativeOverlay?.SetLoadingVeil(true);
+#endif
+        }
+#endif
     }
 
+#if !WINDOWS
     private void AttachPendingSeekHandler(PlayerSource source)
     {
         if (source.PendingSeekTime is not double seekTime)
@@ -832,9 +904,6 @@ public partial class BlazorPage : ContentPage
                 NativeVideoDebug.Log(
                     "PendingSeek skip near target=" + pending.ToString("F1")
                     + "s pos=" + position.ToString("F1") + "s reason=" + reason);
-#if ANDROID
-                _nativeOverlay?.NotifyFirstFrameReady();
-#endif
                 return;
             }
 
@@ -928,10 +997,16 @@ public partial class BlazorPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
 #if WINDOWS
+            NativePlayer.IsVisible = false;
             ConfigureWindowsVideoPlayerLayout();
             OnNativeVideoVisibilityChanged(_playerService.IsVisible);
+            DeviceDisplay.Current.KeepScreenOn = _playerService.IsVisible;
+#else
+#if ANDROID
+            NativePlayer.IsVisible = _playerService.IsVisible;
 #else
             NativePlayer.IsVisible = _playerService.IsVisible;
+#endif
             OnNativeVideoVisibilityChanged(_playerService.IsVisible);
 
             if (_playerService.IsVisible)
@@ -983,11 +1058,14 @@ public partial class BlazorPage : ContentPage
         });
     }
 
-#if !WINDOWS
     private void OnAspectRatioModeChanged(AspectRatioMode mode)
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+#if WINDOWS
+            if (TryHandleWindowsVlcAspect(mode))
+                return;
+#endif
             NativePlayer.Aspect = mode switch
             {
                 AspectRatioMode.Fill => Aspect.AspectFill,
@@ -996,7 +1074,6 @@ public partial class BlazorPage : ContentPage
             };
         });
     }
-#endif
 
     private void NativePlayer_MediaOpened(object? sender, EventArgs e)
     {
@@ -1066,12 +1143,9 @@ public partial class BlazorPage : ContentPage
         }
 #endif
 
-#if !WINDOWS
         ReportNativePlayerMediaFailedToServer(detail + stateDetail);
-#endif
     }
 
-#if !WINDOWS
     private void ReportNativePlayerMediaFailedToServer(string failureDetail)
     {
         try
@@ -1100,6 +1174,8 @@ public partial class BlazorPage : ContentPage
                 "iOS";
 #elif MACCATALYST
                 "MacCatalyst";
+#elif WINDOWS
+                "Windows";
 #else
                 "Unknown";
 #endif
@@ -1118,7 +1194,10 @@ public partial class BlazorPage : ContentPage
                 + " Platform="
                 + platform
                 + " UsesWebVideoPlayer="
-                + WindowsVideoPlayback.UsesWebVideoPlayer;
+                + (_playerService.Source is not null
+                    && WindowsVideoPlayback.ShouldUseWebVideoPlayer(
+                        _playerService.Source.MimeType,
+                        _playerService.Source.Url));
 
             var services = Application.Current?.Handler?.MauiContext?.Services
                 ?? IPlatformApplication.Current?.Services;
@@ -1177,7 +1256,6 @@ public partial class BlazorPage : ContentPage
         return key.Contains("token", StringComparison.OrdinalIgnoreCase)
             || key.Contains("auth", StringComparison.OrdinalIgnoreCase);
     }
-#endif
 
     private void NativePlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
@@ -1585,10 +1663,14 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged -= OnSourceChanged;
         _playerService.IsVisibleChanged -= OnIsVisibleChanged;
+        if (_remoteControlChromeSubscribed && _remoteControlForChrome is not null)
+        {
+            _remoteControlForChrome.SessionChanged -= OnRemoteControlChromeSessionChanged;
+            _remoteControlChromeSubscribed = false;
+        }
         _nativeOverlay?.Detach();
         _audioPlayerService.PlayerUxSettingsChanged -= HandleAudioPlayerUxSettingsChanged;
         _audioPlayerService.PlaybackStateChanged -= HandleAudioPlaybackKeepScreenChanged;
-#if !WINDOWS
         if (_accessTokenChangedSubscribed && _authStateProvider is not null)
         {
             _authStateProvider.AccessTokenChanged -= OnAccessTokenChanged;
@@ -1604,7 +1686,6 @@ public partial class BlazorPage : ContentPage
         _playerService.StopRequested -= HandleVideoStopRequested;
         _playerService.SeekRequested -= HandleVideoSeekRequested;
         _playerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChanged;
-#endif
 
 #if !ANDROID && !IOS && !WINDOWS
         UnwireNativeAudioElement(NativeAudioPlayer);
@@ -1788,7 +1869,6 @@ public partial class BlazorPage : ContentPage
         return MediaSource.FromUri(url);
     }
 
-#if !WINDOWS
     private void TrySubscribeAccessTokenChanged()
     {
         if (_accessTokenChangedSubscribed)
@@ -1815,11 +1895,12 @@ public partial class BlazorPage : ContentPage
                 return;
 
 #if ANDROID
-            // Proactive AuthSessionKeeper refresh (~2 min while near expiry) used to full-rebind
-            // ExoPlayer + seek-to-current, causing a multi-second buffer stall. Update the shared
-            // HTTP Authorization header so the next segment fetch uses the new Bearer instead.
+            // Proactive token refresh must not full-rebind Exo (buffer stall). Update the
+            // shared HTTP Authorization header so the next fetch uses the new Bearer.
             ApplyExoPlayerHttpAuthHeaders();
             NativeVideoDebug.Log("AccessTokenChanged applied Exo HTTP auth without rebind");
+#elif WINDOWS
+            UpdateWindowsVlcAuthorization();
 #else
             var resumeAt = Math.Max(CaptureNativeVideoResumePosition(), _authRebindResumeOverride ?? 0);
             ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
@@ -1869,6 +1950,9 @@ public partial class BlazorPage : ContentPage
 
 #if ANDROID
                 RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+#elif WINDOWS
+                if (!string.IsNullOrEmpty(_playerService.Source?.Url))
+                    TryOpenWindowsVlc(_playerService.Source);
 #else
                 ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
 #endif
@@ -1883,6 +1967,9 @@ public partial class BlazorPage : ContentPage
 
 #if ANDROID
                 RebindAndroidNativeVideoPreservingPosition(_playerService.Source.Url, resumeAt);
+#elif WINDOWS
+                if (!string.IsNullOrEmpty(_playerService.Source?.Url))
+                    TryOpenWindowsVlc(_playerService.Source);
 #else
                 ReopenNativePlayerSourcePreservingPosition(_playerService.Source, resumeAt);
 #endif
@@ -1902,11 +1989,21 @@ public partial class BlazorPage : ContentPage
         if (exo > 1)
             return Math.Max(exo, pending);
 #endif
+#if WINDOWS
+        var vlc = GetWindowsVlcPositionSeconds();
+        if (vlc > 1)
+            return Math.Max(vlc, pending);
+#endif
+#if WINDOWS
+        return Math.Max(_playerService.CurrentTime, pending);
+#else
         var fromPlayer = NativePlayer.Position.TotalSeconds;
         var fromService = _playerService.CurrentTime;
         return Math.Max(Math.Max(fromPlayer, fromService), pending);
+#endif
     }
 
+#if !WINDOWS
     private void ReopenNativePlayerSourcePreservingPosition(PlayerSource source, double resumeAt)
     {
         if (string.IsNullOrEmpty(source.Url))

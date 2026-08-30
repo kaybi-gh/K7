@@ -135,7 +135,7 @@ public sealed partial class NativeVideoPlayerOverlay
         {
             _deviceList.Children.Add(CreateSectionHeader(NativeStrings.RemoteDevices));
             foreach (var device in _remoteDevices)
-                AddCastFocusRow(GetDeviceIcon(device.DeviceType), device.DeviceName, () => _ = OnRemoteDeviceRowClicked(device));
+                AddCastFocusRow(GetDeviceIcon(device.DeviceType), FormatConnectedDeviceLabel(device), () => _ = OnRemoteDeviceRowClicked(device));
         }
 
         if (_castFocusRows.Count == 0)
@@ -155,8 +155,72 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private void AddCastFocusRow(string icon, string text, Action onClick)
     {
-        var view = NativeIconText.CreateTappableRow(icon, text, selected: false, onClick);
+        var label = string.IsNullOrWhiteSpace(text) ? "Device" : text.Trim();
+
+        // Match NativePlaybackSettingsPanel: Grid + Star column so the name Label gets a
+        // real width. HorizontalStackLayout + TailTruncation often measures text as empty
+        // on Windows WinUI.
+        var content = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition { Width = GridLength.Auto },
+                new ColumnDefinition { Width = GridLength.Star }
+            },
+            ColumnSpacing = 10
+        };
+        var iconLabel = new Label
+        {
+            Text = icon,
+            FontFamily = NativePlayerGlyphs.FontFamily,
+            TextColor = Colors.White,
+            FontSize = 15,
+            VerticalOptions = LayoutOptions.Center,
+            FontAutoScalingEnabled = false
+        };
+        var textLabel = new Label
+        {
+            Text = label,
+            // Explicit face - do not inherit Phosphor from siblings / styles.
+            FontFamily = "OpenSansRegular",
+            TextColor = Colors.White,
+            FontSize = 15,
+            VerticalOptions = LayoutOptions.Center,
+            LineBreakMode = LineBreakMode.TailTruncation,
+            HorizontalOptions = LayoutOptions.Fill,
+            FontAutoScalingEnabled = false
+        };
+        Grid.SetColumn(iconLabel, 0);
+        Grid.SetColumn(textLabel, 1);
+        content.Children.Add(iconLabel);
+        content.Children.Add(textLabel);
+
+        var view = new Border
+        {
+            Stroke = Colors.Transparent,
+            // Keep stroke thickness stable (settings panel) to avoid height jumps on focus.
+            StrokeThickness = 2,
+            StrokeShape = new RoundRectangle { CornerRadius = 6 },
+            BackgroundColor = Colors.Transparent,
+            Padding = new Thickness(12, 10),
+            Content = content,
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(4, 2)
+        };
+
         var row = new CastFocusRow(view, onClick);
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => onClick();
+        view.GestureRecognizers.Add(tap);
+        NativeOverlayHover.Attach(view, hovered =>
+        {
+            if (!hovered)
+                return;
+
+            var index = _castFocusRows.FindIndex(r => ReferenceEquals(r.View, view));
+            if (index >= 0)
+                SetCastFocusIndex(index);
+        });
         _castFocusRows.Add(row);
         _deviceList.Children.Add(view);
     }
@@ -182,6 +246,9 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private void SetCastFocusIndex(int index)
     {
+        if (index == _castFocusIndex)
+            return;
+
         if (_castFocusIndex >= 0 && _castFocusIndex < _castFocusRows.Count)
             ApplyCastRowVisual(_castFocusRows[_castFocusIndex], focused: false);
 
@@ -193,9 +260,17 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private static void ApplyCastRowVisual(CastFocusRow row, bool focused)
     {
-        row.View.BackgroundColor = focused ? Color.FromArgb("#66FFFFFF") : Colors.Transparent;
-        row.View.Stroke = focused ? Colors.White : Colors.Transparent;
-        row.View.StrokeThickness = focused ? 2 : 0;
+        row.View.StrokeThickness = 2;
+        if (focused)
+        {
+            row.View.BackgroundColor = Color.FromArgb("#66FFFFFF");
+            row.View.Stroke = Colors.White;
+        }
+        else
+        {
+            row.View.BackgroundColor = Colors.Transparent;
+            row.View.Stroke = Colors.Transparent;
+        }
     }
 
     private static Label CreateSectionHeader(string text) => new()
@@ -207,11 +282,15 @@ public sealed partial class NativeVideoPlayerOverlay
         Padding = new Thickness(12, 8, 12, 4)
     };
 
+    private static string FormatConnectedDeviceLabel(ConnectedDeviceDto device) =>
+        ConnectedDeviceLabels.GetDisplayName(device);
+
     private static string GetDeviceIcon(string deviceType) => deviceType switch
     {
         "Desktop" => NativePlayerGlyphs.Desktop,
         "Mobile" => NativePlayerGlyphs.DeviceMobile,
         "TV" => NativePlayerGlyphs.Television,
+        "Phone" => NativePlayerGlyphs.DeviceMobile,
         _ => NativePlayerGlyphs.Monitor
     };
 
@@ -232,22 +311,27 @@ public sealed partial class NativeVideoPlayerOverlay
         if (source?.IndexedFileId is null || _hubClient is null)
             return;
 
+        // Capture before Pause / chrome teardown - CurrentTime can briefly read 0.
+        var startPosition = _player.GetResumePosition();
+        var volume = _player.IsMuted ? 0 : _player.Volume;
         _player.Pause();
 
         var senderDeviceId = _deviceStorage?.Get(PreferenceKeys.DEVICE_ID);
         var request = new RemotePlaybackRequestDto
         {
             IndexedFileId = source.IndexedFileId.Value,
-            StartPosition = _player.CurrentTime,
+            StartPosition = startPosition > 0 ? startPosition : null,
             IsAudio = false,
+            MediaId = source.MediaId,
             Title = source.Title,
             CoverUrl = source.CoverUrl,
             Duration = _player.Duration,
-            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null
+            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null,
+            Volume = volume
         };
 
         await _hubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
-        _remoteControl?.StartSession(device.DeviceId, device.DeviceName, request);
+        _remoteControl?.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
     }
 
     private sealed class CastFocusRow(Border view, Action activate)

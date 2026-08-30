@@ -61,6 +61,10 @@ public sealed class NativePlaybackSettingsPanel : Border
         _titleLabel.HorizontalOptions = LayoutOptions.Fill;
 
         StyleHeaderButton(_headerActionButton);
+        NativeOverlayHover.Attach(_headerActionButton, hovered =>
+            _headerActionButton.BackgroundColor = hovered
+                ? NativeOverlayHover.Highlight
+                : Colors.Transparent);
         _headerActionButton.Clicked += (_, _) =>
         {
             if (_page == NativeSettingsPage.Root)
@@ -269,7 +273,11 @@ public sealed class NativePlaybackSettingsPanel : Border
         {
             var selected = ReferenceEquals(track, _player.SelectedAudioTrack)
                 || (_player.SelectedAudioTrack is not null && track.Index == _player.SelectedAudioTrack.Index);
-            AddSelectRow(FormatAudio(track), selected, () => _ = _player.ChangeAudioTrackAsync(track));
+            AddSelectRow(
+                FormatAudio(track),
+                selected,
+                () => _ = _player.ChangeAudioTrackAsync(track),
+                NativeLanguageFlags.CreateFlagView(track.Language));
         }
     }
 
@@ -279,7 +287,11 @@ public sealed class NativePlaybackSettingsPanel : Border
         foreach (var track in _player.SubtitleTracks)
         {
             var selected = _player.SelectedSubtitleTrack is not null && track.Index == _player.SelectedSubtitleTrack.Index;
-            AddSelectRow(FormatSubtitle(track), selected, () => _ = _player.ChangeSubtitleTrackAsync(track));
+            AddSelectRow(
+                FormatSubtitle(track),
+                selected,
+                () => _ = _player.ChangeSubtitleTrackAsync(track),
+                NativeLanguageFlags.CreateFlagView(track.Language));
         }
     }
 
@@ -358,11 +370,12 @@ public sealed class NativePlaybackSettingsPanel : Border
         AddRowView(content, selected: false, action);
     }
 
-    private void AddSelectRow(string text, bool selected, Action action)
+    private void AddSelectRow(string text, bool selected, Action action, View? flag = null)
     {
         var content = NativeIconText.CreateContent(
             selected ? NativePlayerGlyphs.CheckCircle : null,
-            text);
+            text,
+            leading: flag);
         AddRowView(content, selected, () =>
         {
             action();
@@ -375,7 +388,7 @@ public sealed class NativePlaybackSettingsPanel : Border
         var border = new Border
         {
             Stroke = Colors.Transparent,
-            StrokeThickness = 0,
+            StrokeThickness = 2,
             StrokeShape = new RoundRectangle { CornerRadius = 6 },
             BackgroundColor = selected ? Color.FromArgb("#33FFFFFF") : Colors.Transparent,
             Padding = new Thickness(12, 11),
@@ -388,12 +401,24 @@ public sealed class NativePlaybackSettingsPanel : Border
         var tap = new TapGestureRecognizer();
         tap.Tapped += (_, _) => row.Activate();
         border.GestureRecognizers.Add(tap);
+        NativeOverlayHover.Attach(border, hovered =>
+        {
+            if (!hovered)
+                return;
+
+            var index = _rows.FindIndex(r => ReferenceEquals(r.View, border));
+            if (index >= 0)
+                SetFocusedIndex(index);
+        });
         _rows.Add(row);
         _list.Children.Add(border);
     }
 
     private void SetFocusedIndex(int index)
     {
+        if (index == _focusedIndex)
+            return;
+
         if (_focusedIndex >= 0 && _focusedIndex < _rows.Count)
             ApplyRowVisual(_rows[_focusedIndex], focused: false);
 
@@ -425,16 +450,15 @@ public sealed class NativePlaybackSettingsPanel : Border
 
     private static void ApplyRowVisual(Row row, bool focused)
     {
+        row.View.StrokeThickness = 2;
         if (focused)
         {
             row.View.BackgroundColor = Color.FromArgb("#66FFFFFF");
             row.View.Stroke = Colors.White;
-            row.View.StrokeThickness = 2;
         }
         else
         {
             row.View.Stroke = Colors.Transparent;
-            row.View.StrokeThickness = 0;
             row.View.BackgroundColor = row.Selected
                 ? Color.FromArgb("#33FFFFFF")
                 : Colors.Transparent;
@@ -451,14 +475,14 @@ public sealed class NativePlaybackSettingsPanel : Border
         button.HeightRequest = 36;
         button.Padding = 0;
         button.BorderWidth = 0;
+        button.CornerRadius = 8;
         button.FontAutoScalingEnabled = false;
+        NativeOverlayHover.ApplyHandCursor(button);
     }
 
     private static string FormatAudio(AudioFileTrackDto track)
     {
-        var label = AudioTrackDisplayHelper.FormatLabel(track);
-        var flag = NativeLanguageFlags.GetFlagEmoji(track.Language);
-        return string.IsNullOrEmpty(flag) ? label : $"{flag} {label}";
+        return AudioTrackDisplayHelper.FormatLabel(track);
     }
 
     private static string FormatSubtitle(SubtitleFileTrackDto track)
@@ -468,9 +492,7 @@ public sealed class NativePlaybackSettingsPanel : Border
             : track.IsForced
                 ? NativeStrings.SubtitleTypeForced
                 : NativeStrings.SubtitleTypeFull;
-        var label = AudioTrackDisplayHelper.FormatSubtitleLabel(track, type);
-        var flag = NativeLanguageFlags.GetFlagEmoji(track.Language);
-        return string.IsNullOrEmpty(flag) ? label : $"{flag} {label}";
+        return AudioTrackDisplayHelper.FormatSubtitleLabel(track, type);
     }
 
     private sealed class Row(Border view, Action activate)
@@ -488,7 +510,7 @@ public sealed class NativePlaybackSettingsPanel : Border
 /// </summary>
 public static class NativeLanguageFlags
 {
-    public static string? GetFlagEmoji(string? languageCode)
+    public static string? GetCountryCode(string? languageCode)
     {
         if (string.IsNullOrWhiteSpace(languageCode))
             return null;
@@ -498,10 +520,26 @@ public static class NativeLanguageFlags
         if (string.IsNullOrWhiteSpace(countryCode) || countryCode.Length != 2)
             return null;
 
-        var upper = countryCode.ToUpperInvariant();
-        const int regionalIndicatorBase = 0x1F1E6 - 'A';
-        var first = char.ConvertFromUtf32(regionalIndicatorBase + upper[0]);
-        var second = char.ConvertFromUtf32(regionalIndicatorBase + upper[1]);
-        return first + second;
+        return countryCode.ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// WinUI does not render regional-indicator flag emoji. Use the same flag-icons
+    /// PNGs as the web via flagcdn (session is already online for playback).
+    /// </summary>
+    public static View? CreateFlagView(string? languageCode)
+    {
+        var country = GetCountryCode(languageCode);
+        if (country is null)
+            return null;
+
+        return new Image
+        {
+            Source = ImageSource.FromUri(new Uri("https://flagcdn.com/w40/" + country + ".png")),
+            WidthRequest = 22,
+            HeightRequest = 16,
+            Aspect = Aspect.AspectFit,
+            VerticalOptions = LayoutOptions.Center
+        };
     }
 }

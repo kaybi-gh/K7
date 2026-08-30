@@ -141,29 +141,7 @@ public sealed partial class NativeVideoPlayerOverlay
                 {
                     _swipeIndicator.IsVisible = true;
                     var next = Math.Clamp(_panStartVolume - e.TotalY / 600, 0, 1);
-                    if (_volumeService?.SupportsNativeVolume == true)
-                    {
-                        // System stream volume owns loudness on Android phones/TV. Do not toggle
-                        // MediaElement mute - there is no unmute control in native chrome, and a
-                        // stuck ShouldMute silences video while music still works.
-                        _volumeService.SetVolume(next);
-                    }
-                    else if (_volumeService is not null)
-                    {
-                        _volumeService.SetVolume(next);
-                        if (next <= 0)
-                            _player.Mute();
-                        else if (_player.IsMuted)
-                            _player.Unmute();
-                    }
-                    else
-                    {
-                        _player.SetVolume(next);
-                        if (next <= 0)
-                            _player.Mute();
-                        else if (_player.IsMuted)
-                            _player.Unmute();
-                    }
+                    ApplyUserVolume(next);
 
                     UpdateSwipeIndicator(SwipeSide.Right, NativePlayerGlyphs.SpeakerHigh, next);
                     UpdateTransport();

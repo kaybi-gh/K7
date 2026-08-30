@@ -6,13 +6,20 @@ namespace K7.Clients.MAUI.Controls.Video;
 /// </summary>
 internal static class NativeIconText
 {
-    public static HorizontalStackLayout CreateContent(string? glyph, string text, double fontSize = 15)
+    public static HorizontalStackLayout CreateContent(
+        string? glyph,
+        string text,
+        double fontSize = 15,
+        View? leading = null)
     {
         var row = new HorizontalStackLayout
         {
             Spacing = 8,
             VerticalOptions = LayoutOptions.Center
         };
+
+        if (leading is not null)
+            row.Children.Add(leading);
 
         if (!string.IsNullOrEmpty(glyph))
         {
@@ -30,10 +37,14 @@ internal static class NativeIconText
         row.Children.Add(new Label
         {
             Text = text,
+            // App.xaml defaults Labels to OpenSansRegular; set explicitly so siblings with
+            // Phosphor cannot leave Latin text unmapped / zero-width on Windows.
+            FontFamily = "OpenSansRegular",
             TextColor = Colors.White,
             FontSize = fontSize,
             VerticalOptions = LayoutOptions.Center,
             LineBreakMode = LineBreakMode.TailTruncation,
+            HorizontalOptions = LayoutOptions.Fill,
             FontAutoScalingEnabled = false
         });
 
