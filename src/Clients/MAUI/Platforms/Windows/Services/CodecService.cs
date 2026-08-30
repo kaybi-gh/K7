@@ -1,36 +1,43 @@
 ﻿using K7.Clients.MAUI.Interfaces;
-using K7.Clients.Shared.Services;
+using K7.Clients.Shared.Helpers;
+using Windows.Graphics.Display;
 
 namespace K7.Clients.MAUI.Platforms.Windows.Services;
 
 /// <summary>
-/// Reports playback capabilities from WebView2 (Chromium MSE), not WinUI MediaElement / Media Foundation.
-/// K7 HLS uses fMP4 segments with #EXT-X-MAP; WinUI MediaElement does not support that tag
-/// (https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/hls-tag-support).
-/// Video playback on Windows uses Video.js in WebView2, so stream-session codec negotiation must match Chromium.
+/// Reports LibVLC Direct Play capabilities (D3D11VA when the GPU has the decoder).
+/// Not WebView2 MSE and not Media Foundation HLS.
 /// </summary>
-public class CodecService(WebViewJsBridge jsBridge) : ICodecService
+public class CodecService : ICodecService
 {
-    public async Task<bool> GetHdrSupportAsync()
+    public Task<bool> GetHdrSupportAsync()
     {
-        return await jsBridge.InvokeAsync<bool>("getHdrSupport");
+        try
+        {
+            if (MainThread.IsMainThread)
+                return Task.FromResult(ReadHdrSupport());
+
+            return MainThread.InvokeOnMainThreadAsync(ReadHdrSupport);
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
     }
 
-    public async Task<string[]> GetSupportedVideoCodecsAsync()
+    private static bool ReadHdrSupport()
     {
-        var codecs = await jsBridge.InvokeAsync<string[]>("getSupportedVideoCodecsAsync");
-        return codecs ?? [];
+        var info = DisplayInformation.GetForCurrentView();
+        var advanced = info.GetAdvancedColorInfo();
+        return advanced.CurrentAdvancedColorKind != AdvancedColorKind.StandardDynamicRange;
     }
 
-    public async Task<string[]> GetSupportedAudioCodecsAsync()
-    {
-        var codecs = await jsBridge.InvokeAsync<string[]>("getSupportedAudioCodecsAsync");
-        return codecs ?? [];
-    }
+    public Task<string[]> GetSupportedVideoCodecsAsync() =>
+        Task.FromResult(LibVlcWindowsCapabilities.VideoCodecs);
 
-    public async Task<string[]> GetSupportedContainersAsync()
-    {
-        var containers = await jsBridge.InvokeAsync<string[]>("getSupportedContainersAsync");
-        return containers ?? [];
-    }
+    public Task<string[]> GetSupportedAudioCodecsAsync() =>
+        Task.FromResult(LibVlcWindowsCapabilities.AudioCodecs);
+
+    public Task<string[]> GetSupportedContainersAsync() =>
+        Task.FromResult(LibVlcWindowsCapabilities.GetContainers());
 }

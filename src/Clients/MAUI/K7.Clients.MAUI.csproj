@@ -108,6 +108,13 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <PackageReference Include="LibVLCSharp.MAUI" />
+    <PackageReference Include="NAudio" />
+    <PackageReference Include="SharpDX.Direct3D11" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" />
+  </ItemGroup>
+
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
     <PackageReference Include="Xamarin.GooglePlayServices.Basement" />
     <PackageReference Include="Xamarin.GooglePlayServices.Cast" />
@@ -144,5 +151,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="K7.Clients.MAUI.SmokeTests" />
   </ItemGroup>
+
+  <Import Project="Platforms\Windows\LibVlcWindowsNative.targets" />
 
 </Project>

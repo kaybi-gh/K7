@@ -1,0 +1,32 @@
+<Project>
+  <!-- VideoLAN.LibVLC.Windows 4 still uses Content+Link in BeforeBuild. MAUI WinUI
+       does not copy those items into the RID output, so LibVLCSharp cannot load
+       libvlc.dll. Copy the x64 tree next to the exe ourselves. -->
+  <PropertyGroup>
+    <VlcWindowsX64Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">true</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">false</VlcWindowsX86Enabled>
+    <VlcWindowsArm64Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">false</VlcWindowsArm64Enabled>
+    <K7LibVlcWindowsVersion Condition="'$(K7LibVlcWindowsVersion)' == ''">4.0.0-alpha-20260830</K7LibVlcWindowsVersion>
+    <_K7LibVlcWinSrc>$(NuGetPackageRoot)videolan.libvlc.windows\$(K7LibVlcWindowsVersion)\build\x64</_K7LibVlcWinSrc>
+    <_K7LibVlcWinDst>$(OutDir)libvlc\win-x64\</_K7LibVlcWinDst>
+  </PropertyGroup>
+
+  <Target Name="K7CopyLibVlcWindowsNatives"
+          AfterTargets="CopyFilesToOutputDirectory"
+          Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <Error
+        Text="VideoLAN.LibVLC.Windows $(K7LibVlcWindowsVersion) natives missing at $(_K7LibVlcWinSrc)"
+        Condition="!Exists('$(_K7LibVlcWinSrc)\libvlc.dll')" />
+    <ItemGroup>
+      <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\libvlc.dll" />
+      <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\libvlccore.dll" />
+      <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\plugins\**\*.*" />
+      <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\lua\**\*.*" />
+      <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\hrtfs\**\*.*" />
+    </ItemGroup>
+    <Copy
+        SourceFiles="@(_K7LibVlcWinFiles)"
+        DestinationFiles="@(_K7LibVlcWinFiles->'$(_K7LibVlcWinDst)%(RecursiveDir)%(Filename)%(Extension)')"
+        SkipUnchangedFiles="true" />
+  </Target>
+</Project>
