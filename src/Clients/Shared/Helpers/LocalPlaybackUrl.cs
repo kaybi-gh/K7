@@ -3,8 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// Local/offline media paths vs HTTP(S) stream URLs. Native MediaElement plays files via
-/// <c>FromFile</c>; Android must not rebind ExoPlayer with <c>DefaultHttpDataSource</c> for those.
+/// Local/offline media paths vs HTTP(S) stream URLs. Android/Windows LibVLC opens files via
+/// <c>FromPath</c>. iOS MediaElement uses <c>FromFile</c>.
 /// </summary>
 public static class LocalPlaybackUrl
 {

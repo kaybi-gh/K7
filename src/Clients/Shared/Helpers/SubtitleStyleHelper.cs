@@ -43,17 +43,17 @@ public static class SubtitleStyleHelper
         {
             (SubtitleFontSize.Small, DeviceType.Phone) => 12,
             (SubtitleFontSize.Small, DeviceType.Tablet) => 14,
-            (SubtitleFontSize.Small, DeviceType.TV) => 22,
+            (SubtitleFontSize.Small, DeviceType.TV) => 28,
             (SubtitleFontSize.Small, _) => 16,
 
             (SubtitleFontSize.Large, DeviceType.Phone) => 20,
             (SubtitleFontSize.Large, DeviceType.Tablet) => 24,
-            (SubtitleFontSize.Large, DeviceType.TV) => 40,
+            (SubtitleFontSize.Large, DeviceType.TV) => 60,
             (SubtitleFontSize.Large, _) => 32,
 
             (SubtitleFontSize.Medium, DeviceType.Phone) => 16,
             (SubtitleFontSize.Medium, DeviceType.Tablet) => 18,
-            (SubtitleFontSize.Medium, DeviceType.TV) => 28,
+            (SubtitleFontSize.Medium, DeviceType.TV) => 40,
             _ => 22
         };
 

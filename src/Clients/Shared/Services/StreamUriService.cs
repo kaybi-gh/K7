@@ -29,7 +29,11 @@ public class StreamUriService : IStreamUriService
         _musicCache = musicCache;
     }
 
-    public async Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public async Task<StreamingSessionDto> GetOrCreateSessionAsync(
+        Guid indexedFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default)
     {
         // Check offline store first (explicit downloads)
         if (_offlineStore is not null)
@@ -64,6 +68,7 @@ public class StreamUriService : IStreamUriService
                 IndexedFileId = indexedFileId,
                 DeviceId = Guid.Parse(storedDeviceId),
                 AudioTrackIndex = audioTrackIndex,
+                SubtitleTrackIndex = subtitleTrackIndex,
                 MaxAudioBitrate = maxBitrate > 0 ? maxBitrate : null,
                 DownmixToStereo = downmix
             };
@@ -82,7 +87,11 @@ public class StreamUriService : IStreamUriService
         throw new InvalidOperationException($"Missing {nameof(PreferenceKeys.DEVICE_ID)}");
     }
 
-    public async Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(Guid remoteFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public async Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(
+        Guid remoteFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default)
     {
         var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
@@ -93,7 +102,8 @@ public class StreamUriService : IStreamUriService
         {
             RemoteFileId = remoteFileId,
             DeviceId = Guid.Parse(storedDeviceId),
-            AudioTrackIndex = audioTrackIndex
+            AudioTrackIndex = audioTrackIndex,
+            SubtitleTrackIndex = subtitleTrackIndex
         };
 
         var session = await _streamingService.CreateRemoteStreamSessionAsync(request, cancellationToken);

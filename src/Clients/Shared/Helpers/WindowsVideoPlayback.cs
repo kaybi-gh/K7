@@ -1,12 +1,20 @@
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// Windows MAUI decodes video with Video.js in WebView2, not WinUI MediaElement.
-/// K7 HLS is fMP4 with #EXT-X-MAP, which Media Foundation does not support.
-/// See docs/dev/video-playback.md and
-/// https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/hls-tag-support
+/// Windows MAUI: LibVLC for muxed Direct Play; Video.js for HLS transcode (WebView2).
+/// Web WASM always uses Video.js. See docs/dev/video-playback.md.
 /// </summary>
 public static class WindowsVideoPlayback
 {
-    public static bool UsesWebVideoPlayer => OperatingSystem.IsWindows();
+    /// <summary>
+    /// True when the current stream should decode in WebView2 Video.js (HLS transcode).
+    /// </summary>
+    public static bool ShouldUseWebVideoPlayer(string? mimeType, string? url) =>
+        StreamingSourceKind.IsHls(mimeType, url);
+
+    /// <summary>
+    /// True when the current stream should decode in LibVLC (muxed direct-stream / local file).
+    /// </summary>
+    public static bool ShouldUseLibVlc(string? mimeType, string? url) =>
+        !string.IsNullOrEmpty(url) && !ShouldUseWebVideoPlayer(mimeType, url);
 }

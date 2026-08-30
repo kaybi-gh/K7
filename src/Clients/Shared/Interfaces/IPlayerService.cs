@@ -74,6 +74,11 @@ public interface IPlayerService
     void Stop();
     void SetAspectRatioMode(AspectRatioMode mode);
 
+    /// <summary>
+    /// Best-effort resume clock for handoff (remote play, quality swap). Prefers
+    /// <see cref="CurrentTime"/>, then last known tick, then <c>PendingSeekTime</c>.
+    /// </summary>
+    double GetResumePosition();
 
     Task ShowAsync();
     Task HideAsync();
@@ -87,7 +92,7 @@ public interface IPlayerService
     /// </summary>
     string? PlaybackStartFailureMessageKey { get; }
 
-    Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default);
+    Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default);
     Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default);
     void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto>? tracks);
     Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default);
@@ -96,7 +101,7 @@ public interface IPlayerService
 
     /// <summary>
     /// Retries opening the current HLS source or falls back to a transcoded quality after a transient failure.
-    /// Used by Web / Windows Video.js watchdogs only; native MediaElement implementations no-op.
+    /// Used by Web Video.js watchdogs only; native LibVLC / MediaElement implementations no-op.
     /// Returns true when a recovery attempt was scheduled or when recovery was skipped because media is progressing.
     /// </summary>
     /// <param name="allowQualityLadder">

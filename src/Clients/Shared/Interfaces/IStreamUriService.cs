@@ -4,7 +4,15 @@ namespace K7.Clients.Shared.Interfaces;
 
 public interface IStreamUriService
 {
-    Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
+    Task<StreamingSessionDto> GetOrCreateSessionAsync(
+        Guid indexedFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default);
 
-    Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(Guid remoteFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
+    Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(
+        Guid remoteFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default);
 }

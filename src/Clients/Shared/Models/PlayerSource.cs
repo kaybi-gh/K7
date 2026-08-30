@@ -8,6 +8,8 @@ public class PlayerSource
     public string? Url { get; set; }
     public string? MimeType { get; set; }
     public double? PendingSeekTime { get; set; }
+    /// <summary>File duration from metadata (seconds). Used so the seekbar total is known before VLC Length.</summary>
+    public double? KnownDurationSeconds { get; set; }
     public string? ThumbnailsUrl { get; set; }
     public IReadOnlyList<K7.Shared.Dtos.Entities.Metadatas.Files.ChapterMarkerDto>? Chapters { get; set; }
     public string? Title { get; set; }

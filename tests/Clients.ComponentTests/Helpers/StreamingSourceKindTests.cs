@@ -35,4 +35,39 @@ public class StreamingSourceKindTests
         hls.Should().Be(
             "https://host/api/indexed-files/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/hls-stream/manifest.m3u8?StreamSessionId=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     }
+
+    [Test]
+    public void TryBuildHlsManifestUrl_ShouldAppendVideoCodecsOnly_WhenVideoJsCompatible()
+    {
+        StreamingSourceKind.TryBuildHlsManifestUrl(
+                "https://host/api/indexed-files/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/direct-stream",
+                Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                out var hls,
+                videoJsCompatible: true)
+            .Should().BeTrue();
+        hls.Should().Contain("VideoCodecsOnly=true");
+        hls.Should().Contain("StreamSessionId=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    }
+
+    [Test]
+    public void EnsureVideoJsHlsManifestQuery_ShouldBeIdempotent()
+    {
+        var once = StreamingSourceKind.EnsureVideoJsHlsManifestQuery(
+            "https://host/hls-stream/manifest.m3u8?StreamSessionId=1");
+        var twice = StreamingSourceKind.EnsureVideoJsHlsManifestQuery(once);
+
+        once.Should().Be(twice);
+        once.Should().Contain("VideoCodecsOnly=true");
+    }
+
+    [Test]
+    public void TryBuildDirectStreamUrl_ShouldReplaceHlsManifestPath()
+    {
+        StreamingSourceKind.TryBuildDirectStreamUrl(
+                "https://host/api/indexed-files/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/hls-stream/manifest.m3u8?StreamSessionId=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb&Quality=720p",
+                out var direct)
+            .Should().BeTrue();
+        direct.Should().Be(
+            "https://host/api/indexed-files/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/direct-stream");
+    }
 }
