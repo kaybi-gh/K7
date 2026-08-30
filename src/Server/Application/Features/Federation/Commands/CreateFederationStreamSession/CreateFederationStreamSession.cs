@@ -115,11 +115,12 @@ public class CreateFederationStreamSessionCommandHandler(
                 Id = indexedFile.Id,
                 DeviceId = virtualDevice.Id,
                 StreamSessionId = session.Id,
-                AudioTrackIndex = command.Request.AudioTrackIndex
+                AudioTrackIndex = command.Request.AudioTrackIndex,
+                SubtitleTrackIndex = command.Request.SubtitleTrackIndex
             };
 
             var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
-                virtualDevice, indexedFile, videoMeta, query, hlsSegmentsAvailable, subtitleTrackIndex: null);
+                virtualDevice, indexedFile, videoMeta, query, hlsSegmentsAvailable, command.Request.SubtitleTrackIndex);
             streamUri = uri;
             streamDecision = decision;
             duration = videoMeta.Duration.TotalSeconds;

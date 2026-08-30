@@ -9,6 +9,7 @@ public static class PreferenceKeys
 {
     public static readonly PreferenceKey<string> K7_SERVER_URL = new("BackendUrl");
     public static readonly PreferenceKey<string> DEVICE_ID = new("DeviceId");
+    public static readonly PreferenceKey<string> DEVICE_NAME = new("DeviceName");
     public static readonly PreferenceKey<string> DEVICE_ATTACHED_USER_ID = new("DeviceAttachedUserId");
     public static readonly PreferenceKey<double> PLAYER_VOLUME = new("PlayerVolume");
     public static readonly PreferenceKey<double> PLAYER_PLAYBACK_RATE = new("PlayerPlaybackRate");

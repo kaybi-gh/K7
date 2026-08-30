@@ -26,7 +26,8 @@ public class CreateStreamSession : IEndpoint
                 Id = session.IndexedFileId,
                 DeviceId = command.DeviceId,
                 StreamSessionId = session.Id,
-                AudioTrackIndex = command.AudioTrackIndex
+                AudioTrackIndex = command.AudioTrackIndex,
+                SubtitleTrackIndex = command.SubtitleTrackIndex
             };
 
             var streamUri = await sender.Send(query, cancellationToken);

@@ -57,7 +57,8 @@ public class CreateRemoteStreamSessionCommandHandler(
         {
             IndexedFileId = remoteFile.RemoteFileId,
             DeviceCapabilities = capabilitiesDto,
-            AudioTrackIndex = request.AudioTrackIndex
+            AudioTrackIndex = request.AudioTrackIndex,
+            SubtitleTrackIndex = request.SubtitleTrackIndex
         };
 
         var remoteSession = await peerClient.CreateRemoteStreamSessionAsync(

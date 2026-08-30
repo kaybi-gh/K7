@@ -7,4 +7,5 @@ public sealed record CreateFederationStreamSessionRequest
     public required Guid IndexedFileId { get; init; }
     public required DevicePlaybackCapabilitiesDto DeviceCapabilities { get; init; }
     public int? AudioTrackIndex { get; init; }
+    public int? SubtitleTrackIndex { get; init; }
 }

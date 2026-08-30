@@ -560,13 +560,10 @@ public partial class K7Hub
     private (Guid DeviceId, string DeviceName, string DeviceType, string UserDisplayName)? ResolveCallerDevice()
     {
         var entry = presenceTracker.FindByConnectionId(Context.ConnectionId);
-        if (entry is not null)
-            return (entry.Value.DeviceId, entry.Value.Connection.DeviceName, entry.Value.Connection.DeviceType, entry.Value.Connection.UserDisplayName);
-
-        if (!TryRegisterCallerDeviceFromQuery(out var deviceId, out var connection))
+        if (entry is null)
             return null;
 
-        return (deviceId, connection.DeviceName, connection.DeviceType, connection.UserDisplayName);
+        return (entry.Value.DeviceId, entry.Value.Connection.DeviceName, entry.Value.Connection.DeviceType, entry.Value.Connection.UserDisplayName);
     }
 
     private string ResolveGroupDisplayName(Guid groupId, Guid deviceId, string fallback)

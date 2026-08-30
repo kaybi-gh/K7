@@ -3,7 +3,6 @@ using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
-using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
@@ -12,8 +11,11 @@ using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
+using K7.Shared;
 using K7.Shared.Dtos;
+using K7.Shared.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Services;
@@ -92,14 +94,22 @@ public sealed class StreamPlaybackService(
             var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
             query.AudioTrackIndex = selection.AudioTrackIndex;
             subtitleTrackIndex ??= selection.SubtitleTrackIndex;
-            query.SubtitleTrackIndex = subtitleTrackIndex;
         }
+
+        query.SubtitleTrackIndex = subtitleTrackIndex;
 
         var (streamUri, streamDecision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
             device, indexedFile, videoFileMetadata, query, hlsSegmentsAvailable, subtitleTrackIndex);
         streamDecision = await StreamDecisionEnrichment.EnrichEncodersAsync(
             streamDecision, ffmpegCapabilitiesService, cancellationToken);
         activeStreamTracker.UpdateStreamDecision(query.StreamSessionId, streamDecision);
+        await TryPrefetchHlsStartupAsync(
+            indexedFile,
+            videoFileMetadata,
+            query.StreamSessionId,
+            streamUri,
+            streamDecision,
+            cancellationToken);
         return streamUri;
     }
 
@@ -483,5 +493,99 @@ public sealed class StreamPlaybackService(
 
         return !string.IsNullOrEmpty(job.VideoCodec)
             && !string.Equals(job.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Start video and audio ffmpeg as soon as the HLS URI is chosen. Video.js still
+    /// has to init and fetch playlists; without this those seconds are a cold start
+    /// on init.m4s.
+    /// </summary>
+    private async Task TryPrefetchHlsStartupAsync(
+        IndexedFile indexedFile,
+        VideoFileMetadata videoFileMetadata,
+        Guid streamSessionId,
+        IndexedFileStreamUri streamUri,
+        StreamDecisionDto streamDecision,
+        CancellationToken cancellationToken)
+    {
+        if (streamDecision.Mode == PlaybackMode.Direct)
+            return;
+
+        if (!streamUri.MimeType.Contains("mpegurl", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (string.IsNullOrEmpty(indexedFile.Path) || !File.Exists(indexedFile.Path))
+            return;
+
+        try
+        {
+            var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(
+                context, indexedFile.Id, cancellationToken);
+            var totalDurationMs = hlsSegments.Count > 0
+                ? hlsSegments.Sum(s => s.Duration)
+                : (long)videoFileMetadata.Duration.TotalMilliseconds;
+            if (totalDurationMs <= 0)
+                return;
+
+            var allSegments = HlsSegmentHelper.ResolveVideoStreamingSegments(hlsSegments, totalDurationMs);
+            if (allSegments.Count == 0)
+                return;
+
+            var videoCodec = streamDecision.Mode == PlaybackMode.Transmux && !streamDecision.IsSubtitleBurnIn
+                ? null
+                : streamDecision.StreamVideoCodec;
+            var burnIn = streamDecision.IsSubtitleBurnIn
+                ? streamDecision.SelectedSubtitleTrackIndex
+                : null;
+
+            var videoJob = await transcodeJobManager.GetOrStartJobAsync(
+                indexedFile.Id,
+                indexedFile.Path,
+                quality: "original",
+                videoCodec,
+                audioCodec: null,
+                audioTrackIndex: 0,
+                isAudioOnly: false,
+                streamSessionId,
+                CancellationToken.None,
+                burnIn);
+            transcodeJobManager.PingJob(videoJob.JobId, streamSessionId);
+            await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                videoJob.JobId, -1, allSegments, CancellationToken.None);
+
+            var audioTrackIndex = streamDecision.SelectedAudioTrackIndex ?? 0;
+            var audioNeedsTranscode = streamDecision.Reason.HasFlag(TranscodeReason.AudioCodecNotSupported)
+                || (streamDecision.SourceAudioCodec is not null
+                    && streamDecision.StreamAudioCodec is not null
+                    && !string.Equals(
+                        streamDecision.SourceAudioCodec,
+                        streamDecision.StreamAudioCodec,
+                        StringComparison.OrdinalIgnoreCase));
+
+            var audioJob = await transcodeJobManager.GetOrStartJobAsync(
+                indexedFile.Id,
+                indexedFile.Path,
+                quality: "original",
+                videoCodec: null,
+                audioCodec: audioNeedsTranscode ? streamDecision.StreamAudioCodec : null,
+                audioTrackIndex,
+                isAudioOnly: true,
+                streamSessionId,
+                CancellationToken.None);
+            transcodeJobManager.PingJob(audioJob.JobId, streamSessionId);
+            await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                audioJob.JobId, -1, allSegments, CancellationToken.None);
+
+            logger.LogInformation(
+                "Prefetched HLS ffmpeg for {IndexedFileId} session {SessionId} (videoCodec={VideoCodec}, audioCodec={AudioCodec})",
+                indexedFile.Id,
+                streamSessionId,
+                videoCodec ?? "copy",
+                audioNeedsTranscode ? streamDecision.StreamAudioCodec : "copy");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to prefetch HLS ffmpeg for {IndexedFileId}", indexedFile.Id);
+        }
     }
 }

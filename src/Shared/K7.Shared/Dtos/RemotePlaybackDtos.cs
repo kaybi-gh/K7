@@ -38,6 +38,8 @@ public sealed record RemotePlaybackRequestDto
     public string? CoverUrl { get; init; }
     public double? Duration { get; init; }
     public Guid? SenderDeviceId { get; init; }
+    /// <summary>Sender playback volume (0-1) so the receiver and remote UI start aligned.</summary>
+    public double? Volume { get; init; }
 }
 
 public sealed record RemotePlaybackStateDto

@@ -13,5 +13,9 @@ public class CreateStreamSessionCommandValidator : AbstractValidator<CreateStrea
         RuleFor(v => v.AudioTrackIndex)
             .GreaterThanOrEqualTo(0)
             .When(v => v.AudioTrackIndex is not null);
+
+        RuleFor(v => v.SubtitleTrackIndex)
+            .GreaterThanOrEqualTo(0)
+            .When(v => v.SubtitleTrackIndex is not null);
     }
 }

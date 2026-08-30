@@ -4,13 +4,14 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Services;
-using Microsoft.Extensions.DependencyInjection;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Web.Endpoints.Hubs;
@@ -45,10 +46,11 @@ public partial class K7Hub(
         await Groups.AddToGroupAsync(Context.ConnectionId, identityUserId);
 
         // Update device LastSeen timestamp and track connection
-        if (TryRegisterCallerDeviceFromQuery(out var deviceId, out _))
+        var registeredDeviceId = await TryRegisterCallerDeviceFromQueryAsync();
+        if (registeredDeviceId is Guid deviceId)
         {
             await sender.Send(new UpdateDeviceLastSeenCommand(deviceId));
-            await BroadcastConnectedDevices(identityUserId);
+            await BroadcastConnectedDevicesAsync(identityUserId);
             await BroadcastOnlineUsersPresenceToAdminsAsync();
         }
 
@@ -91,7 +93,7 @@ public partial class K7Hub(
         {
             if (!string.IsNullOrEmpty(identityUserId))
             {
-                await BroadcastConnectedDevices(identityUserId);
+                await BroadcastConnectedDevicesAsync(identityUserId);
             }
 
             var result = syncPlay.DisconnectDevice(deviceId);
@@ -248,30 +250,43 @@ public partial class K7Hub(
         if (string.IsNullOrEmpty(identityUserId))
             return;
 
-        var devices = presenceTracker.GetDevicesForUser(identityUserId)
-            .Select(kvp => new ConnectedDeviceDto
-            {
-                DeviceId = kvp.Key,
-                DeviceName = kvp.Value.DeviceName,
-                DeviceType = kvp.Value.DeviceType
-            })
-            .ToList();
-
+        var devices = await BuildConnectedDevicesAsync(identityUserId);
         await Clients.Caller.ReceiveConnectedDevicesUpdated(devices);
     }
 
-    private async Task BroadcastConnectedDevices(string identityUserId)
+    private async Task BroadcastConnectedDevicesAsync(string identityUserId)
     {
-        var devices = presenceTracker.GetDevicesForUser(identityUserId)
-            .Select(kvp => new ConnectedDeviceDto
+        var devices = await BuildConnectedDevicesAsync(identityUserId);
+        await Clients.Group(identityUserId).ReceiveConnectedDevicesUpdated(devices);
+    }
+
+    private async Task<IReadOnlyList<ConnectedDeviceDto>> BuildConnectedDevicesAsync(string identityUserId)
+    {
+        var connected = presenceTracker.GetDevicesForUser(identityUserId).ToList();
+        if (connected.Count == 0)
+            return [];
+
+        var labels = await ResolveDeviceLabelsAsync(connected.Select(kvp => kvp.Key).ToList());
+
+        return connected
+            .Select(kvp =>
             {
-                DeviceId = kvp.Key,
-                DeviceName = kvp.Value.DeviceName,
-                DeviceType = kvp.Value.DeviceType
+                labels.TryGetValue(kvp.Key, out var label);
+                var deviceName = FirstNonEmpty(
+                    label.Name,
+                    kvp.Value.DeviceName,
+                    label.Type,
+                    kvp.Value.DeviceType,
+                    "Device");
+                var deviceType = FirstNonEmpty(kvp.Value.DeviceType, label.Type, "Unknown");
+                return new ConnectedDeviceDto
+                {
+                    DeviceId = kvp.Key,
+                    DeviceName = deviceName,
+                    DeviceType = deviceType
+                };
             })
             .ToList();
-
-        await Clients.Group(identityUserId).ReceiveConnectedDevicesUpdated(devices);
     }
 
     private Task BroadcastOnlineUsersPresenceToAdminsAsync() =>
@@ -280,25 +295,23 @@ public partial class K7Hub(
     private OnlineUsersPresenceDto BuildOnlineUsersPresenceDto() =>
         new() { IdentityUserIds = presenceTracker.GetOnlineIdentityUserIds() };
 
-    private bool TryRegisterCallerDeviceFromQuery(out Guid deviceId, out HubDeviceConnection connection)
+    private async Task<Guid?> TryRegisterCallerDeviceFromQueryAsync()
     {
-        deviceId = default;
-        connection = null!;
-
         var httpContext = Context.GetHttpContext();
-        if (!Guid.TryParse(httpContext?.Request.Query["deviceId"], out deviceId))
-            return false;
+        if (!Guid.TryParse(httpContext?.Request.Query["deviceId"], out var deviceId))
+            return null;
 
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId))
-            return false;
+            return null;
 
-        var deviceName = httpContext!.Request.Query["deviceName"].ToString();
-        var deviceType = httpContext.Request.Query["deviceType"].ToString();
+        var queryName = httpContext!.Request.Query["deviceName"].ToString();
+        var queryType = httpContext.Request.Query["deviceType"].ToString();
+        var (deviceName, deviceType) = await ResolveDevicePresenceAsync(deviceId, queryName, queryType);
         var userDisplayName = Context.User?.FindFirstValue(ClaimTypes.Name) ?? deviceName;
         var syncPlayEnabled = !bool.TryParse(httpContext.Request.Query["syncPlayEnabled"], out var spEnabled) || spEnabled;
 
-        connection = new HubDeviceConnection(
+        var connection = new HubDeviceConnection(
             Context.ConnectionId,
             identityUserId,
             userDisplayName,
@@ -307,6 +320,56 @@ public partial class K7Hub(
             syncPlayEnabled);
 
         presenceTracker.RegisterDevice(deviceId, connection);
-        return true;
+        return deviceId;
+    }
+
+    private async Task<(string Name, string Type)> ResolveDevicePresenceAsync(
+        Guid deviceId,
+        string queryName,
+        string queryType)
+    {
+        var labels = await ResolveDeviceLabelsAsync([deviceId]);
+        labels.TryGetValue(deviceId, out var label);
+
+        // Prefer the persisted admin/devices name over the hub query (often empty / DeviceType only).
+        var deviceName = FirstNonEmpty(label.Name, queryName, label.Type, queryType, "Device");
+        var deviceType = FirstNonEmpty(queryType, label.Type, "Unknown");
+        return (deviceName, deviceType);
+    }
+
+    private async Task<Dictionary<Guid, (string? Name, string? Type)>> ResolveDeviceLabelsAsync(
+        IReadOnlyList<Guid> deviceIds)
+    {
+        var result = new Dictionary<Guid, (string? Name, string? Type)>();
+        if (deviceIds.Count == 0)
+            return result;
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var rows = await db.Devices
+            .AsNoTracking()
+            .Where(d => deviceIds.Contains(d.Id))
+            .Select(d => new { d.Id, d.DeviceName, d.DeviceType })
+            .ToListAsync();
+
+        foreach (var row in rows)
+        {
+            result[row.Id] = (
+                string.IsNullOrWhiteSpace(row.DeviceName) ? null : row.DeviceName.Trim(),
+                row.DeviceType.ToString());
+        }
+
+        return result;
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                return value.Trim();
+        }
+
+        return string.Empty;
     }
 }

@@ -11,6 +11,7 @@ public static class PreferenceKeyCatalog
     [
         PreferenceKeys.K7_SERVER_URL.Name,
         PreferenceKeys.DEVICE_ID.Name,
+        PreferenceKeys.DEVICE_NAME.Name,
         PreferenceKeys.ACCESS_TOKEN.Name,
         PreferenceKeys.REFRESH_TOKEN.Name,
         PreferenceKeys.DEVICE_ATTACHED_USER_ID.Name,
