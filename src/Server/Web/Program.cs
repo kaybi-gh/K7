@@ -64,6 +64,7 @@ try
         {
             var query = httpContext.Request.Query;
             if (query.ContainsKey(EphemeralStreamTokenDefaults.QueryParameterName)
+                || query.ContainsKey("access_token")
                 || query.ContainsKey("apiKey")
                 || query.ContainsKey("p")
                 || query.ContainsKey("t"))

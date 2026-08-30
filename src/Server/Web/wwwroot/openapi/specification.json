@@ -6211,6 +6211,14 @@
               ],
               "format": "double"
             }
+          },
+          {
+            "name": "videoCodecsOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -6310,6 +6318,14 @@
                 "string"
               ],
               "format": "double"
+            }
+          },
+          {
+            "name": "videoCodecsOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -6785,6 +6801,78 @@
           {
             "name": "SubtitleBurnInStreamIndex",
             "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/subtitles/{subtitleTrackIndex}.vtt": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetSubtitleVtt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subtitleTrackIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetSubtitleVtt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subtitleTrackIndex",
+            "in": "path",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -12028,6 +12116,15 @@
               "string"
             ],
             "format": "int32"
+          },
+          "subtitleTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12239,6 +12336,15 @@
               "string"
             ],
             "format": "int32"
+          },
+          "subtitleTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12307,6 +12413,15 @@
             "format": "uuid"
           },
           "audioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "subtitleTrackIndex": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
@@ -16643,6 +16758,15 @@
             "items": {
               "$ref": "#/components/schemas/LiteSerieSeasonDto"
             }
+          },
+          "runtime": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "hasThemeSong": {
             "type": "boolean"
