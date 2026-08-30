@@ -62,14 +62,19 @@ public class RemotePlaybackHandler : IDisposable
         }
         else
         {
+            // Pass startPosition into PlayIndexedFileAsync so PendingSeekTime / #EXT-X-START
+            // apply before first frame. A separate Seek() races cold start and lands at 0.
             await _playerService.PlayIndexedFileAsync(
                 request.IndexedFileId,
-                audioTracks: []);
+                audioTracks: [],
+                title: request.Title,
+                coverUrl: request.CoverUrl,
+                mediaId: request.MediaId,
+                durationSeconds: request.Duration,
+                startPosition: request.StartPosition is > 0 ? request.StartPosition : null);
 
-            if (request.StartPosition is > 0)
-            {
-                _playerService.Seek(request.StartPosition.Value);
-            }
+            if (request.Volume is double volume)
+                _playerService.SetVolume(Math.Clamp(volume, 0, 1));
         }
 
         StartStateReporting();

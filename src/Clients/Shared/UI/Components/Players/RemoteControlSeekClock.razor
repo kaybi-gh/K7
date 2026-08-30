@@ -1,0 +1,17 @@
+@inject IRemoteControlService Remote
+
+<div class="remote-control-panel__seek">
+    <span class="remote-control-panel__time">@FormatTime(Remote.Position)</span>
+    <div class="remote-control-panel__seekbar-host">
+        <SeekBar IsVisible="true"
+                 KeyboardFocusable="false"
+                 UseExternalClock="true"
+                 ExternalCurrentTime="@Remote.Position"
+                 ExternalDuration="@Remote.Duration"
+                 ExternalBufferedTime="@Remote.Position"
+                 OnSeekRequested="OnSeekRequested"
+                 ThumbnailsUri="@ThumbnailsUri"
+                 Chapters="@Chapters" />
+    </div>
+    <span class="remote-control-panel__time">@FormatTime(Remote.Duration)</span>
+</div>

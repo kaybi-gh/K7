@@ -1,3 +1,4 @@
+using System.Globalization;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Dtos;
@@ -44,11 +45,47 @@ public partial class RemoteControlPanel : ComponentBase, IAsyncDisposable
         }
     }
 
-    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+    private void OnStateChanged()
+    {
+        // Position ticks every second - only re-render when chrome that owns menus / transport changes.
+        // Full redraws were closing K7Menu (Open default false re-applied on ParametersSet).
+        if (!ShouldRefreshChrome())
+            return;
+
+        CaptureChromeSnapshot();
+        InvokeAsync(StateHasChanged);
+    }
+
     private void OnSessionChanged()
     {
         RefreshSeekMetadata();
+        CaptureChromeSnapshot();
         InvokeAsync(StateHasChanged);
+    }
+
+    private RemotePlaybackState _chromeState;
+    private double _chromeVolume = -1;
+    private int? _chromeAudioIndex;
+    private int? _chromeSubtitleIndex;
+    private int _chromeAudioCount = -1;
+    private int _chromeSubtitleCount = -1;
+
+    private bool ShouldRefreshChrome() =>
+        Remote.PlaybackState != _chromeState
+        || Math.Abs(Remote.Volume - _chromeVolume) > 0.02
+        || Remote.SelectedAudioTrackIndex != _chromeAudioIndex
+        || Remote.SelectedSubtitleTrackIndex != _chromeSubtitleIndex
+        || Remote.AudioTracks.Count != _chromeAudioCount
+        || Remote.SubtitleTracks.Count != _chromeSubtitleCount;
+
+    private void CaptureChromeSnapshot()
+    {
+        _chromeState = Remote.PlaybackState;
+        _chromeVolume = Remote.Volume;
+        _chromeAudioIndex = Remote.SelectedAudioTrackIndex;
+        _chromeSubtitleIndex = Remote.SelectedSubtitleTrackIndex;
+        _chromeAudioCount = Remote.AudioTracks.Count;
+        _chromeSubtitleCount = Remote.SubtitleTracks.Count;
     }
 
     private void RefreshSeekMetadata()
@@ -83,16 +120,28 @@ public partial class RemoteControlPanel : ComponentBase, IAsyncDisposable
         return new Uri(baseAddress, relativeOrAbsolute);
     }
 
-    private async Task OnPlay() => await Remote.SendPlayAsync();
-    private async Task OnPause() => await Remote.SendPauseAsync();
+    private async Task OnPlayPause()
+    {
+        if (Remote.PlaybackState == RemotePlaybackState.Playing)
+            await Remote.SendPauseAsync();
+        else
+            await Remote.SendPlayAsync();
+    }
+
     private async Task OnStop() => await ExitRemoteAsync();
 
     private async Task OnSeekAsync(double position) => await Remote.SendSeekAsync(position);
 
-    private async Task OnVolumeChanged(ChangeEventArgs e)
+    private async Task OnVolumeInput(ChangeEventArgs e)
     {
-        if (double.TryParse(e.Value?.ToString(), out var volume))
+        if (double.TryParse(
+                e.Value?.ToString(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var volume))
+        {
             await Remote.SendVolumeAsync(volume);
+        }
     }
 
     private async Task OnAudioTrackSelected(int trackIndex) =>
@@ -109,14 +158,6 @@ public partial class RemoteControlPanel : ComponentBase, IAsyncDisposable
             return;
 
         await Remote.SendStopAsync();
-    }
-
-    private static string FormatTime(double seconds)
-    {
-        var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
-        return ts.Hours > 0
-            ? ts.ToString(@"h\:mm\:ss")
-            : ts.ToString(@"m\:ss");
     }
 
     public async ValueTask DisposeAsync()

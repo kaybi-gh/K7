@@ -7,6 +7,7 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
 {
     private readonly K7HubClient _hubClient;
     private readonly ICastService _castService;
+    private DateTime _lastLocalVolumeUtc;
 
     public RemoteControlService(K7HubClient hubClient, ICastService castService)
     {
@@ -58,7 +59,7 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
         Duration = request.Duration ?? 0;
         Position = request.StartPosition ?? 0;
         PlaybackState = RemotePlaybackState.Playing;
-        Volume = 1.0;
+        Volume = request.Volume is double v ? Math.Clamp(v, 0, 1) : 1.0;
 
         AudioTracks = [];
         SubtitleTracks = [];
@@ -168,7 +169,8 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
 
     public async Task SendVolumeAsync(double volume)
     {
-        Volume = volume;
+        Volume = Math.Clamp(volume, 0, 1);
+        _lastLocalVolumeUtc = DateTime.UtcNow;
         StateChanged?.Invoke();
 
         if (IsCastSession)
@@ -180,7 +182,7 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
         await _hubClient.SendRemoteTransportCommandAsync(TargetDeviceId.Value, new RemoteTransportCommandDto
         {
             Action = RemoteTransportAction.SetVolume,
-            Value = volume
+            Value = Volume
         });
     }
 
@@ -215,13 +217,16 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
         PlaybackState = state.State;
         Position = state.Position;
         Duration = state.Duration;
-        Volume = state.Volume;
+        // Keep the slider stable for a moment after the user moves it; otherwise 1 Hz
+        // reports from the receiver yank the thumb / focus back.
+        if ((DateTime.UtcNow - _lastLocalVolumeUtc).TotalSeconds > 1.5)
+            Volume = state.Volume;
         SelectedAudioTrackIndex = state.SelectedAudioTrackIndex;
         SelectedSubtitleTrackIndex = state.SelectedSubtitleTrackIndex;
 
-        if (state.AudioTracks is not null)
+        if (state.AudioTracks is not null && !TrackListsEqual(AudioTracks, state.AudioTracks))
             AudioTracks = state.AudioTracks;
-        if (state.SubtitleTracks is not null)
+        if (state.SubtitleTracks is not null && !TrackListsEqual(SubtitleTracks, state.SubtitleTracks))
             SubtitleTracks = state.SubtitleTracks;
 
         if (state.State == RemotePlaybackState.Stopped)
@@ -231,6 +236,26 @@ public sealed class RemoteControlService : IRemoteControlService, IDisposable
         }
 
         StateChanged?.Invoke();
+    }
+
+    private static bool TrackListsEqual(
+        IReadOnlyList<RemoteTrackInfoDto> current,
+        IReadOnlyList<RemoteTrackInfoDto> incoming)
+    {
+        if (ReferenceEquals(current, incoming))
+            return true;
+        if (current.Count != incoming.Count)
+            return false;
+
+        for (var i = 0; i < current.Count; i++)
+        {
+            if (current[i].Index != incoming[i].Index)
+                return false;
+            if (!string.Equals(current[i].Label, incoming[i].Label, StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
     }
 
     private void OnCastMediaStatusUpdated(CastMediaStatus status)

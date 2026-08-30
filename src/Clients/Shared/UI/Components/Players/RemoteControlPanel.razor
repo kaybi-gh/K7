@@ -1,3 +1,4 @@
+@using System.Globalization
 @inject IRemoteControlService Remote
 @inject IPlayerService PlayerService
 @inject IK7ServerService K7Server
@@ -11,7 +12,7 @@
      data-initial-focus=".remote-control-panel__play">
     <div class="remote-control-panel__header">
         <K7Icon Icon="@Phosphor.Screencast" IconSize="@K7IconSize.Sm" />
-        <span>@string.Format(S["PlayingOn"], Remote.TargetDeviceName)</span>
+        <span>@string.Format(S["PlayingOn"], string.IsNullOrWhiteSpace(Remote.TargetDeviceName) ? "Device" : Remote.TargetDeviceName)</span>
     </div>
 
     @if (Remote.CoverUrl is not null)
@@ -40,48 +41,26 @@
         }
     </div>
 
-    <div class="remote-control-panel__seek">
-        <span class="remote-control-panel__time">@FormatTime(Remote.Position)</span>
-        <div class="remote-control-panel__seekbar-host">
-            <SeekBar IsVisible="true"
-                     UseExternalClock="true"
-                     ExternalCurrentTime="@Remote.Position"
-                     ExternalDuration="@Remote.Duration"
-                     ExternalBufferedTime="@Remote.Position"
-                     OnSeekRequested="OnSeekAsync"
-                     ThumbnailsUri="@_thumbnailsUri"
-                     Chapters="@_chapters" />
-        </div>
-        <span class="remote-control-panel__time">@FormatTime(Remote.Duration)</span>
-    </div>
+    <RemoteControlSeekClock ThumbnailsUri="@_thumbnailsUri"
+                            Chapters="@_chapters"
+                            OnSeekRequested="OnSeekAsync" />
 
     <div class="remote-control-panel__transport">
-        @if (Remote.PlaybackState == RemotePlaybackState.Playing)
-        {
-            <K7IconButton Class="remote-control-panel__play"
-                          Icon="@Phosphor.Pause"
-                          OnClick="OnPause"
-                          Size="lg"
-                          AriaLabel="Pause"
-                          data-initial-focus />
-        }
-        else
-        {
-            <K7IconButton Class="remote-control-panel__play"
-                          Icon="@Phosphor.Play"
-                          OnClick="OnPlay"
-                          Size="lg"
-                          AriaLabel="Play"
-                          data-initial-focus />
-        }
+        @* One stable button so 1 Hz state ticks do not remount and steal SpatialNav focus. *@
+        <K7IconButton Class="remote-control-panel__play"
+                      Icon="@(Remote.PlaybackState == RemotePlaybackState.Playing ? Phosphor.Pause : Phosphor.Play)"
+                      OnClick="OnPlayPause"
+                      Size="lg"
+                      AriaLabel="@(Remote.PlaybackState == RemotePlaybackState.Playing ? "Pause" : "Play")"
+                      data-initial-focus />
         <K7IconButton Icon="@Phosphor.Stop" OnClick="OnStop" AriaLabel="Stop" />
     </div>
 
     <div class="remote-control-panel__volume">
         <K7Icon Icon="@(Remote.Volume < 0.01 ? Phosphor.SpeakerNone : Phosphor.SpeakerHigh)" IconSize="@K7IconSize.Sm" />
         <input type="range" min="0" max="1" step="0.01"
-               value="@Remote.Volume"
-               @onchange="OnVolumeChanged"
+               value="@Remote.Volume.ToString(CultureInfo.InvariantCulture)"
+               @oninput="OnVolumeInput"
                class="remote-control-panel__volume-slider focusable"
                data-sn-activatable
                tabindex="0"

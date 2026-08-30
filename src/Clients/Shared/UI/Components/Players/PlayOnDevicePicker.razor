@@ -37,7 +37,7 @@
                 @foreach (var device in _remoteDevices)
                 {
                     <K7MenuItem Icon="@GetDeviceIcon(device.DeviceType)" OnClick="@(() => OnRemoteDeviceSelected(device))">
-                        @device.DeviceName
+                        @ConnectedDeviceLabels.GetDisplayName(device)
                     </K7MenuItem>
                 }
             }

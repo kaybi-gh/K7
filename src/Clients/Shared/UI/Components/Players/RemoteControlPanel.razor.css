@@ -62,31 +62,6 @@
     opacity: 0.6;
 }
 
-.remote-control-panel__seek {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    max-width: 560px;
-}
-
-.remote-control-panel__seekbar-host {
-    flex: 1;
-    min-width: 0;
-}
-
-.remote-control-panel__seekbar-host ::deep .seekbar-container {
-    width: 100%;
-}
-
-.remote-control-panel__time {
-    font-size: var(--text-xs);
-    font-variant-numeric: tabular-nums;
-    opacity: 0.7;
-    min-width: 3rem;
-    text-align: center;
-}
-
 .remote-control-panel__transport {
     display: flex;
     align-items: center;

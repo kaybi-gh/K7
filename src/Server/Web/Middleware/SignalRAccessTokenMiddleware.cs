@@ -1,14 +1,15 @@
 namespace K7.Server.Web.Middleware;
 
 /// <summary>
-/// Copies the SignalR <c>access_token</c> query parameter into the Authorization header
-/// so OpenIddict validation can authenticate native clients on the WebSocket handshake.
+/// Copies the <c>access_token</c> query parameter into the Authorization header so
+/// OpenIddict can authenticate clients that cannot send headers (SignalR handshake,
+/// LibVLC Android HTTP).
 /// </summary>
 public sealed class SignalRAccessTokenMiddleware(RequestDelegate next)
 {
     public Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.StartsWithSegments("/hub"))
+        if (ShouldCopyAccessToken(context.Request.Path))
         {
             var accessToken = context.Request.Query["access_token"];
             if (!string.IsNullOrEmpty(accessToken) &&
@@ -20,4 +21,9 @@ public sealed class SignalRAccessTokenMiddleware(RequestDelegate next)
 
         return next(context);
     }
+
+    private static bool ShouldCopyAccessToken(PathString path) =>
+        path.StartsWithSegments("/hub")
+        || path.StartsWithSegments("/api/indexed-files")
+        || path.StartsWithSegments("/api/remote-stream-sessions");
 }

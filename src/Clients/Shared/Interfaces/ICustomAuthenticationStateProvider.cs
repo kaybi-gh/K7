@@ -6,7 +6,7 @@ public interface ICustomAuthenticationStateProvider
 {
     /// <summary>
     /// Raised when the stored access token value changes (login, refresh, logout clear is not raised).
-    /// Native players that bake Authorization into ExoPlayer/MediaElement must rebind on this.
+    /// Native players that bake Authorization into LibVLC / MediaElement must rebind on this.
     /// </summary>
     event EventHandler? AccessTokenChanged;
 

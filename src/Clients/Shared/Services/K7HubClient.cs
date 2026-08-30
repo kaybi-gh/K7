@@ -24,6 +24,7 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
     private HubConnection? _hubConnection;
     private bool _started;
     private string? _accessToken;
+    private string? _registeredDeviceName;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly HashSet<string> _joinedGroups = new(StringComparer.Ordinal);
 
@@ -72,9 +73,10 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
         if (!string.IsNullOrEmpty(accessToken))
             _accessToken = accessToken;
 
-        if (string.Equals(ConnectedUserId, userId, StringComparison.Ordinal)
+            if (string.Equals(ConnectedUserId, userId, StringComparison.Ordinal)
             && _started
-            && _hubConnection?.State == HubConnectionState.Connected)
+            && _hubConnection?.State == HubConnectionState.Connected
+            && string.Equals(_registeredDeviceName, deviceName, StringComparison.Ordinal))
             return;
 
         await _lock.WaitAsync();
@@ -84,12 +86,16 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
                 _accessToken = accessToken;
 
             var userChanged = !string.Equals(ConnectedUserId, userId, StringComparison.Ordinal);
+            var needsDeviceNameRefresh = !string.Equals(_registeredDeviceName, deviceName, StringComparison.Ordinal)
+                && !string.IsNullOrEmpty(deviceName);
             if (userChanged)
             {
                 ConnectedUserId = userId;
                 UserContextChanged?.Invoke();
             }
-            else if (_started && _hubConnection?.State == HubConnectionState.Connected)
+            else if (_started
+                && _hubConnection?.State == HubConnectionState.Connected
+                && !needsDeviceNameRefresh)
             {
                 return;
             }
@@ -109,6 +115,8 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
                 queryParams.Add($"deviceName={Uri.EscapeDataString(deviceName)}");
             if (!string.IsNullOrEmpty(deviceType))
                 queryParams.Add($"deviceType={Uri.EscapeDataString(deviceType)}");
+
+            _registeredDeviceName = deviceName;
 
             var hubPath = queryParams.Count > 0
                 ? $"/hub?{string.Join('&', queryParams)}"

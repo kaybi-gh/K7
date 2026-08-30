@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
@@ -11,18 +12,13 @@ public record UpdateDeviceCommand : IRequest
     public required UpdateDeviceRequest UpdateDeviceRequest { get; init; }
 }
 
-public class UpdateDeviceCommandHandler : IRequestHandler<UpdateDeviceCommand>
+public class UpdateDeviceCommandHandler(
+    IApplicationDbContext context,
+    IHubPresenceTracker presenceTracker) : IRequestHandler<UpdateDeviceCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public UpdateDeviceCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(UpdateDeviceCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.Devices
+        var entity = await context.Devices
             .FindAsync([request.Id], cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
@@ -75,6 +71,19 @@ public class UpdateDeviceCommandHandler : IRequestHandler<UpdateDeviceCommand>
             entity.NativeDeviceDetails = null;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        // Keep remote-device picker labels in sync with /admin/devices.
+        if (presenceTracker.TryGetDevice(request.Id, out var connection))
+        {
+            var deviceName = string.IsNullOrWhiteSpace(update.DeviceName)
+                ? connection.DeviceName
+                : update.DeviceName.Trim();
+            presenceTracker.UpdateDevice(request.Id, connection with
+            {
+                DeviceName = deviceName,
+                DeviceType = update.DeviceType.ToString()
+            });
+        }
     }
 }
