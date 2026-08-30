@@ -238,6 +238,35 @@ public class HlsSegmentFileWaiterTests
     }
 
     [Test]
+    public async Task IsSegmentFileReady_ShouldReturnFalse_WhenInitHasSizeZeroMoovEvenIfStable()
+    {
+        var path = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);
+        var ftyp = BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]);
+        var moovHeader = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x6D, 0x6F, 0x6F, 0x76, 0x00 };
+        File.WriteAllBytes(path, Concat(ftyp, moovHeader));
+
+        HlsSegmentFileWaiter.IsSegmentFileReady(path).Should().BeFalse();
+        await Task.Delay(HlsSegmentFileWaiter.SizeZeroStableMs + 50);
+        HlsSegmentFileWaiter.IsSegmentFileReady(path).Should().BeFalse(
+            "size-zero init moov stub without a media segment must not be served");
+    }
+
+    [Test]
+    public void IsSegmentFileReady_ShouldReturnTrue_WhenSizeZeroInitAndMediaSegmentReady()
+    {
+        var initPath = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);
+        var ftyp = BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]);
+        var moovHeader = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x6D, 0x6F, 0x6F, 0x76, 0x00 };
+        File.WriteAllBytes(initPath, Concat(ftyp, moovHeader));
+        File.WriteAllBytes(
+            Path.Combine(_tempDirectory, "0.m4s"),
+            Concat(BuildMinimalMoof(sampleSizes: [1]), BuildBox("mdat", [0x02])));
+
+        HlsSegmentFileWaiter.IsSegmentFileReady(initPath).Should().BeTrue(
+            "a ready media segment means ffmpeg finalized the empty_moov init header");
+    }
+
+    [Test]
     public void IsSegmentFileReady_ShouldReturnFalse_WhenMediaHasSizeZeroMdatUntilStable()
     {
         var path = Path.Combine(_tempDirectory, "0.m4s");

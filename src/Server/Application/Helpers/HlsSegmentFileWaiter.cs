@@ -143,12 +143,24 @@ internal static class HlsSegmentFileWaiter
                 return false;
             }
 
-            // size==0 boxes are only safe once the writer has stopped appending.
-            // Prefer "next media segment exists" as a stronger completion signal.
-            // Keep the stability entry after success so WaitUntilAvailable -> TryRead
-            // does not have to re-settle the same length.
-            if (hasSizeZeroBox && !IsSizeZeroSnapshotSafe(segmentPath, length))
-                return false;
+            // Init with size==0 moov: ffmpeg's empty_moov stub (~453 bytes) must not be
+            // served (poisons LibVLC / Exo). Accept only once a media segment exists -
+            // that means the header was finalized - or when length is stable for non-init.
+            if (hasSizeZeroBox)
+            {
+                if (IsInitSegmentPath(segmentPath))
+                {
+                    if (!HasSiblingReadyMediaSegment(segmentPath))
+                    {
+                        ClearSizeZeroStability(segmentPath);
+                        return false;
+                    }
+                }
+                else if (!IsSizeZeroSnapshotSafe(segmentPath, length))
+                {
+                    return false;
+                }
+            }
 
             bytes = buffer;
             return true;
@@ -905,6 +917,28 @@ internal static class HlsSegmentFileWaiter
 
     private static bool IsInitSegmentPath(string segmentPath) =>
         string.Equals(Path.GetFileName(segmentPath), InitSegmentFileName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// True when any numbered <c>N.m4s</c> beside init is a ready media segment.
+    /// Used to know ffmpeg finished writing a size-zero empty_moov init header.
+    /// </summary>
+    private static bool HasSiblingReadyMediaSegment(string initSegmentPath)
+    {
+        var directory = Path.GetDirectoryName(initSegmentPath);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+            return false;
+
+        foreach (var path in Directory.EnumerateFiles(directory, "*.m4s"))
+        {
+            if (IsInitSegmentPath(path))
+                continue;
+
+            if (IsSegmentFileReady(path))
+                return true;
+        }
+
+        return false;
+    }
 
     private static bool IsSizeZeroSnapshotSafe(string segmentPath, int length)
     {

@@ -80,15 +80,18 @@ public class GetStreamUriQueryHandler(
         var subtitleBurnInStreamIndex = selectedSubtitle is { IsTextBased: false } ? selectedSubtitle.Index : (int?)null;
         var defaultTextSubtitleTrackIndex = selectedSubtitle is { IsTextBased: true } ? selectedSubtitle.Index : (int?)null;
 
-        var resolutionExceedsDevice = device.DisplayHeight > 0
-            && selectedVideoTrack.Height > 0
-            && selectedVideoTrack.Height > device.DisplayHeight;
-
-        // Video.js (web + Windows WebView2) cannot switch in-container audio/subs.
-        // Always remux/encode so the HLS master keeps track choice.
+        // Video.js cannot switch in-container audio/subs. Native LibVLC / AVPlayer can.
+        // Web always remux/encode so the HLS master keeps track choice.
         // https://github.com/videojs/video.js/issues/6442
         // https://docs.videojs.com/tutorial-audio-tracks.html
         var allowsVideoDirectPlay = AllowsVideoDirectPlay(device);
+
+        // Native players scale. Do not transcode just because DisplayHeight is DIP
+        // (Windows 1080p at 150% scale reports ~720) or smaller than the file.
+        var resolutionExceedsDevice = !allowsVideoDirectPlay
+            && device.DisplayHeight > 0
+            && selectedVideoTrack.Height > 0
+            && selectedVideoTrack.Height > device.DisplayHeight;
 
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
         if (allowsVideoDirectPlay && audioDirectSupported && videoDirectSupported && !resolutionExceedsDevice)
@@ -125,9 +128,10 @@ public class GetStreamUriQueryHandler(
 
         // Otherwise we go through HLS. Video.js MSE often accepts 8-bit hvc1 but rejects
         // Main 10 (Heroes) and rejects video+audio packed into one CODECS type check.
+        var usesVideoJsHls = UsesVideoJsHlsManifest(device);
         var videoCodecSupported = supportedVideoFormats.Any(x =>
             MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
-        if (!allowsVideoDirectPlay && !IsVideoJsHlsCopyTrack(selectedVideoTrack))
+        if (usesVideoJsHls && !IsVideoJsHlsCopyTrack(selectedVideoTrack))
             videoCodecSupported = false;
 
         var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
@@ -147,6 +151,11 @@ public class GetStreamUriQueryHandler(
             requiresVideoTranscoding = true;
         }
 
+        // Windows MAUI plays HLS in Video.js (WebView2), not LibVLC remux. Always encode
+        // so MSE gets h264/aac; Direct Play keeps real codecs via /direct-stream.
+        if (device.OperatingSystem == OperatingSystem.Windows)
+            requiresVideoTranscoding = true;
+
         if (requiresVideoTranscoding)
         {
             videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
@@ -162,8 +171,33 @@ public class GetStreamUriQueryHandler(
 
         foreach (var audioTrack in videoFileMetadata.AudioTracks)
         {
-            if (string.IsNullOrWhiteSpace(audioTrack.Codec)
-                || !hlsCompatibleAudioCodecSet.Contains(MediaCodecNames.Canonical(audioTrack.Codec)))
+            var canonicalCodec = string.IsNullOrWhiteSpace(audioTrack.Codec)
+                ? null
+                : MediaCodecNames.Canonical(audioTrack.Codec);
+
+            if (device.OperatingSystem == OperatingSystem.Windows)
+            {
+                if (canonicalCodec is null
+                    || !string.Equals(canonicalCodec, "aac", StringComparison.OrdinalIgnoreCase))
+                {
+                    audioTrackTranscodings ??= [];
+                    audioTrackTranscodings[audioTrack.Index] = "aac";
+                }
+
+                continue;
+            }
+
+            // Device may decode EAC3/DTS in Direct Play, but ffmpeg demuxed fMP4 remux
+            // of those codecs often never finishes init.m4s (Android Exo HLS promote).
+            if (canonicalCodec is "ac3" or "eac3" or "dts" or "truehd" or "dtshd" or "mlp")
+            {
+                audioTrackTranscodings ??= [];
+                audioTrackTranscodings[audioTrack.Index] = "aac";
+                continue;
+            }
+
+            if (canonicalCodec is null
+                || !hlsCompatibleAudioCodecSet.Contains(canonicalCodec))
             {
                 audioTrackTranscodings ??= [];
                 var fallback = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
@@ -216,18 +250,27 @@ public class GetStreamUriQueryHandler(
                 AudioTrackTranscodings = audioTrackTranscodings,
                 DefaultAudioTrackIndex = request.AudioTrackIndex,
                 DefaultSubtitleTrackIndex = defaultTextSubtitleTrackIndex,
-                SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex
+                SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
+                // Video.js (Web + Windows HLS) needs video-only CODECS on STREAM-INF.
+                VideoCodecsOnly = usesVideoJsHls
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
         }, hlsDecision);
     }
 
     /// <summary>
-    /// Native Android/iOS/Mac can switch muxed tracks. Web and Windows Video.js cannot.
+    /// Native clients can switch muxed tracks (LibVLC on Android/Windows, AVPlayer on
+    /// iOS/Mac). Web Video.js cannot.
     /// </summary>
     internal static bool AllowsVideoDirectPlay(Device device) =>
-        device.ClientType == ClientType.Native
-        && device.OperatingSystem != OperatingSystem.Windows;
+        device.ClientType == ClientType.Native;
+
+    /// <summary>
+    /// HLS master is consumed by Video.js/VHS (Web WASM and Windows MAUI HLS fallback).
+    /// </summary>
+    internal static bool UsesVideoJsHlsManifest(Device device) =>
+        device.ClientType == ClientType.Web
+        || device.OperatingSystem == OperatingSystem.Windows;
 
     /// <summary>
     /// Video.js VHS calls MediaSource.isTypeSupported on the master CODECS tag.
@@ -298,7 +341,8 @@ public class GetStreamUriQueryHandler(
                 return match;
         }
 
-        return audioFormats.First();
+        return audioFormats.FirstOrDefault()
+            ?? new AudioMediaFormat { Id = "audio-mp4-aac", Container = "mp4", Codec = "aac" };
     }
 
     // Codecs that work inside fMP4 segments (HLS with ISO BMFF), ordered by transcoding preference.
@@ -324,7 +368,15 @@ public class GetStreamUriQueryHandler(
                 return match;
         }
 
-        return videoFormats.First();
+        // Empty device capabilities must not 500 stream-sessions; HLS encode can always target h264.
+        return videoFormats.FirstOrDefault()
+            ?? new VideoMediaFormat
+            {
+                Id = "video-mp4-aac-h264",
+                Container = "mp4",
+                AudioCodec = "aac",
+                VideoCodec = "h264"
+            };
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)

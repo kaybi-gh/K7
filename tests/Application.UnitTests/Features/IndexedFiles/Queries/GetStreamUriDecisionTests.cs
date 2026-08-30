@@ -171,7 +171,7 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
-    public void GetVideoFileStreamUri_ShouldReturnHlsRemux_WhenWindowsVideoJs()
+    public void GetVideoFileStreamUri_ShouldDirectPlay_WhenWindowsNativeLibVlc()
     {
         var device = CreateDevice(
             ["audio-mp4-aac", "video-mp4-aac-h264"],
@@ -188,7 +188,109 @@ public class GetStreamUriDecisionTests
         var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
             device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
 
-        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldDirectPlay_WhenWindowsNativeEac3InMatroska()
+    {
+        var device = CreateDevice(
+            ["audio-matroska-eac3", "video-matroska-eac3-h264", "audio-mp4-eac3", "audio-mp4-aac"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "eac3");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+        decision.StreamAudioCodec.Should().Be("eac3");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldTranscodeNeverRemux_WhenWindowsHlsWithEac3()
+    {
+        // Container mismatch => HLS on Windows; always transcode for Video.js, never remux copy.
+        var device = CreateDevice(
+            ["audio-mp4-eac3", "audio-mp4-aac", "video-mp4-eac3-h264", "video-mp4-aac-h264"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "eac3");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transcode);
+        decision.SourceAudioCodec.Should().Be("eac3");
+        decision.StreamAudioCodec.Should().Be("aac");
+        decision.StreamVideoCodec.Should().Be("h264");
+        uri.MimeType.Should().Be("application/vnd.apple.mpegurl");
+        uri.Uri.ToString().Should().Contain("AudioTrackTranscodings=");
+        uri.Uri.ToString().Should().Contain("aac");
+        uri.Uri.ToString().Should().Contain("TranscodingVideoCodec=h264");
+        uri.Uri.ToString().Should().Contain("VideoCodecsOnly=true");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldDirectPlay_WhenNativeResolutionExceedsDisplayHeight()
+    {
+        var device = CreateDevice(
+            ["audio-matroska-aac", "video-matroska-aac-hevc"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        device.DisplayHeight = 720;
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var videoTrack = metadata.VideoTracks.First();
+        videoTrack.Width = 3840;
+        videoTrack.Height = 2160;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
+        decision.StreamVideoCodec.Should().Be("hevc");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldTranscode_WhenWebResolutionExceedsDisplayHeight()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        device.DisplayHeight = 720;
+        var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transcode);
+        decision.Reason.Should().HaveFlag(TranscodeReason.ResolutionNotSupported);
+        decision.StreamVideoCodec.Should().Be("h264");
     }
 
     [Test]
@@ -265,9 +367,9 @@ public class GetStreamUriDecisionTests
     [TestCase(ClientType.Native, OperatingSystem.Android, true)]
     [TestCase(ClientType.Native, OperatingSystem.iOS, true)]
     [TestCase(ClientType.Native, OperatingSystem.MacCatalyst, true)]
-    [TestCase(ClientType.Native, OperatingSystem.Windows, false)]
+    [TestCase(ClientType.Native, OperatingSystem.Windows, true)]
     [TestCase(ClientType.Web, OperatingSystem.Unknown, false)]
-    public void AllowsVideoDirectPlay_ShouldMatchVideoJsLimitation(
+    public void AllowsVideoDirectPlay_ShouldAllowNativeClients(
         ClientType clientType,
         OperatingSystem operatingSystem,
         bool expected)
@@ -334,18 +436,36 @@ public class GetStreamUriDecisionTests
         best.Codec.Should().Be("aac");
     }
 
+    [Test]
+    public void GetDeviceBestSupportedVideoMediaFormat_ShouldFallbackToH264_WhenDeviceHasNoVideoFormats()
+    {
+        var best = GetStreamUriQueryHandler.GetDeviceBestSupportedVideoMediaFormat([]);
+
+        best.VideoCodec.Should().Be("h264");
+        best.Container.Should().Be("mp4");
+    }
+
+    [Test]
+    public void GetDeviceBestSupportedAudioMediaFormat_ShouldFallbackToAac_WhenDeviceHasNoAudioFormats()
+    {
+        var best = GetStreamUriQueryHandler.GetDeviceBestSupportedAudioMediaFormat([]);
+
+        best.Codec.Should().Be("aac");
+        best.Container.Should().Be("mp4");
+    }
+
     private static Device CreateDevice(
         IEnumerable<string> formatIds,
         ClientType clientType = ClientType.Native,
         OperatingSystem operatingSystem = OperatingSystem.Android) => new()
-    {
-        ClientType = clientType,
-        OperatingSystem = operatingSystem,
-        PlaybackCapabilities = new DevicePlaybackCapabilities
         {
-            SupportedMediaFormatIds = formatIds.ToList()
-        }
-    };
+            ClientType = clientType,
+            OperatingSystem = operatingSystem,
+            PlaybackCapabilities = new DevicePlaybackCapabilities
+            {
+                SupportedMediaFormatIds = formatIds.ToList()
+            }
+        };
 
     private static (IndexedFile File, AudioFileMetadata Metadata) CreateAudioFile(string container, string codec)
     {

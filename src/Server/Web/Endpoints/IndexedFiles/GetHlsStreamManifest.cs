@@ -22,7 +22,8 @@ public class GetHlsStreamManifest : IEndpoint
                 [FromQuery] int? subtitleBurnInStreamIndex,
                 [FromQuery] string? quality,
                 [FromQuery] string? audioTrackTranscodings,
-                [FromQuery] double? startSeconds) =>
+                [FromQuery] double? startSeconds,
+                [FromQuery] bool videoCodecsOnly = false) =>
         {
             return (await sender.Send(new GetHlsStreamManifestQuery()
             {
@@ -34,7 +35,8 @@ public class GetHlsStreamManifest : IEndpoint
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 Quality = quality,
                 AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(audioTrackTranscodings),
-                StartSeconds = startSeconds is > 0 ? startSeconds : null
+                StartSeconds = startSeconds is > 0 ? startSeconds : null,
+                VideoCodecsOnly = videoCodecsOnly
             })).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)

@@ -34,7 +34,8 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.SubtitleBurnInStreamIndex), query.SubtitleBurnInStreamIndex?.ToString() },
             { nameof(query.Quality), query.Quality },
             { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) },
-            { nameof(query.StartSeconds), query.StartSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+            { nameof(query.StartSeconds), query.StartSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+            { nameof(query.VideoCodecsOnly), query.VideoCodecsOnly ? "true" : null }
         };
 
         var filteredParams = queryParams
@@ -90,6 +91,11 @@ public record GetHlsStreamManifestQuery : IRequest<HttpContentResult>
     /// Optional resume offset (seconds). Propagated to media playlists as #EXT-X-START.
     /// </summary>
     public double? StartSeconds { get; set; }
+    /// <summary>
+    /// When true, STREAM-INF CODECS lists video only (Video.js MSE isTypeSupported).
+    /// Native LibVLC needs video+audio in CODECS.
+    /// </summary>
+    public bool VideoCodecsOnly { get; set; }
 };
 
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, HttpContentResult>
@@ -291,11 +297,44 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
+        if (query.StartSeconds is > 0)
+        {
+            playlist.AppendLine(
+                "#EXT-X-START:TIME-OFFSET="
+                + query.StartSeconds.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)
+                + ",PRECISE=NO");
+        }
 
         var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
         var fileResolution = Constants.VideoQualities.Single(x => x.Key == fileResolutionIdentifier).Value;
 
-        var audioTrackTranscodings = query.AudioTrackTranscodings ?? [];
+        // Copy so Video.js can force AAC without mutating the request DTO.
+        var audioTrackTranscodings = query.AudioTrackTranscodings is { Count: > 0 }
+            ? new Dictionary<int, string>(query.AudioTrackTranscodings)
+            : new Dictionary<int, string>();
+
+        // Video.js / MSE cannot remux EAC3/DTS into fMP4. ffmpeg -f segment also hangs on
+        // those remuxes (stuck empty_moov init.m4s ~453 bytes). Force AAC for unreliable
+        // bitstream-copy codecs even when the device can decode them in Direct Play.
+        // VideoCodecsOnly (Windows Video.js) forces AAC for every non-AAC track.
+        foreach (var track in videoFileMetadata.AudioTracks)
+        {
+            if (audioTrackTranscodings.ContainsKey(track.Index))
+                continue;
+
+            if (query.VideoCodecsOnly)
+            {
+                if (MediaCodecNames.EqualsCodec(track.Codec, "aac"))
+                    continue;
+
+                audioTrackTranscodings[track.Index] = "aac";
+                continue;
+            }
+
+            if (IsUnreliableHlsFmp4AudioRemux(track.Codec))
+                audioTrackTranscodings[track.Index] = "aac";
+        }
+
         var hasVideoTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingVideoCodec);
 
         var originalVideoTrack = videoFileMetadata.VideoTracks
@@ -308,7 +347,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             : HlsCodecStringHelpers.GetHlsVideoCodecString(originalVideoTrack);
 
         var defaultAudioTrack = videoFileMetadata.AudioTracks
-            .OrderByDescending(t => t.IsDefault)
+            .OrderByDescending(t => query.DefaultAudioTrackIndex is int want && t.Index == want)
+            .ThenByDescending(t => t.IsDefault)
             .ThenBy(t => t.Index)
             .FirstOrDefault();
 
@@ -321,18 +361,9 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 : HlsCodecStringHelpers.GetHlsCodecs(videoCodec: null, defaultAudioTrack.Codec))
             : string.Empty;
 
-        var codecsAttribute = (videoCodecString, audioCodecString) switch
-        {
-            (not "", not "") => $"{videoCodecString},{audioCodecString}",
-            (not "", _) => videoCodecString,
-            (_, not "") => audioCodecString,
-            _ => string.Empty
-        };
-
-        var audioTracks = videoFileMetadata.AudioTracks
-            .OrderByDescending(t => t.IsDefault)
-            .ThenBy(t => t.Index)
-            .ToList();
+        var audioTracks = OrderHlsAudioTracks(
+            videoFileMetadata.AudioTracks,
+            query.DefaultAudioTrackIndex);
 
         var usedAudioNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var track in audioTracks)
@@ -342,6 +373,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 : track == audioTracks[0];
             var trackName = AudioTrackDisplayHelper.FormatHlsName(track.Name, track.Language, track.Index, usedAudioNames);
             var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
+            var channels = track.Channels > 0 ? track.Channels : 2;
 
             var trackAudioParams = new List<string>
                 {
@@ -358,6 +390,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             var audioUri = GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
                 + audioQueryString;
 
+            // CHANNELS helps LibVLC adaptive join demuxed audio more reliably.
             playlist.AppendLine(
                 $"#EXT-X-MEDIA:TYPE=AUDIO," +
                 $"GROUP-ID=\"audio\"," +
@@ -365,6 +398,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 $"LANGUAGE=\"{language}\"," +
                 $"DEFAULT={BoolToYesNo(isDefault)}," +
                 $"AUTOSELECT={BoolToYesNo(isDefault)}," +
+                $"CHANNELS=\"{channels}\"," +
                 $"URI=\"{audioUri}\"");
         }
 
@@ -437,11 +471,26 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             ? HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodec, audioCodec: null)
             : videoCodecString;
 
-        // Demuxed HLS: AUDIO is a separate group. Packing mp4a into CODECS makes Video.js
-        // call isTypeSupported("hvc1...,mp4a.40.2") which fails even when hvc1 alone works.
-        var effectiveCodecsAttribute = !string.IsNullOrEmpty(effectiveVideoCodecString)
-            ? effectiveVideoCodecString
-            : audioCodecString;
+        // LibVLC: STREAM-INF CODECS lists video+audio even with a demuxed AUDIO
+        // group. Video.js MSE rejects combined types - Web passes VideoCodecsOnly.
+        string effectiveCodecsAttribute;
+        if (query.VideoCodecsOnly)
+        {
+            effectiveCodecsAttribute = !string.IsNullOrEmpty(effectiveVideoCodecString)
+                ? effectiveVideoCodecString
+                : audioCodecString;
+        }
+        else if (!string.IsNullOrEmpty(effectiveVideoCodecString)
+            && !string.IsNullOrEmpty(audioCodecString))
+        {
+            effectiveCodecsAttribute = $"{effectiveVideoCodecString},{audioCodecString}";
+        }
+        else
+        {
+            effectiveCodecsAttribute = !string.IsNullOrEmpty(effectiveVideoCodecString)
+                ? effectiveVideoCodecString
+                : audioCodecString;
+        }
 
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
             $"BANDWIDTH={targetResolution.MaxBitrate}," +
@@ -449,6 +498,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             $"RESOLUTION={targetResolution.Width}x{targetResolution.Height}," +
             $"CODECS=\"{effectiveCodecsAttribute}\"" +
             ",AUDIO=\"audio\"" +
+            ",CLOSED-CAPTIONS=NONE" +
             subtitlesAttribute);
 
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
@@ -473,6 +523,25 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         playlist.AppendLine();
 
         return playlist.ToString();
+    }
+
+    private static List<AudioFileTrack> OrderHlsAudioTracks(
+        IEnumerable<AudioFileTrack> tracks,
+        int? selectedIndex) =>
+        tracks
+            .OrderByDescending(t => selectedIndex is int want && t.Index == want)
+            .ThenByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList();
+
+    /// <summary>
+    /// Bitstream-copy of these codecs into <c>-f segment</c> fMP4 often stalls on a
+    /// size-zero empty_moov init (~453 bytes) until the client times out with 503.
+    /// </summary>
+    private static bool IsUnreliableHlsFmp4AudioRemux(string? codec)
+    {
+        var canonical = MediaCodecNames.Canonical(codec);
+        return canonical is "ac3" or "eac3" or "dts" or "truehd" or "dtshd" or "mlp";
     }
 
     private static string BoolToYesNo(bool value) => value ? "YES" : "NO";
