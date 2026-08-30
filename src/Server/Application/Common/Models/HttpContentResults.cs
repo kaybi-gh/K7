@@ -2,7 +2,12 @@ namespace K7.Server.Application.Common.Models;
 
 public abstract record HttpContentResult;
 
-public sealed record FileHttpContentResult(string FilePath, string ContentType, bool EnableRangeProcessing = true, string? FileDownloadName = null) : HttpContentResult;
+public sealed record FileHttpContentResult(
+    string FilePath,
+    string ContentType,
+    bool EnableRangeProcessing = true,
+    string? FileDownloadName = null,
+    bool LongRunning = false) : HttpContentResult;
 
 public sealed record StreamHttpContentResult(Func<Stream> OpenStream, string ContentType, string? FileDownloadName = null) : HttpContentResult;
 

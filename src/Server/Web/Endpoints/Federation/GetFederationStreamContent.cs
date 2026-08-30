@@ -7,6 +7,7 @@ using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSe
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Domain.Constants;
+using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Federation;
@@ -32,7 +33,7 @@ public class GetFederationStreamContent : IEndpoint
             if (path == "direct-stream")
             {
                 var stream = await sender.Send(new GetFederationDirectStreamQuery(indexedFileId), cancellationToken);
-                return Results.File(stream.Path, contentType: stream.MimeType, enableRangeProcessing: true);
+                return MediaStreamHttp.File(stream.Path, stream.MimeType);
             }
 
             if (path == "hls-stream/manifest.m3u8")
@@ -50,7 +51,8 @@ public class GetFederationStreamContent : IEndpoint
                     AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(query["AudioTrackTranscodings"].FirstOrDefault()),
                     StartSeconds = double.TryParse(query["startSeconds"].FirstOrDefault(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var manifestStart) && manifestStart > 0
                         ? manifestStart
-                        : null
+                        : null,
+                    VideoCodecsOnly = bool.TryParse(query["VideoCodecsOnly"].FirstOrDefault(), out var vco) && vco
                 };
                 return (await sender.Send(manifestQuery, cancellationToken)).ToIResult();
             }

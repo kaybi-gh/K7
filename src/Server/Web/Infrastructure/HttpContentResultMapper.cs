@@ -6,11 +6,13 @@ public static class HttpContentResultMapper
 {
     public static IResult ToIResult(this HttpContentResult result) => result switch
     {
-        FileHttpContentResult file => Results.File(
-            file.FilePath,
-            contentType: file.ContentType,
-            enableRangeProcessing: file.EnableRangeProcessing,
-            fileDownloadName: file.FileDownloadName),
+        FileHttpContentResult file => file.LongRunning
+            ? MediaStreamHttp.File(file.FilePath, file.ContentType, file.FileDownloadName)
+            : Results.File(
+                file.FilePath,
+                contentType: file.ContentType,
+                enableRangeProcessing: file.EnableRangeProcessing,
+                fileDownloadName: file.FileDownloadName),
         StreamHttpContentResult stream => Results.File(
             stream.OpenStream(),
             contentType: stream.ContentType,

@@ -1,5 +1,6 @@
 using K7.Server.Application.Features.Federation.Queries.GetFederationStream;
 using K7.Server.Domain.Constants;
+using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Federation;
@@ -19,7 +20,7 @@ public class GetFederationStream : IEndpoint
         {
             var clientId = httpContext.User.FindFirst("sub")?.Value;
             var result = await sender.Send(new GetFederationStreamQuery(clientId, fileId), cancellationToken);
-            return Results.File(result.Path, contentType: result.MimeType, enableRangeProcessing: true);
+            return MediaStreamHttp.File(result.Path, result.MimeType);
         })
         .RequireAuthorization(Policies.PeerAccess)
         .WithName(type.Name)

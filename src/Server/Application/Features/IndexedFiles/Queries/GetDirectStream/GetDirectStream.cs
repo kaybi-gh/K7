@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetDirectStream;
 
@@ -11,11 +12,16 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
 {
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
+    private readonly ILogger<GetDirectStreamQueryHandler> _logger;
 
-    public GetDirectStreamQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
+    public GetDirectStreamQueryHandler(
+        IApplicationDbContext context,
+        IMediaAccessGuard accessGuard,
+        ILogger<GetDirectStreamQueryHandler> logger)
     {
         _context = context;
         _accessGuard = accessGuard;
+        _logger = logger;
     }
 
     public async Task<HttpContentResult> Handle(GetDirectStreamQuery query, CancellationToken cancellationToken)
@@ -39,6 +45,13 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
             ? mime
             : "application/octet-stream";
 
-        return new FileHttpContentResult(entity.Path, mimeType);
+        _logger.LogInformation(
+            "Direct stream {IndexedFileId} size={Size} mime={Mime} container={Container}",
+            entity.Id,
+            file.Length,
+            mimeType,
+            container);
+
+        return new FileHttpContentResult(entity.Path, mimeType, LongRunning: true);
     }
 }
