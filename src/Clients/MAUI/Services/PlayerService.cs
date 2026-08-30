@@ -1,3 +1,4 @@
+using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -57,12 +58,32 @@ internal class PlayerService(
         {
             if (_source != value)
             {
+                var keepClock = _source.StreamSessionId is { } sessionId
+                    && value.StreamSessionId == sessionId
+                    && _source.IndexedFileId is { } fileId
+                    && value.IndexedFileId == fileId
+                    && Duration > 1;
+                var keepTime = CurrentTime;
+                var keepDuration = Duration;
                 _source = value;
-                CurrentTime = 0;
-                Duration = 0;
+                if (!keepClock)
+                {
+                    CurrentTime = 0;
+                    // Apply metadata duration before SourceChanged: Windows VLC opens there.
+                    Duration = value.KnownDurationSeconds is double known && known > 1
+                        ? known
+                        : 0;
+                }
+
                 BufferedTime = 0;
                 PlaybackState = PlaybackState.Idle;
                 SourceChanged?.Invoke(value);
+                if (keepClock)
+                {
+                    if (keepTime > 0)
+                        CurrentTime = keepTime;
+                    Duration = keepDuration;
+                }
             }
         }
     }
@@ -112,6 +133,7 @@ internal class PlayerService(
     }
 
     private double _currentTime = 0;
+    private double _lastKnownPlaybackTime;
     public double CurrentTime
     {
         get => _currentTime;
@@ -120,6 +142,8 @@ internal class PlayerService(
             if (_currentTime != value)
             {
                 _currentTime = value;
+                if (value > 1)
+                    _lastKnownPlaybackTime = value;
                 CurrentTimeChanged?.Invoke(value);
             }
         }
@@ -254,12 +278,15 @@ internal class PlayerService(
     private DateTime _lastQualityFallbackUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
+        _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
-        _selectedSubtitleTrack = null;
+        _selectedSubtitleTrack = subtitleTrackIndex is int subInit
+            ? _subtitleTracks.FirstOrDefault(t => t.Index == subInit)
+            : null;
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
@@ -273,23 +300,25 @@ internal class PlayerService(
 
         await ShowAsync();
 
-        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
+        var session = await streamUriService.GetOrCreateSessionAsync(
+            indexedFileId, audioTrackIndex, subtitleTrackIndex, cancellationToken);
 
         if (session.Source is null)
         {
             throw new InvalidOperationException("Streaming session did not return a source URI.");
         }
 
-        // Update selected tracks based on server's auto-selection
-        _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
-            ?? _selectedAudioTrack;
-
         if (session.SubtitleTracks is { Count: > 0 })
             SetSubtitleTracks(session.SubtitleTracks);
 
-        _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
-            ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
-            : null;
+        PlaybackSessionTrackSelection.Apply(
+            _audioTracks,
+            _subtitleTracks,
+            session.PlaybackSettings,
+            audioTrackIndex,
+            subtitleTrackIndex,
+            out _selectedAudioTrack,
+            out _selectedSubtitleTrack);
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
@@ -298,6 +327,7 @@ internal class PlayerService(
 
         var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
 
+        var resolvedChapters = chapters ?? session.Chapters;
         var playerSource = new PlayerSource
         {
             MediaId = mediaId,
@@ -306,7 +336,8 @@ internal class PlayerService(
             Url = BuildManifestUrlWithStartPosition(manifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,
-            Chapters = chapters ?? session.Chapters,
+            Chapters = resolvedChapters,
+            KnownDurationSeconds = ResolveKnownDurationSeconds(durationSeconds, resolvedChapters),
             Title = title,
             CoverUrl = coverUrl,
             PendingSeekTime = startPosition is > 0 ? startPosition : null
@@ -321,6 +352,7 @@ internal class PlayerService(
     public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = null;
+        _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
         _selectedSubtitleTrack = subtitleTrackIndex is int subIdx2
@@ -339,23 +371,28 @@ internal class PlayerService(
 
         await ShowAsync();
 
-        var session = await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, audioTrackIndex, cancellationToken);
+        var session = await streamUriService.GetOrCreateRemoteSessionAsync(
+            remoteFileId, audioTrackIndex, subtitleTrackIndex, cancellationToken);
 
         if (session?.Source is null)
         {
             return;
         }
 
+        if (session.AudioTracks is { Count: > 0 })
+            _audioTracks = session.AudioTracks.ToList();
+
         if (session.SubtitleTracks is { Count: > 0 })
             SetSubtitleTracks(session.SubtitleTracks);
 
-        if (session.AudioTracks is { Count: > 0 })
-        {
-            _audioTracks = session.AudioTracks.ToList();
-            _selectedAudioTrack = audioTrackIndex is int idxFromSession
-                ? _audioTracks.FirstOrDefault(t => t.Index == idxFromSession)
-                : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
-        }
+        PlaybackSessionTrackSelection.Apply(
+            _audioTracks,
+            _subtitleTracks,
+            session.PlaybackSettings,
+            audioTrackIndex,
+            subtitleTrackIndex,
+            out _selectedAudioTrack,
+            out _selectedSubtitleTrack);
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
@@ -403,13 +440,27 @@ internal class PlayerService(
         _selectedAudioTrack = matched;
         AudioTrackChanged?.Invoke(matched);
 
-        if (!StreamingSourceKind.IsHls(Source.MimeType, _baseManifestUrl))
+        if (!StreamingSourceKind.IsHls(Source.MimeType, Source.Url))
         {
             SwitchAudioTrackRequested?.Invoke(BuildAudioTrackSlug(matched));
             return Task.CompletedTask;
         }
 
-        var seekTime = CurrentTime;
+#if ANDROID
+        // Demuxed HLS on Exo: all AUDIO renditions are already in the master. Reload cuts
+        // audio; in-player override keeps the previous language until the new one buffers.
+        if (_baseManifestUrl is not null)
+        {
+            _baseManifestUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
+            _baseManifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
+            _baseManifestUrl = BuildManifestUrlWithSubtitleSettings(
+                _baseManifestUrl, _selectedSubtitleTrack);
+        }
+
+        SwitchAudioTrackRequested?.Invoke(BuildAudioTrackSlug(matched));
+        return Task.CompletedTask;
+#else
+        var seekTime = CaptureResumeTime();
         var previousDuration = Duration;
         var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
         newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
@@ -426,7 +477,10 @@ internal class PlayerService(
             Duration = previousDuration;
         }
 
+        ResumeWebPlaybackIfNeeded();
+
         return Task.CompletedTask;
+#endif
     }
 
     public Task ChangeSubtitleTrackAsync(SubtitleFileTrackDto? track, CancellationToken cancellationToken = default)
@@ -450,7 +504,7 @@ internal class PlayerService(
             return Task.CompletedTask;
         }
 
-        var seekTime = CurrentTime;
+        var seekTime = CaptureResumeTime();
         var previousDuration = Duration;
 
         var newUrl = BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, track);
@@ -469,6 +523,8 @@ internal class PlayerService(
             Duration = previousDuration;
         }
 
+        ResumeWebPlaybackIfNeeded();
+
         return Task.CompletedTask;
     }
 
@@ -482,24 +538,50 @@ internal class PlayerService(
 
         // Explicit user quality changes reset Windows Video.js recovery budget for the new selection.
         _playbackStartRecoveryAttempts = 0;
-        _selectedQuality = quality;
-        QualityChanged?.Invoke(quality);
+        var previousQuality = _selectedQuality;
 
         if (quality is { IsOriginal: false }
             && !StreamingSourceKind.IsHls(Source?.MimeType, _baseManifestUrl)
             && !TryPromoteDirectToHls())
         {
+            NativeVideoDebug.Log(
+                "ChangeQuality promote fail session="
+                + (Source?.StreamSessionId?.ToString("D") ?? "null")
+                + " base="
+                + SummarizePlaybackUrl(_baseManifestUrl));
+            // Keep UI + stream on the previous quality when Direct cannot become HLS.
             return Task.CompletedTask;
         }
 
-        var seekTime = CurrentTime;
+        _selectedQuality = quality;
+        QualityChanged?.Invoke(quality);
+
+        if (quality is null || quality.IsOriginal)
+            TryDemoteHlsToDirect();
+
+        var seekTime = CaptureResumeTime();
         var previousDuration = Duration;
 
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
         if (_selectedAudioTrack is not null)
             newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
+#if WINDOWS
+        // Direct->HLS promotes start without GetStreamUri Video.js flags.
+        if (StreamingSourceKind.IsHls("application/vnd.apple.mpegurl", newUrl))
+            newUrl = StreamingSourceKind.EnsureVideoJsHlsManifestQuery(newUrl);
+#endif
         _baseManifestUrl = newUrl;
+
+        NativeVideoDebug.Log(
+            "ChangeQuality label="
+            + (quality?.Label ?? "null")
+            + " original="
+            + (quality?.IsOriginal ?? false)
+            + " prev="
+            + (previousQuality?.Label ?? "null")
+            + " url="
+            + SummarizePlaybackUrl(newUrl));
 
         ReplaceStreamingSource(
             BuildManifestUrlWithStartPosition(newUrl, seekTime),
@@ -513,14 +595,16 @@ internal class PlayerService(
             Duration = previousDuration;
         }
 
+        ResumeWebPlaybackIfNeeded();
+
         return Task.CompletedTask;
     }
 
     public async Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default)
     {
-        // Android/iOS/MacCatalyst MediaElement had no ABR/watchdog before Windows Video.js.
-        // Keep recovery for Windows Video.js (hard SRC_NOT_SUPPORTED / idle watchdog) only.
-        if (!WindowsVideoPlayback.UsesWebVideoPlayer)
+        // Web Video.js watchdog lives in VideoPlayer.razor. Native LibVLC / MediaElement
+        // do not use this ABR ladder.
+        if (!WindowsVideoPlayback.ShouldUseWebVideoPlayer(Source?.MimeType, Source?.Url))
             return false;
 
         if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
@@ -604,7 +688,9 @@ internal class PlayerService(
         if (_baseManifestUrl is null || Source is null)
             return;
 
-        var seekTime = CurrentTime > 0 ? CurrentTime : Source.PendingSeekTime;
+        var seekTime = CaptureResumeTime();
+        if (seekTime <= 1)
+            seekTime = Source.PendingSeekTime ?? 0;
         var previousDuration = Duration;
 
         var url = BuildManifestUrlWithStartPosition(
@@ -613,11 +699,11 @@ internal class PlayerService(
                 _selectedQuality),
             seekTime);
 
-        ReplaceStreamingSource(url, seekTime is > 0 ? seekTime : null);
+        ReplaceStreamingSource(url, seekTime > 0 ? seekTime : null);
 
-        if (seekTime is > 0)
+        if (seekTime > 0)
         {
-            CurrentTime = seekTime.Value;
+            CurrentTime = seekTime;
             if (previousDuration > 0)
                 Duration = previousDuration;
         }
@@ -635,13 +721,37 @@ internal class PlayerService(
             StreamSessionId = Source.StreamSessionId,
             IndexedFileId = Source.IndexedFileId,
             Url = url,
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
+            MimeType = StreamingSourceKind.IsHls(Source.MimeType, url)
+                ? "application/vnd.apple.mpegurl"
+                : Source.MimeType ?? "application/vnd.apple.mpegurl",
             ThumbnailsUrl = Source.ThumbnailsUrl,
             Chapters = Source.Chapters,
+            KnownDurationSeconds = Source.KnownDurationSeconds,
             Title = Source.Title,
             CoverUrl = Source.CoverUrl,
             PendingSeekTime = pendingSeekTime
         };
+    }
+
+    private static string SummarizePlaybackUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return "-";
+        if (LocalPlaybackUrl.IsLocalFile(url))
+            return "file";
+        try
+        {
+            var uri = new Uri(url);
+            var path = uri.AbsolutePath;
+            var query = uri.Query;
+            if (query.Length > 80)
+                query = query[..80] + "...";
+            return path + query;
+        }
+        catch (UriFormatException)
+        {
+            return url.Length > 96 ? url[..96] + "..." : url;
+        }
     }
 
     public Task ShowAsync()
@@ -669,9 +779,22 @@ internal class PlayerService(
 
     public void Pause() => PauseRequested?.Invoke();
     public void Seek(double time) => SeekRequested?.Invoke(time);
-    public void Mute() => MuteRequested?.Invoke();
-    public void Unmute() => UnmuteRequest?.Invoke();
-    public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
+    public void Mute()
+    {
+        IsMuted = true;
+        MuteRequested?.Invoke();
+    }
+
+    public void Unmute()
+    {
+        IsMuted = false;
+        UnmuteRequest?.Invoke();
+    }
+    public void SetVolume(double volume)
+    {
+        Volume = Math.Clamp(volume, 0, 1);
+        VolumeChangeRequested?.Invoke(Volume);
+    }
     public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
 
     public void Stop() => StopRequested?.Invoke();
@@ -685,23 +808,72 @@ internal class PlayerService(
         AspectRatioModeChangeRequested?.Invoke(mode);
     }
 
+    private double CaptureResumeTime()
+    {
+        if (CurrentTime > 1)
+            return CurrentTime;
+        if (_lastKnownPlaybackTime > 1)
+            return _lastKnownPlaybackTime;
+        return Source?.PendingSeekTime is double pending && pending > 1 ? pending : 0;
+    }
+
+    public double GetResumePosition() => CaptureResumeTime();
+
     private static string BuildAudioTrackSlug(AudioFileTrackDto track) => $"audio-{track.Index}";
 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
 
+    private void ResumeWebPlaybackIfNeeded()
+    {
+        if (!IsVisible)
+            return;
+
+        if (!WindowsVideoPlayback.ShouldUseWebVideoPlayer(Source?.MimeType, Source?.Url))
+            return;
+
+        PlaybackState = PlaybackState.Buffering;
+        Play();
+    }
+
     private bool TryPromoteDirectToHls()
     {
+        // Windows HLS is Video.js (MSE); Android LibVLC needs video+audio CODECS.
+        var videoJsCompatible =
+#if WINDOWS
+            true;
+#else
+            false;
+#endif
+
         if (!StreamingSourceKind.TryBuildHlsManifestUrl(
                 _baseManifestUrl,
                 Source?.StreamSessionId,
-                out var hlsUrl))
+                out var hlsUrl,
+                videoJsCompatible))
         {
             return false;
         }
 
+        NativeVideoDebug.Log(
+            "PromoteDirectToHls session="
+            + Source!.StreamSessionId!.Value.ToString("D")
+            + " url="
+            + SummarizePlaybackUrl(hlsUrl));
         _baseManifestUrl = hlsUrl;
         if (Source is not null)
             Source.MimeType = "application/vnd.apple.mpegurl";
+        return true;
+    }
+
+    private bool TryDemoteHlsToDirect()
+    {
+        if (!StreamingSourceKind.TryBuildDirectStreamUrl(_baseManifestUrl, out var directUrl))
+            return false;
+
+        NativeVideoDebug.Log("DemoteHlsToDirect url=" + SummarizePlaybackUrl(directUrl));
+        _baseManifestUrl = directUrl;
+        if (Source is not null)
+            Source.MimeType = "video/mp4";
         return true;
     }
 
@@ -710,7 +882,13 @@ internal class PlayerService(
         if (IsSubtitleBurnInActive())
             return true;
 
-        return track is { IsTextBased: false };
+        // Image subs (PGS) in the muxed file: Android LibVLC can SetSpu / :sub-track.
+        // Promoting Direct Play to HLS burn-in restarts at 0 and drops the audio ES.
+        // HLS has no PGS rendition, so burn-in is still required there.
+        if (track is not { IsTextBased: false })
+            return false;
+
+        return StreamingSourceKind.IsHls(Source?.MimeType, Source?.Url ?? _baseManifestUrl);
     }
 
     private bool IsSubtitleBurnInActive() =>
@@ -799,10 +977,24 @@ internal class PlayerService(
         var url = System.Text.RegularExpressions.Regex.Replace(baseUrl, @"[&?]startSeconds=[^&]*", "");
         url = url.TrimEnd('?', '&');
 
-        if (startPosition is not > 0)
+        if (startPosition is not double seconds || seconds <= 0)
             return url;
 
         var separator = url.Contains('?') ? "&" : "?";
-        return $"{url}{separator}startSeconds={startPosition.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
+        return $"{url}{separator}startSeconds={seconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    private static double? ResolveKnownDurationSeconds(
+        double? durationSeconds,
+        IReadOnlyList<ChapterMarkerDto>? chapters)
+    {
+        if (durationSeconds is double known && known > 1)
+            return known;
+
+        if (chapters is null || chapters.Count == 0)
+            return null;
+
+        var end = chapters.Max(c => c.EndSeconds ?? c.StartSeconds);
+        return end > 1 ? end : null;
     }
 }

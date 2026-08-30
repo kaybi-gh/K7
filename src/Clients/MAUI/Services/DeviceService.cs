@@ -1,4 +1,5 @@
 using K7.Clients.MAUI.Interfaces;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -33,17 +34,24 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var nativeDeviceDetails = await GetNativeDeviceDetailsAsync();
         var displayInfo = await MainThread.InvokeOnMainThreadAsync(() => DeviceDisplay.MainDisplayInfo);
+        var landscape = displayInfo.Orientation == DisplayOrientation.Landscape;
+        var (displayWidth, displayHeight) = DisplayPixelSize.FromDip(
+            displayInfo.Width,
+            displayInfo.Height,
+            displayInfo.Density,
+            landscape);
 
+        var operatingSystem = await GetOperatingSystemAsync();
         return new CreateDeviceRequest
         {
             DeviceUniqueId = deviceIdService.GetDeviceId(),
-            DeviceName = DeviceInfo.Name,
+            DeviceName = BuildDeviceName(_cachedDeviceType, operatingSystem),
             ClientType = GetClientType(),
             DeviceType = _cachedDeviceType,
-            OperatingSystem = await GetOperatingSystemAsync(),
+            OperatingSystem = operatingSystem,
             OperatingSystemVersion = nativeDeviceDetails.RawVersion,
-            DisplayHeight = displayInfo.Orientation == DisplayOrientation.Landscape ? displayInfo.Height : displayInfo.Width,
-            DisplayWidth = displayInfo.Orientation == DisplayOrientation.Landscape ? displayInfo.Width : displayInfo.Height,
+            DisplayHeight = displayHeight,
+            DisplayWidth = displayWidth,
             NativeDeviceDetails = nativeDeviceDetails,
             WebDeviceDetails = null,
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
@@ -124,6 +132,17 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
 
             _ => false
         }).ToList();
+
+        var hevc = supported.Count(f => f is VideoMediaFormatDto video
+            && video.VideoCodec.Equals("hevc", StringComparison.OrdinalIgnoreCase));
+        var matroska = supported.Count(f => f.Container.Equals("matroska", StringComparison.OrdinalIgnoreCase));
+        System.Diagnostics.Debug.WriteLine(
+            "K7 device formats n="
+            + supported.Count
+            + " hevc="
+            + hevc
+            + " matroska="
+            + matroska);
 
         return supported;
     }
@@ -219,5 +238,19 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             var platform when platform.Equals(DevicePlatform.watchOS) => OperatingSystem.Unknown,
             _ => OperatingSystem.Unknown
         };
+    }
+
+    private static string BuildDeviceName(DeviceType deviceType, OperatingSystem operatingSystem)
+    {
+        var platform = deviceType == DeviceType.Unknown ? "Device" : deviceType.ToString();
+        var client = operatingSystem switch
+        {
+            OperatingSystem.Windows => "Windows",
+            OperatingSystem.Android => "Android",
+            OperatingSystem.iOS => "iOS",
+            OperatingSystem.MacCatalyst => "macOS",
+            _ => "App"
+        };
+        return $"{client} ({platform})";
     }
 }

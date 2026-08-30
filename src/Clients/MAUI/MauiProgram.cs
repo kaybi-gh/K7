@@ -24,6 +24,9 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 #if WINDOWS
 using K7.Clients.MAUI.Platforms.Windows;
 #endif
+#if WINDOWS
+using LibVLCSharp.MAUI;
+#endif
 
 namespace K7.Clients.MAUI;
 
@@ -44,6 +47,9 @@ public static partial class MauiProgram
             .UseMauiApp<App>()
             .UseSkiaSharp()
             .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false)
+#if WINDOWS
+            .UseLibVLCSharp()
+#endif
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

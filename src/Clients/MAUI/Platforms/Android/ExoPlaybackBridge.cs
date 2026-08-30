@@ -1,5 +1,6 @@
 using AndroidX.Media3.Common;
 using AndroidX.Media3.ExoPlayer;
+using AndroidX.Media3.UI;
 
 namespace K7.Clients.MAUI;
 
@@ -8,7 +9,8 @@ namespace K7.Clients.MAUI;
 /// </summary>
 internal sealed class ExoPlaybackBridge : Java.Lang.Object, IPlayerListener
 {
-    private const int TimelineIntervalMs = 500;
+    // 1s is enough for progress/seek UI; 500ms doubled main-thread CurrentTime churn on TV.
+    private const int TimelineIntervalMs = 1_000;
 
     private IExoPlayer? _exo;
     private bool _attached;
@@ -16,14 +18,18 @@ internal sealed class ExoPlaybackBridge : Java.Lang.Object, IPlayerListener
 
     public Action? FirstFrameRendered { get; set; }
 
+    /// <summary>Fired when Exo publishes CurrentTracks (audio/text groups ready to select).</summary>
+    public Action? TracksChanged { get; set; }
+
     /// <summary>ExoPlayer clock in seconds. MediaElement.Position can freeze after resume/seek.</summary>
     public Action<double>? PositionHeard { get; set; }
 
     /// <summary>ExoPlayer duration in seconds. MediaElement.Duration is often 0 on demuxed HLS.</summary>
     public Action<double>? DurationHeard { get; set; }
 
-    public void Attach(IExoPlayer exo)
+    public void Attach(IExoPlayer exo, PlayerView? playerView = null)
     {
+        _ = playerView;
         if (ReferenceEquals(_exo, exo) && _attached)
             return;
 
@@ -58,6 +64,12 @@ internal sealed class ExoPlaybackBridge : Java.Lang.Object, IPlayerListener
     public void OnRenderedFirstFrame()
     {
         FirstFrameRendered?.Invoke();
+    }
+
+    public void OnTracksChanged(Tracks? tracks)
+    {
+        _ = tracks;
+        TracksChanged?.Invoke();
     }
 
     private void StartTimelineLoop()

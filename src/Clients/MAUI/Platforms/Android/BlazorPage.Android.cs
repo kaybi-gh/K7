@@ -6,10 +6,11 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using K7.Clients.MAUI.Controls.Video;
 using K7.Clients.MAUI.Platforms.Android;
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
-using DeviceType = K7.Server.Domain.Enums.DeviceType;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
@@ -19,6 +20,7 @@ public partial class BlazorPage
 {
     private Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener? _videoFocusBounceListener;
     private bool _videoFocusBounceAttached;
+    private string? _directTrackOverrideUrl;
     private int _androidHttpTimeoutRetryCount;
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
@@ -91,7 +93,8 @@ public partial class BlazorPage
         }
     }
 
-    internal void EnsureVideoSurfaceNotFocusable() => SuppressPlayerViewFocus();
+
+    internal void EnsureVideoSurfaceNotFocusable() => SuppressNativeVideoFocus();
 
     internal bool TryEvaluateWebViewJs(string script)
     {
@@ -156,54 +159,49 @@ public partial class BlazorPage
         });
     }
 
+
     partial void ConfigureNativeVideoPlayerAfterOpen()
     {
+        _directTrackOverrideUrl = null;
+        var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
+        AndroidExoHlsTuning.TryInstallAmlogicTunedPlayer(NativePlayer, playerView);
+
         var player = GetPlayer(NativePlayer);
         ApplyAndroidHlsAvSyncSettings(player);
         AttachExoPlaybackBridge(player);
         if (player is IExoPlayer exo)
         {
-            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
-            var playerView = platformView is null ? null : FindPlayerView(platformView);
             AndroidExoHlsTuning.ApplyPlaybackSurfaceTuning(exo, playerView);
-            AndroidSubtitleStyle.ApplyTo(playerView, deviceType: ResolveSubtitleDeviceType());
             TryPublishExoTimelineFromPlayer(exo);
+            ApplyPendingAndroidSubtitleStyle();
         }
         SetVideoFocusOwnership(active: true);
     }
 
     internal void ApplyPendingAndroidSubtitleStyle()
     {
-        try
-        {
-            var platformView = NativePlayer.Handler?.PlatformView as global::Android.Views.View;
-            var playerView = platformView is null ? null : FindPlayerView(platformView);
-            AndroidSubtitleStyle.ApplyTo(playerView, deviceType: ResolveSubtitleDeviceType());
-        }
-        catch
-        {
-        }
-    }
-
-    private static DeviceType ResolveSubtitleDeviceType()
-    {
-        var deviceService = IPlatformApplication.Current?.Services?.GetService<IDeviceService>();
-        return SubtitleStyleHelper.NormalizeDeviceType(
-            deviceService?.CachedDeviceType ?? DeviceType.Desktop);
+        var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
+        AndroidExoSubtitleStyle.Apply(playerView, AndroidSubtitleStyle.GetSettings());
     }
 
     partial void DetachPlayerPlatform()
     {
+        _directTrackOverrideUrl = null;
         if (_exoPlaybackBridge is not null)
+        {
             _exoPlaybackBridge.FirstFrameRendered = null;
+            _exoPlaybackBridge.TracksChanged = null;
+        }
         _exoPlaybackBridge?.Detach();
+        AndroidDisplayAfr.Restore();
     }
 
-    /// <summary>
-    /// MediaElement's DefaultHttpDataSource uses 8s connect/read timeouts. K7 HLS init.m4s can
-    /// take much longer while ffmpeg seeks for mid-stream resume (server waits up to ~90s).
-    /// Rebind the real ExoPlayer with longer timeouts so TV/slow links do not fail at 0:00.
-    /// </summary>
+    // LibVLC Android removed; ExoPlayer owns Direct/HLS/local.
+    internal void ReleaseSidecarTextSubtitles() { }
+    internal void NotifySidecarTextSubtitles(bool ready) { }
+
     private void BindAndroidExoPlayerWithLongHttpTimeouts(string url)
     {
         if (LocalPlaybackUrl.IsLocalFile(url))
@@ -232,15 +230,15 @@ public partial class BlazorPage
             ApplyAndroidHlsAvSyncSettings(exo);
             AttachExoPlaybackBridge(exo);
             TryPublishExoTimelineFromPlayer(exo);
+            ApplyPendingAndroidSubtitleStyle();
             _androidHttpTimeoutRetryCount = 0;
 
             // Do not PostDelayed SetMediaSource again: a second Prepare resets HLS to
             // startSeconds/segment boundaries (~1015s jumps), fights PendingSeek, and blinks.
             // Long timeouts are already on this bind; MediaFailed auth path rebinds explicitly.
         }
-        catch (Exception)
+        catch
         {
-            // Best-effort rebind - toolkit default timeouts remain if this fails.
         }
     }
 
@@ -322,17 +320,6 @@ public partial class BlazorPage
         }
     }
 
-    partial void OnAfterNativeVideoSeek()
-    {
-        EnsureVideoSurfaceNotFocusable();
-        // Native XAML chrome owns input; bouncing into the (hidden) WebView after seeks
-        // causes focus flashes and can stall ExoPlayer on TV.
-        if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
-            return;
-
-        if (!HasWebViewWindowFocus())
-            BounceWindowFocusToWebView();
-    }
 
     private double GetExoPlaybackPositionSeconds()
     {
@@ -556,6 +543,16 @@ public partial class BlazorPage
 
         return player;
     }
+partial void OnAfterNativeVideoSeek()
+    {
+        EnsureVideoSurfaceNotFocusable();
+        if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
+            return;
+
+        if (!HasWebViewWindowFocus())
+            BounceWindowFocusToWebView();
+    }
+
 
     private void SetVideoFocusOwnership(bool active)
     {
@@ -692,22 +689,13 @@ public partial class BlazorPage
         }
     }
 
-    private void SuppressPlayerViewFocus()
+
+    private void SuppressNativeVideoFocus()
     {
         try
         {
-            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
-            if (platformView is null)
-                return;
-
-            DisableFocusRecursive(platformView);
-            var playerView = FindPlayerView(platformView);
-            if (playerView is not null)
-            {
-                playerView.Focusable = false;
-                playerView.FocusableInTouchMode = false;
-                playerView.DescendantFocusability = Android.Views.DescendantFocusability.BlockDescendants;
-            }
+            if (NativePlayer.Handler?.PlatformView is Android.Views.View leftover)
+                DisableFocusRecursive(leftover);
         }
         catch
         {
@@ -729,22 +717,31 @@ public partial class BlazorPage
         }
     }
 
+
+    private sealed class VideoFocusBounceListener(BlazorPage page)
+        : Java.Lang.Object, Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener
+    {
+        public void OnGlobalFocusChanged(Android.Views.View? oldFocus, Android.Views.View? newFocus)
+            => page.OnVideoGlobalFocusChanged(oldFocus, newFocus);
+    }
+
     private void AttachExoPlaybackBridge(IPlayer? player)
     {
         player = UnwrapPlayer(player);
         if (player is not IExoPlayer exo)
             return;
 
+        var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
+
         _exoPlaybackBridge ??= new ExoPlaybackBridge();
-        _exoPlaybackBridge.FirstFrameRendered = () =>
-        {
-            _nativeOverlay?.NotifyFirstFrameReady();
-            ApplyDirectPlayTrackOverrides();
-        };
+        _exoPlaybackBridge.FirstFrameRendered = () => _nativeOverlay?.NotifyFirstFrameReady();
+        _exoPlaybackBridge.TracksChanged = () => MainThread.BeginInvokeOnMainThread(ApplySelectedTrackOverrides);
         _exoPlaybackBridge.PositionHeard = OnExoPositionHeard;
         _exoPlaybackBridge.DurationHeard = OnExoDurationHeard;
-        _exoPlaybackBridge.Attach(exo);
+        _exoPlaybackBridge.Attach(exo, playerView);
         TryPublishExoTimelineFromPlayer(exo);
+        ApplySelectedTrackOverrides();
     }
 
     private void OnExoDurationHeard(double seconds)
@@ -788,13 +785,9 @@ public partial class BlazorPage
         _playerService.CurrentTime = seconds;
     }
 
-    private void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
+    private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
     {
-        // Remux Original is open-GOP HEVC (CRA, not IDR). PREVIOUS_SYNC would snap
-        // to the only real IDR at t=0 after we demote CRA sync flags. Exact lands
-        // on the playlist CRA; linear play no longer flushes at each .m4s.
-        var exactForOpenGopRemux = _playerService.SelectedQuality?.IsOriginal == true;
-        TryApplySeekParameters(player, exactForOpenGopRemux);
+        TryApplyPreviousSyncSeekParameters(player);
         TryDisableSkipSilence(player);
     }
 
@@ -811,7 +804,7 @@ public partial class BlazorPage
         }
     }
 
-    private static bool TryApplySeekParameters(IPlayer? player, bool useExact)
+    private static bool TryApplyPreviousSyncSeekParameters(IPlayer? player)
     {
         try
         {
@@ -822,17 +815,14 @@ public partial class BlazorPage
             // Prefer JNI setSeekParameters on the concrete Java type. Assigning
             // IExoPlayer.SeekParameters on IExoPlayerInvoker can report success without
             // updating ExoPlayerImpl (exact mid-GOP seek -> frozen TextureView + live audio).
-            // Encode still uses PREVIOUS_SYNC (real IDRs). Remux Original uses EXACT so
-            // we do not snap to the sole IDR at t=0 after CRA sync flags are demoted.
             if (player is Java.Lang.Object javaObj)
             {
                 var seekParamsClass = Java.Lang.Class.ForName("androidx.media3.exoplayer.SeekParameters");
                 if (seekParamsClass is not null)
                 {
-                    var fieldName = useExact ? "EXACT" : "PREVIOUS_SYNC";
-                    var seekParam = seekParamsClass.GetField(fieldName)?.Get(null)
-                        ?? seekParamsClass.GetDeclaredField(fieldName)?.Get(null);
-                    if (seekParam is not null)
+                    var previous = seekParamsClass.GetField("PREVIOUS_SYNC")?.Get(null)
+                        ?? seekParamsClass.GetDeclaredField("PREVIOUS_SYNC")?.Get(null);
+                    if (previous is not null)
                     {
                         for (var cls = javaObj.Class; cls is not null; cls = cls.Superclass)
                         {
@@ -860,7 +850,7 @@ public partial class BlazorPage
                                 continue;
 
                             method.Accessible = true;
-                            method.Invoke(javaObj, seekParam);
+                            method.Invoke(javaObj, previous);
                             return true;
                         }
                     }
@@ -869,7 +859,7 @@ public partial class BlazorPage
 
             if (player is IExoPlayer exo)
             {
-                exo.SeekParameters = useExact ? SeekParameters.Exact : SeekParameters.PreviousSync;
+                exo.SeekParameters = SeekParameters.PreviousSync;
                 return true;
             }
         }
@@ -878,13 +868,6 @@ public partial class BlazorPage
         }
 
         return false;
-    }
-
-    private sealed class VideoFocusBounceListener(BlazorPage page)
-        : Java.Lang.Object, Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener
-    {
-        public void OnGlobalFocusChanged(Android.Views.View? oldFocus, Android.Views.View? newFocus)
-            => page.OnVideoGlobalFocusChanged(oldFocus, newFocus);
     }
 
     /// <summary>
@@ -1111,93 +1094,6 @@ public partial class BlazorPage
         });
     }
 
-    private static void SetImmersiveMode(Android.App.Activity activity)
-    {
-        var window = activity.Window;
-        if (window is null) return;
-
-#pragma warning disable CA1422, CS0618
-        if (OperatingSystem.IsAndroidVersionAtLeast(30))
-        {
-            window.SetDecorFitsSystemWindows(false);
-            var controller = window.InsetsController;
-            if (controller is not null)
-            {
-                controller.Hide(Android.Views.WindowInsets.Type.StatusBars()
-                    | Android.Views.WindowInsets.Type.NavigationBars());
-                controller.SystemBarsBehavior =
-                    (int)Android.Views.WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
-            }
-        }
-
-        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
-        window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
-        window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-        if (OperatingSystem.IsAndroidVersionAtLeast(28))
-        {
-            window.Attributes!.LayoutInDisplayCutoutMode =
-                Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
-        }
-
-        window.DecorView.SystemUiFlags =
-            Android.Views.SystemUiFlags.Fullscreen
-            | Android.Views.SystemUiFlags.HideNavigation
-            | Android.Views.SystemUiFlags.ImmersiveSticky
-            | Android.Views.SystemUiFlags.LayoutFullscreen
-            | Android.Views.SystemUiFlags.LayoutHideNavigation
-            | Android.Views.SystemUiFlags.LayoutStable;
-#pragma warning restore CA1422, CS0618
-    }
-
-    private static void SetLandscapeOrientationPlatform()
-    {
-        var activity = Platform.CurrentActivity;
-        if (activity is not null)
-        {
-            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.SensorLandscape;
-            SetImmersiveMode(activity);
-        }
-    }
-
-    private static void RestoreOrientationPlatform()
-    {
-        var activity = Platform.CurrentActivity;
-        if (activity is null) return;
-
-        activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.Unspecified;
-
-        var window = activity.Window;
-        if (window is null) return;
-
-#pragma warning disable CA1422, CS0618
-        if (OperatingSystem.IsAndroidVersionAtLeast(30))
-        {
-            window.SetDecorFitsSystemWindows(false);
-            var controller = window.InsetsController;
-            controller?.Show(Android.Views.WindowInsets.Type.StatusBars()
-                | Android.Views.WindowInsets.Type.NavigationBars());
-        }
-
-        window.ClearFlags(Android.Views.WindowManagerFlags.Fullscreen);
-        window.ClearFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-        if (OperatingSystem.IsAndroidVersionAtLeast(28))
-        {
-            window.Attributes!.LayoutInDisplayCutoutMode =
-                Android.Views.LayoutInDisplayCutoutMode.Default;
-        }
-
-        window.DecorView.SystemUiFlags = Android.Views.SystemUiFlags.Visible;
-
-        if (!OperatingSystem.IsAndroidVersionAtLeast(35))
-        {
-            window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-            window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
-        }
-#pragma warning restore CA1422, CS0618
-    }
 
     private static IPlayer? GetPlayer(MediaElement mediaElement)
     {
@@ -1231,86 +1127,109 @@ public partial class BlazorPage
         return null;
     }
 
-    private void ApplyDirectPlayTrackOverrides()
-    {
-        if (StreamingSourceKind.IsHls(_playerService.Source?.MimeType, _playerService.Source?.Url))
-            return;
 
-        if (_playerService.SelectedAudioTrack is { } audio)
-            OnSwitchAudioTrack($"audio-{audio.Index}");
-
-        if (_playerService.SelectedSubtitleTrack is { IsTextBased: true } sub)
-            OnSwitchSubtitleTrack($"sub-{sub.Index}");
-    }
 
     private void OnSwitchAudioTrack(string trackName)
     {
-        MainThread.BeginInvokeOnMainThread(() => TrySwitchAudioTrack(trackName, attempt: 0));
-    }
-
-    private void TrySwitchAudioTrack(string trackName, int attempt)
-    {
-        var player = GetPlayer(NativePlayer);
-        if (player is null)
-            return;
-
-        var tracks = player.CurrentTracks;
-        if (tracks?.Groups is null || tracks.Groups.Size() == 0)
+        MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View waitView)
-                waitView.PostDelayed(() => TrySwitchAudioTrack(trackName, attempt + 1), 250);
-            return;
-        }
+            var player = GetPlayer(NativePlayer);
+            if (player is null)
+                return;
 
-        int? targetOrdinal = null;
-        AudioFileTrackDto? catalogTrack = null;
-        if (trackName.StartsWith("audio-", StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(trackName.AsSpan(6), out var fileStreamIndex))
-        {
-            var ordered = _playerService.AudioTracks.OrderBy(t => t.Index).ToList();
-            var ordinal = ordered.FindIndex(t => t.Index == fileStreamIndex);
-            if (ordinal >= 0)
+            var tracks = player.CurrentTracks;
+            if (tracks?.Groups is null || tracks.Groups.Size() == 0)
+                return;
+
+            for (var i = 0; i < tracks.Groups.Size(); i++)
             {
-                targetOrdinal = ordinal;
-                catalogTrack = ordered[ordinal];
-            }
-        }
+                var group = (Tracks.Group)tracks.Groups.Get(i)!;
+                if (group.Type != C.TrackTypeAudio)
+                    continue;
 
-        var audioOrdinal = 0;
-        for (var i = 0; i < tracks.Groups.Size(); i++)
-        {
-            var group = (Tracks.Group)tracks.Groups.Get(i)!;
-            if (group.Type != C.TrackTypeAudio)
-                continue;
-
-            for (var j = 0; j < group.Length; j++)
-            {
-                var format = group.GetTrackFormat(j);
-                var labelMatch = string.Equals(format?.Label, trackName, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(format?.Language, trackName, StringComparison.OrdinalIgnoreCase);
-                var catalogMatch = targetOrdinal is null
-                    && catalogTrack is not null
-                    && (string.Equals(format?.Language, catalogTrack.Language, StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(format?.Label, catalogTrack.Name, StringComparison.OrdinalIgnoreCase));
-                var ordinalMatch = targetOrdinal == audioOrdinal;
-
-                if (labelMatch || catalogMatch || ordinalMatch)
+                for (var j = 0; j < group.Length; j++)
                 {
-                    var newParams = player.TrackSelectionParameters!
-                        .BuildUpon()!
-                        .ClearOverridesOfType(C.TrackTypeAudio)!
-                        .SetOverrideForType(new TrackSelectionOverride(group.MediaTrackGroup, j))!
-                        .Build();
-                    player.TrackSelectionParameters = newParams;
+                    var format = group.GetTrackFormat(j);
+                    if (string.Equals(format?.Label, trackName, StringComparison.OrdinalIgnoreCase)
+                        || format?.Language == trackName)
+                    {
+                        SelectAudioOverride(player, group, j);
+                        return;
+                    }
+                }
+            }
+
+            // Direct / HLS: trackName is often audio-{fileStreamIndex}
+            if (trackName.StartsWith("audio-", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(trackName.AsSpan(6), out var fileStreamIndex))
+            {
+                var ordered = _playerService.AudioTracks.OrderBy(t => t.Index).ToList();
+                var catalog = ordered.FirstOrDefault(t => t.Index == fileStreamIndex);
+                var ordinal = ordered.FindIndex(t => t.Index == fileStreamIndex);
+                if (ordinal < 0)
                     return;
+
+                // Prefer language / label match (HLS EXT-X-MEDIA order can differ from file index).
+                if (catalog is not null)
+                {
+                    for (var i = 0; i < tracks.Groups.Size(); i++)
+                    {
+                        var group = (Tracks.Group)tracks.Groups.Get(i)!;
+                        if (group.Type != C.TrackTypeAudio)
+                            continue;
+
+                        for (var j = 0; j < group.Length; j++)
+                        {
+                            var format = group.GetTrackFormat(j);
+                            if (format is null)
+                                continue;
+
+                            if (!string.IsNullOrEmpty(catalog.Language)
+                                && string.Equals(
+                                    format.Language, catalog.Language, StringComparison.OrdinalIgnoreCase))
+                            {
+                                SelectAudioOverride(player, group, j);
+                                return;
+                            }
+
+                            if (!string.IsNullOrEmpty(catalog.Name)
+                                && !string.IsNullOrEmpty(format.Label)
+                                && format.Label.Contains(catalog.Name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                SelectAudioOverride(player, group, j);
+                                return;
+                            }
+                        }
+                    }
                 }
 
-                audioOrdinal++;
-            }
-        }
+                var audioGroupOrder = 0;
+                for (var i = 0; i < tracks.Groups.Size(); i++)
+                {
+                    var group = (Tracks.Group)tracks.Groups.Get(i)!;
+                    if (group.Type != C.TrackTypeAudio)
+                        continue;
+                    if (audioGroupOrder == ordinal)
+                    {
+                        SelectAudioOverride(player, group, 0);
+                        return;
+                    }
 
-        if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View retryView)
-            retryView.PostDelayed(() => TrySwitchAudioTrack(trackName, attempt + 1), 250);
+                    audioGroupOrder++;
+                }
+            }
+        });
+    }
+
+    private static void SelectAudioOverride(IPlayer player, Tracks.Group group, int trackIndex)
+    {
+        var newParams = player.TrackSelectionParameters!
+            .BuildUpon()!
+            .SetOverrideForType(new TrackSelectionOverride(group.MediaTrackGroup, trackIndex))!
+            .Build();
+        player.TrackSelectionParameters = newParams;
+        NativeVideoDebug.Log(
+            "SelectAudioTrack idx=" + trackIndex + " groupLen=" + group.Length);
     }
 
     private void OnSwitchSubtitleTrack(string? slug)
@@ -1412,4 +1331,119 @@ public partial class BlazorPage
         NativeVideoDebug.Log("SelectTextTrack idx=" + trackIdx + " groupLen=" + group.Length);
     }
 
+    private static void SetImmersiveMode(Android.App.Activity activity)
+    {
+        var window = activity.Window;
+        if (window is null) return;
+
+#pragma warning disable CA1422, CS0618
+        if (OperatingSystem.IsAndroidVersionAtLeast(30))
+        {
+            window.SetDecorFitsSystemWindows(false);
+            var controller = window.InsetsController;
+            if (controller is not null)
+            {
+                controller.Hide(Android.Views.WindowInsets.Type.StatusBars()
+                    | Android.Views.WindowInsets.Type.NavigationBars());
+                controller.SystemBarsBehavior =
+                    (int)Android.Views.WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
+            }
+        }
+
+        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+        window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
+        window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+        {
+            window.Attributes!.LayoutInDisplayCutoutMode =
+                Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
+        }
+
+        window.DecorView.SystemUiFlags =
+            Android.Views.SystemUiFlags.Fullscreen
+            | Android.Views.SystemUiFlags.HideNavigation
+            | Android.Views.SystemUiFlags.ImmersiveSticky
+            | Android.Views.SystemUiFlags.LayoutFullscreen
+            | Android.Views.SystemUiFlags.LayoutHideNavigation
+            | Android.Views.SystemUiFlags.LayoutStable;
+#pragma warning restore CA1422, CS0618
+    }
+
+    private static void SetLandscapeOrientationPlatform()
+    {
+        var activity = Platform.CurrentActivity;
+        if (activity is not null)
+        {
+            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.SensorLandscape;
+            SetImmersiveMode(activity);
+        }
+    }
+
+    private static void RestoreOrientationPlatform()
+    {
+        var activity = Platform.CurrentActivity;
+        if (activity is null) return;
+
+        activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.Unspecified;
+
+        var window = activity.Window;
+        if (window is null) return;
+
+#pragma warning disable CA1422, CS0618
+        if (OperatingSystem.IsAndroidVersionAtLeast(30))
+        {
+            window.SetDecorFitsSystemWindows(false);
+            var controller = window.InsetsController;
+            controller?.Show(Android.Views.WindowInsets.Type.StatusBars()
+                | Android.Views.WindowInsets.Type.NavigationBars());
+        }
+
+        window.ClearFlags(Android.Views.WindowManagerFlags.Fullscreen);
+        window.ClearFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+        {
+            window.Attributes!.LayoutInDisplayCutoutMode =
+                Android.Views.LayoutInDisplayCutoutMode.Default;
+        }
+
+        window.DecorView.SystemUiFlags = Android.Views.SystemUiFlags.Visible;
+
+        if (!OperatingSystem.IsAndroidVersionAtLeast(35))
+        {
+            window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+            window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+        }
+#pragma warning restore CA1422, CS0618
+    }
+
+
+    private void ApplySelectedTrackOverrides()
+    {
+        if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+            return;
+
+        var url = _playerService.Source.Url;
+        if (_directTrackOverrideUrl == url)
+            return;
+
+        if (_playerService.SelectedAudioTrack is { } audio)
+            OnSwitchAudioTrack($"audio-{audio.Index}");
+
+        if (_playerService.SelectedSubtitleTrack is { IsTextBased: true } sub)
+            OnSwitchSubtitleTrack($"sub-{sub.Index}");
+        else if (_playerService.SelectedSubtitleTrack is null)
+            OnSwitchSubtitleTrack(null);
+
+        // Only lock after we actually had track groups to select against.
+        var player = GetPlayer(NativePlayer);
+        var tracks = player?.CurrentTracks;
+        if (tracks?.Groups is not null && tracks.Groups.Size() > 0)
+            _directTrackOverrideUrl = url;
+    }
+
+    private void ApplyDirectPlayTrackOverrides() => ApplySelectedTrackOverrides();
 }
+
