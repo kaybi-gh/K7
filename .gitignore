@@ -493,6 +493,10 @@ $RECYCLE.BIN/
 # Client libraries
 **/wwwroot/dist/
 
+# LibVLC Windows natives come from the VideoLAN.LibVLC.Windows NuGet package
+# (copied to OutDir by Platforms/Windows/LibVlcWindowsNative.targets). Never commit.
+src/Clients/MAUI/libvlc/
+
 # Coding agents
 .github/agents
 /.vscode/tasks.json
