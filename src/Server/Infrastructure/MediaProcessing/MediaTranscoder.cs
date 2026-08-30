@@ -142,6 +142,7 @@ public class MediaTranscoder : IMediaTranscoder
         int? subtitleBurnInStreamIndex = null)
     {
         _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        outputDirectory = FfmpegStreamingArgs.NormalizeOutputDirectory(outputDirectory);
         Directory.CreateDirectory(outputDirectory);
 
         var hasBurnIn = subtitleBurnInStreamIndex.HasValue;
@@ -279,7 +280,7 @@ public class MediaTranscoder : IMediaTranscoder
         }
 
         // -f segment writes %d.m4s + init via segment_header_filename (not HLS playlist).
-        // Absolute pattern avoids depending on process cwd for segment file placement.
+        // Pattern is absolute so a relative Paths:Transcoding does not nest under cwd.
         var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options =>
@@ -530,6 +531,7 @@ public class MediaTranscoder : IMediaTranscoder
         string? audioCodec = null)
     {
         _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        outputDirectory = FfmpegStreamingArgs.NormalizeOutputDirectory(outputDirectory);
         Directory.CreateDirectory(outputDirectory);
 
         var needsTranscode = !string.IsNullOrEmpty(audioCodec);

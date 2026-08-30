@@ -72,9 +72,9 @@ public class TranscodeJobManager(
                 ? $"video-{quality}-{videoCodec ?? "copy"}-sub{subtitleBurnInStreamIndex.Value}"
                 : $"video-{quality}-{videoCodec ?? "copy"}";
 
-            var outputDir = isAudioOnly
+            var outputDir = FfmpegStreamingArgs.NormalizeOutputDirectory(isAudioOnly
                 ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
-                : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir);
+                : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir));
 
             if (Directory.Exists(outputDir))
             {

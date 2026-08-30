@@ -402,6 +402,17 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
+    public void NormalizeOutputDirectory_ShouldReturnAbsolutePath_WhenTranscodingPathIsRelative()
+    {
+        var relative = Path.Combine("transcoding", "fdf6e46fd6484ce69b32593d07b67d66", "video-original-copy");
+        var normalized = FfmpegStreamingArgs.NormalizeOutputDirectory(relative);
+
+        Path.IsPathFullyQualified(normalized).Should().BeTrue();
+        Path.Combine(normalized, "%d.m4s").Should().StartWith(normalized);
+        normalized.Should().NotContain(Path.Combine(relative, relative));
+    }
+
+    [Test]
     public void ResolveVideoFfmpegWindow_ShouldPadStartAndEnd_WhenMidFile()
     {
         FfmpegStreamingArgs.ResolveVideoFfmpegWindow(5, 10, 20).Should().Be((4, 11));

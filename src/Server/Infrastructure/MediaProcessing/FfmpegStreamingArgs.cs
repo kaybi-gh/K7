@@ -24,6 +24,17 @@ internal static class FfmpegStreamingArgs
     public const string SegmentFmp4MovFlags =
         "frag_keyframe+empty_moov+default_base_moof+skip_trailer";
 
+    /// <summary>
+    /// ffmpeg WorkingDirectory is the output folder and -segment_header_filename is
+    /// relative (init.m4s). The %d.m4s pattern must be absolute: a relative
+    /// Paths:Transcoding value would otherwise nest (ENOENT on header write).
+    /// </summary>
+    public static string NormalizeOutputDirectory(string outputDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        return Path.GetFullPath(outputDirectory);
+    }
+
     public static TimeSpan ResolveTransmuxSeekTime(
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
