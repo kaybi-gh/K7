@@ -1113,7 +1113,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 var coverPath = Path.Combine(directory, fileName);
                 if (File.Exists(coverPath))
                 {
-                    picture = new MetadataPicture { Type = MetadataPictureType.Cover, LocalPath = coverPath };
+                    // Copy into the metadata directory so variant generation (which converts the
+                    // source to WebP and deletes it) never modifies the user's media library.
+                    var coverDirectory = Path.Combine(_pathsConfiguration.Metadatas, "medias", album.Id.ToString());
+                    Directory.CreateDirectory(coverDirectory);
+                    var importedCoverPath = Path.Combine(coverDirectory, $"cover{Path.GetExtension(coverPath)}");
+                    File.Copy(coverPath, importedCoverPath, overwrite: true);
+
+                    picture = new MetadataPicture { Type = MetadataPictureType.Cover, LocalPath = importedCoverPath };
                     break;
                 }
             }
