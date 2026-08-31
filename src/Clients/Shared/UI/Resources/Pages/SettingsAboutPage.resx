@@ -27,6 +27,7 @@
   <data name="BuiltWith" xml:space="preserve"><value>Technologies</value></data>
   <data name="Credits" xml:space="preserve"><value>Remerciements</value></data>
   <data name="CreditFfmpeg" xml:space="preserve"><value>Transcodage et traitement multimedia</value></data>
+  <data name="CreditLibVlc" xml:space="preserve"><value>Decodage video Direct Play sous Windows</value></data>
   <data name="CreditOpenIddict" xml:space="preserve"><value>Authentification OpenID Connect</value></data>
   <data name="CreditMusicBrainz" xml:space="preserve"><value>Métadonnées musicales</value></data>
   <data name="CreditTmdb" xml:space="preserve"><value>Métadonnées films</value></data>

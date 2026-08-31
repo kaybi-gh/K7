@@ -106,6 +106,7 @@ K7 also relies on many other open source projects and communities listed below, 
 K7 would not exist without the work of many projects and communities, including:
 
 - [FFmpeg](https://ffmpeg.org) - transcoding and media processing
+- [LibVLC](https://www.videolan.org/vlc/libvlc.html) - Windows Direct Play video decoding
 - [OpenIddict](https://github.com/openiddict/openiddict-core) - authentication and OIDC
 - [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI) - optional music intelligence
 - [MusicBrainz](https://musicbrainz.org) - music metadata
