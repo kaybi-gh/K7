@@ -63,7 +63,13 @@ public partial class MainLayout : IDisposable
         FeedHub.Changed += OnFeedHubChanged;
     }
 
-    private void OnFeedHubChanged() => InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    private void OnFeedHubChanged()
+    {
+        if (MauiNativeVideoChrome.BackgroundUiPaused)
+            return;
+
+        InvokeAsync(StateHasChanged).FireAndForget(Logger);
+    }
 
     private void OnAuthenticationStateChanged(Task<AuthenticationState> task) =>
         OnAuthenticationStateChangedAsync(task).FireAndForget(Logger);
@@ -103,14 +109,23 @@ public partial class MainLayout : IDisposable
             _sessionUserId = userId;
 
             if (userChanged && Connectivity.IsOnline)
-                DeviceInitializer.InitializeDeviceAsync(Services, userId)
-                    .FireAndForget(Logger, "Device init failed");
+            {
+                try
+                {
+                    await DeviceInitializer.InitializeDeviceAsync(Services, userId);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogDebug(ex, "Device init failed");
+                }
+            }
 
             var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
             AudioProgressTracker.SetCanReport(canReport);
 
             var deviceStorageService = Services.GetRequiredService<IDeviceStorageService>();
             var deviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+            var deviceName = deviceStorageService.Get(PreferenceKeys.DEVICE_NAME);
 
             var baseUri = DeviceService.GetClientType() == ClientType.Web
                 ? NavigationManager.ToAbsoluteUri("/")
@@ -119,11 +134,23 @@ public partial class MainLayout : IDisposable
 
             if (Connectivity.IsOnline)
             {
-                string? deviceType = null;
-                if (userChanged || K7HubClient.State != HubConnectionState.Connected)
-                    deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
+                var deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
 
-                K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName: null, deviceType)
+                try
+                {
+                    var createRequest = await DeviceService.GenerateCreateDeviceRequestAsync();
+                    if (!string.IsNullOrWhiteSpace(createRequest.DeviceName))
+                    {
+                        deviceName = createRequest.DeviceName.Trim();
+                        deviceStorageService.Set(PreferenceKeys.DEVICE_NAME, deviceName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogDebug(ex, "Could not resolve device name before hub start");
+                }
+
+                K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName, deviceType)
                     .FireAndForget(Logger, "Hub startup failed");
             }
         }

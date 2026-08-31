@@ -2,6 +2,7 @@ using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI;
 using K7.Server.Domain.Enums;
+using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
@@ -21,9 +22,11 @@ public partial class VideoPlayer : IAsyncDisposable
     private string? _lastPlayerId;
     private bool _syncPlaySidebarOpen;
     private CancellationTokenSource? _durationWaitCts;
+    private bool _webControlsWired;
+    private bool _webPipelineActive;
     private bool _mediaCanPlay;
     // HLS index.m3u8 exposes duration before segment 0 exists; wait for real media progress.
-    // Applies to Web + Windows Video.js only - native MediaElement has no idle watchdog.
+    // Applies to Web Video.js only. Native LibVLC / MediaElement has no idle watchdog.
     private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan WindowsWebDurationReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan RecoveryRoundTimeout = TimeSpan.FromSeconds(30);
@@ -48,15 +51,15 @@ public partial class VideoPlayer : IAsyncDisposable
                 try
                 {
                     var pendingSeek = PlayerService.Source?.PendingSeekTime;
-                    // Never autoplay from the embedded <source> when resuming mid-stream -
-                    // that would fetch segment 0 before changeSourceAndSeek can run.
+                    // Always request autoplay when we intend to resume after a pipeline switch /
+                    // quality change. changeSourceAndSeek also calls play() after seek.
                     var options = new
                     {
                         // K7's own VideoPlayerControlsOverlay is the only UI; never let video.js render its default control bar.
                         controls = false,
                         volume = PlayerService.Volume,
                         muted = PlayerService.IsMuted,
-                        autoplay = _playPending && pendingSeek is null
+                        autoplay = _playPending
                     };
 
                     _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -67,12 +70,23 @@ public partial class VideoPlayer : IAsyncDisposable
                     _isInitialized = true;
                     _lastPlayerId = _player.Id;
                     await ApplySubtitleStyleAsync();
+                    await ApplyWebPlayerVolumeAsync();
 
+                    var shouldPlay = _playPending;
                     if (pendingSeek is double seekTime && !string.IsNullOrEmpty(SourceUri))
                     {
                         _playPending = false;
                         _sourceApplyPending = false;
-                        await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+                        var subtitleSlug = ResolveActiveSubtitleSlug();
+                        await JSRuntime.InvokeVoidAsync(
+                            "changeSourceAndSeek",
+                            _player.Id,
+                            SourceUri,
+                            SourceMimeType,
+                            seekTime,
+                            UsesWindowsWebHlsPlayer() ? null : subtitleSlug);
+                        if (UsesWindowsWebHlsPlayer())
+                            await ApplyWindowsHlsSubtitleAsync(subtitleSlug);
                     }
                     else if (_sourceApplyPending || !string.IsNullOrEmpty(SourceUri))
                     {
@@ -82,7 +96,9 @@ public partial class VideoPlayer : IAsyncDisposable
                             await ApplySourceAsync(source);
                     }
 
-                    if (_playPending && !string.IsNullOrEmpty(_player.Id))
+                    // changeSourceAndSeek / changeSource already call play(), but WebView2 can
+                    // drop the first attempt when the gesture that selected quality is gone.
+                    if (shouldPlay && !string.IsNullOrEmpty(_player.Id))
                     {
                         _playPending = false;
                         await JSRuntime.InvokeVoidAsync("play", _player.Id);
@@ -126,7 +142,17 @@ public partial class VideoPlayer : IAsyncDisposable
         RemoteControl.StateChanged += OnRemoteSessionChanged;
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
 
-        if (UsesWebVideoPlayer())
+        _webPipelineActive = UsesWebVideoPlayer();
+        UpdateWebVideoControlSubscription();
+    }
+
+    private void UpdateWebVideoControlSubscription()
+    {
+        var shouldWire = UsesWebVideoPlayer();
+        if (shouldWire == _webControlsWired)
+            return;
+
+        if (shouldWire)
         {
             PlayerService.PlayRequested += PlayAsync;
             PlayerService.PauseRequested += PauseAsync;
@@ -142,24 +168,51 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested += OnAspectRatioModeChange;
             PlayerService.PlayerUxSettingsChanged += OnVideoPlayerUxSettingsChanged;
+            _webControlsWired = true;
+            return;
         }
+
+        PlayerService.PlayRequested -= PlayAsync;
+        PlayerService.PauseRequested -= PauseAsync;
+        PlayerService.MuteRequested -= MuteAsync;
+        PlayerService.UnmuteRequest -= UnmuteAsync;
+        PlayerService.VolumeChangeRequested -= SetVolumeAsync;
+        PlayerService.PlaybackRateChangeRequested -= SetPlaybackRateAsync;
+        PlayerService.StopRequested -= StopAsync;
+        PlayerService.EnterFullScreenRequested -= EnterFullScreenAsync;
+        PlayerService.ExitFullScreenRequested -= ExitFullScreenAsync;
+        PlayerService.SeekRequested -= SeekAsync;
+        PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
+        PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
+        PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
+        PlayerService.PlayerUxSettingsChanged -= OnVideoPlayerUxSettingsChanged;
+        _webControlsWired = false;
     }
 
     private void OnVideoPlayerUxSettingsChanged() => ApplySubtitleStyleAsync().FireAndForget();
 
-    private void OnRemoteSessionChanged() => InvokeAsync(StateHasChanged);
+    private void OnRemoteSessionChanged() => InvokeAsync(() =>
+    {
+        StateHasChanged();
+        SyncNativePlayerShellCss();
+    });
 
     private void OnVisibilityChanged()
     {
         StateHasChanged();
+        SyncNativePlayerShellCss();
+    }
 
+    private void SyncNativePlayerShellCss()
+    {
         // On MAUI Native, hide app chrome so only the video overlay receives input.
-        // On Windows the video renders in WebView2 but still needs native-player-active
-        // so sibling shell UI does not compete for hit testing / focus.
-        if (DeviceService.GetClientType() == ClientType.Native)
-        {
-            SetNativePlayerActiveAsync(PlayerService.IsVisible).FireAndForget();
-        }
+        // Remote-control UI is Blazor - keep shell CSS off while IsControlling.
+        if (DeviceService.GetClientType() != ClientType.Native)
+            return;
+
+        var active = PlayerService.IsVisible
+            && !(RemoteControl.IsControlling && !RemoteControl.IsAudio);
+        SetNativePlayerActiveAsync(active).FireAndForget();
     }
 
     private async Task SetNativePlayerActiveAsync(bool active)
@@ -253,7 +306,7 @@ public partial class VideoPlayer : IAsyncDisposable
             }
         }
 
-        if (UsesWebVideoPlayer())
+        if (_webControlsWired)
         {
             PlayerService.PlayRequested -= PlayAsync;
             PlayerService.PauseRequested -= PauseAsync;
@@ -269,21 +322,69 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
             PlayerService.PlayerUxSettingsChanged -= OnVideoPlayerUxSettingsChanged;
-
-            if (!string.IsNullOrEmpty(_lastPlayerId))
-            {
-                try
-                {
-                    await JSRuntime.InvokeVoidAsync("disposeVideoJs", _lastPlayerId);
-                }
-                catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
-                {
-                }
-            }
+            _webControlsWired = false;
         }
+
+        await DisposeWebPlayerAsync();
 
         _dotNetRef?.Dispose();
         _dotNetRef = null;
+    }
+
+    private async Task DisposeWebPlayerAsync()
+    {
+        _durationWaitCts?.Cancel();
+
+        if (_isInitialized && !string.IsNullOrEmpty(_lastPlayerId))
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("disposeVideoJs", _lastPlayerId);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+            {
+            }
+        }
+
+        _isInitialized = false;
+        _initInProgress = false;
+        _playPending = false;
+        _sourceApplyPending = false;
+        _lastPlayerId = null;
+        _mediaCanPlay = false;
+    }
+
+    private async Task HandleWebPipelineTransitionAsync()
+    {
+        var useWeb = UsesWebVideoPlayer();
+        if (useWeb == _webPipelineActive)
+        {
+            if (PlayerService.IsVisible && DeviceService.GetClientType() == ClientType.Native)
+                await SetNativePlayerActiveAsync(true);
+
+            return;
+        }
+
+        if (_webPipelineActive && !useWeb)
+            await DisposeWebPlayerAsync();
+
+        if (!_webPipelineActive && useWeb)
+        {
+            _isInitialized = false;
+            _initInProgress = false;
+            if (!string.IsNullOrEmpty(PlayerService.Source?.Url))
+                _sourceApplyPending = true;
+
+            // Always resume after Direct -> HLS: quality pick is a user gesture but the
+            // async WebView restore loses it, so we must re-issue play after init.
+            _playPending = true;
+            PlayerService.PlaybackState = PlaybackState.Buffering;
+        }
+
+        _webPipelineActive = useWeb;
+
+        if (PlayerService.IsVisible && DeviceService.GetClientType() == ClientType.Native)
+            await SetNativePlayerActiveAsync(true);
     }
 
     private void OnSourceChange(PlayerSource playerSource) => OnSourceChangeAsync(playerSource).FireAndForget();
@@ -304,6 +405,9 @@ public partial class VideoPlayer : IAsyncDisposable
         {
             ThumbnailsSource = playerSource.ThumbnailsUrl;
         }
+
+        UpdateWebVideoControlSubscription();
+        await HandleWebPipelineTransitionAsync();
 
         if (UsesWebVideoPlayer() && !string.IsNullOrEmpty(playerSource.Url))
         {
@@ -339,20 +443,71 @@ public partial class VideoPlayer : IAsyncDisposable
 
         if (source.PendingSeekTime is double seekTime)
         {
-            await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, source.Url, source.MimeType ?? SourceMimeType, seekTime);
+            var subtitleSlug = ResolveActiveSubtitleSlug();
+            await JSRuntime.InvokeVoidAsync(
+                "changeSourceAndSeek",
+                _player.Id,
+                source.Url,
+                source.MimeType ?? SourceMimeType,
+                seekTime,
+                UsesWindowsWebHlsPlayer() ? null : subtitleSlug);
+            await ApplyWebPlayerVolumeAsync();
+            if (UsesWindowsWebHlsPlayer())
+                await ApplyWindowsHlsSubtitleAsync(subtitleSlug);
             return;
         }
 
-        var subtitleSlug = PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
-            ? $"sub-{sub.Index}"
-            : null;
-        await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, source.Url, source.MimeType ?? SourceMimeType, subtitleSlug);
+        var slug = ResolveActiveSubtitleSlug();
+        await JSRuntime.InvokeVoidAsync(
+            "changeSource",
+            _player.Id,
+            source.Url,
+            source.MimeType ?? SourceMimeType,
+            UsesWindowsWebHlsPlayer() ? null : slug);
+        await ApplyWebPlayerVolumeAsync();
+        if (UsesWindowsWebHlsPlayer())
+            await ApplyWindowsHlsSubtitleAsync(slug);
     }
 
-    private bool UsesWebVideoPlayer() =>
-        DeviceService.GetClientType() == ClientType.Web
-        || (DeviceService.GetClientType() == ClientType.Native
-            && WindowsVideoPlayback.UsesWebVideoPlayer);
+    private async Task ApplyWebPlayerVolumeAsync()
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
+            return;
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("changeVolume", _player.Id, PlayerService.Volume);
+            await JSRuntime.InvokeVoidAsync(
+                PlayerService.IsMuted ? "mute" : "unmute",
+                _player.Id);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+        {
+        }
+    }
+
+    private string? ResolveActiveSubtitleSlug() =>
+        PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
+            ? $"sub-{sub.Index}"
+            : null;
+
+    private bool UsesWebVideoPlayer()
+    {
+        if (DeviceService.GetClientType() == ClientType.Web)
+            return true;
+
+        if (DeviceService.GetClientType() != ClientType.Native)
+            return false;
+
+        var source = PlayerService.Source;
+        return WindowsVideoPlayback.ShouldUseWebVideoPlayer(
+            source?.MimeType ?? SourceMimeType,
+            source?.Url ?? SourceUri);
+    }
+
+    private bool UsesWindowsWebHlsPlayer() =>
+        DeviceService.GetClientType() == ClientType.Native
+        && UsesWebVideoPlayer();
 
     private static bool IsFinitePositive(double value) =>
         !double.IsNaN(value) && !double.IsInfinity(value) && value > 0;
@@ -393,7 +548,7 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         try
         {
-            var isWindowsWebPlayer = UsesWebVideoPlayer() && WindowsVideoPlayback.UsesWebVideoPlayer;
+            var isWindowsWebPlayer = UsesWindowsWebHlsPlayer();
             var maxRounds = isWindowsWebPlayer ? MaxWindowsWebRecoveryRounds : 1;
             var waitTimeout = isWindowsWebPlayer
                 ? WindowsWebDurationReadyTimeout
@@ -517,10 +672,41 @@ public partial class VideoPlayer : IAsyncDisposable
 
     private async Task OnSwitchSubtitleTrackAsync(string? slug)
     {
-        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
+            return;
+
+        if (UsesWindowsWebHlsPlayer())
         {
-            await JSRuntime.InvokeVoidAsync("switchSubtitleTrack", _player.Id, slug);
+            await ApplyWindowsHlsSubtitleAsync(slug);
+            return;
         }
+
+        await JSRuntime.InvokeVoidAsync("switchSubtitleTrackWhenReady", _player.Id, slug);
+    }
+
+    private async Task ApplyWindowsHlsSubtitleAsync(string? slug)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
+            return;
+
+        var track = PlayerService.SelectedSubtitleTrack;
+        if (string.IsNullOrEmpty(slug)
+            || track is not { IsTextBased: true }
+            || PlayerService.Source?.IndexedFileId is not Guid fileId)
+        {
+            await JSRuntime.InvokeVoidAsync("loadSidecarSubtitleTrack", _player.Id, null, null);
+            return;
+        }
+
+        var relative = GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, track.Index);
+        var absolute = K7ServerService.GetAbsoluteUri(relative)?.AbsoluteUri;
+        if (string.IsNullOrEmpty(absolute))
+        {
+            await JSRuntime.InvokeVoidAsync("switchSubtitleTrackWhenReady", _player.Id, slug);
+            return;
+        }
+
+        await JSRuntime.InvokeVoidAsync("loadSidecarSubtitleTrack", _player.Id, absolute, slug);
     }
 
     private async Task ApplySubtitleStyleAsync()
@@ -556,6 +742,7 @@ public partial class VideoPlayer : IAsyncDisposable
         else
         {
             _playPending = true;
+            await InvokeAsync(StateHasChanged);
         }
     }
     public async Task PauseAsync()
@@ -744,7 +931,7 @@ public partial class VideoPlayer : IAsyncDisposable
                 + "s Duration="
                 + PlayerService.Duration.ToString("F2")
                 + "s UsesWebVideoPlayer="
-                + WindowsVideoPlayback.UsesWebVideoPlayer;
+                + UsesWebVideoPlayer();
 
             ClientErrorReporter.ReportError(
                 new InvalidOperationException(reportMessage),

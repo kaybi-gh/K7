@@ -263,13 +263,14 @@ public partial class NextEpisodeOverlay : IDisposable
             indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
             videoMetadata.SubtitleTracks,
-            videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            PlaybackTrackContinuity.MatchAudioIndex(videoMetadata.AudioTracks, PlayerService.SelectedAudioTrack),
+            PlaybackTrackContinuity.MatchSubtitleIndex(videoMetadata.SubtitleTracks, PlayerService.SelectedSubtitleTrack),
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString(),
             nextEpisodeId,
             VideoPlayerTitleHelper.FormatEpisode(episodeDto),
-            chapters: videoMetadata.Chapters);
+            chapters: videoMetadata.Chapters,
+            durationSeconds: videoMetadata.Duration.TotalSeconds);
 
         StateHasChanged();
     }

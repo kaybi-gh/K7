@@ -137,10 +137,18 @@ public sealed class MockBrightnessService : IBrightnessService
 
 public sealed class MockStreamUriService : IStreamUriService
 {
-    public Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public Task<StreamingSessionDto> GetOrCreateSessionAsync(
+        Guid indexedFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default)
         => Task.FromResult(new StreamingSessionDto { Id = Guid.NewGuid(), IndexedFileId = indexedFileId, PlaybackSettings = new PlaybackSettingsDto() });
 
-    public Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(Guid remoteFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(
+        Guid remoteFileId,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        CancellationToken cancellationToken = default)
         => Task.FromResult<StreamingSessionDto?>(new StreamingSessionDto { Id = Guid.NewGuid(), IndexedFileId = remoteFileId, PlaybackSettings = new PlaybackSettingsDto() });
 }
 

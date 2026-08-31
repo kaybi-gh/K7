@@ -14,6 +14,30 @@
     outline: none;
 }
 
+.video-loading-indicator {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100005;
+}
+
+/* Hide Video.js built-in spinner - K7 overlay owns buffering UX. */
+::deep .video-js .vjs-loading-spinner,
+::deep .video-js .vjs-big-play-button,
+::deep .video-js .vjs-loading-spinner:before,
+::deep .video-js .vjs-loading-spinner:after,
+::deep .vjs-waiting .vjs-loading-spinner,
+::deep .vjs-seeking .vjs-loading-spinner,
+::deep .vjs-loading-spinner {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
     .video-controls-overlay.controls-hidden::before {
         opacity: 0;
     }

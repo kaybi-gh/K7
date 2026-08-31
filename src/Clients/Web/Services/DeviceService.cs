@@ -29,7 +29,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var browser = MapBrowser(parsedUserAgent.BrowserName);
         var operatingSystem = MapOperatingSystem(parsedUserAgent.OsName);
         
-        var deviceName = BuildDeviceName(browser.ToString(), deviceType);
+        var deviceName = BuildDeviceName(deviceType, browser);
 
         return new CreateDeviceRequest
         {
@@ -180,11 +180,11 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         };
     }
 
-    private static string BuildDeviceName(string? browserName, DeviceType deviceType)
+    private static string BuildDeviceName(DeviceType deviceType, Browser browser)
     {
-        var readableBrowser = string.IsNullOrWhiteSpace(browserName) ? "Unknown browser" : browserName;
-        var readableDeviceType = deviceType.ToString();
-        return $"{readableBrowser} ({readableDeviceType})";
+        var platform = deviceType == DeviceType.Unknown ? "Device" : deviceType.ToString();
+        var client = browser == Browser.Unknown ? "Browser" : browser.ToString();
+        return $"{client} ({platform})";
     }
 
     public async Task<WebDeviceDetailsDto> GetWebDeviceDetailsAsync()

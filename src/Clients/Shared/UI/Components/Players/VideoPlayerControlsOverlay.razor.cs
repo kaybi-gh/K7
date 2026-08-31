@@ -85,6 +85,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private enum SwipeSide { Left, Right }
 
+    private bool IsBuffering => PlayerService.PlaybackState is PlaybackState.Buffering;
+
     private void OnPlaybackStateChanged(PlaybackState state) => RequestRender();
     private void OnIsMutedChanged(bool isMuted) => RequestRender();
     private void OnVolumeChanged(double volume) => RequestRender();
@@ -944,22 +946,13 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             var delta = -dy / 300.0;
             if (_swipeSide == SwipeSide.Right)
             {
-                if (VolumeService.SupportsNativeVolume)
-                {
-                    var newVolume = Math.Clamp(VolumeService.Volume + delta, 0, 1);
-                    VolumeService.SetVolume(newVolume);
-                    _hudIcon = Phosphor.SpeakerHigh;
-                    _hudText = $"{(int)Math.Round(newVolume * 100)}%";
-                    _swipeBarPercent = VolumeService.Volume * 100;
-                }
-                else
-                {
-                    var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
-                    PlayerService.SetVolume(newVolume);
-                    _hudIcon = Phosphor.SpeakerHigh;
-                    _hudText = $"{(int)Math.Round(newVolume * 100)}%";
-                    _swipeBarPercent = newVolume * 100;
-                }
+                // Always drive PlayerService so Direct (LibVLC/WASAPI) and HLS (Video.js)
+                // share one volume. Platform handlers sync native session gain when needed.
+                var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
+                PlayerService.SetVolume(newVolume);
+                _hudIcon = Phosphor.SpeakerHigh;
+                _hudText = $"{(int)Math.Round(newVolume * 100)}%";
+                _swipeBarPercent = newVolume * 100;
             }
             else
             {
@@ -1309,22 +1302,27 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         var source = PlayerService.Source;
         if (source?.IndexedFileId is null) return;
 
+        // Capture before Pause - CurrentTime can briefly read 0 after teardown.
+        var startPosition = PlayerService.GetResumePosition();
+        var volume = PlayerService.IsMuted ? 0 : PlayerService.Volume;
         PlayerService.Pause();
 
         var senderDeviceId = DeviceStorage.Get(PreferenceKeys.DEVICE_ID);
         var request = new K7.Shared.Dtos.RemotePlaybackRequestDto
         {
             IndexedFileId = source.IndexedFileId.Value,
-            StartPosition = PlayerService.CurrentTime,
+            StartPosition = startPosition > 0 ? startPosition : null,
             IsAudio = false,
+            MediaId = source.MediaId,
             Title = source.Title,
             CoverUrl = source.CoverUrl,
             Duration = PlayerService.Duration,
-            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null
+            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null,
+            Volume = volume
         };
 
         await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
-        RemoteControl.StartSession(device.DeviceId, device.DeviceName, request);
+        RemoteControl.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
     }
 
     public async ValueTask DisposeAsync()

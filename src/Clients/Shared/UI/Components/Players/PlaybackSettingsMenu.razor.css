@@ -84,7 +84,7 @@
   background: var(--color-surface-hover);
   color: var(--color-text);
   outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .playback-settings-back--compact {
@@ -124,7 +124,7 @@
 .playback-settings-nav-item:focus-visible {
   background: var(--color-surface-hover);
   outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .playback-settings-body ::deep .k7-menu-item {
@@ -141,7 +141,7 @@
 .playback-settings-body ::deep .k7-menu-item:focus-visible {
   background: var(--color-surface-hover);
   outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .playback-settings-nav-label {

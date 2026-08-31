@@ -36,6 +36,11 @@ public partial class SeekBar : IAsyncDisposable
     [Parameter] public bool IsVisible { get; set; }
 
     /// <summary>
+    /// When false, the bar stays pointer-draggable but is skipped by SpatialNav (remote panel).
+    /// </summary>
+    [Parameter] public bool KeyboardFocusable { get; set; } = true;
+
+    /// <summary>
     /// When true, use <see cref="ExternalCurrentTime"/> / Duration / Buffered instead of IPlayerService
     /// (remote-control mode).
     /// </summary>

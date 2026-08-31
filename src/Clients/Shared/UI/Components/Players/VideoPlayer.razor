@@ -20,17 +20,36 @@
 else if (PlayerService.IsVisible)
 {
     var isNative = DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Native;
-    var usesWebVideoOnNative = isNative && WindowsVideoPlayback.UsesWebVideoPlayer;
-    // Android/iOS only - Windows keeps full Blazor + Video.js chrome.
-    var nativeChrome = MauiNativeVideoChrome.IsEnabled && isNative && !usesWebVideoOnNative;
+    var usesWebVideoOnNative = isNative
+        && WindowsVideoPlayback.ShouldUseWebVideoPlayer(
+            PlayerService.Source?.MimeType,
+            PlayerService.Source?.Url ?? SourceUri);
+    // Windows keeps native XAML chrome for both LibVLC and Video.js HLS.
+    var nativeChrome = MauiNativeVideoChrome.IsEnabled && isNative;
 
-    if (nativeChrome)
+    if (nativeChrome && !usesWebVideoOnNative)
     {
-        @* Native MAUI overlay owns all chrome on Android/iOS. *@
+        @* LibVLC / MediaElement: native MAUI overlay owns all chrome; no Blazor video shell. *@
+    }
+    else if (nativeChrome && usesWebVideoOnNative)
+    {
+        @* Windows HLS: Video.js paints in WebView2; native XAML overlay owns chrome/input. *@
+        <div class="video-container" @ref="_videoContainer">
+            <div class="video-main">
+                @* Never embed <source> here: Video.js owns src via changeSource/changeSourceAndSeek. *@
+                <video id="video-player" class="video-js" @ref="_player" playsinline>
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a
+                        web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                    </p>
+                </video>
+            </div>
+        </div>
     }
     else
     {
-        var containerClass = isNative && !usesWebVideoOnNative ? "video-container native-overlay" : "video-container";
+        var containerClass = "video-container";
         if (_syncPlaySidebarOpen)
         {
             containerClass += " syncplay-sidebar-open";
@@ -45,8 +64,7 @@ else if (PlayerService.IsVisible)
                 {
                     <SyncPlayReactionOverlay />
                 }
-                @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web
-                     || usesWebVideoOnNative)
+                @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
                 {
                 @* Never embed <source> here: Video.js owns src via changeSource/changeSourceAndSeek.
                    Blazor re-rendering a <source> while VHS is attached causes reload thrash / black frames. *@

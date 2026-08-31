@@ -1,15 +1,17 @@
 @using System.Globalization
 
-<div class="seekbar-container focusable @(_isScrubbing ? "scrubbing" : "")" tabindex="0" role="slider"
-     data-sn-activatable
+<div class="seekbar-container @(KeyboardFocusable ? "focusable" : null) @(_isScrubbing ? "scrubbing" : "")"
+     tabindex="@(KeyboardFocusable ? 0 : -1)"
+     role="slider"
+     data-sn-activatable="@(KeyboardFocusable ? true : null)"
      data-thumbnails-uri="@(ThumbnailsUri?.ToString() ?? "")"
      data-thumb-interval="@IntervalSeconds"
      data-thumbs-per-row="@ThumbsPerRow"
      data-thumb-width="@ThumbWidth"
      data-thumb-height="@ThumbHeight"
-     aria-valuemin="0" aria-valuemax="@ClockDuration.ToString(CultureInfo.InvariantCulture)"
-     aria-valuenow="@ClockCurrentTime.ToString(CultureInfo.InvariantCulture)"
-     aria-label="Seek"
+    aria-valuemin="0" aria-valuemax="@ClockDuration.ToString(CultureInfo.InvariantCulture)"
+    aria-valuenow="@ClockCurrentTime.ToString(CultureInfo.InvariantCulture)"
+    aria-label="Seek"
 @onpointerdown="OnPointerDown"
 @onpointermove="OnPointerMove"
 @onpointerup="OnPointerUp"

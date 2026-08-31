@@ -166,6 +166,15 @@ var SpatialNav = (function () {
             var container = layer.el;
             if (!container || !container.isConnected) return;
             if (window.K7 && window.K7._suppressEnterUntilKeyUp) return;
+            // Keep current focus when the user is already navigating this layer, or another
+            // open menu (Blazor re-renders can re-push layers and would otherwise jump to item 1).
+            var active = document.activeElement;
+            if (active && active !== document.body && active !== document.documentElement) {
+                if (container.contains(active))
+                    return;
+                if (active.closest && active.closest('.k7-menu-dropdown--open'))
+                    return;
+            }
             // When video controls are hidden, keep focus on the overlay root.
             // Focusing a control bar button on TV/Android WebView triggers stale
             // mouseenter events that immediately re-show the overlay.
@@ -2593,34 +2602,63 @@ var SpatialNav = (function () {
                 var currentIds = {};
 
                 layerEls.forEach(function (el) {
-                    // Assign a stable UID if not present
+                    // Prefer an existing stack entry for the same DOM node. Blazor re-renders
+                    // strip JS-assigned data-sn-layer-uid; treating that as a new layer would
+                    // autoFocus the first item and yank remote/menu focus.
+                    var existingLayer = null;
+                    for (var i = 0; i < _layers.length; i++) {
+                        if (_layers[i].el === el || layerElementsMatch(_layers[i].el, el)) {
+                            existingLayer = _layers[i];
+                            break;
+                        }
+                    }
+
                     var uid = el.getAttribute('data-sn-layer-uid');
+                    if (!uid && existingLayer && existingLayer.el && existingLayer.el.getAttribute) {
+                        uid = existingLayer.el.getAttribute('data-sn-layer-uid');
+                    }
                     if (!uid) {
                         uid = 'snl-' + (++_layerUidCounter);
-                        el.setAttribute('data-sn-layer-uid', uid);
                     }
+                    el.setAttribute('data-sn-layer-uid', uid);
                     currentIds[uid] = el;
 
+                    if (existingLayer) {
+                        existingLayer.el = el;
+                        _trackedLayerIds[uid] = el;
+                        return;
+                    }
+
                     if (!_trackedLayerIds[uid]) {
-                        // New layer appeared
                         var type = el.getAttribute('data-sn-layer') || 'popover';
                         pushLayer(el, type, {});
                     } else {
-                        // Update element reference (may change between calls in MAUI WebView)
-                        for (var i = 0; i < _layers.length; i++) {
-                            if (_layers[i].el === _trackedLayerIds[uid] || (_layers[i].el.getAttribute && _layers[i].el.getAttribute('data-sn-layer-uid') === uid)) {
-                                _layers[i].el = el;
+                        for (var j = 0; j < _layers.length; j++) {
+                            if (_layers[j].el === _trackedLayerIds[uid]
+                                || (_layers[j].el.getAttribute
+                                    && _layers[j].el.getAttribute('data-sn-layer-uid') === uid)) {
+                                _layers[j].el = el;
                                 break;
                             }
                         }
                     }
                 });
 
-                // Check for removed layers
+                // Drop layers whose element is gone - not merely reassigned a new uid.
                 for (var uid in _trackedLayerIds) {
-                    if (!currentIds[uid]) {
-                        popLayer(_trackedLayerIds[uid]);
+                    if (currentIds[uid])
+                        continue;
+
+                    var oldEl = _trackedLayerIds[uid];
+                    var stillPresent = false;
+                    for (var newUid in currentIds) {
+                        if (currentIds[newUid] === oldEl || layerElementsMatch(currentIds[newUid], oldEl)) {
+                            stillPresent = true;
+                            break;
+                        }
                     }
+                    if (!stillPresent)
+                        popLayer(oldEl);
                 }
 
                 _trackedLayerIds = currentIds;
@@ -3094,6 +3132,47 @@ K7.isKeyboardNavMode = function () {
             || key === 'PageUp' || key === 'PageDown') {
             setModality('keyboard');
         }
+    }, true);
+})();
+
+// Menu rows keep one highlight: mouse hover moves DOM focus so :focus and
+// :hover are never on two different items (that stacked outset rings and
+// changed the dropdown height).
+(function focusMenuItemOnHover() {
+    var MENU_ITEM = '.k7-menu-item, .k7-menu-close, .k7-menu-back,'
+        + ' .playback-settings-nav-item, .playback-settings-close, .playback-settings-back,'
+        + ' .k7-filter-menu__option, .k7-select-option,'
+        + ' .k7-menu-dropdown .k7-btn, .app-nav-popover .k7-menu-item';
+    var MENU_ROOT = '.k7-menu-dropdown--open, .k7-select-dropdown--open,'
+        + ' .playback-settings-panel, .k7-filter-menu__menu, .app-nav-popover.open';
+
+    document.addEventListener('pointerover', function (e) {
+        if (e.pointerType !== 'mouse' && e.pointerType !== 'pen')
+            return;
+
+        var raw = e.target;
+        if (!raw || !raw.closest)
+            return;
+
+        var item = raw.closest(MENU_ITEM);
+        if (!item || item.disabled || item.getAttribute('aria-disabled') === 'true')
+            return;
+
+        var menu = item.closest(MENU_ROOT);
+        if (!menu)
+            return;
+
+        var active = document.activeElement;
+        if (active === item)
+            return;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable))
+            return;
+        if (active && active.hasAttribute && active.hasAttribute('data-sn-editing'))
+            return;
+
+        try {
+            item.focus({ preventScroll: true });
+        } catch (ex) { }
     }, true);
 })();
 

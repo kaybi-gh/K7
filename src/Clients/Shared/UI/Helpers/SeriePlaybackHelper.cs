@@ -104,15 +104,14 @@ internal static class SeriePlaybackHelper
                     indexedFile.Id,
                     videoMetadata.AudioTracks ?? [],
                     videoMetadata.SubtitleTracks,
-                    videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                    videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-                    videoMetadata.VideoResolution,
-                    videoMetadata.Thumbnails?.Uri?.ToString(),
-                    episode.Id,
-                    episodeTitle,
-                    coverUrl,
-                    startPosition,
-                    videoMetadata.Chapters);
+                    videoResolution: videoMetadata.VideoResolution,
+                    thumbnailsUrl: videoMetadata.Thumbnails?.Uri?.ToString(),
+                    mediaId: episode.Id,
+                    title: episodeTitle,
+                    coverUrl: coverUrl,
+                    startPosition: startPosition,
+                    chapters: videoMetadata.Chapters,
+                    durationSeconds: videoMetadata.Duration.TotalSeconds);
             }
             catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
             {
@@ -142,14 +141,12 @@ internal static class SeriePlaybackHelper
             remoteFile.Id,
             remoteVideoMetadata?.AudioTracks ?? [],
             remoteVideoMetadata?.SubtitleTracks,
-            remoteVideoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            remoteVideoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            remoteVideoMetadata?.VideoResolution,
-            remoteVideoMetadata?.Thumbnails?.Uri?.ToString(),
-            episode.Id,
-            epTitle,
-            cover,
-            startPosition);
+            videoResolution: remoteVideoMetadata?.VideoResolution,
+            thumbnailsUrl: remoteVideoMetadata?.Thumbnails?.Uri?.ToString(),
+            mediaId: episode.Id,
+            title: epTitle,
+            coverUrl: cover,
+            startPosition: startPosition);
 
         return EpisodePlaybackResult.Started;
     }

@@ -1,5 +1,5 @@
 // Chromium / MSE playback capability probes.
-// Used by the web client and Windows MAUI (WebView2 + Video.js HLS).
+// Web client only. Windows MAUI reports LibVLC codecs via CodecService.
 // Video codecs must match MediaSource.isTypeSupported on fMP4 CODECS strings
 // (what Video.js VHS checks). <video>.canPlayType is progressive-file decode
 // (hev1 Direct Play). Reporting HEVC from canPlayType makes the server remux

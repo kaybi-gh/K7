@@ -66,7 +66,9 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
                 videoMetadata?.SubtitleTracks,
                 mediaId: media.Id,
                 title: title ?? VideoPlayerTitleHelper.FormatFromMedia(media),
-                coverUrl: coverUrl);
+                coverUrl: coverUrl,
+                chapters: videoMetadata?.Chapters,
+                durationSeconds: videoMetadata?.Duration.TotalSeconds);
 
             var serieId = (media as SerieEpisodeDto)?.SerieId;
             _progressTracker.StartTracking(media.Id, isAuthenticated: true, serieId: serieId, indexedFileId: indexedFile.Id);

@@ -22,6 +22,8 @@ public partial class K7Menu : IAsyncDisposable
     private bool _open;
     private bool _layerPushed;
     private bool _mobileMenuAttached;
+    private bool _openParameterSeen;
+    private bool _lastOpenParameter;
     private ElementReference _root;
     private ElementReference _dropdown;
     private ElementReference _backdrop;
@@ -58,29 +60,44 @@ public partial class K7Menu : IAsyncDisposable
         {
             await CloseMenuInternalAsync();
             _open = false;
-            await OpenChanged.InvokeAsync(false);
+            if (OpenChanged.HasDelegate)
+                await OpenChanged.InvokeAsync(false);
         }
 
-        if (!OpenChanged.HasDelegate)
+        // Controlled (@bind-Open): parent owns Open.
+        if (OpenChanged.HasDelegate)
         {
             if (_open == Open)
                 return;
 
             _open = Open && !Disabled;
-
             if (_open)
                 await OpenMenuInternalAsync();
             else
                 await CloseMenuInternalAsync();
+            return;
+        }
+
+        // Uncontrolled: do not treat the default Open=false as "close" on every parent
+        // re-render (e.g. remote panel 1 Hz ticks). Only react when Open actually changes.
+        if (!_openParameterSeen)
+        {
+            _openParameterSeen = true;
+            _lastOpenParameter = Open;
+            if (Open && !_open && !Disabled)
+            {
+                _open = true;
+                await OpenMenuInternalAsync();
+            }
 
             return;
         }
 
-        if (_open == Open)
+        if (_lastOpenParameter == Open)
             return;
 
+        _lastOpenParameter = Open;
         _open = Open && !Disabled;
-
         if (_open)
             await OpenMenuInternalAsync();
         else

@@ -57,7 +57,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             {
                 field = value;
                 CurrentTime = 0;
-                Duration = 0;
+                Duration = value.KnownDurationSeconds is double known && known > 1
+                    ? known
+                    : 0;
                 BufferedTime = 0;
                 PlaybackState = PlaybackState.Idle;
                 SourceChanged?.Invoke(value);
@@ -93,11 +95,15 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             }
         } } = 0;
 
+    private double _lastKnownPlaybackTime;
+
     public double CurrentTime { get; set
         {
             if (field != value)
             {
                 field = value;
+                if (value > 1)
+                    _lastKnownPlaybackTime = value;
                 CurrentTimeChanged?.Invoke(value);
             }
         } } = 0;
@@ -201,7 +207,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private int _playGeneration;
     private CancellationTokenSource? _playCts;
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
     {
         var generation = Interlocked.Increment(ref _playGeneration);
         _playCts?.Cancel();
@@ -210,6 +216,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         var playToken = _playCts.Token;
 
         _currentIndexedFileId = indexedFileId;
+        _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
         SelectedSubtitleTrack = null;
@@ -229,7 +236,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         {
             await ShowAsync();
 
-            var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: playToken);
+            var session = await streamUriService.GetOrCreateSessionAsync(
+                indexedFileId, audioTrackIndex, subtitleTrackIndex, playToken);
 
             if (generation != _playGeneration)
                 return;
@@ -240,18 +248,23 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 throw new InvalidOperationException("Streaming session did not return a source URI.");
             }
 
-            SelectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
-                ?? SelectedAudioTrack;
-
             if (session.SubtitleTracks is { Count: > 0 })
                 SetSubtitleTracks(session.SubtitleTracks);
 
-            SelectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
-                ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
-                : null;
+            PlaybackSessionTrackSelection.Apply(
+                _audioTracks,
+                _subtitleTracks,
+                session.PlaybackSettings,
+                audioTrackIndex,
+                subtitleTrackIndex,
+                out var selectedAudio,
+                out var selectedSubtitle);
+            SelectedAudioTrack = selectedAudio;
+            SelectedSubtitleTrack = selectedSubtitle;
 
             _baseManifestUrl = session.Source.Uri.OriginalString;
 
+            var resolvedChapters = chapters ?? session.Chapters;
             Source = new PlayerSource
             {
                 MediaId = mediaId,
@@ -260,7 +273,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
                 MimeType = session.Source.MimeType,
                 ThumbnailsUrl = thumbnailsUrl,
-                Chapters = chapters ?? session.Chapters,
+                Chapters = resolvedChapters,
+                KnownDurationSeconds = ResolveKnownDurationSeconds(durationSeconds, resolvedChapters),
                 Title = title,
                 CoverUrl = coverUrl,
                 PendingSeekTime = startPosition is > 0 ? startPosition : null
@@ -290,6 +304,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         var playToken = _playCts.Token;
 
         _currentIndexedFileId = null;
+        _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
         SelectedSubtitleTrack = subtitleTrackIndex is int subIdx
@@ -311,7 +326,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         {
             await ShowAsync();
 
-            var session = await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, audioTrackIndex, playToken);
+            var session = await streamUriService.GetOrCreateRemoteSessionAsync(
+                remoteFileId, audioTrackIndex, subtitleTrackIndex, playToken);
 
             if (generation != _playGeneration)
                 return;
@@ -322,16 +338,22 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 return;
             }
 
+            if (session.AudioTracks is { Count: > 0 })
+                _audioTracks = session.AudioTracks.ToList();
+
             if (session.SubtitleTracks is { Count: > 0 })
                 SetSubtitleTracks(session.SubtitleTracks);
 
-            if (session.AudioTracks is { Count: > 0 })
-            {
-                _audioTracks = session.AudioTracks.ToList();
-                SelectedAudioTrack = audioTrackIndex is int idxFromSession
-                    ? _audioTracks.FirstOrDefault(t => t.Index == idxFromSession)
-                    : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
-            }
+            PlaybackSessionTrackSelection.Apply(
+                _audioTracks,
+                _subtitleTracks,
+                session.PlaybackSettings,
+                audioTrackIndex,
+                subtitleTrackIndex,
+                out var selectedAudio,
+                out var selectedSubtitle);
+            SelectedAudioTrack = selectedAudio;
+            SelectedSubtitleTrack = selectedSubtitle;
 
             _baseManifestUrl = session.Source.Uri.OriginalString;
 
@@ -392,23 +414,27 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         // Demuxed HLS: reload master with DefaultAudioTrackIndex. Do not also call
         // switchAudioTrack (VHS label match is unreliable, especially over federation).
-        var seekTime = CurrentTime;
+        var seekTime = CaptureResumeTime();
         var newUrl = BuildManifestUrlWithAudioTrack(_baseManifestUrl, matched.Index);
         newUrl = BuildManifestUrlWithQuality(newUrl, SelectedQuality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, SelectedSubtitleTrack);
         _baseManifestUrl = newUrl;
 
+        var current = Source;
+        if (current is null)
+            return Task.CompletedTask;
+
         Source = new PlayerSource
         {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            IndexedFileId = Source.IndexedFileId,
+            MediaId = current.MediaId,
+            StreamSessionId = current.StreamSessionId,
+            IndexedFileId = current.IndexedFileId,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            ThumbnailsUrl = Source.ThumbnailsUrl,
-            Chapters = Source.Chapters,
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
+            MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
+            ThumbnailsUrl = current.ThumbnailsUrl,
+            Chapters = current.Chapters,
+            Title = current.Title,
+            CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
@@ -430,24 +456,28 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             return Task.CompletedTask;
         }
 
-        var seekTime = CurrentTime;
+        var seekTime = CaptureResumeTime();
         var newUrl = BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, track);
         newUrl = BuildManifestUrlWithQuality(newUrl, SelectedQuality);
         if (SelectedAudioTrack is not null)
             newUrl = BuildManifestUrlWithAudioTrack(newUrl, SelectedAudioTrack.Index);
         _baseManifestUrl = newUrl;
 
+        var current = Source;
+        if (current is null)
+            return Task.CompletedTask;
+
         Source = new PlayerSource
         {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            IndexedFileId = Source.IndexedFileId,
+            MediaId = current.MediaId,
+            StreamSessionId = current.StreamSessionId,
+            IndexedFileId = current.IndexedFileId,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            ThumbnailsUrl = Source.ThumbnailsUrl,
-            Chapters = Source.Chapters,
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
+            MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
+            ThumbnailsUrl = current.ThumbnailsUrl,
+            Chapters = current.Chapters,
+            Title = current.Title,
+            CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
@@ -466,7 +496,17 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         SelectedQuality = quality;
         QualityChanged?.Invoke(quality);
 
-        var seekTime = CurrentTime;
+        if (quality is { IsOriginal: false }
+            && !StreamingSourceKind.IsHls(Source?.MimeType, _baseManifestUrl)
+            && !TryPromoteDirectToHls())
+        {
+            return Task.CompletedTask;
+        }
+
+        var seekTime = CaptureResumeTime();
+        var current = Source;
+        if (current is null)
+            return Task.CompletedTask;
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
         newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, SelectedSubtitleTrack);
         if (SelectedAudioTrack is not null)
@@ -475,15 +515,15 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         Source = new PlayerSource
         {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            IndexedFileId = Source.IndexedFileId,
+            MediaId = current.MediaId,
+            StreamSessionId = current.StreamSessionId,
+            IndexedFileId = current.IndexedFileId,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
-            MimeType = Source.MimeType ?? "application/vnd.apple.mpegurl",
-            ThumbnailsUrl = Source.ThumbnailsUrl,
-            Chapters = Source.Chapters,
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
+            MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
+            ThumbnailsUrl = current.ThumbnailsUrl,
+            Chapters = current.Chapters,
+            Title = current.Title,
+            CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
@@ -527,6 +567,34 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         AspectRatio = mode;
         AspectRatioModeChanged?.Invoke(mode);
         AspectRatioModeChangeRequested?.Invoke(mode);
+    }
+
+    private double CaptureResumeTime()
+    {
+        if (CurrentTime > 1)
+            return CurrentTime;
+        if (_lastKnownPlaybackTime > 1)
+            return _lastKnownPlaybackTime;
+        return Source?.PendingSeekTime is double pending && pending > 1 ? pending : 0;
+    }
+
+    public double GetResumePosition() => CaptureResumeTime();
+
+    private bool TryPromoteDirectToHls()
+    {
+        if (!StreamingSourceKind.TryBuildHlsManifestUrl(
+                _baseManifestUrl,
+                Source?.StreamSessionId,
+                out var hlsUrl,
+                videoJsCompatible: true))
+        {
+            return false;
+        }
+
+        _baseManifestUrl = hlsUrl;
+        if (Source is not null)
+            Source.MimeType = "application/vnd.apple.mpegurl";
+        return true;
     }
 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
@@ -604,6 +672,20 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         var separator = url.Contains('?') ? "&" : "?";
         return $"{url}{separator}startSeconds={startPosition.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    private static double? ResolveKnownDurationSeconds(
+        double? durationSeconds,
+        IReadOnlyList<ChapterMarkerDto>? chapters)
+    {
+        if (durationSeconds is double known && known > 1)
+            return known;
+
+        if (chapters is null || chapters.Count == 0)
+            return null;
+
+        var end = chapters.Max(c => c.EndSeconds ?? c.StartSeconds);
+        return end > 1 ? end : null;
     }
 
     public Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default) =>

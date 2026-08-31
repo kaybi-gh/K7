@@ -12,7 +12,6 @@
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
 @inject IBrightnessService BrightnessService
-@inject IVolumeService VolumeService
 @inject ICastOrchestrationService CastOrchestration
 @inject K7HubClient HubClient
 @inject K7.Clients.Shared.Interfaces.ISpatialNavService SpatialNav
@@ -33,6 +32,13 @@
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
      @onkeyup="OnKeyUp" @onkeyup:stopPropagation
      @onfocusin="OnFocusIn">
+
+    @if (IsBuffering)
+    {
+        <div class="video-loading-indicator">
+            <K7Spinner />
+        </div>
+    }
 
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <div class="controls-bar-title-row">

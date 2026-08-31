@@ -386,6 +386,9 @@ public partial class HomeView : IAsyncDisposable
         if (FeedHub.IsEnabled && FeedHub.ActiveKey is { } active && active != FeedHubKey.Home)
             return;
 
+        if (MauiNativeVideoChrome.BackgroundUiPaused)
+            return;
+
         InvokeAsync(StateHasChanged).FireAndForget();
     }
 

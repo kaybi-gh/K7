@@ -579,6 +579,29 @@ body.native-player-active.windows-web-video .video-controls-overlay {
     background-color: rgba(0, 0, 0, 0.01) !important;
 }
 
+/* Single K7 buffering spinner - hide Video.js default (grey) spinner. */
+body.native-player-active.windows-web-video .vjs-loading-spinner,
+body.native-player-active.windows-web-video .vjs-loading-spinner:before,
+body.native-player-active.windows-web-video .vjs-loading-spinner:after,
+body.native-player-active.windows-web-video .vjs-big-play-button,
+.video-container .vjs-loading-spinner,
+.video-container .vjs-loading-spinner:before,
+.video-container .vjs-loading-spinner:after,
+.video-container .vjs-big-play-button,
+.video-js.vjs-waiting .vjs-loading-spinner,
+.video-js.vjs-seeking .vjs-loading-spinner {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Windows: paint HLS cues above the full-bleed controls hit-test layer (rgba 0.01). */
+body.native-player-active.windows-web-video .vjs-text-track-display {
+    z-index: 100001 !important;
+    pointer-events: none !important;
+}
+
 /* ============================================================
    Reconnection overlay
    ============================================================ */

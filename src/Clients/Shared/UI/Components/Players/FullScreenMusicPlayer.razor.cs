@@ -288,7 +288,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         };
 
         await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
-        RemoteControl.StartSession(device.DeviceId, device.DeviceName, request);
+        RemoteControl.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
     }
 
     private async Task OnResumeHere()

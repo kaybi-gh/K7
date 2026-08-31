@@ -177,8 +177,12 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
 
     const playerOptions = {
         ...options,
+        // Keep K7 CSS (absolute px from SubtitleStyleHelper) in control - native ::cue
+        // sizes as a fraction of the video height and ignores most of our stylesheet.
+        textTrackSettings: false,
         html5: {
             ...(options?.html5 ?? {}),
+            nativeTextTracks: false,
             vhs: {
                 ...(options?.html5?.vhs ?? {}),
                 overrideNative: true
@@ -342,15 +346,12 @@ window.changeSource = function (id, src, type, subtitleSlug) {
                 });
             }
         });
-        if (subtitleSlug) {
-            player.one('loadedmetadata', function () {
-                window.switchSubtitleTrack(id, subtitleSlug);
-            });
-        }
+        // VHS adds EXT-X-MEDIA subtitle tracks after master parse - often after loadedmetadata.
+        window.switchSubtitleTrackWhenReady(id, subtitleSlug);
     }
 }
 
-window.changeSourceAndSeek = function (id, src, type, seekTime) {
+window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
     ensurePlatformStreamBridge();
     const player = players[id];
     if (!player) return;
@@ -368,6 +369,7 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
                 console.warn('Auto-play was prevented after seek', error);
             });
         }
+        window.switchSubtitleTrackWhenReady(id, subtitleSlug);
     };
 
     // Seek as soon as duration/playlist metadata is known - before VHS buffers segment 0.
@@ -404,6 +406,31 @@ window.switchAudioTrack = function (id, trackName) {
     return found;
 }
 
+function isSelectableTextTrack(track) {
+    if (!track)
+        return false;
+
+    const kind = track.kind;
+    return kind === 'subtitles' || kind === 'captions';
+}
+
+function textTrackMatchesSlug(track, slug) {
+    if (!track || !slug)
+        return false;
+
+    if (track.label === slug)
+        return true;
+
+    if (track.id && String(track.id).indexOf(slug) !== -1)
+        return true;
+
+    // Some VHS builds surface NAME in id / language only.
+    if (track.language && track.language === slug)
+        return true;
+
+    return false;
+}
+
 window.switchSubtitleTrack = function (id, slug) {
     const player = players[id];
     if (!player) return false;
@@ -411,10 +438,10 @@ window.switchSubtitleTrack = function (id, slug) {
     const textTracks = player.textTracks();
     if (!textTracks) return false;
 
-    // null slug disables all subtitle tracks
+    // null/undefined/empty slug disables all subtitle tracks
     if (!slug) {
         for (let i = 0; i < textTracks.length; i++) {
-            if (textTracks[i].kind === 'subtitles') {
+            if (isSelectableTextTrack(textTracks[i])) {
                 textTracks[i].mode = 'disabled';
             }
         }
@@ -423,16 +450,212 @@ window.switchSubtitleTrack = function (id, slug) {
 
     let found = false;
     for (let i = 0; i < textTracks.length; i++) {
-        if (textTracks[i].kind === 'subtitles') {
-            if (textTracks[i].label === slug) {
-                textTracks[i].mode = 'showing';
-                found = true;
-            } else {
-                textTracks[i].mode = 'disabled';
-            }
+        if (!isSelectableTextTrack(textTracks[i]))
+            continue;
+
+        if (textTrackMatchesSlug(textTracks[i], slug)) {
+            // hidden then showing forces VHS to fetch the subtitle playlist if needed.
+            textTracks[i].mode = 'hidden';
+            textTracks[i].mode = 'showing';
+            found = true;
+        } else {
+            textTracks[i].mode = 'disabled';
         }
     }
     return found;
+}
+
+// VHS registers EXT-X-MEDIA text tracks asynchronously; retry until the slug appears.
+window.switchSubtitleTrackWhenReady = function (id, slug, maxAttempts) {
+    const player = players[id];
+    if (!player)
+        return;
+
+    if (player._k7SubtitleReadyToken)
+        player._k7SubtitleReadyToken += 1;
+    else
+        player._k7SubtitleReadyToken = 1;
+
+    const token = player._k7SubtitleReadyToken;
+    const attempts = typeof maxAttempts === 'number' ? maxAttempts : 40;
+
+    if (!slug) {
+        window.switchSubtitleTrack(id, null);
+        return;
+    }
+
+    const tracks = player.textTracks && player.textTracks();
+    let onAddTrack = null;
+    const cleanup = function () {
+        if (onAddTrack && tracks && typeof tracks.removeEventListener === 'function')
+            tracks.removeEventListener('addtrack', onAddTrack);
+        onAddTrack = null;
+    };
+
+    const trySwitch = function (attempt) {
+        if (player._k7SubtitleReadyToken !== token)
+            return;
+
+        if (window.switchSubtitleTrack(id, slug)) {
+            cleanup();
+            return;
+        }
+
+        if (attempt >= attempts) {
+            cleanup();
+            return;
+        }
+
+        setTimeout(function () {
+            trySwitch(attempt + 1);
+        }, 250);
+    };
+
+    if (tracks && typeof tracks.addEventListener === 'function') {
+        onAddTrack = function () {
+            if (player._k7SubtitleReadyToken !== token)
+                return;
+
+            if (window.switchSubtitleTrack(id, slug))
+                cleanup();
+        };
+        tracks.addEventListener('addtrack', onAddTrack);
+    }
+
+    trySwitch(0);
+}
+
+// Windows MAUI HLS: VHS EXT-X-MEDIA subtitle playlists often never surface cues in WebView2.
+// Load the full sidecar VTT (same endpoint as native Direct) via the auth bridge instead.
+window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
+    const player = players[id];
+    if (!player)
+        return false;
+
+    ensurePlatformStreamBridge();
+
+    if (player._k7SidecarObjectUrl) {
+        try { URL.revokeObjectURL(player._k7SidecarObjectUrl); } catch (e) { }
+        player._k7SidecarObjectUrl = null;
+    }
+
+    try {
+        const remoteTracks = player.remoteTextTracks && player.remoteTextTracks();
+        if (remoteTracks) {
+            for (let i = remoteTracks.length - 1; i >= 0; i--) {
+                const track = remoteTracks[i];
+                if (track && track.id && String(track.id).indexOf('k7-sidecar-') === 0)
+                    player.removeRemoteTextTrack(track);
+            }
+        }
+    } catch (e) {
+    }
+
+    // Prefer sidecar over HLS group tracks so we do not race two sources.
+    window.switchSubtitleTrack(id, null);
+
+    if (!slug || !vttUrl)
+        return true;
+
+    const fetchVttText = async function () {
+        const maxAttempts = 12;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            let status = 0;
+            let body = null;
+
+            if (window.K7 && K7._windowsStreamFetchRef) {
+                const result = await K7._windowsStreamFetchRef.invokeMethodAsync(
+                    'FetchStreamAsync',
+                    vttUrl,
+                    null);
+                if (!result) {
+                    status = 0;
+                } else {
+                    status = result.statusCode || 0;
+                    body = result.body;
+                }
+            } else {
+                const response = await fetch(vttUrl, { credentials: 'include' });
+                status = response.status;
+                if (status >= 200 && status < 300)
+                    body = await response.text();
+            }
+
+            if (status === 503 && attempt < maxAttempts) {
+                const exponent = Math.min(attempt - 1, 4);
+                const delay = Math.min(500 * (1 << exponent), 15_000);
+                await new Promise(function (resolve) { setTimeout(resolve, delay); });
+                continue;
+            }
+
+            if (status < 200 || status >= 300 || body == null)
+                return null;
+
+            if (typeof body === 'string') {
+                if (body.indexOf('#EXTM3U') === 0)
+                    return null;
+                // Bridge may return base64 for byte[]; decode if it does not look like WEBVTT.
+                if (body.indexOf('WEBVTT') === 0 || body.indexOf('webvtt') === 0)
+                    return body;
+                try {
+                    const binary = atob(body);
+                    return new TextDecoder('utf-8').decode(
+                        Uint8Array.from(binary, function (c) { return c.charCodeAt(0); }));
+                } catch (e) {
+                    return body;
+                }
+            }
+
+            if (body instanceof ArrayBuffer)
+                return new TextDecoder('utf-8').decode(new Uint8Array(body));
+
+            if (body instanceof Uint8Array)
+                return new TextDecoder('utf-8').decode(body);
+
+            if (Array.isArray(body))
+                return new TextDecoder('utf-8').decode(new Uint8Array(body));
+
+            return null;
+        }
+
+        return null;
+    };
+
+    try {
+        const text = await fetchVttText();
+        if (!text || text.indexOf('WEBVTT') !== 0 && text.toLowerCase().indexOf('webvtt') !== 0) {
+            console.warn('loadSidecarSubtitleTrack: no WEBVTT body for', vttUrl);
+            return false;
+        }
+
+        const blob = new Blob([text], { type: 'text/vtt' });
+        const objectUrl = URL.createObjectURL(blob);
+        player._k7SidecarObjectUrl = objectUrl;
+
+        const handle = player.addRemoteTextTrack({
+            kind: 'subtitles',
+            src: objectUrl,
+            srclang: 'und',
+            label: slug,
+            id: 'k7-sidecar-' + slug,
+            mode: 'showing',
+            default: true
+        }, false);
+
+        const track = handle && (handle.track || handle);
+        if (track) {
+            track.mode = 'showing';
+            if (!track.id)
+                track.id = 'k7-sidecar-' + slug;
+        }
+
+        k7AttachSubtitleStyleHooks(player);
+        k7RefreshSubtitleStylesForAllPlayers();
+        return true;
+    } catch (err) {
+        console.warn('loadSidecarSubtitleTrack failed', err);
+        return false;
+    }
 }
 
 function k7SafeCssValue(value, fallback) {
@@ -491,6 +714,11 @@ function k7ApplySubtitleStyleSheet(style) {
     // Video.js textTrackSettings writes inline styles on active cues; use !important
     // on the cue box and direct children, then strip inline overrides after each refresh.
     el.textContent =
+        // Neutralize Video.js default .vjs-text-track { font-size: 1.4em } which scales
+        // with the player base font and made HLS cues look larger than the XAML sidecar.
+        '.video-js .vjs-text-track {' +
+        'font-size:inherit !important;' +
+        '}' +
         '.video-js .vjs-text-track-display .vjs-text-track-cue {' +
         'background:transparent !important;' +
         'background-color:transparent !important;' +
@@ -509,7 +737,7 @@ function k7ApplySubtitleStyleSheet(style) {
         'max-width:90% !important;' +
         'padding:4px 8px !important;' +
         'border-radius:4px !important;' +
-        'line-height:1.4 !important;' +
+        'line-height:1.25 !important;' +
         'white-space:pre-wrap !important;' +
         'text-align:center !important;' +
         'font-family:' + fontFamily + ' !important;' +

@@ -416,8 +416,13 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
 }
-.k7-select-option:hover,
-.k7-select-option:focus-visible { background: var(--color-surface-hover); }
+.k7-select-option:hover { background: var(--color-surface-hover); }
+.k7-select-option:focus,
+.k7-select-option:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
 .k7-select-option--selected { color: var(--color-accent); font-weight: 500; }
 .k7-select-option i, .k7-select-option .ph { color: var(--color-text-muted); font-size: var(--text-base); }
 .k7-select-option--selected i, .k7-select-option--selected .ph { color: var(--color-accent); }
@@ -904,8 +909,13 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(90deg); }
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
 }
-.k7-menu-item:hover,
-.k7-menu-item:focus-visible { background: var(--color-surface-hover); }
+.k7-menu-item:hover { background: var(--color-surface-hover); }
+.k7-menu-item:focus,
+.k7-menu-item:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
 .k7-menu-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; flex-shrink: 0; }
 .k7-menu-item-icon i { color: var(--color-text-muted); font-size: var(--text-base); }
 .k7-menu-item-text { flex: 1; min-width: 0; }
@@ -955,10 +965,16 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.k7-menu-close:hover,
+.k7-menu-close:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.k7-menu-close:focus,
 .k7-menu-close:focus-visible {
   background: var(--color-surface-hover);
   color: var(--color-text);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 .k7-menu-back {
   display: inline-flex;
@@ -975,10 +991,16 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.k7-menu-back:hover,
+.k7-menu-back:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.k7-menu-back:focus,
 .k7-menu-back:focus-visible {
   background: var(--color-surface-hover);
   color: var(--color-text);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 /* Teleported menus in the video player need a high z-index (outside scoped CSS) */
@@ -1236,10 +1258,15 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   transition: background var(--transition-fast);
 }
 .k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn:hover,
-.k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn:focus-visible,
 .k7-menu-dropdown > .k7-menu.k7-menu--open > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn {
   background: var(--color-surface-hover);
   outline: none;
+}
+.k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn:focus,
+.k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 .k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn > .k7-icon {
   color: var(--color-text-muted);
@@ -1266,8 +1293,16 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   transition: background var(--transition-fast);
 }
 .k7-menu-dropdown > .k7-menu > button.k7-btn:hover,
-.k7-menu-dropdown > .k7-menu > button.k7-btn:focus-visible,
-.k7-menu-dropdown > .k7-menu.k7-menu--open > button.k7-btn { background: var(--color-surface-hover); outline: none; }
+.k7-menu-dropdown > .k7-menu.k7-menu--open > button.k7-btn {
+  background: var(--color-surface-hover);
+  outline: none;
+}
+.k7-menu-dropdown > .k7-menu > button.k7-btn:focus,
+.k7-menu-dropdown > .k7-menu > button.k7-btn:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
 .k7-menu-dropdown > .k7-menu > button.k7-btn > .k7-icon { color: var(--color-text-muted); font-size: var(--text-base); width: 1.25rem; text-align: center; flex-shrink: 0; }
 /* Chevron indicator for sub-menu triggers */
 .k7-menu-dropdown > .k7-menu > .k7-menu-activator > .k7-menu-activator-inner > .k7-btn::after {
@@ -1741,9 +1776,14 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   cursor: pointer;
 }
 
-.k7-filter-menu__option:hover,
+.k7-filter-menu__option:hover {
+  background: var(--color-surface-hover);
+}
+.k7-filter-menu__option:focus,
 .k7-filter-menu__option:focus-visible {
   background: var(--color-surface-hover);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 .k7-filter-menu__option--selected {

@@ -34,7 +34,7 @@
                 {
                     <span class="fullscreen-player-header-title remote-badge">
                         <K7Icon Icon="@Phosphor.Screencast"  IconSize="@K7IconSize.Sm" />
-                        @string.Format(S["PlayingOn"], RemoteControl.TargetDeviceName)
+                        @string.Format(S["PlayingOn"], string.IsNullOrWhiteSpace(RemoteControl.TargetDeviceName) ? "Device" : RemoteControl.TargetDeviceName)
                     </span>
                 }
                 else

@@ -45,6 +45,7 @@ public partial class Movie : IAsyncDisposable
     private RemoteIndexedFileDto? _selectedRemoteFile;
     private AudioFileTrackDto? _selectedAudioFileTrack;
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
+    private bool _useExplicitTrackSelection;
     private List<MediaCardViewModel> _similarMedia = [];
     private string? _previousId;
     private bool _canExclude;
@@ -185,6 +186,7 @@ public partial class Movie : IAsyncDisposable
             {
                 _selectedAudioFileTrack = vMeta.AudioTracks?.FirstOrDefault(x => x.IsDefault) ?? vMeta.AudioTracks?.FirstOrDefault();
                 _selectedSubtitleFileTrack = vMeta.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
+                _useExplicitTrackSelection = false;
             }
 
             await ResolveLibraryGroupIdAsync();
@@ -281,8 +283,8 @@ public partial class Movie : IAsyncDisposable
 
         var audioTracks = videoMetadata.AudioTracks;
         var subtitleTracks = videoMetadata.SubtitleTracks;
-        var audioTrackIndex = _selectedAudioFileTrack?.Index;
-        var subtitleTrackIndex = _selectedSubtitleFileTrack?.Index;
+        var audioTrackIndex = _useExplicitTrackSelection ? _selectedAudioFileTrack?.Index : null;
+        var subtitleTrackIndex = _useExplicitTrackSelection ? _selectedSubtitleFileTrack?.Index : null;
         var videoResolution = videoMetadata.VideoResolution;
         var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
@@ -296,7 +298,7 @@ public partial class Movie : IAsyncDisposable
 
         try
         {
-            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters);
+            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters, videoMetadata.Duration.TotalSeconds);
         }
         catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
         {
@@ -367,8 +369,12 @@ public partial class Movie : IAsyncDisposable
             remoteFile.Id,
             videoMetadata?.AudioTracks ?? [],
             videoMetadata?.SubtitleTracks,
-            _selectedAudioFileTrack?.Index ?? videoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            _selectedSubtitleFileTrack?.Index ?? videoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            _useExplicitTrackSelection
+                ? _selectedAudioFileTrack?.Index ?? videoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index
+                : null,
+            _useExplicitTrackSelection
+                ? _selectedSubtitleFileTrack?.Index
+                : null,
             videoMetadata?.VideoResolution,
             videoMetadata?.Thumbnails?.Uri?.ToString(),
             _movie.Id,
@@ -402,8 +408,16 @@ public partial class Movie : IAsyncDisposable
             _selectedRemoteFile = optionsResult.RemoteFile;
             _selectedAudioFileTrack = optionsResult.AudioTrack;
             _selectedSubtitleFileTrack = optionsResult.SubtitleTrack;
+            _useExplicitTrackSelection = true;
 
-            await PlayAsync();
+            try
+            {
+                await PlayAsync();
+            }
+            finally
+            {
+                _useExplicitTrackSelection = false;
+            }
         }
     }
 

@@ -306,15 +306,14 @@ public partial class SerieEpisode : IAsyncDisposable
             _indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
             videoMetadata.SubtitleTracks,
-            videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.VideoResolution,
-            videoMetadata.Thumbnails?.Uri?.ToString(),
-            _episode.Id,
-            episodeTitle,
-            _stillUrl,
-            startPosition,
-            videoMetadata.Chapters);
+            videoResolution: videoMetadata.VideoResolution,
+            thumbnailsUrl: videoMetadata.Thumbnails?.Uri?.ToString(),
+            mediaId: _episode.Id,
+            title: episodeTitle,
+            coverUrl: _stillUrl,
+            startPosition: startPosition,
+            chapters: videoMetadata.Chapters,
+            durationSeconds: videoMetadata.Duration.TotalSeconds);
     }
 
     private bool CanResumePlayback =>

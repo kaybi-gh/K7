@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Helpers;
 using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
@@ -19,7 +20,10 @@ public partial class PlaybackOptionsDialog
     [Parameter] public Guid? InitialRemoteFileId { get; set; }
 
     [Inject] private IFederationService FederationService { get; set; } = default!;
+    [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
     [Inject] private ILogger<PlaybackOptionsDialog> Logger { get; set; } = default!;
+
+    private TrackSelectionPreferencesDto? _preferences;
 
     private List<PlaybackReleaseOption> _releases = [];
     private PlaybackReleaseOption? _selectedRelease;
@@ -32,9 +36,7 @@ public partial class PlaybackOptionsDialog
                 return;
 
             _selectedRelease = value;
-            SelectedAudioTrack = videoMetadata?.AudioTracks?.FirstOrDefault(x => x.IsDefault)
-                ?? videoMetadata?.AudioTracks?.FirstOrDefault();
-            SelectedSubtitleTrack = videoMetadata?.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
+            ApplyPreferredTracks();
         }
     }
 
@@ -50,7 +52,7 @@ public partial class PlaybackOptionsDialog
         base.OnInitialized();
         BuildReleases();
         SelectInitialRelease();
-        LoadRemoteDetailsAsync().FireAndForget(Logger);
+        LoadPreferencesAndRemoteAsync().FireAndForget(Logger);
     }
 
     private void BuildReleases()
@@ -84,6 +86,47 @@ public partial class PlaybackOptionsDialog
             ?? _releases.FirstOrDefault();
     }
 
+    private async Task LoadPreferencesAndRemoteAsync()
+    {
+        try
+        {
+            _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(Movie.LibraryId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load track selection preferences");
+        }
+
+        ApplyPreferredTracks();
+        await InvokeAsync(StateHasChanged);
+        await LoadRemoteDetailsAsync();
+    }
+
+    private void ApplyPreferredTracks()
+    {
+        var audio = videoMetadata?.AudioTracks ?? [];
+        var subs = videoMetadata?.SubtitleTracks ?? [];
+        if (audio.Count == 0)
+        {
+            SelectedAudioTrack = null;
+            SelectedSubtitleTrack = null;
+            return;
+        }
+
+        if (_preferences is not null)
+        {
+            var selection = TrackSelector.SelectTracks(_preferences, audio, subs);
+            SelectedAudioTrack = audio.FirstOrDefault(t => t.Index == selection.AudioTrackIndex);
+            SelectedSubtitleTrack = selection.SubtitleTrackIndex is int subIdx
+                ? subs.FirstOrDefault(t => t.Index == subIdx)
+                : null;
+            return;
+        }
+
+        SelectedAudioTrack = audio.FirstOrDefault(x => x.IsDefault) ?? audio.FirstOrDefault();
+        SelectedSubtitleTrack = subs.FirstOrDefault(x => x.IsDefault);
+    }
+
     private async Task LoadRemoteDetailsAsync()
     {
         var remotes = _releases.Where(r => r.IsRemote && r.File is null).ToList();
@@ -99,12 +142,8 @@ public partial class PlaybackOptionsDialog
                     continue;
 
                 release.File = details;
-                if (_selectedRelease?.Id == release.Id)
-                {
-                    SelectedAudioTrack ??= videoMetadata?.AudioTracks?.FirstOrDefault(x => x.IsDefault)
-                        ?? videoMetadata?.AudioTracks?.FirstOrDefault();
-                    SelectedSubtitleTrack ??= videoMetadata?.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
-                }
+                if (_selectedRelease?.Id == release.Id && SelectedAudioTrack is null)
+                    ApplyPreferredTracks();
 
                 StateHasChanged();
             }

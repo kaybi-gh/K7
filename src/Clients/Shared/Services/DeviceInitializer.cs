@@ -60,8 +60,8 @@ public static class DeviceInitializer
                     }
                 }
 
-                // Refresh codec capabilities each login so WebView2 / web stay aligned
-                // with MediaSource HLS probes instead of stale canPlayType format lists.
+                // Refresh codec capabilities each login so the stored format list
+                // matches the current client (LibVLC on Windows MAUI, MSE on Web).
                 await RefreshDeviceCapabilitiesAsync(services, parsedId);
             }
         }
@@ -83,6 +83,7 @@ public static class DeviceInitializer
         var deviceId = await deviceApiService.CreateDeviceAsync(request);
         var deviceIdStr = deviceId.ToString();
         deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceIdStr);
+        PersistDeviceName(deviceStorageService, request.DeviceName);
         return deviceIdStr;
     }
 
@@ -90,6 +91,7 @@ public static class DeviceInitializer
     {
         var deviceService = services.GetRequiredService<IDeviceService>();
         var deviceApiService = services.GetRequiredService<IDeviceApiService>();
+        var deviceStorageService = services.GetRequiredService<IDeviceStorageService>();
         var createRequest = await deviceService.GenerateCreateDeviceRequestAsync();
 
         var updateRequest = new UpdateDeviceRequest
@@ -107,5 +109,14 @@ public static class DeviceInitializer
         };
 
         await deviceApiService.UpdateDeviceAsync(deviceId, updateRequest);
+        PersistDeviceName(deviceStorageService, createRequest.DeviceName);
+    }
+
+    private static void PersistDeviceName(IDeviceStorageService deviceStorageService, string? deviceName)
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+            return;
+
+        deviceStorageService.Set(PreferenceKeys.DEVICE_NAME, deviceName.Trim());
     }
 }
