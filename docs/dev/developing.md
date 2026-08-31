@@ -34,7 +34,7 @@ dotnet workload install maui
 
 Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Physical devices need the host LAN IP. iOS/Mac builds are untested by the maintainer.
 
-Native video chrome on Android/iOS is documented in [video-playback.md](video-playback.md). When `MauiNativeVideoChrome.IsEnabled` is true (non-Windows MAUI), the host shows `NativeVideoPlayerOverlay` above MediaElement instead of the Blazor HUD. Windows MAUI stays on Video.js + full Blazor controls.
+Native video chrome on Android/iOS/Windows is documented in [video-playback.md](video-playback.md). When `MauiNativeVideoChrome.IsEnabled` is true, the host shows `NativeVideoPlayerOverlay` above ExoPlayer (Android), MediaElement (iOS), LibVLC (Windows Direct Play), or Video.js in WebView2 (Windows HLS) instead of the Blazor HUD. Web WASM stays on Video.js + full Blazor controls.
 
 OIDC on MAUI includes `http://localhost/` redirect URIs - register compatible URIs at your IdP when testing SSO.
 

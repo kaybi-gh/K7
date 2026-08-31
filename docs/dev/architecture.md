@@ -136,7 +136,7 @@ MAUI `BlazorWebView.StartPath` opens `/select-profile` (or `/welcome` when no lo
 
 ## Video playback (MAUI)
 
-During video play on Android/iOS, MAUI uses a **native XAML overlay** on top of `MediaElement` (TextureView). Windows MAUI keeps Video.js + Blazor controls in WebView2. Browse UI stays Blazor Hybrid. Details and the Windows `#EXT-X-MAP` limitation: [video-playback.md](video-playback.md).
+During video play on Android/iOS/Windows, MAUI uses a **native XAML overlay** on top of the decode surface (ExoPlayer / MediaElement on Android, MediaElement on iOS, LibVLC on Windows Direct Play. Windows HLS uses Video.js in WebView2 under the same native chrome). Web WASM stays Video.js + Blazor controls. Browse UI stays Blazor Hybrid. Details: [video-playback.md](video-playback.md).
 
 ## Music playback (MAUI Android)
 

@@ -25,7 +25,7 @@ Start with **[Contributing](../CONTRIBUTING.md)** (setup, style, PRs). Then:
 | Guide | Description |
 |---|---|
 | [Architecture](dev/architecture.md) | Layers, request flow, UI layout |
-| [Video playback](dev/video-playback.md) | MAUI native overlay, Windows Video.js / `#EXT-X-MAP` |
+| [Video playback](dev/video-playback.md) | MAUI native overlay, ExoPlayer on Android, LibVLC Direct / Video.js HLS on Windows, Video.js on Web |
 | [Playback bookmarks](dev/playback-bookmarks.md) | Keep Watching, resume position, series next-up |
 | [Design](dev/design.md) | UI constraints, tokens, anti-patterns |
 | [Developing](dev/developing.md) | Clients, DesignSystem, localization, API, testing, Renovate |
