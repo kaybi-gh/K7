@@ -18,11 +18,13 @@ jobs:
       github.event.pull_request.user.login != 'github-actions[bot]'
     steps:
       # Do not checkout PR head under pull_request_target (privileged token).
-      # release-drafter and actions/labeler read config from the default branch.
-      - name: Label from Conventional Commits (release-drafter)
-        uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+      # Autolabeler and actions/labeler read config from the default branch.
+      # v7 split labeling into a dedicated action; the main drafter always
+      # creates a release and fails here with contents: read.
+      - name: Label from Conventional Commits
+        uses: release-drafter/release-drafter/autolabeler@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
-          disable-releaser: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Label from changed paths
         uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
