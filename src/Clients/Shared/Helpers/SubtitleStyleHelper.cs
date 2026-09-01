@@ -38,21 +38,24 @@ public static class SubtitleStyleHelper
         _ => deviceType
     };
 
+    /// <summary>
+    /// Density-independent size (CSS px on Web, MAUI FontSize, Android SP). Not physical pixels.
+    /// </summary>
     public static int ToFontSizePx(SubtitleFontSize size, DeviceType deviceType = DeviceType.Desktop) =>
         (size, NormalizeDeviceType(deviceType)) switch
         {
-            (SubtitleFontSize.Small, DeviceType.Phone) => 12,
-            (SubtitleFontSize.Small, DeviceType.Tablet) => 14,
+            (SubtitleFontSize.Small, DeviceType.Phone) => 20,
+            (SubtitleFontSize.Small, DeviceType.Tablet) => 22,
             (SubtitleFontSize.Small, DeviceType.TV) => 28,
             (SubtitleFontSize.Small, _) => 16,
 
-            (SubtitleFontSize.Large, DeviceType.Phone) => 20,
-            (SubtitleFontSize.Large, DeviceType.Tablet) => 24,
+            (SubtitleFontSize.Large, DeviceType.Phone) => 36,
+            (SubtitleFontSize.Large, DeviceType.Tablet) => 42,
             (SubtitleFontSize.Large, DeviceType.TV) => 60,
             (SubtitleFontSize.Large, _) => 32,
 
-            (SubtitleFontSize.Medium, DeviceType.Phone) => 16,
-            (SubtitleFontSize.Medium, DeviceType.Tablet) => 18,
+            (SubtitleFontSize.Medium, DeviceType.Phone) => 28,
+            (SubtitleFontSize.Medium, DeviceType.Tablet) => 32,
             (SubtitleFontSize.Medium, DeviceType.TV) => 40,
             _ => 22
         };
@@ -70,6 +73,7 @@ public static class SubtitleStyleHelper
     public static string ToFontSizeCss(SubtitleFontSize size, DeviceType deviceType = DeviceType.Desktop) =>
         $"{ToFontSizePx(size, deviceType).ToString(CultureInfo.InvariantCulture)}px";
 
+    /// <summary>Same scale as <see cref="ToFontSizePx"/> for Android <c>COMPLEX_UNIT_SP</c>.</summary>
     public static float ToFontSizeSp(SubtitleFontSize size, DeviceType deviceType = DeviceType.Desktop) =>
         ToFontSizePx(size, deviceType);
 

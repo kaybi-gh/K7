@@ -228,13 +228,16 @@ XAML sidecar loader. Windows HLS uses Video.js remote text tracks via the stream
 
 `VideoPlayerSettingsDto` font / size / color / background opacity / shadow settings are mapped
 by `SubtitleStyleHelper` (same values as the settings preview). Font size scales by
-`DeviceType` (phone/watch, tablet, desktop, TV). Web and Windows HLS Video.js apply them via
+`DeviceType` (phone/watch, tablet, desktop, TV). Values are density-independent (CSS px on
+Web, MAUI `FontSize`, Android `COMPLEX_UNIT_SP`) so a phone Medium cue is 28sp, not 28
+physical pixels. Web and Windows HLS Video.js apply them via
 `applySubtitleStyle` (CSS on `.vjs-text-track-cue` / `::cue`) using the same
 `SubtitleStyleHelper.ToFontSizePx` values. Video.js is configured with `nativeTextTracks: false`
-and `textTrackSettings: false` so cues stay on those absolute px sizes instead of Video.js
+and `textTrackSettings: false` so cues stay on those sizes instead of Video.js
 `1.4em` / `fontPercent` (or native `::cue` height-relative sizing). Android text subs use ExoPlayer
-`SubtitleView` + `CaptionStyleCompat` (`AndroidExoSubtitleStyle`). Windows Direct text subs use
-the XAML sidecar label (same helper). Image-based burn-in (PGS) cannot be restyled client-side.
+`SubtitleView` + `CaptionStyleCompat` (`AndroidExoSubtitleStyle`, `SetFixedTextSize` in SP).
+Windows Direct text subs use the XAML sidecar label (same helper). Image-based burn-in (PGS)
+cannot be restyled client-side.
 
 After save or reset, the server pushes `ReceiveVideoPlayerSettingsUpdated` on the K7 hub
 (user identity group). `VideoPlayerUxSettingsSync` applies the payload to `IPlayerService`

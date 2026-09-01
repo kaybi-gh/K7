@@ -34,8 +34,10 @@ internal static class AndroidExoSubtitleStyle
             subtitleView.SetApplyEmbeddedStyles(false);
             subtitleView.SetApplyEmbeddedFontSizes(false);
 
-            var sizePx = SubtitleStyleHelper.ToFontSizePx(settings.SubtitleFontSize, normalized);
-            subtitleView.SetFixedTextSize((int)ComplexUnitType.Px, sizePx);
+            // SP (not PX): helper values are CSS-px / density-independent. Physical px
+            // made phone cues unreadably small on xxhdpi while TV (density ~1) looked fine.
+            var sizeSp = SubtitleStyleHelper.ToFontSizeSp(settings.SubtitleFontSize, normalized);
+            subtitleView.SetFixedTextSize((int)ComplexUnitType.Sp, sizeSp);
 
             var foreground = ParseColor(settings.SubtitleFontColor, Color.White);
             var backgroundAlpha = (int)Math.Clamp(settings.SubtitleBackgroundOpacity * 255.0, 0, 255);

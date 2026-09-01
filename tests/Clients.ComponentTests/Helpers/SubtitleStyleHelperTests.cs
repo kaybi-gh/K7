@@ -20,6 +20,37 @@ public class SubtitleStyleHelperTests
         css.TextShadow.Should().Contain("#000000");
     }
 
+    [TestCase(SubtitleFontSize.Small, DeviceType.Phone, 20)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.Phone, 28)]
+    [TestCase(SubtitleFontSize.Large, DeviceType.Phone, 36)]
+    [TestCase(SubtitleFontSize.Small, DeviceType.Tablet, 22)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.Tablet, 32)]
+    [TestCase(SubtitleFontSize.Large, DeviceType.Tablet, 42)]
+    [TestCase(SubtitleFontSize.Small, DeviceType.TV, 28)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.TV, 40)]
+    [TestCase(SubtitleFontSize.Large, DeviceType.TV, 60)]
+    [TestCase(SubtitleFontSize.Small, DeviceType.Desktop, 16)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.Desktop, 22)]
+    [TestCase(SubtitleFontSize.Large, DeviceType.Desktop, 32)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.Watch, 28)]
+    public void ToFontSizePx_ShouldScaleByDevice(SubtitleFontSize size, DeviceType device, int expectedPx)
+    {
+        SubtitleStyleHelper.ToFontSizePx(size, device).Should().Be(expectedPx);
+        SubtitleStyleHelper.ToFontSizeSp(size, device).Should().Be(expectedPx);
+        SubtitleStyleHelper.ToFontSizeCss(size, device).Should().Be($"{expectedPx}px");
+    }
+
+    [Test]
+    public void ToFontSizePx_ShouldKeepPhoneCuesAtLeastBodyText()
+    {
+        SubtitleStyleHelper.ToFontSizePx(SubtitleFontSize.Small, DeviceType.Phone)
+            .Should().BeGreaterThanOrEqualTo(20);
+        SubtitleStyleHelper.ToFontSizePx(SubtitleFontSize.Medium, DeviceType.Phone)
+            .Should().BeGreaterThanOrEqualTo(24);
+        SubtitleStyleHelper.ToFontSizePx(SubtitleFontSize.Large, DeviceType.Phone)
+            .Should().BeGreaterThanOrEqualTo(32);
+    }
+
     [Test]
     public void ToCss_ShouldScaleLargeForTv()
     {
@@ -27,7 +58,7 @@ public class SubtitleStyleHelperTests
 
         SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("60px");
         SubtitleStyleHelper.ToCss(settings, DeviceType.Desktop).FontSize.Should().Be("32px");
-        SubtitleStyleHelper.ToCss(settings, DeviceType.Phone).FontSize.Should().Be("20px");
+        SubtitleStyleHelper.ToCss(settings, DeviceType.Phone).FontSize.Should().Be("36px");
     }
 
     [Test]
@@ -36,6 +67,7 @@ public class SubtitleStyleHelperTests
         var settings = new VideoPlayerSettingsDto { SubtitleFontSize = SubtitleFontSize.Medium };
 
         SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("40px");
+        SubtitleStyleHelper.ToCss(settings, DeviceType.Phone).FontSize.Should().Be("28px");
     }
 
     [Test]
@@ -75,12 +107,5 @@ public class SubtitleStyleHelperTests
         r2.Should().Be(0xFF);
         g2.Should().Be(0);
         b2.Should().Be(0);
-    }
-
-    [Test]
-    public void ToFontSizePx_ShouldMapWatchLikePhone()
-    {
-        SubtitleStyleHelper.ToFontSizePx(SubtitleFontSize.Medium, DeviceType.Watch).Should().Be(16);
-        SubtitleStyleHelper.ToFontSizePx(SubtitleFontSize.Medium, DeviceType.Tablet).Should().Be(18);
     }
 }
