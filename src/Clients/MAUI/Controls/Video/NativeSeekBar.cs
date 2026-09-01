@@ -1,4 +1,5 @@
 using System.Globalization;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Helpers;
 
@@ -46,6 +47,9 @@ public sealed class NativeSeekBar : GraphicsView
         StartInteraction += OnStartInteraction;
         DragInteraction += OnDragInteraction;
         EndInteraction += OnEndInteraction;
+
+        if (!NativePointerInput.SupportsHoverRecognizers)
+            return;
 
         var pointer = new PointerGestureRecognizer();
         pointer.PointerMoved += OnPointerMoved;

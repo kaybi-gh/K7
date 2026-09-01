@@ -1,4 +1,5 @@
 using System.Reflection;
+using K7.Clients.Shared.Helpers;
 
 namespace K7.Clients.MAUI.Controls.Video;
 
@@ -19,6 +20,12 @@ internal static class NativeOverlayHover
     public static void Attach(View element, Action<bool>? hoveredChanged = null)
     {
         ApplyHandCursor(element);
+
+        if (!NativePointerInput.SupportsHoverRecognizers)
+        {
+            _ = hoveredChanged;
+            return;
+        }
 
         var pointer = new PointerGestureRecognizer();
         pointer.PointerEntered += (_, _) => hoveredChanged?.Invoke(true);

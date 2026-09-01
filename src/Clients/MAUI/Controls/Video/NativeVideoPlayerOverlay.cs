@@ -219,9 +219,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         BuildLayout();
         WireEvents();
         SizeChanged += (_, _) => UpdateSettingsAvailableHeight();
-        var pointerMove = new PointerGestureRecognizer();
-        pointerMove.PointerMoved += OnDesktopPointerMoved;
-        GestureRecognizers.Add(pointerMove);
+        if (NativePointerInput.SupportsHoverRecognizers)
+        {
+            var pointerMove = new PointerGestureRecognizer();
+            pointerMove.PointerMoved += OnDesktopPointerMoved;
+            GestureRecognizers.Add(pointerMove);
+        }
     }
 
     public bool IsChromeVisible =>
@@ -1059,10 +1062,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _seekBar.HoverEnded += OnSeekHoverEnded;
         _seekBar.PreviewMoved += OnSeekPreviewMoved;
 
-        var seekPointer = new PointerGestureRecognizer();
-        seekPointer.PointerMoved += OnSeekRingPointerMoved;
-        seekPointer.PointerExited += OnSeekRingPointerExited;
-        _seekBarFocusRing.GestureRecognizers.Add(seekPointer);
+        if (NativePointerInput.SupportsHoverRecognizers)
+        {
+            var seekPointer = new PointerGestureRecognizer();
+            seekPointer.PointerMoved += OnSeekRingPointerMoved;
+            seekPointer.PointerExited += OnSeekRingPointerExited;
+            _seekBarFocusRing.GestureRecognizers.Add(seekPointer);
+        }
 
         _timeLabel.TextColor = Colors.White;
         _timeLabel.FontSize = 13;
@@ -1900,6 +1906,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void AttachVolumeHover()
     {
+        if (!NativePointerInput.SupportsHoverRecognizers)
+            return;
+
         var pointer = new PointerGestureRecognizer();
         pointer.PointerEntered += (_, _) =>
         {
@@ -1915,6 +1924,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void AttachVolumePopoverHover()
     {
+        if (!NativePointerInput.SupportsHoverRecognizers)
+            return;
+
         var pointer = new PointerGestureRecognizer();
         pointer.PointerEntered += (_, _) =>
         {
@@ -2052,8 +2064,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
 #if WINDOWS
         Platforms.Windows.WindowsIdleCursor.Show();
-        ResetCursorIdle();
 #endif
+        ResetCursorIdle();
         if (_showChrome)
             ResetHideTimer();
         else

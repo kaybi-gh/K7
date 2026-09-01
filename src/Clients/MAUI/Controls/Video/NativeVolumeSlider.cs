@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Helpers;
+
 namespace K7.Clients.MAUI.Controls.Video;
 
 /// <summary>
@@ -17,16 +19,19 @@ public sealed class NativeVolumeSlider : GraphicsView
         HeightRequest = 200;
         Drawable = new VolumeDrawable(this);
 
-        var pointer = new PointerGestureRecognizer();
-        pointer.PointerPressed += (_, e) => ApplyFromPointer(e, dragging: true);
-        pointer.PointerMoved += (_, e) =>
+        if (NativePointerInput.SupportsHoverRecognizers)
         {
-            if (_dragging)
-                ApplyFromPointer(e, dragging: true);
-        };
-        pointer.PointerReleased += (_, _) => _dragging = false;
-        pointer.PointerExited += (_, _) => _dragging = false;
-        GestureRecognizers.Add(pointer);
+            var pointer = new PointerGestureRecognizer();
+            pointer.PointerPressed += (_, e) => ApplyFromPointer(e, dragging: true);
+            pointer.PointerMoved += (_, e) =>
+            {
+                if (_dragging)
+                    ApplyFromPointer(e, dragging: true);
+            };
+            pointer.PointerReleased += (_, _) => _dragging = false;
+            pointer.PointerExited += (_, _) => _dragging = false;
+            GestureRecognizers.Add(pointer);
+        }
 
         StartInteraction += (_, e) =>
         {
