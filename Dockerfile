@@ -79,7 +79,7 @@ ENV Serilog__MinimumLevel__Default=Warning
 ENV Serilog__MinimumLevel__Override__K7=Information
 ENV Serilog__MinimumLevel__Override__Microsoft.Hosting.Lifetime=Information
 EXPOSE 7080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:7080/health || exit 1
+HEALTHCHECK --interval=5s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:7080/alive || exit 1
 LABEL org.opencontainers.image.source="https://github.com/kaybi-gh/K7"
 ENTRYPOINT ["/entrypoint.sh"]

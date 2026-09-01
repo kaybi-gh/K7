@@ -341,4 +341,5 @@ server {
 }
 ```
 
-Health probe: `GET /health` (allowed during first-run as well).
+Health probes: `GET /alive` (process up, Docker healthcheck) and `GET /health` (also checks
+Postgres). Both are allowed during first-run.

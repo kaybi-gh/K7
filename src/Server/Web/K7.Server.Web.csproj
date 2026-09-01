@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="K7.Server.Web.SmokeTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Clients\Shared\UI\K7.Clients.Shared.UI.csproj" />
     <ProjectReference Include="..\..\Clients\Web\K7.Clients.Web.csproj" />
     <ProjectReference Include="..\..\Shared\Aspire\ServiceDefaults\K7.Shared.Aspire.ServiceDefaults.csproj" />

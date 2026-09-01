@@ -76,8 +76,10 @@ services:
       # Optional display name used when inviting federation peers.
       # Server__Name: Home
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7080/health"]
-      interval: 30s
-      timeout: 5s
+      # /alive is liveness (Kestrel up). /health also waits on Postgres CanConnect.
+      # interval 5s so healthy follows "Now listening on :7080" instead of the next 30s tick.
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7080/alive"]
+      interval: 5s
+      timeout: 3s
       retries: 3
-      start_period: 40s
+      start_period: 60s

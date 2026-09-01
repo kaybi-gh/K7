@@ -1,4 +1,5 @@
 using K7.Server.Application;
+using K7.Server.Web.Infrastructure;
 using K7.Tests.Helpers.Smoke;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,7 +37,20 @@ public class WebHostSmokeTests
             AllowAutoRedirect = false
         });
 
-        var response = await client.GetAsync("/health");
+        var response = await client.GetAsync(HealthProbePaths.Readiness);
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task AliveEndpoint_ShouldReturnSuccess()
+    {
+        var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync(HealthProbePaths.Liveness);
 
         response.IsSuccessStatusCode.Should().BeTrue();
     }
@@ -49,7 +63,7 @@ public class WebHostSmokeTests
             AllowAutoRedirect = false
         });
 
-        var response = await client.GetAsync("/health");
+        var response = await client.GetAsync(HealthProbePaths.Readiness);
         var csp = response.Headers.GetValues("Content-Security-Policy").Single();
 
         csp.Should().Contain("img-src");

@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Web.Infrastructure;
 
 namespace K7.Server.Web.Middleware;
 
@@ -37,11 +38,12 @@ public class SetupRequiredMiddleware(RequestDelegate next)
         context.Response.Redirect("/setup");
     }
 
-    private static bool IsAllowedDuringSetup(PathString path)
+    internal static bool IsAllowedDuringSetup(PathString path)
     {
         return path.StartsWithSegments("/api/setup")
             || path.StartsWithSegments("/api/authentication/callback")
-            || path.StartsWithSegments("/health")
+            || path.StartsWithSegments(HealthProbePaths.Readiness)
+            || path.StartsWithSegments(HealthProbePaths.Liveness)
             || path.StartsWithSegments("/_framework")
             || path.StartsWithSegments("/_blazor")
             || path.StartsWithSegments("/_content")

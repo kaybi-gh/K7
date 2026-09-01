@@ -15,6 +15,7 @@ using K7.Server.Web.Endpoints.Hubs;
 using K7.Server.Web.Infrastructure;
 using K7.Server.Web.Middleware;
 using K7.Shared;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -52,8 +53,8 @@ try
         options.GetLevel = (httpContext, _, ex) =>
         {
             // Health probes are polled frequently and drown useful request logs.
-            if (httpContext.Request.Path.StartsWithSegments("/health")
-                || httpContext.Request.Path.StartsWithSegments("/alive"))
+            if (httpContext.Request.Path.StartsWithSegments(HealthProbePaths.Readiness)
+                || httpContext.Request.Path.StartsWithSegments(HealthProbePaths.Liveness))
                 return LogEventLevel.Verbose;
 
             return ex is not null || httpContext.Response.StatusCode > 499
@@ -90,7 +91,11 @@ try
 
     app.UseSecurityHeaders();
     app.UseRateLimiter();
-    app.UseHealthChecks("/health");
+    app.UseHealthChecks(HealthProbePaths.Readiness);
+    app.UseHealthChecks(HealthProbePaths.Liveness, new HealthCheckOptions
+    {
+        Predicate = r => r.Tags.Contains(HealthProbePaths.LiveTag)
+    });
     // Kestrel serves HTTP :7080 in Docker; TLS belongs on the reverse proxy.
     // Redirect only when this process itself listens on HTTPS (local Development).
     if (app.Environment.IsDevelopment())

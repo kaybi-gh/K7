@@ -157,4 +157,12 @@ Logs: `Realtime monitor for library ... created no watches at /media/...`.
 
 ### Health endpoint
 
-`GET /health` should return success when the process is up (also allowed during first-run).
+`GET /alive` is liveness: the process is accepting HTTP (allowed during first-run). Docker
+Compose and the image `HEALTHCHECK` probe this path every 5s. `Now listening on :7080` in
+the logs is Kestrel binding. The container becomes `healthy` on the next successful `/alive`
+probe (not instantly). The 60s `start_period` only ignores failures while migrations and
+`chown` of `/data` still run. A success during that window marks the container healthy.
+
+`GET /health` is readiness: `/alive` plus an EF Core Postgres `CanConnect` check. Helm uses
+`/alive` for liveness and `/health` for readiness. A slow or blocked database makes `/health`
+fail while `/alive` still succeeds.
