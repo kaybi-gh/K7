@@ -125,6 +125,7 @@ internal static class AndroidExoHlsTuning
 
     private static string CurrentTunedPlayerTag(string manufacturer, string model) =>
         TunedPlayerTagPrefix
+        + HdmiAutoFrameRatePolicy.Persist(AndroidDisplayAfr.ResolveMode())
         + DolbyVisionDecodePolicy.Persist(ResolveDolbyVisionDecodeMode(manufacturer, model))
         + ExoVideoBufferPolicy.Persist(ResolveBufferSize(manufacturer, model));
 

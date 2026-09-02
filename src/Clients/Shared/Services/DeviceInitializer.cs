@@ -60,8 +60,6 @@ public static class DeviceInitializer
                     }
                 }
 
-                // Refresh codec capabilities each login so the stored format list
-                // matches the current client (LibVLC on Windows MAUI, MSE on Web).
                 await RefreshDeviceCapabilitiesAsync(services, parsedId);
             }
         }
@@ -87,7 +85,7 @@ public static class DeviceInitializer
         return deviceIdStr;
     }
 
-    private static async Task RefreshDeviceCapabilitiesAsync(IServiceProvider services, Guid deviceId)
+    public static async Task RefreshDeviceCapabilitiesAsync(IServiceProvider services, Guid deviceId)
     {
         var deviceService = services.GetRequiredService<IDeviceService>();
         var deviceApiService = services.GetRequiredService<IDeviceApiService>();

@@ -70,6 +70,12 @@ public static class PreferenceKeys
     /// </summary>
     public static readonly PreferenceKey<string> VIDEO_DV_DECODE = new("VideoDvDecode");
 
+    /// <summary>
+    /// HDMI auto frame rate on Android TV: disabled / device / tv.
+    /// Local device preference. Empty means the device default (Amlogic=off, other TV=device).
+    /// </summary>
+    public static readonly PreferenceKey<string> VIDEO_HDMI_AFR = new("VideoHdmiAfr");
+
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");
     public static readonly PreferenceKey<bool> KEEP_SCREEN_ON = new("KeepScreenOn");

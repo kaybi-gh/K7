@@ -25,4 +25,11 @@ public interface IDeviceService
     Task<bool> GetHdrSupportAsync();
     Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync();
     string? GetLocalFileUrl(string? localPath);
+
+    /// <summary>
+    /// Drops cached format lists so the next capability refresh sees passthrough / codec changes.
+    /// </summary>
+    void InvalidatePlaybackCapabilityCache()
+    {
+    }
 }

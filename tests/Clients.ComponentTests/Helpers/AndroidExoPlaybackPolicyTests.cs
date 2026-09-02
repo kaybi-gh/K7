@@ -63,6 +63,80 @@ public class AndroidExoPlaybackPolicyTests
             .ShouldDisableVendorVideoAfr("NVIDIA", "SHIELD Android TV")
             .Should().BeFalse();
     }
+
+    [Test]
+    public void ShouldPreferContentHdmiResolution_ShouldBeTrue_WhenScaleOnTv()
+    {
+        AndroidExoPlaybackPolicy
+            .ShouldPreferContentHdmiResolution(HdmiAutoFrameRateMode.ScaleOnTv)
+            .Should().BeTrue();
+        AndroidExoPlaybackPolicy
+            .ShouldPreferContentHdmiResolution(HdmiAutoFrameRateMode.ScaleOnDevice)
+            .Should().BeFalse();
+        AndroidExoPlaybackPolicy
+            .ShouldPreferContentHdmiResolution(HdmiAutoFrameRateMode.Disabled)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldApplyHdmiAutoFrameRate_ShouldHonorModeAndDevice()
+    {
+        AndroidExoPlaybackPolicy
+            .ShouldApplyHdmiAutoFrameRate(
+                HdmiAutoFrameRateMode.ScaleOnDevice,
+                isTelevision: true,
+                "NVIDIA",
+                "SHIELD Android TV")
+            .Should().BeTrue();
+        AndroidExoPlaybackPolicy
+            .ShouldApplyHdmiAutoFrameRate(
+                HdmiAutoFrameRateMode.ScaleOnTv,
+                isTelevision: false,
+                "SEI Robotics",
+                "Nokia Streaming Box 8000")
+            .Should().BeTrue();
+        AndroidExoPlaybackPolicy
+            .ShouldApplyHdmiAutoFrameRate(
+                HdmiAutoFrameRateMode.Disabled,
+                isTelevision: true,
+                "SEI Robotics",
+                "Nokia Streaming Box 8000")
+            .Should().BeFalse();
+        AndroidExoPlaybackPolicy
+            .ShouldApplyHdmiAutoFrameRate(
+                HdmiAutoFrameRateMode.ScaleOnTv,
+                isTelevision: false,
+                "Google",
+                "Pixel 8")
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldAllowSurfaceFrameRateChanges_ShouldBeOffWhenAfrDisabled()
+    {
+        AndroidExoPlaybackPolicy
+            .ShouldAllowSurfaceFrameRateChanges(
+                HdmiAutoFrameRateMode.Disabled,
+                isTelevision: true,
+                "SEI Robotics",
+                "Nokia Streaming Box 8000")
+            .Should().BeFalse();
+        AndroidExoPlaybackPolicy
+            .ShouldAllowSurfaceFrameRateChanges(
+                HdmiAutoFrameRateMode.ScaleOnDevice,
+                isTelevision: true,
+                "NVIDIA",
+                "SHIELD Android TV")
+            .Should().BeTrue();
+        AndroidExoPlaybackPolicy
+            .ShouldAllowSurfaceFrameRateChanges(
+                HdmiAutoFrameRateMode.ScaleOnTv,
+                isTelevision: false,
+                "Google",
+                "Pixel 8")
+            .Should().BeFalse();
+    }
+
     [Test]
     public void ShouldEnableAudioOffload_ShouldBeTrue_WhenTelevisionOrAmlogic()
     {

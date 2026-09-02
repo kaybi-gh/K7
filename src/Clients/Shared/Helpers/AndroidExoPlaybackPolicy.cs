@@ -29,6 +29,14 @@ public static class AndroidExoPlaybackPolicy
         _ = model;
         return false;
     }
+
+    /// <summary>
+    /// Scale on TV: pick the 1x/2x/2.5x HDMI size closest to the file.
+    /// SCALE_ON_DEVICE keeps the current panel size (usually 4K).
+    /// </summary>
+    public static bool ShouldPreferContentHdmiResolution(HdmiAutoFrameRateMode mode) =>
+        mode == HdmiAutoFrameRateMode.ScaleOnTv;
+
     /// <summary>
     /// After an app HDMI mode switch, pin Amlogic HAL AFR off so it cannot retime.
     /// Do not pin when app AFR is disabled: leaving the HAL default
@@ -37,6 +45,32 @@ public static class AndroidExoPlaybackPolicy
     /// </summary>
     public static bool ShouldDisableVendorVideoAfr(string? manufacturer, string? model) =>
         IsAmlogicDevice(manufacturer, model);
+
+    /// <summary>
+    /// HDMI auto frame rate (window preferredDisplayModeId) on Android TV when
+    /// the user did not pick Disabled.
+    /// </summary>
+    public static bool ShouldApplyHdmiAutoFrameRate(
+        HdmiAutoFrameRateMode mode,
+        bool isTelevision,
+        string? manufacturer,
+        string? model) =>
+        mode != HdmiAutoFrameRateMode.Disabled
+        && (isTelevision || IsAmlogicDevice(manufacturer, model));
+
+    /// <summary>
+    /// Surface.setFrameRate only when app AFR has switched HDMI to the file rate.
+    /// With AFR off the panel stays 59.94; Exo OnlyIfSeamless still pokes the surface
+    /// and Amlogic HAL AFR retimes. Phones stay off.
+    /// </summary>
+    public static bool ShouldAllowSurfaceFrameRateChanges(
+        HdmiAutoFrameRateMode afrMode,
+        bool isTelevision,
+        string? manufacturer,
+        string? model) =>
+        afrMode != HdmiAutoFrameRateMode.Disabled
+        && (isTelevision || IsAmlogicDevice(manufacturer, model));
+
     /// <summary>
     /// Enable Media3 audio offload on TV (bitstream to the DSP).
     /// K7 used to force it off; that left EAC3 on a MediaCodec clock that hitchs vs HDMI.

@@ -56,7 +56,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             WebDeviceDetails = null,
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
-                SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id).ToList(),
+                SupportedMediaFormatIds = await BuildSupportedMediaFormatIdsAsync(supportedMediaFormats),
                 SupportedSubtitlesCodecs = ["webvtt"],
                 SupportsHDR = await GetHdrSupportAsync()
             }
@@ -145,6 +145,31 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             + matroska);
 
         return supported;
+    }
+
+    public void InvalidatePlaybackCapabilityCache()
+    {
+        lock (_requestCacheLock)
+        {
+            _cachedCreateRequest = null;
+            _cachedSupportedFormats = null;
+        }
+    }
+
+    private async Task<List<string>> BuildSupportedMediaFormatIdsAsync(List<MediaFormatDto> supportedMediaFormats)
+    {
+        var ids = supportedMediaFormats.Select(x => x.Id).ToList();
+        try
+        {
+            var profiles = await codecHelper.GetSupportedVideoProfilesAsync();
+            if (profiles is { Length: > 0 })
+                ids.AddRange(profiles);
+        }
+        catch
+        {
+        }
+
+        return ids;
     }
 
     public Task<bool> GetHdrSupportAsync()
