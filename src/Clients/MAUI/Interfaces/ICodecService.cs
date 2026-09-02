@@ -6,4 +6,5 @@ public interface ICodecService
     Task<string[]> GetSupportedVideoCodecsAsync();
     Task<string[]> GetSupportedAudioCodecsAsync();
     Task<string[]> GetSupportedContainersAsync();
+    Task<string[]> GetSupportedVideoProfilesAsync();
 }

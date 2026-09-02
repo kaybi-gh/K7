@@ -11,7 +11,7 @@
 
     <Grid x:Name="RootGrid" SafeAreaEdges="None">
         <!-- Native MediaElement (video): Android ExoPlayer / iOS AVPlayer. SurfaceView on
-             Android TV (Amlogic) avoids TextureView composition freezes. Android text cues
+             Android avoids TextureView composition freezes. Android text cues
              sit on RootGrid (ZIndex 3). Windows Direct uses LibVLC; HLS uses Video.js.
              Overlay (ZIndex 5+) owns chrome. -->
         <toolkit:MediaElement x:Name="NativePlayer"

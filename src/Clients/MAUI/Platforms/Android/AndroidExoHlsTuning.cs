@@ -9,41 +9,50 @@ using AndroidX.Media3.ExoPlayer.Upstream;
 using AndroidX.Media3.UI;
 using CommunityToolkit.Maui.Views;
 using K7.Clients.Shared.Helpers;
+using K7.Shared;
+using Microsoft.Maui.Storage;
 
 namespace K7.Clients.MAUI.Platforms.Android;
 
 /// <summary>
 /// HLS MediaSource tuning on the CommunityToolkit MediaElement ExoPlayer: text-track retries
-/// when the server returns 503 while VTT extract runs. On Amlogic, also installs a tuned
-/// ExoPlayer with tunneling ON (HDMI present fences) and vendor HW codec preference.
-/// Dolby Vision MIME stays <c>video/dolby-vision</c> so the TV can show its HDR / DV banner;
-/// earlier freezes came from toggling tunneling off after enabling it, not from HDR itself.
+/// when the server returns 503 while VTT extract runs. On Android TV, also installs a tuned
+/// ExoPlayer (decoder fallback, extension renderers ON, audio offload).
+/// MediaManager is pointed at that player for Play/Pause but is not an IPlayerListener.
+/// HDMI tunneling stays off. Dolby Vision Profile 8 can use HEVC/HDR10 instead of
+/// <c>video/dolby-vision</c> (device setting, TV default).
 /// </summary>
 internal static class AndroidExoHlsTuning
 {
     private const int TextTrackMinRetries = 12;
     private const int Text503MaxBackoffMs = 15_000;
-    // Bump tag when Amlogic player policy changes so an old PlayerView is replaced.
-    private const string AmlogicTunedPlayerTag = "k7-amlogic-hdr";
+    // Bump tag when TV player policy changes so an old PlayerView is replaced.
+    private const string TunedPlayerTagPrefix = "k7-tv-hw-player-hostexo-buf";
 
     private static readonly K7LoadErrorHandlingPolicy SharedLoadErrorPolicy = new();
 
     /// <summary>
-    /// Nokia / Amlogic: keep Media3 tunneling enabled and prefer vendor HW codecs.
-    /// Do not remap Dolby Vision to HEVC - that dropped HDMI HDR InfoFrames (no TV banner)
-    /// while the freezes were fixed by stable tunneling, not by SDR fallback.
+    /// Android TV (and Amlogic boxes that report a phone/tablet idiom): tuned
+    /// renderer factory. Tunneling stays off. DV Profile 8 may map to HEVC.
     /// </summary>
-    internal static IExoPlayer? TryInstallAmlogicTunedPlayer(
+    internal static IExoPlayer? TryInstallTunedPlayer(
         MediaElement mediaElement,
         PlayerView? playerView)
     {
         if (playerView?.Context is null)
             return null;
 
-        if (!IsAmlogicTvBox())
+        var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
+        var model = global::Android.OS.Build.Model ?? "";
+        if (!AndroidExoPlaybackPolicy.ShouldInstallTunedExoPlayer(
+                IsAndroidTelevision(),
+                manufacturer,
+                model))
+        {
             return playerView.Player as IExoPlayer;
+        }
 
-        if (playerView.Tag?.ToString() == AmlogicTunedPlayerTag
+        if (playerView.Tag?.ToString() == CurrentTunedPlayerTag(manufacturer, model)
             && playerView.Player is IExoPlayer already)
         {
             return already;
@@ -52,22 +61,28 @@ internal static class AndroidExoHlsTuning
         try
         {
             var context = playerView.Context;
+            var bufferSize = ResolveBufferSize(manufacturer, model);
+            var tunedTag = CurrentTunedPlayerTag(manufacturer, model);
             var renderers = new DefaultRenderersFactory(context)!
                 .SetEnableDecoderFallback(true)!
-                .SetMediaCodecSelector(new PreferAmlogicHardwareSelector())!;
+                .SetExtensionRendererMode(DefaultRenderersFactory.ExtensionRendererModeOn)!;
 
 #pragma warning disable CS0618
-            var exo = new ExoPlayerBuilder(context)!
+            var exoBuilder = new ExoPlayerBuilder(context)!
                 .SetRenderersFactory(renderers)!
                 .SetWakeMode(C.WakeModeLocal)!
-                .SetHandleAudioBecomingNoisy(true)!
-                .Build()!;
+                .SetHandleAudioBecomingNoisy(true)!;
+            TrySetLoadControl(exoBuilder, bufferSize);
+            var exo = exoBuilder.Build()!;
 #pragma warning restore CS0618
 
-            // Tunneling helps HDMI present fences + HDR InfoFrames; keep audio offload off.
-            // (Generic TryDisableTunnelingAndAudioOffload disables both - wrong for this box.)
-            TryApplyAmlogicPlaybackPreferences(exo);
-            TryDisableVendorVideoAfr();
+            var tunneling = AndroidExoPlaybackPolicy.ShouldEnableHdmiTunneling(manufacturer, model);
+            var offload = AndroidExoPlaybackPolicy.ShouldEnableAudioOffload(
+                IsAndroidTelevision(),
+                manufacturer,
+                model);
+            TryApplyPlaybackPreferences(exo, tunneling, offload);
+            TryApplyMovieAudioAttributes(exo);
 
             var old = playerView.Player;
             if (old is IPlayerListener oldListener)
@@ -81,11 +96,13 @@ internal static class AndroidExoHlsTuning
                 }
             }
 
-            // MediaManager is also the toolkit IPlayerListener - move it onto the new player.
-            TryRetargetMediaManagerPlayer(mediaElement, old, exo);
+            // Point MediaManager at the tuned Exo so Play/Pause still reach it, but do not
+            // add MediaManager as IPlayerListener. Toolkit ticks marshal to the MAUI UI
+            // thread and invalidate PlayerView; a TV Exo host must not do that.
+            TryBindMediaManagerPlayerWithoutListener(mediaElement, old, exo);
 
             playerView.Player = exo;
-            playerView.Tag = new Java.Lang.String(AmlogicTunedPlayerTag);
+            playerView.Tag = new Java.Lang.String(tunedTag);
 
             try
             {
@@ -103,25 +120,92 @@ internal static class AndroidExoHlsTuning
         }
     }
 
-    private static void TryApplyAmlogicPlaybackPreferences(IExoPlayer exo)
+    private static string CurrentTunedPlayerTag(string manufacturer, string model) =>
+        TunedPlayerTagPrefix
+        + ExoVideoBufferPolicy.Persist(ResolveBufferSize(manufacturer, model));
+
+    private static ExoVideoBufferSize ResolveBufferSize(string manufacturer, string model)
+    {
+        var stored = ExoVideoBufferSize.Auto;
+        try
+        {
+            stored = ExoVideoBufferPolicy.Parse(
+                Preferences.Default.Get(PreferenceKeys.VIDEO_EXO_BUFFER.Name, ExoVideoBufferPolicy.Auto));
+        }
+        catch
+        {
+        }
+
+        var television = AndroidExoPlaybackPolicy.ShouldInstallTunedExoPlayer(
+            IsAndroidTelevision(),
+            manufacturer,
+            model);
+        return ExoVideoBufferPolicy.Resolve(stored, television);
+    }
+
+    private static void TrySetLoadControl(ExoPlayerBuilder builder, ExoVideoBufferSize size)
+    {
+        if (size is ExoVideoBufferSize.Default or ExoVideoBufferSize.Auto)
+            return;
+
+        var minMs = size == ExoVideoBufferSize.ExtraLarge ? 100_000 : 50_000;
+        var maxMs = 120_000;
+        try
+        {
+            var loadControl = new DefaultLoadControl.Builder()!
+                .SetBufferDurationsMs(minMs, maxMs, 2_500, 5_000)!
+                .Build();
+            builder.SetLoadControl(loadControl);
+        }
+        catch
+        {
+        }
+    }
+    private static void TryApplyPlaybackPreferences(IExoPlayer exo, bool tunnelingEnabled, bool audioOffload)
     {
         try
         {
-            if (exo is Java.Lang.Object javaPlayer)
-                TryInvokeJavaBoolean(javaPlayer, "experimentalSetOffloadSchedulingEnabled", false);
-
             var builder = exo.TrackSelectionParameters?.BuildUpon();
             if (builder is null)
                 return;
 
             if (builder is Java.Lang.Object javaBuilder)
-                TryInvokeJavaBoolean(javaBuilder, "setTunnelingEnabled", true);
+            {
+                TryInvokeJavaBoolean(javaBuilder, "setTunnelingEnabled", tunnelingEnabled);
+                TryInvokeJavaBoolean(
+                    javaBuilder,
+                    "setAllowInvalidateSelectionsOnRendererCapabilitiesChange",
+                    true);
+            }
 
+            var offloadMode = audioOffload
+                ? TrackSelectionParameters.AudioOffloadPreferences.AudioOffloadModeEnabled
+                : TrackSelectionParameters.AudioOffloadPreferences.AudioOffloadModeDisabled;
             var offload = new TrackSelectionParameters.AudioOffloadPreferences.Builder()!
-                .SetAudioOffloadMode(0)!
+                .SetAudioOffloadMode(offloadMode)!
                 .Build();
             builder.SetAudioOffloadPreferences(offload);
             exo.TrackSelectionParameters = builder.Build();
+
+            TrySetTunnelingOnDefaultTrackSelector(exo, tunnelingEnabled);
+        }
+        catch
+        {
+        }
+    }
+
+    /// <summary>
+    /// USAGE_MEDIA + MOVIE, handle audio focus.
+    /// </summary>
+    private static void TryApplyMovieAudioAttributes(IExoPlayer exo)
+    {
+        try
+        {
+            var attrs = new AudioAttributes.Builder()!
+                .SetUsage(C.UsageMedia)!
+                .SetContentType(C.AudioContentTypeMovie)!
+                .Build();
+            exo.SetAudioAttributes(attrs, true);
         }
         catch
         {
@@ -130,9 +214,10 @@ internal static class AndroidExoHlsTuning
 
     /// <summary>
     /// Amlogic HAL AFR (policy=2) retimes HDMI every few seconds (switch_name 3200/4000/...)
-    /// and correlates with micro-hitches. Best-effort; may be denied without vendor perms.
+    /// and correlates with micro-hitches. Call after app AFR has switched. Restore "2"
+    /// when leaving the player. Best-effort; may be denied without vendor perms.
     /// </summary>
-    private static void TryDisableVendorVideoAfr()
+    internal static void TrySetVendorVideoAfrPolicy(string value)
     {
         try
         {
@@ -146,25 +231,28 @@ internal static class AndroidExoHlsTuning
 
             _ = set.Invoke(
                 null,
-                [new Java.Lang.String("vendor.media.mediahal.videodec.afr.policy"), new Java.Lang.String("0")]);
+                [new Java.Lang.String("vendor.media.mediahal.videodec.afr.policy"), new Java.Lang.String(value)]);
         }
         catch
         {
         }
     }
 
-    private static bool IsAmlogicTvBox()
+    internal static bool IsAndroidTelevision()
     {
-        var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
-        var model = global::Android.OS.Build.Model ?? "";
-        // Amlogic boxes (Nokia Streaming Box, SEI Robotics, etc.).
-        return manufacturer.Contains("SEI", StringComparison.OrdinalIgnoreCase)
-            || manufacturer.Contains("Amlogic", StringComparison.OrdinalIgnoreCase)
-            || model.Contains("Streaming Box", StringComparison.OrdinalIgnoreCase)
-            || model.Contains("Amlogic", StringComparison.OrdinalIgnoreCase);
+        var context = global::Android.App.Application.Context;
+        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
+        if ((uiMode & global::Android.Content.Res.UiMode.TypeMask)
+            == global::Android.Content.Res.UiMode.TypeTelevision)
+        {
+            return true;
+        }
+
+        return context.PackageManager?.HasSystemFeature(
+            global::Android.Content.PM.PackageManager.FeatureLeanback) == true;
     }
 
-    private static void TryRetargetMediaManagerPlayer(
+    private static void TryBindMediaManagerPlayerWithoutListener(
         MediaElement mediaElement,
         IPlayer? oldPlayer,
         IExoPlayer exo)
@@ -182,11 +270,22 @@ internal static class AndroidExoHlsTuning
             if (manager is null)
                 return;
 
-            if (oldPlayer is not null && manager is IPlayerListener listener)
+            if (manager is IPlayerListener listener)
             {
+                if (oldPlayer is not null)
+                {
+                    try
+                    {
+                        oldPlayer.RemoveListener(listener);
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 try
                 {
-                    oldPlayer.RemoveListener(listener);
+                    exo.RemoveListener(listener);
                 }
                 catch
                 {
@@ -198,9 +297,6 @@ internal static class AndroidExoHlsTuning
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (playerProp is not null && playerProp.CanWrite)
                 playerProp.SetValue(manager, exo);
-
-            if (manager is IPlayerListener managerListener)
-                exo.AddListener(managerListener);
         }
         catch
         {
@@ -212,15 +308,26 @@ internal static class AndroidExoHlsTuning
         try
         {
             exo.VideoScalingMode = C.VideoScalingModeScaleToFit;
-            if (OperatingSystem.IsAndroidVersionAtLeast(23))
+            var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
+            var model = global::Android.OS.Build.Model ?? "";
+            var afrMode = AndroidDisplayAfr.ResolveMode();
+            if (OperatingSystem.IsAndroidVersionAtLeast(23)
+                && !AndroidExoPlaybackPolicy.ShouldAllowSurfaceFrameRateChanges(
+                    afrMode,
+                    IsAndroidTelevision(),
+                    manufacturer,
+                    model))
+            {
                 exo.VideoChangeFrameRateStrategy = C.VideoChangeFrameRateStrategyOff;
+            }
 
-            // Amlogic tuned player wants tunneling ON (present fences + HDR). Do not undo it here.
-            // Other devices: Media3 tunneling + offload can freeze the last video frame.
-            if (IsAmlogicTvBox())
-                TryApplyAmlogicPlaybackPreferences(exo);
-            else
-                TryDisableTunnelingAndAudioOffload(exo);
+            var tunneling = AndroidExoPlaybackPolicy.ShouldEnableHdmiTunneling(manufacturer, model);
+            var offload = AndroidExoPlaybackPolicy.ShouldEnableAudioOffload(
+                IsAndroidTelevision(),
+                manufacturer,
+                model);
+            TryApplyPlaybackPreferences(exo, tunneling, offload);
+            TryApplyMovieAudioAttributes(exo);
         }
         catch
         {
@@ -228,6 +335,20 @@ internal static class AndroidExoHlsTuning
 
         if (playerView is null)
             return;
+
+        HidePlayerViewIdleChrome(playerView);
+        try
+        {
+            playerView.SetShutterBackgroundColor(global::Android.Graphics.Color.Transparent);
+            playerView.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+            playerView.Background = null;
+        }
+        catch
+        {
+        }
+
+        FlattenPlayerViewForHardwareOverlay(playerView);
+        playerView.Visibility = global::Android.Views.ViewStates.Visible;
 
         try
         {
@@ -244,26 +365,246 @@ internal static class AndroidExoHlsTuning
         }
     }
 
-    internal static void TryDisableTunnelingAndAudioOffload(IExoPlayer exo)
+    /// <summary>
+    /// Media3 PlayerView idle/artwork is a tiny play-in-circle bitmap
+    /// (<c>exo_edit_mode_logo</c>) scaled to the panel. Hide it and keep a black
+    /// shutter so close/stop does not flash that placeholder. Do not apply the
+    /// black fill during play: an opaque PlayerView background composites over
+    /// SurfaceView on Amlogic and drops HEVC frames.
+    /// </summary>
+    internal static void SuppressPlayerViewPlaceholder(PlayerView? playerView)
     {
-        if (exo is Java.Lang.Object javaPlayer)
-            TryInvokeJavaBoolean(javaPlayer, "experimentalSetOffloadSchedulingEnabled", false);
+        if (playerView is null)
+            return;
+
+        HidePlayerViewIdleChrome(playerView);
 
         try
         {
-            var builder = exo.TrackSelectionParameters?.BuildUpon();
-            if (builder is null)
+            playerView.SetShutterBackgroundColor(global::Android.Graphics.Color.Black);
+            playerView.SetBackgroundColor(global::Android.Graphics.Color.Black);
+        }
+        catch
+        {
+        }
+
+        FlattenPlayerViewForHardwareOverlay(playerView);
+    }
+
+    private static void HidePlayerViewIdleChrome(PlayerView playerView)
+    {
+        try
+        {
+            playerView.UseController = false;
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            playerView.DefaultArtwork = null;
+        }
+        catch
+        {
+        }
+
+        TrySetBooleanProperty(playerView, "UseArtwork", false);
+        TrySetIntProperty(playerView, "ArtworkDisplayMode", 0);
+        TryInvokeJavaInt(playerView, "setArtworkDisplayMode", 0);
+        TryInvokeJavaInt(playerView, "setShowBuffering", 0);
+    }
+
+    /// <summary>
+    /// Re-hide PlayerView shutter/artwork after first frame. MediaElement layout can
+    /// restore those layers; on Amlogic they blend over SurfaceView and drop HEVC frames.
+    /// </summary>
+    internal static void ReapplyHardwareOverlayFlatten(PlayerView? playerView)
+    {
+        if (playerView is null)
+            return;
+
+        FlattenPlayerViewForHardwareOverlay(playerView);
+    }
+
+    /// <summary>
+    /// Opening the playback settings panel stops Amlogic drops: it is a late layout of an
+    /// opaque clipped view, not a decoder reset. Replay that compositor update without the menu.
+    /// </summary>
+    internal static void KickSurfaceComposition(PlayerView? playerView)
+    {
+        if (playerView is null)
+            return;
+
+        try
+        {
+            playerView.RequestLayout();
+            playerView.Invalidate();
+            if (playerView.VideoSurfaceView is global::Android.Views.View surface)
+            {
+                surface.RequestLayout();
+                surface.Invalidate();
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    /// <summary>
+    /// A bare SurfaceView avoids extra GPU layers. Media3 PlayerView keeps a shutter, artwork,
+    /// and a full-screen SubtitleView over the video plane. On Amlogic that GPU blend
+    /// drops HEVC frames even when chrome is hidden. Hide every subtree that does not
+    /// contain the video surface; cues unhide SubtitleView via ExoPlaybackBridge.OnCues.
+    /// </summary>
+    private static void FlattenPlayerViewForHardwareOverlay(PlayerView playerView)
+    {
+        try
+        {
+            if (playerView.VideoSurfaceView is global::Android.Views.SurfaceView surface)
+                surface.SetZOrderMediaOverlay(false);
+        }
+        catch
+        {
+        }
+
+        HidePlayerViewDecor(playerView);
+    }
+
+    private static bool HidePlayerViewDecor(global::Android.Views.View? view)
+    {
+        if (view is null)
+            return false;
+
+        if (view is global::Android.Views.SurfaceView or global::Android.Views.TextureView)
+            return true;
+
+        if (view is SubtitleView subtitle)
+        {
+            subtitle.SetBackgroundColor(global::Android.Graphics.Color.Transparent);
+            subtitle.SetLayerType(global::Android.Views.LayerType.None, null);
+            subtitle.Visibility = global::Android.Views.ViewStates.Gone;
+            return false;
+        }
+
+        if (view is global::Android.Views.ViewGroup group)
+        {
+            var hasVideo = false;
+            for (var i = 0; i < group.ChildCount; i++)
+                hasVideo |= HidePlayerViewDecor(group.GetChildAt(i));
+
+            if (!hasVideo)
+                group.Visibility = global::Android.Views.ViewStates.Gone;
+
+            return hasVideo;
+        }
+
+        view.Visibility = global::Android.Views.ViewStates.Gone;
+        return false;
+    }
+
+    private static void TrySetTunnelingOnDefaultTrackSelector(IExoPlayer exo, bool tunnelingEnabled)
+    {
+        try
+        {
+            var selector = TryGetJavaTrackSelector(exo);
+            if (selector is null)
                 return;
 
-            if (builder is Java.Lang.Object javaBuilder)
-                TryInvokeJavaBoolean(javaBuilder, "setTunnelingEnabled", false);
+            var parameters = TryInvokeNoArg(selector, "getParameters");
+            if (parameters is null)
+                return;
 
-            // AudioOffloadMode 0 = disabled in Media3 bindings.
-            var offload = new TrackSelectionParameters.AudioOffloadPreferences.Builder()!
-                .SetAudioOffloadMode(0)!
-                .Build();
-            builder.SetAudioOffloadPreferences(offload);
-            exo.TrackSelectionParameters = builder.Build();
+            var builder = TryInvokeNoArg(parameters, "buildUpon");
+            if (builder is not Java.Lang.Object javaBuilder)
+                return;
+
+            if (!TryInvokeJavaBoolean(javaBuilder, "setTunnelingEnabled", tunnelingEnabled))
+                return;
+
+            var built = TryInvokeNoArg(javaBuilder, "build");
+            if (built is null)
+                return;
+
+            TryInvokeOneArg(selector, "setParameters", built);
+        }
+        catch
+        {
+        }
+    }
+
+    private static Java.Lang.Object? TryGetJavaTrackSelector(IExoPlayer exo)
+    {
+        try
+        {
+            var prop = exo.GetType().GetProperty("TrackSelector");
+            if (prop?.GetValue(exo) is Java.Lang.Object fromProp)
+                return fromProp;
+        }
+        catch
+        {
+        }
+
+        return exo is Java.Lang.Object javaExo
+            ? TryInvokeNoArg(javaExo, "getTrackSelector")
+            : null;
+    }
+
+    private static Java.Lang.Object? TryInvokeNoArg(Java.Lang.Object target, string methodName)
+    {
+        try
+        {
+            for (var cls = target.Class; cls is not null; cls = cls.Superclass)
+            {
+                Java.Lang.Reflect.Method? method = null;
+                try
+                {
+                    method = cls.GetMethod(methodName);
+                }
+                catch (Java.Lang.NoSuchMethodException)
+                {
+                }
+
+                if (method is null)
+                    continue;
+
+                method.Accessible = true;
+                return method.Invoke(target) as Java.Lang.Object;
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
+    private static void TryInvokeOneArg(Java.Lang.Object target, string methodName, Java.Lang.Object arg)
+    {
+        try
+        {
+            var argClass = arg.Class;
+            if (argClass is null)
+                return;
+
+            for (var cls = target.Class; cls is not null; cls = cls.Superclass)
+            {
+                Java.Lang.Reflect.Method? method = null;
+                try
+                {
+                    method = cls.GetMethod(methodName, argClass);
+                }
+                catch (Java.Lang.NoSuchMethodException)
+                {
+                }
+
+                if (method is null)
+                    continue;
+
+                method.Accessible = true;
+                method.Invoke(target, arg);
+                return;
+            }
         }
         catch
         {
@@ -302,6 +643,64 @@ internal static class AndroidExoHlsTuning
         }
 
         return false;
+    }
+
+    private static void TrySetBooleanProperty(object target, string name, bool value)
+    {
+        try
+        {
+            var prop = target.GetType().GetProperty(name);
+            if (prop is not null && prop.CanWrite)
+                prop.SetValue(target, value);
+        }
+        catch
+        {
+        }
+    }
+
+    private static void TrySetIntProperty(object target, string name, int value)
+    {
+        try
+        {
+            var prop = target.GetType().GetProperty(name);
+            if (prop is not null && prop.CanWrite)
+                prop.SetValue(target, value);
+        }
+        catch
+        {
+        }
+    }
+
+    private static void TryInvokeJavaInt(Java.Lang.Object target, string methodName, int value)
+    {
+        try
+        {
+            var intClass = Java.Lang.Integer.Type;
+            if (intClass is null)
+                return;
+
+            for (var cls = target.Class; cls is not null; cls = cls.Superclass)
+            {
+                Java.Lang.Reflect.Method? method = null;
+                try
+                {
+                    method = cls.GetMethod(methodName, intClass);
+                }
+                catch (Java.Lang.NoSuchMethodException)
+                {
+                }
+
+                if (method is null)
+                    continue;
+
+                method.Accessible = true;
+                method.Invoke(target, value);
+                return;
+            }
+        }
+        catch
+        {
+        }
     }
 
     internal static IMediaSource? CreateStreamingMediaSource(
@@ -394,54 +793,4 @@ internal static class AndroidExoHlsTuning
         }
     }
 
-    /// <summary>
-    /// Prefer vendor HW decoders (c2.amlogic.*) for the requested MIME, including
-    /// <c>video/dolby-vision</c>, so HDMI can advertise HDR / Dolby Vision to the TV.
-    /// </summary>
-    private sealed class PreferAmlogicHardwareSelector : Java.Lang.Object, IMediaCodecSelector
-    {
-        public IList<MediaCodecInfo>? GetDecoderInfos(
-            string? mimeType,
-            bool requiresSecureDecoder,
-            bool requiresTunnelingDecoder)
-        {
-            if (string.IsNullOrEmpty(mimeType))
-                return new List<MediaCodecInfo>();
-
-            // MediaCodecUtil.GetDecoderInfos(String, secure, tunneling) - do not depend on
-            // MediaCodecSelector.DEFAULT (missing from Xamarin Media3 1.8 bindings).
-            var infos = MediaCodecUtil.GetDecoderInfos(
-                mimeType,
-                requiresSecureDecoder,
-                requiresTunnelingDecoder);
-            if (infos is null || infos.Count == 0)
-                return infos;
-
-            // Prefer vendor HW (c2.amlogic.*) over Google software codecs.
-            var preferred = new List<MediaCodecInfo>(infos.Count);
-            var rest = new List<MediaCodecInfo>(infos.Count);
-            foreach (var info in infos)
-            {
-                var name = info.Name ?? "";
-                if (name.Contains("amlogic", StringComparison.OrdinalIgnoreCase)
-                    || (name.StartsWith("OMX.", StringComparison.Ordinal)
-                        && !name.Contains("google", StringComparison.OrdinalIgnoreCase)))
-                {
-                    preferred.Add(info);
-                }
-                else if (!name.Contains("android.hevc", StringComparison.OrdinalIgnoreCase)
-                         && !name.Contains("google", StringComparison.OrdinalIgnoreCase))
-                {
-                    preferred.Add(info);
-                }
-                else
-                {
-                    rest.Add(info);
-                }
-            }
-
-            preferred.AddRange(rest);
-            return preferred;
-        }
-    }
 }

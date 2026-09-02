@@ -54,4 +54,7 @@ public class CodecService : ICodecService
 
     private static string[] GetSupportedAudioCodecs() =>
         ["aac", "mp3", "flac", "alac", "ac3", "eac3", "opus", "pcm"];
+
+    public Task<string[]> GetSupportedVideoProfilesAsync() =>
+        Task.FromResult(Array.Empty<string>());
 }

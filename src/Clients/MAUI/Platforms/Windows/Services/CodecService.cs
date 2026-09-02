@@ -40,4 +40,7 @@ public class CodecService : ICodecService
 
     public Task<string[]> GetSupportedContainersAsync() =>
         Task.FromResult(LibVlcWindowsCapabilities.GetContainers());
+
+    public Task<string[]> GetSupportedVideoProfilesAsync() =>
+        Task.FromResult(Array.Empty<string>());
 }

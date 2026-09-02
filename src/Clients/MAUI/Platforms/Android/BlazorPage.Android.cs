@@ -22,6 +22,7 @@ public partial class BlazorPage
     private bool _videoFocusBounceAttached;
     private string? _directTrackOverrideUrl;
     private int _androidHttpTimeoutRetryCount;
+    private int _androidDirectPlayRuntimeRetryCount;
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
     private ExoPlaybackBridge? _exoPlaybackBridge;
@@ -94,7 +95,119 @@ public partial class BlazorPage
     }
 
 
-    internal void EnsureVideoSurfaceNotFocusable() => SuppressNativeVideoFocus();
+    internal void EnsureVideoSurfaceNotFocusable()
+    {
+        SuppressNativeVideoFocus();
+        try
+        {
+            // MediaElement remaps PlayerView on layout / first frame and can restore
+            // Focusable=true after the one-shot call at open.
+            if (NativePlayer.Handler?.PlatformView is Android.Views.View view)
+                view.Post(SuppressNativeVideoFocus);
+        }
+        catch
+        {
+        }
+    }
+
+    private void OnNativeVideoFirstFrame()
+    {
+        EnsureVideoSurfaceNotFocusable();
+
+        var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
+        AndroidExoHlsTuning.ReapplyHardwareOverlayFlatten(playerView);
+        LogVideoSurfaceSnapshot("first-frame");
+
+        _nativeOverlay?.NotifyFirstFrameReady();
+    }
+
+    internal void LogVideoSurfaceSnapshot(string reason, VisualElement? extra = null)
+    {
+        try
+        {
+            var activity = Platform.CurrentActivity;
+            var current = activity?.CurrentFocus;
+            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+            var playerView = platformView is null ? null : FindPlayerView(platformView);
+            var surface = playerView?.VideoSurfaceView;
+            var subtitle = playerView?.SubtitleView;
+            var extraView = extra?.Handler?.PlatformView as Android.Views.View;
+            var overlayView = _nativeOverlay?.Handler?.PlatformView as Android.Views.View;
+            var webView = blazorWebView.Handler?.PlatformView as global::Android.Webkit.WebView;
+
+            NativeVideoDebug.Warn(
+                "Snap " + reason
+                + " " + AndroidExoPlaybackStats.FormatCountersLine()
+                + " chrome=" + (_nativeOverlay?.IsChromeVisible == true)
+                + " currentFocus=" + DescribeAndroidView(current)
+                + " player=" + DescribeAndroidView(playerView)
+                + " surface=" + DescribeAndroidView(surface)
+                + " subtitle=" + DescribeAndroidView(subtitle)
+                + " extra=" + DescribeAndroidView(extraView)
+                + " overlay=" + DescribeAndroidView(overlayView)
+                + " webView=" + DescribeAndroidView(webView)
+                + " webMauiVis=" + blazorWebView.IsVisible);
+
+            if (reason.Contains("settings", StringComparison.Ordinal)
+                || reason == "chrome-hide"
+                || reason == "first-frame")
+            {
+                LogFocusableChildren("player", playerView);
+                LogFocusableChildren("extra", extraView);
+            }
+        }
+        catch (Exception ex)
+        {
+            NativeVideoDebug.Warn("Snap " + reason + " fail " + ex.GetType().Name);
+        }
+    }
+
+    private static string DescribeAndroidView(Android.Views.View? view)
+    {
+        if (view is null)
+            return "null";
+
+        var name = view.Class?.SimpleName ?? view.GetType().Name;
+        return name
+            + " " + view.Width + "x" + view.Height
+            + " vis=" + view.Visibility
+            + " foc=" + view.Focusable
+            + " has=" + view.HasFocus
+            + " win=" + view.HasWindowFocus
+            + " shown=" + view.IsShown;
+    }
+
+    private static void LogFocusableChildren(string label, Android.Views.View? root)
+    {
+        if (root is null)
+            return;
+
+        var n = 0;
+        void Walk(Android.Views.View view)
+        {
+            if (n >= 24)
+                return;
+
+            if (view.Focusable || view.HasFocus)
+            {
+                n++;
+                NativeVideoDebug.Warn("  focusable[" + label + "] " + DescribeAndroidView(view));
+            }
+
+            if (view is not Android.Views.ViewGroup group)
+                return;
+
+            for (var i = 0; i < group.ChildCount && n < 24; i++)
+            {
+                var child = group.GetChildAt(i);
+                if (child is not null)
+                    Walk(child);
+            }
+        }
+
+        Walk(root);
+    }
 
     internal bool TryEvaluateWebViewJs(string script)
     {
@@ -165,7 +278,7 @@ public partial class BlazorPage
         _directTrackOverrideUrl = null;
         var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
         var playerView = platformView is null ? null : FindPlayerView(platformView);
-        AndroidExoHlsTuning.TryInstallAmlogicTunedPlayer(NativePlayer, playerView);
+        AndroidExoHlsTuning.TryInstallTunedPlayer(NativePlayer, playerView);
 
         var player = GetPlayer(NativePlayer);
         ApplyAndroidHlsAvSyncSettings(player);
@@ -193,8 +306,14 @@ public partial class BlazorPage
         {
             _exoPlaybackBridge.FirstFrameRendered = null;
             _exoPlaybackBridge.TracksChanged = null;
+            _exoPlaybackBridge.PositionHeard = null;
+            _exoPlaybackBridge.DurationHeard = null;
+            _exoPlaybackBridge.PlaybackStateHeard = null;
+            _exoPlaybackBridge.PlaybackErrorHeard = null;
+            _exoPlaybackBridge.BufferedHeard = null;
         }
         _exoPlaybackBridge?.Detach();
+        AndroidExoPlaybackStats.Detach();
         AndroidDisplayAfr.Restore();
     }
 
@@ -242,6 +361,101 @@ public partial class BlazorPage
         }
     }
 
+    /// <summary>
+    /// Drive HTTP Direct Play / HLS from the tuned Exo instance. Skip MediaElement.Source so
+    /// CommunityToolkit does not open a second pipeline and tick IPlayerListener on the UI thread.
+    /// Local files still use MediaElement.FromUri(file://).
+    /// </summary>
+    private void OpenAndroidExoSource(string url)
+    {
+        NativePlayer.ShouldAutoPlay = true;
+        var needToolkitSource = LocalPlaybackUrl.IsLocalFile(url)
+            || NativePlayer.Handler?.PlatformView is null;
+
+        NativePlayer.Stop();
+        if (needToolkitSource)
+            NativePlayer.Source = CreateMediaSourceWithAuth(url);
+
+        NativeVideoDebug.Log(
+            "OpenNativePlayerSource local=" + LocalPlaybackUrl.IsLocalFile(url)
+            + " host=exo toolkitSource=" + needToolkitSource
+            + " url=" + (LocalPlaybackUrl.IsLocalFile(url) ? "file" : "http"));
+        ConfigureNativeVideoPlayerAfterOpen();
+        BindAndroidExoPlayerWithLongHttpTimeouts(url);
+        if (!TrySetAndroidVideoPlayWhenReady(true))
+            NativePlayer.Play();
+    }
+
+    internal bool TrySetAndroidVideoPlayWhenReady(bool play)
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return false;
+
+            exo.PlayWhenReady = play;
+            if (play)
+                exo.Play();
+            else
+                exo.Pause();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal bool TryStopAndroidVideo()
+    {
+        try
+        {
+            SuppressAndroidPlayerViewPlaceholder();
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return false;
+
+            exo.PlayWhenReady = false;
+            exo.Stop();
+            exo.ClearMediaItems();
+            SuppressAndroidPlayerViewPlaceholder();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal void SuppressAndroidPlayerViewPlaceholder()
+    {
+        try
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+            var playerView = platformView is null ? null : FindPlayerView(platformView);
+            AndroidExoHlsTuning.SuppressPlayerViewPlaceholder(playerView);
+        }
+        catch
+        {
+        }
+    }
+
+    internal bool IsAndroidExoHostActive() => UnwrapPlayer(GetPlayer(NativePlayer)) is IExoPlayer;
+
+    internal bool AndroidExoPlayerHasError()
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            return player?.PlayerError is not null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private DefaultHttpDataSource.Factory GetOrCreateExoHttpDataSourceFactory(int connectTimeoutMs, int readTimeoutMs)
     {
         if (_exoHttpDataSourceFactory is not null)
@@ -281,10 +495,35 @@ public partial class BlazorPage
             source.PendingSeekTime = resumeAtSeconds;
 
         BindAndroidExoPlayerWithLongHttpTimeouts(url);
-        NativePlayer.Play();
+        if (!TrySetAndroidVideoPlayWhenReady(true))
+            NativePlayer.Play();
 
         if (resumeAtSeconds > 1)
             SeekNativeVideoAsync(resumeAtSeconds).FireAndForget();
+    }
+
+    private async Task RetryAndroidDirectPlayAfterRuntimeCheckAsync(string url, double resumeAt)
+    {
+        try
+        {
+            await Task.Delay(400);
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (!_playerService.IsVisible)
+                    return;
+                if (!string.Equals(_playerService.Source?.Url, url, StringComparison.Ordinal))
+                    return;
+
+                NativeVideoDebug.Log("RetryDirectPlay after 1004 resumeAt=" + resumeAt.ToString("F1"));
+                RebindAndroidNativeVideoPreservingPosition(url, resumeAt);
+                ReportNativePlaybackIssue(
+                    "NativePlayer.DirectPlayRuntimeRetry",
+                    "resumeAt=" + resumeAt.ToString("F1") + "s url=" + RedactUrl(url));
+            });
+        }
+        catch
+        {
+        }
     }
 
     private void BindAndroidExoPlayerWithLongHttpTimeoutsCore(string url, int connectTimeoutMs, int readTimeoutMs)
@@ -427,7 +666,7 @@ public partial class BlazorPage
 
             // Always resume when we interrupted play for scrub/resume. Checking CurrentState
             // alone can skip Play() while ExoPlayer is paused mid-seek (frozen last frame).
-            if (resumePlayback)
+            if (resumePlayback && !TrySetAndroidVideoPlayWhenReady(true))
                 NativePlayer.Play();
 
             // Soft invalidate only - never null PlayerView.Player (mutes / freezes TextureView).
@@ -560,8 +799,10 @@ partial void OnAfterNativeVideoSeek()
 
         if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)
         {
-            // Native XAML chrome owns input - do not bounce window focus into the (hidden) WebView.
-            DetachVideoFocusBounceListener();
+            // Native XAML chrome owns input - do not bounce window focus into the (hidden)
+            // WebView. Keep the global-focus listener so PlayerView/SurfaceView cannot hold
+            // window focus (Amlogic drops HEVC frames when the video surface is focused).
+            AttachVideoFocusBounceListener();
             SuppressWebViewFocusForNativeChrome();
             return;
         }
@@ -642,6 +883,21 @@ partial void OnAfterNativeVideoSeek()
         if (!_playerService.IsVisible)
             return;
 
+        NativeVideoDebug.Warn(
+            "Focus " + DescribeAndroidView(oldFocus)
+            + " -> " + DescribeAndroidView(newFocus)
+            + " " + AndroidExoPlaybackStats.FormatCountersLine());
+
+        if (MauiNativeVideoChrome.IsEnabled)
+        {
+            // Software DPAD rings on the overlay. If the video surface grabbed window focus
+            // (chrome hidden + overlay GONE, or MediaElement remapped Focusable), strip it.
+            // Do not RequestFocus the hidden WebView: that steals TV keys from native chrome.
+            if (newFocus is not null && IsNativePlayerDescendant(newFocus))
+                EnsureVideoSurfaceNotFocusable();
+            return;
+        }
+
         if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
             return;
 
@@ -650,9 +906,22 @@ partial void OnAfterNativeVideoSeek()
         if (newFocus is null || IsDescendantOf(webView, newFocus))
             return;
 
-
         EnsureVideoSurfaceNotFocusable();
         BounceWindowFocusToWebView();
+    }
+
+    private bool IsNativePlayerDescendant(Android.Views.View node)
+    {
+        try
+        {
+            if (NativePlayer.Handler?.PlatformView is not Android.Views.View root)
+                return false;
+            return IsDescendantOf(root, node);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static bool IsDescendantOf(Android.Views.View root, Android.Views.View? node)
@@ -694,8 +963,12 @@ partial void OnAfterNativeVideoSeek()
     {
         try
         {
-            if (NativePlayer.Handler?.PlatformView is Android.Views.View leftover)
-                DisableFocusRecursive(leftover);
+            if (NativePlayer.Handler?.PlatformView is not Android.Views.View leftover)
+                return;
+
+            leftover.ClearFocus();
+            DisableFocusRecursive(leftover);
+            leftover.ClearFocus();
         }
         catch
         {
@@ -735,13 +1008,62 @@ partial void OnAfterNativeVideoSeek()
         var playerView = platformView is null ? null : FindPlayerView(platformView);
 
         _exoPlaybackBridge ??= new ExoPlaybackBridge();
-        _exoPlaybackBridge.FirstFrameRendered = () => _nativeOverlay?.NotifyFirstFrameReady();
-        _exoPlaybackBridge.TracksChanged = () => MainThread.BeginInvokeOnMainThread(ApplySelectedTrackOverrides);
+        _exoPlaybackBridge.FirstFrameRendered = () =>
+        {
+            TryApplyHdmiAutoFrameRate();
+            MainThread.BeginInvokeOnMainThread(OnNativeVideoFirstFrame);
+        };
+        _exoPlaybackBridge.TracksChanged = () => MainThread.BeginInvokeOnMainThread(() =>
+        {
+            ApplySelectedTrackOverrides();
+            TryApplyHdmiAutoFrameRate();
+        });
         _exoPlaybackBridge.PositionHeard = OnExoPositionHeard;
         _exoPlaybackBridge.DurationHeard = OnExoDurationHeard;
+        _exoPlaybackBridge.PlaybackStateHeard = OnExoPlaybackStateHeard;
+        _exoPlaybackBridge.PlaybackErrorHeard = OnExoPlaybackErrorHeard;
+        _exoPlaybackBridge.BufferedHeard = OnExoBufferedHeard;
         _exoPlaybackBridge.Attach(exo, playerView);
+        AndroidExoPlaybackStats.Attach(exo);
         TryPublishExoTimelineFromPlayer(exo);
         ApplySelectedTrackOverrides();
+        TryApplyHdmiAutoFrameRate();
+    }
+
+    private void TryApplyHdmiAutoFrameRate()
+    {
+        if (!_playerService.IsVisible)
+            return;
+
+        var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
+        var model = global::Android.OS.Build.Model ?? "";
+        var mode = AndroidDisplayAfr.ResolveMode();
+        if (!AndroidExoPlaybackPolicy.ShouldApplyHdmiAutoFrameRate(
+                mode,
+                AndroidExoHlsTuning.IsAndroidTelevision(),
+                manufacturer,
+                model))
+        {
+            AndroidDisplayAfr.Restore();
+            return;
+        }
+
+        var fps = _playerService.Source?.SourceFrameRate ?? 0f;
+        var player = UnwrapPlayer(GetPlayer(NativePlayer));
+        var exo = player as IExoPlayer;
+        if (fps <= 1f && exo is not null)
+            fps = AndroidExoPlaybackStats.TryReadFrameRate(exo);
+        if (fps <= 1f)
+            return;
+
+        NativeVideoDebug.Log(
+            "HdmiAfr mode=" + HdmiAutoFrameRatePolicy.Persist(mode)
+            + " fps=" + fps.ToString("F3"));
+        AndroidDisplayAfr.Apply(
+            fps,
+            _playerService.Source?.SourceVideoWidth ?? 0,
+            _playerService.Source?.SourceVideoHeight ?? 0,
+            AndroidExoPlaybackPolicy.ShouldPreferContentHdmiResolution(mode));
     }
 
     private void OnExoDurationHeard(double seconds)
@@ -751,6 +1073,8 @@ partial void OnAfterNativeVideoSeek()
 
         if (Math.Abs(seconds - _playerService.Duration) > 0.5)
             _playerService.Duration = seconds;
+
+        _androidPendingSeekNudge?.Invoke();
     }
 
     private void TryPublishExoTimelineFromPlayer(IExoPlayer exo)
@@ -764,10 +1088,22 @@ partial void OnAfterNativeVideoSeek()
             var posMs = exo.CurrentPosition;
             if (posMs > 0)
                 OnExoPositionHeard(posMs / 1000.0);
+
+            var bufferedMs = exo.BufferedPosition;
+            if (bufferedMs > 0)
+                OnExoBufferedHeard(bufferedMs / 1000.0);
         }
         catch
         {
         }
+    }
+
+    private void OnExoBufferedHeard(double seconds)
+    {
+        if (!_playerService.IsVisible || seconds < 0)
+            return;
+
+        _playerService.BufferedTime = seconds;
     }
 
     private void OnExoPositionHeard(double seconds)
@@ -783,6 +1119,48 @@ partial void OnAfterNativeVideoSeek()
         }
 
         _playerService.CurrentTime = seconds;
+    }
+
+    private void OnExoPlaybackStateHeard(int exoState, bool playWhenReady, bool isPlaying)
+    {
+        if (!_playerService.IsVisible)
+            return;
+
+        var mapped = ExoPlaybackStateMapping.Map(exoState, playWhenReady, isPlaying);
+        _playerService.PlaybackState = mapped;
+        NativeVideoDebug.Log(
+            "ExoState mapped=" + mapped
+            + " exo=" + exoState
+            + " playWhenReady=" + playWhenReady
+            + " isPlaying=" + isPlaying
+            + " pos=" + GetExoPlaybackPositionSeconds().ToString("F2")
+            + "s visible=" + _playerService.IsVisible
+            + " pending=" + (_playerService.Source?.PendingSeekTime?.ToString("F1") ?? "null"));
+
+        if (MauiNativeVideoChrome.IsEnabled)
+        {
+            if (mapped == Server.Domain.Enums.PlaybackState.Playing)
+            {
+                var pending = _playerService.Source?.PendingSeekTime;
+                var pos = GetExoPlaybackPositionSeconds();
+                if (pending is double resumeAt && resumeAt > 1 && pos < resumeAt - 2)
+                    _nativeOverlay?.SetLoadingVeil(true);
+            }
+            else if (mapped is Server.Domain.Enums.PlaybackState.Buffering
+                or Server.Domain.Enums.PlaybackState.Idle)
+            {
+                var pos = GetExoPlaybackPositionSeconds();
+                if (pos <= 1)
+                    _nativeOverlay?.SetLoadingVeil(true);
+            }
+        }
+
+        _androidPendingSeekNudge?.Invoke();
+    }
+
+    private void OnExoPlaybackErrorHeard(string detail)
+    {
+        HandleNativeVideoMediaFailed(detail);
     }
 
     private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)

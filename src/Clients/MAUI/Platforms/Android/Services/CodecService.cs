@@ -139,9 +139,22 @@ public class CodecService : ICodecService
         }
     }
 
+    public Task<string[]> GetSupportedVideoProfilesAsync()
+    {
+        try
+        {
+            return Task.FromResult(AndroidMediaCodecProfiles.Collect());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[K7-Codec] Video profile detection failed: {ex}");
+            return Task.FromResult(Array.Empty<string>());
+        }
+    }
+
     private static string[] GetSupportedDecoderCodecs(Dictionary<string, string> mimeToCodecMap)
     {
-        var codecList = new MediaCodecList(MediaCodecListKind.AllCodecs);
+        var codecList = new MediaCodecList(MediaCodecListKind.RegularCodecs);
         var codecInfos = codecList.GetCodecInfos();
         if (codecInfos == null) return [];
 

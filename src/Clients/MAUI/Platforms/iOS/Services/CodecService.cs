@@ -74,4 +74,7 @@ public class CodecService : ICodecService
 
         return supported.ToArray();
     }
+
+    public Task<string[]> GetSupportedVideoProfilesAsync() =>
+        Task.FromResult(Array.Empty<string>());
 }

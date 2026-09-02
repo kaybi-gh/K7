@@ -58,6 +58,12 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<int> STREAMING_QUALITY_MOBILE = new("StreamingQualityMobile");
     public static readonly PreferenceKey<bool> DOWNMIX_TO_STEREO = new("DownmixToStereo");
 
+    /// <summary>
+    /// ExoPlayer LoadControl size: auto (Exo default), default, large, extralarge.
+    /// Local device preference.
+    /// </summary>
+    public static readonly PreferenceKey<string> VIDEO_EXO_BUFFER = new("VideoExoBuffer");
+
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");
     public static readonly PreferenceKey<bool> KEEP_SCREEN_ON = new("KeepScreenOn");
