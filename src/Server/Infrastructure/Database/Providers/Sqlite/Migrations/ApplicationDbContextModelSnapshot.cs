@@ -3548,6 +3548,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int?>("BitDepth")
                         .HasColumnType("INTEGER");
 
+                    b.Property<float?>("FrameRate")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("Codec")
                         .IsRequired()
                         .HasColumnType("TEXT");

@@ -10,4 +10,5 @@ public class VideoFileTrack() : BaseFileTrack(FileTrackType.Video)
     public required int Level { get; set; }
     public string? PixelFormat { get; set; }
     public int? BitDepth { get; set; }
+    public float? FrameRate { get; set; }
 }

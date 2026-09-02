@@ -1,7 +1,8 @@
-﻿using FFMpegCore;
+using FFMpegCore;
 using FFMpegCore.Enums;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Helpers;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -83,6 +84,32 @@ public class MediaAnalysisService : IMediaAnalysisService
         };
 
         return fileMetadata;
+    }
+
+    public async Task<float?> ProbeVideoFrameRateAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        string? line = null;
+        await SafeProcessRunner.RunAsync(
+            GlobalFFOptions.GetFFProbeBinaryPath(),
+            "-loglevel error -select_streams v:0 -show_entries stream=avg_frame_rate,r_frame_rate -of csv=p=0 "
+            + "\""
+            + filePath
+            + "\"",
+            onStdout: stdout =>
+            {
+                if (!string.IsNullOrWhiteSpace(stdout) && line is null)
+                    line = stdout.Trim();
+            },
+            timeout: TimeSpan.FromSeconds(20),
+            cancellationToken: cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(line))
+            return null;
+
+        var parts = line.Split(',', StringSplitOptions.TrimEntries);
+        var avg = parts.Length > 0 ? parts[0] : null;
+        var real = parts.Length > 1 ? parts[1] : null;
+        return VideoFrameRate.FromRateStrings(avg, real);
     }
 
     public async Task<List<ChapterMarker>> GetChaptersAsync(string filePath, CancellationToken cancellationToken = default)
@@ -248,7 +275,7 @@ public class MediaAnalysisService : IMediaAnalysisService
             .ToList();
 
         bool hasDefaultVideo = realVideoStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
-        
+
         return [.. realVideoStreams.Select(x => new VideoFileTrack
         {
             Codec = x.CodecName ?? string.Empty,
@@ -259,7 +286,8 @@ public class MediaAnalysisService : IMediaAnalysisService
             BitDepth = x.BitDepth,
             Level = x.Level,
             IsDefault = IsDefaultTrack(hasDefaultVideo, x.Disposition, x.Index),
-            PixelFormat = x.PixelFormat
+            PixelFormat = x.PixelFormat,
+            FrameRate = VideoFrameRate.FromProbe(x.AvgFrameRate, x.FrameRate)
         })];
     }
 

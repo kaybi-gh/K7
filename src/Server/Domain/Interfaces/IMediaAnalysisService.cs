@@ -6,6 +6,12 @@ public interface IMediaAnalysisService
 {
     Task<AudioFileMetadata> GetAudioFileMetadataAsync(string filePath, CancellationToken cancellationToken = default);
     Task<VideoFileMetadata> GetVideoFileMetadataAsync(string filePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lightweight ffprobe of the primary video stream fps. Used to backfill
+    /// tracks scanned before FrameRate was stored.
+    /// </summary>
+    Task<float?> ProbeVideoFrameRateAsync(string filePath, CancellationToken cancellationToken = default);
     Task<List<ChapterMarker>> GetChaptersAsync(string filePath, CancellationToken cancellationToken = default);
     Task<List<HlsSegment>> ComputeKeyframeBasedHlsSegmentsAsync(
         IndexedFile indexedFile,

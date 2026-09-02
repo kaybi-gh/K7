@@ -65,7 +65,7 @@ public class FileDeviceAndIndexedFileMappingsTests
         var videoDto = video.ToFileMetadataDto().Should().BeOfType<VideoFileMetadataDto>().Subject;
         videoDto.VideoResolution.Should().Be(VideoResolutionIdentifier._1080p);
         videoDto.AudioTracks.Should().ContainSingle();
-        videoDto.VideoTracks.Should().ContainSingle();
+        videoDto.VideoTracks.Should().ContainSingle().Which.FrameRate.Should().BeNull();
         videoDto.SubtitleTracks.Should().ContainSingle(t => t.Language == "fra");
     }
 

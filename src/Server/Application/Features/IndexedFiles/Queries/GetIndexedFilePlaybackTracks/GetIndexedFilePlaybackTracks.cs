@@ -7,7 +7,8 @@ namespace K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFilePlay
 
 public record IndexedFilePlaybackTracksDto(
     IReadOnlyList<AudioFileTrackDto> AudioTracks,
-    IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks);
+    IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks,
+    IReadOnlyList<VideoFileTrackDto> VideoTracks);
 
 public record GetIndexedFilePlaybackTracksQuery(Guid Id) : IRequest<IndexedFilePlaybackTracksDto>;
 
@@ -27,6 +28,8 @@ public class GetIndexedFilePlaybackTracksQueryHandler : IRequestHandler<GetIndex
             .Include(x => x.FileMetadata)
                 .ThenInclude(x => (x as VideoFileMetadata)!.AudioTracks)
             .Include(x => x.FileMetadata)
+                .ThenInclude(x => (x as VideoFileMetadata)!.VideoTracks)
+            .Include(x => x.FileMetadata)
                 .ThenInclude(x => (x as VideoFileMetadata)!.SubtitleTracks)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
@@ -34,7 +37,7 @@ public class GetIndexedFilePlaybackTracksQueryHandler : IRequestHandler<GetIndex
 
         if (indexedFile.FileMetadata is not VideoFileMetadata videoMetadata)
         {
-            return new IndexedFilePlaybackTracksDto([], []);
+            return new IndexedFilePlaybackTracksDto([], [], []);
         }
 
         var audioTracks = videoMetadata.AudioTracks
@@ -47,6 +50,11 @@ public class GetIndexedFilePlaybackTracksQueryHandler : IRequestHandler<GetIndex
             .Select(t => t.ToSubtitleFileTrackDto())
             .ToList();
 
-        return new IndexedFilePlaybackTracksDto(audioTracks, subtitleTracks);
+        var videoTracks = videoMetadata.VideoTracks
+            .OrderBy(t => t.Index)
+            .Select(t => t.ToVideoFileTrackDto())
+            .ToList();
+
+        return new IndexedFilePlaybackTracksDto(audioTracks, subtitleTracks, videoTracks);
     }
 }

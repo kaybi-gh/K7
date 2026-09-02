@@ -82,7 +82,8 @@ public static class FileMetadataMappings
             Level = domain.Level,
             PixelFormat = domain.PixelFormat,
             Profile = string.IsNullOrWhiteSpace(domain.Profile) ? null : domain.Profile,
-            Width = domain.Width
+            Width = domain.Width,
+            FrameRate = domain.FrameRate
         };
     }
 

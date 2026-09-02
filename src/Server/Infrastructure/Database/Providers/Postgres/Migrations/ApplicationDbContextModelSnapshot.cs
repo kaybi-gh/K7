@@ -3486,6 +3486,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int?>("BitDepth")
                         .HasColumnType("integer");
 
+                    b.Property<float?>("FrameRate")
+                        .HasColumnType("real");
+
                     b.Property<string>("Codec")
                         .IsRequired()
                         .HasColumnType("text");

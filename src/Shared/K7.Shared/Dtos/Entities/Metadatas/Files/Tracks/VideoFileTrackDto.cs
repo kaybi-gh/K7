@@ -9,5 +9,5 @@ public sealed record VideoFileTrackDto : FileTrackDto
     public required int Level { get; init; }
     public string? PixelFormat { get; init; }
     public int? BitDepth { get; init; }
-
+    public float? FrameRate { get; init; }
 }
