@@ -68,11 +68,16 @@ public class GetStreamUriQueryHandler(
 
         var audioDirectSupported = supportedAudioFormats.Any(x =>
             x.Container == videoFileMetadata.Container
-            && MediaCodecNames.EqualsCodec(x.Codec, selectedAudioTrack.Codec));
+            && MediaCodecNames.EqualsCodec(x.Codec, selectedAudioTrack.Codec))
+            && (request.AllowAudioPassthrough
+                || !AudioPassthroughCodecs.IsPassthrough(selectedAudioTrack.Codec));
 
         var videoDirectSupported = supportedVideoFormats.Any(x =>
             x.Container == videoFileMetadata.Container
-            && MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
+            && MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec))
+            && VideoDecoderProfileMatching.AllowsDirectPlay(
+                device.PlaybackCapabilities.SupportedMediaFormatIds,
+                selectedVideoTrack);
 
         var sourceResolution = selectedVideoTrack.Width > 0 && selectedVideoTrack.Height > 0
             ? $"{selectedVideoTrack.Width}x{selectedVideoTrack.Height}"
@@ -135,7 +140,10 @@ public class GetStreamUriQueryHandler(
         // Main 10 (Heroes) and rejects video+audio packed into one CODECS type check.
         var usesVideoJsHls = UsesVideoJsHlsManifest(device);
         var videoCodecSupported = supportedVideoFormats.Any(x =>
-            MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec));
+            MediaCodecNames.EqualsCodec(x.VideoCodec, selectedVideoTrack.Codec))
+            && VideoDecoderProfileMatching.AllowsDirectPlay(
+                device.PlaybackCapabilities.SupportedMediaFormatIds,
+                selectedVideoTrack);
         if (usesVideoJsHls && !IsVideoJsHlsCopyTrack(selectedVideoTrack))
             videoCodecSupported = false;
 
@@ -288,19 +296,7 @@ public class GetStreamUriQueryHandler(
         if (codec is not ("hevc" or "av1"))
             return true;
 
-        return !IsTenBitVideo(track);
-    }
-
-    internal static bool IsTenBitVideo(VideoFileTrack track)
-    {
-        if (track.BitDepth is >= 10)
-            return true;
-
-        var profile = track.Profile;
-        if (string.IsNullOrWhiteSpace(profile))
-            return false;
-
-        return profile.Contains("10", StringComparison.OrdinalIgnoreCase);
+        return !VideoDecoderProfileMatching.IsTenBit(track);
     }
 
     private static TranscodeReason BuildVideoTranscodeReason(

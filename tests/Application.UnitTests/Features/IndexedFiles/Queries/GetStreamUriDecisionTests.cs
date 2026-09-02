@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -452,6 +453,81 @@ public class GetStreamUriDecisionTests
 
         best.Codec.Should().Be("aac");
         best.Container.Should().Be("mp4");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldRemux_WhenHevcMain10AndDeviceOnlyAdvertisesMain()
+    {
+        var device = CreateDevice(
+            [
+                "audio-matroska-aac",
+                "video-matroska-aac-hevc",
+                VideoDecoderProfileTokens.HevcMain
+            ]);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var main10 = metadata.VideoTracks.First();
+        main10.Profile = "Main 10";
+        main10.BitDepth = 10;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().NotBe(PlaybackMode.Direct);
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldRemux_WhenAudioPassthroughOffAndEac3()
+    {
+        var device = CreateDevice(
+            [
+                "audio-matroska-eac3",
+                "video-matroska-eac3-hevc"
+            ]);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "eac3");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0,
+            AllowAudioPassthrough = false
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().NotBe(PlaybackMode.Direct);
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldDirectPlayHevcMain_WhenProfileAwareAndMainAdvertised()
+    {
+        var device = CreateDevice(
+            [
+                "audio-matroska-aac",
+                "video-matroska-aac-hevc",
+                VideoDecoderProfileTokens.HevcMain
+            ]);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var main8 = metadata.VideoTracks.First();
+        main8.Profile = "Main";
+        main8.BitDepth = 8;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Direct);
     }
 
     private static Device CreateDevice(
