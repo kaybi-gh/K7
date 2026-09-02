@@ -48,6 +48,13 @@ public static class AndroidExoPlaybackPolicy
         string? model) =>
         isTelevision || IsAmlogicDevice(manufacturer, model);
     /// <summary>
+    /// Profile 8.1: query HEVC decoders instead of video/dolby-vision. The file is
+    /// unchanged; MediaCodec gets the HDR10 base layer. Native keeps the DV MIME path.
+    /// </summary>
+    public static bool ShouldPreferHevcDecoderForDolbyVision(DolbyVisionDecodeMode mode) =>
+        mode == DolbyVisionDecodeMode.HevcHdr10;
+
+    /// <summary>
     /// Custom ExoPlayer (offload, decoder fallback, optional DV-as-HEVC) on Android TV
     /// and on Amlogic boxes that report a phone/tablet idiom.
     /// </summary>

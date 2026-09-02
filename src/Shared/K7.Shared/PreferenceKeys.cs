@@ -64,6 +64,12 @@ public static class PreferenceKeys
     /// </summary>
     public static readonly PreferenceKey<string> VIDEO_EXO_BUFFER = new("VideoExoBuffer");
 
+    /// <summary>
+    /// Android TV Dolby Vision decode: native / hevc (HDR10 base layer). Local device
+    /// preference. Empty means the device default (TV=hevc, phone=native).
+    /// </summary>
+    public static readonly PreferenceKey<string> VIDEO_DV_DECODE = new("VideoDvDecode");
+
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");
     public static readonly PreferenceKey<bool> KEEP_SCREEN_ON = new("KeepScreenOn");

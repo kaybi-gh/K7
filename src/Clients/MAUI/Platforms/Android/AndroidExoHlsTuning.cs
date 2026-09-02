@@ -62,10 +62,13 @@ internal static class AndroidExoHlsTuning
         {
             var context = playerView.Context;
             var bufferSize = ResolveBufferSize(manufacturer, model);
+            var dvMode = ResolveDolbyVisionDecodeMode(manufacturer, model);
             var tunedTag = CurrentTunedPlayerTag(manufacturer, model);
             var renderers = new DefaultRenderersFactory(context)!
                 .SetEnableDecoderFallback(true)!
                 .SetExtensionRendererMode(DefaultRenderersFactory.ExtensionRendererModeOn)!;
+            if (AndroidExoPlaybackPolicy.ShouldPreferHevcDecoderForDolbyVision(dvMode))
+                renderers = renderers.SetMediaCodecSelector(new PreferHevcForDolbyVisionSelector())!;
 
 #pragma warning disable CS0618
             var exoBuilder = new ExoPlayerBuilder(context)!
@@ -122,6 +125,7 @@ internal static class AndroidExoHlsTuning
 
     private static string CurrentTunedPlayerTag(string manufacturer, string model) =>
         TunedPlayerTagPrefix
+        + DolbyVisionDecodePolicy.Persist(ResolveDolbyVisionDecodeMode(manufacturer, model))
         + ExoVideoBufferPolicy.Persist(ResolveBufferSize(manufacturer, model));
 
     private static ExoVideoBufferSize ResolveBufferSize(string manufacturer, string model)
@@ -141,6 +145,24 @@ internal static class AndroidExoHlsTuning
             manufacturer,
             model);
         return ExoVideoBufferPolicy.Resolve(stored, television);
+    }
+
+    private static DolbyVisionDecodeMode ResolveDolbyVisionDecodeMode(string manufacturer, string model)
+    {
+        var stored = "";
+        try
+        {
+            stored = Preferences.Default.Get(PreferenceKeys.VIDEO_DV_DECODE.Name, "");
+        }
+        catch
+        {
+        }
+
+        return DolbyVisionDecodePolicy.Resolve(
+            stored,
+            IsAndroidTelevision(),
+            manufacturer,
+            model);
     }
 
     private static void TrySetLoadControl(ExoPlayerBuilder builder, ExoVideoBufferSize size)
@@ -793,4 +815,27 @@ internal static class AndroidExoHlsTuning
         }
     }
 
+    /// <summary>
+    /// Profile 8: Media3 asks for video/dolby-vision first. Answer with HEVC decoders so
+    /// the HAL gets the HDR10 base layer instead of the DV overlay path.
+    /// </summary>
+    private sealed class PreferHevcForDolbyVisionSelector : Java.Lang.Object, IMediaCodecSelector
+    {
+        public IList<MediaCodecInfo>? GetDecoderInfos(
+            string? mimeType,
+            bool requiresSecureDecoder,
+            bool requiresTunnelingDecoder)
+        {
+            if (string.IsNullOrEmpty(mimeType))
+                return new List<MediaCodecInfo>();
+
+            var query = mimeType.Equals("video/dolby-vision", StringComparison.OrdinalIgnoreCase)
+                ? "video/hevc"
+                : mimeType;
+            return MediaCodecUtil.GetDecoderInfos(
+                query,
+                requiresSecureDecoder,
+                requiresTunnelingDecoder);
+        }
+    }
 }
