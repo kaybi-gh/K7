@@ -17,6 +17,7 @@ public record CreateStreamSessionCommand : IRequest<StreamingSessionDto>
     public required Guid DeviceId { get; init; }
     public int? AudioTrackIndex { get; init; }
     public int? SubtitleTrackIndex { get; init; }
+    public bool AudioPassthrough { get; init; } = true;
 };
 
 public class CreateStreamSessionCommandHandler(
@@ -46,7 +47,10 @@ public class CreateStreamSessionCommandHandler(
             await context.Entry(indexedFile).Reference(f => f.FileMetadata).LoadAsync(cancellationToken);
         }
 
-        var playbackSettings = new PlaybackSettingsDto();
+        var playbackSettings = new PlaybackSettingsDto
+        {
+            AudioPassthrough = command.AudioPassthrough
+        };
 
         var session = new StreamSession
         {

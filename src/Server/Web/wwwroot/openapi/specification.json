@@ -11143,9 +11143,6 @@
             ],
             "format": "int32"
           },
-          "downmixToStereo": {
-            "type": "boolean"
-          },
           "showFullscreenOnPlay": {
             "type": "boolean"
           },
@@ -12429,6 +12426,9 @@
               "string"
             ],
             "format": "int32"
+          },
+          "audioPassthrough": {
+            "type": "boolean"
           }
         }
       },
@@ -21413,6 +21413,15 @@
               "string"
             ],
             "format": "int32"
+          },
+          "frameRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "float"
           },
           "index": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",

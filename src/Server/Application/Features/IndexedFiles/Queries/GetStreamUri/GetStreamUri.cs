@@ -29,6 +29,11 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
     public Guid StreamSessionId { get; set; }
     public int? AudioTrackIndex { get; set; }
     public int? SubtitleTrackIndex { get; set; }
+    /// <summary>
+    /// Device-local HDMI bitstream preference for this play. Default on.
+    /// When false, AC3/EAC3/DTS/TrueHD are not Direct Played.
+    /// </summary>
+    public bool AllowAudioPassthrough { get; set; } = true;
 };
 
 public class GetStreamUriQueryHandler(

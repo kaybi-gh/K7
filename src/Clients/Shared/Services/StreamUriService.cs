@@ -62,6 +62,7 @@ public class StreamUriService : IStreamUriService
         {
             var maxBitrate = _deviceStorageService.Get(PreferenceKeys.STREAMING_QUALITY_WIFI, 0);
             var downmix = _deviceStorageService.Get(PreferenceKeys.DOWNMIX_TO_STEREO, false);
+            var audioPassthrough = !downmix;
 
             var request = new CreateStreamSessionRequest
             {
@@ -70,7 +71,7 @@ public class StreamUriService : IStreamUriService
                 AudioTrackIndex = audioTrackIndex,
                 SubtitleTrackIndex = subtitleTrackIndex,
                 MaxAudioBitrate = maxBitrate > 0 ? maxBitrate : null,
-                DownmixToStereo = downmix
+                AudioPassthrough = audioPassthrough
             };
 
             var session = await _streamingService.CreateStreamSessionAsync(request, cancellationToken)

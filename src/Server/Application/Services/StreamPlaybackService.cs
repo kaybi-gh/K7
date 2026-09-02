@@ -50,7 +50,7 @@ public sealed class StreamPlaybackService(
             await context.Entry(audioFileMetadata).Reference(a => a.AudioTrack).LoadAsync(cancellationToken);
             var (uri, decision) = GetStreamUriQueryHandler.GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, query);
             activeStreamTracker.UpdateStreamDecision(query.StreamSessionId, decision);
-            return uri;
+            return uri with { StreamDecision = decision };
         }
 
         if (indexedFile.FileMetadata is null)
@@ -98,6 +98,9 @@ public sealed class StreamPlaybackService(
 
         query.SubtitleTrackIndex = subtitleTrackIndex;
 
+        if (query.StreamSessionId != Guid.Empty)
+            await ApplySessionAudioPassthroughAsync(query, cancellationToken);
+
         var (streamUri, streamDecision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
             device, indexedFile, videoFileMetadata, query, hlsSegmentsAvailable, subtitleTrackIndex);
         streamDecision = await StreamDecisionEnrichment.EnrichEncodersAsync(
@@ -110,7 +113,30 @@ public sealed class StreamPlaybackService(
             streamUri,
             streamDecision,
             cancellationToken);
-        return streamUri;
+        return streamUri with { StreamDecision = streamDecision };
+    }
+
+    private async Task ApplySessionAudioPassthroughAsync(
+        GetStreamUriQuery query,
+        CancellationToken cancellationToken)
+    {
+        var json = await context.StreamSessions
+            .AsNoTracking()
+            .Where(session => session.Id == query.StreamSessionId)
+            .Select(session => session.PlaybackSettingsJson)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        try
+        {
+            var settings = System.Text.Json.JsonSerializer.Deserialize<PlaybackSettingsDto>(json);
+            if (settings is not null)
+                query.AllowAudioPassthrough = settings.AudioPassthrough;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+        }
     }
 
     public async Task<HttpContentResult> GetHlsVideoSegmentAsync(

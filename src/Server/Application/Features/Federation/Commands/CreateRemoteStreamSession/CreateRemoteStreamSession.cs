@@ -119,7 +119,10 @@ public class CreateRemoteStreamSessionCommandHandler(
             PlaybackSettings = remoteSession.PlaybackSettings ?? new PlaybackSettingsDto(),
             Source = localSource,
             AudioTracks = remoteSession.AudioTracks,
-            SubtitleTracks = remoteSession.SubtitleTracks
+            SubtitleTracks = remoteSession.SubtitleTracks,
+            SourceFrameRate = remoteSession.SourceFrameRate,
+            SourceVideoWidth = remoteSession.SourceVideoWidth,
+            SourceVideoHeight = remoteSession.SourceVideoHeight
         };
 
         return new CreateRemoteStreamSessionResult(result, $"/api/remote-stream-sessions/{localSession.Id}");

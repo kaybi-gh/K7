@@ -342,6 +342,10 @@ internal class PlayerService(
             CoverUrl = coverUrl,
             PendingSeekTime = startPosition is > 0 ? startPosition : null
         };
+        playerSource.CopyVideoTimingFrom(session.SourceFrameRate, session.SourceVideoWidth, session.SourceVideoHeight);
+        playerSource.ApplyStreamDecision(
+            session.StreamDecision ?? session.Source?.StreamDecision,
+            _selectedQuality?.IsOriginal ?? true);
 
         Source = playerSource;
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
@@ -412,6 +416,10 @@ internal class PlayerService(
             ThumbnailsUrl = thumbnailsUrl,
             PendingSeekTime = startPosition is > 0 ? startPosition : null
         };
+        Source.CopyVideoTimingFrom(session.SourceFrameRate, session.SourceVideoWidth, session.SourceVideoHeight);
+        Source.ApplyStreamDecision(
+            session.StreamDecision ?? session.Source?.StreamDecision,
+            _selectedQuality?.IsOriginal ?? true);
 
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
         SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);

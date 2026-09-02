@@ -135,7 +135,8 @@ public static class StreamDecisionHydrator
                     DeviceId = deviceId,
                     StreamSessionId = sessionId,
                     AudioTrackIndex = audioTrackIndex,
-                    SubtitleTrackIndex = subtitleTrackIndex
+                    SubtitleTrackIndex = subtitleTrackIndex,
+                    AllowAudioPassthrough = playbackSettings.AudioPassthrough
                 };
 
                 var hlsSegmentsAvailable = await HlsSegmentHelper.HasSegmentsAsync(context, indexedFileId, cancellationToken);

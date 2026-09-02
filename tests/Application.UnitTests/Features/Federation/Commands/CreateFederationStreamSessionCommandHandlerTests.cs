@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Federation.Commands.CreateFederationStreamSession;
 using K7.Server.Application.Features.Federation.Services;
+using K7.Server.Application.Features.IndexedFiles.Commands.BackfillVideoFrameRate;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
@@ -13,6 +14,7 @@ using K7.Server.Domain.Enums;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Dtos.Requests;
 using MediatR;
 using Microsoft.Data.Sqlite;
@@ -150,6 +152,7 @@ public class CreateFederationStreamSessionCommandHandlerTests
 
         _streamTracker.GetStreamInfo(result.Session.Id).Should().NotBeNull();
         await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>());
+        await _sender.DidNotReceive().Send(Arg.Any<BackfillVideoFrameRateCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Test]
@@ -199,6 +202,19 @@ public class CreateFederationStreamSessionCommandHandlerTests
         });
         await _context.SaveChangesAsync();
 
+        _sender.Send(Arg.Any<BackfillVideoFrameRateCommand>(), Arg.Any<CancellationToken>())
+            .Returns(
+            [
+                new VideoFileTrackDto
+                {
+                    Index = 0,
+                    Width = 1920,
+                    Height = 1080,
+                    Level = 40,
+                    FrameRate = 23.976f
+                }
+            ]);
+
         var result = await _handler.Handle(new CreateFederationStreamSessionCommand(
             InboundClientId,
             new CreateFederationStreamSessionRequest
@@ -210,7 +226,9 @@ public class CreateFederationStreamSessionCommandHandlerTests
 
         result.Session.Source.Should().NotBeNull();
         result.Session.Source!.MimeType.Should().Be("application/vnd.apple.mpegurl");
+        result.Session.SourceFrameRate.Should().BeApproximately(23.976f, 0.001f);
 
+        await _sender.Received(1).Send(Arg.Any<BackfillVideoFrameRateCommand>(), Arg.Any<CancellationToken>());
         await _sender.Received(1).Send(
             Arg.Is<CreateBackgroundTaskCommand>(c => c.Request.GetType() == typeof(ComputeHlsSegmentsCommand)),
             Arg.Any<CancellationToken>());

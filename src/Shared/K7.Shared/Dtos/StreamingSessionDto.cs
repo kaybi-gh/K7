@@ -14,7 +14,11 @@ public class StreamingSessionDto
 
     public IReadOnlyList<AudioFileTrackDto> AudioTracks { get; set; } = [];
     public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks { get; set; } = [];
+    public float? SourceFrameRate { get; set; }
+    public int? SourceVideoWidth { get; set; }
+    public int? SourceVideoHeight { get; set; }
     public IReadOnlyList<ChapterMarkerDto>? Chapters { get; set; }
+    public StreamDecisionDto? StreamDecision { get; set; }
 
     /// <summary>
     /// Initial stream URL and MIME type selected for this session

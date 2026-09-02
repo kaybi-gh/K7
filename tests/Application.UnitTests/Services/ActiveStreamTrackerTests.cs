@@ -191,4 +191,78 @@ public class ActiveStreamTrackerTests
         tracker.EndOpenSubsonicTransfer(sessionId, mediaA);
         tracker.GetStreamInfo(sessionId)!.MediaId.Should().Be(mediaB);
     }
+
+    [Test]
+    public void Upsert_ShouldKeepConcurrentPlays_WhenSameUserAndMediaOnDifferentDevices()
+    {
+        var tracker = new ActiveStreamTracker();
+        var userId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var firstSession = Guid.NewGuid();
+        var secondSession = Guid.NewGuid();
+        var tvId = Guid.NewGuid();
+        var browserId = Guid.NewGuid();
+
+        tracker.Upsert(firstSession, CreateStream(firstSession, userId, mediaId, tvId, "Living room"));
+        tracker.Upsert(secondSession, CreateStream(secondSession, userId, mediaId, browserId, "Chrome"));
+
+        var active = tracker.GetActiveStreams();
+        active.Should().HaveCount(2);
+        active.Select(s => s.SessionId).Should().BeEquivalentTo([firstSession, secondSession]);
+    }
+
+    [Test]
+    public void Upsert_ShouldReplaceRestart_WhenSameUserMediaAndDevice()
+    {
+        var tracker = new ActiveStreamTracker();
+        var userId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        var firstSession = Guid.NewGuid();
+        var restartedSession = Guid.NewGuid();
+
+        tracker.Upsert(firstSession, CreateStream(firstSession, userId, mediaId, deviceId, "TV"));
+        tracker.Upsert(restartedSession, CreateStream(restartedSession, userId, mediaId, deviceId, "TV"));
+
+        var active = tracker.GetActiveStreams();
+        active.Should().ContainSingle(s => s.SessionId == restartedSession);
+        tracker.GetStreamInfo(firstSession).Should().BeNull();
+    }
+
+    [Test]
+    public void Upsert_ShouldKeepBoth_WhenDeviceIdsDifferEvenIfNamesMatch()
+    {
+        var tracker = new ActiveStreamTracker();
+        var userId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var firstSession = Guid.NewGuid();
+        var secondSession = Guid.NewGuid();
+
+        tracker.Upsert(firstSession, CreateStream(firstSession, userId, mediaId, Guid.NewGuid(), "K7"));
+        tracker.Upsert(secondSession, CreateStream(secondSession, userId, mediaId, Guid.NewGuid(), "K7"));
+
+        tracker.GetActiveStreams().Should().HaveCount(2);
+    }
+
+    private static ActiveStreamInfo CreateStream(
+        Guid sessionId,
+        Guid userId,
+        Guid mediaId,
+        Guid? deviceId,
+        string deviceName) =>
+        new()
+        {
+            SessionId = sessionId,
+            IdentityUserId = "user-1",
+            UserId = userId,
+            MediaId = mediaId,
+            MediaTitle = "Movie",
+            DeviceId = deviceId,
+            DeviceName = deviceName,
+            DeviceClient = nameof(ClientType.Native),
+            StartedAt = DateTime.UtcNow,
+            Position = 0,
+            Duration = 100,
+            State = (int)PlaybackState.Playing
+        };
 }

@@ -1,11 +1,14 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.IndexedFiles.Commands.BackfillVideoFrameRate;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.MediaFormats;
@@ -164,10 +167,25 @@ public class CreateFederationStreamSessionCommandHandler(
             State = session.State,
             Position = session.Position,
             PlaybackSettings = new PlaybackSettingsDto(),
-            Source = streamUri,
+            Source = streamUri with { StreamDecision = streamDecision },
             AudioTracks = playbackTracks?.Audio ?? [],
-            SubtitleTracks = playbackTracks?.Subtitles ?? []
+            SubtitleTracks = playbackTracks?.Subtitles ?? [],
+            StreamDecision = streamDecision
         };
+        if (indexedFile.FileMetadata is VideoFileMetadata videoTiming)
+        {
+            var videoDtos = videoTiming.VideoTracks.Select(t => t.ToVideoFileTrackDto()).ToList();
+            if (videoDtos.Count > 0 && videoDtos.All(t => VideoFrameRate.IsMissing(t.FrameRate)))
+            {
+                var backfilled = await sender.Send(
+                    new BackfillVideoFrameRateCommand(indexedFile.Id),
+                    cancellationToken);
+                if (backfilled is { Count: > 0 })
+                    videoDtos = backfilled.ToList();
+            }
+
+            StreamSessionVideoTiming.CopyFrom(result, videoDtos);
+        }
 
         return new CreateFederationStreamSessionResult(result, $"/api/federation/stream-sessions/{session.Id}");
     }

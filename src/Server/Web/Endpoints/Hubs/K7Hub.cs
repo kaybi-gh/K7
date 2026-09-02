@@ -126,7 +126,15 @@ public partial class K7Hub(
 
     public async Task SendIndexedFileStreamUri(Guid streamId, Guid indexedFileId, Guid deviceId, PlaybackSettingsDto playbackSettings)
     {
-        var uri = await sender.Send(new GetStreamUriQuery { Id = indexedFileId, DeviceId = deviceId });
+        var uri = await sender.Send(new GetStreamUriQuery
+        {
+            Id = indexedFileId,
+            DeviceId = deviceId,
+            StreamSessionId = streamId,
+            AudioTrackIndex = playbackSettings.AudioTrackIndex,
+            SubtitleTrackIndex = playbackSettings.SubtitleTrackIndex,
+            AllowAudioPassthrough = playbackSettings.AudioPassthrough
+        });
         await Clients.Caller.ReceiveIndexedFileStreamUri(uri);
     }
 

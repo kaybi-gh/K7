@@ -1,6 +1,9 @@
+using K7.Server.Application.Common;
+using K7.Server.Application.Features.IndexedFiles.Commands.BackfillVideoFrameRate;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFilePlaybackTracks;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Features.StreamSessions.Commands.CreateStreamSession;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,7 +30,8 @@ public class CreateStreamSession : IEndpoint
                 DeviceId = command.DeviceId,
                 StreamSessionId = session.Id,
                 AudioTrackIndex = command.AudioTrackIndex,
-                SubtitleTrackIndex = command.SubtitleTrackIndex
+                SubtitleTrackIndex = command.SubtitleTrackIndex,
+                AllowAudioPassthrough = command.AudioPassthrough
             };
 
             var streamUri = await sender.Send(query, cancellationToken);
@@ -41,6 +45,18 @@ public class CreateStreamSession : IEndpoint
             session.PlaybackSettings.SubtitleTrackIndex = query.SubtitleTrackIndex;
             session.AudioTracks = playbackTracks.AudioTracks;
             session.SubtitleTracks = playbackTracks.SubtitleTracks;
+            session.StreamDecision = streamUri.StreamDecision;
+            var videoTracks = playbackTracks.VideoTracks;
+            if (videoTracks.Count > 0 && videoTracks.All(t => VideoFrameRate.IsMissing(t.FrameRate)))
+            {
+                var backfilled = await sender.Send(
+                    new BackfillVideoFrameRateCommand(command.IndexedFileId),
+                    cancellationToken);
+                if (backfilled is { Count: > 0 })
+                    videoTracks = backfilled;
+            }
+
+            StreamSessionVideoTiming.CopyFrom(session, videoTracks);
 
             return Results.Created($"/api/stream-sessions/{session.Id}", session);
         })

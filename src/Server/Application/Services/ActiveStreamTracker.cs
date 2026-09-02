@@ -82,13 +82,15 @@ public class ActiveStreamTracker : IActiveStreamTracker
         }
         else
         {
-            // Remove stale sessions from the same user + same media (user restarted playback)
+            // Same user + media on the same device is a restart. Keep other devices
+            // (two TVs / a TV and a browser playing the same title at once).
             if (info.UserId.HasValue && info.MediaId.HasValue)
             {
                 var staleKeys = _streams
                     .Where(kv => kv.Key != sessionId
                         && kv.Value.UserId == info.UserId
-                        && kv.Value.MediaId == info.MediaId)
+                        && kv.Value.MediaId == info.MediaId
+                        && IsSamePlaybackEndpoint(kv.Value, info))
                     .Select(kv => kv.Key)
                     .ToList();
 
@@ -228,5 +230,22 @@ public class ActiveStreamTracker : IActiveStreamTracker
     {
         pendingInfo.LastUpdatedAt = DateTime.UtcNow;
         _openSubsonicPending[sessionId] = pendingInfo;
+    }
+
+    /// <summary>
+    /// True when both infos are the same client endpoint so a new session should replace the old one.
+    /// </summary>
+    internal static bool IsSamePlaybackEndpoint(ActiveStreamInfo existing, ActiveStreamInfo incoming)
+    {
+        if (existing.DeviceId is Guid existingId && incoming.DeviceId is Guid incomingId)
+            return existingId == incomingId;
+
+        if (existing.DeviceId is null && incoming.DeviceId is null)
+        {
+            return string.Equals(existing.DeviceClient, incoming.DeviceClient, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(existing.DeviceName, incoming.DeviceName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
     }
 }
