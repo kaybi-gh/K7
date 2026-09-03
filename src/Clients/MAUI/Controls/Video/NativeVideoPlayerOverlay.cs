@@ -218,6 +218,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         BuildLayout();
         WireEvents();
+        InitializePlaybackStats();
+#if ANDROID
+        HandlerChanged += (_, _) => SyncTvSurfaceComposition();
+        SizeChanged += (_, _) => SyncTvSurfaceComposition();
+#endif
         SizeChanged += (_, _) => UpdateSettingsAvailableHeight();
         if (NativePointerInput.SupportsHoverRecognizers)
         {
@@ -242,6 +247,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         SubscribeSyncPlay();
         ResetHideTimer();
         _ = LoadPreferencesAsync();
+        _ = LoadPlaybackStatsAsync();
     }
 
     public void Detach()
@@ -261,6 +267,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         DismissNextEpisode();
         RestoreBrightness();
         StopCursorIdle();
+        DetachStatsHud();
 #if WINDOWS
         Platforms.Windows.WindowsIdleCursor.Show();
 #endif
@@ -276,28 +283,26 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            IsVisible = active;
             NativeVideoDebug.Log("SetActive active=" + active + " device=" + _deviceType);
             if (active)
             {
-                AttachSidecarLayer();
+                IsVisible = true;
+                    AttachSidecarLayer();
                 Attach();
                 _awaitingFirstFrame = true;
                 SetLoadingVeil(true);
                 // Warm settings UI while the veil is up so the first Open does not hitch playback.
                 try { _settings.Rebuild(); } catch { /* ignore */ }
-                // TV: start with chrome hidden so the first OK reveals it with focus,
-                // matching Blazor auto-hide behavior after play begins.
-                if (_deviceType == DeviceType.TV)
-                    HideChrome();
-                else
-                    ShowChrome();
+                // Keep chrome visible until the first frame so Back/Settings stay reachable
+                // if Direct Play dies at t=0 (TV previously started with chrome hidden).
+                ShowChrome();
                 ResetSkipSession();
                 _ = RefreshSegmentsAsync();
                 RefreshSeekChapters();
                 UpdateTransport();
                 WarmSeekThumbnails();
                 RefreshSidecarSubtitles();
+                ApplyPlaybackStatsHud();
             }
             else
             {
@@ -307,10 +312,16 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                     _player.ExitFullScreen();
                 }
 
+                HideChrome(force: true);
+                    _awaitingFirstFrame = false;
+#if ANDROID
+                Platforms.Android.AndroidOverlayComposition.Reset(this);
+#endif
                 ClearSidecarSubtitles();
                 DetachSidecarLayer();
                 SetLoadingVeil(false);
                 Detach();
+                IsVisible = false;
             }
         });
     }
@@ -326,6 +337,14 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (loading && !_awaitingFirstFrame)
                 return;
 
+            if (!IsVisible)
+            {
+                _loadingVeil.IsVisible = false;
+                _loadingSpinner.IsVisible = false;
+                _loadingSpinner.IsRunning = false;
+                return;
+            }
+
             _loadingVeil.IsVisible = loading;
             _loadingSpinner.IsVisible = loading;
             _loadingSpinner.IsRunning = loading;
@@ -334,13 +353,14 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (loading)
             {
                 StopHideTimer();
-                if (_deviceType != DeviceType.TV)
-                    ShowChrome();
+                ShowChrome();
             }
             else if (_deviceType == DeviceType.TV && !_showChrome)
             {
                 ResetHideTimer();
             }
+
+            SyncTvSurfaceComposition();
         });
     }
 
@@ -357,9 +377,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _loadingSpinner.IsVisible = true;
             _loadingSpinner.IsRunning = true;
             StopHideTimer();
-            if (_deviceType != DeviceType.TV)
-                ShowChrome();
+            ShowChrome();
             NativeVideoDebug.Log("SetLoadingVeil loading=True transient");
+            SyncTvSurfaceComposition();
         });
     }
 
@@ -374,9 +394,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _loadingSpinner.IsRunning = false;
             NativeVideoDebug.Log("SetLoadingVeil loading=False firstFrame");
             ResetHideTimer();
+            SyncTvSurfaceComposition();
         });
     }
-
     /// <summary>TV / keyboard Back. Returns true when consumed.</summary>
     public bool HandleBack()
     {
@@ -1206,7 +1226,27 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             UpdateSettingsAvailableHeight();
             UpdateChromeVisibility();
             ResetHideTimer(TimeSpan.FromSeconds(5));
+            LogPlaybackMenuSnapshot(_settings.IsOpen ? "settings-open" : "settings-close");
         };
+    }
+
+    private void LogPlaybackMenuSnapshot(string reason)
+    {
+        NativeVideoDebug.Warn(
+            reason
+            + " mauiW=" + _settings.Width.ToString("0")
+            + " mauiH=" + _settings.Height.ToString("0")
+            + " chrome=" + IsChromeVisible);
+#if ANDROID
+        FindBlazorPage()?.LogVideoSurfaceSnapshot(reason, _settings);
+        if (_settings.Handler?.PlatformView is Android.Views.View view)
+        {
+            view.Post(() => FindBlazorPage()?.LogVideoSurfaceSnapshot(reason + "-post", _settings));
+            view.PostDelayed(
+                () => FindBlazorPage()?.LogVideoSurfaceSnapshot(reason + "-post300", _settings),
+                300);
+        }
+#endif
     }
 
     private void UpdateSettingsAvailableHeight()
@@ -1508,6 +1548,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             ClearTvChromeFocus();
 
         SyncTvSurfaceComposition();
+        NativeVideoDebug.Log(
+            "Chrome visible=" + visible
+            + " settings=" + _settings.IsOpen);
+#if ANDROID
+        if (!visible)
+            FindBlazorPage()?.LogVideoSurfaceSnapshot("chrome-hide", _settings);
+#endif
     }
 
     private void SyncTvSurfaceComposition()
@@ -1515,6 +1562,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (_deviceType != DeviceType.TV)
             return;
 
+        // Stats HUD is a RootGrid sibling, not a child of this overlay. Do not keep the
+        // full-screen chrome layer drawn for it: that reintroduces the Amlogic hitch.
         var draw = IsChromeVisible
             || IsSkipSegmentOffered
             || IsNextEpisodeVisible
@@ -1523,6 +1572,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             || _skipNotificationBanner.IsVisible;
 #if ANDROID
         Platforms.Android.AndroidOverlayComposition.SetDraws(this, draw);
+        FindBlazorPage()?.EnsureVideoSurfaceNotFocusable();
+#else
+        TranslationX = 0;
 #endif
     }
 
@@ -1569,7 +1621,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         UpdateChromeVisibility();
         StopHideTimer();
     }
-
     /// <summary>
     /// Enter/exit a dialog-style input modal. While active, transport chrome and gestures are
     /// fully blocked - only the modal layer (next-episode) receives keys and touches.
@@ -1818,7 +1869,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
         if (_awaitingFirstFrame)
             return;
-
         var timeout = overrideTimeout
             ?? (_deviceType == DeviceType.TV ? OverlayTimeoutTv : OverlayTimeoutDesktop);
         _hideTimer = new Timer(timeout.TotalMilliseconds) { AutoReset = false };
@@ -2105,7 +2155,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _player.ExitFullScreen();
         }
 
-        HideChrome();
+        HideChrome(force: true);
         RestoreBrightness();
         _progressTracker?.StopTracking();
         _player.Stop();

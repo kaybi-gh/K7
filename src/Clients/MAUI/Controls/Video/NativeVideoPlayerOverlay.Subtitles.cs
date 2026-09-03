@@ -41,6 +41,7 @@ public sealed partial class NativeVideoPlayerOverlay
     {
         base.OnParentSet();
         AttachSidecarLayer();
+        ApplyPlaybackStatsHud();
     }
 
     private void AttachSidecarLayer()

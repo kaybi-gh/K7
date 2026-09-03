@@ -148,6 +148,16 @@ internal static class AndroidExoHlsTuning
         return ExoVideoBufferPolicy.Resolve(stored, television);
     }
 
+    internal static string DolbyVisionHudLabel()
+    {
+        var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
+        var model = global::Android.OS.Build.Model ?? "";
+        return AndroidExoPlaybackPolicy.ShouldPreferHevcDecoderForDolbyVision(
+            ResolveDolbyVisionDecodeMode(manufacturer, model))
+            ? "dv hevc"
+            : "dv native";
+    }
+
     private static DolbyVisionDecodeMode ResolveDolbyVisionDecodeMode(string manufacturer, string model)
     {
         var stored = "";
@@ -164,6 +174,15 @@ internal static class AndroidExoHlsTuning
             IsAndroidTelevision(),
             manufacturer,
             model);
+    }
+
+    internal static string VideoHostHudLabel() => "host exo";
+
+    internal static string BufferHudLabel()
+    {
+        var manufacturer = global::Android.OS.Build.Manufacturer ?? "";
+        var model = global::Android.OS.Build.Model ?? "";
+        return "buf " + ExoVideoBufferPolicy.Persist(ResolveBufferSize(manufacturer, model));
     }
 
     private static void TrySetLoadControl(ExoPlayerBuilder builder, ExoVideoBufferSize size)

@@ -50,6 +50,7 @@ internal static class NativeStrings
     public static string Quality => IsFrench ? "Qualité" : "Quality";
     public static string Speed => IsFrench ? "Vitesse" : "Speed";
     public static string AspectRatio => IsFrench ? "Format d'image" : "Aspect ratio";
+    public static string PlaybackStats => IsFrench ? "Statistiques" : "Playback stats";
     public static string Normal => "Normal";
     public static string Fit => IsFrench ? "Ajusté" : "Fit";
     public static string Fill => IsFrench ? "Rempli" : "Fill";

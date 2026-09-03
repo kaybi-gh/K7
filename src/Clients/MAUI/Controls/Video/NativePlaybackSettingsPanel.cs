@@ -37,8 +37,11 @@ public sealed class NativePlaybackSettingsPanel : Border
 
     public event EventHandler? Closed;
     public event EventHandler? OpenedChanged;
+    public event EventHandler<bool>? StatsToggled;
 
     public bool IsOpen { get; private set; }
+    public bool ShowStatsToggle { get; set; }
+    public bool StatsEnabled { get; set; }
 
     public NativePlaybackSettingsPanel(IPlayerService player)
     {
@@ -121,6 +124,9 @@ public sealed class NativePlaybackSettingsPanel : Border
         _root.Children.Add(_scroll);
 
         Content = _root;
+        DisableAndroidPlatformFocus(this);
+        DisableAndroidPlatformFocus(_headerActionButton);
+        DisableAndroidPlatformFocus(_scroll);
     }
 
     /// <summary>
@@ -152,14 +158,26 @@ public sealed class NativePlaybackSettingsPanel : Border
         }
 
         OpenedChanged?.Invoke(this, EventArgs.Empty);
+        var focusLabel = _focusedIndex >= 0 && _focusedIndex < _rows.Count
+            ? _rows[_focusedIndex].Label
+            : "";
+        NativeVideoDebug.Warn(
+            "Settings.Open page=" + _page
+            + " rows=" + _rows.Count
+            + " focusIdx=" + _focusedIndex
+            + " focusLabel=" + focusLabel
+            + " statsToggle=" + ShowStatsToggle
+            + " statsOn=" + StatsEnabled
+            + " w=" + Width.ToString("0")
+            + " h=" + Height.ToString("0"));
     }
-
     public void Close()
     {
         if (!IsOpen)
             return;
         IsOpen = false;
         IsVisible = false;
+        NativeVideoDebug.Warn("Settings.Close");
         Closed?.Invoke(this, EventArgs.Empty);
         OpenedChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -265,6 +283,18 @@ public sealed class NativePlaybackSettingsPanel : Border
             AddNavRow(NativePlayerGlyphs.SlidersHorizontal, NativeStrings.Quality, () => { _page = NativeSettingsPage.Quality; Rebuild(); });
         AddNavRow(NativePlayerGlyphs.Gauge, NativeStrings.Speed, () => { _page = NativeSettingsPage.Speed; Rebuild(); });
         AddNavRow(NativePlayerGlyphs.FrameCorners, NativeStrings.AspectRatio, () => { _page = NativeSettingsPage.Aspect; Rebuild(); });
+        if (ShowStatsToggle)
+        {
+            AddSelectRow(
+                NativeStrings.PlaybackStats,
+                StatsEnabled,
+                () =>
+                {
+                    StatsEnabled = !StatsEnabled;
+                    StatsToggled?.Invoke(this, StatsEnabled);
+                },
+                leadingGlyph: NativePlayerGlyphs.ChartLine);
+        }
     }
 
     private void BuildAudio()
@@ -367,23 +397,28 @@ public sealed class NativePlaybackSettingsPanel : Border
         content.Children.Add(icon);
         content.Children.Add(label);
         content.Children.Add(chevron);
-        AddRowView(content, selected: false, action);
+        AddRowView(content, selected: false, action, text);
     }
 
-    private void AddSelectRow(string text, bool selected, Action action, View? flag = null)
+    private void AddSelectRow(
+        string text,
+        bool selected,
+        Action action,
+        View? flag = null,
+        string? leadingGlyph = null)
     {
         var content = NativeIconText.CreateContent(
-            selected ? NativePlayerGlyphs.CheckCircle : null,
+            selected ? NativePlayerGlyphs.CheckCircle : leadingGlyph,
             text,
             leading: flag);
         AddRowView(content, selected, () =>
         {
             action();
             Rebuild();
-        });
+        }, text);
     }
 
-    private void AddRowView(View content, bool selected, Action action)
+    private void AddRowView(View content, bool selected, Action action, string label)
     {
         var border = new Border
         {
@@ -397,7 +432,7 @@ public sealed class NativePlaybackSettingsPanel : Border
             Margin = new Thickness(4, 2)
         };
 
-        var row = new Row(border, action) { Selected = selected };
+        var row = new Row(border, action) { Selected = selected, Label = label };
         var tap = new TapGestureRecognizer();
         tap.Tapped += (_, _) => row.Activate();
         border.GestureRecognizers.Add(tap);
@@ -412,6 +447,7 @@ public sealed class NativePlaybackSettingsPanel : Border
         });
         _rows.Add(row);
         _list.Children.Add(border);
+        DisableAndroidPlatformFocus(border);
     }
 
     private void SetFocusedIndex(int index)
@@ -498,8 +534,32 @@ public sealed class NativePlaybackSettingsPanel : Border
     private sealed class Row(Border view, Action activate)
     {
         public Border View { get; } = view;
+        public string Label { get; set; } = "";
         public bool Selected { get; set; }
         public void Activate() => activate();
+    }
+
+    /// <summary>
+    /// Software focus rings only. A focusable header Button stole window focus from
+    /// SurfaceView and stopped Amlogic HEVC drops; do not rely on that.
+    /// </summary>
+    private static void DisableAndroidPlatformFocus(VisualElement element)
+    {
+#if ANDROID
+        void Apply()
+        {
+            if (element.Handler?.PlatformView is Android.Views.View view)
+            {
+                view.Focusable = false;
+                view.FocusableInTouchMode = false;
+            }
+        }
+
+        Apply();
+        element.HandlerChanged += (_, _) => Apply();
+#else
+        _ = element;
+#endif
     }
 }
 

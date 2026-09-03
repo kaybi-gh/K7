@@ -50,4 +50,5 @@ public static class NativePlayerGlyphs
     public const string List = "\ue2f0"; // list
     public const string FilmSlate = "\ue8c2"; // film-slate
     public const string Bell = "\ue0ce"; // bell
+    public const string ChartLine = "\ue15e"; // chart-line
 }

@@ -84,6 +84,11 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<int> VIDEO_SKIP_BACK_SECONDS = new("VideoSkipBackSeconds");
     public static readonly PreferenceKey<int> VIDEO_SKIP_FORWARD_SECONDS = new("VideoSkipForwardSeconds");
 
+    /// <summary>
+    /// Admin-only native player HUD (dropped frames, HDMI Hz, decoders). Device-local.
+    /// </summary>
+    public static readonly PreferenceKey<bool> VIDEO_PLAYBACK_NERD_STATS = new("VideoPlaybackNerdStats");
+
     // Sleep timer
     public static readonly PreferenceKey<string> SLEEP_TIMER_MODE = new("SleepTimerMode");
 

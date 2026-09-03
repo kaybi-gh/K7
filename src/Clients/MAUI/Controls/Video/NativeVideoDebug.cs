@@ -1,8 +1,9 @@
 namespace K7.Clients.MAUI.Controls.Video;
 
 /// <summary>
-/// Temporary native-video diagnostics for adb logcat. Filter with:
-/// adb logcat -s K7NativeVideo:I *:S
+/// Temporary native-video diagnostics for adb logcat. Release strips Info/Warn, so
+/// these always use Error. Filter with:
+/// adb logcat -s K7NativeVideo:E *:S
 /// Set <see cref="Enabled"/> to false (or delete call sites) once playback is validated.
 /// </summary>
 internal static class NativeVideoDebug
@@ -18,9 +19,11 @@ internal static class NativeVideoDebug
             return;
 
 #if ANDROID
-        global::Android.Util.Log.Info(Tag, message);
+        global::Android.Util.Log.Error(Tag, message);
 #else
         System.Diagnostics.Debug.WriteLine("[" + Tag + "] " + message);
 #endif
     }
+
+    public static void Warn(string message) => Log(message);
 }

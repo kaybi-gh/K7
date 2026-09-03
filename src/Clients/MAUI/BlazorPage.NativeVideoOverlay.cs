@@ -166,6 +166,7 @@ public partial class BlazorPage
         blazorWebView.IsVisible = false;
         MauiNativeVideoChrome.SetBackgroundUiPaused(true);
 #if ANDROID
+        Platforms.Android.AndroidOverlayComposition.SetDraws(blazorWebView, draws: false);
         SuppressWebViewFocusForNativeChrome();
         TryPauseAndroidWebView();
 #endif
@@ -213,6 +214,9 @@ public partial class BlazorPage
         blazorWebView.IsVisible = true;
         blazorWebView.Opacity = 1;
         blazorWebView.InputTransparent = false;
+#if ANDROID
+        Platforms.Android.AndroidOverlayComposition.Reset(blazorWebView);
+#endif
     }
 #endif
 
@@ -223,6 +227,7 @@ public partial class BlazorPage
 
         MauiNativeVideoChrome.SetBackgroundUiPaused(false);
 #if ANDROID
+        Platforms.Android.AndroidOverlayComposition.Reset(blazorWebView);
         TryResumeAndroidWebView();
 #endif
         // Keep Opacity 0 until Play focus is restored so the casting carousel flash is not visible.
