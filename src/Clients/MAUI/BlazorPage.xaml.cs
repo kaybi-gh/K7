@@ -56,6 +56,9 @@ public partial class BlazorPage : ContentPage
 #if !WINDOWS
     private bool _openingNativeSource;
 #endif
+    private bool _nativeStartRecoveryInFlight;
+    private string? _nativeLastRecoveredUrl;
+    private DateTime _nativeLastRecoveredUtc = DateTime.MinValue;
     private double? _authRebindResumeOverride;
     private ICustomAuthenticationStateProvider? _authStateProvider;
     private bool _accessTokenChangedSubscribed;
@@ -1190,10 +1193,144 @@ public partial class BlazorPage : ContentPage
             retrying = true;
             _ = TryRecoverNativeVideoAuthAsync(detail);
         }
+        else if (NativeDirectPlayStartFailure.ShouldRetrySameDirectPlay(
+                     detail,
+                     clockSeconds,
+                     LocalPlaybackUrl.IsLocalFile(_playerService.Source?.Url),
+                     !StreamingSourceKind.IsHls(
+                         _playerService.Source?.MimeType,
+                         _playerService.Source?.Url),
+                     _androidDirectPlayRuntimeRetryCount))
+        {
+            var url = _playerService.Source?.Url;
+            if (!string.IsNullOrEmpty(url) && _playerService.IsVisible)
+            {
+                retrying = true;
+                _androidDirectPlayRuntimeRetryCount++;
+                var resumeAt = CaptureNativeVideoResumePosition();
+                _ = RetryAndroidDirectPlayAfterRuntimeCheckAsync(url, resumeAt);
+            }
+        }
 #endif
 
         ReportNativePlayerMediaFailedToServer(detail + stateDetail);
 
+#if ANDROID
+        if (!retrying)
+            TryHandleNativePlaybackStartFailure(detail);
+#elif !WINDOWS
+        TryHandleNativePlaybackStartFailure(detail);
+#endif
+    }
+
+    private void TryHandleNativePlaybackStartFailure(string detail)
+    {
+        if (!_playerService.IsVisible || !MauiNativeVideoChrome.IsEnabled)
+            return;
+
+#if !WINDOWS
+        if (_openingNativeSource)
+            return;
+#endif
+
+        var isLocal = LocalPlaybackUrl.IsLocalFile(_playerService.Source?.Url);
+        var positionSeconds = GetNativePlaybackClockSeconds();
+
+        if (_nativeStartRecoveryInFlight)
+            return;
+
+        // A dying Direct Play session can MediaFailed after remux Source is already set.
+        // Ignore that stale error unless the new player is actually Failed.
+        // MediaElement.CurrentState never becomes Failed when Exo is hosted without
+        // a MediaManager IPlayerListener, so check ExoPlayer.PlayerError on Android.
+        if (_nativeLastRecoveredUrl is not null
+            && DateTime.UtcNow - _nativeLastRecoveredUtc < TimeSpan.FromSeconds(2)
+            && string.Equals(
+                _playerService.Source?.Url,
+                _nativeLastRecoveredUrl,
+                StringComparison.Ordinal)
+            && !NativePlayerLooksFailed())
+        {
+            return;
+        }
+
+        if (NativeDirectPlayStartFailure.ShouldFallbackQualityLadder(
+                detail,
+                positionSeconds,
+                isLocal))
+        {
+            _ = RecoverNativePlaybackStartAsync();
+            return;
+        }
+
+        if (positionSeconds <= 2)
+            _ = AbortUnplayableNativeStartAsync();
+    }
+
+    private async Task RecoverNativePlaybackStartAsync()
+    {
+        if (_nativeStartRecoveryInFlight)
+            return;
+
+        _nativeStartRecoveryInFlight = true;
+        try
+        {
+            var fromQuality = _playerService.SelectedQuality?.Label ?? "(none)";
+            var fromUrl = RedactUrl(_playerService.Source?.Url);
+            MainThread.BeginInvokeOnMainThread(() => _nativeOverlay?.ShowTransientVeil());
+
+            var recovered = await _playerService.TryRecoverPlaybackStartAsync(allowQualityLadder: true);
+            if (recovered)
+            {
+                _nativeLastRecoveredUrl = _playerService.Source?.Url;
+                _nativeLastRecoveredUtc = DateTime.UtcNow;
+                ReportNativePlaybackIssue(
+                    "NativePlayer.QualityFallback",
+                    "fromQuality="
+                    + fromQuality
+                    + " toQuality="
+                    + (_playerService.SelectedQuality?.Label ?? "(none)")
+                    + " fromUrl="
+                    + fromUrl
+                    + " toUrl="
+                    + RedactUrl(_playerService.Source?.Url));
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    _nativeOverlay?.ClearStartFailure();
+                    _nativeOverlay?.ShowTransientVeil();
+                });
+                return;
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            _nativeStartRecoveryInFlight = false;
+        }
+
+        await AbortUnplayableNativeStartAsync();
+    }
+
+    private async Task AbortUnplayableNativeStartAsync()
+    {
+        if (!_playerService.IsVisible)
+            return;
+
+        ReportNativePlaybackIssue(
+            "NativePlayer.PlaybackAborted",
+            "quality="
+            + (_playerService.SelectedQuality?.Label ?? "(none)")
+            + " url="
+            + RedactUrl(_playerService.Source?.Url)
+            + " StreamSessionId="
+            + (_playerService.Source?.StreamSessionId?.ToString() ?? "(none)")
+            + " IndexedFileId="
+            + (_playerService.Source?.IndexedFileId?.ToString() ?? "(none)"));
+
+        await MainThread.InvokeOnMainThreadAsync(() =>
+            _playerService.AbortPlaybackStartAsync("MediaPlaybackUnplayable"));
     }
 
     private void ReportNativePlaybackIssue(string context, string detail)

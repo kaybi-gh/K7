@@ -610,10 +610,7 @@ internal class PlayerService(
 
     public async Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default)
     {
-        // Web Video.js watchdog lives in VideoPlayer.razor. Native LibVLC / MediaElement
-        // do not use this ABR ladder.
-        if (!WindowsVideoPlayback.ShouldUseWebVideoPlayer(Source?.MimeType, Source?.Url))
-            return false;
+        var isWebVideoPlayer = WindowsVideoPlayback.ShouldUseWebVideoPlayer(Source?.MimeType, Source?.Url);
 
         if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
             return false;
@@ -624,10 +621,19 @@ internal class PlayerService(
             if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
                 return false;
 
-            // Growing buffer / playing: black frames are a display issue, not a ladder issue.
-            if (BufferedTime > 0
-                || CurrentTime > 0
-                || PlaybackState is PlaybackState.Playing)
+            // Web: growing buffer / playing means black frames are a display issue.
+            // Native Direct Play 1004 happens at decoder t=0 even when the resume clock is set.
+            if (isWebVideoPlayer
+                && (BufferedTime > 0
+                    || CurrentTime > 0
+                    || PlaybackState is PlaybackState.Playing))
+            {
+                return true;
+            }
+
+            if (!isWebVideoPlayer
+                && PlaybackState is PlaybackState.Playing
+                && BufferedTime > 0)
             {
                 return true;
             }
@@ -635,20 +641,38 @@ internal class PlayerService(
             if (!allowQualityLadder)
                 return false;
 
-            var sinceLastFallback = DateTime.UtcNow - _lastQualityFallbackUtc;
-            if (_lastQualityFallbackUtc != DateTime.MinValue
-                && sinceLastFallback < MinQualityFallbackInterval)
+            // Web Video.js: avoid stacking burn-in jobs. Native 1004 at t=0 must step
+            // Direct -> remux -> transcode immediately.
+            if (isWebVideoPlayer)
             {
-                return true;
+                var sinceLastFallback = DateTime.UtcNow - _lastQualityFallbackUtc;
+                if (_lastQualityFallbackUtc != DateTime.MinValue
+                    && sinceLastFallback < MinQualityFallbackInterval)
+                {
+                    return true;
+                }
             }
 
             _playbackStartRecoveryAttempts++;
+
+            var url = Source?.Url ?? _baseManifestUrl;
+            if (_selectedQuality?.IsOriginal == true
+                && !StreamingSourceKind.IsHls(Source?.MimeType, url)
+                && TryPromoteDirectToHls())
+            {
+                NativeVideoDebug.Log("RecoverPlaybackStart DirectPlay to remux");
+                _lastQualityFallbackUtc = DateTime.UtcNow;
+                ReloadCurrentSource();
+                return true;
+            }
 
             if (_selectedQuality?.IsOriginal == true)
             {
                 var fallbackQuality = _availableQualities.FirstOrDefault(q => !q.IsOriginal);
                 if (fallbackQuality is not null)
                 {
+                    NativeVideoDebug.Log(
+                        "RecoverPlaybackStart remux to transcode label=" + fallbackQuality.Label);
                     _lastQualityFallbackUtc = DateTime.UtcNow;
                     await ChangeQualityAsync(fallbackQuality, cancellationToken);
                     return true;
@@ -658,12 +682,14 @@ internal class PlayerService(
             var nextQuality = GetNextLowerTranscodedQuality();
             if (nextQuality is not null)
             {
+                NativeVideoDebug.Log(
+                    "RecoverPlaybackStart next transcode label=" + nextQuality.Label);
                 _lastQualityFallbackUtc = DateTime.UtcNow;
                 await ChangeQualityAsync(nextQuality, cancellationToken);
                 return true;
             }
 
-            if (_playbackStartRecoveryAttempts <= 2)
+            if (isWebVideoPlayer && _playbackStartRecoveryAttempts <= 2)
             {
                 _lastQualityFallbackUtc = DateTime.UtcNow;
                 ReloadCurrentSource();
@@ -723,22 +749,25 @@ internal class PlayerService(
     /// </summary>
     private void ReplaceStreamingSource(string url, double? pendingSeekTime)
     {
+        var previous = Source;
         Source = new PlayerSource
         {
-            MediaId = Source.MediaId,
-            StreamSessionId = Source.StreamSessionId,
-            IndexedFileId = Source.IndexedFileId,
+            MediaId = previous.MediaId,
+            StreamSessionId = previous.StreamSessionId,
+            IndexedFileId = previous.IndexedFileId,
             Url = url,
-            MimeType = StreamingSourceKind.IsHls(Source.MimeType, url)
+            MimeType = StreamingSourceKind.IsHls(previous.MimeType, url)
                 ? "application/vnd.apple.mpegurl"
-                : Source.MimeType ?? "application/vnd.apple.mpegurl",
-            ThumbnailsUrl = Source.ThumbnailsUrl,
-            Chapters = Source.Chapters,
-            KnownDurationSeconds = Source.KnownDurationSeconds,
-            Title = Source.Title,
-            CoverUrl = Source.CoverUrl,
+                : previous.MimeType ?? "application/vnd.apple.mpegurl",
+            ThumbnailsUrl = previous.ThumbnailsUrl,
+            Chapters = previous.Chapters,
+            KnownDurationSeconds = previous.KnownDurationSeconds,
+            Title = previous.Title,
+            CoverUrl = previous.CoverUrl,
             PendingSeekTime = pendingSeekTime
         };
+        Source.CopyVideoTimingFrom(previous);
+        Source.ApplyStreamDecision(previous.StreamDecision, _selectedQuality?.IsOriginal ?? true);
     }
 
     private static string SummarizePlaybackUrl(string? url)

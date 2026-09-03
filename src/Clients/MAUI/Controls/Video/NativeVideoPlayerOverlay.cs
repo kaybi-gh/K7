@@ -65,6 +65,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         // Above veil, below chrome - visible in the open middle without blocking back.
         ZIndex = 1
     };
+    private readonly Border _startFailureBanner = new();
+    private readonly Label _startFailureLabel = new();
     private readonly Grid _topBar = new();
     private readonly Grid _bottomBar = new();
     private readonly Label _titleLabel = new();
@@ -157,6 +159,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private DateTime _skipAnchorUtc;
     /// <summary>Dialog-style layer (next-episode) that owns all input and hides chrome.</summary>
     private bool _inputModalActive;
+    private bool _startFailureVisible;
     private static readonly TimeSpan DpadHoldScrubDelay = TimeSpan.FromMilliseconds(320);
     private static readonly TimeSpan DpadHoldInterval = TimeSpan.FromMilliseconds(110);
     private IReadOnlyList<MediaSegmentDto>? _segments;
@@ -287,7 +290,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (active)
             {
                 IsVisible = true;
-                    AttachSidecarLayer();
+                ClearStartFailure();
+                AttachSidecarLayer();
                 Attach();
                 _awaitingFirstFrame = true;
                 SetLoadingVeil(true);
@@ -313,7 +317,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 }
 
                 HideChrome(force: true);
-                    _awaitingFirstFrame = false;
+                ClearStartFailure();
+                _awaitingFirstFrame = false;
 #if ANDROID
                 Platforms.Android.AndroidOverlayComposition.Reset(this);
 #endif
@@ -345,9 +350,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
             }
 
-            _loadingVeil.IsVisible = loading;
-            _loadingSpinner.IsVisible = loading;
-            _loadingSpinner.IsRunning = loading;
+            _loadingVeil.IsVisible = loading && !_startFailureVisible;
+            _loadingSpinner.IsVisible = loading && !_startFailureVisible;
+            _loadingSpinner.IsRunning = loading && !_startFailureVisible;
             NativeVideoDebug.Log("SetLoadingVeil loading=" + loading);
             // Keep transport/back visible while the surface is covered.
             if (loading)
@@ -355,7 +360,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 StopHideTimer();
                 ShowChrome();
             }
-            else if (_deviceType == DeviceType.TV && !_showChrome)
+            else if (_deviceType == DeviceType.TV && !_showChrome && !_startFailureVisible)
             {
                 ResetHideTimer();
             }
@@ -374,8 +379,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             _awaitingFirstFrame = true;
             _loadingVeil.IsVisible = true;
-            _loadingSpinner.IsVisible = true;
-            _loadingSpinner.IsRunning = true;
+            _loadingSpinner.IsVisible = !_startFailureVisible;
+            _loadingSpinner.IsRunning = !_startFailureVisible;
             StopHideTimer();
             ShowChrome();
             NativeVideoDebug.Log("SetLoadingVeil loading=True transient");
@@ -389,6 +394,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _awaitingFirstFrame = false;
+            ClearStartFailure();
             _loadingVeil.IsVisible = false;
             _loadingSpinner.IsVisible = false;
             _loadingSpinner.IsRunning = false;
@@ -397,6 +403,53 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             SyncTvSurfaceComposition();
         });
     }
+
+    /// <summary>
+    /// Direct Play (or remux) died before a frame. Keep chrome and settings reachable.
+    /// </summary>
+    public void ShowStartFailure(string message)
+    {
+        void Apply()
+        {
+            _startFailureVisible = true;
+            _awaitingFirstFrame = false;
+            _startFailureLabel.Text = message;
+            _startFailureBanner.IsVisible = true;
+            _loadingVeil.IsVisible = true;
+            _loadingSpinner.IsVisible = false;
+            _loadingSpinner.IsRunning = false;
+            StopHideTimer();
+            ShowChrome();
+            if (_deviceType == DeviceType.TV)
+                SetTvChromeFocusSlot(TvFocusSlot.Settings);
+            SyncTvSurfaceComposition();
+            NativeVideoDebug.Log("ShowStartFailure");
+        }
+
+        if (MainThread.IsMainThread)
+            Apply();
+        else
+            MainThread.BeginInvokeOnMainThread(Apply);
+    }
+
+    public void ClearStartFailure()
+    {
+        void Apply()
+        {
+            if (!_startFailureVisible && !_startFailureBanner.IsVisible)
+                return;
+
+            _startFailureVisible = false;
+            _startFailureBanner.IsVisible = false;
+            SyncTvSurfaceComposition();
+        }
+
+        if (MainThread.IsMainThread)
+            Apply();
+        else
+            MainThread.BeginInvokeOnMainThread(Apply);
+    }
+
     /// <summary>TV / keyboard Back. Returns true when consumed.</summary>
     public bool HandleBack()
     {
@@ -962,6 +1015,22 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _skipNotificationBanner.Margin = new Thickness(0, 84, 0, 0);
         _skipNotificationBanner.IsVisible = false;
         Children.Add(_skipNotificationBanner);
+
+        _startFailureLabel.TextColor = Colors.White;
+        _startFailureLabel.FontSize = 16;
+        _startFailureLabel.HorizontalTextAlignment = TextAlignment.Center;
+        _startFailureLabel.LineBreakMode = LineBreakMode.WordWrap;
+        _startFailureBanner.Content = _startFailureLabel;
+        _startFailureBanner.Padding = new Thickness(20, 12);
+        _startFailureBanner.BackgroundColor = Color.FromArgb("#CC000000");
+        _startFailureBanner.Stroke = Colors.Transparent;
+        _startFailureBanner.HorizontalOptions = LayoutOptions.Center;
+        _startFailureBanner.VerticalOptions = LayoutOptions.Center;
+        _startFailureBanner.Margin = new Thickness(24, 0);
+        _startFailureBanner.MaximumWidthRequest = 720;
+        _startFailureBanner.ZIndex = 12;
+        _startFailureBanner.IsVisible = false;
+        Children.Add(_startFailureBanner);
 
         _skipSegmentButton.Text = NativeStrings.SkipIntro;
         _skipSegmentButton.BackgroundColor = Color.FromArgb("#CCFFFFFF");
@@ -1569,6 +1638,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             || IsNextEpisodeVisible
             || _hudBanner.IsVisible
             || _loadingVeil.IsVisible
+            || _startFailureBanner.IsVisible
             || _skipNotificationBanner.IsVisible;
 #if ANDROID
         Platforms.Android.AndroidOverlayComposition.SetDraws(this, draw);
@@ -1609,6 +1679,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         // Veil covers the video surface - never hide back/controls until first frame.
         if (!force && _awaitingFirstFrame)
+            return;
+
+        if (!force && _startFailureVisible)
             return;
 
         if (force && _seekScrubbing)
@@ -1869,6 +1942,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
         if (_awaitingFirstFrame)
             return;
+        if (_startFailureVisible)
+            return;
+
         var timeout = overrideTimeout
             ?? (_deviceType == DeviceType.TV ? OverlayTimeoutTv : OverlayTimeoutDesktop);
         _hideTimer = new Timer(timeout.TotalMilliseconds) { AutoReset = false };

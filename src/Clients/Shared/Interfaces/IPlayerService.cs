@@ -100,13 +100,14 @@ public interface IPlayerService
     Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retries opening the current HLS source or falls back to a transcoded quality after a transient failure.
-    /// Used by Web Video.js watchdogs only; native LibVLC / MediaElement implementations no-op.
+    /// Retries opening the current HLS source or walks Direct Play -&gt; remux -&gt; transcode after a start failure.
+    /// Web Video.js can walk the ABR ladder. Native MediaElement promotes failed Direct Play to remux,
+    /// then to the encode ladder.
     /// Returns true when a recovery attempt was scheduled or when recovery was skipped because media is progressing.
     /// </summary>
     /// <param name="allowQualityLadder">
     /// When false, soft idle timeouts do not step quality.
-    /// Hard Video.js SRC_NOT_SUPPORTED should pass true.
+    /// Hard Video.js SRC_NOT_SUPPORTED and native decoder/runtime-check failures should pass true.
     /// </param>
     Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default);
 
