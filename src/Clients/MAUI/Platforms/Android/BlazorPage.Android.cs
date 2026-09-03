@@ -441,6 +441,29 @@ public partial class BlazorPage
         }
     }
 
+    internal bool TrySetAndroidVideoSpeed(double rate)
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return false;
+
+            var speed = (float)Math.Clamp(rate, 0.25, 4);
+            // Compressed audio offload cannot be time-stretched, so on Direct Play (offloaded
+            // original track) a non-1x rate is silently ignored. Drop offload while speeding
+            // so the decoded PCM + Sonic path applies the rate; restore it at 1x.
+            AndroidExoHlsTuning.SetAudioOffloadForSpeed(exo, speed);
+            var pitch = exo.PlaybackParameters?.Pitch ?? 1f;
+            exo.PlaybackParameters = new PlaybackParameters(speed, pitch);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     internal bool IsAndroidExoHostActive() => UnwrapPlayer(GetPlayer(NativePlayer)) is IExoPlayer;
 
     internal bool AndroidExoPlayerHasError()

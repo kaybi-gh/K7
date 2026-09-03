@@ -150,6 +150,30 @@ public class AndroidExoPlaybackPolicyTests
             .ShouldEnableAudioOffload(isTelevision: false, "Google", "Pixel 8")
             .Should().BeFalse();
     }
+
+    [Test]
+    public void ShouldEnableAudioOffloadForSpeed_ShouldStayOn_AtNormalSpeed()
+    {
+        AndroidExoPlaybackPolicy.ShouldEnableAudioOffloadForSpeed(policyOffloadEnabled: true, 1.0)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void ShouldEnableAudioOffloadForSpeed_ShouldTurnOff_WhenSpeedNotNormal()
+    {
+        AndroidExoPlaybackPolicy.ShouldEnableAudioOffloadForSpeed(policyOffloadEnabled: true, 1.5)
+            .Should().BeFalse();
+        AndroidExoPlaybackPolicy.ShouldEnableAudioOffloadForSpeed(policyOffloadEnabled: true, 0.5)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldEnableAudioOffloadForSpeed_ShouldStayOff_WhenPolicyDisabled()
+    {
+        AndroidExoPlaybackPolicy.ShouldEnableAudioOffloadForSpeed(policyOffloadEnabled: false, 1.0)
+            .Should().BeFalse();
+    }
+
     [Test]
     public void IsPreferredVendorDecoder_ShouldBeTrue_WhenNvidiaOrAmlogicHw()
     {

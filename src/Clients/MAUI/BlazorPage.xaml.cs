@@ -663,6 +663,10 @@ public partial class BlazorPage : ContentPage
             if (IsWindowsWebVideoActive)
                 return;
 #endif
+#if ANDROID
+            if (TrySetAndroidVideoSpeed(rate))
+                return;
+#endif
             NativePlayer.Speed = rate;
         });
         return Task.CompletedTask;

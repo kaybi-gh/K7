@@ -81,6 +81,15 @@ public static class AndroidExoPlaybackPolicy
         string? manufacturer,
         string? model) =>
         isTelevision || IsAmlogicDevice(manufacturer, model);
+
+    /// <summary>
+    /// Compressed audio offload bypasses the Sonic time-stretch processor, so playback speed
+    /// other than 1x is a no-op on an offloaded Direct Play track. Keep offload only at normal
+    /// speed; disable it while speeding so the decoded PCM + Sonic path applies the rate.
+    /// </summary>
+    public static bool ShouldEnableAudioOffloadForSpeed(bool policyOffloadEnabled, double speed) =>
+        policyOffloadEnabled && Math.Abs(speed - 1.0) < 0.01;
+
     /// <summary>
     /// Profile 8.1: query HEVC decoders instead of video/dolby-vision. The file is
     /// unchanged; MediaCodec gets the HDR10 base layer. Native keeps the DV MIME path.

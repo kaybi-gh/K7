@@ -203,6 +203,31 @@ internal static class AndroidExoHlsTuning
         {
         }
     }
+
+    /// <summary>
+    /// Audio offload (Direct Play original track) bypasses the Sonic time-stretch processor,
+    /// so playback speed != 1x has no effect. Disable offload while speeding and restore the
+    /// policy default at normal speed. Track reselection re-decodes to a PCM + Sonic path.
+    /// </summary>
+    internal static void SetAudioOffloadForSpeed(IExoPlayer exo, float speed)
+    {
+        try
+        {
+            var manufacturer = global::Android.OS.Build.Manufacturer;
+            var model = global::Android.OS.Build.Model;
+            var policyOffload = AndroidExoPlaybackPolicy.ShouldEnableAudioOffload(
+                IsAndroidTelevision(),
+                manufacturer,
+                model);
+            var offload = AndroidExoPlaybackPolicy.ShouldEnableAudioOffloadForSpeed(policyOffload, speed);
+            var tunneling = AndroidExoPlaybackPolicy.ShouldEnableHdmiTunneling(manufacturer, model);
+            TryApplyPlaybackPreferences(exo, tunneling, offload);
+        }
+        catch
+        {
+        }
+    }
+
     private static void TryApplyPlaybackPreferences(IExoPlayer exo, bool tunnelingEnabled, bool audioOffload)
     {
         try
