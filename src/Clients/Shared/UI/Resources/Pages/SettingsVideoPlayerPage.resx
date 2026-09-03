@@ -54,4 +54,23 @@
   <data name="ResetToDefault" xml:space="preserve"><value>Réinitialiser par défaut</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Préférences enregistrées</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Préférences réinitialisées</value></data>
+  <data name="AdvancedSection" xml:space="preserve"><value>Avancé (cet appareil)</value></data>
+  <data name="AdvancedSectionHint" xml:space="preserve"><value>Ces options restent sur cet appareil. Elles ne sont pas poussees vers vos autres clients.</value></data>
+  <data name="AudioPassthrough" xml:space="preserve"><value>Passthrough audio (AC3 / EAC3 / DTS)</value></data>
+  <data name="AudioPassthroughHint" xml:space="preserve"><value>Desactive, cet appareil ne Direct Play plus les pistes Dolby/DTS. Le serveur remuxe ou transcode en AAC au lieu du bitstream HDMI.</value></data>
+  <data name="ExoBuffer" xml:space="preserve"><value>Tampon de lecture</value></data>
+  <data name="BufferAuto" xml:space="preserve"><value>Auto (defaut)</value></data>
+  <data name="BufferDefault" xml:space="preserve"><value>Defaut</value></data>
+  <data name="BufferLarge" xml:space="preserve"><value>Large</value></data>
+  <data name="BufferExtraLarge" xml:space="preserve"><value>Tres large</value></data>
+  <data name="ExoBufferHint" xml:space="preserve"><value>Un tampon plus grand aide les coupures Wi-Fi ou NAS. Ca ne corrige pas le pulldown 23.976 fps sur un HDMI 60 Hz.</value></data>
+  <data name="HdmiAfr" xml:space="preserve"><value>HDMI auto frame rate</value></data>
+  <data name="HdmiAfrDisabled" xml:space="preserve"><value>Desactive</value></data>
+  <data name="HdmiAfrScaleOnTv" xml:space="preserve"><value>Mise a l'echelle sur la TV</value></data>
+  <data name="HdmiAfrScaleOnDevice" xml:space="preserve"><value>Mise a l'echelle sur l'appareil</value></data>
+  <data name="HdmiAfrHint" xml:space="preserve"><value>Aligne le Hz HDMI sur le film (23.976 vers 23.98). Desactive: le televiseur reste en 59.94. Relancer la lecture apres un changement. Sur Amlogic (Nokia), desactive est le defaut.</value></data>
+  <data name="DolbyVision" xml:space="preserve"><value>Dolby Vision</value></data>
+  <data name="DolbyVisionNative" xml:space="preserve"><value>Natif (banniere DV)</value></data>
+  <data name="DolbyVisionHevc" xml:space="preserve"><value>Lire en HDR10 (HEVC)</value></data>
+  <data name="DolbyVisionHint" xml:space="preserve"><value>Le Profile 8.1 a deja une couche HDR10. HEVC joue cette couche (la TV peut afficher HDR10). Natif garde video/dolby-vision (banniere DV). Relancer la lecture. Defaut TV: HDR10.</value></data>
 </root>

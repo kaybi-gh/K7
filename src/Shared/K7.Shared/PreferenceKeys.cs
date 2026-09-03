@@ -56,25 +56,27 @@ public static class PreferenceKeys
     // Streaming quality
     public static readonly PreferenceKey<int> STREAMING_QUALITY_WIFI = new("StreamingQualityWifi");
     public static readonly PreferenceKey<int> STREAMING_QUALITY_MOBILE = new("StreamingQualityMobile");
-    public static readonly PreferenceKey<bool> DOWNMIX_TO_STEREO = new("DownmixToStereo");
-
+    /// <summary>
+    /// When false, this play sends AudioPassthrough=false so Dolby/DTS is remuxed
+    /// instead of HDMI bitstream. Local device preference; not stored on the user
+    /// or device record.
+    /// </summary>
+    public static readonly PreferenceKey<bool> VIDEO_AUDIO_PASSTHROUGH = new("VideoAudioPassthrough");
     /// <summary>
     /// ExoPlayer LoadControl size: auto (Exo default), default, large, extralarge.
     /// Local device preference.
     /// </summary>
     public static readonly PreferenceKey<string> VIDEO_EXO_BUFFER = new("VideoExoBuffer");
-
-    /// <summary>
-    /// Android TV Dolby Vision decode: native / hevc (HDR10 base layer). Local device
-    /// preference. Empty means the device default (TV=hevc, phone=native).
-    /// </summary>
-    public static readonly PreferenceKey<string> VIDEO_DV_DECODE = new("VideoDvDecode");
-
     /// <summary>
     /// HDMI auto frame rate on Android TV: disabled / device / tv.
     /// Local device preference. Empty means the device default (Amlogic=off, other TV=device).
     /// </summary>
     public static readonly PreferenceKey<string> VIDEO_HDMI_AFR = new("VideoHdmiAfr");
+    /// <summary>
+    /// Android TV Dolby Vision decode: native / hevc (HDR10 base layer). Local device
+    /// preference. Empty means the device default (TV=hevc, phone=native).
+    /// </summary>
+    public static readonly PreferenceKey<string> VIDEO_DV_DECODE = new("VideoDvDecode");
 
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");
@@ -83,7 +85,6 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<int> SKIP_FORWARD_SECONDS = new("SkipForwardSeconds");
     public static readonly PreferenceKey<int> VIDEO_SKIP_BACK_SECONDS = new("VideoSkipBackSeconds");
     public static readonly PreferenceKey<int> VIDEO_SKIP_FORWARD_SECONDS = new("VideoSkipForwardSeconds");
-
     /// <summary>
     /// Admin-only native player HUD (dropped frames, HDMI Hz, decoders). Device-local.
     /// </summary>

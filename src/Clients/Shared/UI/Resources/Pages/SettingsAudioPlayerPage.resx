@@ -58,7 +58,6 @@
   <data name="QualityWifi" xml:space="preserve"><value>Qualité Wi-Fi</value></data>
   <data name="QualityMobile" xml:space="preserve"><value>Qualité mobile</value></data>
   <data name="Original" xml:space="preserve"><value>Originale (sans transcodage)</value></data>
-  <data name="DownmixToStereo" xml:space="preserve"><value>Réduire en stéréo</value></data>
   <data name="PlayerBehavior" xml:space="preserve"><value>Comportement du lecteur</value></data>
   <data name="ShowFullscreenOnPlay" xml:space="preserve"><value>Afficher en plein écran à la lecture</value></data>
   <data name="KeepScreenOn" xml:space="preserve"><value>Garder l'écran allumé</value></data>

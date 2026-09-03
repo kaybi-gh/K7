@@ -149,7 +149,6 @@ public partial class SettingsAudioPlayerPage
 
         DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_WIFI, settings.StreamingQualityWifi);
         DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_MOBILE, settings.StreamingQualityMobile);
-        DeviceStorage.Set(PreferenceKeys.DOWNMIX_TO_STEREO, settings.DownmixToStereo);
 
         AudioPlayerService.SetShowFullscreenOnPlay(settings.ShowFullscreenOnPlay);
         AudioPlayerService.SetKeepScreenOn(settings.KeepScreenOn);

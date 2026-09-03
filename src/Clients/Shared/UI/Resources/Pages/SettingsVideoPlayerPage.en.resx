@@ -54,4 +54,23 @@
   <data name="ResetToDefault" xml:space="preserve"><value>Reset to defaults</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Preferences saved</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Preferences reset</value></data>
+  <data name="AdvancedSection" xml:space="preserve"><value>Advanced (this device)</value></data>
+  <data name="AdvancedSectionHint" xml:space="preserve"><value>These options stay on this device. They are not pushed to your other clients.</value></data>
+  <data name="AudioPassthrough" xml:space="preserve"><value>Audio passthrough (AC3 / EAC3 / DTS)</value></data>
+  <data name="AudioPassthroughHint" xml:space="preserve"><value>When off, this device no longer Direct Plays Dolby/DTS tracks. The server remuxes or transcodes to AAC instead of HDMI bitstream.</value></data>
+  <data name="ExoBuffer" xml:space="preserve"><value>Playback buffer</value></data>
+  <data name="BufferAuto" xml:space="preserve"><value>Auto (default)</value></data>
+  <data name="BufferDefault" xml:space="preserve"><value>Default</value></data>
+  <data name="BufferLarge" xml:space="preserve"><value>Large</value></data>
+  <data name="BufferExtraLarge" xml:space="preserve"><value>Extra large</value></data>
+  <data name="ExoBufferHint" xml:space="preserve"><value>A larger buffer helps Wi-Fi or NAS underruns. It does not fix 23.976 fps pulldown on a 60 Hz HDMI mode.</value></data>
+  <data name="HdmiAfr" xml:space="preserve"><value>HDMI auto frame rate</value></data>
+  <data name="HdmiAfrDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="HdmiAfrScaleOnTv" xml:space="preserve"><value>Scale on TV</value></data>
+  <data name="HdmiAfrScaleOnDevice" xml:space="preserve"><value>Scale on device</value></data>
+  <data name="HdmiAfrHint" xml:space="preserve"><value>Matches HDMI Hz to the file (23.976 to 23.98). Disabled keeps the TV at 59.94. Restart playback after changing this. Amlogic (Nokia) defaults to disabled.</value></data>
+  <data name="DolbyVision" xml:space="preserve"><value>Dolby Vision</value></data>
+  <data name="DolbyVisionNative" xml:space="preserve"><value>Native (DV banner)</value></data>
+  <data name="DolbyVisionHevc" xml:space="preserve"><value>Play as HDR10 (HEVC)</value></data>
+  <data name="DolbyVisionHint" xml:space="preserve"><value>Profile 8.1 already has an HDR10 base layer. HEVC plays that layer (the TV may show HDR10). Native keeps video/dolby-vision (DV banner). Restart playback. TV default: HDR10.</value></data>
 </root>

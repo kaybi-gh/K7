@@ -32,6 +32,12 @@ public class PreferenceKeyCatalogTests
         keys.Should().Contain(PreferenceKeys.PINNED_SHARED_PROFILE_IDS.Name);
         keys.Should().Contain(PreferenceKeys.WINDOW_WIDTH.Name);
         keys.Should().Contain(PreferenceKeys.WINDOW_MAXIMIZED.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_PLAYBACK_NERD_STATS.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_AUDIO_PASSTHROUGH.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_EXO_BUFFER.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_HDMI_AFR.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_DV_DECODE.Name);
+        keys.Should().NotContain("VideoExoAudio");
     }
 
     [Test]

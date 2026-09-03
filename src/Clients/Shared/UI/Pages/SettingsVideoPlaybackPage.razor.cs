@@ -1,12 +1,15 @@
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -16,7 +19,11 @@ public partial class SettingsVideoPlaybackPage
         VideoPlayerSettingsDto Settings,
         VideoPlaybackPolicySettingsDto Policy,
         TrackSelectionPreferencesDto Preferences,
-        Guid? LibraryId);
+        Guid? LibraryId,
+        bool AudioPassthrough,
+        ExoVideoBufferSize ExoBuffer,
+        HdmiAutoFrameRateMode HdmiAfr,
+        DolbyVisionDecodeMode DvDecode);
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -26,12 +33,22 @@ public partial class SettingsVideoPlaybackPage
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
 
     private VideoPlayerSettingsDto? _settings;
     private VideoPlaybackPolicySettingsDto? _videoPolicy;
     private TrackSelectionPreferencesDto? _preferences;
     private List<LibraryDto> _libraries = [];
     private Guid? _selectedLibraryId;
+    private bool _audioPassthrough = true;
+    private ExoVideoBufferSize _exoBuffer = ExoVideoBufferSize.Auto;
+    private HdmiAutoFrameRateMode _hdmiAfr = HdmiAutoFrameRateMode.Disabled;
+    private HdmiAutoFrameRateMode _hdmiAfrDefault = HdmiAutoFrameRateMode.Disabled;
+    private DolbyVisionDecodeMode _dvDecode = DolbyVisionDecodeMode.Native;
+    private DolbyVisionDecodeMode _dvDecodeDefault = DolbyVisionDecodeMode.Native;
+    private bool _showDeviceAdvanced;
+    private bool _showExoBuffer;
+    private bool _showHdmiAfr;
     private bool _loading = true;
     private bool _saving;
     private bool _hasUserOverride;
@@ -43,7 +60,14 @@ public partial class SettingsVideoPlaybackPage
         && _videoPolicy is not null
         && _formTracker.IsDirty(GetFormState());
 
-    private bool ResetDisabled => !IsDirty && !_hasUserOverride;
+    private bool HasDeviceVideoOverride =>
+        _showDeviceAdvanced
+        && (!_audioPassthrough
+            || _exoBuffer != ExoVideoBufferSize.Auto
+            || (_showHdmiAfr && _hdmiAfr != _hdmiAfrDefault)
+            || (_showHdmiAfr && _dvDecode != _dvDecodeDefault));
+
+    private bool ResetDisabled => !IsDirty && !_hasUserOverride && !HasDeviceVideoOverride;
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,6 +78,7 @@ public partial class SettingsVideoPlaybackPage
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync();
             ApplyLocalVideoPlayerSettings(_settings);
+            await LoadDeviceVideoExperienceAsync();
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -63,6 +88,7 @@ public partial class SettingsVideoPlaybackPage
             _videoPolicy = new VideoPlaybackPolicySettingsDto();
             _preferences = new TrackSelectionPreferencesDto();
             ApplyLocalVideoPlayerSettings(_settings);
+            await LoadDeviceVideoExperienceAsync();
             CaptureFormState();
             await RefreshOverrideStateAsync();
         }
@@ -71,7 +97,99 @@ public partial class SettingsVideoPlaybackPage
     }
 
     private VideoFormState GetFormState() =>
-        new(_settings!, _videoPolicy!, _preferences!, _selectedLibraryId);
+        new(
+            _settings!,
+            _videoPolicy!,
+            _preferences!,
+            _selectedLibraryId,
+            _audioPassthrough,
+            _exoBuffer,
+            _hdmiAfr,
+            _dvDecode);
+
+    private async Task LoadDeviceVideoExperienceAsync()
+    {
+        _showDeviceAdvanced = DeviceService.GetClientType() == ClientType.Native;
+        try
+        {
+            _showExoBuffer = _showDeviceAdvanced
+                && await DeviceService.GetOperatingSystemAsync() == OperatingSystem.Android;
+        }
+        catch
+        {
+            _showExoBuffer = false;
+        }
+
+        if (!_showDeviceAdvanced)
+            return;
+
+        var isTelevision = false;
+        string? manufacturer = null;
+        string? model = null;
+        try
+        {
+            isTelevision = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+            var details = await DeviceService.GetNativeDeviceDetailsAsync();
+            manufacturer = details.RawManufacturer;
+            model = details.RawModel;
+        }
+        catch
+        {
+        }
+
+        _showHdmiAfr = _showExoBuffer
+            && (isTelevision || AndroidExoPlaybackPolicy.IsAmlogicDevice(manufacturer, model));
+        _hdmiAfrDefault = HdmiAutoFrameRatePolicy.DefaultForDevice(
+            isTelevision || AndroidExoPlaybackPolicy.IsAmlogicDevice(manufacturer, model),
+            manufacturer,
+            model);
+        _dvDecodeDefault = DolbyVisionDecodePolicy.DefaultForDevice(
+            isTelevision || AndroidExoPlaybackPolicy.IsAmlogicDevice(manufacturer, model),
+            manufacturer,
+            model);
+
+        try
+        {
+            _audioPassthrough = DeviceStorage.Get(PreferenceKeys.VIDEO_AUDIO_PASSTHROUGH, true);
+            _exoBuffer = ExoVideoBufferPolicy.Parse(
+                DeviceStorage.Get(PreferenceKeys.VIDEO_EXO_BUFFER, ExoVideoBufferPolicy.Auto));
+            _hdmiAfr = _showHdmiAfr
+                ? HdmiAutoFrameRatePolicy.Resolve(
+                    DeviceStorage.Get(PreferenceKeys.VIDEO_HDMI_AFR, ""),
+                    isTelevision || AndroidExoPlaybackPolicy.IsAmlogicDevice(manufacturer, model),
+                    manufacturer,
+                    model)
+                : _hdmiAfrDefault;
+            _dvDecode = _showHdmiAfr
+                ? DolbyVisionDecodePolicy.Resolve(
+                    DeviceStorage.Get(PreferenceKeys.VIDEO_DV_DECODE, ""),
+                    isTelevision || AndroidExoPlaybackPolicy.IsAmlogicDevice(manufacturer, model),
+                    manufacturer,
+                    model)
+                : _dvDecodeDefault;
+        }
+        catch
+        {
+            _audioPassthrough = true;
+            _exoBuffer = ExoVideoBufferSize.Auto;
+            _hdmiAfr = _hdmiAfrDefault;
+            _dvDecode = _dvDecodeDefault;
+        }
+    }
+
+    private void PersistDeviceVideoExperience()
+    {
+        if (!_showDeviceAdvanced)
+            return;
+
+        DeviceStorage.Set(PreferenceKeys.VIDEO_AUDIO_PASSTHROUGH, _audioPassthrough);
+        DeviceStorage.Set(PreferenceKeys.VIDEO_EXO_BUFFER, ExoVideoBufferPolicy.Persist(_exoBuffer));
+        if (_showHdmiAfr)
+        {
+            DeviceStorage.Set(PreferenceKeys.VIDEO_HDMI_AFR, HdmiAutoFrameRatePolicy.Persist(_hdmiAfr));
+            DeviceStorage.Set(PreferenceKeys.VIDEO_DV_DECODE, DolbyVisionDecodePolicy.Persist(_dvDecode));
+        }
+    }
 
     private void CaptureFormState()
     {
@@ -91,6 +209,10 @@ public partial class SettingsVideoPlaybackPage
         _videoPolicy = state.Policy;
         _preferences = state.Preferences;
         _selectedLibraryId = state.LibraryId;
+        _audioPassthrough = state.AudioPassthrough;
+        _exoBuffer = state.ExoBuffer;
+        _hdmiAfr = state.HdmiAfr;
+        _dvDecode = state.DvDecode;
     }
 
     private void OnVideoPolicyChanged(VideoPlaybackPolicySettingsDto value)
@@ -205,6 +327,7 @@ public partial class SettingsVideoPlaybackPage
                 UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
                 UserPreferencesService.UpdateUserVideoPlaybackPolicySettingsAsync(_videoPolicy),
                 UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
+            PersistDeviceVideoExperience();
             await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();
@@ -235,6 +358,11 @@ public partial class SettingsVideoPlaybackPage
             _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _videoPolicy = await UserPreferencesService.GetEffectiveVideoPlaybackPolicySettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(_selectedLibraryId);
+            _audioPassthrough = true;
+            _exoBuffer = ExoVideoBufferSize.Auto;
+            _hdmiAfr = _hdmiAfrDefault;
+            _dvDecode = _dvDecodeDefault;
+            PersistDeviceVideoExperience();
             await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
             await RefreshOverrideStateAsync();

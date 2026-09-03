@@ -14,7 +14,6 @@ public sealed record AudioPlayerSettingsDto
     public bool AutoplayEnabled { get; set; } = true;
     public int StreamingQualityWifi { get; set; }
     public int StreamingQualityMobile { get; set; }
-    public bool DownmixToStereo { get; set; }
     public bool ShowFullscreenOnPlay { get; set; }
     public bool KeepScreenOn { get; set; }
     public int SkipBackSeconds { get; set; } = 5;
