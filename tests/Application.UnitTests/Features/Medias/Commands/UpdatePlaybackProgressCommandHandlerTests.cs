@@ -400,4 +400,58 @@ public class UpdatePlaybackProgressCommandHandlerTests
         session.CompletedAt.Should().NotBeNull();
         (await _context.MediaPlaybackSessionCoViewers.SingleAsync()).UserId.Should().Be(coViewerId);
     }
+
+    [Test]
+    public async Task Handle_ShouldNotInsertDuplicateSharedProfileMediaState_WhenFirstProgressIsIdleSkip()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        var coViewerId = Guid.NewGuid();
+        _context.Users.Add(new User { Id = coViewerId, IdentityUserId = "co-ident", DisplayName = "coviewer" });
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Family",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        await _context.SaveChangesAsync();
+
+        _sharedProfiles.ResolveAsync(sharedProfileId, _userId, Arg.Any<CancellationToken>())
+            .Returns(new SharedProfilePlaybackContext(sharedProfileId, "Family", [coViewerId]));
+
+        var handler = new UpdatePlaybackProgressCommandHandler(
+            _context,
+            _currentUser,
+            _notifier,
+            _accessGuard,
+            _tracker,
+            _identityService,
+            Substitute.For<IMediaQueryCacheInvalidator>(),
+            _stateUpdater,
+            new SharedProfileMediaStateUpdater(_context, _policies, Substitute.For<IPlaybackBookmarkService>()),
+            _policies,
+            _sharedProfiles,
+            Substitute.For<ISyncPlayPlaybackContextResolver>(),
+            Substitute.For<IFfmpegCapabilitiesService>(),
+            Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
+
+        var sessionId = Guid.NewGuid();
+        await handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 0,
+            Duration: 7547.123,
+            State: PlaybackState.Idle,
+            SharedProfileId: sharedProfileId), CancellationToken.None);
+
+        var states = await _context.SharedProfileMediaStates.ToListAsync();
+        states.Should().HaveCount(1);
+        states[0].SkipCount.Should().Be(1);
+        states[0].PlayCount.Should().Be(0);
+
+        var session = await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId);
+        session.State.Should().Be(PlaybackState.Idle);
+        session.CompletedAt.Should().BeNull();
+    }
 }

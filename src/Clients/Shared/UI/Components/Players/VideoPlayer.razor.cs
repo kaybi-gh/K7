@@ -638,24 +638,23 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         _durationWaitCts?.Cancel();
 
-        try
-        {
-            await InvokeAsync(ShowPlaybackStartFailedSnackbarAsync);
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-    }
-
-    private Task ShowPlaybackStartFailedSnackbarAsync()
-    {
         var messageKey = PlayerService.PlaybackStartFailureMessageKey
             ?? (PlayerService.Source?.StreamSessionId is not null
                 ? "StreamPlaybackTimedOut"
                 : "StreamNotReady");
 
-        Snackbar.Add(S[messageKey], K7Severity.Error);
-        return Task.CompletedTask;
+        try
+        {
+            // Native overlay hides the Blazor WebView. Wait until it is restored so
+            // K7SnackbarHost can paint (otherwise the toast is queued on a paused WebView).
+            if (MauiNativeVideoChrome.IsEnabled)
+                await Task.Delay(450);
+
+            await InvokeAsync(() => Snackbar.Add(S[messageKey], K7Severity.Error));
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private void OnSwitchAudioTrack(string trackName) => OnSwitchAudioTrackAsync(trackName).FireAndForget();

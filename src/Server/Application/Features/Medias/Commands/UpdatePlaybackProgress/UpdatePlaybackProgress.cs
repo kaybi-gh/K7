@@ -481,8 +481,7 @@ public class UpdatePlaybackProgressCommandHandler(
     {
         if (sharedProfileId is { } profileId)
         {
-            var sharedState = await _context.SharedProfileMediaStates
-                .FirstOrDefaultAsync(s => s.SharedProfileId == profileId && s.MediaId == mediaId, cancellationToken);
+            var sharedState = await FindSharedProfileMediaStateAsync(profileId, mediaId, cancellationToken);
             if (sharedState is null)
             {
                 sharedState = new SharedProfileMediaState
@@ -503,8 +502,7 @@ public class UpdatePlaybackProgressCommandHandler(
             return;
         }
 
-        var state = await _context.UserMediaStates
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == mediaId, cancellationToken);
+        var state = await FindUserMediaStateAsync(userId, mediaId, cancellationToken);
         if (state is null)
         {
             _context.UserMediaStates.Add(new UserMediaState
@@ -519,6 +517,35 @@ public class UpdatePlaybackProgressCommandHandler(
 
         state.SkipCount++;
         state.LastInteractedAt = timeNow;
+    }
+
+    private async Task<SharedProfileMediaState?> FindSharedProfileMediaStateAsync(
+        Guid profileId,
+        Guid mediaId,
+        CancellationToken cancellationToken)
+    {
+        var state = await _context.SharedProfileMediaStates
+            .FirstOrDefaultAsync(s => s.SharedProfileId == profileId && s.MediaId == mediaId, cancellationToken);
+        if (state is not null)
+            return state;
+
+        // ApplyAsync may already have Added a row in this SaveChanges batch.
+        return _context.SharedProfileMediaStates.Local
+            .FirstOrDefault(s => s.SharedProfileId == profileId && s.MediaId == mediaId);
+    }
+
+    private async Task<UserMediaState?> FindUserMediaStateAsync(
+        Guid userId,
+        Guid mediaId,
+        CancellationToken cancellationToken)
+    {
+        var state = await _context.UserMediaStates
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == mediaId, cancellationToken);
+        if (state is not null)
+            return state;
+
+        return _context.UserMediaStates.Local
+            .FirstOrDefault(s => s.UserId == userId && s.MediaId == mediaId);
     }
 
     private static void ApplyExistingSessionProgress(
@@ -574,9 +601,12 @@ public class UpdatePlaybackProgressCommandHandler(
         _context.Entry(session).State = EntityState.Detached;
     }
 
-    private static bool IsDuplicateSessionId(DbUpdateException ex) =>
-        ex.InnerException?.Message.Contains("IX_MediaPlaybackSessions_SessionId", StringComparison.OrdinalIgnoreCase) == true
-        || ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true;
+    private static bool IsDuplicateSessionId(DbUpdateException ex)
+    {
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("IX_MediaPlaybackSessions_SessionId", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("MediaPlaybackSessions.SessionId", StringComparison.OrdinalIgnoreCase);
+    }
 
     private async Task EnsureCoViewersAsync(
         Guid referenceId,

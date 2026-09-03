@@ -596,8 +596,15 @@ body.native-player-active.windows-web-video .vjs-big-play-button,
     pointer-events: none !important;
 }
 
-/* Windows: paint HLS cues above the full-bleed controls hit-test layer (rgba 0.01). */
-body.native-player-active.windows-web-video .vjs-text-track-display {
+/* Windows WebView2: keep the tech in the paint tree without trapping cue DOM
+   inside a stacking context below the controls overlay. */
+body.native-player-active.windows-web-video .video-js {
+    z-index: 0;
+}
+
+/* Paint cues above the full-bleed controls overlay (z-index 100000). pointer-events
+   stay none so chrome clicks still reach the overlay. */
+.video-container .vjs-text-track-display {
     z-index: 100001 !important;
     pointer-events: none !important;
 }

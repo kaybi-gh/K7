@@ -279,6 +279,10 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 CoverUrl = coverUrl,
                 PendingSeekTime = startPosition is > 0 ? startPosition : null
             };
+            Source.CopyVideoTimingFrom(session.SourceFrameRate, session.SourceVideoWidth, session.SourceVideoHeight);
+            Source.ApplyStreamDecision(
+                session.StreamDecision ?? session.Source?.StreamDecision,
+                SelectedQuality?.IsOriginal ?? true);
 
             Play();
             AudioTrackChanged?.Invoke(SelectedAudioTrack);
@@ -368,6 +372,10 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 ThumbnailsUrl = thumbnailsUrl,
                 PendingSeekTime = startPosition is > 0 ? startPosition : null
             };
+            Source.CopyVideoTimingFrom(session.SourceFrameRate, session.SourceVideoWidth, session.SourceVideoHeight);
+            Source.ApplyStreamDecision(
+                session.StreamDecision ?? session.Source?.StreamDecision,
+                SelectedQuality?.IsOriginal ?? true);
 
             Play();
             AudioTrackChanged?.Invoke(SelectedAudioTrack);
@@ -437,6 +445,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
+        Source.CopyVideoTimingFrom(current);
+        Source.ApplyStreamDecision(current.StreamDecision, SelectedQuality?.IsOriginal ?? true);
 
         return Task.CompletedTask;
     }
@@ -480,6 +490,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
+        Source.CopyVideoTimingFrom(current);
+        Source.ApplyStreamDecision(current.StreamDecision, SelectedQuality?.IsOriginal ?? true);
 
         return Task.CompletedTask;
     }
@@ -526,6 +538,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             CoverUrl = current.CoverUrl,
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
+        Source.CopyVideoTimingFrom(current);
+        Source.ApplyStreamDecision(current.StreamDecision, SelectedQuality?.IsOriginal ?? true);
 
         return Task.CompletedTask;
     }

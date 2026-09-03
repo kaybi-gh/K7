@@ -76,7 +76,6 @@ body.native-player-playing .video-container.native-overlay {
 .video-container ::deep .video-js {
     width: 100% !important;
     height: 100% !important;
-    z-index: 0;
     pointer-events: none;
     background: #000;
     /* Keep the tech in the normal paint tree on Windows WebView2 (visibility tricks break frames). */

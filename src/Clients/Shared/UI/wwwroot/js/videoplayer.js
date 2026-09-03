@@ -678,6 +678,10 @@ function k7ClearSubtitleCueInlineStyles(root) {
         cue.style.removeProperty('font-family');
         cue.style.removeProperty('color');
         cue.style.removeProperty('text-shadow');
+        cue.style.removeProperty('transform');
+        cue.style.removeProperty('left');
+        cue.style.removeProperty('right');
+        cue.style.removeProperty('width');
 
         cue.querySelectorAll('*').forEach(function (node) {
             node.style.removeProperty('color');
@@ -726,6 +730,9 @@ function k7ApplySubtitleStyleSheet(style) {
         'width:100% !important;' +
         'left:0 !important;' +
         'right:0 !important;' +
+        'transform:none !important;' +
+        'top:auto !important;' +
+        'bottom:8% !important;' +
         'font-family:' + fontFamily + ' !important;' +
         'font-size:' + fontSize + ' !important;' +
         'color:' + color + ' !important;' +
