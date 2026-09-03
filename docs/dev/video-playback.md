@@ -6,7 +6,7 @@ How first-party clients play video, and why the MAUI hosts differ by platform.
 
 | Platform | Decode surface | Controls |
 |---|---|---|
-| Android | Direct Play, HLS remux/encode, offline files: **ExoPlayer** (Media3 via MediaElement) | Text cues: ExoPlayer `SubtitleView` (UX style via `CaptionStyleCompat`). Chrome: native XAML `NativeVideoPlayerOverlay` (ZIndex 5). Amlogic TV: `SurfaceView` + Media3 tunneling on, audio offload off |
+| Android | Direct Play, HLS remux/encode, offline files: **ExoPlayer** (Media3 via MediaElement) | Text cues: ExoPlayer `SubtitleView` (UX style via `CaptionStyleCompat`). Chrome: native XAML `NativeVideoPlayerOverlay` (ZIndex 5). All Android: `SurfaceView` + Media3 tunneling **off**. Android TV: audio offload **on**, Dolby Vision Profile 8 defaults to HEVC/HDR10 |
 | iOS | MediaElement (AVPlayer) | Same native XAML chrome |
 | Windows | Direct Play + offline: **LibVLC**. HLS transcode: **Video.js** (WebView2) | Native XAML chrome for both (LibVLC and HLS). HLS keeps WebView2 visible under the overlay for Video.js frames only. Remote-control sessions hide the overlay so Blazor `RemoteControlPanel` receives input |
 | Web (WASM) | Video.js | Blazor `VideoPlayerControlsOverlay` |
@@ -16,13 +16,86 @@ Browse / library UI stays Blazor Hybrid. On Android/iOS, when `IPlayerService.Is
 [`WindowsVideoPlayback`](../../src/Clients/Shared/Helpers/WindowsVideoPlayback.cs) routes by URL: `ShouldUseLibVlc` for muxed `/direct-stream` and `file://`. `ShouldUseWebVideoPlayer` for HLS (`manifest.m3u8`). Windows **audio** still uses WebView2 (`WindowsAudioPlayback.UsesWebAudioPlayer`).
 
 Android video (muxed `/direct-stream`, HLS remux/encode, and offline `file://` downloads) uses
-**CommunityToolkit MediaElement** backed by **ExoPlayer / Media3**. Auth is `Authorization` on the
-MediaElement URI headers (and a shared `DefaultHttpDataSource` factory with long connect/read
-timeouts for slow HLS init). Direct Play MKV resume uses HTTP Range seeks natively. Amlogic TV
-boxes (e.g. Nokia Streaming Box 8000) use `AndroidViewType=SurfaceView`, `setKeepContentOnPlayerReset`,
-and Media3 tunneling enabled (audio offload off) so HDMI present fences stay stable on Amlogic.
-Dolby Vision / HDR10 keep their native MIME (`video/dolby-vision` or HEVC + PQ) so the TV can show
-its HDR banner. Do not remap DV to plain HEVC on Amlogic. Overlay chrome does not refresh the seek bar
+**ExoPlayer / Media3** on a CommunityToolkit `PlayerView` surface. The toolkit `MediaManager` is
+not an Exo `IPlayerListener` on Android TV (a TV Exo host must not tick the MAUI UI thread). HTTP streams
+are `SetMediaSource` on the tuned player. `MediaElement.Source` is skipped so the toolkit cannot
+open a second pipeline. Error recovery, the seek bar buffer, and logs read ExoPlayer
+`CurrentPosition` / `BufferedPosition` / `PlayerError` because `MediaElement.Position` stays at 0
+without a MediaManager listener. Auth is `Authorization` on a shared `DefaultHttpDataSource` factory with
+long connect/read timeouts for slow HLS init. Direct Play MKV resume uses HTTP Range seeks natively.
+Android uses `AndroidViewType=SurfaceView` and `setKeepContentOnPlayerReset`. PlayerView
+artwork and the idle play-in-circle bitmap (`exo_edit_mode_logo`) stay off: close/stop
+keeps a black shutter instead of scaling that placeholder to the panel. HDMI tunneling stays **off** on every device, including Amlogic TV boxes
+(Nokia Streaming Box 8000). Tunneling plus EAC3 Direct Play can throw ExoPlayer
+`ERROR_CODE_FAILED_RUNTIME_CHECK` (1004) at t=0 depending on HDMI sink and firmware, so two
+identical boxes can disagree. NVIDIA Shield already needed tunneling off (Media3 hitch on Tegra).
+Android TV ExoPlayer uses decoder fallback, FFmpeg extension
+renderers ON, default MediaCodec order (no vendor-first reorder), audio offload ON.
+That player uses Media3
+`DefaultLoadControl` **Default** unless the user picks Large / Extra large (Media3 stock
+LoadControl). Extra-large is 100s min / 120s max. Phone/tablet stay on Exo defaults unless the
+user picks a size. The choice is device-local (`VideoExoBuffer`: auto / default /
+large / extralarge) under Settings -> Video playback. HDMI auto frame rate is a
+device-local setting (`VideoHdmiAfr`: disabled / device / tv). **Disabled** leaves the TV at its current Hz (often 59.94).
+**Scale on device** keeps the current panel size and switches rate only.
+**Scale on TV** picks the 1x/2x/2.5x HDMI size closest to the file (1080p film
+goes to `1080p @ 23.98` instead of 4K). Amlogic (Nokia Streaming Box) defaults
+to **disabled**: 24 Hz HDMI on that HAL can hitch more than 23.976 on 59.94
+(Direct Play with AFR off was smoother). Other Android TV defaults to
+scale on device. When AFR is on, `preferredDisplayModeId` matches content fps from
+the file (ffprobe `avg_frame_rate` on the stream session) before ExoPlayer starts, then waits until the HDMI
+mode is current. After the
+switch, Amlogic HAL AFR is set to policy=0 so the
+vendor HAL cannot retime HDMI. Policy 2 and the previous HDMI mode are restored after
+`Stop` (wait until the saved mode is current). A later play with AFR off also restores a
+leftover 24 Hz switch. Closing does not `Release` the tuned Exo instance - it `Stop`s and
+`ClearMediaItems` so the next title does not keep a decoder clocked to the old rate. Do not pin
+policy=0 when app AFR is disabled (AFR-off leaves the HAL default). Files scanned before `FrameRate` was stored get a one-shot
+ffprobe on the first `CreateStreamSession` (value is persisted on the video tracks). A full
+library rescan is not required. 23.976 prefers 24 / 47.95, then 59.94. Direct Play MKV
+often has no Exo fps, so the server value is required. The HUD lists supported HDMI modes
+(current marked `*`) and cadence (1x / 2x / 2.5x / 3:2 pulldown). ExoPlayer
+`Surface.setFrameRate` is **off** when HDMI AFR is disabled. The panel stays at 59.94.
+Exo poking the surface fights Amlogic HAL AFR. When AFR is on, Media3 OnlyIfSeamless stays. Audio offload is **on** for Android TV. HDMI tunneling stays off. Offload bypasses the
+Sonic time-stretch processor, so playback speed != 1x would be a no-op on Direct Play
+(offloaded original track). `TrySetAndroidVideoSpeed` therefore disables offload while
+speeding (via `AndroidExoHlsTuning.SetAudioOffloadForSpeed`, re-decoding to a PCM + Sonic
+path) and restores the policy default at 1x. HLS already decodes to PCM, so speed always
+worked there. On Android TV, chrome-hidden native
+overlay is taken out of composition (`View.GONE` plus off-screen translation) so a
+full-screen transparent MAUI Grid cannot blend over the decode surface every vsync (Amlogic
+hitch). Amlogic HEVC then drops ~3 frames every 10s the first time chrome hides during
+playback. This is **not** composition, surface size, hardware-plane promotion, tunneling,
+AFR, or the 10s progress report timer (all ruled out empirically - a TextureView, which is
+never promoted to a hardware plane, drops identically). The trigger is a decode/render
+timing de-sync. The cure is a **one-time native layout pass of an extra view in the video's
+parent tree**. Opening the playback settings panel does exactly that (its native
+`ContentViewGroup` goes `0x0` -> `560x872` and permanently stops the drops, even after it
+closes). The fix replicates that automatically: the first time chrome hides,
+[`NativePlaybackSettingsPanel.PrewarmNativeLayout`](../../src/Clients/MAUI/Controls/Video/NativePlaybackSettingsPanel.cs)
+lays the panel out once off-screen at `Opacity=0` (no flash, no interactive open, no chrome
+change), then hides it - once per session, on all Android TV as a safety net (harmless where
+no drops occur - the bug is Amlogic-specific)
+([`MaybeRunTvDecodeResync`](../../src/Clients/MAUI/Controls/Video/NativeVideoPlayerOverlay.cs)).
+All devices keep `SurfaceView` (optimal AV sync / power). The prewarm alone clears the drops,
+so no TextureView fallback is needed. Keep `PlayerView` non-focusable (software DPAD rings). Text cues use a
+software `SubtitleView` layer so they do not GPU-blend over the HDMI overlay. Admins can turn on **Playback stats**
+in the native overlay playback menu: a corner HUD (sibling of chrome, so TV can still
+undraw the overlay - stats on must not keep the full-screen Grid in composition) mirrors the admin dashboard stream decision (Direct / Transmux /
+Transcode, source -> stream codecs, burn-in vs sidecar, encoder, reason) plus live
+device stats (HDMI Hz vs content fps, dropped frames, buffer, `host exo`, `buf default`,
+AFR / DV / tunneling). The toggle is
+`Capability.CanAccessAdmin` only and is stored on the device
+(`VideoPlaybackNerdStats`). Android TV Dolby Vision Profile 8 defaults to **HEVC / HDR10**
+(`VideoDvDecode`: empty = hevc on TV, native on phones). Native keeps `video/dolby-vision`
+(TV DV banner). HEVC answers MediaCodec with `video/hevc` so the HAL plays the HDR10
+base layer. Restart playback after changing it. If playback dies at start (ExoPlayer 1004 /
+decoder init), native chrome stays usable and walks **Direct Play -> remux HLS (Original) ->
+same-height encode, then lower transcode rungs** with no on-screen fallback copy (logged to
+`/api/diagnostics/client-errors` as `NativePlayer.QualityFallback`). If the ladder is exhausted
+the player closes (`NativePlayer.PlaybackAborted`) and K7Snackbar shows MediaPlaybackUnplayable
+after the Blazor WebView is restored. Closing the player force-hides chrome and resets overlay composition so the
+Blazor UI is not left covered. Overlay chrome does not refresh the seek bar
 while hidden. The BlazorWebView is hidden (opacity 0) during native play but stays running so
 SignalR can push live video-player settings.
 
@@ -38,7 +111,8 @@ Offline / local files (`file://` or a filesystem path from the download store) o
 
 `NativeVideoPlayerOverlay` (`src/Clients/MAUI/Controls/Video/`) targets 1:1 parity with the Blazor
 `VideoPlayerControlsOverlay`: transport, seek bar with chapter ticks/sprite thumbnail preview and
-hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, with TV D-pad
+hovered chapter title, playback settings (audio/subtitles/quality/speed/aspect, plus an
+admin-only Playback stats toggle that shows a live HUD), with TV D-pad
 focus navigation. Audio and subtitle labels are the normalized language plus the original
 track name in parentheses when it is not just the ISO code), cast + remote device picker, SyncPlay (members, chat, reactions, floating
 reaction overlay), skip segment (cooldown + auto-dismiss. After settings and segments load, native
@@ -65,8 +139,17 @@ Direct Play the file. The ladder also offers the same height as a bitrate-capped
 (e.g. `1080p` next to `Original (1080p)`), then lower rungs (`720p`, `480p`, ...).
 
 Direct Play (muxed file, no ffmpeg) is used on native Android/iOS/Mac/Windows when the device
-reports the source container plus both codecs. Android TV plays `matroska` + HEVC + EAC3 via
-ExoPlayer track selection. Windows MAUI uses LibVLC for the same formats. Android text cues use
+reports the source container plus both codecs. Android also sends extra `vprofile:` tokens
+(HEVC/AV1 Main vs Main 10, converted MediaCodec level, decoder max width x height) on
+`SupportedMediaFormatIds`. When those tokens are present, GetStreamUri refuses Direct Play
+(and HLS copy) for Main 10 / Dolby Vision / over-level / over-size even if a `video-*-hevc`
+catalog id exists. Clients that send no tokens (Web, iOS, Windows) keep MIME-only matching.
+Android TV plays `matroska` + HEVC + EAC3 via ExoPlayer track selection. Settings -> Video
+playback on a native device can turn **audio passthrough** off. That stays on the device
+(`VideoAudioPassthrough`) and is sent on the stream session (`AudioPassthrough=false`).
+GetStreamUri then treats AC3/EAC3/DTS/TrueHD as not Direct Playable for that play
+(remux/transcode to AAC) without rewriting the device capability list. Windows MAUI uses LibVLC
+for the same formats. Android text cues use
 ExoPlayer `SubtitleView` (`CaptionStyleCompat`). Windows Direct text cues use a sibling XAML
 WebVTT layer on `RootGrid`. A non-Original quality step still promotes the session to HLS.
 iOS/Mac do not advertise `matroska` (AVPlayer). Do not promote Direct Play to HLS burn-in just
