@@ -26,9 +26,9 @@ public class SubtitleStyleHelperTests
     [TestCase(SubtitleFontSize.Small, DeviceType.Tablet, 22)]
     [TestCase(SubtitleFontSize.Medium, DeviceType.Tablet, 32)]
     [TestCase(SubtitleFontSize.Large, DeviceType.Tablet, 42)]
-    [TestCase(SubtitleFontSize.Small, DeviceType.TV, 28)]
-    [TestCase(SubtitleFontSize.Medium, DeviceType.TV, 40)]
-    [TestCase(SubtitleFontSize.Large, DeviceType.TV, 60)]
+    [TestCase(SubtitleFontSize.Small, DeviceType.TV, 24)]
+    [TestCase(SubtitleFontSize.Medium, DeviceType.TV, 36)]
+    [TestCase(SubtitleFontSize.Large, DeviceType.TV, 52)]
     [TestCase(SubtitleFontSize.Small, DeviceType.Desktop, 16)]
     [TestCase(SubtitleFontSize.Medium, DeviceType.Desktop, 22)]
     [TestCase(SubtitleFontSize.Large, DeviceType.Desktop, 32)]
@@ -56,7 +56,7 @@ public class SubtitleStyleHelperTests
     {
         var settings = new VideoPlayerSettingsDto { SubtitleFontSize = SubtitleFontSize.Large };
 
-        SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("60px");
+        SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("52px");
         SubtitleStyleHelper.ToCss(settings, DeviceType.Desktop).FontSize.Should().Be("32px");
         SubtitleStyleHelper.ToCss(settings, DeviceType.Phone).FontSize.Should().Be("36px");
     }
@@ -66,7 +66,7 @@ public class SubtitleStyleHelperTests
     {
         var settings = new VideoPlayerSettingsDto { SubtitleFontSize = SubtitleFontSize.Medium };
 
-        SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("40px");
+        SubtitleStyleHelper.ToCss(settings, DeviceType.TV).FontSize.Should().Be("36px");
         SubtitleStyleHelper.ToCss(settings, DeviceType.Phone).FontSize.Should().Be("28px");
     }
 
