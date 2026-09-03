@@ -171,6 +171,33 @@ public sealed class NativePlaybackSettingsPanel : Border
             + " w=" + Width.ToString("0")
             + " h=" + Height.ToString("0"));
     }
+
+    /// <summary>
+    /// Lays the panel's native view out once, off-screen and fully transparent, without
+    /// entering the interactive open state. On Amlogic this one-time native measure/arrange
+    /// clears the periodic HEVC frame drops that otherwise appear once chrome hides (the same
+    /// effect a real settings open produces). Pair with <see cref="EndPrewarmNativeLayout"/>.
+    /// </summary>
+    public void PrewarmNativeLayout()
+    {
+        if (_rows.Count == 0 || _builtPage != NativeSettingsPage.Root)
+        {
+            _page = NativeSettingsPage.Root;
+            Rebuild();
+        }
+
+        Opacity = 0;
+        InputTransparent = true;
+        IsVisible = true;
+    }
+
+    public void EndPrewarmNativeLayout()
+    {
+        IsVisible = false;
+        Opacity = 1;
+        InputTransparent = false;
+    }
+
     public void Close()
     {
         if (!IsOpen)

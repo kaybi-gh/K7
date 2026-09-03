@@ -294,6 +294,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 AttachSidecarLayer();
                 Attach();
                 _awaitingFirstFrame = true;
+#if ANDROID
+                _tvResyncPending = true;
+#endif
                 SetLoadingVeil(true);
                 // Warm settings UI while the veil is up so the first Open does not hitch playback.
                 try { _settings.Rebuild(); } catch { /* ignore */ }
@@ -332,6 +335,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     }
 
     private bool _awaitingFirstFrame = true;
+#if ANDROID
+    private bool _tvResyncPending;
+#endif
 
     /// <summary>Black cover until the first decoded frame (avoids TextureView white flash).</summary>
     public void SetLoadingVeil(bool loading)
@@ -1693,7 +1699,42 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _suppressShowUntil = DateTime.UtcNow.AddMilliseconds(500);
         UpdateChromeVisibility();
         StopHideTimer();
+        MaybeRunTvDecodeResync();
     }
+
+    /// <summary>
+    /// On Amlogic, the first time chrome hides during playback, HEVC starts dropping ~3
+    /// frames every 10s. Laying the settings panel's native view out once (the exact effect
+    /// a real settings open produces) permanently clears it. This replicates that off-screen
+    /// and fully transparent, so there is no visible flash and no chrome disturbance. Applied
+    /// to all Android TV as a safety net (harmless where no drops occur), once per session.
+    /// </summary>
+    private void MaybeRunTvDecodeResync()
+    {
+#if ANDROID
+        if (!_tvResyncPending || _awaitingFirstFrame || _settings.IsOpen)
+            return;
+
+        if (_deviceType != DeviceType.TV)
+            return;
+
+        _tvResyncPending = false;
+
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(1200), () =>
+        {
+            if (_settings.IsOpen)
+                return;
+
+            _settings.PrewarmNativeLayout();
+            NativeVideoDebug.Log("TvDecodeResync layout pulse");
+
+            Dispatcher.DispatchDelayed(
+                TimeSpan.FromMilliseconds(400),
+                () => _settings.EndPrewarmNativeLayout());
+        });
+#endif
+    }
+
     /// <summary>
     /// Enter/exit a dialog-style input modal. While active, transport chrome and gestures are
     /// fully blocked - only the modal layer (next-episode) receives keys and touches.
