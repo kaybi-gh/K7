@@ -81,13 +81,17 @@ Change server later: **Settings -> General** -> disconnect (trash), then enter a
 - When a **movie** or the **last episode** finishes, the player closes. Other series episodes can offer the next one (optional autoplay countdown)
 - On Android TV, an administrator can enable **Playback stats** in the native player menu. The HUD shows the same stream decision as Admin -> streams (Direct / Transmux / Transcode, codecs, reason) plus live HDMI Hz, dropped frames, and buffer
 
+### Trailers
+
+On a movie or series page, the clapperboard opens a trailer when metadata includes one (YouTube from TMDb / TVDB). It plays fullscreen in K7 by default. **Settings -> Video playback -> Open trailers in YouTube** (server default under Admin -> Video playback) sends YouTube to the system app on native clients and TV instead. That can leave K7, and on a TV that keeps only one app in memory the system may unload K7. The browser (except TV) always stays in K7. Sites that cannot be embedded still open externally.
+
 ### Settings
 
 The administrator can set **server-wide defaults**; yours override them (reset available on those pages). Details for video, subtitles, tracks, and audio: see [Customization](#customization).
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers. On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10) |
+| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers, open trailers in YouTube (native apps and TV). On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10) |
 | Track selection | Preferred audio languages; when to show subtitles (Off, Forced only, Full, Hearing impaired) |
 | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume / completion threshold |
 
@@ -136,7 +140,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows); per-group tap action on Explore (suggestions vs browse) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |
-| Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages - see [Playback](#playback). Native apps also keep per-device audio passthrough, and Android TV adds playback buffer size, HDMI auto frame rate, and Dolby Vision decode |
+| Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages, open trailers in YouTube - see [Playback](#playback). Native apps also keep per-device audio passthrough, and Android TV adds playback buffer size, HDMI auto frame rate, and Dolby Vision decode |
 | Music player | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
 | Offline | Settings -> Offline | Storage and network rules on native apps - see [Offline downloads](#offline-downloads) |
 

@@ -107,3 +107,9 @@ window.K7.preloadImages = function (urls) {
     if (!urls || !urls.length) return Promise.resolve();
     return Promise.all(urls.map(window.K7.preloadImage));
 };
+
+window.K7.openExternalUrl = function (url) {
+    if (!url) return false;
+    var opened = window.open(url, '_blank', 'noopener,noreferrer');
+    return !!opened;
+};

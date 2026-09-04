@@ -122,6 +122,14 @@ else
             <K7Divider />
 
             <section class="d-flex flex-col gap-4">
+                <h6>@L["TrailersSection"]</h6>
+                <K7Switch Label="@L["OpenTrailersExternally"]" @bind-Value="_settings.OpenTrailersExternally" />
+                <span class="text-caption video-playback-hint">@L["OpenTrailersExternallyHint"]</span>
+            </section>
+
+            <K7Divider />
+
+            <section class="d-flex flex-col gap-4">
                 <h6>@L["SubtitleSection"]</h6>
 
                 <K7Select Label="@L["SubtitleFontFamily"]" @bind-Value="_settings.SubtitleFontFamily" TValue="SubtitleFontFamily">

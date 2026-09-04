@@ -607,6 +607,23 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   border-radius: 0;
   position: relative;
 }
+/* Trailer iframe: no backdrop-filter / transform on ancestors (keeps HW video overlay). */
+.k7-dialog-backdrop--video-overlay {
+  background: #000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+  transform: none;
+}
+.k7-dialog-backdrop--video-overlay .k7-dialog-paper {
+  animation: none;
+  transform: none;
+  background: #000;
+  box-shadow: none;
+}
+.k7-dialog-backdrop--video-overlay .k7-dialog-content {
+  overflow: hidden;
+}
 .k7-dialog-close-floating {
   position: absolute;
   top: var(--space-3);

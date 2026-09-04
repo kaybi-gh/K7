@@ -181,4 +181,5 @@
   <data name="SimilarTracksError" xml:space="preserve"><value>Error finding similar tracks</value></data>
   <data name="Intro" xml:space="preserve"><value>Intro</value></data>
   <data name="Outro" xml:space="preserve"><value>Outro</value></data>
+  <data name="TrailerOpenFailed" xml:space="preserve"><value>Could not open the trailer</value></data>
 </root>

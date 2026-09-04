@@ -1,5 +1,6 @@
 @page "/dialogs"
 @using K7.Clients.Shared.UI.Extensions
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities
 @using K7.Shared.Dtos.Entities.Metadatas.Files
@@ -129,6 +130,14 @@
         <p class="ds-description">Lists all indexed files for a media item with re-identify and removal actions.</p>
         <div class="ds-preview ds-preview--bare">
             <K7Button OnClick="ShowIndexedFilesDialog">Indexed files</K7Button>
+        </div>
+    </section>
+
+    <section id="trailer" class="ds-section">
+        <h2>TrailerDialog</h2>
+        <p class="ds-description">Fullscreen YouTube overlay used on movie and series pages. Opaque black backdrop with no blur or transform so the iframe can use hardware video decode.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowTrailerDialog">Play trailer overlay</K7Button>
         </div>
     </section>
 </div>
@@ -305,5 +314,23 @@
         var p = new K7DialogParameters<IndexedFilesDialog>();
         p.Add(x => x.Media, _demoMediaForFiles);
         await DialogService.ShowAsync<IndexedFilesDialog>("Indexed files", p);
+    }
+
+    private async Task ShowTrailerDialog()
+    {
+        var p = new K7DialogParameters<TrailerDialog>();
+        p.Add(x => x.TrailerKey, "aqz-KE-bpKQ");
+        p.Add(x => x.TrailerSite, "YouTube");
+        p.Add(x => x.TrailerName, "Big Buck Bunny");
+        await DialogService.ShowAsync<TrailerDialog>(
+            "Trailer",
+            p,
+            new K7DialogOptions
+            {
+                FullScreen = true,
+                CloseOnEscapeKey = true,
+                CloseButton = true,
+                BackdropClass = TrailerDialogHelper.VideoOverlayBackdropClass
+            });
     }
 }

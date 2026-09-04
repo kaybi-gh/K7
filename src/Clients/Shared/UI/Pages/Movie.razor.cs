@@ -308,7 +308,9 @@ public partial class Movie : IAsyncDisposable
         }
     }
 
-    private bool CanResumePlayback { get =>
+    private bool CanResumePlayback
+    {
+        get =>
         field
         && _movie?.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false }; set;
     }
@@ -531,20 +533,21 @@ public partial class Movie : IAsyncDisposable
         }
     }
 
-    private async Task OpenTrailerAsync()
+    private Task OpenTrailerAsync()
     {
-        if (_movie?.Trailers is not { Count: > 0 }) return;
+        if (_movie is null) return Task.CompletedTask;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, _movie.Id);
-
-        var trailer = _movie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _movie.Trailers[0];
-        var parameters = new K7DialogParameters<TrailerDialog>
-        {
-            { x => x.TrailerKey, trailer.Key },
-            { x => x.TrailerSite, trailer.Site ?? "YouTube" }
-        };
-        var options = new K7DialogOptions { FullScreen = true, CloseOnEscapeKey = true, CloseButton = true };
-        await DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
+        return TrailerDialogHelper.OpenAsync(
+            _movie.Trailers,
+            _movie.Id,
+            L["Trailer"],
+            DeviceService,
+            ExternalLinkService,
+            DialogService,
+            AmbientThemeService,
+            UserPreferencesService,
+            Snackbar,
+            S);
     }
 
     private async Task LoadSimilarMediaAsync()

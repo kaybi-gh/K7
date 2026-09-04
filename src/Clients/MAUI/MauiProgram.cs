@@ -157,6 +157,7 @@ public static partial class MauiProgram
 
         builder.Services.AddSingleton<WebViewJsBridge>();
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
+        builder.Services.AddSingleton<IExternalLinkService, MauiExternalLinkService>();
 #if !ANDROID
         builder.Services.AddSingleton<ISoftKeyboardService, NoOpSoftKeyboardService>();
 #endif

@@ -70,6 +70,7 @@ builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
+builder.Services.AddScoped<IExternalLinkService, JsExternalLinkService>();
 builder.Services.AddSingleton<IAppExitService, AppExitService>();
 builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
 builder.Services.AddSingleton<IVolumeService, VolumeService>();

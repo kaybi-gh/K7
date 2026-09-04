@@ -44,6 +44,9 @@
   <data name="SkipDurationHint" xml:space="preserve"><value>Short skip duration (keyboard, TV remote, double-tap). Holding on the seek bar still scrubs.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Intro skip behavior</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Outro skip behavior</value></data>
+  <data name="TrailersSection" xml:space="preserve"><value>Trailers</value></data>
+  <data name="OpenTrailersExternally" xml:space="preserve"><value>Open trailers in YouTube</value></data>
+  <data name="OpenTrailersExternallyHint" xml:space="preserve"><value>Applies to native apps and TV. May leave K7, and the system may unload the app on single-app TV devices. No effect in the browser (except TV).</value></data>
   <data name="Small" xml:space="preserve"><value>Small</value></data>
   <data name="Medium" xml:space="preserve"><value>Medium</value></data>
   <data name="Large" xml:space="preserve"><value>Large</value></data>

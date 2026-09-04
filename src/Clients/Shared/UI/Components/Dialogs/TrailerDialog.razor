@@ -2,11 +2,15 @@
 
 <div class="k7-dialog-content trailer-dialog-content">
     <div class="trailer-dialog-frame">
-        <iframe src="@_embedUrl"
-                tabindex="0"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowfullscreen
-                frameborder="0"
-                class="trailer-dialog-iframe" />
+        @if (!string.IsNullOrEmpty(_embedUrl))
+        {
+            <iframe src="@_embedUrl"
+                    title="@TrailerName"
+                    tabindex="0"
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowfullscreen
+                    frameborder="0"
+                    class="trailer-dialog-iframe" />
+        }
     </div>
 </div>

@@ -19,4 +19,5 @@ public sealed class K7DialogOptions
     public bool CloseOnEscapeKey { get; init; } = true;
     public bool CloseButton { get; init; } = true;
     public bool BackdropClick { get; init; } = true;
+    public string? BackdropClass { get; init; }
 }

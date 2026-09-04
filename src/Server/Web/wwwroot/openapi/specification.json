@@ -21516,6 +21516,9 @@
           "playThemeSongs": {
             "type": "boolean"
           },
+          "openTrailersExternally": {
+            "type": "boolean"
+          },
           "introSkipBehavior": {
             "$ref": "#/components/schemas/IntroSkipBehavior"
           },

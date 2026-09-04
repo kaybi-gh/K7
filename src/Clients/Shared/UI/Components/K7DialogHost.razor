@@ -3,7 +3,7 @@
 
 @foreach (var entry in _openDialogs)
 {
-    <div class="k7-dialog-backdrop @(entry.Options?.FullScreen == true ? "k7-dialog-backdrop--fullscreen" : "")"
+    <div class="k7-dialog-backdrop @(entry.Options?.FullScreen == true ? "k7-dialog-backdrop--fullscreen" : "") @entry.Options?.BackdropClass"
          @key="entry.Id"
          @ref="entry.BackdropRef"
          data-sn-layer="dialog"

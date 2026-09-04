@@ -47,6 +47,7 @@ builder.Services.AddSingleton<IClientErrorReporter, MockClientErrorReporter>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
 builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, MockDeviceService>();
+builder.Services.AddScoped<IExternalLinkService, JsExternalLinkService>();
 builder.Services.AddSingleton<IAppExitService, MockAppExitService>();
 builder.Services.AddSingleton<IDeviceStorageService, MockDeviceStorageService>();
 builder.Services.AddSingleton<IPageFilterStorage, MockPageFilterStorage>();

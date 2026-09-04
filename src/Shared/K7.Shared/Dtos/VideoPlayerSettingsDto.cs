@@ -14,6 +14,7 @@ public sealed record VideoPlayerSettingsDto
     public bool ShowSeekbarThumbnails { get; set; } = true;
     public bool ShowChapterTicks { get; set; } = true;
     public bool PlayThemeSongs { get; set; } = true;
+    public bool OpenTrailersExternally { get; set; }
     public IntroSkipBehavior IntroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
     public IntroSkipBehavior OutroSkipBehavior { get; set; } = IntroSkipBehavior.ShowButton;
 

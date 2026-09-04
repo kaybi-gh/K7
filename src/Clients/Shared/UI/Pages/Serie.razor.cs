@@ -462,20 +462,21 @@ public partial class Serie : IAsyncDisposable
         return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
     }
 
-    private async Task OpenTrailerAsync()
+    private Task OpenTrailerAsync()
     {
-        if (_serie?.Trailers is not { Count: > 0 }) return;
+        if (_serie is null) return Task.CompletedTask;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, _serie.Id);
-
-        var trailer = _serie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _serie.Trailers[0];
-        var parameters = new K7DialogParameters<TrailerDialog>
-        {
-            { x => x.TrailerKey, trailer.Key },
-            { x => x.TrailerSite, trailer.Site ?? "YouTube" }
-        };
-        var options = new K7DialogOptions { FullScreen = true, CloseOnEscapeKey = true, CloseButton = true };
-        await DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
+        return TrailerDialogHelper.OpenAsync(
+            _serie.Trailers,
+            _serie.Id,
+            L["Trailer"],
+            DeviceService,
+            ExternalLinkService,
+            DialogService,
+            AmbientThemeService,
+            UserPreferencesService,
+            Snackbar,
+            S);
     }
 
     private void NavigateToStudio(string studio)

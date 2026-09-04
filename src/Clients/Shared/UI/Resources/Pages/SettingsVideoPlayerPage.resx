@@ -44,6 +44,9 @@
   <data name="SkipDurationHint" xml:space="preserve"><value>Duree du saut court (clavier, telecommande TV, double tap). Le maintien sur la barre de lecture reste un scrub.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
+  <data name="TrailersSection" xml:space="preserve"><value>Bandes-annonces</value></data>
+  <data name="OpenTrailersExternally" xml:space="preserve"><value>Ouvrir les bandes-annonces dans YouTube</value></data>
+  <data name="OpenTrailersExternallyHint" xml:space="preserve"><value>S'applique aux applis natives et a la TV. Peut quitter K7. Sur un appareil TV a une seule appli en memoire, le systeme peut tuer K7. Sans effet dans le navigateur (hors TV).</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>
   <data name="Medium" xml:space="preserve"><value>Moyen</value></data>
   <data name="Large" xml:space="preserve"><value>Grand</value></data>

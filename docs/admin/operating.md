@@ -82,6 +82,8 @@ Category cards on Explore open a per-group feed (`/explore?library-group={id}`) 
 
 Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs. Optional per-device disable on the same page. Server default: Admin -> Experience -> General). Theme continues across related series pages (serie / season / episode) and cast person digressions. A finished theme (natural end, watch, or trailer) does not restart on return to the same media. Playback pauses when the app is not visible. Leaving that media context fades out, and opening another media with a theme crossfades.
 
+Movie and series trailers play in K7 by default. **Open trailers in YouTube** (Settings -> Video playback, server default under Admin -> Video playback) sends YouTube to the system app on native clients and TV. That can leave K7, and on a TV that keeps only one app in memory the system may unload K7. The browser (except TV) always stays in K7.
+
 - **Library sidecar (read-only):** `theme.mp3` / `.flac` / `.m4a` / `.ogg` at the series root (next to season folders) or in the movie folder. For movies, same-basename audio is also accepted (for example `Movie Name (2020).mkv` + `Movie Name (2020).mp3`). Sidecars are never written by K7.
 - **Series auto-extract:** when **theme song generation** and **intro/outro detection** are enabled on the library, and no sidecar exists, K7 may extract a faded MP3 from an Intro segment into `Metadatas/medias/{serieId}/theme.mp3`. Movies are not extracted from video; sidecar only.
 - Existing metadata themes still play if generation or intro detection is later turned off; new extracts do not run.

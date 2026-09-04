@@ -132,6 +132,8 @@ Entities inherit `BaseEntity` and raise `BaseEvent` via `AddDomainEvent()`. EF C
 
 Native clients keep Home mounted across navigation (`FeedHub`). `HomeFeedStore` is a process singleton scoped by identity user id plus the optional active shared profile id. Switching a local user (or shared profile) on MAUI reloads the home rows and continue-watching cache instead of reusing the previous feed. The SignalR hub reconnects so playback-progress events follow the new identity.
 
+Movie and series trailers (TMDb / TVDB YouTube ids) play in a fullscreen opaque overlay by default. The overlay has no `backdrop-filter` or ancestor `transform`, so the browser can hardware-decode the iframe. `VideoPlayerSettingsDto.OpenTrailersExternally` (user override of the server default) sends YouTube to the system app on native clients and TV instead. Web desktop/phone always stay in the overlay. Non-embeddable sites always open externally.
+
 MAUI `BlazorWebView.StartPath` opens `/select-profile` (or `/welcome` when no local users, `/linkdevice` on TV when Guest is disabled, or `/` for solo auto-login) so `MainLayout` / FeedHub do not run around `RedirectToLogin`. Video.js and audio player scripts are deferred until after first paint on Windows / Web (`PlaybackAssetLoader`). Play awaits them if the prefetch has not finished.
 
 ## Video playback (MAUI)
