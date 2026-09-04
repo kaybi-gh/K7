@@ -178,46 +178,6 @@ else
                                  ShadowColor="@_settings.SubtitleShadowColor"
                                  ShadowBlur="_settings.SubtitleShadowBlur" />
             </section>
-
-            @if (_showDeviceAdvanced)
-            {
-                <K7Divider />
-
-                <section class="d-flex flex-col gap-4">
-                    <h6>@L["AdvancedSection"]</h6>
-                    <span class="text-caption video-playback-hint">@L["AdvancedSectionHint"]</span>
-
-                    <K7Switch Label="@L["AudioPassthrough"]" @bind-Value="_audioPassthrough" />
-                    <span class="text-caption video-playback-hint">@L["AudioPassthroughHint"]</span>
-
-                    @if (_showExoBuffer)
-                    {
-                        <K7Select Label="@L["ExoBuffer"]" @bind-Value="_exoBuffer" TValue="ExoVideoBufferSize">
-                            <K7SelectItem Value="@ExoVideoBufferSize.Auto" Text="@L["BufferAuto"]">@L["BufferAuto"]</K7SelectItem>
-                            <K7SelectItem Value="@ExoVideoBufferSize.Default" Text="@L["BufferDefault"]">@L["BufferDefault"]</K7SelectItem>
-                            <K7SelectItem Value="@ExoVideoBufferSize.Large" Text="@L["BufferLarge"]">@L["BufferLarge"]</K7SelectItem>
-                            <K7SelectItem Value="@ExoVideoBufferSize.ExtraLarge" Text="@L["BufferExtraLarge"]">@L["BufferExtraLarge"]</K7SelectItem>
-                        </K7Select>
-                        <span class="text-caption video-playback-hint">@L["ExoBufferHint"]</span>
-                    }
-
-                    @if (_showHdmiAfr)
-                    {
-                        <K7Select Label="@L["HdmiAfr"]" @bind-Value="_hdmiAfr" TValue="HdmiAutoFrameRateMode">
-                            <K7SelectItem Value="@HdmiAutoFrameRateMode.Disabled" Text="@L["HdmiAfrDisabled"]">@L["HdmiAfrDisabled"]</K7SelectItem>
-                            <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnTv" Text="@L["HdmiAfrScaleOnTv"]">@L["HdmiAfrScaleOnTv"]</K7SelectItem>
-                            <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnDevice" Text="@L["HdmiAfrScaleOnDevice"]">@L["HdmiAfrScaleOnDevice"]</K7SelectItem>
-                        </K7Select>
-                        <span class="text-caption video-playback-hint">@L["HdmiAfrHint"]</span>
-
-                        <K7Select Label="@L["DolbyVision"]" @bind-Value="_dvDecode" TValue="DolbyVisionDecodeMode">
-                            <K7SelectItem Value="@DolbyVisionDecodeMode.HevcHdr10" Text="@L["DolbyVisionHevc"]">@L["DolbyVisionHevc"]</K7SelectItem>
-                            <K7SelectItem Value="@DolbyVisionDecodeMode.Native" Text="@L["DolbyVisionNative"]">@L["DolbyVisionNative"]</K7SelectItem>
-                        </K7Select>
-                        <span class="text-caption video-playback-hint">@L["DolbyVisionHint"]</span>
-                    }
-                </section>
-            }
         }
 
         @if (_settings is not null && _preferences is not null && _videoPolicy is not null)
@@ -225,6 +185,46 @@ else
             <K7Divider />
 
             <PlaybackPolicySettingsFields VideoPolicy="_videoPolicy" VideoPolicyChanged="OnVideoPolicyChanged" />
+        }
+
+        @if (_settings is not null && _showDeviceAdvanced)
+        {
+            <K7Divider />
+
+            <section class="d-flex flex-col gap-4">
+                <h6>@L["AdvancedSection"]</h6>
+                <span class="text-caption video-playback-hint">@L["AdvancedSectionHint"]</span>
+
+                <K7Switch Label="@L["AudioPassthrough"]" @bind-Value="_audioPassthrough" />
+                <span class="text-caption video-playback-hint">@L["AudioPassthroughHint"]</span>
+
+                @if (_showExoBuffer)
+                {
+                    <K7Select Label="@L["ExoBuffer"]" @bind-Value="_exoBuffer" TValue="ExoVideoBufferSize">
+                        <K7SelectItem Value="@ExoVideoBufferSize.Auto" Text="@L["BufferAuto"]">@L["BufferAuto"]</K7SelectItem>
+                        <K7SelectItem Value="@ExoVideoBufferSize.Default" Text="@L["BufferDefault"]">@L["BufferDefault"]</K7SelectItem>
+                        <K7SelectItem Value="@ExoVideoBufferSize.Large" Text="@L["BufferLarge"]">@L["BufferLarge"]</K7SelectItem>
+                        <K7SelectItem Value="@ExoVideoBufferSize.ExtraLarge" Text="@L["BufferExtraLarge"]">@L["BufferExtraLarge"]</K7SelectItem>
+                    </K7Select>
+                    <span class="text-caption video-playback-hint">@L["ExoBufferHint"]</span>
+                }
+
+                @if (_showHdmiAfr)
+                {
+                    <K7Select Label="@L["HdmiAfr"]" @bind-Value="_hdmiAfr" TValue="HdmiAutoFrameRateMode">
+                        <K7SelectItem Value="@HdmiAutoFrameRateMode.Disabled" Text="@L["HdmiAfrDisabled"]">@L["HdmiAfrDisabled"]</K7SelectItem>
+                        <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnTv" Text="@L["HdmiAfrScaleOnTv"]">@L["HdmiAfrScaleOnTv"]</K7SelectItem>
+                        <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnDevice" Text="@L["HdmiAfrScaleOnDevice"]">@L["HdmiAfrScaleOnDevice"]</K7SelectItem>
+                    </K7Select>
+                    <span class="text-caption video-playback-hint">@L["HdmiAfrHint"]</span>
+
+                    <K7Select Label="@L["DolbyVision"]" @bind-Value="_dvDecode" TValue="DolbyVisionDecodeMode">
+                        <K7SelectItem Value="@DolbyVisionDecodeMode.HevcHdr10" Text="@L["DolbyVisionHevc"]">@L["DolbyVisionHevc"]</K7SelectItem>
+                        <K7SelectItem Value="@DolbyVisionDecodeMode.Native" Text="@L["DolbyVisionNative"]">@L["DolbyVisionNative"]</K7SelectItem>
+                    </K7Select>
+                    <span class="text-caption video-playback-hint">@L["DolbyVisionHint"]</span>
+                }
+            </section>
         }
         </div>
 
