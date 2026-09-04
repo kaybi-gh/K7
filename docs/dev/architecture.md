@@ -140,7 +140,7 @@ During video play on Android/iOS/Windows, MAUI uses a **native XAML overlay** on
 
 ## Music playback (MAUI Android)
 
-Android music uses two Media3 ExoPlayers in `K7MediaLibraryService` (session player + idle player) so crossfade and gapless can overlap. After the blend, the incoming player is promoted in place (`ForwardingSimpleBasePlayer.setPlayer`); the next track is not reloaded onto the freed session player. Windows music stays on WebView2 / Web Audio. iOS uses dual `AVPlayer`.
+Android music uses two Media3 ExoPlayers in `K7MediaLibraryService` (session player + idle player) so crossfade and gapless can overlap. After the blend, the incoming player is promoted in place (`ForwardingSimpleBasePlayer.setPlayer`). The next track is not reloaded onto the freed session player. Android Auto skip uses the ExoPlayer playlist as source of truth (same idea as Tempus / Jellyfin). Next/previous seek the Media3 timeline, then `IAudioPlayerService` copies the current index without reloading the stream. Car radios still fast-start on a small first batch so playback is not blocked on a large fetch. Refill then appends to the Media3 playlist. Windows music stays on WebView2 / Web Audio. iOS uses dual `AVPlayer`.
 
 ## Offline downloads (MAUI)
 

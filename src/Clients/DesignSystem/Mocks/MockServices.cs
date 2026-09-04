@@ -386,6 +386,14 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         return Task.CompletedTask;
     }
 
+    public void SyncCurrentIndexFromExternalPlayer(int index)
+    {
+        if (index < 0 || index >= _queue.Count || index == CurrentIndex)
+            return;
+        CurrentIndex = index;
+        SetCurrentTrack(_queue[CurrentIndex]);
+    }
+
     public void ToggleShuffle() { }
     public void CycleRepeatMode() { }
     public void ToggleAdaptiveCrossfade() { }

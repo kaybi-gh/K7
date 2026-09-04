@@ -69,89 +69,63 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         PlaybackStateChanged?.Invoke(_playbackState);
     }
 
-    private double _duration;
-    public double Duration
-    {
-        get => _duration;
-        set { if (_duration != value) { _duration = value; DurationChanged?.Invoke(value); } }
-    }
+    public double Duration { get; set { if (field != value) { field = value; DurationChanged?.Invoke(value); } } }
 
-    private double _currentTime;
-    public double CurrentTime
-    {
-        get => _currentTime;
-        set
+    public double CurrentTime { get; set
         {
             // After the UI has flipped to the incoming track, ignore late ticks from the
             // outgoing element. While UI is deferred, keep reporting the outgoing clock.
             if (_crossfadeTriggered && !_crossfadeUiDeferred && value > 1)
                 return;
 
-            if (_currentTime == value) return;
-            _currentTime = value;
+            if (field == value) return;
+            field = value;
             CurrentTimeChanged?.Invoke(value);
             ConsiderStopAfterTrackFade();
             ConsiderCrossfade();
             ConsiderGaplessPrebuffer();
-        }
-    }
+        } }
 
-    private double _bufferedTime;
-    public double BufferedTime
-    {
-        get => _bufferedTime;
-        set { if (_bufferedTime != value) { _bufferedTime = value; BufferedTimeChanged?.Invoke(value); } }
-    }
+    public double BufferedTime { get; set { if (field != value) { field = value; BufferedTimeChanged?.Invoke(value); } } }
 
-    private double _volume = System.OperatingSystem.IsAndroid() || System.OperatingSystem.IsIOS()
-        ? 1.0
-        : deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
-    public double Volume
-    {
-        get => _volume;
-        set
+    public double Volume { get; set
         {
-            if (_volume != value)
+            if (field != value)
             {
-                _volume = value;
+                field = value;
                 if (!System.OperatingSystem.IsAndroid() && !System.OperatingSystem.IsIOS())
                     deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
                 VolumeChanged?.Invoke(value);
             }
-        }
-    }
+        } } = System.OperatingSystem.IsAndroid() || System.OperatingSystem.IsIOS()
+        ? 1.0
+        : deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
 
-    private bool _isMuted = deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
-    public bool IsMuted
-    {
-        get => _isMuted;
-        set
+    public bool IsMuted { get; set
         {
-            if (_isMuted != value)
+            if (field != value)
             {
-                _isMuted = value;
+                field = value;
                 deviceStorageService.Set(PreferenceKeys.PLAYER_IS_MUTED, value);
                 IsMutedChanged?.Invoke(value);
             }
-        }
-    }
+        } } = deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
 
     public bool IsVisible { get; private set; }
     public bool IsFullScreenVisible { get; private set; }
 
     // Crossfade state
-    private bool _adaptiveCrossfade = deviceStorageService.Get(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, true);
-    public bool AdaptiveCrossfade => _adaptiveCrossfade;
+    public bool AdaptiveCrossfade { get; private set; } = deviceStorageService.Get(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, true);
 
     public event Action? CrossfadeDurationChanged;
-    private double _crossfadeDuration = deviceStorageService.Get(PreferenceKeys.PLAYER_CROSSFADE_DURATION, 6.0);
-    public double CrossfadeDuration => _crossfadeDuration;
+
+    public double CrossfadeDuration { get; private set; } = deviceStorageService.Get(PreferenceKeys.PLAYER_CROSSFADE_DURATION, 6.0);
 
     /// <summary>
     /// Window used to trigger crossfade/gapless. Duration 0 always means gapless
     /// (adaptive only adjusts duration when the slider is greater than 0).
     /// </summary>
-    public double CrossfadeTriggerWindow => _crossfadeDuration > 0 ? _crossfadeDuration : 0;
+    public double CrossfadeTriggerWindow => CrossfadeDuration > 0 ? CrossfadeDuration : 0;
 
     private bool _crossfadeTriggered;
     private bool _crossfadeUiDeferred;
@@ -163,42 +137,34 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     // Loudness normalization state
     public event Action? LoudnessSettingsChanged;
-    private bool _loudnessEnabled = deviceStorageService.Get(PreferenceKeys.LOUDNESS_ENABLED, true);
-    private double _loudnessTargetLufs = deviceStorageService.Get(PreferenceKeys.LOUDNESS_TARGET_LUFS, -14.0);
-    private double _loudnessPreampDb = deviceStorageService.Get(PreferenceKeys.LOUDNESS_PREAMP_DB, 0.0);
-    private bool _limiterEnabled = deviceStorageService.Get(PreferenceKeys.LOUDNESS_LIMITER_ENABLED, true);
-    public bool LoudnessEnabled => _loudnessEnabled;
-    public double LoudnessTargetLufs => _loudnessTargetLufs;
-    public double LoudnessPreampDb => _loudnessPreampDb;
-    public bool LimiterEnabled => _limiterEnabled;
+
+    public bool LoudnessEnabled { get; private set; } = deviceStorageService.Get(PreferenceKeys.LOUDNESS_ENABLED, true);
+    public double LoudnessTargetLufs { get; private set; } = deviceStorageService.Get(PreferenceKeys.LOUDNESS_TARGET_LUFS, -14.0);
+    public double LoudnessPreampDb { get; private set; } = deviceStorageService.Get(PreferenceKeys.LOUDNESS_PREAMP_DB, 0.0);
+    public bool LimiterEnabled { get; private set; } = deviceStorageService.Get(PreferenceKeys.LOUDNESS_LIMITER_ENABLED, true);
 
     // EQ state
     public event Action? EqSettingsChanged;
-    private bool _eqEnabled = deviceStorageService.Get(PreferenceKeys.EQ_ENABLED, false);
-    private double[] _eqBands = ParseEqBands(deviceStorageService.Get(PreferenceKeys.EQ_BANDS_JSON, null));
-    private string? _eqPresetName = deviceStorageService.Get(PreferenceKeys.EQ_PRESET_NAME, null);
-    public bool EqEnabled => _eqEnabled;
-    public double[] EqBands => _eqBands;
-    public string? EqPresetName => _eqPresetName;
+
+    public bool EqEnabled { get; private set; } = deviceStorageService.Get(PreferenceKeys.EQ_ENABLED, false);
+    public double[] EqBands { get; private set; } = ParseEqBands(deviceStorageService.Get(PreferenceKeys.EQ_BANDS_JSON, null));
+    public string? EqPresetName { get; private set; } = deviceStorageService.Get(PreferenceKeys.EQ_PRESET_NAME, null);
 
     // Queue state
     private readonly List<AudioQueueItem> _queue = [];
     private readonly List<AudioQueueItem> _playHistory = [];
     private readonly List<int> _shuffleOrder = [];
-    private int _currentIndex = -1;
     private int _shufflePosition = -1;
     private const int MaxPlayHistory = 50;
 
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
     public IReadOnlyList<AudioQueueItem> PlayHistory => _playHistory;
-    public AudioQueueItem? CurrentTrack => _currentIndex >= 0 && _currentIndex < _queue.Count ? _queue[_currentIndex] : null;
-    public int CurrentIndex => _currentIndex;
+    public AudioQueueItem? CurrentTrack => CurrentIndex >= 0 && CurrentIndex < _queue.Count ? _queue[CurrentIndex] : null;
+    public int CurrentIndex { get; private set; } = -1;
 
-    private RepeatMode _repeat = RepeatMode.Off;
-    public RepeatMode Repeat => _repeat;
+    public RepeatMode Repeat { get; private set; } = RepeatMode.Off;
 
-    private bool _shuffle;
-    public bool Shuffle => _shuffle;
+    public bool Shuffle { get; private set; }
 
     public string? ActiveRadioTitle { get; private set; }
     public Guid? ActivePlaylistId { get; private set; }
@@ -263,42 +229,37 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     // Player UX preferences
     public event Action? PlayerUxSettingsChanged;
 
-    private bool _showFullscreenOnPlay = deviceStorageService.Get(PreferenceKeys.SHOW_FULLSCREEN_ON_PLAY, false);
-    public bool ShowFullscreenOnPlay => _showFullscreenOnPlay;
+    public bool ShowFullscreenOnPlay { get; private set; } = deviceStorageService.Get(PreferenceKeys.SHOW_FULLSCREEN_ON_PLAY, false);
 
-    private int _skipBackSeconds = deviceStorageService.Get(PreferenceKeys.SKIP_BACK_SECONDS, 5);
-    public int SkipBackSeconds => _skipBackSeconds;
+    public int SkipBackSeconds { get; private set; } = deviceStorageService.Get(PreferenceKeys.SKIP_BACK_SECONDS, 5);
+    public int SkipForwardSeconds { get; private set; } = deviceStorageService.Get(PreferenceKeys.SKIP_FORWARD_SECONDS, 5);
 
-    private int _skipForwardSeconds = deviceStorageService.Get(PreferenceKeys.SKIP_FORWARD_SECONDS, 5);
-    public int SkipForwardSeconds => _skipForwardSeconds;
-
-    private bool _keepScreenOn = deviceStorageService.Get(PreferenceKeys.KEEP_SCREEN_ON, false);
-    public bool KeepScreenOn => _keepScreenOn;
+    public bool KeepScreenOn { get; private set; } = deviceStorageService.Get(PreferenceKeys.KEEP_SCREEN_ON, false);
 
     public void SetShowFullscreenOnPlay(bool enabled)
     {
-        _showFullscreenOnPlay = enabled;
+        ShowFullscreenOnPlay = enabled;
         deviceStorageService.Set(PreferenceKeys.SHOW_FULLSCREEN_ON_PLAY, enabled);
         PlayerUxSettingsChanged?.Invoke();
     }
 
     public void SetSkipBackSeconds(int seconds)
     {
-        _skipBackSeconds = seconds;
+        SkipBackSeconds = seconds;
         deviceStorageService.Set(PreferenceKeys.SKIP_BACK_SECONDS, seconds);
         PlayerUxSettingsChanged?.Invoke();
     }
 
     public void SetSkipForwardSeconds(int seconds)
     {
-        _skipForwardSeconds = seconds;
+        SkipForwardSeconds = seconds;
         deviceStorageService.Set(PreferenceKeys.SKIP_FORWARD_SECONDS, seconds);
         PlayerUxSettingsChanged?.Invoke();
     }
 
     public void SetKeepScreenOn(bool enabled)
     {
-        _keepScreenOn = enabled;
+        KeepScreenOn = enabled;
         deviceStorageService.Set(PreferenceKeys.KEEP_SCREEN_ON, enabled);
         PlayerUxSettingsChanged?.Invoke();
     }
@@ -324,10 +285,10 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (list.Count == 0)
             return;
 
-        if (!_shuffle)
+        if (!Shuffle)
         {
-            _shuffle = true;
-            ShuffleChanged?.Invoke(_shuffle);
+            Shuffle = true;
+            ShuffleChanged?.Invoke(Shuffle);
         }
 
         var startIndex = Rng.Next(list.Count);
@@ -349,7 +310,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         _queue.Clear();
         _queue.AddRange(tracks);
         _playHistory.Clear();
-        _currentIndex = startIndex;
+        CurrentIndex = startIndex;
         RebuildShuffleOrder();
         QueueChanged?.Invoke();
 
@@ -393,7 +354,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         foreach (var track in tracks)
         {
             _queue.Add(track);
-            if (_shuffle)
+            if (Shuffle)
                 _shuffleOrder.Add(_queue.Count - 1);
         }
 
@@ -402,11 +363,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public void AddToQueueNext(AudioQueueItem track)
     {
-        var insertIndex = _currentIndex + 1;
+        var insertIndex = CurrentIndex + 1;
         _queue.Insert(insertIndex, track);
 
         // Fix shuffle order indices
-        if (_shuffle)
+        if (Shuffle)
         {
             for (var i = 0; i < _shuffleOrder.Count; i++)
             {
@@ -423,10 +384,10 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         if (index < 0 || index >= _queue.Count) return;
 
-        var wasCurrent = index == _currentIndex;
+        var wasCurrent = index == CurrentIndex;
         _queue.RemoveAt(index);
 
-        if (_shuffle)
+        if (Shuffle)
         {
             _shuffleOrder.Remove(index);
             for (var i = 0; i < _shuffleOrder.Count; i++)
@@ -436,10 +397,10 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             }
         }
 
-        if (_currentIndex > index)
-            _currentIndex--;
-        else if (_currentIndex >= _queue.Count)
-            _currentIndex = _queue.Count - 1;
+        if (CurrentIndex > index)
+            CurrentIndex--;
+        else if (CurrentIndex >= _queue.Count)
+            CurrentIndex = _queue.Count - 1;
 
         QueueChanged?.Invoke();
 
@@ -453,7 +414,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         _queue.Clear();
         _playHistory.Clear();
         _shuffleOrder.Clear();
-        _currentIndex = -1;
+        CurrentIndex = -1;
         _shufflePosition = -1;
         QueueChanged?.Invoke();
         CurrentTrackChanged?.Invoke(null);
@@ -462,10 +423,10 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     // Navigation
     public async Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default)
     {
-        if (index < 0 || index >= _queue.Count || index == _currentIndex) return;
+        if (index < 0 || index >= _queue.Count || index == CurrentIndex) return;
         PushCurrentToPlayHistory();
-        _currentIndex = index;
-        if (_shuffle)
+        CurrentIndex = index;
+        if (Shuffle)
             _shufflePosition = _shuffleOrder.IndexOf(index);
         await LoadAndPlayCurrentAsync(cancellationToken);
     }
@@ -482,7 +443,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
 
         PushCurrentToPlayHistory();
-        _currentIndex = nextIndex.Value;
+        CurrentIndex = nextIndex.Value;
         await LoadAndPlayCurrentAsync(cancellationToken);
     }
 
@@ -504,90 +465,112 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             return;
         }
 
-        _currentIndex = prevIndex.Value;
+        CurrentIndex = prevIndex.Value;
         await LoadAndPlayCurrentAsync(cancellationToken);
+    }
+
+    public void SyncCurrentIndexFromExternalPlayer(int index)
+    {
+        if (index < 0 || index >= _queue.Count || index == CurrentIndex)
+            return;
+
+        PushCurrentToPlayHistory();
+        CurrentIndex = index;
+        if (Shuffle)
+            _shufflePosition = _shuffleOrder.IndexOf(index);
+
+        _crossfadeTriggered = false;
+        _crossfadeUiDeferred = false;
+        _crossfadeDeclined = false;
+        _gaplessPrebufferTriggered = false;
+        ClearPreparedNextSource();
+
+        CurrentTime = 0;
+        Duration = CurrentTrack?.Duration ?? 0;
+        BufferedTime = 0;
+        CurrentTrackChanged?.Invoke(CurrentTrack);
     }
 
     // Modes
     public void ToggleShuffle()
     {
-        _shuffle = !_shuffle;
-        if (_shuffle)
+        Shuffle = !Shuffle;
+        if (Shuffle)
             RebuildShuffleOrder();
-        ShuffleChanged?.Invoke(_shuffle);
+        ShuffleChanged?.Invoke(Shuffle);
     }
 
     public void CycleRepeatMode()
     {
-        _repeat = _repeat switch
+        Repeat = Repeat switch
         {
             RepeatMode.Off => RepeatMode.All,
             RepeatMode.All => RepeatMode.One,
             RepeatMode.One => RepeatMode.Off,
             _ => RepeatMode.Off
         };
-        RepeatModeChanged?.Invoke(_repeat);
+        RepeatModeChanged?.Invoke(Repeat);
     }
 
     public void ToggleAdaptiveCrossfade()
     {
-        _adaptiveCrossfade = !_adaptiveCrossfade;
-        deviceStorageService.Set(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, _adaptiveCrossfade);
+        AdaptiveCrossfade = !AdaptiveCrossfade;
+        deviceStorageService.Set(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, AdaptiveCrossfade);
         CrossfadeDurationChanged?.Invoke();
     }
 
     public void SetCrossfadeDuration(double seconds)
     {
-        _crossfadeDuration = Math.Clamp(seconds, 0, 12);
-        deviceStorageService.Set(PreferenceKeys.PLAYER_CROSSFADE_DURATION, _crossfadeDuration);
+        CrossfadeDuration = Math.Clamp(seconds, 0, 12);
+        deviceStorageService.Set(PreferenceKeys.PLAYER_CROSSFADE_DURATION, CrossfadeDuration);
         CrossfadeDurationChanged?.Invoke();
     }
 
     public void SetLoudnessEnabled(bool enabled)
     {
-        _loudnessEnabled = enabled;
+        LoudnessEnabled = enabled;
         deviceStorageService.Set(PreferenceKeys.LOUDNESS_ENABLED, enabled);
         LoudnessSettingsChanged?.Invoke();
     }
 
     public void SetLoudnessTargetLufs(double lufs)
     {
-        _loudnessTargetLufs = Math.Clamp(lufs, -26.0, -6.0);
-        deviceStorageService.Set(PreferenceKeys.LOUDNESS_TARGET_LUFS, _loudnessTargetLufs);
+        LoudnessTargetLufs = Math.Clamp(lufs, -26.0, -6.0);
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_TARGET_LUFS, LoudnessTargetLufs);
         LoudnessSettingsChanged?.Invoke();
     }
 
     public void SetLoudnessPreampDb(double db)
     {
-        _loudnessPreampDb = Math.Clamp(db, -6.0, 6.0);
-        deviceStorageService.Set(PreferenceKeys.LOUDNESS_PREAMP_DB, _loudnessPreampDb);
+        LoudnessPreampDb = Math.Clamp(db, -6.0, 6.0);
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_PREAMP_DB, LoudnessPreampDb);
         LoudnessSettingsChanged?.Invoke();
     }
 
     public void SetLimiterEnabled(bool enabled)
     {
-        _limiterEnabled = enabled;
+        LimiterEnabled = enabled;
         deviceStorageService.Set(PreferenceKeys.LOUDNESS_LIMITER_ENABLED, enabled);
         LoudnessSettingsChanged?.Invoke();
     }
 
     public void SetEqEnabled(bool enabled)
     {
-        _eqEnabled = enabled;
+        EqEnabled = enabled;
         deviceStorageService.Set(PreferenceKeys.EQ_ENABLED, enabled);
         EqSettingsChanged?.Invoke();
     }
 
     public void SetEqBands(double[] bands)
     {
-        _eqBands = bands;
+        EqBands = bands;
         deviceStorageService.Set(PreferenceKeys.EQ_BANDS_JSON, System.Text.Json.JsonSerializer.Serialize(bands));
         EqSettingsChanged?.Invoke();
     }
 
     public void SetEqPresetName(string? name)
     {
-        _eqPresetName = name;
+        EqPresetName = name;
         deviceStorageService.Set(PreferenceKeys.EQ_PRESET_NAME, name ?? string.Empty);
         EqSettingsChanged?.Invoke();
     }
@@ -607,9 +590,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public async Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default)
     {
-        if (_stopAfterCurrentTrack) return;
+        if (StopAfterCurrentTrack) return;
         if (_crossfadeTriggered || _crossfadeDeclined || _queue.Count == 0) return;
-        if (_repeat == RepeatMode.One) return;
+        if (Repeat == RepeatMode.One) return;
 
         // Peek only - GetNextIndex mutates shuffle position and must not run until
         // we commit to a real crossfade (same-album adaptive returns 0 for gapless).
@@ -619,11 +602,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         var nextTrack = _queue[nextIndex.Value];
 
-        var duration = _crossfadeDuration;
+        var duration = CrossfadeDuration;
         var outgoingTrack = CurrentTrack;
-        if (_adaptiveCrossfade && outgoingTrack is not null)
+        if (AdaptiveCrossfade && outgoingTrack is not null)
         {
-            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
+            var baseDuration = CrossfadeDuration > 0 ? CrossfadeDuration : 6.0;
             duration = HarmonicMixHelper.ComputeCrossfadeDuration(outgoingTrack, nextTrack, baseDuration);
         }
 
@@ -682,7 +665,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
 
         PushCurrentToPlayHistory();
-        _currentIndex = committedIndex.Value;
+        CurrentIndex = committedIndex.Value;
         // Keep seek bar / title / waveform on the outgoing track during the blend.
         // Flipping UI at arm-time feels like an early cut even when audio overlaps.
         _crossfadeUiDeferred = true;
@@ -705,9 +688,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private void ConsiderCrossfade()
     {
-        if (_crossfadeTriggered || _crossfadeDeclined || _stopAfterCurrentTrack || CrossfadeTriggerWindow <= 0)
+        if (_crossfadeTriggered || _crossfadeDeclined || StopAfterCurrentTrack || CrossfadeTriggerWindow <= 0)
             return;
-        if (_playbackState != PlaybackState.Playing || _currentTime <= 0)
+        if (_playbackState != PlaybackState.Playing || CurrentTime <= 0)
             return;
 
         // Prefer track metadata duration so a transient MediaElement Duration glitch
@@ -716,7 +699,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (duration <= 0)
             return;
 
-        var remaining = duration - _currentTime;
+        var remaining = duration - CurrentTime;
         // Arm a bit early once the next track is prebuffered so JS can start it
         // silently and still run a full-duration equal-power blend.
         var armWindow = CrossfadeTriggerWindow;
@@ -728,16 +711,16 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private void ConsiderGaplessPrebuffer()
     {
-        if (_gaplessPrebufferTriggered || _crossfadeTriggered || _stopAfterCurrentTrack)
+        if (_gaplessPrebufferTriggered || _crossfadeTriggered || StopAfterCurrentTrack)
             return;
-        if (_playbackState != PlaybackState.Playing || _currentTime <= 0)
+        if (_playbackState != PlaybackState.Playing || CurrentTime <= 0)
             return;
 
         var duration = GetReliableDurationSeconds();
         if (duration <= 0)
             return;
 
-        var remaining = duration - _currentTime;
+        var remaining = duration - CurrentTime;
         // Prepare the next track early for gapless and crossfade so the incoming
         // stream is already decoding when the equal-power ramp starts.
         var prepareWindow = CrossfadeTriggerWindow > 0
@@ -750,16 +733,16 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private double GetReliableDurationSeconds()
     {
         var trackDuration = CurrentTrack?.Duration ?? 0;
-        if (trackDuration > 0 && _duration > 0)
+        if (trackDuration > 0 && Duration > 0)
         {
             // If native duration is wildly shorter than metadata, trust metadata
             // (avoids early crossfade / false "end of track" fades).
-            if (_duration < trackDuration * 0.5)
+            if (Duration < trackDuration * 0.5)
                 return trackDuration;
-            return Math.Max(_duration, trackDuration * 0.95);
+            return Math.Max(Duration, trackDuration * 0.95);
         }
 
-        return trackDuration > 0 ? trackDuration : _duration;
+        return trackDuration > 0 ? trackDuration : Duration;
     }
 
     private bool _gaplessPrebufferTriggered;
@@ -774,9 +757,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public async Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default)
     {
-        if (_stopAfterCurrentTrack) return;
+        if (StopAfterCurrentTrack) return;
         if (_gaplessPrebufferTriggered || _crossfadeTriggered || _queue.Count == 0) return;
-        if (_repeat == RepeatMode.One) return;
+        if (Repeat == RepeatMode.One) return;
 
         var nextIndex = PeekNextIndex();
         if (nextIndex is null) return;
@@ -814,13 +797,13 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     // Called by the component when JS reports track ended
     public async Task OnTrackEndedAsync(CancellationToken cancellationToken = default)
     {
-        if (_stopAfterCurrentTrack)
+        if (StopAfterCurrentTrack)
         {
             await FinishStopAfterCurrentTrackAsync();
             return;
         }
 
-        if (_repeat == RepeatMode.One)
+        if (Repeat == RepeatMode.One)
         {
             Seek(0);
             Play();
@@ -857,36 +840,35 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         await LoadAndPlayCurrentAsync(cancellationToken);
     }
 
-    private bool _stopAfterCurrentTrack;
     private bool _sleepFadeStarted;
     private const double SleepFadeSeconds = 8.0;
 
-    public bool StopAfterCurrentTrack => _stopAfterCurrentTrack;
+    public bool StopAfterCurrentTrack { get; private set; }
     public event Action? StopAfterCurrentTrackCompleted;
 
     public void RequestStopAfterCurrentTrack()
     {
-        _stopAfterCurrentTrack = true;
+        StopAfterCurrentTrack = true;
         _sleepFadeStarted = false;
         ConsiderStopAfterTrackFade();
     }
 
     public void ClearStopAfterCurrentTrack()
     {
-        _stopAfterCurrentTrack = false;
+        StopAfterCurrentTrack = false;
         _sleepFadeStarted = false;
     }
 
     private void ConsiderStopAfterTrackFade()
     {
-        if (!_stopAfterCurrentTrack || _sleepFadeStarted)
+        if (!StopAfterCurrentTrack || _sleepFadeStarted)
             return;
 
         var duration = GetReliableDurationSeconds();
         if (duration <= 0)
             return;
 
-        var remaining = duration - _currentTime;
+        var remaining = duration - CurrentTime;
         if (remaining <= 0 || remaining > SleepFadeSeconds)
             return;
 
@@ -909,7 +891,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private async Task FinishStopAfterCurrentTrackAsync()
     {
-        _stopAfterCurrentTrack = false;
+        StopAfterCurrentTrack = false;
         _sleepFadeStarted = false;
         Pause();
         PlaybackState = PlaybackState.Ended;
@@ -967,7 +949,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         await ShowAsync();
 
-        if (_showFullscreenOnPlay && !IsFullScreenVisible)
+        if (ShowFullscreenOnPlay && !IsFullScreenVisible)
             ToggleFullScreen();
 
         PlayerSource source;
@@ -1012,13 +994,13 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private int? GetNextIndex()
     {
-        if (_shuffle)
+        if (Shuffle)
         {
             _shufflePosition++;
             if (_shufflePosition < _shuffleOrder.Count)
                 return _shuffleOrder[_shufflePosition];
 
-            if (_repeat == RepeatMode.All)
+            if (Repeat == RepeatMode.All)
             {
                 RebuildShuffleOrder();
                 return _shuffleOrder.Count > 0 ? _shuffleOrder[0] : null;
@@ -1027,11 +1009,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             return null;
         }
 
-        var next = _currentIndex + 1;
+        var next = CurrentIndex + 1;
         if (next < _queue.Count)
             return next;
 
-        if (_repeat == RepeatMode.All)
+        if (Repeat == RepeatMode.All)
             return 0;
 
         return null;
@@ -1039,21 +1021,21 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private int? PeekNextIndex()
     {
-        if (_shuffle)
+        if (Shuffle)
         {
             var nextPos = _shufflePosition + 1;
             if (nextPos < _shuffleOrder.Count)
                 return _shuffleOrder[nextPos];
-            if (_repeat == RepeatMode.All && _shuffleOrder.Count > 0)
+            if (Repeat == RepeatMode.All && _shuffleOrder.Count > 0)
                 return _shuffleOrder[0];
             return null;
         }
 
-        var next = _currentIndex + 1;
+        var next = CurrentIndex + 1;
         if (next < _queue.Count)
             return next;
 
-        if (_repeat == RepeatMode.All)
+        if (Repeat == RepeatMode.All)
             return 0;
 
         return null;
@@ -1061,7 +1043,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private int? GetPreviousIndex()
     {
-        if (_shuffle)
+        if (Shuffle)
         {
             if (_shufflePosition > 0)
             {
@@ -1071,7 +1053,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             return null;
         }
 
-        var prev = _currentIndex - 1;
+        var prev = CurrentIndex - 1;
         return prev >= 0 ? prev : null;
     }
 
@@ -1081,7 +1063,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         var indices = new List<int>();
         for (var i = 0; i < _queue.Count; i++)
         {
-            if (i != _currentIndex)
+            if (i != CurrentIndex)
                 indices.Add(i);
         }
 
@@ -1096,8 +1078,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         var result = new List<int>(indices.Count);
         var remaining = new List<int>(indices);
 
-        string? lastArtist = _currentIndex >= 0 && _currentIndex < _queue.Count
-            ? _queue[_currentIndex].Artist
+        string? lastArtist = CurrentIndex >= 0 && CurrentIndex < _queue.Count
+            ? _queue[CurrentIndex].Artist
             : null;
 
         while (remaining.Count > 0)

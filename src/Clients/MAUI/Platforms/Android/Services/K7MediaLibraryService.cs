@@ -325,6 +325,8 @@ public class K7MediaLibraryService : MediaLibraryService,
             _audioPlayerService.PlaybackState = PlaybackState.Idle;
             _updatingFromPlayer = false;
         }
+
+        TryCompleteRadioPlaylistHandoff(requireItems: false);
     }
 
     public void OnMediaItemTransition(MediaItem? mediaItem, int reason)
@@ -340,19 +342,19 @@ public class K7MediaLibraryService : MediaLibraryService,
             _updatingFromPlayer = false;
         }
 
-        // Auto-advance (reason=1): ExoPlayer moved to next track in playlist.
-        // Sync AudioPlayerService without triggering OnSourceChanged.
+        // Auto-advance (reason=1) or controller skip/seek (reason=2): ExoPlayer already
+        // moved. Sync the in-memory queue without LoadAndPlayCurrentAsync / SourceChanged.
         // Skip while soft-crossfading - the queue index was already advanced.
-        if (reason == 1 && !_crossfadeInProgress
-            && _resolvedQueueMediaItems is not null && _resolvedQueueMediaItems.Count > 1)
+        if ((reason == 1 || reason == 2) && !_crossfadeInProgress
+            && _player.MediaItemCount > 1)
         {
             TryCompleteRadioPlaylistHandoff();
-            _ = Task.Run(async () =>
+            MainThread.BeginInvokeOnMainThread(() =>
             {
                 _syncingFromExoPlayer = true;
                 try
                 {
-                    await _audioPlayerService.NextAsync();
+                    SyncQueueIndexFromPlayer(mediaItem);
                 }
                 finally
                 {
@@ -658,9 +660,11 @@ public class K7MediaLibraryService : MediaLibraryService,
                     return;
 
                 var mediaId = track.MediaId.ToString();
+                if (!string.Equals(current.MediaId, mediaId, StringComparison.Ordinal))
+                    return;
+
                 var currentTitle = current.MediaMetadata?.Title?.ToString();
-                if (string.Equals(current.MediaId, mediaId, StringComparison.Ordinal)
-                    && string.Equals(currentTitle, track.Title, StringComparison.Ordinal))
+                if (string.Equals(currentTitle, track.Title, StringComparison.Ordinal))
                     return;
 
                 var updated = current.BuildUpon()!
@@ -878,6 +882,7 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         _radioAwaitingMedia3Playlist = false;
         _radioMediaIdsOnPlayer.Clear();
+        _syncingFromExoPlayer = false;
         CancelRadioPlaylistSyncDebounce();
     }
 
@@ -891,15 +896,58 @@ public class K7MediaLibraryService : MediaLibraryService,
         ScheduleRadioPlaylistSync();
     }
 
-    private void TryCompleteRadioPlaylistHandoff()
+    private void TryCompleteRadioPlaylistHandoff(bool requireItems = true)
     {
         if (!_radioAwaitingMedia3Playlist)
             return;
-        if (_player is null || _player.MediaItemCount == 0)
+        if (requireItems && (_player is null || _player.MediaItemCount == 0))
             return;
 
         _radioAwaitingMedia3Playlist = false;
+        _syncingFromExoPlayer = false;
         ScheduleRadioPlaylistSync();
+    }
+
+    private void ScheduleRadioPlaylistHandoffTimeout()
+    {
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            if (!_radioAwaitingMedia3Playlist)
+                return;
+
+            Log.Warn(Tag, "Radio playlist handoff timed out; enabling refill sync");
+            TryCompleteRadioPlaylistHandoff(requireItems: false);
+        });
+    }
+
+    private void SyncQueueIndexFromPlayer(MediaItem? mediaItem)
+    {
+        if (_audioPlayerService is null)
+            return;
+
+        var queue = _audioPlayerService.Queue;
+        var index = -1;
+
+        if (mediaItem?.MediaId is not null && Guid.TryParse(mediaItem.MediaId, out var mediaId))
+        {
+            for (var i = 0; i < queue.Count; i++)
+            {
+                if (queue[i].MediaId == mediaId)
+                {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        if (index < 0 && _player is not null)
+            index = _player.CurrentMediaItemIndex;
+
+        if (index >= 0)
+            _audioPlayerService.SyncCurrentIndexFromExternalPlayer(index);
+
+        _forwardingPlayer?.NotifyQueueChanged();
     }
 
     private void ScheduleRadioPlaylistSync()
@@ -1463,7 +1511,7 @@ public class K7MediaLibraryService : MediaLibraryService,
                                 _radioMediaIdsOnPlayer.Add(id);
                             _radioAwaitingMedia3Playlist = true;
                             _pendingTrack = _audioPlayerService?.CurrentTrack ?? queueItems[0];
-                            _syncingFromExoPlayer = false;
+                            ScheduleRadioPlaylistHandoffTimeout();
                         }
                         else
                         {

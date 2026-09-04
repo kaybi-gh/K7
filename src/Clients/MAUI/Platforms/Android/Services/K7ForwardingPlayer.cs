@@ -9,8 +9,9 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
 /// <summary>
 /// Session-facing player that forwards to the active ExoPlayer and can swap that
 /// instance in place after a crossfade (Media3 ForwardingSimpleBasePlayer.setPlayer).
-/// Next/previous from Android Auto and notifications go through IAudioPlayerService
-/// instead of Media3's native playlist.
+/// Next/previous from notifications go through IAudioPlayerService when ExoPlayer
+/// has a single item. Multi-item Android Auto playlists skip natively so artwork
+/// and audio stay aligned.
 /// </summary>
 public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 {
@@ -46,6 +47,9 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
     protected override State GetState()
     {
         var state = base.GetState()!;
+        if (HasNativePlaylist())
+            return state!;
+
         var commands = new PlayerCommands.Builder()
             .AddAll(state.AvailableCommands!)!;
         if (_hasPrevious is not null && _hasPrevious())
@@ -65,6 +69,13 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 
     protected override IListenableFuture HandleSeek(int mediaItemIndex, long positionMs, int seekCommand)
     {
+        // Tempus / Jellyfin / Media3 demo: when ExoPlayer already has a real
+        // playlist, skip must seek that playlist. Intercepting next/prev and
+        // routing through IAudioPlayerService only patches now-playing metadata
+        // (artwork changes, URI stays) which is the Android Auto skip bug.
+        if (HasNativePlaylist())
+            return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
+
         if (seekCommand is CommandSeekToNext or CommandSeekToNextMediaItem)
         {
             _onSeekToNext();
@@ -79,6 +90,8 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 
         return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
     }
+
+    private bool HasNativePlaylist() => Player?.MediaItemCount > 1;
 
     // Service owns ExoPlayer lifetime; MediaSession.release must not release the audible player.
     protected override IListenableFuture HandleRelease() => ImmediateVoid();

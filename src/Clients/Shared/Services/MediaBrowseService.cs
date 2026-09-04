@@ -5,6 +5,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.Services;
 
@@ -41,6 +42,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private readonly IMusicRadioPlaybackService _musicRadio;
     private readonly IServerPreferencesService _serverPreferences;
     private readonly IAudioPlayerService _audioPlayer;
+    private readonly IStringLocalizer<MediaBrowseService> _localizer;
 
     public MediaBrowseService(
         IMediaService mediaService,
@@ -50,7 +52,8 @@ public sealed class MediaBrowseService : IMediaBrowseService
         IOfflineMediaStore offlineStore,
         IMusicRadioPlaybackService musicRadio,
         IServerPreferencesService serverPreferences,
-        IAudioPlayerService audioPlayer)
+        IAudioPlayerService audioPlayer,
+        IStringLocalizer<MediaBrowseService> localizer)
     {
         _mediaService = mediaService;
         _playlistService = playlistService;
@@ -60,6 +63,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
         _musicRadio = musicRadio;
         _serverPreferences = serverPreferences;
         _audioPlayer = audioPlayer;
+        _localizer = localizer;
     }
 
     public Task<IReadOnlyList<MediaBrowseItem>> GetRootItemsAsync(CancellationToken cancellationToken = default)
@@ -376,22 +380,22 @@ public sealed class MediaBrowseService : IMediaBrowseService
             new()
             {
                 Id = $"{PrefixRadio}{MusicRadioType.Discovery}",
-                Title = "Discovery",
-                Subtitle = "Radio",
+                Title = RadioTitle(MusicRadioType.Discovery),
+                Subtitle = _localizer["Radio"],
                 IsPlayable = true
             },
             new()
             {
                 Id = $"{PrefixRadio}{MusicRadioType.TimeCapsule}",
-                Title = "Time Capsule",
-                Subtitle = "Radio",
+                Title = RadioTitle(MusicRadioType.TimeCapsule),
+                Subtitle = _localizer["Radio"],
                 IsPlayable = true
             },
             new()
             {
                 Id = $"{PrefixRadio}{MusicRadioType.RecentlyAdded}",
-                Title = "Recently Added",
-                Subtitle = "Radio",
+                Title = RadioTitle(MusicRadioType.RecentlyAdded),
+                Subtitle = _localizer["Radio"],
                 IsPlayable = true
             }
         };
@@ -404,8 +408,8 @@ public sealed class MediaBrowseService : IMediaBrowseService
                 presets.Insert(1, new MediaBrowseItem
                 {
                     Id = $"{PrefixRadio}{MusicRadioType.DiscoveryAi}",
-                    Title = "Discovery AI",
-                    Subtitle = "Radio",
+                    Title = RadioTitle(MusicRadioType.DiscoveryAi),
+                    Subtitle = _localizer["Radio"],
                     IsPlayable = true
                 });
             }
@@ -428,14 +432,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             or MusicRadioType.TimeCapsule or MusicRadioType.RecentlyAdded))
             return [];
 
-        var title = radioType switch
-        {
-            MusicRadioType.Discovery => "Discovery",
-            MusicRadioType.DiscoveryAi => "Discovery AI",
-            MusicRadioType.TimeCapsule => "Time Capsule",
-            MusicRadioType.RecentlyAdded => "Recently Added",
-            _ => radioType.ToString()
-        };
+        var title = RadioTitle(radioType);
 
         var started = await _musicRadio.StartAsync(new MusicRadioRequest
         {
@@ -448,6 +445,15 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         return _audioPlayer.Queue.Count > 0 ? _audioPlayer.Queue.ToArray() : [];
     }
+
+    private string RadioTitle(MusicRadioType radioType) => radioType switch
+    {
+        MusicRadioType.Discovery => _localizer["PresetDiscovery"],
+        MusicRadioType.DiscoveryAi => _localizer["PresetDiscoveryAi"],
+        MusicRadioType.TimeCapsule => _localizer["PresetTimeCapsule"],
+        MusicRadioType.RecentlyAdded => _localizer["PresetRecentlyAdded"],
+        _ => radioType.ToString()
+    };
 
     private static MediaBrowseItem CreateServerUnavailableItem() => new()
     {

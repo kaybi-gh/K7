@@ -78,6 +78,11 @@ public interface IAudioPlayerService
     Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default);
     Task NextAsync(CancellationToken cancellationToken = default);
     Task PreviousAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Align the in-memory queue index with an external player (ExoPlayer / Android Auto)
+    /// that already switched tracks. Does not fire <see cref="SourceChanged"/>.
+    /// </summary>
+    void SyncCurrentIndexFromExternalPlayer(int index);
 
     // Modes
     void ToggleShuffle();
