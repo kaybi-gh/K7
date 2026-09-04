@@ -16,6 +16,7 @@ public static class ThemeSongPlaybackHelper
         IUserPreferencesService preferences,
         IAmbientThemeService ambientTheme,
         IAudioPlayerService audioPlayer,
+        IPlayerService playerService,
         IDeviceStorageService deviceStorage,
         CancellationToken cancellationToken = default)
     {
@@ -25,6 +26,9 @@ public static class ThemeSongPlaybackHelper
                 await ambientTheme.FadeOutAsync(1.5, cancellationToken);
             return;
         }
+
+        if (playerService.IsVisible)
+            return;
 
         if (audioPlayer.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering)
             return;
@@ -87,10 +91,14 @@ public static class ThemeSongPlaybackHelper
         ambientTheme.ScheduleLeave(mediaId);
 
     /// <summary>
-    /// Hard interrupt (watch / trailer) with a short fade.
+    /// Hard interrupt (watch / trailer) with a short fade. Keeps the media context
+    /// finished so the theme does not restart on the same series/movie tree.
     /// </summary>
-    public static Task InterruptAsync(IAmbientThemeService ambientTheme, CancellationToken cancellationToken = default) =>
-        ambientTheme.FadeOutAsync(0.4, cancellationToken);
+    public static Task InterruptAsync(
+        IAmbientThemeService ambientTheme,
+        Guid mediaId,
+        CancellationToken cancellationToken = default) =>
+        ambientTheme.InterruptAsync(mediaId, cancellationToken);
 
     public static Task StopAsync(IAmbientThemeService ambientTheme, CancellationToken cancellationToken = default) =>
         ambientTheme.StopAsync(cancellationToken);

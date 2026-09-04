@@ -176,6 +176,80 @@ public class AmbientThemeServiceTests
         _sut.IsFinished.Should().BeFalse();
     }
 
+    [Test]
+    public async Task InterruptAsync_ShouldKeepFinishedContext_WhenSameMedia()
+    {
+        var url = "https://server/api/medias/a/theme";
+        await StartThemeAsync(SerieId, url);
+
+        await _sut.InterruptAsync(SerieId);
+
+        _sut.CurrentMediaId.Should().Be(SerieId);
+        _sut.IsFinished.Should().BeTrue();
+
+        await _sut.KeepOrStartAsync(SerieId, url, [9, 9, 9]);
+        await AssertPlayBytesCalledAsync(times: 1);
+        _sut.IsFinished.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task InterruptAsync_ShouldAllowOtherMediaTheme()
+    {
+        await StartThemeAsync(SerieId, "https://server/api/medias/a/theme");
+        await _sut.InterruptAsync(SerieId);
+
+        await StartThemeAsync(OtherMediaId, "https://server/api/medias/b/theme");
+
+        _sut.CurrentMediaId.Should().Be(OtherMediaId);
+        _sut.IsFinished.Should().BeFalse();
+        await AssertPlayBytesCalledAsync(times: 2);
+    }
+
+    [Test]
+    public async Task KeepOrStartAsync_ShouldHaltJs_WhenInterruptedDuringPlay()
+    {
+        var enteredPlay = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _js.InvokeAsync<IJSVoidResult>(
+                "K7.AmbientTheme.playBytes",
+                Arg.Any<CancellationToken>(),
+                Arg.Any<object?[]>())
+            .Returns(_ =>
+            {
+                enteredPlay.TrySetResult();
+                return new ValueTask<IJSVoidResult>(DelayedVoidResultAsync());
+            });
+
+        var start = StartThemeAsync(SerieId, "https://server/api/medias/a/theme");
+        await enteredPlay.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await _sut.InterruptAsync(SerieId);
+        await start;
+
+        _sut.CurrentMediaId.Should().Be(SerieId);
+        _sut.IsFinished.Should().BeTrue();
+        await _js.Received().InvokeAsync<IJSVoidResult>(
+            "K7.AmbientTheme.stop",
+            Arg.Any<CancellationToken>(),
+            Arg.Any<object?[]>());
+    }
+
+    [Test]
+    public async Task Navigation_ShouldAllowRestart_AfterLeaveThenReturnToSerie()
+    {
+        var url = "https://server/api/medias/a/theme";
+        await StartThemeAsync(SerieId, url);
+        await _sut.InterruptAsync(SerieId);
+
+        _sut.HandleLocationChanged("https://app/");
+        await Task.Delay(80);
+
+        _sut.CurrentMediaId.Should().BeNull();
+        await StartThemeAsync(SerieId, url);
+
+        _sut.CurrentMediaId.Should().Be(SerieId);
+        _sut.IsFinished.Should().BeFalse();
+        await AssertPlayBytesCalledAsync(times: 2);
+    }
+
     private async Task StartThemeAsync(Guid mediaId, string url)
     {
         await _sut.KeepOrStartAsync(mediaId, url, [1, 2, 3, 4]);
@@ -187,6 +261,12 @@ public class AmbientThemeServiceTests
             "K7.AmbientTheme.playBytes",
             Arg.Any<CancellationToken>(),
             Arg.Any<object?[]>());
+    }
+
+    private static async Task<IJSVoidResult> DelayedVoidResultAsync()
+    {
+        await Task.Delay(80);
+        return Substitute.For<IJSVoidResult>();
     }
 
     private sealed class StubNavigationManager : NavigationManager

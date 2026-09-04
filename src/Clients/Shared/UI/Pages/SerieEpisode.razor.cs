@@ -177,6 +177,7 @@ public partial class SerieEpisode : IAsyncDisposable
             UserPreferencesService,
             AmbientThemeService,
             AudioPlayerService,
+            PlayerService,
             DeviceStorageService);
 
         var seasonSummary = serie.Seasons?.FirstOrDefault(s => s.SeasonNumber == SeasonNumber);
@@ -280,7 +281,7 @@ public partial class SerieEpisode : IAsyncDisposable
         var videoMetadata = _indexedFile.FileMetadata as VideoFileMetadataDto;
         if (videoMetadata is null) return;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, Guid.Parse(SerieId));
 
         await RefreshEpisodeUserStateAsync();
 

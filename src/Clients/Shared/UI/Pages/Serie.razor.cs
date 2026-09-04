@@ -210,6 +210,7 @@ public partial class Serie : IAsyncDisposable
                     UserPreferencesService,
                     AmbientThemeService,
                     AudioPlayerService,
+                    PlayerService,
                     DeviceStorageService);
             }
         }
@@ -314,7 +315,7 @@ public partial class Serie : IAsyncDisposable
         if (!fromBeginning && !SeriePlaybackHelper.IsInProgress(episode))
             fromBeginning = false;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, Guid.Parse(Id));
 
         var result = await SeriePlaybackHelper.PlayEpisodeAsync(
             episode,
@@ -465,7 +466,7 @@ public partial class Serie : IAsyncDisposable
     {
         if (_serie?.Trailers is not { Count: > 0 }) return;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, _serie.Id);
 
         var trailer = _serie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _serie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>

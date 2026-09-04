@@ -6,16 +6,22 @@ window.K7.AmbientTheme = {
     _targetVolume: 0.25,
     _fadeRaf: null,
     _generation: 0,
+    _pausedByHide: false,
+    _visibilityBound: false,
 
     playBytes: async function (bytes, volume, crossfadeSeconds, sourceUrl, dotNetRef) {
         if (!bytes || !bytes.length) return;
+
+        this._bindVisibility();
 
         var targetVolume = typeof volume === 'number' ? Math.min(1, Math.max(0, volume)) : 0.25;
         var crossfadeMs = Math.max(0, (typeof crossfadeSeconds === 'number' ? crossfadeSeconds : 1.2) * 1000);
         var generation = ++this._generation;
         var identity = sourceUrl || '';
 
-        if (identity && this._sourceUrl === identity && this._audio && !this._audio.paused)
+        // Keep a visibility-paused instance. Do not restart from 0.
+        if (identity && this._sourceUrl === identity && this._audio
+            && (!this._audio.paused || this._pausedByHide))
             return;
 
         var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -60,6 +66,13 @@ window.K7.AmbientTheme = {
         this._sourceUrl = identity;
         this._targetVolume = targetVolume;
         this._dotNetRef = dotNetRef || null;
+        this._pausedByHide = false;
+
+        if (typeof document !== 'undefined' && document.hidden) {
+            this._pauseForHide();
+            next.volume = targetVolume;
+            return;
+        }
 
         if (previous && crossfadeMs > 0) {
             await this._crossfade(previous, next, targetVolume, crossfadeMs, generation);
@@ -78,6 +91,14 @@ window.K7.AmbientTheme = {
         var audio = this._audio;
         if (!audio) return;
 
+        this._pausedByHide = false;
+
+        // Hidden documents freeze rAF. A fade would leave audio running.
+        if (typeof document !== 'undefined' && document.hidden) {
+            this.stop();
+            return;
+        }
+
         var generation = ++this._generation;
         var durationMs = Math.max(0, (typeof durationSeconds === 'number' ? durationSeconds : 1.5) * 1000);
         var from = audio.volume;
@@ -95,6 +116,7 @@ window.K7.AmbientTheme = {
     stop: function () {
         this._generation++;
         this._cancelFade();
+        this._pausedByHide = false;
 
         var audio = this._audio;
         var objectUrl = this._objectUrl;
@@ -102,6 +124,48 @@ window.K7.AmbientTheme = {
         this._objectUrl = null;
         this._sourceUrl = null;
         this._disposeAudio(audio, objectUrl);
+    },
+
+    _bindVisibility: function () {
+        if (this._visibilityBound)
+            return;
+
+        this._visibilityBound = true;
+        var self = this;
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden)
+                self._pauseForHide();
+            else
+                self._resumeAfterHide();
+        });
+        window.addEventListener('pagehide', function () { self._pauseForHide(); });
+        window.addEventListener('pageshow', function () { self._resumeAfterHide(); });
+    },
+
+    _pauseForHide: function () {
+        var audio = this._audio;
+        if (!audio || audio.paused)
+            return;
+
+        this._pausedByHide = true;
+        try { audio.pause(); } catch (e) { }
+    },
+
+    _resumeAfterHide: function () {
+        if (!this._pausedByHide)
+            return;
+
+        this._pausedByHide = false;
+        if (this._fadeRaf !== null)
+            return;
+
+        var audio = this._audio;
+        if (!audio)
+            return;
+
+        var playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === 'function')
+            playPromise.catch(function () { });
     },
 
     _crossfade: async function (fromAudio, toAudio, targetVolume, durationMs, generation) {

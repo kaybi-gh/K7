@@ -134,6 +134,7 @@ public partial class SerieSeason : IAsyncDisposable
             UserPreferencesService,
             AmbientThemeService,
             AudioPlayerService,
+            PlayerService,
             DeviceStorageService);
 
         var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
@@ -408,7 +409,7 @@ public partial class SerieSeason : IAsyncDisposable
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id, bypassCache: true);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, Guid.Parse(SerieId));
 
         double? startPosition = null;
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)

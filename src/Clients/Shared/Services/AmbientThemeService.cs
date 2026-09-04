@@ -79,7 +79,7 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
         lock (_gate)
         {
             if (_currentMediaId == mediaId
-                && string.Equals(_currentUrl, themeUrl, StringComparison.Ordinal))
+                && (_finished || string.Equals(_currentUrl, themeUrl, StringComparison.Ordinal)))
             {
                 // Same media context: keep playing, or keep Finished (do not restart).
                 return;
@@ -109,13 +109,37 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
         }
 
         if (version != Volatile.Read(ref _playVersion))
+        {
+            // Watch/leave won the race: do not leave an orphan HTML5 Audio running.
+            await HaltJsAsync();
             return;
+        }
 
         lock (_gate)
         {
             _currentMediaId = mediaId;
             _currentUrl = themeUrl;
             _finished = false;
+        }
+    }
+
+    public async Task InterruptAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        CancelLeave();
+        Interlocked.Increment(ref _playVersion);
+
+        lock (_gate)
+        {
+            _currentMediaId = mediaId;
+            _finished = true;
+        }
+
+        try
+        {
+            await _js.InvokeVoidAsync("K7.AmbientTheme.fadeOut", cancellationToken, 0.4);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
         }
     }
 
@@ -248,6 +272,17 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
             _leaveCts.Cancel();
             _leaveCts.Dispose();
             _leaveCts = null;
+        }
+    }
+
+    private async Task HaltJsAsync()
+    {
+        try
+        {
+            await _js.InvokeVoidAsync("K7.AmbientTheme.stop", CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
         }
     }
 

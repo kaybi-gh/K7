@@ -165,6 +165,9 @@ public partial class BlazorPage
         blazorWebView.InputTransparent = true;
         blazorWebView.IsVisible = false;
         MauiNativeVideoChrome.SetBackgroundUiPaused(true);
+        // HTML5 ambient audio survives WebView.OnPause. Halt it before timers freeze.
+        _ = TryEvaluateWebViewJs(
+            "try{if(window.K7&&K7.AmbientTheme&&K7.AmbientTheme.stop)K7.AmbientTheme.stop();}catch(e){}");
 #if ANDROID
         Platforms.Android.AndroidOverlayComposition.SetDraws(blazorWebView, draws: false);
         SuppressWebViewFocusForNativeChrome();
@@ -190,7 +193,8 @@ public partial class BlazorPage
         blazorWebView.Opacity = 1;
         blazorWebView.InputTransparent = true;
         _ = TryEvaluateWebViewJs(
-            "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,true);"
+            "try{if(window.K7&&K7.AmbientTheme&&K7.AmbientTheme.stop)K7.AmbientTheme.stop();"
+            + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,true);"
             + "if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(false);}catch(e){}");
     }
 

@@ -5,14 +5,15 @@ public interface IAmbientThemeService
     Guid? CurrentMediaId { get; }
 
     /// <summary>
-    /// True when the current media theme reached natural end and must not auto-restart
-    /// until the theme context is cleared or a different media starts.
+    /// True when the current media theme reached natural end or was interrupted (watch / trailer)
+    /// and must not auto-restart until the theme context is cleared or a different media starts.
     /// </summary>
     bool IsFinished { get; }
 
     /// <summary>
     /// Starts or keeps theme playback for <paramref name="mediaId"/>. Same media is a no-op
-    /// (including after natural end); a different media crossfades when something is already playing.
+    /// (including after natural end or watch/trailer interrupt). A different media crossfades
+    /// when something is already playing.
     /// </summary>
     Task KeepOrStartAsync(
         Guid mediaId,
@@ -28,7 +29,13 @@ public interface IAmbientThemeService
     void ScheduleLeave(Guid mediaId);
 
     /// <summary>
-    /// Fades out immediately (watch / trailer / hard leave).
+    /// Fades out a watch/trailer interrupt while keeping the media context as finished so
+    /// returning to the same series/movie tree does not restart the theme.
+    /// </summary>
+    Task InterruptAsync(Guid mediaId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fades out and clears the theme context (leaving the media tree, or no theme available).
     /// </summary>
     Task FadeOutAsync(double durationSeconds = 0.5, CancellationToken cancellationToken = default);
 

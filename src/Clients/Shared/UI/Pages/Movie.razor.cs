@@ -200,6 +200,7 @@ public partial class Movie : IAsyncDisposable
                     UserPreferencesService,
                     AmbientThemeService,
                     AudioPlayerService,
+                    PlayerService,
                     DeviceStorageService);
             }
         }
@@ -259,7 +260,7 @@ public partial class Movie : IAsyncDisposable
             return;
         }
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, _movie.Id);
 
         // Remote file playback (federation)
         if (_selectedRemoteFile is not null)
@@ -534,7 +535,7 @@ public partial class Movie : IAsyncDisposable
     {
         if (_movie?.Trailers is not { Count: > 0 }) return;
 
-        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService);
+        await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, _movie.Id);
 
         var trailer = _movie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _movie.Trailers[0];
         var parameters = new K7DialogParameters<TrailerDialog>
