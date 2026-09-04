@@ -40,4 +40,36 @@ public class MediaBrowseFilterPresetsTests
         MediaBrowseFilterPresets.GetSearchFieldValue(next, "Studio").Should().Be("Warner Bros.");
         MediaBrowseFilterPresets.GetSelectedGenres(next).Should().BeEquivalentTo(["Action"]);
     }
+
+    [Test]
+    public void WithPreset_ShouldSwitchBetweenUnwatchedAndInProgress()
+    {
+        var unwatched = MediaBrowseFilterPresets.WithPreset(
+            MediaBrowseFilterPresets.Empty,
+            MediaBrowseFilterPresets.Unwatched);
+        var inProgress = MediaBrowseFilterPresets.WithPreset(
+            unwatched,
+            MediaBrowseFilterPresets.InProgress);
+
+        MediaBrowseFilterPresets.AreEquivalent(unwatched, inProgress).Should().BeFalse();
+        MediaBrowseFilterPresets.IsInProgress(inProgress).Should().BeTrue();
+        MediaBrowseFilterPresets.IsUnwatched(inProgress).Should().BeFalse();
+
+        var backToUnwatched = MediaBrowseFilterPresets.WithPreset(
+            inProgress,
+            MediaBrowseFilterPresets.Unwatched);
+        MediaBrowseFilterPresets.IsUnwatched(backToUnwatched).Should().BeTrue();
+        MediaBrowseFilterPresets.IsInProgress(backToUnwatched).Should().BeFalse();
+    }
+
+    [Test]
+    public void AreEquivalent_ShouldBeTrue_WhenWatchPresetIsUnchanged()
+    {
+        var first = MediaBrowseFilterPresets.WithPreset(
+            MediaBrowseFilterPresets.Empty,
+            MediaBrowseFilterPresets.Unwatched);
+        var second = MediaBrowseFilterPresets.WithPreset(first, MediaBrowseFilterPresets.Unwatched);
+
+        MediaBrowseFilterPresets.AreEquivalent(first, second).Should().BeTrue();
+    }
 }

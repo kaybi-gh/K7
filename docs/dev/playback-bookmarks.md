@@ -83,11 +83,14 @@ Dismiss removes bookmarks. It does not change `IsCompleted` on media state.
 | `CreateMedia` / `ReidentifyIndexedFile` | `RefreshSeriesBookmarksForSerieAsync` when episode becomes playable |
 | `HomeFeedContinueWatchingStrategy` | Queries `PlaybackBookmarks`, backfills missing next episodes, expires stale series bookmarks. In-progress episode bookmarks win over series next-up |
 | `GetMedia` | Loads item bookmarks for the media graph and overlays them in `ToMediaDto` so Play/Resume receives `LastPlaybackPosition` |
-| `LiteMediaProjectionService` | Merges item bookmarks into `UserMediaStateDto` for position/progress overlay |
+| `LiteMediaProjectionService` | Merges item bookmarks into `UserMediaStateDto` for position/progress overlay. Series and season cards aggregate episode `IsCompleted` so the watched badge matches playback |
+| Browse filters (`IsCompleted`, `InProgress`, `UnwatchedOnly`) | Series/season filters aggregate episode states. A series is completed only when every episode is completed |
 
 ## DTO mapping
 
 `UserMediaStateMappings.ToUserMediaStateDto` accepts an optional `ItemPlaybackBookmark` to overlay `LastPlaybackPosition` and `ProgressPercentage` on the DTO without storing them on the entity. `GetMedia` and list projections must pass that bookmark; without it, resume position is always 0 and Play falls back to the first unwatched episode.
+
+Series and season list items do not store their own `IsCompleted`. `LiteMediaProjectionService` and browse filters (`IsCompleted`, `InProgress`, `UnwatchedOnly`) aggregate episode states: a series or season is completed only when every episode is completed.
 
 ## Migration
 

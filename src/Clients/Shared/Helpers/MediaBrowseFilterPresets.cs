@@ -140,6 +140,9 @@ public static class MediaBrowseFilterPresets
         };
     }
 
+    public static bool AreEquivalent(RuleGroupDto left, RuleGroupDto right) =>
+        AreEquivalentGroup(left.MatchCondition, left.Items, right.MatchCondition, right.Items);
+
     private static IReadOnlySet<string> GetMultiSelectValues(RuleGroupDto filter, string fieldName) =>
         filter.Items
             .OfType<ConditionRuleItemDto>()
@@ -182,4 +185,32 @@ public static class MediaBrowseFilterPresets
 
     private static bool IsSearchOperator(RuleOperator ruleOperator) =>
         ruleOperator is RuleOperator.Equals or RuleOperator.Contains;
+
+    private static bool AreEquivalentGroup(
+        RuleMatchCondition leftMatch,
+        IReadOnlyList<RuleGroupItemDto> leftItems,
+        RuleMatchCondition rightMatch,
+        IReadOnlyList<RuleGroupItemDto> rightItems)
+    {
+        if (leftMatch != rightMatch || leftItems.Count != rightItems.Count)
+            return false;
+
+        for (var i = 0; i < leftItems.Count; i++)
+        {
+            if (!AreEquivalentItem(leftItems[i], rightItems[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool AreEquivalentItem(RuleGroupItemDto left, RuleGroupItemDto right) =>
+        (left, right) switch
+        {
+            (ConditionRuleItemDto l, ConditionRuleItemDto r) =>
+                l.Field == r.Field && l.Operator == r.Operator && l.Value == r.Value,
+            (NestedGroupItemDto l, NestedGroupItemDto r) =>
+                AreEquivalentGroup(l.MatchCondition, l.Items, r.MatchCondition, r.Items),
+            _ => false
+        };
 }

@@ -419,7 +419,36 @@ public sealed class LiteMediaProjectionService(IApplicationDbContext context)
             };
         }
 
+        if (userId.HasValue)
+            await OverlaySerieHierarchyWatchStateAsync(resultById, baseRows, userId.Value, cancellationToken);
+
         return mediaIds.Distinct().Where(resultById.ContainsKey).Select(id => resultById[id]).ToList();
+    }
+
+    private async Task OverlaySerieHierarchyWatchStateAsync(
+        Dictionary<Guid, LiteMediaDto> resultById,
+        List<BaseRow> baseRows,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var serieIds = baseRows.Where(r => r.Type == MediaType.Serie).Select(r => r.Id).ToList();
+        var seasonIds = baseRows.Where(r => r.Type == MediaType.SerieSeason).Select(r => r.Id).ToList();
+        if (serieIds.Count == 0 && seasonIds.Count == 0)
+            return;
+
+        var aggregated = await SerieWatchStateAggregator.AggregateAsync(
+            context,
+            serieIds,
+            seasonIds,
+            userId,
+            sharedProfileId: null,
+            cancellationToken);
+
+        foreach (var (mediaId, state) in aggregated)
+        {
+            if (resultById.TryGetValue(mediaId, out var dto))
+                resultById[mediaId] = dto with { UserState = state };
+        }
     }
 
     public async Task<List<BaseMedia>> GetLiteMediasAsync(

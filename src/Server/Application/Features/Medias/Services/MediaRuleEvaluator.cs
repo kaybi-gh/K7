@@ -258,9 +258,7 @@ public static class MediaRuleEvaluator
         if (userId is null)
             return _ => false;
 
-        var uid = userId.Value;
-        return m => !(m is MusicAlbum) && !(m is MusicTrack)
-            && m.UserMediaStates.Any(s => s.UserId == uid && !s.IsCompleted && s.LastInteractedAt != null);
+        return WatchStatePredicates.IsInProgress(userId.Value);
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildRatingPredicate(ConditionRuleItem rule, Guid? userId)
@@ -345,8 +343,8 @@ public static class MediaRuleEvaluator
         return rule.Operator switch
         {
             RuleOperator.Equals => isCompleted
-                ? m => m.UserMediaStates.Any(s => s.UserId == uid && s.IsCompleted)
-                : m => !m.UserMediaStates.Any(s => s.UserId == uid && s.IsCompleted),
+                ? WatchStatePredicates.IsCompleted(uid)
+                : WatchStatePredicates.IsNotCompleted(uid),
             _ => _ => true
         };
     }

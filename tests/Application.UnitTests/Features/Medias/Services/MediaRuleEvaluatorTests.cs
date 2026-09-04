@@ -216,6 +216,52 @@ public class MediaRuleEvaluatorTests
     }
 
     [Test]
+    public async Task ApplyFilter_IsCompletedTrue_ShouldMatchSerie_WhenAllEpisodesAreCompleted()
+    {
+        var (serie, _, episodes) = AddSerieWithEpisodes("Watched Show", episodeCount: 2);
+        MarkEpisodeCompleted(episodes[0], _userA);
+        MarkEpisodeCompleted(episodes[1], _userA);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(DynamicPlaylistField.IsCompleted), RuleOperator.Equals, "true");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain(serie.Id);
+        ids.Should().Contain(_inception.Id);
+    }
+
+    [Test]
+    public async Task ApplyFilter_IsCompletedFalse_ShouldExcludeSerie_WhenAllEpisodesAreCompleted()
+    {
+        var (watchedSerie, _, watchedEpisodes) = AddSerieWithEpisodes("Caught Up", episodeCount: 2);
+        var (unwatchedSerie, _, _) = AddSerieWithEpisodes("Not Started", episodeCount: 2);
+        MarkEpisodeCompleted(watchedEpisodes[0], _userA);
+        MarkEpisodeCompleted(watchedEpisodes[1], _userA);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(DynamicPlaylistField.IsCompleted), RuleOperator.Equals, "false");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().NotContain(watchedSerie.Id);
+        ids.Should().Contain(unwatchedSerie.Id);
+        ids.Should().NotContain(_inception.Id);
+    }
+
+    [Test]
+    public async Task ApplyFilter_InProgress_ShouldMatchSerie_WhenSomeEpisodesAreCompleted()
+    {
+        var (serie, _, episodes) = AddSerieWithEpisodes("Mid Watch", episodeCount: 2);
+        MarkEpisodeCompleted(episodes[0], _userA);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule("InProgress", RuleOperator.Equals, "true");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain(serie.Id);
+        ids.Should().NotContain(_inception.Id);
+    }
+
+    [Test]
     public async Task ApplyFilter_CombinedAndRules_ShouldRequireAllConditions()
     {
         var filter = new RuleGroup
@@ -631,6 +677,72 @@ public class MediaRuleEvaluatorTests
             Created = now,
             LastModified = now
         };
+    }
+
+    private (Serie Serie, SerieSeason Season, List<SerieEpisode> Episodes) AddSerieWithEpisodes(
+        string title,
+        int episodeCount)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var serie = new Serie
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            SortTitle = title,
+            Created = now,
+            LastModified = now
+        };
+        var season = new SerieSeason
+        {
+            Id = Guid.NewGuid(),
+            Title = "Season 1",
+            SortTitle = "Season 1",
+            SerieId = serie.Id,
+            Serie = serie,
+            SeasonNumber = 1,
+            Created = now,
+            LastModified = now
+        };
+        serie.Seasons.Add(season);
+
+        var episodes = new List<SerieEpisode>(episodeCount);
+        for (var i = 1; i <= episodeCount; i++)
+        {
+            var episode = new SerieEpisode
+            {
+                Id = Guid.NewGuid(),
+                Title = $"E{i}",
+                SortTitle = $"E{i}",
+                SerieId = serie.Id,
+                Serie = serie,
+                SeasonId = season.Id,
+                Season = season,
+                EpisodeNumber = i,
+                Created = now,
+                LastModified = now
+            };
+            season.Episodes.Add(episode);
+            episodes.Add(episode);
+        }
+
+        _context.Medias.AddRange(serie, season);
+        _context.Medias.AddRange(episodes);
+        return (serie, season, episodes);
+    }
+
+    private void MarkEpisodeCompleted(SerieEpisode episode, Guid userId)
+    {
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            MediaId = episode.Id,
+            Media = episode,
+            IsCompleted = true,
+            LastInteractedAt = DateTime.UtcNow,
+            Created = DateTimeOffset.UtcNow,
+            LastModified = DateTimeOffset.UtcNow
+        });
     }
 
     private static void AddActor(BaseMedia media, Person person, string characterName)

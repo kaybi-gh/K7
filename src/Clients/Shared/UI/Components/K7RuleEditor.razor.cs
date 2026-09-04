@@ -17,23 +17,11 @@ public partial class K7RuleEditor : ComponentBase
 
     protected override void OnParametersSet()
     {
-        if (FiltersEqual(Value, ToDto(_root)))
+        if (MediaBrowseFilterPresets.AreEquivalent(Value, ToDto(_root)))
             return;
 
         _root = FromDto(Value);
     }
-
-    private static bool FiltersEqual(RuleGroupDto left, RuleGroupDto right) =>
-        left.MatchCondition == right.MatchCondition
-        && left.Items.Count == right.Items.Count
-        && left.Items.Zip(right.Items).All(pair => pair.First switch
-        {
-            ConditionRuleItemDto l when pair.Second is ConditionRuleItemDto r =>
-                l.Field == r.Field && l.Operator == r.Operator && l.Value == r.Value,
-            NestedGroupItemDto l when pair.Second is NestedGroupItemDto r =>
-                l.MatchCondition == r.MatchCondition && l.Items.Count == r.Items.Count,
-            _ => false
-        });
 
     private string GetOperatorLabel(RuleOperator op) => op switch
     {

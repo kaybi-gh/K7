@@ -232,7 +232,7 @@ public partial class LibraryBrowseFilters
     private async Task SetPresetAsync(RuleGroupDto preset)
     {
         var next = MediaBrowseFilterPresets.WithPreset(Filter, preset);
-        if (ReferenceEquals(next, Filter) || FiltersEqual(next, Filter))
+        if (ReferenceEquals(next, Filter) || MediaBrowseFilterPresets.AreEquivalent(next, Filter))
             return;
 
         await FilterChanged.InvokeAsync(next);
@@ -372,10 +372,6 @@ public partial class LibraryBrowseFilters
             LibraryGroupIds,
             MediaType,
             cancellationToken);
-
-    private static bool FiltersEqual(RuleGroupDto left, RuleGroupDto right) =>
-        left.MatchCondition == right.MatchCondition
-        && left.Items.Count == right.Items.Count;
 
     private enum QuickFilterSubmenu
     {

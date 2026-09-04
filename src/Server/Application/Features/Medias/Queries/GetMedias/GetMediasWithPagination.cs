@@ -289,7 +289,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.UnwatchedOnly == true && userId.HasValue)
         {
-            query = query.Where(x => !x.UserMediaStates.Any(s => s.UserId == userId.Value && s.IsCompleted));
+            query = query.Where(WatchStatePredicates.IsNotCompleted(userId.Value));
         }
 
         return query;
