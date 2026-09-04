@@ -13,27 +13,54 @@ public partial class HomeTvHero : IAsyncDisposable
     private int _activeLayer;
     private int _swapGeneration;
     private bool _disposed;
+    private MediaCardViewModel? _focused;
 
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     [Parameter] public MediaCardViewModel? Model { get; set; }
 
-    protected override async Task OnParametersSetAsync()
+    private MediaCardViewModel? DisplayModel => _focused ?? Model;
+
+    protected override void OnParametersSet()
     {
-        var newUrl = Model?.ResolveHeroBackdropUrl();
-        var newSoft = ShouldUseSoftBackdrop(Model);
+        if (_focused is null || Model?.Id == _focused.Id)
+            _focused = Model;
+
+        _ = SwapBackdropIfNeededAsync();
+    }
+
+    /// <summary>
+    /// Update the hero without a parent re-render (Home carousels stay mounted).
+    /// </summary>
+    public void ApplyFocusedItem(MediaCardViewModel item)
+    {
+        if (_focused?.Id == item.Id)
+            return;
+
+        _focused = item;
+        StateHasChanged();
+        _ = SwapBackdropIfNeededAsync();
+    }
+
+    private async Task SwapBackdropIfNeededAsync()
+    {
+        var newUrl = DisplayModel?.ResolveHeroBackdropUrl();
+        var newSoft = ShouldUseSoftBackdrop(DisplayModel);
         if (newUrl == _layerUrls[_activeLayer] && newSoft == _layerSoft[_activeLayer])
             return;
 
-        // Soft/sharp is per layer so the outgoing image keeps its blur while opacity fades.
         var targetLayer = 1 - _activeLayer;
         var generation = ++_swapGeneration;
 
+        // Paint the incoming bitmap at opacity 0 first so progressive JPEG
+        // bands stay hidden, then fade the layer in.
+        _layerUrls[targetLayer] = newUrl;
+        _layerSoft[targetLayer] = newSoft;
+        await InvokeAsync(StateHasChanged);
+
         if (!string.IsNullOrWhiteSpace(newUrl))
         {
-            // Wait until the bitmap is decoded so opacity fade does not run on an empty layer
-            // (uncached images would otherwise pop in after the transition already finished).
             try
             {
                 await JSRuntime.InvokeVoidAsync("K7.preloadImage", newUrl);
@@ -48,16 +75,14 @@ public partial class HomeTvHero : IAsyncDisposable
             }
             catch (JSException)
             {
-                // Still swap; better a hard cut than a stuck hero.
             }
         }
 
         if (_disposed || generation != _swapGeneration)
             return;
 
-        _layerUrls[targetLayer] = newUrl;
-        _layerSoft[targetLayer] = newSoft;
         _activeLayer = targetLayer;
+        await InvokeAsync(StateHasChanged);
     }
 
     private static bool ShouldShowSubtitle(MediaCardViewModel model)
@@ -65,8 +90,8 @@ public partial class HomeTvHero : IAsyncDisposable
         if (string.IsNullOrEmpty(model.AdditionalInformations))
             return false;
 
-        // Movies/series often put the year in AdditionalInformations for card footers;
-        // the hero already shows ReleaseYear in the meta row.
+        // Movies/series often put the year in AdditionalInformations for card footers.
+        // The hero already shows ReleaseYear in the meta row.
         if (model.ReleaseYear is { } year
             && string.Equals(model.AdditionalInformations, year.ToString(), StringComparison.Ordinal))
             return false;
@@ -85,17 +110,6 @@ public partial class HomeTvHero : IAsyncDisposable
         // Manual cards (playlists, collections) may omit SoftHeroBackdrop.
         return model.Kind is MediaCardKind.Cover
             || model.MediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist;
-    }
-
-    private static string FormatBackdropCss(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-            return "none";
-
-        var escaped = url.Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("\"", "\\\"", StringComparison.Ordinal)
-            .Replace("'", "\\'", StringComparison.Ordinal);
-        return $"url('{escaped}')";
     }
 
     private static bool ShouldShowRuntime(MediaCardViewModel model) =>

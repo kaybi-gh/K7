@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.ComponentTests.Helpers;
 
@@ -123,5 +124,68 @@ public class MetadataPictureDisplayHelperTests
 
         MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(MediaType.MusicAlbum, cover)
             .Should().BeTrue();
+    }
+
+    [Test]
+    public void ResolveAdaptiveBackdropUrls_ShouldOmitCacheBuster_WhenVersionIsNull()
+    {
+        var picture = new MetadataPictureDto
+        {
+            Id = Guid.NewGuid(),
+            Type = MetadataPictureType.Backdrop,
+            Uri = new Uri("/api/metadata-pictures/backdrop.jpg", UriKind.Relative),
+            OriginalWidth = 3840,
+            OriginalHeight = 2160
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+
+        var (displayUrl, highResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(picture, apiClient);
+
+        displayUrl.Should().Be("https://localhost/api/metadata-pictures/backdrop.jpg?size=Medium");
+        displayUrl.Should().NotContain("v=");
+        highResUrl.Should().Be("https://localhost/api/metadata-pictures/backdrop.jpg");
+    }
+
+    [Test]
+    public void ResolveAdaptiveBackdropUrls_ShouldKeepMediumOnly_WhenSourceFitsBudget()
+    {
+        var picture = new MetadataPictureDto
+        {
+            Id = Guid.NewGuid(),
+            Type = MetadataPictureType.Backdrop,
+            Uri = new Uri("/api/metadata-pictures/backdrop.jpg", UriKind.Relative),
+            OriginalWidth = 1920,
+            OriginalHeight = 1080
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+
+        var (displayUrl, highResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(picture, apiClient);
+
+        displayUrl.Should().Contain("size=Medium");
+        highResUrl.Should().BeNull();
+    }
+
+    [Test]
+    public void ResolveAdaptiveBackdropUrls_ShouldReturnNull_WhenPictureIsCover()
+    {
+        var cover = new MetadataPictureDto
+        {
+            Id = Guid.NewGuid(),
+            Type = MetadataPictureType.Cover,
+            Uri = new Uri("/api/metadata-pictures/cover.jpg", UriKind.Relative),
+            OriginalWidth = 1400,
+            OriginalHeight = 1400
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+
+        var (displayUrl, highResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(cover, apiClient);
+
+        displayUrl.Should().BeNull();
+        highResUrl.Should().BeNull();
+        apiClient.DidNotReceive().GetAbsoluteUri(Arg.Any<string?>());
     }
 }

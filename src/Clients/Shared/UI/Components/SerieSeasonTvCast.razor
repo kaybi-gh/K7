@@ -1,0 +1,13 @@
+@if (_items.Count > 0)
+{
+    <div class="season-tv-page-content" data-tv-scroll-zone="below">
+        <Carousel Title="@L["CastingAndCrew"]">
+            @foreach (var cast in _items)
+            {
+                <CarouselItem @key="cast.Key">
+                    <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
+                </CarouselItem>
+            }
+        </Carousel>
+    </div>
+}

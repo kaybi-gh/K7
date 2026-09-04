@@ -311,7 +311,7 @@ public static class LiteMediaMappings
             preferredSize,
             MetadataPictureSize.Medium);
         var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
-        return MediaPictureUrlHelper.WithCacheBuster(uri, DateTimeOffset.UtcNow);
+        return uri;
     }
 
     private static string? ResolveHeroPictureUrl(
@@ -321,12 +321,14 @@ public static class LiteMediaMappings
         if (picture?.Uri is null)
             return null;
 
-        // TV / card heroes: cap backdrops at Medium; stills/covers stay original.
+        // TV / card heroes: cap backdrops at Medium. Stills and covers stay original.
+        // No cache-buster: Home / Movie / Serie must share the same URL so the
+        // browser can reuse the already-decoded Medium backdrop.
         var size = picture.Type == MetadataPictureType.Backdrop
             ? MetadataPictureDisplayHelper.SizeForHeroBackdrop()
             : MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero);
         var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
-        return MediaPictureUrlHelper.WithCacheBuster(uri, DateTimeOffset.UtcNow);
+        return uri;
     }
 
     private static MediaType GetMediaType(LiteMediaDto item) => item switch

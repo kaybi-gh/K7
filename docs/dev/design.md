@@ -14,6 +14,12 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 - Accent is copper (`#CC7A3E`) via CSS tokens only - never hard-coded hex in components. Hex values in this doc are token references only.
 - Fonts: Epilogue for headings, Manrope for body (`--font-heading` / `--font-body`). Do not use Inter/Roboto/Arial or monospace as a style gimmick.
 
+## Loading
+
+Page shells (home, explore feeds, movie, serie, season, episode, person, music artist, music album) use **skeletons** that match the layout. **Spinners** stay for inline waits: saving, search, player buffering, dialogs, and admin jobs.
+
+Hero backdrops (`MediaPageBackdrop`, TV home hero, TV season stills) decode fully then fade in. They stay at Medium (1920 CSS px) on typical TV viewports so Movie/Serie reuse the image already shown on Home / Explore instead of decoding a 4K original on the UI thread. Season episode stills follow the same Medium budget so D-pad focus does not decode full-resolution JPEGs. Person backdrops rotate on a timer. Filmography hover and D-pad do not swap them.
+
 Component catalog: [developing.md - DesignSystem](developing.md#designsystem). Brand SVGs: [`branding/`](../../branding/).
 
 ## Rules

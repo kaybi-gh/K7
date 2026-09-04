@@ -23,7 +23,9 @@ export function pickHeroImageUrl(cappedUrl, highResUrl, pixelBudget) {
     }
 
     var budget = typeof pixelBudget === 'number' && pixelBudget > 0 ? pixelBudget : 1920;
-    var need = (window.innerWidth || 0) * (window.devicePixelRatio || 1);
+    // CSS pixels only: a 1080p TV with DPR 1.5/2 must keep Medium (already
+    // fetched on Home) instead of decoding a 4K original on the UI thread.
+    var need = window.innerWidth || 0;
     return need > budget ? highResUrl : cappedUrl;
 }
 
@@ -131,10 +133,29 @@ export function preloadImage(url) {
         }
 
         var img = new Image();
-        img.onload = function () { resolve(true); };
-        img.onerror = function () { resolve(false); };
+        img.decoding = 'async';
+        var finish = function (ok) {
+            if (typeof img.decode !== 'function') {
+                resolve(ok);
+                return;
+            }
+            img.decode().then(function () { resolve(ok); }).catch(function () { resolve(ok); });
+        };
+        img.onload = function () { finish(true); };
+        img.onerror = function () { finish(false); };
         img.src = url;
+        if (img.complete && img.naturalWidth > 0)
+            finish(true);
     });
+}
+
+export function bindDecodedImages(backdropEl) {
+    if (!backdropEl || !window.K7 || typeof window.K7.markImageDecoded !== 'function')
+        return;
+
+    var imgs = backdropEl.querySelectorAll('.media-page-backdrop__image:not(.media-page-backdrop__image--layer)');
+    for (var i = 0; i < imgs.length; i++)
+        window.K7.markImageDecoded(imgs[i]);
 }
 
 export function attachScrollFade(scrollRoot, backdropEl) {

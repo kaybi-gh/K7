@@ -10,7 +10,36 @@
 @inject IStringLocalizer<MediaReviewDialog> ReviewDialogL
 <PageTitle>@_album?.Title</PageTitle>
 
-@if (_album is not null)
+@if (_loading)
+{
+    <div class="album-detail-page album-detail-page--skeleton" aria-busy="true">
+        <div class="album-header">
+            <div class="album-header-cover">
+                <K7Skeleton Class="album-skeleton-cover" />
+            </div>
+            <div class="album-header-info">
+                <K7Skeleton Class="album-skeleton-overline" />
+                <K7Skeleton Class="album-skeleton-title" />
+                <K7Skeleton Class="album-skeleton-artist" />
+                <div class="album-actions">
+                    <K7Skeleton Class="album-skeleton-play" />
+                    <K7Skeleton Class="album-skeleton-play album-skeleton-play--outline" />
+                </div>
+            </div>
+        </div>
+        <div class="album-tracklist">
+            @for (var i = 0; i < 8; i++)
+            {
+                <div class="album-skeleton-track">
+                    <K7Skeleton Shape="text" Width="24px" Height="14px" />
+                    <K7Skeleton Shape="text" Width="40%" Height="16px" />
+                    <K7Skeleton Shape="text" Width="48px" Height="14px" />
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (_album is not null)
 {
     <MediaPageContent Class="album-detail-wash"
                       FullWash="true"
@@ -242,10 +271,4 @@
         </div>
         </div>
     </MediaPageContent>
-}
-else if (_loading)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
 }

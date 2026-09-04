@@ -25,70 +25,52 @@
 
 @if (_loading)
 {
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
+    @if (_isTv)
+    {
+        <div class="season-tv" aria-busy="true">
+            <MediaHeroSkeleton ShowCast="false" />
+            <Carousel Skeleton="true">
+                @for (var j = 0; j < 8; j++)
+                {
+                    <CarouselItem>
+                        <MediaCard Skeleton="true" Variant="MediaCardVariant.Backdrop" FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        </div>
+    }
+    else
+    {
+        <MediaHeroSkeleton ShowCast="false" />
+    }
 }
 else if (_season is not null && _isTv)
 {
     <div class="season-tv"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
-        <MediaPageBackdrop ImageUrl="@(_previousStillUrl ?? _backdropUrl)"
-                           HighResImageUrl="@(_previousStillUrl is null ? _backdropHighResUrl : null)"
-                           SecondaryImageUrl="@(_focusedStillUrl ?? _backdropUrl)"
-                           SecondaryHighResImageUrl="@(_focusedStillUrl is null ? _backdropHighResUrl : null)"
-                           SecondaryImageKey="@_focusedStillUrl"
+        <MediaPageBackdrop @ref="_tvBackdrop"
+                           ImageUrl="@_backdropUrl"
+                           HighResImageUrl="@_backdropHighResUrl"
                            DominantColor="@_dominantColor"
                            ScrollTarget="@_seasonTvRoot" />
 
         <div @ref="_seasonTvRoot"
-             class="season-tv-scroll @(HasDisplayableCast ? "media-page-scroll" : "")"
+             class="season-tv-scroll media-page-scroll"
              data-tv-scroll>
         <div class="season-tv-main" data-tv-scroll-zone="main">
-            <div class="tv-hero">
-                <div class="tv-back-button">
-                    <K7Button StartIcon="@Phosphor.ArrowLeft"
-                               Color="secondary"
-                               Variant="filled"
-                               Href="@($"/series/{SerieId}")">
-                        @L["BackToSerie"]
-                    </K7Button>
-                </div>
-
-                <div class="tv-details">
-                    <K7Image Class="tv-logo"
-                             ObjectFit="scale-down"
-                             Src="@_logoUrl"
-                             Alt="">
-                        <FallbackContent>
-                            <h3 class="media-logo-title">@_season.SerieTitle?.ToUpper()</h3>
-                        </FallbackContent>
-                    </K7Image>
-
-                    <div class="tv-episode-info">
-                        @if (_focusedEpisode is not null)
-                        {
-                            <span class="tv-episode-label">
-                                @string.Format(L["EpisodeNumber"], _focusedEpisode.EpisodeNumber)
-                            </span>
-                            <h3 class="tv-episode-title">@_focusedEpisode.Title</h3>
-
-                            @if (_focusedEpisode.ReleaseDate is not null)
-                            {
-                                <span class="tv-episode-date text-sm">@_focusedEpisode.ReleaseDate.Value.ToString("d MMMM yyyy")</span>
-                            }
-
-                            <div class="tv-episode-overview overview-clickable focusable" tabindex="0" role="button" @onclick="OpenSynopsisDialogAsync">
-                                <p>@(_focusedEpisode.Overview ?? "")</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
+            <SerieSeasonTvHero @ref="_tvHero"
+                               SerieId="@SerieId"
+                               SerieTitle="@_season.SerieTitle"
+                               LogoUrl="@_logoUrl"
+                               Episode="_focusedEpisode"
+                               CanResumePlayback="_canResumePlayback"
+                               OnPlay="e => PlayEpisodeAsync(e)"
+                               OnPlayFromBeginning="e => PlayEpisodeAsync(e, fromBeginning: true)"
+                               OnOpenSynopsis="OpenSynopsisDialogAsync" />
 
             <div class="tv-carousel-area" data-tv-scroll-zone="episodes">
                 <h2 class="tv-season-title">@(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))</h2>
-                <Carousel @ref="_tvCarousel" Title="@L["EpisodeList"]">
+                <Carousel @ref="_tvCarousel" Title="@L["EpisodeList"]" ContentKey="@_episodeCarouselKey">
                     @foreach (var episode in _episodes)
                     {
                         var ep = episode;
@@ -96,26 +78,17 @@ else if (_season is not null && _isTv)
                              data-carousel-item
                              @key="ep.Id"
                              @attributes="GetEpisodeInitialFocusAttributes(ep)"
-                             @onfocusin="() => OnTvEpisodeFocus(ep)"
-                             @onclick="() => PlayEpisodeAsync(ep)"
-                             @onclick:preventDefault="true"
-                             @onkeydown="e => OnTvEpisodeKeyDown(e, ep)"
                              id="ep-@ep.EpisodeNumber">
-                            <MediaCard Model="@(new MediaCardViewModel
-                                       {
-                                           Id = ep.Id.ToString(),
-                                           Kind = MediaCardKind.Episode,
-                                           Title = ep.Title,
-                                           AdditionalInformations = string.Format(L["EpisodeNumber"], ep.EpisodeNumber),
-                                           PictureUrl = GetEpisodeStillUrl(ep),
-                                           Progress = ep.UserState?.ProgressPercentage ?? 0,
-                                           Watched = ep.UserState?.IsCompleted ?? false,
-                                       })"
+                            <MediaCard Model="@GetEpisodeCardModel(ep)"
                                        Variant="MediaCardVariant.Backdrop"
                                        FooterVisible="true"
                                        ProgressEnabled="true"
                                        OverlayEnabled="true"
-                                       WatchedStatusEnabled="true" />
+                                       WatchedStatusEnabled="true"
+                                       WatchStateMenuEnabled="_canSetWatchState"
+                                       OnActivated="() => PlayEpisodeAsync(ep)"
+                                       OnFocused="() => OnTvEpisodeFocus(ep)"
+                                       OnWatchStateChanged="() => OnEpisodeWatchStateChangedAsync(ep)" />
                         </div>
                     }
                 </Carousel>
@@ -129,19 +102,7 @@ else if (_season is not null && _isTv)
             }
         </div>
 
-        @if (HasDisplayableCast)
-        {
-            <div class="season-tv-page-content" data-tv-scroll-zone="below">
-                <Carousel Title="@L["CastingAndCrew"]">
-                    @foreach (var cast in _focusedEpisodeDisplayableCast)
-                    {
-                        <CarouselItem @key="cast.Key">
-                            <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
-                        </CarouselItem>
-                    }
-                </Carousel>
-            </div>
-        }
+        <SerieSeasonTvCast @ref="_tvCast" Items="_focusedEpisodeDisplayableCast" />
         </div>
     </div>
 }
@@ -252,7 +213,7 @@ else if (_season is not null)
                                          Episode="episode"
                                          StillUrl="@GetEpisodeStillUrl(episode)"
                                          Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
-                                         OnPlay="PlayEpisodeAsync"
+                                         OnPlay="e => PlayEpisodeAsync(e)"
                                          OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
                     </div>
                 }

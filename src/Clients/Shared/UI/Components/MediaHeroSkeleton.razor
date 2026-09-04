@@ -1,0 +1,61 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="@RootClass" aria-busy="true">
+    <div class="media-hero-main media-hero-skeleton__main">
+        <div class="media-hero media-hero-skeleton__hero">
+            <div class="media-hero-backdrop-zone">
+                <K7Skeleton Class="media-hero-skeleton__logo" />
+            </div>
+            <div class="media-hero-body">
+                @if (PortraitLayout)
+                {
+                    <K7Skeleton Class="media-hero-skeleton__name" />
+                    <div class="media-hero-skeleton__meta">
+                        <K7Skeleton Class="media-hero-skeleton__chip media-hero-skeleton__chip--wide" />
+                        <K7Skeleton Class="media-hero-skeleton__chip" />
+                    </div>
+                    <div class="media-hero-skeleton__overview">
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line" />
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line media-hero-skeleton__line--mid" />
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line media-hero-skeleton__line--short" />
+                    </div>
+                }
+                else
+                {
+                    <div class="media-hero-skeleton__chips">
+                        <K7Skeleton Class="media-hero-skeleton__chip" />
+                        <K7Skeleton Class="media-hero-skeleton__chip media-hero-skeleton__chip--wide" />
+                        <K7Skeleton Class="media-hero-skeleton__chip" />
+                    </div>
+                    <div class="media-hero-skeleton__meta">
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__meta-item" />
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__meta-item media-hero-skeleton__meta-item--wide" />
+                    </div>
+                    <div class="media-hero-skeleton__overview">
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line" />
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line media-hero-skeleton__line--mid" />
+                        <K7Skeleton Shape="text" Class="media-hero-skeleton__line media-hero-skeleton__line--short" />
+                    </div>
+                    <div class="media-hero-skeleton__actions">
+                        <K7Skeleton Class="media-hero-skeleton__play" />
+                        <K7Skeleton Shape="circle" Class="media-hero-skeleton__icon" Width="44px" Height="44px" />
+                        <K7Skeleton Shape="circle" Class="media-hero-skeleton__icon" Width="44px" Height="44px" />
+                        <K7Skeleton Shape="circle" Class="media-hero-skeleton__icon" Width="44px" Height="44px" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (ShowCast)
+    {
+        <Carousel Skeleton="true" Title="">
+            @for (var i = 0; i < 8; i++)
+            {
+                <CarouselItem>
+                    <PersonRole Skeleton="true" />
+                </CarouselItem>
+            }
+        </Carousel>
+    }
+</div>

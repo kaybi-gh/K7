@@ -15,7 +15,9 @@ public enum ImageDisplayRole
 public static class MetadataPictureDisplayHelper
 {
     /// <summary>
-    /// Max CSS pixels * DPR before a hero backdrop upgrades from Medium to original.
+    /// Max CSS viewport width before a hero backdrop upgrades from Medium to original.
+    /// DPR is ignored so 1080p TV (often reported as 1920x1.5/2) reuses the Medium
+    /// already shown on Home / Explore instead of decoding a 4K original.
     /// </summary>
     public const int HeroBackdropPixelBudget = 1920;
 
@@ -28,7 +30,7 @@ public static class MetadataPictureDisplayHelper
     };
 
     /// <summary>
-    /// Capped backdrop for typical windows; pair with original via
+    /// Capped backdrop for typical windows. Pair with original via
     /// <see cref="ResolveAdaptiveBackdropUrls"/> when the source is larger.
     /// </summary>
     public static MetadataPictureSize? SizeForHeroBackdrop() => MetadataPictureSize.Medium;

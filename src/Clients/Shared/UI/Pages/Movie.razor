@@ -23,53 +23,8 @@
 <PageTitle>@_movie?.Title</PageTitle>
 @if (isLoading)
 {
-    <div class="hero-page-stack">
-        <div class="d-flex flex-col pa-10" style="height: 100%;">
-            <K7Skeleton Width="300px" />
-            
-            <div class="d-flex">
-                <K7Skeleton Width="80px" />
-                <K7Skeleton Width="80px" />
-                <K7Skeleton Width="80px" />
-            </div>
-            
-            <div class="d-flex align-center">
-                <K7Skeleton Width="50px" />
-                <K7Skeleton Width="100px" />
-            </div>
-            
-            <div class="d-flex flex-col pa-10">
-                <K7Skeleton Width="100px" />
-                <K7Skeleton Width="600px" />
-                <K7Skeleton Width="500px" />
-                <K7Skeleton Width="550px" />
-            </div>
-            
-            <div class="d-flex">
-                <K7Skeleton Width="100px" />
-                <K7Skeleton Shape="circle" />
-                <K7Skeleton Shape="circle" />
-                <K7Skeleton Shape="circle" />
-                <K7Skeleton Shape="circle" />
-            </div>
-            <K7Icon Style="position: absolute; left: 50%; top: 90vh;"  IconSize="@K7IconSize.Md" Name="caret-down" />
-        </div>
-    </div>
-    <div>
-        <div class="d-flex flex-col px-10">
-            <div class="d-flex flex-col" style="width: 100%;">
-                <K7Skeleton Width="100%" />
-                <K7Skeleton Width="100%" />
-            </div>
-        </div>
-        <Carousel Skeleton="true" Title="@L["CastingAndCrew"]">
-            @for (int i = 0; i < 10; i++)
-            {
-                <CarouselItem>
-                    <PersonRole Skeleton="true" />
-                </CarouselItem>
-            }
-        </Carousel>
+    <div class="movie-page">
+        <MediaHeroSkeleton DetailLayout="true" />
     </div>
 }
 else

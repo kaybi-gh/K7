@@ -4154,6 +4154,11 @@ K7.TvDetailScroll = (function () {
         return root.querySelector('[data-tv-scroll-zone="' + name + '"]');
     }
 
+    // MAUI WebView can pass a serialized ElementReference that did not map to a node.
+    function isElement(el) {
+        return !!(el && typeof el.addEventListener === 'function');
+    }
+
     function createHandlers(inst) {
         function scrollToMain(instant) {
             inst.showingBelow = false;
@@ -4311,16 +4316,18 @@ K7.TvDetailScroll = (function () {
 
     return {
         init: function (root) {
-            if (!root) return;
+            if (!isElement(root)) return false;
             K7.TvDetailScroll.dispose(root);
             var inst = { root: root, showingBelow: false, lastHeroFocus: null, onFocusIn: null };
             createHandlers(inst);
             root.scrollTop = 0;
             root.addEventListener('focusin', inst.onFocusIn, true);
             _instances.set(root, inst);
+            return true;
         },
         dispose: function (root) {
-            var inst = root ? _instances.get(root) : null;
+            if (!isElement(root)) return;
+            var inst = _instances.get(root);
             if (!inst) return;
             if (inst.onFocusIn) {
                 inst.root.removeEventListener('focusin', inst.onFocusIn, true);
@@ -4328,14 +4335,15 @@ K7.TvDetailScroll = (function () {
             _instances.delete(root);
         },
         sync: function (root) {
-            var inst = root ? _instances.get(root) : null;
+            if (!isElement(root)) return;
+            var inst = _instances.get(root);
             if (!inst || inst.showingBelow) return;
             // Do not yank scroll back to the hero while the user is on mouse/touch.
             if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
             inst.root.scrollTop = 0;
         },
         hasInstance: function (root) {
-            return !!(root && _instances.has(root));
+            return isElement(root) && _instances.has(root);
         },
         getLastHeroFocus: function (root) {
             var inst = root ? _instances.get(root) : null;

@@ -63,4 +63,20 @@ public class MediaPictureUrlHelperTests
         MediaPictureUrlHelper.ToDisplayUrl(apiClient, null).Should().BeNull();
         apiClient.DidNotReceive().GetAbsoluteUri(Arg.Any<string?>());
     }
+
+    [Test]
+    public void WithCacheBuster_ShouldLeaveUrlUnchanged_WhenVersionIsNull()
+    {
+        MediaPictureUrlHelper.WithCacheBuster("https://k7.local/p.jpg?size=Medium", null)
+            .Should().Be("https://k7.local/p.jpg?size=Medium");
+    }
+
+    [Test]
+    public void WithCacheBuster_ShouldAppendVersionQuery_WhenUrlHasSize()
+    {
+        var version = DateTimeOffset.FromUnixTimeMilliseconds(1_700_000_000_000);
+
+        MediaPictureUrlHelper.WithCacheBuster("https://k7.local/p.jpg?size=Medium", version)
+            .Should().Be("https://k7.local/p.jpg?size=Medium&v=1700000000000");
+    }
 }

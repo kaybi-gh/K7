@@ -1,14 +1,15 @@
-﻿using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.PersonRoles;
+using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -23,11 +24,11 @@ public partial class Person : IAsyncDisposable
     private PersonDto? _person;
     private const string PersonPlaceholderSrc = "_content/K7.Clients.Shared.UI/images/person-placeholder.png";
     private string? _portraitUrl;
-    private string? _previousBackdropUrl;
+    private MediaPageBackdrop? _tvBackdrop;
     private readonly List<PersonBackdropSlide> _backdrops = [];
-    private List<MediaCardViewModel> _medias = [];
-    private List<MediaCardViewModel> _discography = [];
-    private List<PersonKnownForItemDto> _knownFor = [];
+    private readonly List<MediaCardViewModel> _medias = [];
+    private readonly List<MediaCardViewModel> _discography = [];
+    private List<MediaCardViewModel> _knownForCards = [];
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
@@ -40,7 +41,7 @@ public partial class Person : IAsyncDisposable
     private bool _tvScrollInitialized;
     private bool _initialFocusApplied;
 
-    private bool HasBelowContent => _discography.Count > 0 || _medias.Count > 0 || _knownFor.Count > 0;
+    private bool HasBelowContent => _discography.Count > 0 || _medias.Count > 0 || _knownForCards.Count > 0;
 
     private string? ActiveBackdropUrl => _backdrops.Count > 0 ? _backdrops[_activeBackdropIndex].Url : null;
 
@@ -147,9 +148,9 @@ public partial class Person : IAsyncDisposable
         {
             _backdropTimer = new Timer(_ =>
             {
-                _previousBackdropUrl = _backdrops[_activeBackdropIndex].Url;
                 _activeBackdropIndex = (_activeBackdropIndex + 1) % _backdrops.Count;
-                InvokeAsync(StateHasChanged).FireAndForget();
+                var slide = _backdrops[_activeBackdropIndex];
+                InvokeAsync(() => _tvBackdrop?.ApplyFocusedImage(slide.Url, soft: true)).FireAndForget();
             }, null, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(6));
         }
 
@@ -164,12 +165,7 @@ public partial class Person : IAsyncDisposable
         {
             if (!_tvScrollInitialized)
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
-                _tvScrollInitialized = true;
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+                _tvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _tvScrollRoot);
             }
         }
 
@@ -190,7 +186,16 @@ public partial class Person : IAsyncDisposable
 
         try
         {
-            _knownFor = await k7ServerService.GetPersonKnownForAsync(_person.Id);
+            var knownFor = await k7ServerService.GetPersonKnownForAsync(_person.Id);
+            _knownForCards = knownFor
+                .Select(item => new MediaCardViewModel
+                {
+                    Id = item.ExternalId,
+                    Title = item.Title,
+                    PictureUrl = item.PosterUrl,
+                    AdditionalInformations = item.Year?.ToString()
+                })
+                .ToList();
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -295,7 +300,7 @@ public partial class Person : IAsyncDisposable
 
         if (_backdrops.Count < 5
             && apiClient.GetAbsoluteUri(
-                coverUri?.GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri is { } coverUrl)
+                coverUri?.GetUri(MetadataPictureDisplayHelper.SizeForHeroBackdrop())?.OriginalString)?.AbsoluteUri is { } coverUrl)
         {
             _backdrops.Add(new PersonBackdropSlide(coverUrl, null, coverUri?.DominantColor));
         }
@@ -385,7 +390,7 @@ public partial class Person : IAsyncDisposable
         _backdropTimer?.Dispose();
 
         if (_tvScrollInitialized)
-            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+            await TvDetailScrollJs.TryDisposeAsync(JSRuntime, _tvScrollRoot);
     }
 
     private readonly record struct PersonBackdropSlide(string Url, string? HighResUrl, string? DominantColor);

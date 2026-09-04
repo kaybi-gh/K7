@@ -155,10 +155,12 @@ public partial class Movie : IAsyncDisposable
                 : _movie.LastMetadataRefreshedAt;
 
             var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Backdrop);
+            // Omit the cache buster on first paint so TV reuses the Medium URL already
+            // decoded on Home / Explore.
             (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
                 backdropPicture,
                 apiClient,
-                cacheVersion);
+                isPicturesRefresh ? cacheVersion : null);
             _dominantColor = backdropPicture?.DominantColor;
 
             var logoUri = apiClient.GetAbsoluteUri(
@@ -228,12 +230,11 @@ public partial class Movie : IAsyncDisposable
         {
             if (!_tvScrollInitialized)
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
-                _tvScrollInitialized = true;
+                _tvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _tvScrollRoot);
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+                await TvDetailScrollJs.TrySyncAsync(JSRuntime, _tvScrollRoot);
             }
         }
 
@@ -704,6 +705,6 @@ public partial class Movie : IAsyncDisposable
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)
-            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+            await TvDetailScrollJs.TryDisposeAsync(JSRuntime, _tvScrollRoot);
     }
 }

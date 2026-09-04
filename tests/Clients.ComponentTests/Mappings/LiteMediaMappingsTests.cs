@@ -161,7 +161,39 @@ public class LiteMediaMappingsTests
 
         result.PictureUrl.Should().NotBeNullOrEmpty();
         result.PictureUrl.Should().StartWith("https://localhost/api/pictures/poster.jpg");
-        result.PictureUrl.Should().Contain("v=");
+        result.PictureUrl.Should().NotContain("v=");
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldShareStableMediumBackdropUrl_WhenMovieHasBackdrop()
+    {
+        var backdropUri = new Uri("/api/metadata-pictures/backdrop.jpg", UriKind.Relative);
+        var item = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Dune",
+            MediaType = MediaType.Movie,
+            NavigationTarget = "/movies/1",
+            Pictures =
+            [
+                new MetadataPictureDto
+                {
+                    Id = Guid.NewGuid(),
+                    Type = MetadataPictureType.Backdrop,
+                    Uri = backdropUri,
+                    OriginalWidth = 3840,
+                    OriginalHeight = 2160
+                }
+            ]
+        };
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+
+        var result = item.ToCardViewModel(apiClient);
+
+        result.BackdropUrl.Should().Be("https://localhost/api/metadata-pictures/backdrop.jpg?size=Medium");
+        result.BackdropUrl.Should().NotContain("v=");
     }
 
     [Test]
@@ -271,7 +303,8 @@ public class LiteMediaMappingsTests
 
         var result = item.ToCardViewModel(apiClient);
 
-        result.BackdropUrl.Should().Contain("still.jpg");
+        result.BackdropUrl.Should().Be("https://localhost/api/pictures/still.jpg");
+        result.BackdropUrl.Should().NotContain("size=");
         result.SoftHeroBackdrop.Should().BeFalse();
     }
 
@@ -342,6 +375,7 @@ public class LiteMediaMappingsTests
         result.PictureUrl.Should().Contain("album-cover.jpg");
         result.BackdropUrl.Should().NotBeNullOrEmpty();
         result.BackdropUrl.Should().Contain("album-cover.jpg");
+        result.BackdropUrl.Should().NotContain("size=");
         result.ResolveHeroBackdropUrl().Should().Be(result.BackdropUrl);
         result.SoftHeroBackdrop.Should().BeTrue();
     }

@@ -152,7 +152,7 @@ else
 
             @if (LongPressEnabled)
             {
-                <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
+                <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target @onclick:stopPropagation="true">
                     <K7IconButton Icon="@Phosphor.DotsThreeVertical"
                                   Class="media-card-menu-trigger"
                                   AriaLabel="Menu"

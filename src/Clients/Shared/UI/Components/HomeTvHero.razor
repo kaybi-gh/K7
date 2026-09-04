@@ -1,52 +1,62 @@
-@if (Model is not null)
+@if (DisplayModel is not null)
 {
     <div class="home-tv-hero__backdrop-fixed">
-        <div class="home-tv-hero__backdrop @(_layerSoft[0] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
-             style="background-image: @FormatBackdropCss(_layerUrls[0])" />
-        <div class="home-tv-hero__backdrop @(_layerSoft[1] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
-             style="background-image: @FormatBackdropCss(_layerUrls[1])" />
+        @if (!string.IsNullOrEmpty(_layerUrls[0]))
+        {
+            <img class="home-tv-hero__backdrop @(_layerSoft[0] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 0 ? "home-tv-hero__backdrop--active" : "")"
+                 src="@_layerUrls[0]"
+                 alt=""
+                 decoding="async" />
+        }
+        @if (!string.IsNullOrEmpty(_layerUrls[1]))
+        {
+            <img class="home-tv-hero__backdrop @(_layerSoft[1] ? "home-tv-hero__backdrop--soft" : "") @(_activeLayer == 1 ? "home-tv-hero__backdrop--active" : "")"
+                 src="@_layerUrls[1]"
+                 alt=""
+                 decoding="async" />
+        }
         <div class="home-tv-hero__gradient"></div>
     </div>
     <div class="home-tv-hero">
         <div class="home-tv-hero__content">
-            <h2 class="home-tv-hero__title">@Model.Title</h2>
-            @if (ShouldShowSubtitle(Model))
+            <h2 class="home-tv-hero__title">@DisplayModel.Title</h2>
+            @if (ShouldShowSubtitle(DisplayModel))
             {
-                <p class="home-tv-hero__subtitle">@Model.AdditionalInformations</p>
+                <p class="home-tv-hero__subtitle">@DisplayModel.AdditionalInformations</p>
             }
             <div class="home-tv-hero__meta">
-                @if (Model.ReleaseYear.HasValue)
+                @if (DisplayModel.ReleaseYear.HasValue)
                 {
-                    <span class="home-tv-hero__meta-item">@Model.ReleaseYear</span>
+                    <span class="home-tv-hero__meta-item">@DisplayModel.ReleaseYear</span>
                 }
-                @if (!string.IsNullOrEmpty(Model.ContentRating))
+                @if (!string.IsNullOrEmpty(DisplayModel.ContentRating))
                 {
-                    <span class="home-tv-hero__meta-item home-tv-hero__badge">@Model.ContentRating</span>
+                    <span class="home-tv-hero__meta-item home-tv-hero__badge">@DisplayModel.ContentRating</span>
                 }
-                @if (Model.Rating.HasValue)
+                @if (DisplayModel.Rating.HasValue)
                 {
                     <span class="home-tv-hero__meta-item home-tv-hero__rating">
                         <K7Icon Icon="@Phosphor.Star"  IconSize="@K7IconSize.Sm" />
-                        @Model.Rating.Value.ToString("0.#")/10
+                        @DisplayModel.Rating.Value.ToString("0.#")/10
                     </span>
                 }
-                @if (ShouldShowRuntime(Model))
+                @if (ShouldShowRuntime(DisplayModel))
                 {
-                    <span class="home-tv-hero__meta-item">@FormatRuntime(Model.RuntimeMinutes!.Value)</span>
+                    <span class="home-tv-hero__meta-item">@FormatRuntime(DisplayModel.RuntimeMinutes!.Value)</span>
                 }
             </div>
-            @if (Model.Genres is { Count: > 0 })
+            @if (DisplayModel.Genres is { Count: > 0 })
             {
                 <div class="home-tv-hero__genres">
-                    @foreach (var genre in Model.Genres.Take(4))
+                    @foreach (var genre in DisplayModel.Genres.Take(4))
                     {
                         <K7Chip Size="sm" Variant="outlined">@genre</K7Chip>
                     }
                 </div>
             }
-            @if (!string.IsNullOrEmpty(Model.Overview))
+            @if (!string.IsNullOrEmpty(DisplayModel.Overview))
             {
-                <p class="home-tv-hero__overview">@TruncateOverview(Model.Overview)</p>
+                <p class="home-tv-hero__overview">@TruncateOverview(DisplayModel.Overview)</p>
             }
         </div>
     </div>

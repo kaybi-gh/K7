@@ -13,10 +13,42 @@
     position: absolute;
     inset: 0;
     z-index: 0;
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    opacity: 0;
     transform: translateZ(0);
+    transition: opacity 0.45s ease;
+}
+
+.media-page-backdrop__image.k7-img-decoded {
+    opacity: 1;
+}
+
+.media-page-backdrop__image--layer {
+    /* No translateZ: a transformed backdrop becomes a containing block and
+       churns TV spatial-nav layout while JPEGs decode. */
+    transform: none;
+    opacity: 0;
+}
+
+.media-page-backdrop__image--layer.k7-img-decoded {
+    opacity: 0;
+}
+
+.media-page-backdrop__image--layer.media-page-backdrop__image--active,
+.media-page-backdrop__image--layer.media-page-backdrop__image--active.k7-img-decoded {
+    opacity: 1;
+}
+
+.media-page-backdrop__image--layer.media-page-backdrop__image--soft {
+    filter: blur(12px);
+    object-fit: cover;
+    object-position: center top;
+    width: 108%;
+    height: 108%;
+    inset: -4%;
 }
 
 /* Scrims must stay above every image layer (including temporary fades).

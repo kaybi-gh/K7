@@ -27,9 +27,7 @@
 @if (_loading)
 {
     <div class="serie-page">
-        <div class="d-flex flex-col pa-16">
-            <K7Spinner />
-        </div>
+        <MediaHeroSkeleton DetailLayout="true" />
     </div>
 }
 else if (_serie is not null)

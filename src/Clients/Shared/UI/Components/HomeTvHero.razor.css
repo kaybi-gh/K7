@@ -11,10 +11,12 @@
 .home-tv-hero__backdrop {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center 20%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
     opacity: 0;
-    transition: opacity 1s ease-in-out;
+    transition: opacity 0.7s ease;
 }
 
 .home-tv-hero__backdrop--active {
@@ -25,8 +27,11 @@
     /* Prefer soft stills without transform: transform on this fixed layer
        creates containing-block side effects that churn TV focus/layout. */
     filter: blur(12px);
-    background-size: 108%;
-    background-position: center 20%;
+    object-fit: cover;
+    object-position: center 20%;
+    width: 108%;
+    height: 108%;
+    inset: -4%;
 }
 
 .home-tv-hero__gradient {

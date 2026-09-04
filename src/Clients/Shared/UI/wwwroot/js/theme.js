@@ -86,20 +86,52 @@ window.K7.clickElement = function (el) {
     if (el) el.click();
 };
 
+window.K7.decodeLoadedImage = function (img) {
+    if (!img) return Promise.resolve(false);
+    if (typeof img.decode !== 'function')
+        return Promise.resolve(true);
+    return img.decode().then(function () { return true; }).catch(function () { return true; });
+};
+
+window.K7.markImageDecoded = function (img) {
+    if (!img || img.dataset.k7Decoded === '1')
+        return;
+    var ready = function () {
+        if (img.dataset.k7Decoded === '1')
+            return;
+        img.dataset.k7Decoded = '1';
+        img.classList.add('k7-img-decoded');
+    };
+    var finish = function () {
+        window.K7.decodeLoadedImage(img).then(ready);
+    };
+    if (img.complete && img.naturalWidth > 0) {
+        finish();
+        return;
+    }
+    img.addEventListener('load', finish, { once: true });
+    img.addEventListener('error', ready, { once: true });
+};
+
 window.K7.preloadImage = function (url) {
     if (!url) return Promise.resolve();
     return new Promise(function (resolve) {
         var img = new Image();
+        img.decoding = 'async';
         var done = false;
         var finish = function () {
             if (done) return;
             done = true;
             resolve();
         };
-        img.onload = finish;
+        var afterLoad = function () {
+            window.K7.decodeLoadedImage(img).then(finish);
+        };
+        img.onload = afterLoad;
         img.onerror = finish;
         img.src = url;
-        if (img.complete) finish();
+        if (img.complete && img.naturalWidth > 0)
+            afterLoad();
     });
 };
 

@@ -6,15 +6,39 @@
      aria-hidden="true">
     @if (_resolvedImageUrl is not null)
     {
-        <div class="media-page-backdrop__image"
-             style="background-image: url('@_resolvedImageUrl')" />
+        <img class="media-page-backdrop__image"
+             src="@_resolvedImageUrl"
+             alt=""
+             decoding="async"
+             fetchpriority="high"
+             onload="window.K7&&K7.markImageDecoded(this)"
+             onerror="window.K7&&K7.markImageDecoded(this)" />
     }
 
     @if (_resolvedSecondaryImageUrl is not null)
     {
-        <div class="media-page-backdrop__image"
-             style="background-image: url('@_resolvedSecondaryImageUrl')"
-             @key="@($"secondary-{SecondaryImageKey}")" />
+        <img class="media-page-backdrop__image"
+             src="@_resolvedSecondaryImageUrl"
+             alt=""
+             decoding="async"
+             @key="@($"secondary-{SecondaryImageKey}")"
+             onload="window.K7&&K7.markImageDecoded(this)"
+             onerror="window.K7&&K7.markImageDecoded(this)" />
+    }
+
+    @if (!string.IsNullOrEmpty(_layerUrls[0]))
+    {
+        <img class="media-page-backdrop__image media-page-backdrop__image--layer @(_layerSoft[0] ? "media-page-backdrop__image--soft" : "") @(_focusedLayerVisible && _activeLayer == 0 ? "media-page-backdrop__image--active" : "")"
+             src="@_layerUrls[0]"
+             alt=""
+             decoding="async" />
+    }
+    @if (!string.IsNullOrEmpty(_layerUrls[1]))
+    {
+        <img class="media-page-backdrop__image media-page-backdrop__image--layer @(_layerSoft[1] ? "media-page-backdrop__image--soft" : "") @(_focusedLayerVisible && _activeLayer == 1 ? "media-page-backdrop__image--active" : "")"
+             src="@_layerUrls[1]"
+             alt=""
+             decoding="async" />
     }
 
     <div class="media-page-backdrop__scrim-side" />

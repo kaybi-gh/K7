@@ -13,7 +13,7 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     public string? ImageUrl { get; set; }
 
     /// <summary>
-    /// Optional full-resolution backdrop. Used when viewport CSS width * DPR exceeds the hero budget.
+    /// Optional full-resolution backdrop. Used when viewport CSS width exceeds the hero budget.
     /// </summary>
     [Parameter]
     public string? HighResImageUrl { get; set; }
@@ -59,8 +59,14 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     private string? _attachedSoftStillImageUrl;
     private string? _resolvedImageUrl;
     private string? _resolvedSecondaryImageUrl;
-    private int _primarySwapGeneration;
-    private int _secondarySwapGeneration;
+    private readonly string?[] _layerUrls = [null, null];
+    private readonly bool[] _layerSoft = [false, false];
+    private int _activeLayer;
+    private int _swapGeneration;
+    private bool _focusedLayerVisible;
+    private string? _pendingFocusedUrl;
+    private bool _pendingFocusedSoft;
+    private bool _hasPendingFocusedImage;
     private DotNetObjectReference<MediaPageBackdrop>? _dotNetRef;
     private volatile bool _disposed;
 
@@ -113,6 +119,16 @@ public partial class MediaPageBackdrop : IAsyncDisposable
             if (_disposed || _module is null)
                 return;
 
+            await _module.InvokeVoidAsync("bindDecodedImages", _rootRef);
+
+            if (_hasPendingFocusedImage)
+            {
+                var pendingUrl = _pendingFocusedUrl;
+                var pendingSoft = _pendingFocusedSoft;
+                _hasPendingFocusedImage = false;
+                await SwapFocusedLayerAsync(pendingUrl, pendingSoft);
+            }
+
             var softStillUrl = _resolvedImageUrl ?? ImageUrl;
             if (SoftStillBlurEnabled
                 && !string.IsNullOrEmpty(softStillUrl)
@@ -142,6 +158,26 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     [JSInvokable]
     public Task OnHeroViewportChangedAsync() =>
         _disposed ? Task.CompletedTask : RefreshResolvedUrlsAsync();
+
+    /// <summary>
+    /// Crossfade a TV still without a parent re-render. Incoming JPEG is decoded
+    /// off-screen first so D-pad moves do not paint progressive bands.
+    /// </summary>
+    public void ApplyFocusedImage(string? url, bool soft = false)
+    {
+        if (_disposed)
+            return;
+
+        if (_module is null)
+        {
+            _pendingFocusedUrl = url;
+            _pendingFocusedSoft = soft;
+            _hasPendingFocusedImage = true;
+            return;
+        }
+
+        _ = SwapFocusedLayerAsync(url, soft);
+    }
 
     private async Task RefreshResolvedUrlsAsync()
     {
@@ -173,75 +209,70 @@ public partial class MediaPageBackdrop : IAsyncDisposable
             if (!primaryChanged && !secondaryChanged)
                 return;
 
+            // Decode off-screen (opacity 0) then fade in via k7-img-decoded.
+            // Do not wait here: the wash color is already visible and TV input
+            // must not stall on a 1920px JPEG.
             if (primaryChanged)
-                await ApplyPrimaryUrlAsync(primary);
+            {
+                _resolvedImageUrl = primary;
+                await SafeStateHasChangedAsync();
+            }
 
             if (secondaryChanged)
-                await ApplySecondaryUrlAsync(secondary);
+            {
+                _resolvedSecondaryImageUrl = secondary;
+                await SafeStateHasChangedAsync();
+            }
         }
         catch (Exception ex) when (IsBenignJsInteropFailure(ex))
         {
         }
     }
 
-    private async Task ApplyPrimaryUrlAsync(string? nextUrl)
+    private async Task SwapFocusedLayerAsync(string? url, bool soft)
     {
-        var generation = ++_primarySwapGeneration;
+        if (_disposed)
+            return;
 
-        if (string.IsNullOrEmpty(nextUrl))
+        if (string.IsNullOrEmpty(url))
         {
-            _resolvedImageUrl = null;
+            if (!_focusedLayerVisible && _layerUrls[0] is null && _layerUrls[1] is null)
+                return;
+
+            _swapGeneration++;
+            _layerUrls[0] = null;
+            _layerUrls[1] = null;
+            _focusedLayerVisible = false;
             await SafeStateHasChangedAsync();
             return;
         }
 
-        // Keep the current image visible until the next URL is decoded.
-        if (_resolvedImageUrl is not null && _module is not null && !_disposed)
-        {
-            try
-            {
-                await _module.InvokeAsync<bool>("preloadImage", nextUrl);
-            }
-            catch (Exception ex) when (IsBenignJsInteropFailure(ex))
-            {
-                return;
-            }
-        }
-
-        if (_disposed || generation != _primarySwapGeneration)
+        if (_focusedLayerVisible
+            && url == _layerUrls[_activeLayer]
+            && soft == _layerSoft[_activeLayer])
             return;
 
-        _resolvedImageUrl = nextUrl;
+        var targetLayer = 1 - _activeLayer;
+        var generation = ++_swapGeneration;
+
+        _layerUrls[targetLayer] = url;
+        _layerSoft[targetLayer] = soft;
         await SafeStateHasChangedAsync();
-    }
 
-    private async Task ApplySecondaryUrlAsync(string? nextUrl)
-    {
-        var generation = ++_secondarySwapGeneration;
-
-        if (string.IsNullOrEmpty(nextUrl))
+        try
         {
-            _resolvedSecondaryImageUrl = null;
-            await SafeStateHasChangedAsync();
+            await JSRuntime.InvokeVoidAsync("K7.preloadImage", url);
+        }
+        catch (Exception ex) when (IsBenignJsInteropFailure(ex))
+        {
             return;
         }
 
-        if (_resolvedSecondaryImageUrl is not null && _module is not null && !_disposed)
-        {
-            try
-            {
-                await _module.InvokeAsync<bool>("preloadImage", nextUrl);
-            }
-            catch (Exception ex) when (IsBenignJsInteropFailure(ex))
-            {
-                return;
-            }
-        }
-
-        if (_disposed || generation != _secondarySwapGeneration)
+        if (_disposed || generation != _swapGeneration)
             return;
 
-        _resolvedSecondaryImageUrl = nextUrl;
+        _activeLayer = targetLayer;
+        _focusedLayerVisible = true;
         await SafeStateHasChangedAsync();
     }
 
@@ -271,6 +302,8 @@ public partial class MediaPageBackdrop : IAsyncDisposable
             return;
 
         _disposed = true;
+        _swapGeneration++;
+        _hasPendingFocusedImage = false;
 
         var module = _module;
         _module = null;

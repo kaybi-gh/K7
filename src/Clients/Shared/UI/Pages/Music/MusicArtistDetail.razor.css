@@ -224,3 +224,43 @@
         flex-shrink: 0;
     }
 }
+
+::deep .artist-skeleton-portrait {
+    display: block;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+}
+
+::deep .artist-skeleton-name {
+    display: block;
+    width: min(40vw, 280px);
+    height: 36px;
+    border-radius: var(--radius-md);
+}
+
+.artist-skeleton-bio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: 600px;
+    margin: var(--space-3) 0;
+}
+
+::deep .artist-skeleton-play {
+    display: block;
+    width: 140px;
+    height: 48px;
+    border-radius: var(--radius-md);
+}
+
+::deep .artist-skeleton-play--outline {
+    width: 120px;
+}
+
+@media (max-width: 599.98px) {
+    ::deep .artist-skeleton-portrait {
+        width: 120px;
+        height: 120px;
+    }
+}

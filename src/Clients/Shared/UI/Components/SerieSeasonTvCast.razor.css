@@ -1,0 +1,11 @@
+.season-tv-page-content {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    padding-bottom: var(--space-6);
+}
+
+.season-tv-page-content ::deep .carousel-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}

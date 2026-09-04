@@ -23,7 +23,7 @@ else
         }
         else if (_isTv == true)
         {
-            <HomeTvHero Model="_focusedItem" />
+            <HomeTvHero @ref="_tvHero" Model="_focusedItem" />
             <VerticalCarousel>
                 @if (!FeedStore.IsLoaded || isLoading)
                 {

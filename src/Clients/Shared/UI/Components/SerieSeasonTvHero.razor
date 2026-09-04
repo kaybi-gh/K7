@@ -1,0 +1,63 @@
+<div class="tv-hero">
+    <div class="tv-back-button">
+        <K7Button StartIcon="@Phosphor.ArrowLeft"
+                   Color="secondary"
+                   Variant="filled"
+                   Href="@($"/series/{SerieId}")">
+            @L["BackToSerie"]
+        </K7Button>
+    </div>
+
+    <div class="tv-details">
+        <K7Image Class="tv-logo"
+                 ObjectFit="scale-down"
+                 Src="@LogoUrl"
+                 Alt="">
+            <FallbackContent>
+                <h3 class="media-logo-title">@SerieTitle?.ToUpper()</h3>
+            </FallbackContent>
+        </K7Image>
+
+        <div class="tv-episode-info">
+            @if (_episode is not null)
+            {
+                <span class="tv-episode-label">
+                    @string.Format(L["EpisodeNumber"], _episode.EpisodeNumber)
+                </span>
+                <h3 class="tv-episode-title">@_episode.Title</h3>
+
+                @if (_episode.ReleaseDate is not null)
+                {
+                    <span class="tv-episode-date text-sm">@_episode.ReleaseDate.Value.ToString("d MMMM yyyy")</span>
+                }
+
+                <div class="tv-episode-overview overview-clickable focusable" tabindex="0" role="button" @onclick="OpenSynopsisAsync">
+                    <p>@(_episode.Overview ?? "")</p>
+                </div>
+            }
+
+            @if (CanRestartEpisode && _episode is { } resumeEpisode)
+            {
+                <div class="tv-episode-actions">
+                    <div class="tv-episode-actions-primary tv-episode-actions-primary--split">
+                        <K7Button Variant="filled"
+                                   StartIcon="@Phosphor.Play"
+                                   Color="primary"
+                                   Size="lg"
+                                   Class="tv-episode-actions-play"
+                                   OnClick="() => PlayAsync(resumeEpisode, fromBeginning: false)">
+                            @PlayLabel
+                        </K7Button>
+                        <K7Button Variant="outlined"
+                                   StartIcon="@Phosphor.ClockCounterClockwise"
+                                   Color="primary"
+                                   Size="lg"
+                                   Class="tv-episode-actions-replay"
+                                   AriaLabel="@S["PlayFromBeginning"]"
+                                   OnClick="() => PlayAsync(resumeEpisode, fromBeginning: true)" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

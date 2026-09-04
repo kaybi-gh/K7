@@ -343,3 +343,60 @@
         display: none;
     }
 }
+
+::deep .album-skeleton-cover {
+    display: block;
+    width: 220px;
+    height: 220px;
+    border-radius: 8px;
+}
+
+::deep .album-skeleton-overline {
+    display: block;
+    width: 72px;
+    height: 12px;
+    margin-bottom: var(--space-2);
+}
+
+::deep .album-skeleton-title {
+    display: block;
+    width: min(40vw, 320px);
+    height: 32px;
+    border-radius: var(--radius-md);
+}
+
+::deep .album-skeleton-artist {
+    display: block;
+    width: 160px;
+    height: 18px;
+    margin-top: var(--space-2);
+}
+
+::deep .album-skeleton-play {
+    display: block;
+    width: 140px;
+    height: 48px;
+    border-radius: var(--radius-md);
+}
+
+::deep .album-skeleton-play--outline {
+    width: 120px;
+}
+
+.album-skeleton-track {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: 10px 40px;
+}
+
+@media (max-width: 599.98px) {
+    ::deep .album-skeleton-cover {
+        width: 120px;
+        height: 120px;
+    }
+
+    .album-skeleton-track {
+        padding: 10px 16px;
+    }
+}

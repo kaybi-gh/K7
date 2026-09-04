@@ -7,7 +7,37 @@
 @inject IStringLocalizer<MusicArtistDetail> L
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@_artist?.Title</PageTitle>
-@if (_artist is not null)
+@if (_loading)
+{
+    <div class="artist-detail-page artist-detail-page--skeleton" aria-busy="true">
+        <div class="artist-hero">
+            <div class="artist-hero-portrait">
+                <K7Skeleton Class="artist-skeleton-portrait" />
+            </div>
+            <div class="artist-hero-info">
+                <K7Skeleton Class="artist-skeleton-name" />
+                <div class="artist-skeleton-bio">
+                    <K7Skeleton Shape="text" Width="92%" Height="16px" />
+                    <K7Skeleton Shape="text" Width="80%" Height="16px" />
+                    <K7Skeleton Shape="text" Width="64%" Height="16px" />
+                </div>
+                <div class="artist-actions">
+                    <K7Skeleton Class="artist-skeleton-play" />
+                    <K7Skeleton Class="artist-skeleton-play artist-skeleton-play--outline" />
+                </div>
+            </div>
+        </div>
+        <Carousel Skeleton="true">
+            @for (var i = 0; i < 8; i++)
+            {
+                <CarouselItem>
+                    <MediaCard Skeleton="true" Variant="MediaCardVariant.Cover" FooterVisible="true" />
+                </CarouselItem>
+            }
+        </Carousel>
+    </div>
+}
+else if (_artist is not null)
 {
     <MediaPageContent Class="artist-detail-wash"
                       FullWash="true"
@@ -180,10 +210,4 @@
             }
         </div>
     </MediaPageContent>
-}
-else if (_loading)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
 }

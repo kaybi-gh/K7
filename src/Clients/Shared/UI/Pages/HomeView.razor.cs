@@ -1,5 +1,7 @@
-using K7.Clients.Shared.Interfaces;
+using System.Net.Http;
+using System.Security.Claims;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -9,8 +11,6 @@ using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
-using System.Net.Http;
-using System.Security.Claims;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -40,6 +40,7 @@ public partial class HomeView : IAsyncDisposable
     private bool _focusRestored;
     private bool _emptyFeedRetried;
     private bool _homeRestoreLoadFailed;
+    private HomeTvHero? _tvHero;
     private IJSObjectReference? _homeRestoreModule;
     private bool _hubHomeActive;
 
@@ -523,7 +524,7 @@ public partial class HomeView : IAsyncDisposable
             return;
 
         _focusedItem = item;
-        StateHasChanged();
+        _tvHero?.ApplyFocusedItem(item);
     }
 
     private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(L, rowTitle);

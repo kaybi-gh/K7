@@ -7,7 +7,23 @@
 @if (_isTv is null || _loading)
 {
     <div class="@(_isTv == true ? "tv-feed-page" : "explore-page page-scrollable")" aria-busy="true">
-        @if (_isTv != true)
+        @if (_isTv == true)
+        {
+            <VerticalCarousel>
+                @for (var i = 0; i < 3; i++)
+                {
+                    <Carousel Skeleton="true">
+                        @for (var j = 0; j < 10; j++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+            </VerticalCarousel>
+        }
+        else
         {
             <div class="d-flex flex-col pa-16">
                 <K7Spinner />

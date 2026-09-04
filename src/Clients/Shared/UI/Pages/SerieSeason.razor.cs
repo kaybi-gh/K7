@@ -12,7 +12,6 @@ using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using K7.Shared.Enums;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -38,17 +37,23 @@ public partial class SerieSeason : IAsyncDisposable
     private string _pageTitle = "";
     private bool _loading = true;
     private bool _canRate;
+    private bool _canSetWatchState;
+    private bool _canResumePlayback;
     private int? _seasonUserRating;
     private string? _focusEpisodeFragment;
     private bool _isTv;
     private LiteSerieEpisodeDto? _focusedEpisode;
-    private string? _focusedStillUrl;
-    private string? _previousStillUrl;
+    private MediaPageBackdrop? _tvBackdrop;
+    private SerieSeasonTvHero? _tvHero;
+    private SerieSeasonTvCast? _tvCast;
     private Carousel? _tvCarousel;
     private ElementReference _seasonTvRoot;
     private bool _seasonTvScrollInitialized;
     private bool _isFederated;
     private int? _pendingCarouselScrollIndex;
+    private Guid? _tvInitialFocusEpisodeId;
+    private string? _episodeCarouselKey;
+    private readonly Dictionary<Guid, MediaCardViewModel> _episodeCardModels = [];
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
     private Guid? _castLoadEpisodeId;
@@ -66,6 +71,9 @@ public partial class SerieSeason : IAsyncDisposable
         K7HubClient.MediaIndexedFilesUpdated += OnMediaIndexedFilesUpdated;
         K7HubClient.ProgressUpdated += OnProgressUpdated;
         PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
+
+        if (DeviceService.CachedDeviceType is { } cached)
+            _isTv = cached == DeviceType.TV;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -117,8 +125,13 @@ public partial class SerieSeason : IAsyncDisposable
         _focusedEpisodeDisplayableCast = [];
         _castLoadEpisodeId = null;
         _seasonTvScrollInitialized = false;
+        _tvInitialFocusEpisodeId = null;
+        _episodeCardModels.Clear();
+        _episodeCarouselKey = null;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        _canResumePlayback = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
         if (serieMedia is not SerieDto serie)
@@ -197,6 +210,8 @@ public partial class SerieSeason : IAsyncDisposable
             _pageTitle = SeasonNumber == 0
                 ? $"{serie.Title} - {L["Specials"]}"
                 : $"{serie.Title} - {string.Format(L["SeasonNumber"], SeasonNumber)}";
+
+            _episodeCarouselKey = string.Join(',', _episodes.Select(e => e.Id));
         }
 
         // Set initial focused episode for TV
@@ -206,7 +221,7 @@ public partial class SerieSeason : IAsyncDisposable
             _focusedEpisode = (targetEpNumber is not null
                 ? _episodes.FirstOrDefault(e => e.EpisodeNumber == targetEpNumber)
                 : null) ?? _episodes[0];
-            _focusedStillUrl = GetEpisodeStillUrl(_focusedEpisode, size: null);
+            _tvInitialFocusEpisodeId = _focusedEpisode.Id;
             if (_episodeCastCache.TryGetValue(_focusedEpisode.Id, out var cached))
                 ApplyFocusedEpisodeCast(cached);
             else
@@ -223,14 +238,9 @@ public partial class SerieSeason : IAsyncDisposable
             try
             {
                 if (!_seasonTvScrollInitialized)
-                {
-                    await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _seasonTvRoot);
-                    _seasonTvScrollInitialized = true;
-                }
-                else
-                {
-                    await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _seasonTvRoot);
-                }
+                    _seasonTvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _seasonTvRoot);
+
+                ApplyTvHeroVisuals(_focusedEpisode);
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
             {
@@ -290,8 +300,8 @@ public partial class SerieSeason : IAsyncDisposable
     }
 
     private Dictionary<string, object>? GetEpisodeInitialFocusAttributes(LiteSerieEpisodeDto episode) =>
-        _focusedEpisode?.Id == episode.Id
-            ? new Dictionary<string, object> { ["data-initial-focus"] = true }
+        _tvInitialFocusEpisodeId == episode.Id
+            ? new Dictionary<string, object> { ["data-initial-focus"] = ".focusable" }
             : null;
 
     private static int? ParseEpisodeFragment(string? fragment)
@@ -311,22 +321,63 @@ public partial class SerieSeason : IAsyncDisposable
                 ?.GetUri(size)?.OriginalString)?.AbsoluteUri;
     }
 
+    private MediaCardViewModel GetEpisodeCardModel(LiteSerieEpisodeDto episode)
+    {
+        var progress = episode.UserState?.ProgressPercentage ?? 0;
+        var watched = episode.UserState?.IsCompleted ?? false;
+        if (_episodeCardModels.TryGetValue(episode.Id, out var existing))
+        {
+            existing.Progress = progress;
+            existing.Watched = watched;
+            return existing;
+        }
+
+        var model = new MediaCardViewModel
+        {
+            Id = episode.Id.ToString(),
+            Kind = MediaCardKind.Episode,
+            Title = episode.Title,
+            AdditionalInformations = string.Format(L["EpisodeNumber"], episode.EpisodeNumber),
+            PictureUrl = GetEpisodeStillUrl(episode),
+            Progress = progress,
+            Watched = watched,
+        };
+        _episodeCardModels[episode.Id] = model;
+        return model;
+    }
+
     private void OnTvEpisodeFocus(LiteSerieEpisodeDto episode)
     {
         if (_focusedEpisode?.Id == episode.Id)
             return;
 
         _focusedEpisode = episode;
-        _previousStillUrl = _focusedStillUrl;
-        _focusedStillUrl = GetEpisodeStillUrl(episode, size: null);
+        _tvHero?.ApplyFocusedEpisode(episode);
+        ApplyTvHeroVisuals(episode);
 
         if (_episodeCastCache.TryGetValue(episode.Id, out var cached))
+        {
             ApplyFocusedEpisodeCast(cached);
+            _tvCast?.ApplyCast(_focusedEpisodeDisplayableCast);
+        }
         else
             LoadFocusedEpisodeCastAsync(episode).FireAndForget();
 
         SyncEpisodeAnchorInUrl(episode.EpisodeNumber);
-        StateHasChanged();
+    }
+
+    private void ApplyTvHeroVisuals(LiteSerieEpisodeDto? episode)
+    {
+        if (episode is null)
+        {
+            _tvBackdrop?.ApplyFocusedImage(null);
+            return;
+        }
+
+        var stillPicture = episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still);
+        var url = GetEpisodeStillUrl(episode, MetadataPictureDisplayHelper.SizeForHeroBackdrop());
+        var soft = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(MediaType.SerieEpisode, stillPicture);
+        _tvBackdrop?.ApplyFocusedImage(url, soft);
     }
 
     private void SyncEpisodeAnchorInUrl(int episodeNumber)
@@ -355,7 +406,7 @@ public partial class SerieSeason : IAsyncDisposable
 
         _episodeCastCache[loadId] = roles;
         ApplyFocusedEpisodeCast(roles);
-        StateHasChanged();
+        _tvCast?.ApplyCast(_focusedEpisodeDisplayableCast);
     }
 
     private void ApplyFocusedEpisodeCast(IReadOnlyList<LitePersonRoleDto> roles)
@@ -390,15 +441,7 @@ public partial class SerieSeason : IAsyncDisposable
         return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
     }
 
-    private async Task OnTvEpisodeKeyDown(KeyboardEventArgs e, LiteSerieEpisodeDto episode)
-    {
-        if (e.Key is "Enter")
-        {
-            await PlayEpisodeAsync(episode);
-        }
-    }
-
-    private async Task PlayEpisodeAsync(LiteSerieEpisodeDto episode)
+    private async Task PlayEpisodeAsync(LiteSerieEpisodeDto episode, bool fromBeginning = false)
     {
         if (!SeriePlaybackHelper.IsPlayable(episode))
         {
@@ -412,7 +455,11 @@ public partial class SerieSeason : IAsyncDisposable
         await ThemeSongPlaybackHelper.InterruptAsync(AmbientThemeService, Guid.Parse(SerieId));
 
         double? startPosition = null;
-        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+        if (fromBeginning)
+        {
+            startPosition = 0;
+        }
+        else if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && episodeDto.UserState is { LastPlaybackPosition: >= 1, IsCompleted: false })
         {
             startPosition = episodeDto.UserState.LastPlaybackPosition;
@@ -607,7 +654,14 @@ public partial class SerieSeason : IAsyncDisposable
         {
             var index = _episodes.FindIndex(e => e.Id == episode.Id);
             if (index >= 0)
+            {
                 _episodes[index] = _episodes[index] with { UserState = updated.UserState };
+                if (_focusedEpisode?.Id == episode.Id)
+                {
+                    _focusedEpisode = _episodes[index];
+                    _tvHero?.ApplyFocusedEpisode(_focusedEpisode);
+                }
+            }
         }
 
         StateHasChanged();
@@ -631,6 +685,8 @@ public partial class SerieSeason : IAsyncDisposable
                 .Where(e => SeriePlaybackHelper.IsPlayable(e)
                     || (focusEpisodeNumber is int n && e.EpisodeNumber == n))
                 .ToList();
+            _episodeCarouselKey = string.Join(',', _episodes.Select(e => e.Id));
+            _episodeCardModels.Clear();
 
             if (_focusedEpisode is not null)
             {
@@ -640,7 +696,11 @@ public partial class SerieSeason : IAsyncDisposable
                 {
                     _focusedEpisode = _episodes[index];
                     if (_isTv)
+                    {
                         _pendingCarouselScrollIndex = index;
+                        _tvHero?.ApplyFocusedEpisode(_focusedEpisode);
+                        ApplyTvHeroVisuals(_focusedEpisode);
+                    }
                 }
             }
 
@@ -663,12 +723,6 @@ public partial class SerieSeason : IAsyncDisposable
         if (!_seasonTvScrollInitialized)
             return;
 
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _seasonTvRoot);
-        }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
-        {
-        }
+        await TvDetailScrollJs.TryDisposeAsync(JSRuntime, _seasonTvRoot);
     }
 }

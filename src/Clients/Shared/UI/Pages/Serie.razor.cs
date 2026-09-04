@@ -184,7 +184,7 @@ public partial class Serie : IAsyncDisposable
             (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
                 backdropPicture,
                 apiClient,
-                cacheVersion);
+                isPicturesRefresh ? cacheVersion : null);
 
             _dominantColor = backdropPicture?.DominantColor;
 
@@ -269,12 +269,11 @@ public partial class Serie : IAsyncDisposable
         {
             if (!_tvScrollInitialized)
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
-                _tvScrollInitialized = true;
+                _tvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _tvScrollRoot);
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+                await TvDetailScrollJs.TrySyncAsync(JSRuntime, _tvScrollRoot);
             }
         }
 
@@ -668,7 +667,7 @@ public partial class Serie : IAsyncDisposable
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)
-            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+            await TvDetailScrollJs.TryDisposeAsync(JSRuntime, _tvScrollRoot);
     }
 
     private static int? GetUserRating(IReadOnlyList<RatingDto>? ratings) =>

@@ -104,12 +104,11 @@ public partial class SerieEpisode : IAsyncDisposable
         {
             if (!_tvScrollInitialized)
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
-                _tvScrollInitialized = true;
+                _tvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _tvScrollRoot);
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+                await TvDetailScrollJs.TrySyncAsync(JSRuntime, _tvScrollRoot);
             }
         }
 
@@ -501,7 +500,7 @@ public partial class SerieEpisode : IAsyncDisposable
         _metadataRefreshWatcher?.Dispose();
 
         if (_tvScrollInitialized)
-            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+            await TvDetailScrollJs.TryDisposeAsync(JSRuntime, _tvScrollRoot);
     }
 
     private async Task ToggleWatchStateAsync()

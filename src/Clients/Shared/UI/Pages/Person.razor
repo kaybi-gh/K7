@@ -17,20 +17,25 @@
 @if (_loading)
 {
     <div class="person-page">
-        <div class="d-flex flex-col pa-16">
-            <K7Spinner />
-        </div>
+        <MediaHeroSkeleton PortraitLayout="true" ShowCast="false" />
+        <Carousel Skeleton="true">
+            @for (var i = 0; i < 8; i++)
+            {
+                <CarouselItem>
+                    <MediaCard Skeleton="true" FooterVisible="true" />
+                </CarouselItem>
+            }
+        </Carousel>
     </div>
 }
 else if (_person is not null)
 {
     <div class="person-page"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", ActiveDominantColor)">
-        <MediaPageBackdrop ImageUrl="@(_previousBackdropUrl ?? ActiveBackdropUrl)"
+        <MediaPageBackdrop @ref="_tvBackdrop"
+                           ImageUrl="@ActiveBackdropUrl"
                            HighResImageUrl="@ActiveBackdropHighResUrl"
-                           SecondaryImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropUrl : null)"
-                           SecondaryHighResImageUrl="@(_previousBackdropUrl is not null ? ActiveBackdropHighResUrl : null)"
-                           SecondaryImageKey="@ActiveBackdropUrl"
+                           DominantColor="@ActiveDominantColor"
                            ScrollTarget="@_tvScrollRoot"
                            Class="media-page-backdrop--soft-still"
                            SoftStillBlurEnabled="true" />
@@ -179,16 +184,16 @@ else if (_person is not null)
                     </Carousel>
                 }
 
-                @if (_knownFor.Count > 0)
+                @if (_knownForCards.Count > 0)
                 {
                     <Carousel Title="@L["KnownFor"]">
-                        @foreach (var item in _knownFor)
+                        @foreach (var item in _knownForCards)
                         {
-                            <CarouselItem @key="@($"{item.MediaType}-{item.ExternalId}")">
-                                <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
-                                           FooterVisible="true"
-                                           OverlayEnabled="true"
-                                           ContextMenuEnabled="false" />
+                            <CarouselItem @key="item.Id">
+                            <MediaCard Model="item"
+                                       FooterVisible="true"
+                                       OverlayEnabled="true"
+                                       ContextMenuEnabled="false" />
                             </CarouselItem>
                         }
                     </Carousel>
