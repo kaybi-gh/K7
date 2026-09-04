@@ -86,6 +86,20 @@
     background-color: color-mix(in srgb, var(--color-overlay) 85%, var(--color-success) 15%);
     border-radius: var(--radius-2xl);
     border: 1px solid var(--color-border-subtle);
+    pointer-events: none;
+}
+
+.media-card:focus-within .media-card-watched,
+.media-card-link:focus-visible .media-card-watched,
+.media-card--menu-open .media-card-watched,
+.media-card--selected .media-card-watched {
+    z-index: 5;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .media-card:hover .media-card-watched {
+        z-index: 5;
+    }
 }
 
 .media-card-type-badge {

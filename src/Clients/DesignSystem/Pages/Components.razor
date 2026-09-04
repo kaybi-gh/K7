@@ -518,6 +518,24 @@
             }
             <div style="width:160px"><MediaCard Skeleton="true" Variant="MediaCardVariant.Poster" Model="_skeletonCard" /></div>
         </div>
+        <h3 class="ds-sub-heading">Hover overlay</h3>
+        <p class="ds-description">Progress label and watched badge stay readable on the hover overlay.</p>
+        <div class="ds-preview">
+            <div style="width:160px">
+                <MediaCard Model="_watchedCard"
+                           Variant="MediaCardVariant.Poster"
+                           OverlayEnabled="true"
+                           WatchedStatusEnabled="true"
+                           Href="/components#media-card" />
+            </div>
+            <div style="width:160px">
+                <MediaCard Model="_inProgressCard"
+                           Variant="MediaCardVariant.Poster"
+                           OverlayEnabled="true"
+                           ProgressEnabled="true"
+                           Href="/components#media-card" />
+            </div>
+        </div>
 
         <h3 class="ds-sub-heading">Backdrop</h3>
         <div class="ds-preview">
@@ -723,6 +741,25 @@
     // Media
 
     private static readonly MediaCardViewModel _skeletonCard = new() { Id = "skeleton" };
+
+    private static readonly MediaCardViewModel _watchedCard = new()
+    {
+        Id = Guid.NewGuid().ToString(),
+        Title = "Dune",
+        PictureUrl = "https://picsum.photos/seed/dune-watched/200/300",
+        Kind = MediaCardKind.Poster,
+        Watched = true
+    };
+
+    private static readonly MediaCardViewModel _inProgressCard = new()
+    {
+        Id = Guid.NewGuid().ToString(),
+        Title = "Oppenheimer",
+        PictureUrl = "https://picsum.photos/seed/opp-progress/200/300",
+        Kind = MediaCardKind.Poster,
+        Progress = 42,
+        RuntimeMinutes = 180
+    };
 
     private static readonly List<MediaCardViewModel> _posterCards =
     [

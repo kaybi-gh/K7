@@ -216,6 +216,25 @@ public class MediaCardTests
         cut.Find(".media-card-overlay-progress-label").TextContent.Should().Contain("ProgressPercent");
     }
 
+    [Test]
+    public void Render_ShouldShowWatchedBadge_WhenWatched()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var model = CreateModel() with { Watched = true };
+
+        // Act
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.WatchedStatusEnabled, true)
+            .Add(c => c.Href, "/movies/1"));
+
+        // Assert
+        cut.Find(".media-card-watched").Should().NotBeNull();
+        cut.FindAll(".media-card-overlay-watched").Should().BeEmpty();
+    }
+
     private static RenderFragment BuildCardWithHost(
         MediaCardViewModel model,
         bool overlayEnabled,
