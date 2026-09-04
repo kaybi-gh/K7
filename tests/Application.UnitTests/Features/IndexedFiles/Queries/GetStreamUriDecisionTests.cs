@@ -149,13 +149,16 @@ public class GetStreamUriDecisionTests
         decision.Mode.Should().Be(PlaybackMode.Direct);
     }
 
-    [Test]
-    public void GetVideoFileStreamUri_ShouldReturnHlsRemux_WhenWebClientEvenIfCodecsSupported()
+    [TestCase(OperatingSystem.Unknown)]
+    [TestCase(OperatingSystem.Windows)]
+    [TestCase(OperatingSystem.Android)]
+    public void GetVideoFileStreamUri_ShouldReturnHlsRemux_WhenWebClientEvenIfCodecsSupported(
+        OperatingSystem operatingSystem)
     {
         var device = CreateDevice(
             ["audio-mp4-aac", "video-mp4-aac-h264"],
             ClientType.Web,
-            OperatingSystem.Unknown);
+            operatingSystem);
         var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
         var request = new GetStreamUriQuery
         {
@@ -168,7 +171,10 @@ public class GetStreamUriDecisionTests
             device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
 
         decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.Reason.Should().Be(TranscodeReason.None);
+        decision.StreamVideoCodec.Should().Be("h264");
         uri.MimeType.Should().Be("application/vnd.apple.mpegurl");
+        uri.Uri.ToString().Should().NotContain("TranscodingVideoCodec=");
     }
 
     [Test]
@@ -370,6 +376,7 @@ public class GetStreamUriDecisionTests
     [TestCase(ClientType.Native, OperatingSystem.MacCatalyst, true)]
     [TestCase(ClientType.Native, OperatingSystem.Windows, true)]
     [TestCase(ClientType.Web, OperatingSystem.Unknown, false)]
+    [TestCase(ClientType.Web, OperatingSystem.Windows, false)]
     public void AllowsVideoDirectPlay_ShouldAllowNativeClients(
         ClientType clientType,
         OperatingSystem operatingSystem,
@@ -377,6 +384,19 @@ public class GetStreamUriDecisionTests
     {
         var device = CreateDevice(["video-mp4-aac-h264"], clientType, operatingSystem);
         GetStreamUriQueryHandler.AllowsVideoDirectPlay(device).Should().Be(expected);
+    }
+
+    [TestCase(ClientType.Native, OperatingSystem.Windows, true)]
+    [TestCase(ClientType.Native, OperatingSystem.Android, false)]
+    [TestCase(ClientType.Web, OperatingSystem.Windows, false)]
+    [TestCase(ClientType.Web, OperatingSystem.Unknown, false)]
+    public void ForcesWindowsHlsEncode_ShouldOnlyApplyToNativeWindows(
+        ClientType clientType,
+        OperatingSystem operatingSystem,
+        bool expected)
+    {
+        var device = CreateDevice(["video-mp4-aac-h264"], clientType, operatingSystem);
+        GetStreamUriQueryHandler.ForcesWindowsHlsEncode(device).Should().Be(expected);
     }
 
     [Test]

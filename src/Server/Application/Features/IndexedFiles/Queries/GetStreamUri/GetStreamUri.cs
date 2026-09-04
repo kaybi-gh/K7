@@ -164,9 +164,10 @@ public class GetStreamUriQueryHandler(
             requiresVideoTranscoding = true;
         }
 
-        // Windows MAUI plays HLS in Video.js (WebView2), not LibVLC remux. Always encode
-        // so MSE gets h264/aac; Direct Play keeps real codecs via /direct-stream.
-        if (device.OperatingSystem == OperatingSystem.Windows)
+        // Windows MAUI HLS uses Video.js in WebView2, not LibVLC remux. Always encode
+        // so MSE gets h264/aac. Direct Play keeps real codecs via /direct-stream.
+        // Web browsers on Windows remux like any other browser (ClientType.Web).
+        if (ForcesWindowsHlsEncode(device))
             requiresVideoTranscoding = true;
 
         if (requiresVideoTranscoding)
@@ -188,7 +189,7 @@ public class GetStreamUriQueryHandler(
                 ? null
                 : MediaCodecNames.Canonical(audioTrack.Codec);
 
-            if (device.OperatingSystem == OperatingSystem.Windows)
+            if (ForcesWindowsHlsEncode(device))
             {
                 if (canonicalCodec is null
                     || !string.Equals(canonicalCodec, "aac", StringComparison.OrdinalIgnoreCase))
@@ -286,6 +287,14 @@ public class GetStreamUriQueryHandler(
         || device.OperatingSystem == OperatingSystem.Windows;
 
     /// <summary>
+    /// Native Windows HLS cannot remux: Video.js in WebView2 is the fallback after
+    /// Direct Play, and copy into fMP4 was unreliable. Web on Windows is a normal browser.
+    /// </summary>
+    internal static bool ForcesWindowsHlsEncode(Device device) =>
+        device.ClientType == ClientType.Native
+        && device.OperatingSystem == OperatingSystem.Windows;
+
+    /// <summary>
     /// Video.js VHS calls MediaSource.isTypeSupported on the master CODECS tag.
     /// 10-bit HEVC/AV1 (Main 10) is advertised as hevc from 8-bit probes, then the
     /// playlist is excluded (MEDIA_ERR_DECODE, no supported playlists).
@@ -324,7 +333,13 @@ public class GetStreamUriQueryHandler(
         if (audioNeedsTranscode)
             reason |= TranscodeReason.AudioCodecNotSupported;
 
-        return reason != TranscodeReason.None ? reason : TranscodeReason.ContainerNotSupported;
+        if (reason != TranscodeReason.None)
+            return reason;
+
+        // Transmux copies codecs into HLS; do not label that as an unsupported container.
+        return requiresVideoTranscoding
+            ? TranscodeReason.ContainerNotSupported
+            : TranscodeReason.None;
     }
 
     // Codecs that work inside fMP4 segments (HLS with ISO BMFF), ordered by preference.
