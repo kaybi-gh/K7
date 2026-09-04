@@ -31,6 +31,7 @@ public class IndexedFileExtensionsTests : FileFixture
     [TestCase("Movie (2005)", "Movie-part1.avi", "Movie", 2005)]
     [TestCase("Movie (2005)", "Movie.cd1.avi", "Movie", 2005)]
     [TestCase("Movie (2005)", "Movie.part1.avi", "Movie", 2005)]
+    [TestCase(null, "Movie.DVDRip.1990.mp4", "Movie", 1990)]
     [TestCase(null, "Movie(1990).mp4", "Movie", 1990)]
     public void ShouldParseMovieFileCorrectly(string? parentDirectory, string fileName, string expectedMovieTitle, int expectedReleaseYear)
     {
@@ -188,6 +189,20 @@ public class IndexedFileExtensionsTests : FileFixture
     [TestCase("Sur le front (2019)", "Sur le front S04", "Sur le front - 4x01 - Episode.mkv", "Sur le front", 4, 1, null, 2019)]
     [TestCase("Taratata (1993)", "Taratata S25", "Taratata - 25x01 - Episode.mkv", "Taratata", 25, 1, null, 1993)]
     public void ShouldParseEpisodeWithSeasonFolder(string? grandparent, string? parent, string fileName,
+        string expectedTitle, int expectedSeason, int expectedEpisode, int? expectedAbsolute, int? expectedYear)
+    {
+        AssertEpisodeParsing(grandparent, parent, fileName, expectedTitle, expectedSeason, expectedEpisode, expectedAbsolute, expectedYear);
+    }
+
+    #endregion
+
+    #region Serie Episode Parsing - Leading number in season folder
+
+    [TestCase("Game of throne", "Saison 5", "05 - Tue L Enfant.mkv", "Game of throne", 5, 5, null, null)]
+    [TestCase("Warehouse 13", "Warehouse 13 - Saison 01 - DVDRip TrueFrench - Chupacabra", "01 - Bienvenue - 1ere Partie - Chupacabra.mp4", "Warehouse 13", 1, 1, null, null)]
+    [TestCase(null, "Warehouse 13 - Saison 01 - DVDRip TrueFrench - Chupacabra", "01 - Bienvenue.mp4", "Warehouse 13", 1, 1, null, null)]
+    [TestCase("Show", "Season 1", "01 - Pilot.mkv", "Show", 1, 1, null, null)]
+    public void ShouldParseLeadingEpisodeNumberInSeasonFolder(string? grandparent, string? parent, string fileName,
         string expectedTitle, int expectedSeason, int expectedEpisode, int? expectedAbsolute, int? expectedYear)
     {
         AssertEpisodeParsing(grandparent, parent, fileName, expectedTitle, expectedSeason, expectedEpisode, expectedAbsolute, expectedYear);

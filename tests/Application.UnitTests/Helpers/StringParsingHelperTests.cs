@@ -41,9 +41,26 @@ public partial class StringParsingHelperTests
         result!.Value.Output.Should().Be("2020");
     }
 
+    [Test]
+    public void TryApplyRegexes_ShouldUseTrimmedInputAsOutput_WhenOutputGroupIsMissing()
+    {
+        var ok = StringParsingHelper.TryApplyRegexes(
+            "Movie.DVDRip",
+            [TitleCleanupRegex()],
+            recursive: false,
+            out var result);
+
+        ok.Should().BeTrue();
+        result!.Value.Output.Should().Be("Movie");
+        result.Value.TrimmedInput.Should().Be("Movie");
+    }
+
     [GeneratedRegex(@"(?<noise>\.(?<output>\d{4})\.)", RegexOptions.IgnoreCase)]
     private static partial Regex YearRegex();
 
     [GeneratedRegex(@"(?<noise>\.S(?<output>\d{2})E\d{2}\.)", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonEpisodeRegex();
+
+    [GeneratedRegex(@"^(?<trimmedInput>.+?)[._-](?:dvdrip|bluray)", RegexOptions.IgnoreCase)]
+    private static partial Regex TitleCleanupRegex();
 }

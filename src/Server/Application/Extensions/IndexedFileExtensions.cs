@@ -207,6 +207,30 @@ public static class IndexedFileExtensions
             return true;
         }
 
+        // "01 - Title" inside a season folder -> S{folder}E{NN} (not anime absolute numbering)
+        var seasonFromFolder = ExtractSeasonFromFolder(indexedFile, library);
+        if (seasonFromFolder.HasValue
+            && Regexes.TryParseLeadingEpisodeNumber(cleanedFileName, out var leadingEpisodeNumber))
+        {
+            var seriesTitle = ExtractSeriesTitle(cleanedFileName, 0, indexedFile, library);
+            seriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(seriesTitle);
+            var releaseYear = ExtractReleaseYear(seriesTitle, indexedFile, library, out var cleanedSeriesTitle);
+            cleanedSeriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedSeriesTitle);
+
+            if (string.IsNullOrWhiteSpace(cleanedSeriesTitle)) return false;
+
+            indexedFile.Identification = new MediaIdentification(cleanedSeriesTitle)
+            {
+                ReleaseYear = releaseYear,
+                SeriesTitle = cleanedSeriesTitle,
+                SeasonNumber = seasonFromFolder,
+                EpisodeNumber = leadingEpisodeNumber,
+                ProviderName = pathProviderName,
+                ProviderExternalId = pathProviderId
+            };
+            return true;
+        }
+
         // Try absolute numbering (anime: "Show Name - 1001")
         var absoluteMatch = Regexes.EpisodeAbsolute().Match(cleanedFileName);
         if (absoluteMatch.Success)
@@ -226,9 +250,6 @@ public static class IndexedFileExtensions
             cleanedSeriesTitle = MetadataProviderPathIdParser.StripProviderIdTokens(cleanedSeriesTitle);
 
             if (string.IsNullOrWhiteSpace(cleanedSeriesTitle)) return false;
-
-            // Season from folder if available, otherwise null (to be resolved by provider)
-            var seasonFromFolder = ExtractSeasonFromFolder(indexedFile, library);
 
             indexedFile.Identification = new MediaIdentification(cleanedSeriesTitle)
             {
@@ -289,6 +310,10 @@ public static class IndexedFileExtensions
                     return gpName;
                 }
             }
+
+            var strippedFromSeasonFolder = Regexes.StripSeasonFolderDecorations(dirName);
+            if (!string.IsNullOrWhiteSpace(strippedFromSeasonFolder))
+                return strippedFromSeasonFolder;
         }
 
         // Use parent directory if it's not the library root
@@ -406,7 +431,8 @@ public static class IndexedFileExtensions
 // One file can represent one episode or a part of an episode or multiple episodes
 // Can have one or two parent directories or none
 // Serie title must be in filename or parent directory or parent parent directory
-// Episode(s) number(s) must be in filename
+// Episode(s) number(s) must be in filename (SxxExx, NxNN, leading NN in a season folder, or absolute)
 // Season number must exist and can be in filename or parent directory
+// (including "Show - Saison 01 - DVDRip ..." release folders)
 // Episode(s) title(s) can be in filename
 // Release year should be in filename or parent directory or parent parent directory

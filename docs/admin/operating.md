@@ -94,7 +94,7 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 **Movies:** `Movie Name (2019).mkv` or `Movie Name (2019)/Movie Name (2019).mkv`. Year helps matching; rip/quality tags are stripped when parsing.
 
-**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Show Name S04`, `Specials`. Prefer standard episode naming when possible. Include the year in the series folder when there are homonyms, and optionally a provider id: `Show Name (2023) [tmdbid-123]`.
+**TV series:** Prefer `SxxExx` or `s01e01` (also `1x01`). Season folders: `Season 1`, `Saison 1`, `S01`, `Show Name S04`, `Specials`, and release-style folders that contain `Saison NN` / `Season NN` (quality and group tags after that are ignored). Episode files named `01 - Title.ext` inside a season folder are treated as that season's episode 1. Prefer standard episode naming when possible. Include the year in the series folder when there are homonyms, and optionally a provider id: `Show Name (2023) [tmdbid-123]`.
 
 When the last indexed file for an episode is removed (scan or delete), K7 removes orphan episodes with no user data and cascades to empty seasons and series. Episodes kept for watch history, playlists, or collections are retained without files until you clear that state. Library browse, home, and search only list series/seasons/episodes that still have playable files. Series detail carousels hide empty seasons and non-playable episodes. History, reviews, and stats deep links can still open those media pages (playback is disabled with an unavailable state).
 

@@ -14,22 +14,35 @@ public static partial class StringParsingHelper
     private static bool TryApplyRegex(string input, Regex expression, [NotNullWhen(true)] out RegexResult? result)
     {
         var match = expression.Match(input);
-        if (match.Success && match.Groups.TryGetValue("output", out var outputGroup))
+        if (!match.Success)
         {
-            string? trimmedInput;
-            if (match.Groups.TryGetValue("trimmedInput", out var trimmedInputGroup))
-            {
-                trimmedInput = trimmedInputGroup.Value.Trim();
-            }
-            else
-            {
-                var noise = match.Groups.GetValueOrDefault("noise")?.Value;
-                trimmedInput = string.IsNullOrEmpty(noise) ? null : input.Replace(noise, "").Trim();
-            }
+            result = null;
+            return false;
+        }
 
+        string? trimmedInput = null;
+        if (match.Groups.TryGetValue("trimmedInput", out var trimmedInputGroup) && trimmedInputGroup.Success)
+        {
+            trimmedInput = trimmedInputGroup.Value.Trim();
+        }
+        else
+        {
+            var noise = match.Groups.GetValueOrDefault("noise")?.Value;
+            trimmedInput = string.IsNullOrEmpty(noise) ? null : input.Replace(noise, "").Trim();
+        }
+
+        if (match.Groups.TryGetValue("output", out var outputGroup) && outputGroup.Success)
+        {
             result = new RegexResult(outputGroup.Value.Trim(), trimmedInput);
             return true;
         }
+
+        if (!string.IsNullOrEmpty(trimmedInput))
+        {
+            result = new RegexResult(trimmedInput, trimmedInput);
+            return true;
+        }
+
         result = null;
         return false;
     }

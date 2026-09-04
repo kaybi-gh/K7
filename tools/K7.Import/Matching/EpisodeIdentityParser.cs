@@ -113,6 +113,14 @@ internal static partial class EpisodeIdentityParser
             break;
         }
 
+        if (episode is null
+            && season is not null
+            && TryParseLeadingEpisode(fileName, out var leadingEpisode))
+        {
+            episode = leadingEpisode;
+            lastEpisode = leadingEpisode;
+        }
+
         return seriesTitle is not null || season is not null || episode is not null;
     }
 
@@ -141,6 +149,19 @@ internal static partial class EpisodeIdentityParser
         return true;
     }
 
-    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<n>\d{1,2})$|^S(?<n>\d{1,2})$|(?:Season|Saison|Series|S)(?<n>\d{1,2})$", RegexOptions.IgnoreCase)]
+    private static bool TryParseLeadingEpisode(string fileName, out int episode)
+    {
+        episode = 0;
+        var match = LeadingEpisodeRegex().Match(fileName);
+        if (!match.Success)
+            return false;
+
+        return int.TryParse(match.Groups["n"].Value, out episode) && episode is >= 1 and <= 999;
+    }
+
+    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<n>\d{1,2})$|^S(?<n>\d{1,2})$|(?:Season|Saison|Series|S)(?<n>\d{1,2})$|\b(?:Season|Saison)\s*(?<n>\d{1,2})\b", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonFolderRegex();
+
+    [GeneratedRegex(@"^\s*(?<n>\d{1,3})[\s.\-_]+.+$")]
+    private static partial Regex LeadingEpisodeRegex();
 }

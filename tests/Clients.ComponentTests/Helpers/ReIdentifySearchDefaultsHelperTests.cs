@@ -195,6 +195,34 @@ public class ReIdentifySearchDefaultsHelperTests
     }
 
     [Test]
+    public void ResolveSourcePath_ShouldReturnSerieRoot_WhenReleaseStyleSeasonFolderPresent()
+    {
+        var files = new[]
+        {
+            new IndexedFileDto
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = Guid.NewGuid(),
+                Name = "01 - Bienvenue",
+                Extension = ".mp4",
+                Path = Path.Combine(
+                    "media",
+                    "series",
+                    "Warehouse 13",
+                    "Warehouse 13 - Saison 01 - DVDRip TrueFrench - Chupacabra",
+                    "01 - Bienvenue.mp4"),
+                ParentDirectory = "Warehouse 13 - Saison 01 - DVDRip TrueFrench - Chupacabra",
+                Hash = 1,
+                Size = 1
+            }
+        };
+
+        var resolved = ReIdentifySearchDefaultsHelper.ResolveSourcePath(files, MediaType.Serie);
+
+        resolved.Should().Be(Path.Combine("media", "series", "Warehouse 13"));
+    }
+
+    [Test]
     public void ResolveSourcePath_ShouldReturnPreferredFile_WhenFileScoped()
     {
         var preferredId = Guid.NewGuid();
