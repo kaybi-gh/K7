@@ -1,3 +1,4 @@
+using System.Globalization;
 using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
@@ -12,18 +13,20 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     [Parameter] public IList<TItem>? Items { get; set; }
     [Parameter] public ItemsProviderDelegate<TItem>? ItemsProvider { get; set; }
     [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
-    [Parameter] public RenderFragment? Placeholder { get; set; }
     [Parameter] public RenderFragment? EmptyContent { get; set; }
     [Parameter] public int ItemWidth { get; set; } = 160;
     [Parameter] public int Spacing { get; set; } = 6;
     [Parameter] public float AspectRatio { get; set; } = 1.5f;
+    [Parameter] public MediaCardVariant PlaceholderVariant { get; set; } = MediaCardVariant.Poster;
     [Parameter] public int FooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 5;
     [Parameter] public bool SingleColumnOnMobile { get; set; }
+    [Parameter] public int? MaxColumnCount { get; set; }
+    [Parameter] public EventCallback OnNearEnd { get; set; }
 
     private ElementReference _gridRef;
     private Virtualize<List<TItem>>? _virtualizeRef;
-    private readonly Dictionary<string, ItemsProviderResult<List<TItem>>> _rowsCache = new();
+    private readonly Dictionary<string, CachedProviderRows> _rowsCache = new();
     private IJSObjectReference? _module;
     private DotNetObjectReference<K7VirtualGrid<TItem>>? _dotnetRef;
 
@@ -41,6 +44,15 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         if (Items is not null)
         {
             RebuildRows();
+        }
+        else if (_containerWidth > 0)
+        {
+            var cols = CalculateColumnCount();
+            if (cols != _lastColumnCount)
+            {
+                _lastColumnCount = cols;
+                _rowsCache.Clear();
+            }
         }
 
         UpdateEstimatedRowHeight();
@@ -75,7 +87,24 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             }
 
             await _module.InvokeVoidAsync("initGridKeyNav", _gridRef, _estimatedRowHeight);
+            SyncKeyNavExtent();
+            try
+            {
+                await _module.InvokeVoidAsync("setVirtualKeyNavItemHeight", _gridRef, _estimatedRowHeight);
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or JSException or InvalidOperationException)
+            {
+            }
         }
+    }
+
+    [JSInvokable]
+    public Task OnVirtualScrollNearEnd()
+    {
+        if (_disposed || !OnNearEnd.HasDelegate)
+            return Task.CompletedTask;
+
+        return InvokeAsync(OnNearEnd.InvokeAsync);
     }
 
     [JSInvokable]
@@ -112,6 +141,18 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
         if (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure)
         {
+            if (_module is not null && rowHeightChanged)
+            {
+                try
+                {
+                    await _module.InvokeVoidAsync("setVirtualKeyNavItemHeight", _gridRef, _estimatedRowHeight);
+                    SyncKeyNavExtent();
+                }
+                catch (Exception ex) when (ex is JSDisconnectedException or JSException or InvalidOperationException)
+                {
+                }
+            }
+
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -124,6 +165,36 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         {
             await _virtualizeRef.RefreshDataAsync();
         }
+    }
+
+    public void PatchLoadedSlots(Func<int, TItem> itemAtIndex)
+    {
+        if (_rowsCache.Count == 0)
+            return;
+
+        var changed = false;
+        foreach (var cached in _rowsCache.Values)
+        {
+            var rowOffset = 0;
+            foreach (var row in cached.Rows)
+            {
+                for (var c = 0; c < row.Count; c++)
+                {
+                    var absIndex = (cached.RowStart + rowOffset) * cached.Cols + c;
+                    var next = itemAtIndex(absIndex);
+                    if (Equals(row[c], next))
+                        continue;
+
+                    row[c] = next;
+                    changed = true;
+                }
+
+                rowOffset++;
+            }
+        }
+
+        if (changed)
+            StateHasChanged();
     }
 
     public void ScrollToItemIndex(int itemIndex)
@@ -147,7 +218,12 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         var cacheKey = FormattableString.Invariant($"{cols}:{request.StartIndex}:{request.Count}");
         if (_rowsCache.TryGetValue(cacheKey, out var cached))
         {
-            return cached;
+            // Virtualize can re-ask a range it already mounted (fast scroll then stop).
+            // Re-run the provider so cancelled / queued pages for this window start again
+            // without replacing the cached row lists PatchLoadedSlots mutates.
+            _ = ItemsProvider(
+                new ItemsProviderRequest(request.StartIndex * cols, request.Count * cols, CancellationToken.None));
+            return new ItemsProviderResult<List<TItem>>(cached.Rows, cached.TotalRows);
         }
 
         try
@@ -166,20 +242,28 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
             var rows = result.Items
                 .Chunk(cols)
-                .Select(chunk => chunk.ToList())
+                .Select((chunk, i) => (List<TItem>)new IndexedRow(request.StartIndex + i, chunk))
                 .ToList();
 
-            var totalRows = (int)Math.Ceiling((double)result.TotalItemCount / cols);
+            var totalRows = result.TotalItemCount > 0
+                ? (int)Math.Ceiling((double)result.TotalItemCount / cols)
+                : _lastTotalRows;
             _lastColumnCount = cols;
             _lastTotalRows = totalRows;
 
-            var providerResult = new ItemsProviderResult<List<TItem>>(rows, totalRows);
-            _rowsCache[cacheKey] = providerResult;
-            return providerResult;
+            _rowsCache[cacheKey] = new CachedProviderRows
+            {
+                RowStart = request.StartIndex,
+                Cols = cols,
+                Rows = rows,
+                TotalRows = totalRows
+            };
+            SyncKeyNavExtent();
+            return new ItemsProviderResult<List<TItem>>(rows, totalRows);
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
-            return default;
+            throw;
         }
     }
 
@@ -188,15 +272,41 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         if (Items is null || Items.Count == 0)
         {
             _rows = [];
+            _lastTotalRows = 0;
             return;
         }
 
         var cols = CalculateColumnCount();
+        var chunks = Items.Chunk(cols).ToList();
+
+        if (_lastColumnCount == cols
+            && _rows.Count > 0
+            && _rows[0] is IndexedRow
+            && chunks.Count >= _rows.Count)
+        {
+            var lastOld = _rows[^1];
+            var lastChunk = chunks[_rows.Count - 1];
+            if (lastOld.Count != lastChunk.Length)
+            {
+                lastOld.Clear();
+                lastOld.AddRange(lastChunk);
+            }
+
+            for (var i = _rows.Count; i < chunks.Count; i++)
+                _rows.Add(new IndexedRow(i, chunks[i]));
+
+            _lastColumnCount = cols;
+            _lastTotalRows = _rows.Count;
+            SyncKeyNavExtent();
+            return;
+        }
+
         _lastColumnCount = cols;
-        _rows = Items
-            .Chunk(cols)
-            .Select(chunk => chunk.ToList())
+        _rows = chunks
+            .Select((chunk, i) => (List<TItem>)new IndexedRow(i, chunk))
             .ToList();
+        _lastTotalRows = _rows.Count;
+        SyncKeyNavExtent();
     }
 
     private int CalculateColumnCount()
@@ -208,7 +318,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             return 1;
         }
 
-        return VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio);
+        return VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio, MaxColumnCount);
     }
 
     private int GetEffectiveSpacing() =>
@@ -237,10 +347,17 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
     private int EffectiveSpacing => GetEffectiveSpacing();
 
-    private string GetRowGridStyle()
+    private string GridCssVars =>
+        FormattableString.Invariant(
+            $"--item-width: {ItemWidth}px; --grid-gap: {EffectiveSpacing}px; --row-height: {_estimatedRowHeight}px; --item-aspect: {AspectRatio.ToString(CultureInfo.InvariantCulture)}; --item-ratio: {MediaCardLayout.CssRatio(PlaceholderVariant)};");
+
+    private string GetRowGridStyle(bool includeHeight = true)
     {
         var cols = CalculateColumnCount();
-        return $"grid-template-columns: repeat({cols}, minmax(0, 1fr)); height: {_estimatedRowHeight}px;";
+        var columns = $"grid-template-columns: repeat({cols}, minmax(0, 1fr));";
+        return includeHeight
+            ? $"{columns} height: {_estimatedRowHeight}px;"
+            : columns;
     }
 
     private bool HasContent() =>
@@ -273,5 +390,62 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         _module = null;
         _dotnetRef?.Dispose();
         _dotnetRef = null;
+    }
+
+    private object GetCellSlotKey(List<TItem> row, int column)
+    {
+        if (row is IndexedRow indexed)
+            return indexed.RowIndex * CalculateColumnCount() + column;
+
+        return CellKey(row[column]);
+    }
+
+    private static int GetRowIndex(List<TItem> row) =>
+        row is IndexedRow indexed ? indexed.RowIndex : 0;
+
+    private void SyncKeyNavExtent()
+    {
+        if (_module is null)
+            return;
+
+        _ = SyncKeyNavExtentAsync();
+    }
+
+    private async Task SyncKeyNavExtentAsync()
+    {
+        if (_module is null)
+            return;
+
+        try
+        {
+            await _module.InvokeVoidAsync(
+                "setVirtualKeyNavExtent",
+                _gridRef,
+                _estimatedRowHeight,
+                _lastTotalRows);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or JSException or InvalidOperationException)
+        {
+        }
+    }
+
+    private static object CellKey(TItem item) =>
+        item is UnloadedBrowseItem unloaded ? unloaded.SlotIndex : item!;
+
+    private sealed class IndexedRow : List<TItem>
+    {
+        public int RowIndex { get; }
+
+        public IndexedRow(int rowIndex, IEnumerable<TItem> items)
+            : base(items) =>
+            RowIndex = rowIndex;
+    }
+
+    private sealed class CachedProviderRows
+    {
+        public int RowStart { get; init; }
+        public int Cols { get; init; }
+        public List<List<TItem>> Rows { get; init; } = [];
+        public int TotalRows { get; init; }
     }
 }

@@ -119,7 +119,10 @@ public static class LiteMediaMappings
         return item.ReleaseDate?.Year.ToString();
     }
 
-    public static MediaCardViewModel ToCardViewModel(this HomeFeedItemDto item, IK7ServerService apiClient)
+    public static MediaCardViewModel ToCardViewModel(
+        this HomeFeedItemDto item,
+        IK7ServerService apiClient,
+        MetadataPictureSize pictureSize = MetadataPictureSize.Medium)
     {
         var kind = item.MediaType switch
         {
@@ -150,7 +153,7 @@ public static class LiteMediaMappings
             MediaType = item.MediaType,
             Title = item.Title,
             AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
-            PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient),
+            PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient, pictureSize),
             BackdropUrl = ResolveHeroPictureUrl(backdropPicture, apiClient),
             SoftHeroBackdrop = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(
                 item.MediaType,

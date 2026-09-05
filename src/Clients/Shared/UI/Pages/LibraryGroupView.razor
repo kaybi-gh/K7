@@ -13,7 +13,7 @@
 <BrowseView TItem="LiteMediaDto"
             ItemsProvider="ProvideMediasAsync"
             TotalItemCount="EffectiveTotalCount"
-            Loading="_loading || _intelligentSearchLoading || _contentLoading"
+            Loading="_loading || _intelligentSearchLoading"
             @ref="_browseView"
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="@GridItemWidth"
@@ -24,7 +24,9 @@
             ViewModeChanged="OnBrowseViewModeChanged"
             Class="library-group-browse"
             GridItemAspectRatio="GridAspectRatio"
+            GridCardVariant="GridCardVariant"
             OverscanCount="_overscanCount"
+            MaxColumnCount="TvMaxColumnCount"
             JumpIndexLabels="JumpLabels"
             OnJumpRequested="OnJumpRequested"
             OnColumnPickerRequested="OnColumnPickerRequested">
@@ -98,10 +100,17 @@
         @{
             var vm = GetGridCardViewModel(item);
         }
-        @if (vm is not null)
+        @if (item is UnloadedBrowseItem unloaded)
         {
-            <MediaCard @key="item.Id"
-                       Model="vm"
+            <div class="k7-virtual-grid-placeholder-focus focusable"
+                 tabindex="0"
+                 role="presentation"
+                 aria-busy="true"
+                 @onfocus="@CreateUnloadedSlotFocusCallback(unloaded.SlotIndex)"></div>
+        }
+        else if (vm is not null)
+        {
+            <MediaCard Model="vm"
                        ElementId="@GetCardElementId(item)"
                        Variant="@GetVariant(item)"
                        Href="@GetItemHref(item)"
@@ -110,9 +119,9 @@
                        WatchedStatusEnabled="true"
                        WatchStateMenuEnabled="_canSetWatchState"
                        FooterVisible="true"
-                       ImageLoading="@(_isTv ? "eager" : "lazy")"
+                       ImageLoading="lazy"
                        PlaceholderIcon="@GetGridPlaceholderIcon(item)"
-                       OnFocused="() => OnCardFocused(item)" />
+                       OnFocused="@CreateSilentCardFocusCallback(item)" />
         }
     </GridTemplate>
     <TableContent>
@@ -195,7 +204,7 @@
         @{
             var vm = GetCardViewModel(item);
         }
-        <LibraryListItem Item="item" Href="@GetItemHref(item)" ElementId="@GetCardElementId(item)" OnFocused="() => OnCardFocused(item)">
+        <LibraryListItem Item="item" Href="@GetItemHref(item)" ElementId="@GetCardElementId(item)" OnFocused="@CreateSilentCardFocusCallback(item)">
             <Actions>
                 @if (vm is not null)
                 {

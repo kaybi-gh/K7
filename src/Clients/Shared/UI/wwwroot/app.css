@@ -32,7 +32,6 @@
 /* 7. Components */
 @import url('./css/components.css');
 @import url('./css/playlist-detail.css');
-@import url('./css/social-users.css');
 @import url('./css/media-hero.css');
 
 /* ============================================================
@@ -109,9 +108,9 @@ textarea[data-sn-editing="true"] {
 /* ============================================================
    Android TV / Leanback platform overrides
    The Android handler injects "K7TV/1.0" into the WebView
-   user-agent and adjusts the WebView initial scale to
-   compensate for the TV's high pixel density. The .platform-tv
-   class is added on <html> by index.html before Blazor mounts.
+   user-agent and tv-layout.js adds .platform-tv on <html>
+   before Blazor mounts, then rewrites the viewport to
+   compensate for the TV's high pixel density (1/dpr).
    ============================================================ */
 html.platform-tv {
     /* 10-foot: scale all rem-based type (tokens, utilities, most pages). */
@@ -296,16 +295,61 @@ html.platform-tv .app-nav-bar {
 }
 
 html.platform-tv .app-nav-popover.open,
-html.platform-tv .k7-menu-dropdown.k7-menu-dropdown--open {
+html.platform-tv .k7-menu-dropdown.k7-menu-dropdown--open.k7-menu-dropdown--placed,
+html.platform-tv .k7-select-dropdown.k7-select-dropdown--open.k7-select-dropdown--placed {
     background: var(--color-surface);
     opacity: 1;
 }
 
-html.platform-tv .k7-menu-dropdown--card-corner,
+html.platform-tv .k7-menu-dropdown.k7-menu-dropdown--open:not(.k7-menu-dropdown--placed),
+html.platform-tv .k7-select-dropdown.k7-select-dropdown--open:not(.k7-select-dropdown--placed) {
+    opacity: 0;
+    visibility: hidden;
+}
+
+html.platform-tv .k7-dialog-paper {
+    animation: none;
+}
+
+.k7-virtual-grid-placeholder-focus {
+    display: block;
+    width: 100%;
+    min-height: 40%;
+    aspect-ratio: 2 / 3;
+    aspect-ratio: var(--item-ratio, 2 / 3);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    border: 2px solid var(--color-border-subtle);
+    box-sizing: border-box;
+    outline: none;
+}
+
+.k7-virtual-grid-placeholder-focus:focus,
+.k7-virtual-grid-placeholder-focus:focus-visible {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+html.platform-tv .k7-virtual-grid-placeholder-focus:hover:not(:focus) {
+    border-color: var(--color-border-subtle);
+    box-shadow: none;
+}
+
+html.platform-tv .k7-virtual-grid-placeholder-focus:focus,
+html.platform-tv .k7-virtual-grid-placeholder-focus:focus-visible {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent);
+}
+
+html.platform-tv .k7-menu-dropdown--card-corner {
+    --k7-media-card-menu-width: 20rem;
+    max-height: none;
+    overflow-y: visible;
+}
 html.platform-tv .k7-menu-portal.k7-menu-dropdown--open {
     max-height: none;
     overflow-y: visible;
-    max-width: min(480px, calc(100vw - 16px));
 }
 
 html.platform-tv .k7-avatar--sm {

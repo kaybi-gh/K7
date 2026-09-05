@@ -64,13 +64,17 @@
                 @if (UseProvider)
                 {
                     <K7VirtualGrid TItem="TItem"
+                                   @key="GridCardVariant"
                                    ItemsProvider="WrappedItemsProvider"
                                    ItemWidth="_itemWidth"
                                    Spacing="_spacing"
                                    AspectRatio="GridItemAspectRatio.Value"
+                                   PlaceholderVariant="GridCardVariant"
                                    FooterHeight="GridFooterHeight"
                                    OverscanCount="OverscanCount"
                                    SingleColumnOnMobile="SingleColumnOnMobile"
+                                   MaxColumnCount="MaxColumnCount"
+                                   OnNearEnd="OnSentinelVisible"
                                    @ref="_gridComponentRef">
                         <ItemTemplate>@GridTemplate(context)</ItemTemplate>
                     </K7VirtualGrid>
@@ -78,13 +82,17 @@
                 else
                 {
                     <K7VirtualGrid TItem="TItem"
+                                   @key="GridCardVariant"
                                    Items="Items"
                                    ItemWidth="_itemWidth"
                                    Spacing="_spacing"
                                    AspectRatio="GridItemAspectRatio.Value"
+                                   PlaceholderVariant="GridCardVariant"
                                    FooterHeight="GridFooterHeight"
                                    OverscanCount="OverscanCount"
                                    SingleColumnOnMobile="SingleColumnOnMobile"
+                                   MaxColumnCount="MaxColumnCount"
+                                   OnNearEnd="OnSentinelVisible"
                                    @ref="_gridComponentRef">
                         <ItemTemplate>@GridTemplate(context)</ItemTemplate>
                     </K7VirtualGrid>
@@ -160,7 +168,8 @@
                 break;
         }
 
-        @if (!UseProvider && HasMore && OnLoadMore is not null)
+        @if (!UseProvider && HasMore && OnLoadMore is not null
+             && (_currentMode is not BrowseViewMode.Grid || GridItemAspectRatio is null))
         {
             <div class="browse-view-sentinel" @ref="_sentinelRef">
                 <K7Spinner />

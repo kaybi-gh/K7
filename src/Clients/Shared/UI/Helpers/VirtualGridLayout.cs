@@ -16,6 +16,9 @@ public static class VirtualGridLayout
     /// <summary>Matches --media-card-grid-column-min-backdrop (140px).</summary>
     public const int CompactBackdropColumnMin = 140;
 
+    public const int BackdropMinColumns = 2;
+    public const int CompactBackdropMaxColumns = 2;
+
     public static int GetEffectiveSpacing(int containerWidth, int spacing) =>
         containerWidth > 0 && containerWidth < CompactBreakpoint
             ? CompactSpacing
@@ -32,7 +35,7 @@ public static class VirtualGridLayout
         return Math.Min(itemWidth, compactMin);
     }
 
-    public static int CalculateColumnCount(int containerWidth, int itemWidth, int spacing, float aspectRatio)
+    public static int CalculateColumnCount(int containerWidth, int itemWidth, int spacing, float aspectRatio, int? maxColumnCount = null)
     {
         if (containerWidth <= 0)
         {
@@ -41,7 +44,18 @@ public static class VirtualGridLayout
 
         var effectiveSpacing = GetEffectiveSpacing(containerWidth, spacing);
         var floor = GetColumnWidthFloor(containerWidth, itemWidth, aspectRatio);
-        var cols = (containerWidth + effectiveSpacing) / (floor + effectiveSpacing);
-        return Math.Max(cols, 1);
+        var cols = Math.Max((containerWidth + effectiveSpacing) / (floor + effectiveSpacing), 1);
+
+        if (aspectRatio < 1f)
+        {
+            cols = Math.Max(cols, BackdropMinColumns);
+            if (containerWidth < CompactBreakpoint)
+                cols = Math.Min(cols, CompactBackdropMaxColumns);
+        }
+
+        if (maxColumnCount is > 0)
+            cols = Math.Min(cols, maxColumnCount.Value);
+
+        return cols;
     }
 }

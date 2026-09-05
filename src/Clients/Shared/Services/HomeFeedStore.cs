@@ -928,8 +928,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
                 if (feedPage?.Items is null)
                     return null;
 
+                var pictureSize = MetadataPictureDisplayHelper.SizeForBrowsePoster(_isTv);
                 return feedPage.Items
-                    .Select(item => item.ToCardViewModel(apiClient))
+                    .Select(item => item.ToCardViewModel(apiClient, pictureSize))
                     .DistinctBy(item => item.Id)
                     .ToList();
             });

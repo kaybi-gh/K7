@@ -2,8 +2,8 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -40,10 +40,12 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int DefaultSpacing { get; set; } = 6;
     [Parameter] public float ListItemHeight { get; set; } = 64;
     [Parameter] public float? GridItemAspectRatio { get; set; } = 1.5f;
+    [Parameter] public MediaCardVariant GridCardVariant { get; set; } = MediaCardVariant.Poster;
     [Parameter] public int GridFooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 5;
     [Parameter] public bool DisableViewModePersistence { get; set; }
     [Parameter] public bool SingleColumnOnMobile { get; set; }
+    [Parameter] public int? MaxColumnCount { get; set; }
     [Parameter] public int? TotalItemCount { get; set; }
     [Parameter] public EventCallback<BrowseViewMode> ViewModeChanged { get; set; }
 
@@ -102,7 +104,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             return;
         }
 
-        if (!_sentinelObserving && HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
+        if (!_sentinelObserving && HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 }
+            && (_currentMode is not BrowseViewMode.Grid || GridItemAspectRatio is null))
         {
             _sentinelObserving = true;
             await StartObservingSentinel();
@@ -134,6 +137,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             Index = index
         }).ToList();
 
+        _itemWidth = DefaultItemWidth;
         ApplyMobileModeRestrictions();
         _hasColumnPicker = OnColumnPickerRequested.HasDelegate;
 
@@ -171,6 +175,9 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         if (!DisableViewModePersistence)
             await SaveSettingsAsync();
     }
+
+    public void PatchGridSlots(Func<int, TItem> itemAtIndex) =>
+        _gridComponentRef?.PatchLoadedSlots(itemAtIndex);
 
     public async Task RefreshAsync()
     {

@@ -1,5 +1,7 @@
 .k7-virtual-grid {
+    position: relative;
     overflow-y: auto;
+    overflow-anchor: none;
     scrollbar-gutter: stable;
     flex: 1;
     padding: 0 16px 16px;
@@ -7,49 +9,37 @@
 
 .k7-virtual-grid-row {
     display: grid;
-    gap: var(--grid-gap);
+    column-gap: var(--grid-gap);
+    align-items: start;
+    height: var(--row-height);
+    min-height: var(--row-height);
+    max-height: var(--row-height);
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .k7-virtual-grid-placeholder-cell {
+    min-width: 0;
     min-height: 0;
-    border-radius: var(--radius-sm);
-    background: var(--color-surface);
-    position: relative;
-    aspect-ratio: 2 / 3;
-    border: 1px solid var(--color-border-subtle);
-    overflow: hidden;
-}
-
-.k7-virtual-grid-placeholder-cell::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        110deg,
-        transparent 30%,
-        color-mix(in srgb, var(--color-text-muted) 8%, transparent) 50%,
-        transparent 70%);
-    background-size: 200% 100%;
-    animation: k7-virtual-grid-placeholder-shimmer 1.4s ease-in-out infinite;
 }
 
 .k7-virtual-grid-placeholder-focus {
-    position: absolute;
-    inset: 0;
-    border: 0;
-    border-radius: inherit;
-    background: transparent;
+    display: block;
+    width: 100%;
+    min-height: 40%;
+    aspect-ratio: 2 / 3;
+    aspect-ratio: var(--item-ratio);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    border: 2px solid var(--color-border-subtle);
+    box-sizing: border-box;
     outline: none;
-    z-index: 1;
 }
 
+.k7-virtual-grid-placeholder-focus:focus,
 .k7-virtual-grid-placeholder-focus:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-
-@keyframes k7-virtual-grid-placeholder-shimmer {
-    0% { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 @media (max-width: 599.98px) {

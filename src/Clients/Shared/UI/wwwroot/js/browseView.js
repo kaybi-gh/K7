@@ -1,4 +1,4 @@
-let _observers = new Map();
+﻿let _observers = new Map();
 let _sentinelObserver = null;
 let _sentinelPending = false;
 let _gridKeyHandlers = new Map();
@@ -77,16 +77,38 @@ export function observeContainerWidth(element, dotnetRef) {
     });
 
     observer.observe(element);
-    _observers.set(element, observer);
+
+    let nearEndPending = false;
+    const onScroll = () => {
+        const threshold = Math.max(element.clientHeight * 0.6, 480);
+        if (element.scrollHeight - element.scrollTop - element.clientHeight > threshold)
+            return;
+        if (nearEndPending)
+            return;
+        nearEndPending = true;
+        invokeDotNet(dotnetRef, "OnVirtualScrollNearEnd").finally(() => {
+            nearEndPending = false;
+        });
+    };
+    element.addEventListener('scroll', onScroll, { passive: true });
+    _observers.set(element, { resize: observer, onScroll });
 
     const style = getComputedStyle(element);
     return Math.floor(element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight));
 }
 
 export function dispose(element) {
-    const observer = _observers.get(element);
-    if (observer) {
-        observer.disconnect();
+    const entry = _observers.get(element);
+    if (!entry)
+        return;
+
+    if (typeof entry.disconnect === 'function') {
+        entry.disconnect();
+    } else {
+        if (entry.resize)
+            entry.resize.disconnect();
+        if (entry.onScroll)
+            element.removeEventListener('scroll', entry.onScroll);
     }
     _observers.delete(element);
 }
@@ -152,9 +174,12 @@ function getGridColumnCount(scrollRoot, fallback) {
 
 /**
  * Keyboard scrubbing for virtualized grids/lists/tables:
- * - own ArrowUp/Down so spatial nav cannot escape to jump-index on vertical moves
- * - land on placeholder cells while Virtualize loads; block further Down until real
- * - recover focus when placeholders are replaced with content
+ * - own ArrowUp/Down so spatial nav cannot escape to the navbar / jump-index
+ * - D-pad Up/Down walks the logical catalog (row index), not only DOM neighbors
+ * - Virtualize mounts a window around that index; unloaded slots are empty tiles
+ * - never steal focus to the last loaded row when a later window mounts
+ * - leave the grid on Up only when scrollTop is already at the top
+ * - recover focus when Virtualize replaces a focused node
  * - ArrowRight still reaches jump-index via spatial nav
  */
 export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
@@ -165,185 +190,451 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
         : () => 1;
     const focusableSelector = options.focusableSelector || '.focusable';
 
-    let _lastFocusedIndex = -1;
+    let itemHeightPx = itemHeight;
     let _colCount = 0;
+    let _lastCol = 0;
+    let _logicalRow = 0;
+    let _totalRows = 0;
     let _recovering = false;
     let _waitingForRow = false;
-    let _desiredIndex = -1;
+    let _pendingDir = 'down';
+    let _leaveGridOnPurpose = false;
+    let _lastFocusTop = 0;
+    let _pendingSlotTop = 0;
+    let _userScrollTop = 0;
 
-    function getCards() {
-        return Array.from(scrollRoot.querySelectorAll(focusableSelector));
+    function getRows() {
+        return Array.from(scrollRoot.querySelectorAll(VIRTUAL_ROW_SELECTOR));
     }
 
-    function getCardIndex(el) {
-        return getCards().indexOf(el);
+    function getRowFocusables(row) {
+        if (!row) return [];
+        return Array.from(row.querySelectorAll(focusableSelector));
     }
 
     function isPlaceholder(el) {
         return !!(el && el.matches && el.matches(VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR));
     }
 
-    function focusCardAt(index, cards) {
-        const list = cards || getCards();
-        if (index < 0 || index >= list.length) return false;
-        const target = list[index];
-        if (!target) return false;
+    function isGridAtTop() {
+        return scrollRoot.scrollTop <= 2;
+    }
+
+    function isRowVisible(row) {
+        if (!row) return false;
+        const rootRect = scrollRoot.getBoundingClientRect();
+        const rect = row.getBoundingClientRect();
+        return rect.bottom > rootRect.top + 8 && rect.top < rootRect.bottom - 8;
+    }
+
+    function clampSlotTop(top) {
+        const rootRect = scrollRoot.getBoundingClientRect();
+        const minTop = rootRect.top + 8;
+        const maxTop = rootRect.bottom - Math.min(itemHeightPx, rootRect.height) - 8;
+        if (maxTop <= minTop)
+            return (rootRect.top + rootRect.bottom - itemHeightPx) / 2;
+        return Math.max(minTop, Math.min(top, maxTop));
+    }
+
+    function capturePendingSlot(direction, fromRow) {
+        const rootRect = scrollRoot.getBoundingClientRect();
+        if (fromRow && isRowVisible(fromRow)) {
+            const top = fromRow.getBoundingClientRect().top;
+            _pendingSlotTop = direction === 'down'
+                ? top + itemHeightPx
+                : top - itemHeightPx;
+            return;
+        }
+
+        if (direction === 'down')
+            _pendingSlotTop = rootRect.bottom - itemHeightPx - 8;
+        else
+            _pendingSlotTop = rootRect.top + 8;
+        _pendingSlotTop = clampSlotTop(_pendingSlotTop);
+    }
+
+    function focusElement(el) {
+        if (!el) return false;
         _recovering = true;
-        target.focus({ preventScroll: true });
+        el.focus({ preventScroll: true });
         _recovering = false;
-        _lastFocusedIndex = index;
+        if (document.activeElement !== el)
+            return false;
+        _lastFocusTop = el.getBoundingClientRect().top;
         return true;
+    }
+
+    function rowNearestFocus(rows) {
+        if (rows.length === 0) return null;
+        let best = rows[0];
+        let bestDist = Infinity;
+        for (let i = 0; i < rows.length; i++) {
+            const dist = Math.abs(rows[i].getBoundingClientRect().top - _lastFocusTop);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = rows[i];
+            }
+        }
+        return best;
+    }
+
+    function rememberUserScroll() {
+        _userScrollTop = scrollRoot.scrollTop;
+    }
+
+    function restoreUserScroll() {
+        if (Math.abs(scrollRoot.scrollTop - _userScrollTop) > 2)
+            scrollRoot.scrollTop = _userScrollTop;
+    }
+
+    function focusColInRow(row, col) {
+        const cells = getRowFocusables(row);
+        if (cells.length === 0) return false;
+        const idx = Math.max(0, Math.min(col, cells.length - 1));
+        _lastCol = idx;
+        return focusElement(cells[idx]);
     }
 
     function scrollRowIntoView(row, direction) {
         if (!row) return;
         const rowRect = row.getBoundingClientRect();
         const rootRect = scrollRoot.getBoundingClientRect();
+        const inView = rowRect.top >= rootRect.top - 2 && rowRect.bottom <= rootRect.bottom + 2;
+        if (inView)
+            return;
 
         if (direction === 'down') {
             const bottomEdge = rowRect.bottom - rootRect.top + scrollRoot.scrollTop;
-            const targetScroll = bottomEdge + itemHeight - scrollRoot.clientHeight;
+            const targetScroll = bottomEdge - scrollRoot.clientHeight + 8;
             if (targetScroll > scrollRoot.scrollTop) {
                 scrollRoot.scrollTop = targetScroll;
+                rememberUserScroll();
             }
         } else {
             const topEdge = rowRect.top - rootRect.top + scrollRoot.scrollTop;
-            const targetScroll = topEdge - itemHeight;
+            const targetScroll = topEdge - 8;
             if (targetScroll < scrollRoot.scrollTop) {
                 scrollRoot.scrollTop = Math.max(0, targetScroll);
+                rememberUserScroll();
             }
         }
     }
 
-    function nudgeScrollForLoad() {
+    function nudgeScroll(direction) {
         const maxScroll = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
-        const next = Math.min(maxScroll, scrollRoot.scrollTop + Math.max(itemHeight * 0.5, 24));
-        if (next > scrollRoot.scrollTop) {
-            scrollRoot.scrollTop = next;
+        const delta = Math.max(itemHeightPx, 24);
+        if (direction === 'down') {
+            scrollRoot.scrollTop = Math.min(maxScroll, scrollRoot.scrollTop + delta);
+        } else {
+            scrollRoot.scrollTop = Math.max(0, scrollRoot.scrollTop - delta);
         }
+        rememberUserScroll();
+    }
+
+    function requestAdjacentRow(direction, col, fromRow) {
+        _waitingForRow = true;
+        _pendingDir = direction;
+        _lastCol = col;
+        capturePendingSlot(direction, fromRow);
+        if (tryFulfillPendingFocus())
+            return;
+
+        if (direction === 'down')
+            nudgeScroll('down');
+        else
+            nudgeScroll('up');
+        requestAnimationFrame(() => tryFulfillPendingFocus());
+    }
+
+    function isEligiblePendingRow(row, activeRow) {
+        if (!isRowVisible(row))
+            return false;
+        if (!activeRow)
+            return true;
+        const rowTop = row.getBoundingClientRect().top;
+        const activeTop = activeRow.getBoundingClientRect().top;
+        if (_pendingDir === 'down')
+            return rowTop > activeTop + 8;
+        return rowTop < activeTop - 8;
+    }
+
+    function hasLogicalRows() {
+        return !!scrollRoot.querySelector('[data-grid-row]');
+    }
+
+    function readLogicalRow(row) {
+        if (!row) return _logicalRow;
+        const raw = row.getAttribute('data-grid-row');
+        const n = raw == null ? NaN : parseInt(raw, 10);
+        return Number.isFinite(n) ? n : _logicalRow;
+    }
+
+    function findRowByLogical(index) {
+        return scrollRoot.querySelector('[data-grid-row="' + index + '"]');
+    }
+
+    function scrollToLogicalRow(index, direction) {
+        const rowTop = Math.max(0, index * itemHeightPx);
+        const viewH = scrollRoot.clientHeight;
+        const maxScroll = Math.max(0, scrollRoot.scrollHeight - viewH);
+        let scrollTop = scrollRoot.scrollTop;
+        const mounted = !!findRowByLogical(index);
+        const goingDown = direction === 'down';
+
+        if (!mounted) {
+            // Bottom spacer can already occupy this Y while the row is not mounted.
+            // Virtualize only remounts after scrollTop changes.
+            const delta = Math.max(itemHeightPx, 24);
+            if (goingDown) {
+                const nextTop = Math.min(maxScroll, Math.max(scrollTop + delta, rowTop + itemHeightPx - viewH + 8));
+                scrollTop = nextTop > scrollTop ? nextTop : Math.min(maxScroll, scrollTop + delta);
+            } else if (rowTop < scrollTop) {
+                scrollTop = rowTop;
+            } else {
+                scrollTop = Math.max(0, scrollTop - delta);
+            }
+        } else if (rowTop < scrollTop + 8) {
+            scrollTop = rowTop;
+        } else if (rowTop + itemHeightPx > scrollTop + viewH - 8) {
+            scrollTop = rowTop + itemHeightPx - viewH + 8;
+        }
+
+        scrollRoot.scrollTop = Math.min(maxScroll, Math.max(0, scrollTop));
+        rememberUserScroll();
+    }
+
+    function focusLogicalRow(index, col) {
+        const row = findRowByLogical(index);
+        if (!row) return false;
+        return focusColInRow(row, col);
+    }
+
+    function isGridAtBottom() {
+        const maxScroll = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+        return scrollRoot.scrollTop >= maxScroll - 4;
+    }
+
+    function moveLogicalRow(direction, col) {
+        const delta = direction === 'down' ? 1 : -1;
+        const next = _logicalRow + delta;
+        if (next < 0) {
+            _waitingForRow = false;
+            if (isGridAtTop()) {
+                _leaveGridOnPurpose = true;
+                return false;
+            }
+            return true;
+        }
+
+        if (_totalRows > 0 && next >= _totalRows) {
+            if (!isGridAtBottom()) {
+                _waitingForRow = true;
+                _pendingDir = direction;
+                nudgeScroll(direction);
+                requestAnimationFrame(() => tryFulfillPendingFocus());
+            }
+            return true;
+        }
+
+        _logicalRow = next;
+        _lastCol = col;
+        _waitingForRow = true;
+        _pendingDir = direction;
+        scrollToLogicalRow(next, direction);
+        if (focusLogicalRow(next, col)) {
+            const row = findRowByLogical(next);
+            scrollRowIntoView(row, direction);
+            _waitingForRow = false;
+            return true;
+        }
+
+        requestAnimationFrame(() => {
+            if (focusLogicalRow(_logicalRow, _lastCol))
+                _waitingForRow = false;
+        });
+        return true;
     }
 
     function tryFulfillPendingFocus() {
-        if (!_waitingForRow || _desiredIndex < 0) return;
+        if (!_waitingForRow) return false;
 
-        const cards = getCards();
-        if (_desiredIndex >= cards.length) {
-            nudgeScrollForLoad();
-            return;
+        if (hasLogicalRows()) {
+            if (focusLogicalRow(_logicalRow, _lastCol)) {
+                _waitingForRow = false;
+                return true;
+            }
+            return false;
         }
 
-        const target = cards[_desiredIndex];
-        focusCardAt(_desiredIndex, cards);
+        const rows = getRows();
+        if (rows.length === 0)
+            return false;
 
-        if (isPlaceholder(target)) {
-            scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), 'down');
-            return;
+        const targetTop = _pendingSlotTop;
+        const active = document.activeElement;
+        const activeRow = active && scrollRoot.contains(active)
+            ? active.closest(VIRTUAL_ROW_SELECTOR)
+            : null;
+
+        let best = null;
+        let bestDist = Infinity;
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!isEligiblePendingRow(row, activeRow))
+                continue;
+            const dist = Math.abs(row.getBoundingClientRect().top - targetTop);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = row;
+            }
         }
 
-        _waitingForRow = false;
-        _desiredIndex = -1;
-        scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), 'down');
+        if (!best || bestDist > itemHeightPx * 1.25)
+            return false;
+
+        if (focusColInRow(best, _lastCol)) {
+            _waitingForRow = false;
+            return true;
+        }
+        return false;
     }
 
     function recoverFocus() {
-        if (_lastFocusedIndex < 0) return;
-        _recovering = true;
-        const cards = getCards();
-        if (cards.length === 0) { _recovering = false; return; }
-        const target = cards[Math.min(_lastFocusedIndex, cards.length - 1)];
-        if (target) {
-            target.focus({ preventScroll: true });
+        if (_waitingForRow) {
+            tryFulfillPendingFocus();
+            return;
         }
-        _recovering = false;
+
+        if (hasLogicalRows() && focusLogicalRow(_logicalRow, _lastCol))
+            return;
+
+        const rows = getRows();
+        const row = rowNearestFocus(rows);
+        if (!row) return;
+        const dist = Math.abs(row.getBoundingClientRect().top - _lastFocusTop);
+        if (dist <= itemHeightPx * 1.25) {
+            focusColInRow(row, _lastCol);
+            return;
+        }
+
+        _waitingForRow = true;
+        capturePendingSlot(_pendingDir, null);
+        tryFulfillPendingFocus();
     }
 
     function handleVerticalArrow(arrowKey, focused) {
-        if (!focused || !scrollRoot.contains(focused)) return false;
-        if (!focused.matches(focusableSelector)) return false;
-
         const isDown = arrowKey === 'ArrowDown';
         const isUp = arrowKey === 'ArrowUp';
         if (!isDown && !isUp) return false;
 
-        const row = focused.closest(VIRTUAL_ROW_SELECTOR);
-        if (!row) return false;
-
-        const cols = _colCount || getColumns(_colCount) || 1;
-        _colCount = cols;
-        const cards = getCards();
-        const currentIndex = getCardIndex(focused);
-        if (currentIndex < 0) return false;
-
-        if (isDown && isPlaceholder(focused)) {
-            _waitingForRow = true;
-            _desiredIndex = currentIndex;
-            nudgeScrollForLoad();
+        const focusedInGrid = !!(focused && scrollRoot.contains(focused)
+            && focused.matches && focused.matches(focusableSelector));
+        if (!focusedInGrid) {
+            if (hasLogicalRows())
+                return moveLogicalRow(isDown ? 'down' : 'up', _lastCol);
+            if (!_waitingForRow)
+                return false;
+            requestAdjacentRow(isDown ? 'down' : 'up', _lastCol, null);
             return true;
         }
 
-        // First row: let SpatialNavigation leave the grid (toolbar / app navbar).
-        if (isUp && currentIndex < cols) {
+        const row = focused.closest(VIRTUAL_ROW_SELECTOR);
+        if (!row) {
+            requestAdjacentRow(isDown ? 'down' : 'up', _lastCol, null);
+            return true;
+        }
+
+        _colCount = getColumns(_colCount) || 1;
+        const cells = getRowFocusables(row);
+        let col = cells.indexOf(focused);
+        if (col < 0) col = _lastCol;
+        _lastCol = col;
+
+        if (hasLogicalRows()) {
+            _logicalRow = readLogicalRow(row);
+            return moveLogicalRow(isDown ? 'down' : 'up', col);
+        }
+
+        const rows = getRows();
+        const rowIndex = rows.indexOf(row);
+        const direction = isDown ? 'down' : 'up';
+
+        if (isUp && rowIndex <= 0 && isGridAtTop()) {
             _waitingForRow = false;
-            _desiredIndex = -1;
+            _leaveGridOnPurpose = true;
             return false;
         }
 
-        const targetIndex = isDown
-            ? currentIndex + cols
-            : currentIndex - cols;
-
-        if (isUp) {
-            _waitingForRow = false;
-            _desiredIndex = -1;
-        }
-
-        if (targetIndex >= cards.length) {
-            _waitingForRow = true;
-            _desiredIndex = targetIndex;
-            _lastFocusedIndex = currentIndex;
-            nudgeScrollForLoad();
+        if (!isRowVisible(row)) {
+            requestAdjacentRow(direction, col, row);
             return true;
         }
 
-        const target = cards[targetIndex];
-        _lastFocusedIndex = targetIndex;
-        focusCardAt(targetIndex, cards);
-        scrollRowIntoView(target.closest(VIRTUAL_ROW_SELECTOR), isDown ? 'down' : 'up');
-
-        if (isDown && isPlaceholder(target)) {
-            _waitingForRow = true;
-            _desiredIndex = targetIndex;
-        } else if (!isPlaceholder(target)) {
-            _waitingForRow = false;
-            _desiredIndex = -1;
+        const adjacent = isDown ? rows[rowIndex + 1] : rows[rowIndex - 1];
+        if (!adjacent) {
+            requestAdjacentRow(direction, col, row);
+            return true;
         }
 
+        focusColInRow(adjacent, col);
+        scrollRowIntoView(adjacent, direction);
+
+        if (!scrollRoot.contains(document.activeElement)) {
+            requestAdjacentRow(direction, col, row);
+            return true;
+        }
+
+        _waitingForRow = false;
         return true;
     }
 
     const onFocusIn = (e) => {
         if (_recovering) return;
-        if (e.target && e.target.matches && e.target.matches(focusableSelector)) {
-            _lastFocusedIndex = getCardIndex(e.target);
+        if (e.target && e.target.matches && e.target.matches(focusableSelector)
+            && scrollRoot.contains(e.target)) {
             _colCount = getColumns(_colCount) || 1;
-            if (!isPlaceholder(e.target) && _waitingForRow && _lastFocusedIndex === _desiredIndex) {
-                _waitingForRow = false;
-                _desiredIndex = -1;
+            const row = e.target.closest(VIRTUAL_ROW_SELECTOR);
+            const cells = getRowFocusables(row);
+            const col = cells.indexOf(e.target);
+            if (col >= 0)
+                _lastCol = col;
+            if (_waitingForRow && hasLogicalRows()) {
+                const incoming = readLogicalRow(row);
+                if (incoming !== _logicalRow)
+                    return;
             }
+            if (row)
+                _logicalRow = readLogicalRow(row);
+            _lastFocusTop = e.target.getBoundingClientRect().top;
+            _waitingForRow = false;
         }
     };
 
     const onFocusOut = () => {
         if (_recovering) return;
         setTimeout(() => {
+            if (_recovering) return;
             const active = document.activeElement;
-            if (!active || active === document.body) {
-                if (_waitingForRow) {
-                    tryFulfillPendingFocus();
-                    return;
-                }
-                recoverFocus();
+            if (active && active.isConnected && scrollRoot.contains(active))
+                return;
+
+            if (_leaveGridOnPurpose) {
+                _leaveGridOnPurpose = false;
+                return;
             }
+
+            const lostToBody = !active || !active.isConnected
+                || active === document.body || active === document.documentElement;
+            const lostToNav = !!(active && active.closest && active.closest('.app-nav'));
+
+            if (_waitingForRow)
+                tryFulfillPendingFocus();
+
+            if (scrollRoot.contains(document.activeElement))
+                return;
+
+            if (lostToBody || (lostToNav && (!isGridAtTop() || _waitingForRow)))
+                recoverFocus();
         }, 0);
     };
 
@@ -367,9 +658,15 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
 
     const mutationObserver = typeof MutationObserver !== 'undefined'
         ? new MutationObserver(() => {
+            if (_leaveGridOnPurpose) return;
             if (_waitingForRow) {
                 tryFulfillPendingFocus();
+                return;
             }
+
+            const active = document.activeElement;
+            if (!active || !active.isConnected || active === document.body)
+                recoverFocus();
         })
         : null;
 
@@ -380,13 +677,42 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
     scrollRoot.addEventListener('keydown', onKeyDown, true);
     scrollRoot.addEventListener('focusin', onFocusIn);
     scrollRoot.addEventListener('focusout', onFocusOut);
+    const onScroll = () => {
+        if (_waitingForRow)
+            tryFulfillPendingFocus();
+    };
+    scrollRoot.addEventListener('scroll', onScroll, { passive: true });
     _gridKeyHandlers.set(scrollRoot, {
         onKeyDown,
         onFocusIn,
         onFocusOut,
+        onScroll,
         mutationObserver,
-        handleVerticalArrow
+        handleVerticalArrow,
+        isWaiting: () => _waitingForRow,
+        setItemHeight: (height) => {
+            if (typeof height === 'number' && height > 0)
+                itemHeightPx = height;
+        },
+        setExtent: (height, totalRows) => {
+            if (typeof height === 'number' && height > 0)
+                itemHeightPx = height;
+            if (typeof totalRows === 'number' && totalRows >= 0)
+                _totalRows = totalRows;
+        }
     });
+}
+
+export function setVirtualKeyNavItemHeight(scrollRoot, rowHeight) {
+    const handlers = _gridKeyHandlers.get(scrollRoot);
+    if (handlers && typeof handlers.setItemHeight === 'function')
+        handlers.setItemHeight(rowHeight);
+}
+
+export function setVirtualKeyNavExtent(scrollRoot, rowHeight, totalRows) {
+    const handlers = _gridKeyHandlers.get(scrollRoot);
+    if (handlers && typeof handlers.setExtent === 'function')
+        handlers.setExtent(rowHeight, totalRows);
 }
 
 export function initGridKeyNav(gridElement, rowHeight) {
@@ -411,6 +737,8 @@ export function disposeVirtualKeyNav(scrollRoot) {
         scrollRoot.removeEventListener('keydown', handlers.onKeyDown, true);
         scrollRoot.removeEventListener('focusin', handlers.onFocusIn);
         scrollRoot.removeEventListener('focusout', handlers.onFocusOut);
+        if (handlers.onScroll)
+            scrollRoot.removeEventListener('scroll', handlers.onScroll);
         if (handlers.mutationObserver) {
             handlers.mutationObserver.disconnect();
         }
@@ -432,16 +760,40 @@ export function disposeTableKeyNav(scrollElement) {
 
 /** Called from navigation.js (document capture) before SpatialNavigation can steal Down to jump-index. */
 export function handleVirtualBrowseArrow(arrowKey, focusedEl) {
-    if (!focusedEl || !focusedEl.closest) return false;
     if (arrowKey !== 'ArrowDown' && arrowKey !== 'ArrowUp') return false;
-    if (focusedEl.closest('.k7-jump-index')) return false;
+    if (focusedEl && focusedEl.closest && focusedEl.closest('.k7-jump-index')) return false;
 
-    const root = focusedEl.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table');
+    let root = focusedEl && focusedEl.closest
+        ? focusedEl.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table')
+        : null;
+
+    if (!root) {
+        for (const [el, handlers] of _gridKeyHandlers) {
+            if (handlers && typeof handlers.isWaiting === 'function' && handlers.isWaiting()) {
+                root = el;
+                break;
+            }
+        }
+    }
+
+    if (!root && (!focusedEl || focusedEl === document.body || focusedEl === document.documentElement)) {
+        for (const [el] of _gridKeyHandlers) {
+            if (el.querySelector('[data-grid-row]')) {
+                root = el;
+                break;
+            }
+        }
+    }
+
     if (!root) return false;
 
     const handlers = _gridKeyHandlers.get(root);
     if (!handlers || typeof handlers.handleVerticalArrow !== 'function') return false;
-    return handlers.handleVerticalArrow(arrowKey, focusedEl);
+    try {
+        return handlers.handleVerticalArrow(arrowKey, focusedEl);
+    } catch {
+        return false;
+    }
 }
 
 if (typeof window !== 'undefined') {

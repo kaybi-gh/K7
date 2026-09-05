@@ -37,6 +37,20 @@ public class MetadataPictureDisplayHelperTests
     }
 
     [Test]
+    public void SizeForBrowsePoster_ShouldReturnSmall_WhenTv()
+    {
+        MetadataPictureDisplayHelper.SizeForBrowsePoster(true)
+            .Should().Be(MetadataPictureSize.Small);
+    }
+
+    [Test]
+    public void SizeForBrowsePoster_ShouldReturnMedium_WhenNotTv()
+    {
+        MetadataPictureDisplayHelper.SizeForBrowsePoster(false)
+            .Should().Be(MetadataPictureSize.Medium);
+    }
+
+    [Test]
     public void IsHdStill_ShouldReturnTrue_WhenDimensionsUnknown()
     {
         var still = new MetadataPictureDto { Type = MetadataPictureType.Still };

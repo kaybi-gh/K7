@@ -29,6 +29,9 @@ public static class MetadataPictureDisplayHelper
         _ => MetadataPictureSize.Small
     };
 
+    public static MetadataPictureSize SizeForBrowsePoster(bool isTv) =>
+        isTv ? MetadataPictureSize.Small : MetadataPictureSize.Medium;
+
     /// <summary>
     /// Capped backdrop for typical windows. Pair with original via
     /// <see cref="ResolveAdaptiveBackdropUrls"/> when the source is larger.
