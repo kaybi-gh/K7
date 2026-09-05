@@ -15,7 +15,7 @@ public class GlobalSearch : IEndpoint
         {
             return await sender.Send(query, cancellationToken);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

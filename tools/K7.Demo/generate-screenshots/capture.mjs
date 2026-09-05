@@ -207,7 +207,7 @@ function mediaTypesForKind(kind) {
 }
 
 async function resolveViaSearch(page, { search, kind }) {
-  // Guest cannot call /api/search (UserOrAbove). Browse /api/medias with SearchText instead.
+  // Browse /api/medias with SearchText so kind can be filtered by MediaTypes.
   const params = new URLSearchParams({
     PageNumber: '1',
     PageSize: '25',

@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Search.Queries.GlobalSearch;
 
-[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GlobalSearchQuery : IRequest<GlobalSearchResultDto>
 {
     public required string Q { get; init; }

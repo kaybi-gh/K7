@@ -27,7 +27,7 @@ Media detail / library list captures should use **`resolve`** instead of hard-co
 { "resolve": { "category": "MOVIES" } }
 ```
 
-`kind`: `movie` | `series` | `album`. Resolution uses guest-accessible `GET /api/medias?SearchText=...` (not `/api/search`, which requires a full user), or clicks an Explore category card.
+`kind`: `movie` | `series` | `album`. Resolution uses `GET /api/medias?SearchText=...` (or `/api/search`), or clicks an Explore category card.
 
 ### Capture a subset
 
