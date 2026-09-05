@@ -169,7 +169,7 @@ The job installs the `maui-android` workload on the runner so NuGet restore work
 
 Repo **Settings -> Actions -> General** must allow Actions to create pull requests (write permissions). Without this, Renovate pushes branches but cannot open PRs.
 
-`pull_request` CI does not run on PRs opened by `github-actions[bot]`. Build and integration-tests workflows also listen on `pull_request_target` for bot PRs (Renovate, Dependabot).
+GitHub does not start workflows from events created by `GITHUB_TOKEN` (push, `pull_request`, or `pull_request_target`). After Renovate opens or updates PRs, the Renovate job dispatches Build, Integration Tests, and CodeQL on any `renovate/*` head that still has no check runs. `workflow_dispatch` and `repository_dispatch` are the exceptions GitHub allows with `GITHUB_TOKEN`.
 
 Run **Actions -> Renovate -> Run workflow** once to verify after changing Renovate config.
 

@@ -3,8 +3,8 @@
 # and android-arm / Fire Stick RIDs restore correctly.
 #
 # Uses the workflow GITHUB_TOKEN for git push and PR creation.
-# CI on Renovate PRs is handled via pull_request_target in build/integration-tests workflows
-# (pull_request does not run for PRs opened by github-actions[bot]).
+# GitHub does not start workflows from GITHUB_TOKEN push/PR events, so this job
+# dispatches Build / Integration Tests / CodeQL on renovate/* PRs that have no checks.
 # See docs/dev/developing.md#dependency-updates
 
 name: Renovate
@@ -23,6 +23,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write
 
 jobs:
   renovate:
@@ -73,3 +74,23 @@ jobs:
             grep -E "^(ERROR| WARN: Error updating branch)|Pull request creation error" renovate.log || true
             exit 1
           fi
+
+      - name: Trigger CI on Renovate PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr list --author "app/github-actions" --state open --limit 50 \
+            --json number,headRefName,headRefOid \
+            --jq '.[] | select(.headRefName | startswith("renovate/")) | [.number, .headRefName, .headRefOid] | @tsv' \
+            | while IFS=$'\t' read -r number branch sha; do
+                count="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/check-runs" --jq '.total_count')"
+                if [ "${count}" -gt 0 ]; then
+                  echo "Skip #${number} (${branch}): ${count} check-runs already"
+                  continue
+                fi
+                echo "Dispatch CI for #${number} (${branch})"
+                gh workflow run Build --ref "${branch}"
+                gh workflow run "Integration Tests" --ref "${branch}"
+                gh workflow run CodeQL --ref "${branch}"
+              done
