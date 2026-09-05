@@ -159,6 +159,8 @@ Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respaw
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
 
+Renovate groups only packages that must bump together (OpenIddict, OpenTelemetry, SkiaSharp, LibVLC, SQLite natives, Google Play Services, Microsoft runtime minors). Everything else gets its own PR so one breaking bump cannot block the rest. Majors for `Microsoft.OpenApi` (incompatible with `Microsoft.AspNetCore.OpenApi` 10) and `FluentAssertions` (license + API) are disabled.
+
 `Directory.Packages.props` also pins some transitive packages (`Azure.Identity`, `System.Drawing.Common`, `SSH.NET`) to patched versions. CI fails `dotnet list package --vulnerable` if those pins are removed.
 
 The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no secret required).
