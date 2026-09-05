@@ -68,4 +68,6 @@ public partial class ExploreLibraryGroupView : IDisposable
     }
 
     private void GoBack() => NavigationManager.NavigateTo("/explore");
+
+    private void GoToBrowse() => NavigationManager.NavigateTo(BrowseHref);
 }

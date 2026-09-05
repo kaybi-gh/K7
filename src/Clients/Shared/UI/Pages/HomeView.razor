@@ -9,7 +9,7 @@
 }
 else
 {
-    <div class="@(_isTv == true ? "tv-feed-page home-page home-page--tv" : "home-page page-scrollable")" data-initial-focus="@_homeFocusSelector">
+    <div class="@(_isTv == true ? "tv-feed-page home-page home-page--tv" : "home-page page-scrollable")" data-initial-focus="@(_isTv == true && FeedStore.IsLoaded && !isLoading ? _homeFocusSelector : null)">
         @if (_isOffline)
         {
             <div class="home-offline-banner">
@@ -24,7 +24,7 @@ else
         else if (_isTv == true)
         {
             <HomeTvHero @ref="_tvHero" Model="_focusedItem" />
-            <VerticalCarousel>
+            <VerticalCarousel VirtualizeRows="true" InitialActiveIndex="_tvInitialRowIndex">
                 @if (!FeedStore.IsLoaded || isLoading)
                 {
                     @for (int i = 0; i < 3; i++)
@@ -41,10 +41,14 @@ else
                 }
                 else
                 {
-                    @foreach (var row in GetVisibleRows())
+                    var tvRows = GetVisibleRows().ToList();
+                    @for (var rowIndex = 0; rowIndex < tvRows.Count; rowIndex++)
                     {
+                        var row = tvRows[rowIndex];
                         <div @key="row.Config.Id">
-                            @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                            <TvFeedRow Index="rowIndex">
+                                @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
+                            </TvFeedRow>
                         </div>
                     }
                 }
@@ -123,7 +127,7 @@ RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> ite
                            ContinueWatchingMenuEnabled="continueWatching && _canTrackProgress"
                            WatchStateMenuEnabled="_canSetWatchState"
                            IsAdmin="_isAdmin"
-                           OnFocused="() => OnItemFocused(row, item, cardIndex)"
+                           OnFocused="@CreateSilentCardFocusCallback(row, item, cardIndex)"
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
                            OnExcludeForOthers="() => ExcludeForOthers(item)"
                            OnDismissFromContinueWatching="() => DismissFromContinueWatching(item)" />

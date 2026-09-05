@@ -29,6 +29,10 @@
     overflow: hidden;
 }
 
+.vertical-carousel ::deep .tv-feed-row-spacer {
+    min-height: 22rem;
+}
+
 /* Before JS sets viewport height, keep extra shelves out of document flow
    so the page does not flash a full desktop-style stack. Absolute + hidden
    still allows offsetHeight measurement for equalized strip height. */

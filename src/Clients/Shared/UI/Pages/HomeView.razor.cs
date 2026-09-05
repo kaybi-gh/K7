@@ -31,6 +31,7 @@ public partial class HomeView : IAsyncDisposable
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
+    private readonly SuppressRenderEventHandler _silentFocus = new();
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
@@ -64,6 +65,18 @@ public partial class HomeView : IAsyncDisposable
                 return $"#home-card-{focus.MediaId} a, #home-card-{focus.MediaId} button";
 
             return "[data-carousel-item] a, [data-carousel-item] button";
+        }
+    }
+
+    private int _tvInitialRowIndex
+    {
+        get
+        {
+            if (NavigationState.SavedFocus is not { } saved)
+                return 0;
+
+            var idx = GetVisibleRows().ToList().FindIndex(r => r.Config.Id == saved.RowId);
+            return idx >= 0 ? idx : 0;
         }
     }
 
@@ -206,7 +219,10 @@ public partial class HomeView : IAsyncDisposable
         await Task.Yield();
         await Task.Delay(50);
 
-        await RestoreLastFocusedCardAsync();
+        // First launch: page data-initial-focus already ran. Only restore when
+        // coming back from another page with a saved card.
+        if (NavigationState.SavedFocus is not null)
+            await RestoreLastFocusedCardAsync();
     }
 
     private async Task TryFocusHomeCarouselAsync()
@@ -367,14 +383,7 @@ public partial class HomeView : IAsyncDisposable
             }
         }
 
-        try
-        {
-            await TryFocusHomeCarouselAsync();
-            _focusRestored = true;
-        }
-        catch (InvalidOperationException)
-        {
-        }
+        _focusRestored = true;
     }
 
     private void OnFeedStoreChanged()
@@ -511,6 +520,9 @@ public partial class HomeView : IAsyncDisposable
         if (result is { Canceled: false })
             Snackbar.Add(S["ExclusionsUpdated"], K7Severity.Success);
     }
+
+    private EventCallback CreateSilentCardFocusCallback(HomeRowConfigDto row, MediaCardViewModel item, int cardIndex) =>
+        EventCallback.Factory.Create(_silentFocus, () => OnItemFocused(row, item, cardIndex));
 
     private void OnItemFocused(HomeRowConfigDto row, MediaCardViewModel item, int cardIndex)
     {

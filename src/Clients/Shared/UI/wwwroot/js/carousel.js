@@ -1,4 +1,50 @@
-export function init(rootElement) {
+function invokeDotNet(dotnetRef, methodName, ...args) {
+    if (!dotnetRef)
+        return;
+
+    dotnetRef.invokeMethodAsync(methodName, ...args).catch(function (error) {
+        var message = error?.message ?? String(error);
+        if (message.includes('DotNetObjectReference') || message.includes('tracked object with id'))
+            return;
+    });
+}
+
+function reportVisibleSlides(rootElement, embla, dotNetRef) {
+    if (!dotNetRef || !embla)
+        return;
+
+    var slides = embla.slideNodes();
+    var inView = [];
+    try {
+        inView = embla.slidesInView();
+    } catch (e) {
+        inView = [];
+    }
+
+    var first = -1;
+    var last = -1;
+    for (var i = 0; i < inView.length; i++) {
+        var idx = inView[i];
+        var slide = slides[idx];
+        if (!slide || slide.hasAttribute('data-carousel-loop-back'))
+            continue;
+        if (first < 0)
+            first = idx;
+        last = idx;
+    }
+
+    if (first < 0) {
+        try {
+            first = last = embla.selectedScrollSnap();
+        } catch (e2) {
+            return;
+        }
+    }
+
+    invokeDotNet(dotNetRef, 'OnVisibleSlides', first, last);
+}
+
+export function init(rootElement, dotNetRef) {
     if (!rootElement || rootElement.__embla) return;
 
     var viewportNode = rootElement.querySelector('[data-carousel-viewport]');
@@ -141,11 +187,22 @@ export function init(rootElement) {
     embla.on('init', function () {
         updateArrows();
         scrollToInitialFocus();
+        reportVisibleSlides(rootElement, embla, dotNetRef);
     });
-    embla.on('reInit', updateArrows);
-    embla.on('select', updateArrows);
+    embla.on('reInit', function () {
+        updateArrows();
+        reportVisibleSlides(rootElement, embla, dotNetRef);
+    });
+    embla.on('select', function () {
+        updateArrows();
+        reportVisibleSlides(rootElement, embla, dotNetRef);
+    });
     embla.on('scroll', updateArrows);
+    if (typeof embla.on === 'function') {
+        try { embla.on('slidesInView', function () { reportVisibleSlides(rootElement, embla, dotNetRef); }); } catch (e) { /* older Embla */ }
+    }
     scrollToInitialFocus();
+    reportVisibleSlides(rootElement, embla, dotNetRef);
 
     // Native video hides the WebView (0-width snaps). Remember the last real
     // selected slide so close can reInit without jumping to the last card.

@@ -20,13 +20,14 @@ public partial class ExploreSectionContent
     private ExploreTvHeroPanel? _heroPanel;
     private ExploreTvFocusContext? _tvFocusContext;
     private bool _focusApplied;
+    private bool _wasLoading = true;
 
     protected override void OnParametersSet()
     {
-        if (!IsLoading)
-            return;
+        if (IsLoading && !_wasLoading)
+            _focusApplied = false;
 
-        _focusApplied = false;
+        _wasLoading = IsLoading;
     }
 
     protected override void OnInitialized()

@@ -8,7 +8,7 @@
                             BackAriaLabel="@BackAriaLabel"
                             OnBack="OnBack" />
         @* Keep one VerticalCarousel across loading/content so JS ready state is not reset. *@
-        <VerticalCarousel>
+        <VerticalCarousel VirtualizeRows="true">
             @if (IsLoading)
             {
                 @for (var i = 0; i < 3; i++)

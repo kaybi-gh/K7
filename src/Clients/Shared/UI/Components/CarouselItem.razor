@@ -1,3 +1,6 @@
-<div class="carousel-item @Class" data-carousel-item id="@ItemId">
-    @ChildContent
+<div class="@_itemClass" data-carousel-item id="@ItemId" @attributes="_initialFocusAttributes">
+    @if (_renderContent)
+    {
+        @ChildContent
+    }
 </div>

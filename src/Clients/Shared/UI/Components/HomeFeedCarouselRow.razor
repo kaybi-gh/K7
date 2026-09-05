@@ -1,6 +1,10 @@
 @namespace K7.Clients.Shared.UI.Components
 
-@if (_loading)
+@if (!_renderCarousel)
+{
+    <div class="tv-feed-row-spacer" aria-hidden="true"></div>
+}
+else if (_loading)
 {
     <Carousel Skeleton="true" Title="@Title">
         @for (var i = 0; i < 8; i++)
@@ -31,7 +35,7 @@ else if (_items.Count > 0)
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
                            OnExcludeForOthers="() => ExcludeForOthers(item)"
                            OnWatchStateChanged="RefreshAfterWatchStateChangeAsync"
-                           OnFocused="() => OnCardFocused(item)" />
+                           OnFocused="@CreateSilentCardFocusCallback(item)" />
             </CarouselItem>
         }
     </Carousel>

@@ -33,9 +33,11 @@ public partial class HomeFeedCarouselRow : IDisposable
 
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
     [CascadingParameter] private ExploreFocusNavigationContext? ExploreFocus { get; set; }
+    [CascadingParameter] private TvFeedRowViewport? RowViewport { get; set; }
 
     private List<MediaCardViewModel> _items = [];
     private bool _loading = true;
+    private bool _renderCarousel => RowViewport?.RenderContent ?? true;
     private string? _loadKey;
     private bool _canExclude;
     private bool _canSetWatchState;
@@ -43,6 +45,7 @@ public partial class HomeFeedCarouselRow : IDisposable
     private IDisposable? _hubSubscription;
     private DebouncedActionRunner? _visualRefreshRunner;
     private readonly HashSet<Guid> _pendingVisualMediaIds = [];
+    private readonly SuppressRenderEventHandler _silentFocus = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,7 +101,10 @@ public partial class HomeFeedCarouselRow : IDisposable
             var changed = false;
             foreach (var item in page.Items)
             {
-                var next = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                var next = item.ToCardViewModel(
+                    ApiClient,
+                    n => string.Format(S["SeasonNumber"], n),
+                    pictureSize: MetadataPictureDisplayHelper.SizeForBrowsePoster(TvFocus is not null));
                 if (next is null)
                     continue;
 
@@ -164,8 +170,9 @@ public partial class HomeFeedCarouselRow : IDisposable
             var feedPage = await MediaService.GetHomeFeedAsync(query);
             if (feedPage?.Items is not null)
             {
+                var pictureSize = MetadataPictureDisplayHelper.SizeForBrowsePoster(TvFocus is not null);
                 var nextItems = feedPage.Items
-                    .Select(item => item.ToCardViewModel(ApiClient))
+                    .Select(item => item.ToCardViewModel(ApiClient, pictureSize: pictureSize))
                     .DistinctBy(item => item.Id)
                     .ToList();
                 ApplyItems(nextItems);
@@ -229,6 +236,9 @@ public partial class HomeFeedCarouselRow : IDisposable
 
     private string? GetCardElementId(string mediaId) =>
         ExploreFocus?.GetCardElementId(mediaId);
+
+    private EventCallback CreateSilentCardFocusCallback(MediaCardViewModel item) =>
+        EventCallback.Factory.Create(_silentFocus, () => OnCardFocused(item));
 
     private void OnCardFocused(MediaCardViewModel item)
     {

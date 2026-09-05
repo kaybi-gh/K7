@@ -36,10 +36,14 @@ public partial class MediasCarouselRow : IDisposable
 
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
     [CascadingParameter] private ExploreFocusNavigationContext? ExploreFocus { get; set; }
+    [CascadingParameter] private TvFeedRowViewport? RowViewport { get; set; }
 
     private List<LiteMediaDto> _items = [];
     private List<CarouselCardItem> _cardItems = [];
     private bool _loading = true;
+    private bool _renderCarousel => RowViewport?.RenderContent ?? true;
+    private MetadataPictureSize CardPictureSize =>
+        MetadataPictureDisplayHelper.SizeForBrowsePoster(TvFocus is not null);
     private string? _loadKey;
     private bool _canExclude;
     private bool _canSetWatchState;
@@ -47,6 +51,7 @@ public partial class MediasCarouselRow : IDisposable
     private IDisposable? _hubSubscription;
     private DebouncedActionRunner? _visualRefreshRunner;
     private readonly HashSet<Guid> _pendingVisualMediaIds = [];
+    private readonly SuppressRenderEventHandler _silentFocus = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,7 +125,7 @@ public partial class MediasCarouselRow : IDisposable
 
     private bool UpsertCard(LiteMediaDto item)
     {
-        var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+        var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n), pictureSize: CardPictureSize);
         if (model is null)
             return false;
 
@@ -192,7 +197,7 @@ public partial class MediasCarouselRow : IDisposable
         _cardItems = nextItems
             .Select(item =>
             {
-                var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                var model = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n), pictureSize: CardPictureSize);
                 if (model is null)
                     return null;
 
@@ -243,6 +248,9 @@ public partial class MediasCarouselRow : IDisposable
 
     private string? GetCardElementId(Guid mediaId) =>
         ExploreFocus?.GetCardElementId(mediaId.ToString());
+
+    private EventCallback CreateSilentCardFocusCallback(MediaCardViewModel item) =>
+        EventCallback.Factory.Create(_silentFocus, () => OnCardFocused(item));
 
     private void OnCardFocused(MediaCardViewModel item)
     {

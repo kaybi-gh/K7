@@ -5,6 +5,14 @@
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+.carousel-item--placeholder {
+    width: var(--carousel-slide-width);
+    aspect-ratio: 2 / 3;
+    padding-bottom: 2.75rem;
+    box-sizing: content-box;
+    pointer-events: none;
+}
+
 .carousel-item.entering {
     animation: carousel-item-enter 0.4s ease forwards;
 }

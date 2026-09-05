@@ -1,6 +1,17 @@
 var MAX_DOT_SLOTS = 7;
 
-export function init(rootElement) {
+function invokeDotNet(dotnetRef, methodName, ...args) {
+    if (!dotnetRef)
+        return;
+
+    dotnetRef.invokeMethodAsync(methodName, ...args).catch(function (error) {
+        var message = error?.message ?? String(error);
+        if (message.includes('DotNetObjectReference') || message.includes('tracked object with id'))
+            return;
+    });
+}
+
+export function init(rootElement, dotNetRef) {
     if (!rootElement || rootElement.__vcarousel) return;
 
     var viewportNode = rootElement.querySelector('[data-vcarousel-viewport]');
@@ -13,7 +24,9 @@ export function init(rootElement) {
     var dotsNode = rootElement.querySelector('[data-vcarousel-dots]');
     var chevronUpNode = rootElement.querySelector('[data-vcarousel-chevron-up]');
     var chevronDownNode = rootElement.querySelector('[data-vcarousel-chevron-down]');
-    var currentIndex = 0;
+    var initialAttr = parseInt(rootElement.getAttribute('data-vcarousel-initial'), 10);
+    var currentIndex = Number.isFinite(initialAttr) && initialAttr > 0 ? initialAttr : 0;
+    var userMoved = false;
     var scrollAnim = null;
     var lastFocusedPerSlide = {};
     var resizeObserver = null;
@@ -209,16 +222,31 @@ export function init(rootElement) {
         }
     }
 
-    function updateSlides(activeIdx) {
+    function readInitialIndex() {
+        var raw = parseInt(rootElement.getAttribute('data-vcarousel-initial'), 10);
+        return Number.isFinite(raw) && raw > 0 ? raw : 0;
+    }
+
+    function notifyActiveRow(activeIdx, fromUser) {
+        if (currentIndex === activeIdx)
+            return;
+        currentIndex = activeIdx;
+        if (!fromUser)
+            return;
+        userMoved = true;
+        invokeDotNet(dotNetRef, 'OnActiveRowChanged', activeIdx);
+    }
+
+    function updateSlides(activeIdx, fromUser) {
         var slides = containerNode.children;
         for (var i = 0; i < slides.length; i++) {
             clearSlideStyles(slides[i]);
         }
-        currentIndex = activeIdx;
+        notifyActiveRow(activeIdx, fromUser);
         updatePagination(activeIdx);
     }
 
-    function scrollToSlide(idx, instant) {
+    function scrollToSlide(idx, instant, fromUser) {
         var slides = containerNode.children;
         if (idx < 0 || idx >= slides.length) return;
         var slide = slides[idx];
@@ -230,7 +258,7 @@ export function init(rootElement) {
         } else {
             smoothScrollTo(targetY, 280);
         }
-        updateSlides(idx);
+        updateSlides(idx, fromUser);
     }
 
     function getSlideIndex(target) {
@@ -254,7 +282,7 @@ export function init(rootElement) {
         if (idx >= 0) {
             lastFocusedPerSlide[idx] = e.target;
             if (idx !== currentIndex) {
-                scrollToSlide(idx);
+                scrollToSlide(idx, false, true);
             }
         }
     }
@@ -314,6 +342,12 @@ export function init(rootElement) {
         if (needsReveal) {
             setReady(true);
             normalizeSlideHeights();
+        }
+
+        if (!userMoved) {
+            var initialIdx = readInitialIndex();
+            if (initialIdx > currentIndex)
+                currentIndex = initialIdx;
         }
 
         var idx = Math.min(Math.max(currentIndex, 0), slides.length - 1);

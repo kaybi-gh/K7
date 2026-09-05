@@ -1,0 +1,7 @@
+.tv-feed-row--passthrough {
+    display: contents;
+}
+
+.tv-feed-row-spacer {
+    min-height: 22rem;
+}

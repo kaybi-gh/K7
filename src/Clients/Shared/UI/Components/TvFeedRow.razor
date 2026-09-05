@@ -1,0 +1,12 @@
+<div class="@_rootClass">
+    <CascadingValue Value="_viewport" IsFixed="true">
+        @if (ShouldRenderContent || KeepMounted)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <div class="tv-feed-row-spacer" aria-hidden="true"></div>
+        }
+    </CascadingValue>
+</div>

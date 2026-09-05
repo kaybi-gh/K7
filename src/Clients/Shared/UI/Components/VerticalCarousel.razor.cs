@@ -9,11 +9,51 @@ public partial class VerticalCarousel : IAsyncDisposable
 
     private ElementReference _root;
     private IJSObjectReference? _module;
+    private DotNetObjectReference<VerticalCarousel>? _dotnetRef;
     private bool _moduleLoadFailed;
     private int _lastSlideCount = -1;
     private volatile bool _disposed;
+    private TvVerticalWindow? _rowWindow;
+    private bool _hasUserMoved;
+    private int _appliedInitialIndex = int.MinValue;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool VirtualizeRows { get; set; }
+    [Parameter] public int InitialActiveIndex { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!VirtualizeRows)
+            return;
+
+        if (_rowWindow is null)
+        {
+            _rowWindow = new TvVerticalWindow();
+            _rowWindow.Reset(InitialActiveIndex);
+            _appliedInitialIndex = InitialActiveIndex;
+            return;
+        }
+
+        if (!_hasUserMoved && InitialActiveIndex != _appliedInitialIndex)
+        {
+            _rowWindow.Reset(InitialActiveIndex);
+            _appliedInitialIndex = InitialActiveIndex;
+        }
+    }
+
+    [JSInvokable]
+    public Task OnActiveRowChanged(int index)
+    {
+        if (_disposed || _rowWindow is null)
+            return Task.CompletedTask;
+
+        _hasUserMoved = true;
+        // D-pad must not re-render the feed. Only mount newly visited rows.
+        if (!_rowWindow.GrowTo(index))
+            return Task.CompletedTask;
+
+        return InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -41,22 +81,14 @@ public partial class VerticalCarousel : IAsyncDisposable
         {
             if (firstRender)
             {
-                await _module.InvokeVoidAsync("init", _root);
+                if (VirtualizeRows)
+                    _dotnetRef = DotNetObjectReference.Create(this);
+
+                await _module.InvokeVoidAsync("init", _root, _dotnetRef);
                 if (_disposed)
                     return;
                 _lastSlideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
-                return;
             }
-
-            var slideCount = await _module.InvokeAsync<int>("getSlideCount", _root);
-            if (_disposed)
-                return;
-
-            // Always schedule a remeasure: explore rows remount skeleton->content
-            // without changing slide count, which otherwise leaves a stale viewport
-            // height and lets the next shelf peek under the current one.
-            _lastSlideCount = slideCount;
-            await _module.InvokeVoidAsync("refresh", _root);
         }
         catch (Exception ex) when (IsBenignJsFailure(ex))
         {
@@ -71,6 +103,9 @@ public partial class VerticalCarousel : IAsyncDisposable
         _disposed = true;
         var module = _module;
         _module = null;
+        var dotnetRef = _dotnetRef;
+        _dotnetRef = null;
+        dotnetRef?.Dispose();
 
         if (module is null)
             return;
