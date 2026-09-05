@@ -140,8 +140,8 @@ New behavior should ship with tests in the matching project (unit, bUnit, functi
 | `Domain.UnitTests` / `Application.UnitTests` / `Import.UnitTests` | Unit | `build.yml` (fast) |
 | `Clients.ComponentTests` | bUnit | fast |
 | `Web.SmokeTests` / `Clients.DesignSystem.SmokeTests` | Smoke | fast |
-| `Clients.MAUI.SmokeTests` | MAUI smoke | `maui-smoke` (Windows) |
-| `Application.FunctionalTests` / `Infrastructure.IntegrationTests` | HTTP + EF | `integration-tests.yml` |
+| `Clients.MAUI.SmokeTests` | MAUI smoke | `build.yml` `maui-smoke` (Windows, after `build-and-test`) |
+| `Application.FunctionalTests` / `Infrastructure.IntegrationTests` | HTTP + EF | `build.yml` `integration` (after `build-and-test`) |
 | `Tests.Helpers` | Factories, Testcontainers | referenced |
 
 [`K7.CI.slnf`](../../K7.CI.slnf) is the **fast CI** filter (excludes MAUI, Aspire AppHost, functional and integration tests).
@@ -154,6 +154,10 @@ dotnet test K7.CI.slnf
 ```
 
 Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respawn). Without Docker, unit and bUnit projects still run.
+
+`build.yml` runs `build-and-test` first (restore, vulnerable-package check, Release build of `K7.CI.slnf`, fast tests). `maui-smoke`, integration tests, CodeQL, and `publish-image` start only if that job succeeds. CodeQL still has a weekly schedule (and a manual `workflow_dispatch`) in [`codeql.yml`](../../.github/workflows/codeql.yml).
+
+If branch protection requires status checks, use the names under the **Build** workflow (`build-and-test`, `maui-smoke`, `Integration tests / integration`, `CodeQL / Analyze (csharp)`, `publish-image`). The old standalone **Integration Tests** and **CodeQL** PR checks no longer run on push/PR.
 
 ## Dependency updates
 
@@ -169,7 +173,7 @@ The job installs the `maui-android` workload on the runner so NuGet restore work
 
 Repo **Settings -> Actions -> General** must allow Actions to create pull requests (write permissions). Without this, Renovate pushes branches but cannot open PRs.
 
-GitHub does not start workflows from events created by `GITHUB_TOKEN` (push, `pull_request`, or `pull_request_target`). After Renovate opens or updates PRs, the Renovate job dispatches Build, Integration Tests, and CodeQL on any `renovate/*` head that still has no check runs. `workflow_dispatch` and `repository_dispatch` are the exceptions GitHub allows with `GITHUB_TOKEN`.
+GitHub does not start workflows from events created by `GITHUB_TOKEN` (push, `pull_request`, or `pull_request_target`). After Renovate opens or updates PRs, the Renovate job dispatches **Build** on any `renovate/*` head that still has no check runs (integration tests and CodeQL are jobs in that workflow). `workflow_dispatch` and `repository_dispatch` are the exceptions GitHub allows with `GITHUB_TOKEN`.
 
 Run **Actions -> Renovate -> Run workflow** once to verify after changing Renovate config.
 

@@ -45,6 +45,7 @@ env:
   IMAGE_NAME: ghcr.io/kaybi-gh/k7
 
 jobs:
+  # build-and-test is the gate. Heavier jobs start only if it succeeds.
   build-and-test:
     if: |
       github.event_name != 'pull_request_target' ||
@@ -105,6 +106,7 @@ jobs:
           dotnet test tests/Clients.DesignSystem.SmokeTests/Clients.DesignSystem.SmokeTests.csproj --configuration Release --no-build --verbosity normal
 
   maui-smoke:
+    needs: build-and-test
     if: |
       github.event_name != 'pull_request_target' ||
       contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
@@ -154,6 +156,29 @@ jobs:
           -f net10.0-windows10.0.19041.0
           --no-build
           --verbosity normal
+
+  integration:
+    name: Integration tests
+    needs: build-and-test
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
+    permissions:
+      contents: read
+    uses: ./.github/workflows/integration-tests.yml
+
+  codeql:
+    name: CodeQL
+    needs: build-and-test
+    if: |
+      (github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login))
+      && (github.event_name != 'push' || github.ref == 'refs/heads/main')
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: ./.github/workflows/codeql.yml
 
   publish-image:
     needs: build-and-test

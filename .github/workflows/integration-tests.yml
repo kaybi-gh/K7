@@ -1,30 +1,8 @@
+# Called from build.yml after build-and-test. workflow_dispatch keeps a manual-only path.
 name: Integration Tests
 
 on:
-  push:
-    branches: [ main, 'renovate/**' ]
-    paths-ignore:
-      - '**.md'
-      - branding/**
-      - screenshots/**
-      - LICENSE
-      - .github/FUNDING.yml
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - branding/**
-      - screenshots/**
-      - LICENSE
-      - .github/FUNDING.yml
-  pull_request_target:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - branding/**
-      - screenshots/**
-      - LICENSE
-      - .github/FUNDING.yml
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -32,9 +10,6 @@ permissions:
 
 jobs:
   integration:
-    if: |
-      github.event_name != 'pull_request_target' ||
-      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
     runs-on: ubuntu-latest
 
     steps:

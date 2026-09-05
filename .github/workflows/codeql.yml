@@ -1,18 +1,9 @@
+# PR and push analysis is invoked from build.yml after build-and-test.
+# schedule and workflow_dispatch keep a standalone weekly / manual path.
 name: CodeQL
 
 on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - branding/**
-      - screenshots/**
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - branding/**
-      - screenshots/**
+  workflow_call:
   schedule:
     - cron: '17 4 * * 1'
   workflow_dispatch:
@@ -32,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3
