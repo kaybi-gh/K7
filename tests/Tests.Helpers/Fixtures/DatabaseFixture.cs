@@ -13,7 +13,7 @@ namespace K7.Tests.Helpers.Fixtures;
 /// [SetUpFixture] in the consuming test assembly (see Application.FunctionalTests/Testing.cs).
 /// </summary>
 [TestFixture]
-public class DatabaseFixture
+public abstract class DatabaseFixture
 {
     private static ITestDatabase? _database;
     [System.Diagnostics.CodeAnalysis.SuppressMessage(

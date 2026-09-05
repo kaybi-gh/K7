@@ -3,7 +3,7 @@
 namespace K7.Tests.Helpers.Fixtures;
 
 [TestFixture]
-public class FileAndDatabaseFixture : DatabaseFixture
+public abstract class FileAndDatabaseFixture : DatabaseFixture
 {
     [OneTimeSetUp]
     protected void FileFixure_RunBeforeAnyTests() => FileHelper.CreateTestDirectory();

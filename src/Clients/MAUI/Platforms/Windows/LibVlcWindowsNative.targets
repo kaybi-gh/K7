@@ -6,8 +6,7 @@
     <VlcWindowsX64Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">true</VlcWindowsX64Enabled>
     <VlcWindowsX86Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">false</VlcWindowsX86Enabled>
     <VlcWindowsArm64Enabled Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">false</VlcWindowsArm64Enabled>
-    <K7LibVlcWindowsVersion Condition="'$(K7LibVlcWindowsVersion)' == ''">4.0.0-alpha-20260830</K7LibVlcWindowsVersion>
-    <_K7LibVlcWinSrc>$(NuGetPackageRoot)videolan.libvlc.windows\$(K7LibVlcWindowsVersion)\build\x64</_K7LibVlcWinSrc>
+    <_K7LibVlcWinSrc>$(PkgVideoLAN_LibVLC_Windows)\build\x64</_K7LibVlcWinSrc>
     <_K7LibVlcWinDst>$(OutDir)libvlc\win-x64\</_K7LibVlcWinDst>
   </PropertyGroup>
 
@@ -15,8 +14,8 @@
           AfterTargets="CopyFilesToOutputDirectory"
           Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
     <Error
-        Text="VideoLAN.LibVLC.Windows $(K7LibVlcWindowsVersion) natives missing at $(_K7LibVlcWinSrc)"
-        Condition="!Exists('$(_K7LibVlcWinSrc)\libvlc.dll')" />
+        Text="VideoLAN.LibVLC.Windows natives missing at $(_K7LibVlcWinSrc)"
+        Condition="'$(PkgVideoLAN_LibVLC_Windows)' == '' or !Exists('$(_K7LibVlcWinSrc)\libvlc.dll')" />
     <ItemGroup>
       <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\libvlc.dll" />
       <_K7LibVlcWinFiles Include="$(_K7LibVlcWinSrc)\libvlccore.dll" />
