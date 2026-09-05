@@ -41,7 +41,9 @@
     }
     else
     {
-        <MediaHeroSkeleton ShowCast="false" />
+        <div class="season-detail-page" aria-busy="true">
+            <MediaHeroSkeleton SeasonLayout="true" ShowCast="false" />
+        </div>
     }
 }
 else if (_season is not null && _isTv)

@@ -13,6 +13,11 @@ public partial class MediaHeroSkeleton
     /// Person page hero: 2:3 portrait beside the bio, not a landscape logo.
     /// </summary>
     [Parameter] public bool PortraitLayout { get; set; }
+    /// <summary>
+    /// Desktop season page: compact logo, title row, and episode list rows.
+    /// Default (no flag) matches the TV season hero.
+    /// </summary>
+    [Parameter] public bool SeasonLayout { get; set; }
     [Parameter] public string Class { get; set; } = "";
 
     private string RootClass
@@ -21,9 +26,11 @@ public partial class MediaHeroSkeleton
         {
             var layout = PortraitLayout
                 ? "media-hero-skeleton media-hero-skeleton--portrait"
-                : DetailLayout
-                    ? "media-hero-skeleton media-hero-skeleton--detail"
-                    : "media-hero-skeleton";
+                : SeasonLayout
+                    ? "media-hero-skeleton media-hero-skeleton--season"
+                    : DetailLayout
+                        ? "media-hero-skeleton media-hero-skeleton--detail"
+                        : "media-hero-skeleton";
             return string.IsNullOrEmpty(Class) ? layout : $"{layout} {Class}";
         }
     }

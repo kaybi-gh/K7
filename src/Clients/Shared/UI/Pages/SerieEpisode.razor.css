@@ -16,7 +16,6 @@
     min-height: 100%;
     flex-shrink: 0;
     z-index: 2;
-    overflow: hidden;
 }
 
 .episode-page-scroll[data-tv-scroll] .episode-main {
@@ -50,6 +49,7 @@
 @media (min-width: 600px) {
     .episode-hero.media-hero {
         padding: var(--space-10) var(--space-8) var(--space-8);
+        overflow: visible;
     }
 }
 
@@ -178,29 +178,35 @@
     flex-shrink: 0;
 }
 
-.episode-overview {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    line-height: 1.6;
+.episode-overview-wrap {
     max-width: 700px;
-    margin: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    flex-shrink: 0;
 }
 
-.episode-overview.overview-clickable {
+.episode-overview {
+    margin: 0;
+    opacity: 0.85;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.overview-clickable {
     cursor: pointer;
     border-radius: var(--radius-md);
     padding: var(--space-2);
     margin-inline: calc(-1 * var(--space-2));
-    transition: background-color var(--transition-fast);
+    transition: background-color var(--duration-normal) var(--ease-out);
 }
 
-.episode-overview.overview-clickable:hover,
-.episode-overview.overview-clickable:focus-visible {
-    background-color: color-mix(in srgb, var(--color-text) 8%, transparent);
+.overview-clickable:hover,
+.overview-clickable:focus-visible {
+    background-color: rgba(128, 128, 128, 0.15);
 }
 
 .episode-nav {

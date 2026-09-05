@@ -21,6 +21,8 @@ public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentU
         .Include(x => x.ExternalIds)
         .Include(x => x.PortraitPicture)
         .Include(x => x.Roles)
+            .ThenInclude(x => x.PortraitPicture)
+        .Include(x => x.Roles)
             .ThenInclude(x => x.Media)
                 .ThenInclude(x => x.Pictures)
                     .ThenInclude(p => p.Variants)

@@ -95,6 +95,16 @@ else if (_episode is not null)
                         }
                     </div>
 
+                    @if (!string.IsNullOrEmpty(_episode.Overview))
+                    {
+                        <div class="episode-overview-wrap overview-clickable focusable"
+                             tabindex="0"
+                             role="button"
+                             @onclick="OpenOverviewDialogAsync">
+                            <p class="episode-overview">@_episode.Overview</p>
+                        </div>
+                    }
+
                     <div class="episode-actions" data-tv-scroll-zone="actions">
                         <div class="@(CanResumePlayback ? "episode-actions-primary episode-actions-primary--split" : "episode-actions-primary")">
                             <K7Button Variant="filled"
@@ -165,16 +175,6 @@ else if (_episode is not null)
                             </K7Menu>
                         </div>
                     </div>
-
-                    @if (!string.IsNullOrEmpty(_episode.Overview))
-                    {
-                        <p class="episode-overview overview-clickable focusable"
-                           tabindex="0"
-                           role="button"
-                           @onclick="OpenOverviewDialogAsync">
-                            @_episode.Overview
-                        </p>
-                    }
                 </div>
                 </div>
             </div>

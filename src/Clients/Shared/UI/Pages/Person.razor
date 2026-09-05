@@ -16,16 +16,46 @@
 
 @if (_loading)
 {
-    <div class="person-page">
-        <MediaHeroSkeleton PortraitLayout="true" ShowCast="false" />
-        <Carousel Skeleton="true">
-            @for (var i = 0; i < 8; i++)
-            {
-                <CarouselItem>
-                    <MediaCard Skeleton="true" FooterVisible="true" />
-                </CarouselItem>
-            }
-        </Carousel>
+    <div class="person-page" aria-busy="true">
+        <div class="person-page-scroll media-page-scroll">
+            <div class="person-main media-hero-main">
+                <div class="person-hero media-hero">
+                    <div class="media-hero-backdrop-zone">
+                        <div class="person-portrait">
+                            <K7Skeleton Class="person-skeleton-portrait" />
+                        </div>
+                    </div>
+                    <div class="media-hero-body">
+                        <div class="person-info">
+                            <div class="person-name-row">
+                                <K7Skeleton Class="person-skeleton-name" />
+                            </div>
+                            <div class="person-meta">
+                                <K7Skeleton Class="person-skeleton-chip person-skeleton-chip--wide" />
+                                <K7Skeleton Class="person-skeleton-chip" />
+                            </div>
+                            <div class="person-skeleton-bio">
+                                <K7Skeleton Shape="text" Class="person-skeleton-line" />
+                                <K7Skeleton Shape="text" Class="person-skeleton-line person-skeleton-line--mid" />
+                                <K7Skeleton Shape="text" Class="person-skeleton-line person-skeleton-line--short" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <MediaPageContent Class="person-page-content">
+                <div class="person-content">
+                    <Carousel Skeleton="true">
+                        @for (var i = 0; i < 8; i++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                </div>
+            </MediaPageContent>
+        </div>
     </div>
 }
 else if (_person is not null)

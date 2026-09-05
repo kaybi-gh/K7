@@ -14,6 +14,7 @@ public class MediaHeroSkeletonTests
 
         cut.Find(".media-hero-skeleton").ClassList.Should().NotContain("media-hero-skeleton--detail");
         cut.Find(".media-hero-skeleton").ClassList.Should().NotContain("media-hero-skeleton--portrait");
+        cut.Find(".media-hero-skeleton").ClassList.Should().NotContain("media-hero-skeleton--season");
         cut.FindAll(".media-hero-skeleton__play").Should().ContainSingle();
     }
 
@@ -41,6 +42,21 @@ public class MediaHeroSkeletonTests
 
         cut.Find(".media-hero-skeleton").ClassList.Should().Contain("media-hero-skeleton--portrait");
         cut.FindAll(".media-hero-skeleton__name").Should().ContainSingle();
+        cut.FindAll(".media-hero-skeleton__play").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Render_ShouldUseSeasonLayout_WhenSeasonLayout()
+    {
+        using var ctx = new BunitContext();
+
+        var cut = ctx.Render<MediaHeroSkeleton>(p => p
+            .Add(c => c.SeasonLayout, true)
+            .Add(c => c.ShowCast, false));
+
+        cut.Find(".media-hero-skeleton").ClassList.Should().Contain("media-hero-skeleton--season");
+        cut.FindAll(".media-hero-skeleton__season-logo").Should().ContainSingle();
+        cut.FindAll(".media-hero-skeleton__episode-row").Should().HaveCount(6);
         cut.FindAll(".media-hero-skeleton__play").Should().BeEmpty();
     }
 }

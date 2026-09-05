@@ -202,9 +202,17 @@
 
     <section id="media-hero-skeleton" class="ds-section">
         <h2>MediaHeroSkeleton</h2>
-        <p class="ds-description">Page-shell placeholder for movie, serie, episode, and person detail. Matches the hero + cast layout so TV does not flash a spinner. DetailLayout sizes the logo like Movie/Serie (up to 500 x 180). PortraitLayout uses a 2:3 portrait beside the bio.</p>
+        <p class="ds-description">Page-shell placeholder for movie, serie, season, episode, and person detail. Matches the hero plus cast layout so TV does not flash a spinner. DetailLayout sizes the logo like Movie/Serie (up to 500 x 180). SeasonLayout matches the desktop season page (compact logo, icon actions, episode rows). PortraitLayout uses a 2:3 portrait beside the bio. The person page itself reuses the person hero shell so phone, desktop, and TV breakpoints apply while loading.</p>
         <div class="ds-preview ds-preview--column" style="min-height: 420px; width: 100%;">
             <MediaHeroSkeleton DetailLayout="true" />
+        </div>
+        <p class="ds-description">SeasonLayout for the desktop season page.</p>
+        <div class="ds-preview ds-preview--column" style="min-height: 640px; width: 100%;">
+            <MediaHeroSkeleton SeasonLayout="true" ShowCast="false" />
+        </div>
+        <p class="ds-description">PortraitLayout for the person catalog preview (the live person page uses the person hero shell).</p>
+        <div class="ds-preview ds-preview--column" style="min-height: 420px; width: 100%;">
+            <MediaHeroSkeleton PortraitLayout="true" ShowCast="false" />
         </div>
     </section>
 

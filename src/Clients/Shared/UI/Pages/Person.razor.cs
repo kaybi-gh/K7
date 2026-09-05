@@ -78,8 +78,7 @@ public partial class Person : IAsyncDisposable
             return;
         }
 
-        _portraitUrl = apiClient.GetAbsoluteUri(
-            _person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        ApplyPortraitUrl(_person);
 
         var seenMedia = new HashSet<Guid>();
         var seenSeries = new HashSet<Guid>();
@@ -318,6 +317,14 @@ public partial class Person : IAsyncDisposable
         });
     }
 
+    private void ApplyPortraitUrl(PersonDto person, DateTimeOffset? cacheVersion = null)
+    {
+        var portraitUri = apiClient.GetAbsoluteUri(
+            PersonRoleDisplayHelper.ResolvePortrait(person)
+                ?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        _portraitUrl = MediaPictureUrlHelper.WithCacheBuster(portraitUri, cacheVersion);
+    }
+
     private static int Age(DateOnly birthday)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
@@ -344,9 +351,7 @@ public partial class Person : IAsyncDisposable
             return;
 
         _person = person;
-        var portraitUri = apiClient.GetAbsoluteUri(
-            person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-        _portraitUrl = MediaPictureUrlHelper.WithCacheBuster(portraitUri, DateTimeOffset.UtcNow);
+        ApplyPortraitUrl(person, DateTimeOffset.UtcNow);
         StateHasChanged();
     }
 
@@ -380,6 +385,8 @@ public partial class Person : IAsyncDisposable
         if (result is { Canceled: false })
         {
             _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
+            if (_person is not null)
+                ApplyPortraitUrl(_person, DateTimeOffset.UtcNow);
             StateHasChanged();
         }
     }

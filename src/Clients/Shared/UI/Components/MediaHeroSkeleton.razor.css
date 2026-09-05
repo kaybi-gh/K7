@@ -141,6 +141,59 @@ html.platform-tv .media-hero-skeleton--detail ::deep .media-hero-skeleton__play 
     border-radius: var(--radius-lg);
 }
 
+@media (max-width: 960px) {
+    .media-hero-skeleton--portrait .media-hero-skeleton__hero {
+        padding: 0 var(--space-6) var(--space-8);
+    }
+
+    .media-hero-skeleton--portrait ::deep .media-hero-skeleton__logo {
+        width: 200px;
+        height: 300px;
+        max-width: 200px;
+    }
+}
+
+@media (min-width: 1280px) {
+    .media-hero-skeleton--portrait .media-hero-skeleton__hero {
+        max-width: 1400px;
+        gap: var(--space-12);
+    }
+
+    .media-hero-skeleton--portrait ::deep .media-hero-skeleton__logo {
+        width: 300px;
+        height: 450px;
+        max-width: 300px;
+    }
+}
+
+@media (min-width: 1920px) {
+    .media-hero-skeleton--portrait .media-hero-skeleton__hero {
+        padding: 0 var(--space-16) var(--space-16);
+        max-width: 1800px;
+        gap: var(--space-16);
+    }
+
+    .media-hero-skeleton--portrait ::deep .media-hero-skeleton__logo {
+        width: 340px;
+        height: 510px;
+        max-width: 340px;
+    }
+}
+
+html.platform-tv .media-hero-skeleton--portrait .media-hero-skeleton__hero {
+    flex-direction: row;
+    align-items: flex-end;
+    padding: 0 var(--space-16) var(--space-16);
+    max-width: 1800px;
+    gap: var(--space-16);
+}
+
+html.platform-tv .media-hero-skeleton--portrait ::deep .media-hero-skeleton__logo {
+    width: 340px;
+    height: 510px;
+    max-width: 340px;
+}
+
 ::deep .media-hero-skeleton__name {
     display: block;
     width: min(42vw, 360px);
@@ -207,5 +260,116 @@ html.platform-tv .media-hero-skeleton--detail ::deep .media-hero-skeleton__play 
     .media-hero-skeleton--portrait ::deep .media-hero-skeleton__name {
         width: 70%;
         margin-inline: auto;
+    }
+}
+
+.media-hero-skeleton--season {
+    height: auto;
+    min-height: 100%;
+    flex: 1 0 auto;
+    overflow: visible;
+}
+
+.media-hero-skeleton__season-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 800px;
+    padding: var(--space-4) var(--space-6) 0;
+}
+
+::deep .media-hero-skeleton__season-logo {
+    display: block;
+    width: min(42vw, 280px);
+    height: 80px;
+    max-width: 60vw;
+    max-height: 120px;
+    border-radius: var(--radius-md);
+}
+
+::deep .media-hero-skeleton__season-title {
+    display: block;
+    width: 180px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+}
+
+.media-hero-skeleton__season-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.media-hero-skeleton__season-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.media-hero-skeleton--season ::deep .media-hero-skeleton__icon {
+    width: 36px;
+    height: 36px;
+}
+
+.media-hero-skeleton__season-episodes {
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--space-6) var(--space-4);
+}
+
+.media-hero-skeleton__episode-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    margin-top: var(--space-3);
+    background: var(--color-overlay);
+    border-radius: var(--radius-md);
+}
+
+::deep .media-hero-skeleton__episode-still {
+    flex-shrink: 0;
+    width: 160px;
+    height: 90px;
+    border-radius: var(--radius-md);
+}
+
+.media-hero-skeleton__episode-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1;
+    min-width: 0;
+}
+
+.media-hero-skeleton--season .media-hero-skeleton__overview {
+    margin: 0;
+    max-width: 700px;
+}
+
+@media (max-width: 599.98px) {
+    .media-hero-skeleton__season-header {
+        padding: var(--space-3) var(--space-4) 0;
+        align-items: center;
+    }
+
+    .media-hero-skeleton__season-title-row {
+        justify-content: center;
+    }
+
+    .media-hero-skeleton--season ::deep .media-hero-skeleton__season-logo {
+        width: min(80vw, 240px);
+        max-width: 80vw;
+        margin-inline: auto;
+    }
+
+    .media-hero-skeleton__season-episodes {
+        padding: 0 var(--space-4) var(--space-2);
+    }
+
+    ::deep .media-hero-skeleton__episode-still {
+        width: 120px;
+        height: 76px;
     }
 }

@@ -326,6 +326,141 @@
     }
 }
 
+/* Loading: reuse .person-hero / .person-portrait so phone, desktop, and TV breakpoints apply. */
+
+::deep .person-skeleton-portrait {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+}
+
+::deep .person-skeleton-name {
+    display: block;
+    width: min(42vw, 360px);
+    height: 1.15em;
+    min-height: 36px;
+    border-radius: var(--radius-md);
+}
+
+::deep .person-skeleton-chip {
+    display: block;
+    width: 88px;
+    height: 32px;
+    border-radius: var(--radius-full);
+}
+
+::deep .person-skeleton-chip--wide {
+    width: 148px;
+}
+
+.person-skeleton-bio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+::deep .person-skeleton-line {
+    height: 18px;
+    width: 92%;
+}
+
+::deep .person-skeleton-line--mid {
+    width: 86%;
+}
+
+::deep .person-skeleton-line--short {
+    width: 70%;
+}
+
+@media (max-width: 599.98px) {
+    ::deep .person-skeleton-name {
+        width: 70%;
+        margin-inline: auto;
+    }
+}
+
+@media (min-width: 1920px) {
+    ::deep .person-skeleton-name {
+        width: min(36vw, 480px);
+        min-height: 48px;
+    }
+
+    ::deep .person-skeleton-chip {
+        height: 40px;
+        width: 104px;
+    }
+
+    ::deep .person-skeleton-chip--wide {
+        width: 168px;
+    }
+
+    ::deep .person-skeleton-line {
+        height: 20px;
+    }
+}
+
+/* TV WebView CSS px may not hit 1920. Keep the 10-foot hero even then. */
+:global(html.platform-tv) .person-hero.media-hero {
+    flex-direction: row;
+    align-items: flex-end;
+    padding: 0 var(--space-16) var(--space-16);
+    max-width: 1800px;
+    gap: var(--space-16);
+}
+
+:global(html.platform-tv) .person-hero.media-hero .media-hero-body {
+    flex: 1;
+    min-width: 0;
+}
+
+:global(html.platform-tv) .person-portrait {
+    width: 340px;
+}
+
+:global(html.platform-tv) .person-name {
+    font-size: var(--text-5xl);
+}
+
+:global(html.platform-tv) .person-meta-item {
+    font-size: var(--text-base);
+    padding: var(--space-2) var(--space-4);
+}
+
+:global(html.platform-tv) .person-bio-text {
+    font-size: var(--text-lg);
+    -webkit-line-clamp: 6;
+}
+
+:global(html.platform-tv) .person-info {
+    text-align: left;
+}
+
+:global(html.platform-tv) .person-name-row {
+    display: flex;
+    justify-content: flex-start;
+}
+
+:global(html.platform-tv) ::deep .person-skeleton-name {
+    width: min(36vw, 480px);
+    min-height: 48px;
+    margin-inline: 0;
+}
+
+:global(html.platform-tv) ::deep .person-skeleton-chip {
+    height: 40px;
+    width: 104px;
+}
+
+:global(html.platform-tv) ::deep .person-skeleton-chip--wide {
+    width: 168px;
+}
+
+:global(html.platform-tv) ::deep .carousel-wrapper {
+    --carousel-margin-start: 80px;
+}
+
 .person-page-scroll[data-tv-scroll] .person-main {
     min-height: 100%;
 }

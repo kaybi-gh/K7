@@ -1,10 +1,25 @@
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.PersonRoles;
+using K7.Shared.Dtos.Entities.Persons;
 
 namespace K7.Clients.Shared.Helpers;
 
 public static class PersonRoleDisplayHelper
 {
     public sealed record GroupedDisplay(Guid Key, LitePersonRoleDto PrimaryRole, string? MergedSubtitle);
+
+    public static MetadataPictureDto? ResolvePortrait(PersonDto person)
+    {
+        if (person.PortraitPicture is not null)
+            return person.PortraitPicture;
+
+        return person.Roles
+            .Where(r => r.PortraitPicture is not null)
+            .OrderBy(r => r.Order is null)
+            .ThenBy(r => r.Order)
+            .Select(r => r.PortraitPicture)
+            .FirstOrDefault();
+    }
 
     public static IReadOnlyList<GroupedDisplay> GroupForCarousel(IEnumerable<LitePersonRoleDto>? roles)
     {

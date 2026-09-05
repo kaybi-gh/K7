@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Helpers;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using K7.Shared.Dtos.Entities.Persons;
 
@@ -129,4 +130,79 @@ public class PersonRoleDisplayHelperTests
         grouped[0].Key.Should().Be(firstPersonId);
         grouped[1].Key.Should().Be(secondPersonId);
     }
+
+    [Test]
+    public void ResolvePortrait_ShouldPreferPersonPortrait_WhenPresent()
+    {
+        var personPortrait = Picture("person");
+        var person = new PersonDto
+        {
+            Id = PersonId,
+            Name = "Actor",
+            PortraitPicture = personPortrait,
+            Roles =
+            [
+                new ActorDto
+                {
+                    Id = Guid.NewGuid(),
+                    Order = 1,
+                    PortraitPicture = Picture("role")
+                }
+            ]
+        };
+
+        PersonRoleDisplayHelper.ResolvePortrait(person).Should().BeSameAs(personPortrait);
+    }
+
+    [Test]
+    public void ResolvePortrait_ShouldUseBilledRolePortrait_WhenPersonHasNone()
+    {
+        var billed = Picture("billed");
+        var person = new PersonDto
+        {
+            Id = PersonId,
+            Name = "Actor",
+            Roles =
+            [
+                new ActorDto
+                {
+                    Id = Guid.NewGuid(),
+                    Order = null,
+                    PortraitPicture = Picture("unbilled")
+                },
+                new ActorDto
+                {
+                    Id = Guid.NewGuid(),
+                    Order = 2,
+                    PortraitPicture = billed
+                },
+                new ActorDto
+                {
+                    Id = Guid.NewGuid(),
+                    Order = 5
+                }
+            ]
+        };
+
+        PersonRoleDisplayHelper.ResolvePortrait(person).Should().BeSameAs(billed);
+    }
+
+    [Test]
+    public void ResolvePortrait_ShouldReturnNull_WhenNoPortraitsExist()
+    {
+        var person = new PersonDto
+        {
+            Id = PersonId,
+            Name = "Actor",
+            Roles = [new ActorDto { Id = Guid.NewGuid(), Order = 1 }]
+        };
+
+        PersonRoleDisplayHelper.ResolvePortrait(person).Should().BeNull();
+    }
+
+    private static MetadataPictureDto Picture(string marker) => new()
+    {
+        Id = Guid.NewGuid(),
+        Uri = new Uri($"/api/metadata-pictures/{marker}", UriKind.Relative)
+    };
 }
