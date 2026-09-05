@@ -4,7 +4,8 @@
 #
 # Uses the workflow GITHUB_TOKEN for git push and PR creation.
 # GitHub does not start workflows from GITHUB_TOKEN push/PR events, so this job
-# dispatches Build / Integration Tests / CodeQL on renovate/* PRs that have no checks.
+# dispatches Build on renovate/* PRs that have no checks. Integration tests and
+# CodeQL are jobs in that workflow and start only after build-and-test succeeds.
 # See docs/dev/developing.md#dependency-updates
 
 name: Renovate
@@ -91,6 +92,4 @@ jobs:
                 fi
                 echo "Dispatch CI for #${number} (${branch})"
                 gh workflow run Build --ref "${branch}"
-                gh workflow run "Integration Tests" --ref "${branch}"
-                gh workflow run CodeQL --ref "${branch}"
               done
