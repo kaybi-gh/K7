@@ -5,7 +5,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Ardalis.GuardClauses" Version="4.6.0" />
+    <PackageVersion Include="Ardalis.GuardClauses" Version="5.0.0" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.5.3" />
     <!-- Transitive CVE pins (CentralPackageTransitivePinningEnabled). Not referenced directly. -->
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
