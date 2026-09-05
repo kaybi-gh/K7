@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Common;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Enums;

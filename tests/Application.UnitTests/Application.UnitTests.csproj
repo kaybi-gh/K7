@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <RootNamespace>K7.Server.Application.UnitTests</RootNamespace>
@@ -21,7 +21,7 @@
         <PackageReference Include="NUnit3TestAdapter" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
         <PackageReference Include="coverlet.collector" />
-        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="AwesomeAssertions" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,4 +1,3 @@
-using AngleSharp.Dom;
 using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components;
 using Microsoft.AspNetCore.Components;
@@ -81,7 +80,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("tom");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
 
@@ -110,7 +109,7 @@ public class K7SearchSelectTests
         await input.FocusAsync();
         searchCount.Should().Be(0);
 
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
 
         searchCount.Should().Be(1);
@@ -132,7 +131,7 @@ public class K7SearchSelectTests
             }));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         searchCount.Should().Be(0);
 
         await input.InputAsync("t");
@@ -153,7 +152,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Alpha", "Beta"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("ab");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
 
@@ -177,7 +176,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("tom");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
 
@@ -197,7 +196,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A", "Actor B"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("to");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
 
@@ -222,7 +221,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Alpha", "Beta"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("ab");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(2));
 
@@ -255,7 +254,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("ac");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
 
@@ -287,7 +286,7 @@ public class K7SearchSelectTests
             .Add(x => x.SearchAsync, (_, _) => Task.FromResult<IReadOnlyList<string>>(["Actor A"])));
 
         var input = cut.Find("input");
-        await BeginEditingAsync(input);
+        await BeginEditingAsync(cut);
         await input.InputAsync("tom");
         cut.WaitForAssertion(() => cut.FindAll(".k7-search-select-option").Count.Should().Be(1));
 
@@ -312,8 +311,6 @@ public class K7SearchSelectTests
         return ctx;
     }
 
-    private static async Task BeginEditingAsync(IElement input)
-    {
-        await input.KeyDownAsync("Enter");
-    }
+    private static Task BeginEditingAsync(IRenderedComponent<K7SearchSelect> cut) =>
+        cut.Find("input").KeyDownAsync("Enter");
 }

@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Features.OpenSubsonic;
 
 namespace K7.Server.Application.UnitTests.Features.OpenSubsonic;

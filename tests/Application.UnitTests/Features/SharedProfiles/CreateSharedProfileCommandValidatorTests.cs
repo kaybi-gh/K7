@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Features.SharedProfiles.Commands.CreateSharedProfile;
 using NUnit.Framework;
 

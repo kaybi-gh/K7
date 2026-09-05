@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Clients.Shared.Helpers;
 
 namespace K7.Clients.ComponentTests.Helpers;

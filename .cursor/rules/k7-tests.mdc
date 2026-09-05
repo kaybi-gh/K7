@@ -1,12 +1,12 @@
 ---
-description: K7 testing conventions (NUnit, FluentAssertions, NSubstitute)
+description: K7 testing conventions (NUnit, AwesomeAssertions, NSubstitute)
 globs: tests/**
 alwaysApply: false
 ---
 
 # Testing
 
-Stack: NUnit, FluentAssertions, NSubstitute. AAA structure.
+Stack: NUnit, AwesomeAssertions, NSubstitute. AAA structure.
 
 Naming: `{ClassUnderTest}Tests`, `{Method}_Should{Expected}_When{Condition}`.
 

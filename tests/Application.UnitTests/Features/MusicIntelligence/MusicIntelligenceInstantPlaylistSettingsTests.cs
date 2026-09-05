@@ -1,5 +1,5 @@
 using System.Text.Json;
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Shared.Dtos;
 
 namespace K7.Server.Application.UnitTests.Features.MusicIntelligence;

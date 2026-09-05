@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.OpenSubsonic;

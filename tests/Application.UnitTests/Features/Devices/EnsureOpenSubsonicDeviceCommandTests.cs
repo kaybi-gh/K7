@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Features.Devices.Commands.EnsureOpenSubsonicDevice;
 
 namespace K7.Server.Application.UnitTests.Features.Devices;

@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using NUnit.Framework;

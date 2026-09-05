@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Helpers;
 
 namespace K7.Server.Application.UnitTests.Helpers;
